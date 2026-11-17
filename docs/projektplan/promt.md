@@ -293,21 +293,6 @@ Found on 2026-11-08 during the run of T-16, by the penetration test of the F-82 
   the run inserts without an `ANALYZE`). Next step: a run of `vuln-perf` alone on the large class (after the kind legs, as
   [Q-ARCH-325](../spec/architecture.md) set) that logs the slowest five requests with their request IDs; revisit if V-7b misses
   there as well, which would make it the reference environment's number ([H-491](../security/vulnerability-scanning.md#h-491--the-performance-run-is-not-the-reference-environment)).
-- **F-116 · `TestBastion_R_BAS_049_RoutingByPath` failed once on CI** (Test and Release 42530616876, e2e-bastion): "0 hits for 36
-  paths requested twice"; each repeated tarball request went to the main installation as a revalidation (304) instead of being a hit
-  on the Bastion replica of its path. Green in the runs before and after with no Bastion change in between. Done when the cause of
-  the revalidations is known. Read on 2026-11-09, two candidates in `engine.fresh` (`internal/bastion/engine/entries.go`), not
-  settled: (a) the e2e Bastion keeps an artifact for `artifact_revalidate_after: 90s` (`deploy/dev/bastion-chart-common.yaml`), and
-  the test relies on the tarballs the scenario before it fetched, whose last runs refresh the npm tarballs and then run the other
-  clients; past 90 s every npm tarball is stale, which explains the first round of revalidations but not the second, since a
-  304 sets `validatedAt` anew; (b) a content entry of the feed that names the npm repository and arrived less than 15 s before
-  makes every entry unusable, also one revalidated a moment ago, so all 72 requests revalidate while they run inside those 15 s.
-  Done on 2026-11-09 (`go vet -tags e2e` only, no kind run): the test now requests every path once before it reads `before`, which
-  removes (a), and a failure logs, per replica, the content entries of the feed applied since that warm-up and the feed lag and
-  resets (the Bastion exposes the count of applied entries by kind and no per-entry record, so this tells whether a content
-  entry arrived during the measurement and not which repository it named). Open: (b) is not ruled out and the fix is not run
-  on kind. Next step: the next recurrence names the cause with those lines; if it is (b), the Bastion needs a per-entry record
-  (a debug log of the applied content entries with their repositories) before the test can wait for a quiet feed.
 - **F-117 · The self-hosted runners lost the Ubuntu archive for a few minutes** (Test and Release 42553790224, 2026-11-09 03:02):
   every job that installs `build-essential` at that moment (GoSec, cyclomatic complexity, both builds, the image, the source malware
   scan, Trivy) failed in `apt-get` with "Could not connect to archive.ubuntu.com:80" over IPv6 and IPv4; jobs that had installed

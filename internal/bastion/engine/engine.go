@@ -276,7 +276,7 @@ func (e *engine) Ready(ctx context.Context) error { return e.d.Cache.Ready(ctx) 
 func (e *engine) janitor() {
 	now := e.now()
 	e.answers.prune(now)
-	e.d.Link.Feed().Prune(answers.PruneCutoffs(now, e.cfg.Answers.Period, e.cfg.Answers.GracePeriod))
+	e.d.Link.Feed().Prune(answers.PruneCutoff(now, e.cfg.Answers.Period, e.cfg.Answers.GracePeriod))
 	e.volatile.retain(func(_ string, t time.Time) bool { return now.Before(t) })
 	e.probes.retain(func(_ string, p *probeRec) bool { return now.Before(p.until) })
 }

@@ -413,13 +413,17 @@ func (l *Link) pollOnce(ctx context.Context) (more, ok bool) {
 		l.applyReset(received, next)
 	} else {
 		l.applyEntries(ans.Entries, received)
-		if len(ans.Entries) == 0 && next.Synthetic() {
+		// The read returned every entry the feed can still send behind its cursor: the IDs of the others go
+		// (Q-BAS-152).
+		l.o.Feed.Settle(after.At, ans.Entries)
+		if len(ans.Entries) == 0 && next.Synthetic() && sent.After(next.At) {
 			// The main installation read from a time, not from an entry. Move the time forward to this
-			// request, so the next read is cheap: its lookback covers entries committed late (Q-BAS-76).
+			// request, so the next read is cheap: its lookback covers entries committed late (Q-BAS-76). Never
+			// backwards: a cursor that went back would widen the window behind it again (Q-BAS-152).
 			next = iface.Cursor{At: sent.UTC()}
 		}
 	}
-	l.o.Feed.Prune(answers.PruneCutoffs(received, l.cfg.AnswerPeriod, l.cfg.GracePeriod))
+	l.o.Feed.Prune(answers.PruneCutoff(received, l.cfg.AnswerPeriod, l.cfg.GracePeriod))
 
 	l.mu.Lock()
 	l.cursor = next
