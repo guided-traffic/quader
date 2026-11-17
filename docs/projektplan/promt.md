@@ -258,6 +258,21 @@ Found on 2026-11-08 during the run of T-16, by the penetration test of the F-82 
 
 ### Tests and tools
 
+- **F-129 · The search journey opened a package instead of the repository, once** (Test and Release 44157579247, `e2e (access-long)`,
+  attempt 1; green on the re-run and in run 44150760311 before it, with only a checklist changed in between). The journey is
+  `tests/23-search.spec.ts:86` (R-UI-095, R-UI-097, R-UI-098): a reader types a part of a repository key and opens the first live
+  suggestion by keyboard; the page reached was `/projects/<project>/packages/npm/<key>-kit`, a package whose name holds the same
+  part, not the repository. Candidate, not verified: the order of the live suggestions depends on which answer arrives first. Not
+  read: the search code. Done when the order of the suggestions is stated by the spec and held by the code, or the journey no
+  longer depends on it.
+- **F-130 · The upgrade set has no release to start from since the rename to Quader** (2026-11-17,
+  [ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark)).
+  `TestUpgrade_R_HA_064_AcrossTheCut` installs `v0.16.0` and `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` the latest
+  release, both by the chart `quader` and the image `guidedtraffic/quader`; these exist from `v0.56.0` on, and the chart repository
+  no longer offers the packages of the former name. The set runs on dispatch only and was not run after the rename. The upgrade
+  across the cut can no longer be shown with published artifacts; the rolling upgrade works again with the second release under
+  the new name. Done when the set names what it starts from and the test across the cut is either rebuilt from two bundles or
+  removed with its exit criterion.
 - **F-123 · `TestR_DEB_035_LargeIndex` timed out once in the unit tests** (Test and Release 42582225034, 2026-11-09, job unit tests;
   the run was cancelled by a later push before a re-run): the test's client gave up after its 30 s timeout while it waited for the
   headers of `Packages.gz` of the stub's `bulk` suite (test/debstub/stub_test.go:275), under `-race` and coverage on the self-hosted
