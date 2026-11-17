@@ -487,6 +487,9 @@ func TestBastion_R_BAS_049_FailedAuthenticationTimeout(t *testing.T) {
 	if st, _, out := pod(env.full.Token); st != 200 {
 		t.Fatalf("$FULL is known before the timeout: %d %s", st, out)
 	}
+	// The answer of $FULL obtained now is what keeps it working in the timeout, on every replica through Valkey (Q-BAS-153), for
+	// the answer period of the e2e Bastion; the test needs about 7 s of it.
+	known := time.Now()
 	codes := map[int]int{}
 	var timeoutAt int
 	for i := 1; i <= 21; i++ {
@@ -519,6 +522,9 @@ func TestBastion_R_BAS_049_FailedAuthenticationTimeout(t *testing.T) {
 		if strings.HasPrefix(r.Path, "/api/v1/bastion/check") {
 			t.Errorf("a token in the timeout was checked at the main installation: %s %s", r.Method, r.Path)
 		}
+	}
+	if el := time.Since(known); el >= basAnswerPeriod {
+		t.Fatalf("the steps took %s, longer than the answer period of %s: the answer of $FULL has expired, and R-BAS-036 refuses a credential without one", el.Round(time.Millisecond), basAnswerPeriod)
 	}
 	if st, _, out := pod(env.full.Token); st != 200 {
 		t.Errorf("$FULL from the address in the timeout: %d %s, want 200", st, out)

@@ -159,7 +159,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [engine/request.go](../../internal/bastion/engine/request.go) | `ServeHTTP`, the request record `rq`, the steps of R-BAS-018 (host, block list, path, limits, credentials), the guard's verdict as a response |
 | [engine/credential.go](../../internal/bastion/engine/credential.go) | `Authorization` (Bearer, Basic), the token syntax, the credential key, the challenge |
 | [engine/respond.go](../../internal/bastion/engine/respond.go) | the Bastion's own problem details, the mapping of the client's errors, the header filters |
-| [engine/answerstore.go](../../internal/bastion/engine/answerstore.go) | answers in memory and in the shared store, negative entries, private copies, the `AnswerSink` the link calls |
+| [engine/answerstore.go](../../internal/bastion/engine/answerstore.go) | answers in memory and in the shared store (a copy in memory that fails a rule is dropped and the shared record is read, Q-BAS-153), negative entries, private copies, the `AnswerSink` the link calls |
 | [engine/readflow.go](../../internal/bastion/engine/readflow.go) | the decision between hit, check and miss, the check, the collapsing of misses |
 | [engine/forward.go](../../internal/bastion/engine/forward.go) | the forwarded request, the handling of a marked response by its class, documents and refusals |
 | [engine/fill.go](../../internal/bastion/engine/fill.go) | `fillRun`, the artifact fill that reads the main installation's body into `cache.Fill` without the client, and `follow`, which serves the client from the spool with the withheld tail |
