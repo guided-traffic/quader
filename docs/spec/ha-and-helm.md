@@ -10166,13 +10166,17 @@ leg's `evidence/kept-pod-logs/` and the events; the run rows were not read (they
 | (c) Wait longer than 15 minutes | — | — | 1.2 GiB at 512 KiB/s is 40 minutes: a bound widened to fit the test's mistake |
 
 **Choice:** (a). The base is a property of the harness (`variantDrain.BackupBase`), set by E5.9 only: the vulnerability blocks run variant E without the
-large files, and their Job copies the whole installation as before (set `vuln-long` of run 44067104691: Complete with 2 pods, 41 s after the drain began).
+large files, and their Job copies the whole installation as before (set `vuln-long` of run 44067104691: Complete with 2 pods).
 The runner losses that Q-HA-245 suspected of a full disk came before the runners' disk limit was removed on 2026-11-09; the base writes the 1 GiB file into
 the target once.
 
 **Diagnostics:** every pod of the variant's Jobs (base and slowed) has its log streamed by `kubectl logs -f` into `drain-variant-E-<pod>.log` of the
 artifacts, from its start to its SIGTERM line (the evidence recorder of Q-HA-300 copies every 2 s and lost the last lines of both pods); and `verifyE` logs
 the run rows of the Job (pod, state, progress, pins left and their bytes), also when its wait times out.
+
+**Measured** on the branch (run 44190428274, leg `drain-load-e`, green): the base backup took 9 s; the first pod of the slowed Job had 10 blobs to
+copy, had copied 4 (80 MiB) when it was evicted 2 min 28 s after its start, and ended `interrupted`; the replacement had 56 blobs to copy (the
+10 files and 46 the load had added, 200 MiB in all) and completed 4 min 4 s after its start; the Job ended `Complete` with 2 pods and exit 0.
 
 **Applied:** `test/e2e/drain_load_test.go`, `test/e2e/drain_variants_test.go` (`prepareBackupJob`, `verifyE`), `test/e2e/backup_env_test.go`
 (`followJobPodLogs`, `logBackupRuns`).
