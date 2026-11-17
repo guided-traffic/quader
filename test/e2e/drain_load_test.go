@@ -65,8 +65,8 @@ func drainUnderLoad(t *testing.T, kind string, v drainVariant, start func() drai
 		opts = append(opts, func(d *variantDrain) { d.BackupFiles, d.BackupFileMiB, d.BackupBase = 10, 20, true })
 	}
 	d := prepareVariantDrain(t, v, opts...)
-	// the pick may have moved the PostgreSQL and the Valkey primary and the backup Job may be running: the replicas are unready for
-	// a few seconds after that, and the load is the drain's, not the pick's
+	// the pick may have moved the PostgreSQL and the Valkey primary and the backup Job may be running; none of them may take a
+	// replica out of its Service (a switchover is a stall, Q-HA-13, Q-HA-302): a 503 of the edge after them is a finding
 	quaderSettled(t, 3, 3, 4)
 	streams := streamPodLogs(t, logPrefix, d.OnNode)
 
