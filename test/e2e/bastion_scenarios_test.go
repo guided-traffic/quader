@@ -217,20 +217,24 @@ func TestBastion_R_BAS_049_RoutingByPath(t *testing.T) {
 			}
 		}
 	}
-	// Warm-up (F-116): the cold runs before this test left the tarballs on the replica of their path, but their last runs may be older
-	// than artifact_revalidate_after, and a feed entry for the repository that arrived less than 15 s before makes every entry
-	// unusable (engine.fresh). One round here revalidates what is stale and puts a fresh validation time on every path, so the two
-	// rounds measured below are hits whatever the age of the cold runs; a request that still goes to the main installation after it is
-	// a revalidation caused by something that happened during the measurement, and the failure says what the Bastion applied.
-	fetch(1)
-	contentOf := func(m map[string]float64) float64 {
-		return msum(m, "quader_bastion_feed_entries_applied_total", `kind="content"`)
+	// A content or grants entry of the feed that the Bastion applied less than 15 s before a validation makes the entry unusable
+	// (R-BAS-022, engine.fresh); the failure says how many of each a replica applied from before the warm-up to the end.
+	appliedOf := func(m map[string]float64) (content, grants float64) {
+		return msum(m, "quader_bastion_feed_entries_applied_total", `kind="content"`), msum(m, "quader_bastion_feed_entries_applied_total", `kind="grants"`)
 	}
-	before, contentBefore := map[string]float64{}, map[string]float64{}
+	contentBefore, grantsBefore := map[string]float64{}, map[string]float64{}
 	for _, p := range pods {
-		m := basMetrics(t, p.Name)
-		before[p.Name] = msum(m, "quader_bastion_requests_total", `class="artifact"`, `result="hit"`)
-		contentBefore[p.Name] = contentOf(m)
+		contentBefore[p.Name], grantsBefore[p.Name] = appliedOf(basMetrics(t, p.Name))
+	}
+	// Warm-up (F-116): the cold runs before this test are older than artifact_revalidate_after, so one round here revalidates what is
+	// stale and puts a fresh validation time on every path; the two rounds measured below are hits whatever the age of the cold runs.
+	// A request that still goes to the main installation after it is a revalidation caused by an entry the Bastion applied meanwhile.
+	// Nothing in this suite commits one at this point: before Q-BAS-152 a replica applied the entries a quiet feed kept re-sending
+	// again 5 minutes and 15 seconds after it first received them, which is about when this test runs after the fixture's setup.
+	fetch(1)
+	before := map[string]float64{}
+	for _, p := range pods {
+		before[p.Name] = msum(basMetrics(t, p.Name), "quader_bastion_requests_total", `class="artifact"`, `result="hit"`)
 	}
 	w := openMainWindow(t)
 	fetch(2)
@@ -255,13 +259,13 @@ func TestBastion_R_BAS_049_RoutingByPath(t *testing.T) {
 	if total < float64(len(paths)) {
 		t.Errorf("%v hits for %d paths requested twice, want at least %d", total, len(paths), len(paths))
 	}
-	if t.Failed() {
-		// Candidate (b) of F-116: a content entry of the feed that named the repository shortly before made every entry unusable.
-		for _, p := range pods {
-			m := basMetrics(t, p.Name)
-			t.Logf("%s: content feed entries applied since the warm-up: %v (total %v), feed lag %vs, feed resets %v", p.Name,
-				contentOf(m)-contentBefore[p.Name], contentOf(m), msum(m, "quader_bastion_feed_lag_seconds"), msum(m, "quader_bastion_feed_resets_total"))
-		}
+	// Logged on every run (F-116): an entry of the feed applied shortly before or during the measurement makes every entry unusable,
+	// and the totals show whether a replica applied an entry twice.
+	for _, p := range pods {
+		m := basMetrics(t, p.Name)
+		content, grants := appliedOf(m)
+		t.Logf("%s: feed entries applied since before the warm-up: content %v (total %v), grants %v (total %v); feed lag %vs, feed resets %v", p.Name,
+			content-contentBefore[p.Name], content, grants-grantsBefore[p.Name], grants, msum(m, "quader_bastion_feed_lag_seconds"), msum(m, "quader_bastion_feed_resets_total"))
 	}
 }
 

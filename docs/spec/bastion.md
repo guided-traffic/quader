@@ -1265,8 +1265,11 @@ The Bastion follows the revocation feed every few seconds, so a revoked token or
   its receipt time, which makes every matching answer unusable (R-BAS-020 rule 3), and deletes the matching answers from memory
   and, best effort, from Valkey. `settings` triggers a handshake. A page is recorded as a whole and then the answers it matches are deleted in one pass
   ([Q-BAS-126](#q-bas-126--the-link-applies-a-page-as-a-unit-ends-the-start-read-at-the-end-of-the-feed-and-bounds-each-call)). Entries are kept for
-  `answers.period + grace_period + 15 s`; the IDs of applied entries for at least the feed's lookback (5 minutes, the default of
-  `bastions.feed.lookback`) as well, so that an entry the feed sends again is not applied again (H-470).
+  `answers.period + grace_period + 15 s`. The ID of an applied entry is kept for as long as the feed may send the entry again,
+  so that an entry the feed sends again is not applied again: the lookback of R-BAS-015 is measured behind the cursor, which
+  stands still while no entry is committed, so a quiet feed sends the same entries on every read. An ID goes when a read from a
+  cursor later than its entry no longer returns it; the window only moves forward with the cursor, which therefore never moves
+  backwards ([Q-BAS-152](#q-bas-152--the-id-of-an-applied-entry-is-kept-until-a-read-behind-which-it-lies-no-longer-returns-it)).
 - **Start.** A starting replica reads the feed from `t:<now − answers.period − answers.grace_period − 15 s>` before it uses any
   answer from Valkey; that time is the start of its feed history (rule 4). Until the first read succeeds it uses no shared answer. A read that returns no entry moves a synthetic cursor forward to
   the time of the request, so the next read is cheap and the main installation's lookback covers late commits
@@ -5090,7 +5093,7 @@ Context: security findings B3, B7, B8 and B11, all in the link. (1) The history 
 replica that knew a part of the feed. (2) Every entry of a page was recorded and then followed by a full pass over the answers that dropped what it matched: a burst page of 1,000 entries against 200,000
 answers was a thousand passes. (3) Reachability was evaluated after a whole tick, and a connection that swallowed the request held the call until `response_header_timeout`. (4) The IDs of applied
 entries were pruned with the entries, after `period + grace_period + 15 s`, which is shorter than the feed's lookback (5 minutes) for a short period: an entry the feed sent again was applied again
-and made every answer obtained since unusable.
+and made every answer obtained since unusable. (Part (4) is replaced by [Q-BAS-152](#q-bas-152--the-id-of-an-applied-entry-is-kept-until-a-read-behind-which-it-lies-no-longer-returns-it).)
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -5103,9 +5106,9 @@ and made every answer obtained since unusable.
 **Rationale:** the validity rules already make every matching answer unusable at the moment the page is recorded (R-BAS-020 rule 3), so the deletion is memory and Valkey housekeeping and may be one pass. The
 development agent would revisit (c) if operators set `bastions.feed.lookback` above its default.
 
-**Applied in the spec:** R-BAS-026, R-BAS-027; code: `link.pollOnce`, `link.applyEntries`, `link.callContext`, `engine.answerStore.Drop`, `answers.PruneCutoffs`;
+**Applied in the spec:** R-BAS-026, R-BAS-027; code: `link.pollOnce`, `link.applyEntries`, `link.callContext`, `engine.answerStore.Drop`, `answers.FeedLog.Settle` (Q-BAS-152);
 `TestR_BAS_026_TheHistoryStartsOnlyWhenTheStartReadReachedItsEnd`, `TestR_BAS_026_AFeedPageOfAThousandEntriesIsAppliedAgainstTwoHundredThousandAnswersWithinTheBound`,
-`TestR_BAS_027_ACallThatTheMainInstallationNeverAnswersIsCutAtUnreachableAfter`, `TestR_BAS_026_AnAppliedIDIsKeptForAtLeastTheFeedLookback`.
+`TestR_BAS_027_ACallThatTheMainInstallationNeverAnswersIsCutAtUnreachableAfter`, `TestR_BAS_026_AnAppliedIDIsKeptWhileTheFeedSendsItsEntry`.
 
 ### Q-BAS-127 · A refused request or miss does not consume the limit it was refused by
 
@@ -5449,6 +5452,41 @@ Status: **Decided by the development agent** — selected from the options below
 **Rationale:** Q-BAS-148 and Q-BAS-149 decide the rules; this records where they are enforced.
 
 **Applied in the spec:** R-BAS-010, R-BAS-011, R-BAS-012.
+
+### Q-BAS-152 · The ID of an applied entry is kept until a read behind which it lies no longer returns it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: finding F-116. `TestBastion_R_BAS_049_RoutingByPath` failed in the runs 42530616876, 43401661890 and 43578163061: every tarball request of the measurement went to the main installation as a revalidation. The Bastion kept the
+ID of an applied entry for at least 5 minutes and 15 seconds after its receipt (Q-BAS-126), on the assumption that the feed sends an
+entry again for its lookback after it was first received. The lookback is measured behind the cursor (R-BAS-015), and the cursor names
+the last entry, so while no entry is committed every read returns the same window, for as long as the feed stays quiet. 5 minutes and
+15 seconds after the first receipt the replica forgot the IDs, the next read applied the same `grants` and `content` entries again with a
+new receipt time, and every URL answer and cache entry validated within 15 s before that was unusable (R-BAS-020 rule 3, R-BAS-022);
+with the IDs recorded again, the cycle would repeat while the feed stayed quiet. In the e2e suite the fixture's policies and packages are
+the last entries, and the test runs about 5 minutes and 30 seconds after them. The replica logs of the runs show it: in 43578163061 every
+tarball validated before 09:14:43.66 was revalidated and every later one was a hit, which puts a re-application at about 09:14:28.6, some
+5 minutes and 17 seconds after the policies the fixture created at 09:09:10.4 were first received (the time is inferred from the
+boundary; the Bastion logs no applied entry); in 43401661890 the npm publishes of 09:41:41.5 to 42.2
+were applied again at about 09:46:58, and the measurement ran from 09:47:11.3 to 12.1. The two content entries the diagnostics saw
+during that measurement were the NuGet pushes of 09:41:53, applied again in the same way.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A read whose cursor lies after an entry and that does not return it ends the entry's ID; the cursor never moves backwards (chosen) | The behind part of a read is complete (R-BAS-015 resets rather than cut it) and the window only moves forward, so an entry that left it cannot come back | Exact for any `bastions.feed.lookback`, no clock is compared, no interface change; H-470 goes | The IDs of a quiet feed's window stay in memory, at most one window |
+| (b) Keep the IDs for the longest lookback the configuration allows (1 hour) | A time again | One constant | Still wrong for a feed that is quiet for longer than an hour; a re-application then repeats every hour |
+| (c) Measure the window behind the time of the read at the main installation | The feed re-sends an entry for the lookback after it was committed | The Bastion's time rule would hold | A Bastion that was cut off longer than the lookback misses a late commit the cursor-relative window catches |
+
+**Choice:** (a).
+
+**Rationale:** the main installation already returns, on every read, the complete set of entries the Bastion could see again; the
+Bastion only has to stop forgetting what that set still contains. A content or grants entry that a replica applies for the first time
+still makes the entries validated in the 15 s before unusable, as R-BAS-022 specifies: that is the margin of R-BAS-020 and not a defect.
+The synthetic cursor of an empty read moves to the time of the read only when that is later than the cursor (Q-BAS-76), so a Bastion clock
+behind the main installation's cannot widen the window again. The development agent records no revisit condition.
+
+**Applied in the spec:** R-BAS-026; code: `answers.FeedLog.Settle`, `link.pollOnce`;
+`TestR_BAS_026_AQuietFeedThatReSendsAnEntryPastItsLookbackDoesNotApplyItAgain`, `TestR_BAS_026_AnAppliedIDIsKeptWhileTheFeedSendsItsEntry`.
 
 ## What this does not cover
 
@@ -5923,15 +5961,6 @@ handler mounted below those prefixes that does not call it would run for a probe
 refuses the anonymous caller everything that is not `public`, but a handler that decides nothing would serve. What makes it
 real: a new route below the package families outside the dispatcher; a test of the route table that every pattern below them is the
 dispatcher's or the raw file handler's would hold it.
-### H-470 · The Bastion assumes the feed's default lookback when it keeps the IDs of applied entries
-
-Stage: R-BAS-026, `answers.FeedLog`. Subject: the entries a Bastion applies once.
-
-Live on every Bastion whose main installation sets `bastions.feed.lookback` above its default of 5 minutes (the key allows up to 1 hour), and dormant otherwise. The Bastion keeps the ID of an applied entry
-for `answers.period + grace_period + 15 s` and at least 5 minutes plus 15 s, so that an entry the feed sends again is not applied again. With a longer lookback and a short period, the feed sends an entry
-again after the ID is forgotten, and it is applied again: it is recorded with a new receipt time, so every answer obtained since the first receipt is unusable once more. That costs the main installation
-requests; it cannot serve anything that should not be served. What makes it real: a lookback of 30 minutes and `answers.period: 1m`, `grace_period: 1m`.
-
 ### H-471 · A pass-through body at the floor rate holds its budget slot for the length of the transfer
 
 Stage: R-BAS-025, the pass-through of a response that is not kept (Q-BAS-123). Subject: the slots of the budget.

@@ -537,6 +537,49 @@ func TestR_BAS_026_AnEntryIsAppliedOnceByItsID(t *testing.T) {
 	}
 }
 
+// TestR_BAS_026_AQuietFeedThatReSendsAnEntryPastItsLookbackDoesNotApplyItAgain: the lookback of the feed is measured
+// behind the cursor, and the cursor stands still while no entry is committed, so a quiet feed sends the same entries
+// on every read for as long as it stays quiet. With the periods of the e2e Bastion (30 s and 90 s) the replica kept an
+// ID for 5 minutes and 15 seconds after its receipt and then applied the re-sent entry again: every URL answer and
+// every cache entry validated in the 15 s before was unusable once more (F-116, Q-BAS-152). The ID now stays while
+// the feed sends the entry, and goes once a read behind which the entry lies no longer returns it.
+func TestR_BAS_026_AQuietFeedThatReSendsAnEntryPastItsLookbackDoesNotApplyItAgain(t *testing.T) {
+	r := newRig(t, rigOpts{mutate: func(c *link.Config) { c.AnswerPeriod, c.GracePeriod = 30*time.Second, 90*time.Second }})
+	r.connect()
+	r.clock.Advance(time.Second)
+	g := r.main.AddEntry(iface.FeedEntry{Kind: iface.FeedGrants})
+	r.tickAfter(2 * time.Second)
+	if r.applied("grants") != 1 {
+		t.Fatalf("applied grants = %v, want 1", r.applied("grants"))
+	}
+	// Twenty minutes of a quiet feed: every read sends the grants entry again, and an answer obtained once the
+	// entry's margin has passed stays usable throughout.
+	r.tickAfter(answers.SkewMargin + time.Second)
+	for range 600 {
+		r.tickAfter(2 * time.Second)
+		a := answers.Answer{Kind: answers.URL, ObtainedAt: r.clock.Now().Add(-time.Second), Repository: "web/npm-all"}
+		if got := r.check(a); got != answers.Usable {
+			t.Fatalf("at +%s an answer obtained a second ago is %q: the re-sent grants entry was applied again (applied %v)",
+				r.clock.Now().Sub(g.At), got, r.applied("grants"))
+		}
+	}
+	if r.applied("grants") != 1 {
+		t.Fatalf("applied grants = %v after a quiet feed, want 1", r.applied("grants"))
+	}
+	if r.l.Feed().Known() != 1 {
+		t.Fatalf("the log keeps %d IDs, want the one the feed still sends", r.l.Feed().Known())
+	}
+	// An entry committed now moves the cursor; once the grants entry lies a lookback behind it the feed no longer
+	// sends it, and its ID goes.
+	r.main.AddEntry(iface.FeedEntry{Kind: iface.FeedToken, Tokens: []string{"t9"}})
+	r.tickAfter(2 * time.Second)
+	r.tickAfter(2 * time.Second)
+	if r.l.Feed().Known() != 1 || r.applied("grants") != 1 || r.applied("token") != 1 {
+		t.Fatalf("after the cursor moved past the window: %d IDs, grants %v, token %v; want the token entry's ID alone",
+			r.l.Feed().Known(), r.applied("grants"), r.applied("token"))
+	}
+}
+
 // TestR_BAS_026_EveryKindIsAppliedAndMatchesWhatTheRulesSay: a token, a principal, a grants and a content entry
 // each make exactly the answers unusable that R-BAS-020 rule 3 names; each is counted by kind.
 func TestR_BAS_026_EveryKindIsAppliedAndMatchesWhatTheRulesSay(t *testing.T) {

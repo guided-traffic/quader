@@ -118,16 +118,24 @@ func TestR_BAS_026_AReplicaWithoutHistoryUsesNoAnswerAndOldOnesStayOut(t *testin
 
 func TestR_BAS_026_AnEntryIsAppliedOnceAndPruned(t *testing.T) {
 	log := NewFeedLog()
-	e := iface.FeedEntry{ID: "e1", Kind: iface.FeedToken, Tokens: []string{"t1"}}
+	e := iface.FeedEntry{ID: "e1", At: t0, Kind: iface.FeedToken, Tokens: []string{"t1"}}
 	if !log.Record(e, t0) || log.Record(e, t0.Add(time.Second)) {
 		t.Fatal("an entry was applied twice or not at all")
 	}
-	log.Prune(t0.Add(time.Minute), t0.Add(time.Minute))
+	log.Prune(t0.Add(time.Minute))
+	if log.Record(e, t0.Add(2*time.Minute)) {
+		t.Fatal("pruning by time forgot the ID of an entry the feed may still send")
+	}
+	s := state(t0.Add(time.Minute+time.Second), log)
+	if got := s.Check(Answer{Kind: Credential, ObtainedAt: t0.Add(time.Minute - 14*time.Second), TokenID: "t1"}); got != Usable {
+		t.Fatalf("a pruned entry still matches: %q", got)
+	}
+	log.Settle(t0.Add(time.Minute), nil)
 	if !log.Record(e, t0.Add(2*time.Minute)) {
-		t.Fatal("a pruned entry is unknown again, so a later re-send applies it again")
+		t.Fatal("a settled entry is still known, so its re-application cannot be told from a first one")
 	}
 	log.Reset()
-	s := state(t0.Add(3*time.Minute), log)
+	s = state(t0.Add(3*time.Minute), log)
 	if got := s.Check(Answer{Kind: Credential, ObtainedAt: t0.Add(2*time.Minute + time.Second), TokenID: "t1"}); got != Usable {
 		t.Fatalf("after a reset the log is empty: %q", got)
 	}

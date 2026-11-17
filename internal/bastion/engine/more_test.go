@@ -173,7 +173,15 @@ func TestR_BAS_019_TheForwardedFamilyDecidesWhichHeaderCarriesTheHost(t *testing
 func TestR_BAS_026_TheJanitorDropsWhatNoAnswerCanUseAnyMore(t *testing.T) {
 	s := newSiteHarness(t, options{})
 	warm(t, s)
-	s.feed.Record(iface.FeedEntry{ID: "old", Kind: iface.FeedToken, Tokens: []string{"x"}}, s.clock.now())
+	received := s.clock.now()
+	s.feed.Record(iface.FeedEntry{ID: "old", At: received, Kind: iface.FeedToken, Tokens: []string{"x"}}, received)
+	before := answers.Answer{Kind: answers.Credential, ObtainedAt: received.Add(-10 * time.Second), TokenID: "x"}
+	judge := func() answers.Reason {
+		return answers.State{Now: s.clock.now(), Period: 24 * time.Hour, HistoryStart: received.Add(-time.Hour), Log: s.feed}.Check(before)
+	}
+	if judge() != answers.Revoked {
+		t.Fatal("the token entry does not match")
+	}
 	if s.e.answers.mem.len() == 0 {
 		t.Fatal("no answers")
 	}
@@ -186,9 +194,13 @@ func TestR_BAS_026_TheJanitorDropsWhatNoAnswerCanUseAnyMore(t *testing.T) {
 	if s.e.isVolatile("k") {
 		t.Fatal("the volatile mark outlived its time")
 	}
-	// the feed entry is forgotten: a new one with the same ID is applied again
-	if !s.feed.Record(iface.FeedEntry{ID: "old", Kind: iface.FeedToken, Tokens: []string{"x"}}, s.clock.now()) {
+	// the feed entry no longer matches anything, but its ID stays known: only a feed read that no longer returns
+	// the entry ends it, so a re-send is not applied again (Q-BAS-152)
+	if judge() != answers.Usable {
 		t.Fatal("the feed log was not pruned")
+	}
+	if s.feed.Record(iface.FeedEntry{ID: "old", At: received, Kind: iface.FeedToken, Tokens: []string{"x"}}, s.clock.now()) {
+		t.Fatal("the janitor forgot the ID of an entry the feed may still send")
 	}
 	s.e.answers.put(context.Background(), answers.Credential, "k", &answerVal{Answer: answerBase(answers.Credential, s.clock.now(), tokenSubject("a", nil), "")})
 	s.e.answers.prune(s.clock.now())

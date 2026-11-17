@@ -25,18 +25,10 @@ import (
 // the clock skew between replicas.
 const SkewMargin = 15 * time.Second
 
-// FeedLookback is the lookback of the main installation's feed at its default (bastions.feed.lookback, R-BAS-015):
-// a read returns the entries newer than its cursor minus this period, so an entry is sent again for that long
-// after it was first received. The log keeps the IDs it applied for at least this long, so that a re-sent entry
-// is not applied again (Q-BAS-126, H-470).
-const FeedLookback = 5 * time.Minute
-
-// PruneCutoffs returns the two cutoffs of [FeedLog.Prune] at the given time: entries received before the first
-// no answer can depend on (period + grace period + [SkewMargin]), IDs received before the second can no longer
-// be re-sent (the same period, and at least the [FeedLookback] plus the margin).
-func PruneCutoffs(now time.Time, period, grace time.Duration) (entries, ids time.Time) {
-	keep := period + grace + SkewMargin
-	return now.Add(-keep), now.Add(-max(keep, FeedLookback+SkewMargin))
+// PruneCutoff returns the cutoff of [FeedLog.Prune] at the given time: entries received before it no answer can
+// depend on (period + grace period + [SkewMargin], R-BAS-026).
+func PruneCutoff(now time.Time, period, grace time.Duration) time.Time {
+	return now.Add(-(period + grace + SkewMargin))
 }
 
 // Kind is the kind of an answer (R-BAS-020).
@@ -125,7 +117,9 @@ func (s State) Usable(a Answer) bool { return s.Check(a) == Usable }
 // replica, which closes the race of an answer fetched before a revocation and stored after the answer was
 // evicted. It is safe for concurrent use.
 type FeedLog struct {
-	mu         sync.Mutex
+	mu sync.Mutex
+	// seen holds the ID of every applied entry with the entry's own time (the main installation's clock), for as
+	// long as the feed may send the entry again; see [FeedLog.Settle].
 	seen       map[string]time.Time
 	tokens     map[string]time.Time
 	principals map[string]time.Time
@@ -147,7 +141,7 @@ func (l *FeedLog) Record(e iface.FeedEntry, received time.Time) (applied bool) {
 	if _, dup := l.seen[e.ID]; dup {
 		return false
 	}
-	l.seen[e.ID] = received
+	l.seen[e.ID] = e.At
 	switch e.Kind {
 	case iface.FeedToken:
 		for _, id := range e.Tokens {
@@ -169,12 +163,10 @@ func (l *FeedLog) Record(e iface.FeedEntry, received time.Time) (applied bool) {
 	return true
 }
 
-// Prune forgets what no answer can still depend on: entries received before cutoff, which the caller sets to
-// now − (period + grace period + [SkewMargin]) (R-BAS-026), and the IDs applied before idCutoff, which is not
-// later than that and not later than now − ([FeedLookback] + [SkewMargin]); see [PruneCutoffs]. An ID that is
-// forgotten while the feed still re-sends its entry would apply the entry again and make every answer obtained
-// since its first receipt unusable once more.
-func (l *FeedLog) Prune(cutoff, idCutoff time.Time) {
+// Prune forgets the entries no answer can still depend on: those received before cutoff, which the caller sets to
+// now − (period + grace period + [SkewMargin]) (R-BAS-026, [PruneCutoff]). The IDs of applied entries are not
+// pruned by time; [FeedLog.Settle] forgets them.
+func (l *FeedLog) Prune(cutoff time.Time) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	for _, m := range []map[string]time.Time{l.tokens, l.principals, l.repos} {
@@ -184,14 +176,39 @@ func (l *FeedLog) Prune(cutoff, idCutoff time.Time) {
 			}
 		}
 	}
-	for k, t := range l.seen {
-		if t.Before(idCutoff) {
-			delete(l.seen, k)
-		}
-	}
 	if l.grants.Before(cutoff) {
 		l.grants = time.Time{}
 	}
+}
+
+// Settle forgets the IDs of the applied entries the feed can no longer send again, after a read whose cursor
+// named the time cursorAt returned the entries got (R-BAS-026, Q-BAS-152). A read returns every entry within the
+// lookback behind its cursor (R-BAS-015), and that window is measured from the cursor, which stands still while no
+// entry is committed: a quiet feed sends the same entries on every read, for as long as it stays quiet, not for the
+// lookback after they were first received. An entry older than the cursor that the read did not return has left the
+// window, and the window only moves forward with the cursor, so it cannot come back; its ID goes. Every other ID
+// stays: forgetting one while the feed still sends its entry would apply the entry again with a new receipt time
+// and make every matching answer obtained since unusable once more. The rule needs neither the main installation's
+// lookback nor a comparison of two clocks: both times are the main installation's.
+func (l *FeedLog) Settle(cursorAt time.Time, got []iface.FeedEntry) {
+	returned := make(map[string]bool, len(got))
+	for _, e := range got {
+		returned[e.ID] = true
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for id, at := range l.seen {
+		if at.Before(cursorAt) && !returned[id] {
+			delete(l.seen, id)
+		}
+	}
+}
+
+// Known reports how many IDs of applied entries the log keeps.
+func (l *FeedLog) Known() int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return len(l.seen)
 }
 
 // Reset forgets every entry, on a reset answer of the feed: the caller drops its answers and takes the reset
