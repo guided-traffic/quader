@@ -258,13 +258,6 @@ Found on 2026-11-08 during the run of T-16, by the penetration test of the F-82 
 
 ### Tests and tools
 
-- **F-129 · The search journey opened a package instead of the repository, once** (Test and Release 44157579247, `e2e (access-long)`,
-  attempt 1; green on the re-run and in run 44150760311 before it, with only a checklist changed in between). The journey is
-  `tests/23-search.spec.ts:86` (R-UI-095, R-UI-097, R-UI-098): a reader types a part of a repository key and opens the first live
-  suggestion by keyboard; the page reached was `/projects/<project>/packages/npm/<key>-kit`, a package whose name holds the same
-  part, not the repository. Candidate, not verified: the order of the live suggestions depends on which answer arrives first. Not
-  read: the search code. Done when the order of the suggestions is stated by the spec and held by the code, or the journey no
-  longer depends on it.
 - **F-130 · The upgrade set has no release to start from since the rename to Quader** (2026-11-17,
   [ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark)).
   `TestUpgrade_R_HA_064_AcrossTheCut` installs `v0.16.0` and `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` the latest

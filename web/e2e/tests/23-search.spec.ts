@@ -63,6 +63,25 @@ function publishBody(): object {
 const field = (page: Page) => page.getByRole('combobox', { name: 'Search' });
 const list = (page: Page) => page.getByRole('listbox', { name: 'Suggestions' });
 
+/**
+ * Down until the option `id` is the active entry. The field names its active entry in `aria-activedescendant` one render after
+ * the key, not within it (the UI's change detection runs after the event), so every press waits for the attribute to move on
+ * before the next press is decided. Read at once, the attribute still named the entry before, the loop pressed once more than
+ * it needed, and Enter opened the entry below the one sought (the package under the repository, Test and Release 43571234014
+ * and 44157579247).
+ */
+async function downTo(page: Page, id: string): Promise<void> {
+  const box = field(page);
+  let active = await box.getAttribute('aria-activedescendant');
+  for (let i = 0; i < 30 && active !== id; i++) {
+    await box.press('ArrowDown');
+    if (active === null) await expect(box).toHaveAttribute('aria-activedescendant', /.+/);
+    else await expect(box).not.toHaveAttribute('aria-activedescendant', active);
+    active = await box.getAttribute('aria-activedescendant');
+  }
+  await expect(box).toHaveAttribute('aria-activedescendant', id);
+}
+
 /** Every link of the page: none may lead into the admin area (R-UI-099). */
 async function adminLinks(page: Page): Promise<string[]> {
   const hrefs = await page.locator('main a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''));
@@ -106,9 +125,7 @@ test('R-UI-095 R-UI-097 R-UI-098 a reader finds a repository by a part of its ke
 
   await test.step('Down and Enter open the repository', async () => {
     const target = await list(page).getByRole('option', { name: new RegExp(`^${repoKey} · `) }).getAttribute('id');
-    for (let i = 0; i < 30 && (await field(page).getAttribute('aria-activedescendant')) !== target; i++) {
-      await field(page).press('ArrowDown');
-    }
+    await downTo(page, target!);
     await field(page).press('Enter');
     await expect(page).toHaveURL(new RegExp(`/projects/${project}/repositories/${repoKey}`));
   });
@@ -152,10 +169,7 @@ test('R-UI-096 R-UI-099 the administrator gets the Admin area group last; only p
     const entry = list(page).getByRole('option', { name: 'Users, Admin area', exact: true });
     const target = await entry.getAttribute('id');
     // Down until the marked entry is the active one: the focus stays in the field (aria-activedescendant).
-    for (let i = 0; i < 30 && (await field(page).getAttribute('aria-activedescendant')) !== target; i++) {
-      await field(page).press('ArrowDown');
-    }
-    await expect(field(page)).toHaveAttribute('aria-activedescendant', target!);
+    await downTo(page, target!);
     await field(page).press('Enter');
     await expect(page).toHaveURL(/\/admin\/users$/);
   });
