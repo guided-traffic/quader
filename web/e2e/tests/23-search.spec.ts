@@ -183,6 +183,9 @@ test('R-UI-095 / focuses the field while the preference is on; Ctrl+K always', a
     if ((await box.isChecked()) !== on) await box.click();
     await page.getByRole('button', { name: 'Save preferences' }).click();
     await expect(box).toBeChecked({ checked: on });
+    // `/` follows the saved preference, which the UI takes over when the server has answered the save; the box is checked
+    // before that. The confirmation is shown after the take-over, so a key pressed after it meets the new preference.
+    await expect(page.getByText('Preferences saved.')).toBeVisible();
   };
   await preference(true);
   await page.locator('main h1').click();
