@@ -1,9 +1,41 @@
 apiVersion: v1
 entries:
+  quader:
+  - apiVersion: v2
+    appVersion: 0.56.0
+    created: "2026-11-17T20:50:18.179891813Z"
+    description: quader, an artifact repository manager for package formats, as a
+      web and a worker Deployment.
+    digest: a6461364035e696f8c09c6618f9280c6eb1bbb5bd79840b15896804a690f460b
+    home: https://github.com/guided-traffic/quader
+    kubeVersion: '>=1.30.0-0'
+    name: quader
+    sources:
+    - https://github.com/guided-traffic/quader
+    type: application
+    urls:
+    - https://guided-traffic.github.io/quader/quader-0.56.0.tgz
+    version: 0.56.0
+  quader-bastion:
+  - apiVersion: v2
+    appVersion: 0.56.0
+    created: "2026-11-17T20:50:18.182533659Z"
+    description: The quader Bastion, a read-only, internet-facing cache instance in
+      front of a main quader installation (quader serve --role bastion).
+    digest: 6fd7da3d644f857c88331e17b2008447328227562f1d09dabc41d9e3b093abc6
+    home: https://github.com/guided-traffic/quader
+    kubeVersion: '>=1.30.0-0'
+    name: quader-bastion
+    sources:
+    - https://github.com/guided-traffic/quader
+    type: application
+    urls:
+    - https://guided-traffic.github.io/quader/quader-bastion-0.56.0.tgz
+    version: 0.56.0
   trove:
   - apiVersion: v2
     appVersion: 0.55.3
-    created: "2026-11-14T07:49:02.216811484Z"
+    created: "2026-11-17T20:50:18.536131895Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: bfae29e7ba2f219b3a1e06817d232230063cf58ef9a5254fe6f939dd2e186ea6
@@ -14,11 +46,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.55.3.tgz
+    - https://guided-traffic.github.io/quader/trove-0.55.3.tgz
     version: 0.55.3
   - apiVersion: v2
     appVersion: 0.55.2
-    created: "2026-11-14T07:49:02.211592262Z"
+    created: "2026-11-17T20:50:18.530656772Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 723333ff10dc8115df7695a8e5f0eb89c01779b89ef3d38b2996a7af7b791da1
@@ -29,11 +61,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.55.2.tgz
+    - https://guided-traffic.github.io/quader/trove-0.55.2.tgz
     version: 0.55.2
   - apiVersion: v2
     appVersion: 0.55.1
-    created: "2026-11-14T07:49:02.20741319Z"
+    created: "2026-11-17T20:50:18.52483398Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 6f420a3dc75464397babd639f556044c0b1773cf15a70a8b0ee8cf981f6fe9db
@@ -44,11 +76,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.55.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.55.1.tgz
     version: 0.55.1
   - apiVersion: v2
     appVersion: 0.55.0
-    created: "2026-11-14T07:49:02.203099424Z"
+    created: "2026-11-17T20:50:18.520359849Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 0f3ae95954cfabbb3ff0cd70333ffad7733acffda683c7fa015cadded73745e7
@@ -59,11 +91,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.55.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.55.0.tgz
     version: 0.55.0
   - apiVersion: v2
     appVersion: 0.54.0
-    created: "2026-11-14T07:49:02.197769523Z"
+    created: "2026-11-17T20:50:18.514428812Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 7c132747a147c448ad13571309fb7077293462b5b8192ae415022cc642b4dbaa
@@ -74,11 +106,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.54.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.54.0.tgz
     version: 0.54.0
   - apiVersion: v2
     appVersion: 0.53.0
-    created: "2026-11-14T07:49:02.19377585Z"
+    created: "2026-11-17T20:50:18.50998029Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: a406288b6880c91c7e88d55b1fe3949ca7a537a7f9657b65c6e87c612f3eb27b
@@ -89,11 +121,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.53.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.53.0.tgz
     version: 0.53.0
   - apiVersion: v2
     appVersion: 0.52.3
-    created: "2026-11-14T07:49:02.188190699Z"
+    created: "2026-11-17T20:50:18.505397142Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 58a5433b86ba3cfe85b5adc33ab5a737cf6241b9f48b86a6e48bbb76c5857294
@@ -104,11 +136,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.52.3.tgz
+    - https://guided-traffic.github.io/quader/trove-0.52.3.tgz
     version: 0.52.3
   - apiVersion: v2
     appVersion: 0.52.2
-    created: "2026-11-14T07:49:02.184250366Z"
+    created: "2026-11-17T20:50:18.499442972Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 1ff62c1f8f3daabcea4d8d7b196b8c42d58d2bf1c68fdc91f41476cd974e4f51
@@ -119,11 +151,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.52.2.tgz
+    - https://guided-traffic.github.io/quader/trove-0.52.2.tgz
     version: 0.52.2
   - apiVersion: v2
     appVersion: 0.52.1
-    created: "2026-11-14T07:49:02.178752749Z"
+    created: "2026-11-17T20:50:18.494507058Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 81ced73e4a1e27a91754c76a81a4f8862d70b6f6595395b71d0743dfb2f1bd7b
@@ -134,11 +166,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.52.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.52.1.tgz
     version: 0.52.1
   - apiVersion: v2
     appVersion: 0.52.0
-    created: "2026-11-14T07:49:02.174449553Z"
+    created: "2026-11-17T20:50:18.487745922Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 0059a46ddb5705fdd17fd1127ca9703a2f8eafa0dfa7965a9d72e20688cd89cf
@@ -149,11 +181,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.52.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.52.0.tgz
     version: 0.52.0
   - apiVersion: v2
     appVersion: 0.51.0
-    created: "2026-11-14T07:49:02.169930059Z"
+    created: "2026-11-17T20:50:18.482805599Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 905f8e2eefdd57c99ad74d7b0da87f88b08c9f2fe6ebde913c78c9aef130bd7e
@@ -164,11 +196,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.51.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.51.0.tgz
     version: 0.51.0
   - apiVersion: v2
     appVersion: 0.50.0
-    created: "2026-11-14T07:49:02.164213039Z"
+    created: "2026-11-17T20:50:18.478767783Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: a4cc013d290c6bb104e38ca002797eadf6592d41fd03a21936a36ef397af304c
@@ -179,11 +211,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.50.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.50.0.tgz
     version: 0.50.0
   - apiVersion: v2
     appVersion: 0.49.0
-    created: "2026-11-14T07:49:02.15755044Z"
+    created: "2026-11-17T20:50:18.470068121Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 49607f699e9444e512639558bcb5bac7676cb9092946599ba10260e0bf96f6e1
@@ -194,11 +226,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.49.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.49.0.tgz
     version: 0.49.0
   - apiVersion: v2
     appVersion: 0.48.0
-    created: "2026-11-14T07:49:02.151200547Z"
+    created: "2026-11-17T20:50:18.465158627Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 21de5623a21fa8417dac9ef9ff60dc3854aacf23366fa3d037a41ebec7bdcb25
@@ -209,11 +241,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.48.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.48.0.tgz
     version: 0.48.0
   - apiVersion: v2
     appVersion: 0.47.0
-    created: "2026-11-14T07:49:02.146903432Z"
+    created: "2026-11-17T20:50:18.458864965Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 5555a2646af87501aa9d9a54d9641de4f7b862efa069feab58289f4a4da26f05
@@ -224,11 +256,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.47.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.47.0.tgz
     version: 0.47.0
   - apiVersion: v2
     appVersion: 0.46.3
-    created: "2026-11-14T07:49:02.141361993Z"
+    created: "2026-11-17T20:50:18.454296235Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 82611dfd3e27406674990f051cb92a4b41910b7e21fc6e60f8b7c23840ca0151
@@ -239,11 +271,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.46.3.tgz
+    - https://guided-traffic.github.io/quader/trove-0.46.3.tgz
     version: 0.46.3
   - apiVersion: v2
     appVersion: 0.46.2
-    created: "2026-11-14T07:49:02.13713963Z"
+    created: "2026-11-17T20:50:18.448647011Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 5dad204c6b7d98c2ae2e245bb043c3abcba48e92937b225dc0ef912027c1c262
@@ -254,11 +286,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.46.2.tgz
+    - https://guided-traffic.github.io/quader/trove-0.46.2.tgz
     version: 0.46.2
   - apiVersion: v2
     appVersion: 0.46.1
-    created: "2026-11-14T07:49:02.132931212Z"
+    created: "2026-11-17T20:50:18.444236801Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 1acd2eafb63d421ff2d1f90030809482d53688d5eda543346df4441b62ccb45d
@@ -269,11 +301,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.46.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.46.1.tgz
     version: 0.46.1
   - apiVersion: v2
     appVersion: 0.46.0
-    created: "2026-11-14T07:49:02.126734298Z"
+    created: "2026-11-17T20:50:18.439740467Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: a0bc4e3129787aa9dbad867d9f7bb2aa6175996209b00989bce836789f4fe867
@@ -284,11 +316,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.46.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.46.0.tgz
     version: 0.46.0
   - apiVersion: v2
     appVersion: 0.45.1
-    created: "2026-11-14T07:49:02.122198213Z"
+    created: "2026-11-17T20:50:18.433633389Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 82e179297e9328d93173d235bb302932c61daf24325c7566309c52514b38a15e
@@ -299,11 +331,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.45.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.45.1.tgz
     version: 0.45.1
   - apiVersion: v2
     appVersion: 0.45.0
-    created: "2026-11-14T07:49:02.116227837Z"
+    created: "2026-11-17T20:50:18.429371459Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 4d96cd6e9b67691e2f5c9e31f79e70ccbc5eb65944a447049afab00fd14179e5
@@ -314,11 +346,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.45.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.45.0.tgz
     version: 0.45.0
   - apiVersion: v2
     appVersion: 0.44.0
-    created: "2026-11-14T07:49:02.11134579Z"
+    created: "2026-11-17T20:50:18.423865406Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: c34ac990477897accadeb0f611f96939a85093b83c54f520ac3619ff04831921
@@ -329,11 +361,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.44.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.44.0.tgz
     version: 0.44.0
   - apiVersion: v2
     appVersion: 0.43.2
-    created: "2026-11-14T07:49:02.107053183Z"
+    created: "2026-11-17T20:50:18.419157102Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 07e08d62ffbd26b9fcd11fbce3e15c3ca07dd21cd239e6a0c930ef2131841014
@@ -344,11 +376,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.43.2.tgz
+    - https://guided-traffic.github.io/quader/trove-0.43.2.tgz
     version: 0.43.2
   - apiVersion: v2
     appVersion: 0.43.1
-    created: "2026-11-14T07:49:02.100908057Z"
+    created: "2026-11-17T20:50:18.414656211Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: d423b3c06b37c5ca69c20c6e35d4b4ea189340eff4d0d5da5f3732ea824c1136
@@ -359,11 +391,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.43.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.43.1.tgz
     version: 0.43.1
   - apiVersion: v2
     appVersion: 0.43.0
-    created: "2026-11-14T07:49:02.096382813Z"
+    created: "2026-11-17T20:50:18.408822789Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 5fee161bc939c155371b0ee7db5dcda43d88f30ecf78e200c005126797788716
@@ -374,11 +406,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.43.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.43.0.tgz
     version: 0.43.0
   - apiVersion: v2
     appVersion: 0.42.0
-    created: "2026-11-14T07:49:02.090546519Z"
+    created: "2026-11-17T20:50:18.403901603Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 1f0331275c8233dd321bf11563399bbacacf2cc945bc4e4a65d42969903b66a4
@@ -389,11 +421,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.42.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.42.0.tgz
     version: 0.42.0
   - apiVersion: v2
     appVersion: 0.41.0
-    created: "2026-11-14T07:49:02.086206783Z"
+    created: "2026-11-17T20:50:18.397892819Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 2e70ba8c2ba4d1e864ad5eaa4055c7428a593e3a1af72e25aec36a31f8533da6
@@ -404,11 +436,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.41.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.41.0.tgz
     version: 0.41.0
   - apiVersion: v2
     appVersion: 0.40.0
-    created: "2026-11-14T07:49:02.081482784Z"
+    created: "2026-11-17T20:50:18.393678719Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 1ee4544e63e57ea679093317ca82096077f6fb51688a46a343868936d63765ec
@@ -419,11 +451,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.40.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.40.0.tgz
     version: 0.40.0
   - apiVersion: v2
     appVersion: 0.39.0
-    created: "2026-11-14T07:49:02.073054637Z"
+    created: "2026-11-17T20:50:18.385469174Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 84a26e214abc834177b59e7485c390cdfa8699a59ffd6de692f8967a3c9182fc
@@ -434,11 +466,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.39.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.39.0.tgz
     version: 0.39.0
   - apiVersion: v2
     appVersion: 0.38.0
-    created: "2026-11-14T07:49:02.068914348Z"
+    created: "2026-11-17T20:50:18.380384689Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 3cdd988ebdfbc7e9ebf2fd48f1b92b0fbb0042b33fb959b1fb55c8156c5917fe
@@ -449,11 +481,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.38.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.38.0.tgz
     version: 0.38.0
   - apiVersion: v2
     appVersion: 0.37.0
-    created: "2026-11-14T07:49:02.062873438Z"
+    created: "2026-11-17T20:50:18.374479141Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: e967181c0d6449b344c87042fbe60c3ab7af5bfb4170d95736d06ed309666ab4
@@ -464,11 +496,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.37.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.37.0.tgz
     version: 0.37.0
   - apiVersion: v2
     appVersion: 0.36.0
-    created: "2026-11-14T07:49:02.058012401Z"
+    created: "2026-11-17T20:50:18.370374729Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 38d6d7a38c1b83acbb7864d805e409d828360e89ddb6b2d099f172afe75f6905
@@ -479,11 +511,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.36.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.36.0.tgz
     version: 0.36.0
   - apiVersion: v2
     appVersion: 0.35.0
-    created: "2026-11-14T07:49:02.053151114Z"
+    created: "2026-11-17T20:50:18.364580111Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 1edd64bf1114b525ffe25c124bdbb4cb8b571f86380d4da5dfc2d7f4e71f9538
@@ -494,11 +526,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.35.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.35.0.tgz
     version: 0.35.0
   - apiVersion: v2
     appVersion: 0.34.1
-    created: "2026-11-14T07:49:02.047143697Z"
+    created: "2026-11-17T20:50:18.360083157Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 5a1944c24d542a975b7e9c894ade5f3cdd1f02407888085ca870929c81774e64
@@ -509,11 +541,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.34.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.34.1.tgz
     version: 0.34.1
   - apiVersion: v2
     appVersion: 0.34.0
-    created: "2026-11-14T07:49:02.042861901Z"
+    created: "2026-11-17T20:50:18.355715317Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: bf20af84e0f4083a33801dd19ed213f5b8932311fc0655696b849f5549ed1b38
@@ -524,11 +556,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.34.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.34.0.tgz
     version: 0.34.0
   - apiVersion: v2
     appVersion: 0.33.0
-    created: "2026-11-14T07:49:02.036791716Z"
+    created: "2026-11-17T20:50:18.350145593Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: c3ae344bf48436fbb33eb4eb23900749603485ce43afbf145be6912e2b32095c
@@ -539,11 +571,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.33.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.33.0.tgz
     version: 0.33.0
   - apiVersion: v2
     appVersion: 0.32.0
-    created: "2026-11-14T07:49:02.032279025Z"
+    created: "2026-11-17T20:50:18.345591Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 3f482d541eca1b8d76cb22821da006f887413d470d17b79a0db5164153a3d1fe
@@ -554,11 +586,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.32.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.32.0.tgz
     version: 0.32.0
   - apiVersion: v2
     appVersion: 0.31.0
-    created: "2026-11-14T07:49:02.028142062Z"
+    created: "2026-11-17T20:50:18.340106748Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: d6a0a7b1c1dd843bc91a3e731b70a07bfece5140fd598cf57602056931f943fc
@@ -569,11 +601,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.31.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.31.0.tgz
     version: 0.31.0
   - apiVersion: v2
     appVersion: 0.30.1
-    created: "2026-11-14T07:49:02.021923848Z"
+    created: "2026-11-17T20:50:18.336131121Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: ef7a461579e58f5e8a1f7a16b3309c4a4157c9e3b2cc49d191e5238f9ef3317e
@@ -584,11 +616,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.30.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.30.1.tgz
     version: 0.30.1
   - apiVersion: v2
     appVersion: 0.30.0
-    created: "2026-11-14T07:49:02.017696966Z"
+    created: "2026-11-17T20:50:18.330737751Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: b7012720773168204dbda29eb33f603806139df30d03d01225d99b2509332c74
@@ -599,11 +631,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.30.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.30.0.tgz
     version: 0.30.0
   - apiVersion: v2
     appVersion: 0.29.0
-    created: "2026-11-14T07:49:02.007459109Z"
+    created: "2026-11-17T20:50:18.322269988Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 8097eeeee6ef60bd93b6399e8c1b64b92e94bd49d6646a72a6111d6269974040
@@ -614,11 +646,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.29.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.29.0.tgz
     version: 0.29.0
   - apiVersion: v2
     appVersion: 0.28.0
-    created: "2026-11-14T07:49:02.001537775Z"
+    created: "2026-11-17T20:50:18.316614914Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 65f8c67c8e70d445081c5706ccadd27bba297ed6dda0a70725e5889bf6960f14
@@ -629,11 +661,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.28.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.28.0.tgz
     version: 0.28.0
   - apiVersion: v2
     appVersion: 0.27.1
-    created: "2026-11-14T07:49:01.99689565Z"
+    created: "2026-11-17T20:50:18.312866886Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 3e33ca5a2e4d41eb76aff3c747ac631f62dc71b3cacee73513ed8cebe292ed22
@@ -644,11 +676,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.27.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.27.1.tgz
     version: 0.27.1
   - apiVersion: v2
     appVersion: 0.27.0
-    created: "2026-11-14T07:49:01.992118602Z"
+    created: "2026-11-17T20:50:18.307472313Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: e16a471ca04968c2b4eeba0505c0b7a8c644d24cb3709a5a6540cb8386a367aa
@@ -659,11 +691,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.27.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.27.0.tgz
     version: 0.27.0
   - apiVersion: v2
     appVersion: 0.26.0
-    created: "2026-11-14T07:49:01.986093822Z"
+    created: "2026-11-17T20:50:18.303043128Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 7e8a76a8767a7512c425737da50e1516ed836c01f57830232d2bacdd8e2f3fb2
@@ -674,11 +706,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.26.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.26.0.tgz
     version: 0.26.0
   - apiVersion: v2
     appVersion: 0.25.4
-    created: "2026-11-14T07:49:01.981210253Z"
+    created: "2026-11-17T20:50:18.298652825Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 48a536c177146a302af6f50f6134e8cc6a53ee09a5e406df28ebb68635eec482
@@ -689,11 +721,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.25.4.tgz
+    - https://guided-traffic.github.io/quader/trove-0.25.4.tgz
     version: 0.25.4
   - apiVersion: v2
     appVersion: 0.25.3
-    created: "2026-11-14T07:49:01.97503006Z"
+    created: "2026-11-17T20:50:18.293645224Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: f02a9095b53d256d885d133420700efeaadefff16cf621d5ee89417fa9e44404
@@ -704,11 +736,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.25.3.tgz
+    - https://guided-traffic.github.io/quader/trove-0.25.3.tgz
     version: 0.25.3
   - apiVersion: v2
     appVersion: 0.25.2
-    created: "2026-11-14T07:49:01.970479849Z"
+    created: "2026-11-17T20:50:18.289625563Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 0d2b44621bb9678231508710b0f45d58b46ef34626269741ac49f0ee09274a68
@@ -719,11 +751,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.25.2.tgz
+    - https://guided-traffic.github.io/quader/trove-0.25.2.tgz
     version: 0.25.2
   - apiVersion: v2
     appVersion: 0.25.0
-    created: "2026-11-14T07:49:01.965055722Z"
+    created: "2026-11-17T20:50:18.283565913Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: e3a1f5c514708ccb6a8f4df29375460511e4d7222cf8a98da77589cfa8a9459e
@@ -734,11 +766,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.25.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.25.0.tgz
     version: 0.25.0
   - apiVersion: v2
     appVersion: 0.24.0
-    created: "2026-11-14T07:49:01.960587824Z"
+    created: "2026-11-17T20:50:18.279641712Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 3254dc20e8a668ed0c2176fc7bc8cd14daa8646d54e4dd99e651cc0caa592a9b
@@ -749,11 +781,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.24.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.24.0.tgz
     version: 0.24.0
   - apiVersion: v2
     appVersion: 0.23.0
-    created: "2026-11-14T07:49:01.955994822Z"
+    created: "2026-11-17T20:50:18.275276427Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 20bd1322c5e7cedf89f8589238a31bd229efa34775be44a0f7eacdf08302f4c3
@@ -764,11 +796,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.23.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.23.0.tgz
     version: 0.23.0
   - apiVersion: v2
     appVersion: 0.22.0
-    created: "2026-11-14T07:49:01.95019683Z"
+    created: "2026-11-17T20:50:18.269188063Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 49ad2cd41eb8ccfe0a77c97a23e2d2572298fdfb0c3d3b3d60a8f4d2ff672ccb
@@ -779,11 +811,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.22.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.22.0.tgz
     version: 0.22.0
   - apiVersion: v2
     appVersion: 0.21.0
-    created: "2026-11-14T07:49:01.946421769Z"
+    created: "2026-11-17T20:50:18.265691561Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: e91c99f6a948151baa7ecdfb092bf406204e2e73cd2c7ccd17d80691625d40a4
@@ -794,11 +826,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.21.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.21.0.tgz
     version: 0.21.0
   - apiVersion: v2
     appVersion: 0.20.2
-    created: "2026-11-14T07:49:01.942779106Z"
+    created: "2026-11-17T20:50:18.260680234Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 04193d8476860987d79c3ecc6c86c739016bd31f451c528725f5fcfccaf1fb5a
@@ -809,11 +841,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.20.2.tgz
+    - https://guided-traffic.github.io/quader/trove-0.20.2.tgz
     version: 0.20.2
   - apiVersion: v2
     appVersion: 0.20.1
-    created: "2026-11-14T07:49:01.93719673Z"
+    created: "2026-11-17T20:50:18.25764269Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 207d2c7283c3390fe1738cced56b306590cd4f9bcab07cff083ed8f709132e12
@@ -824,11 +856,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.20.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.20.1.tgz
     version: 0.20.1
   - apiVersion: v2
     appVersion: 0.20.0
-    created: "2026-11-14T07:49:01.933870345Z"
+    created: "2026-11-17T20:50:18.254359129Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: bfa1520fbe47754e97e935a20d990bc861715f65366915fc3da76ad04132b056
@@ -839,11 +871,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.20.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.20.0.tgz
     version: 0.20.0
   - apiVersion: v2
     appVersion: 0.19.5
-    created: "2026-11-14T07:49:01.927673021Z"
+    created: "2026-11-17T20:50:18.247871682Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: df2bd960e5ae28d933ce71ba4f95affca8d647c3513b7e1e1a36dd8f20b7a413
@@ -854,11 +886,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.19.5.tgz
+    - https://guided-traffic.github.io/quader/trove-0.19.5.tgz
     version: 0.19.5
   - apiVersion: v2
     appVersion: 0.19.4
-    created: "2026-11-14T07:49:01.921388842Z"
+    created: "2026-11-17T20:50:18.244522047Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: f70bae8d870c4ee8b7f54b446733e48c8bd9b88a247ae50a2a58f45dd00e913a
@@ -869,11 +901,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.19.4.tgz
+    - https://guided-traffic.github.io/quader/trove-0.19.4.tgz
     version: 0.19.4
   - apiVersion: v2
     appVersion: 0.19.3
-    created: "2026-11-14T07:49:01.917652103Z"
+    created: "2026-11-17T20:50:18.241363314Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: b1f220835330ff77655cee323653ea7f2f6226dd8e3684807c4616742e92a8f4
@@ -884,11 +916,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.19.3.tgz
+    - https://guided-traffic.github.io/quader/trove-0.19.3.tgz
     version: 0.19.3
   - apiVersion: v2
     appVersion: 0.19.2
-    created: "2026-11-14T07:49:01.914257818Z"
+    created: "2026-11-17T20:50:18.236452357Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 30edd54f00f4da4ebdccab6dc59b627d836bb9476716ef04601439d2613bf09b
@@ -899,11 +931,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.19.2.tgz
+    - https://guided-traffic.github.io/quader/trove-0.19.2.tgz
     version: 0.19.2
   - apiVersion: v2
     appVersion: 0.19.1
-    created: "2026-11-14T07:49:01.909324656Z"
+    created: "2026-11-17T20:50:18.233232166Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 7dd51b22025616d9c7274f2396ef2e9659102abf821eaaa320a329b68dc4da11
@@ -914,11 +946,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.19.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.19.1.tgz
     version: 0.19.1
   - apiVersion: v2
     appVersion: 0.19.0
-    created: "2026-11-14T07:49:01.906026493Z"
+    created: "2026-11-17T20:50:18.229420017Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 5001077eb5c0b4ee2e06e24fbe4e28f72dd22d990bfb63283be4922b9d5fe5b3
@@ -929,11 +961,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.19.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.19.0.tgz
     version: 0.19.0
   - apiVersion: v2
     appVersion: 0.18.0
-    created: "2026-11-14T07:49:01.902671944Z"
+    created: "2026-11-17T20:50:18.223636821Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: c71ea1675cbc5c760860ee6c119fb5358a0a67082d29f76baf1062e5a2f732fd
@@ -944,11 +976,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.18.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.18.0.tgz
     version: 0.18.0
   - apiVersion: v2
     appVersion: 0.17.1
-    created: "2026-11-14T07:49:01.897637309Z"
+    created: "2026-11-17T20:50:18.220540185Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 7cf4f456eae0bf58fb3c2030dacc5079c32b0c094c96fec8d89817a97cb065fa
@@ -959,11 +991,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.17.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.17.1.tgz
     version: 0.17.1
   - apiVersion: v2
     appVersion: 0.17.0
-    created: "2026-11-14T07:49:01.893527458Z"
+    created: "2026-11-17T20:50:18.2173915Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: b284b4ad458a23044f8c8a8ae1434df131361037f9a6c29640e3514bdcfed233
@@ -974,11 +1006,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.17.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.17.0.tgz
     version: 0.17.0
   - apiVersion: v2
     appVersion: 0.16.0
-    created: "2026-11-14T07:49:01.889444416Z"
+    created: "2026-11-17T20:50:18.212105263Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 9e426cbecaeb656ee5789aea637ea94cd5d16cd13e9b1486d214fd9f3d5fc277
@@ -989,11 +1021,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.16.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.16.0.tgz
     version: 0.16.0
   - apiVersion: v2
     appVersion: 0.15.1
-    created: "2026-11-14T07:49:01.884826887Z"
+    created: "2026-11-17T20:50:18.209429784Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 8f8344fbe772b721ebff32bd95f859efd82aa3aab0e9cf44e92a3bdd416be031
@@ -1004,11 +1036,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.15.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.15.1.tgz
     version: 0.15.1
   - apiVersion: v2
     appVersion: 0.15.0
-    created: "2026-11-14T07:49:01.882089741Z"
+    created: "2026-11-17T20:50:18.207267213Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: a4d01ee5cb78c9969c43680c64d631930c6263f6260b8a70c45e232080ce4df4
@@ -1019,11 +1051,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.15.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.15.0.tgz
     version: 0.15.0
   - apiVersion: v2
     appVersion: 0.14.0
-    created: "2026-11-14T07:49:01.879521022Z"
+    created: "2026-11-17T20:50:18.202930653Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: f8f3cf1ed82d6c3c01c1dea17e14a52bd3d1377fb57a931310761fef54d78f3a
@@ -1034,11 +1066,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.14.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.14.0.tgz
     version: 0.14.0
   - apiVersion: v2
     appVersion: 0.13.0
-    created: "2026-11-14T07:49:01.877122765Z"
+    created: "2026-11-17T20:50:18.200382003Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 326c386991fd65b9435fb9ebc68bc7e43f8a01f0aabbc702eff88a2978483689
@@ -1049,11 +1081,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.13.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.13.0.tgz
     version: 0.13.0
   - apiVersion: v2
     appVersion: 0.12.0
-    created: "2026-11-14T07:49:01.872707988Z"
+    created: "2026-11-17T20:50:18.197992213Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 329ca5f0f40923fbe4c99830b8c290c7db02ba79254587ab04c54c57046bee32
@@ -1064,11 +1096,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.12.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.12.0.tgz
     version: 0.12.0
   - apiVersion: v2
     appVersion: 0.11.1
-    created: "2026-11-14T07:49:01.869680965Z"
+    created: "2026-11-17T20:50:18.194302686Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 206e3842f9f44c36dcb22d2cdc2dbf1978b25e521d1788723ee7d2bab5e7a1b4
@@ -1079,11 +1111,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.11.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.11.1.tgz
     version: 0.11.1
   - apiVersion: v2
     appVersion: 0.11.0
-    created: "2026-11-14T07:49:01.866723806Z"
+    created: "2026-11-17T20:50:18.191647165Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 4482dde6d74c20a5c523714bb07b2d0cc09db48ad110aa16ee59016e6521d1eb
@@ -1094,11 +1126,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.11.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.11.0.tgz
     version: 0.11.0
   - apiVersion: v2
     appVersion: 0.10.0
-    created: "2026-11-14T07:49:01.864042624Z"
+    created: "2026-11-17T20:50:18.189330263Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 55b19df29e2ce66c7ed82adb12ebbb06cfb007e9c95cb964f16eef726b49b753
@@ -1109,11 +1141,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.10.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.10.0.tgz
     version: 0.10.0
   - apiVersion: v2
     appVersion: 0.9.0
-    created: "2026-11-14T07:49:02.226819476Z"
+    created: "2026-11-17T20:50:18.547727204Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 537bb0e64e6816cb7456c4faabf5c36b8217fc6f7b170e96127bc1a720659f9e
@@ -1124,11 +1156,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.9.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.9.0.tgz
     version: 0.9.0
   - apiVersion: v2
     appVersion: 0.8.0
-    created: "2026-11-14T07:49:02.224449542Z"
+    created: "2026-11-17T20:50:18.544767426Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: f660d494ee4cefa298b30d96bc5c72f8746dabc010b81bc3b1c1599687fcbbd6
@@ -1139,11 +1171,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.8.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.8.0.tgz
     version: 0.8.0
   - apiVersion: v2
     appVersion: 0.7.0
-    created: "2026-11-14T07:49:02.221078632Z"
+    created: "2026-11-17T20:50:18.542486893Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 4904d4f6744ff0c30741270945d3a7eb9235153d043375ddcddb9c0c7cdcd4b5
@@ -1154,11 +1186,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.7.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.7.0.tgz
     version: 0.7.0
   - apiVersion: v2
     appVersion: 0.6.0
-    created: "2026-11-14T07:49:02.218968157Z"
+    created: "2026-11-17T20:50:18.539353908Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: de162a1cb4b4594fce20c9efedef1495da573d1155b681efdba502e9fbb42d11
@@ -1169,11 +1201,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.6.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.6.0.tgz
     version: 0.6.0
   - apiVersion: v2
     appVersion: 0.5.0
-    created: "2026-11-14T07:49:02.159900125Z"
+    created: "2026-11-17T20:50:18.472587426Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: f1204e5511ff4ae31086a0a4ce14ae95be00419155b95d53f0868c2d3df1201e
@@ -1184,11 +1216,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.5.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.5.0.tgz
     version: 0.5.0
   - apiVersion: v2
     appVersion: 0.4.0
-    created: "2026-11-14T07:49:02.075117434Z"
+    created: "2026-11-17T20:50:18.388052009Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: b00facfad70564296607f9cea5bfece3ef7da5426425e4327a3e3f7be4facac8
@@ -1199,11 +1231,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.4.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.4.0.tgz
     version: 0.4.0
   - apiVersion: v2
     appVersion: 0.3.1
-    created: "2026-11-14T07:49:02.012658444Z"
+    created: "2026-11-17T20:50:18.326499917Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: a609d748e2a502711c9dbef2ce2fd2862088ecd2ff5e654d75ac2faef002f356
@@ -1214,11 +1246,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.3.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.3.1.tgz
     version: 0.3.1
   - apiVersion: v2
     appVersion: 0.3.0
-    created: "2026-11-14T07:49:02.010008603Z"
+    created: "2026-11-17T20:50:18.324412249Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: 1767bb4f91eb7258cc99de93f0ee1436013fa481eb84b393f3c9bf017a89042f
@@ -1229,11 +1261,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.3.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.3.0.tgz
     version: 0.3.0
   - apiVersion: v2
     appVersion: 0.2.0
-    created: "2026-11-14T07:49:01.930347959Z"
+    created: "2026-11-17T20:50:18.250248918Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: bfa538f776ba3f3fa55abfd576b2f16cc3b525537dd2bd985e384f84b5bee96a
@@ -1244,11 +1276,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.2.0.tgz
+    - https://guided-traffic.github.io/quader/trove-0.2.0.tgz
     version: 0.2.0
   - apiVersion: v2
     appVersion: 0.1.1
-    created: "2026-11-14T07:49:01.858831899Z"
+    created: "2026-11-17T20:50:18.186701171Z"
     description: trove, an artifact repository manager for package formats, as a web
       and a worker Deployment.
     digest: a901e8644b4b37b1a235da888b8c215453e28decb6a7c8c4ece503d26586fe08
@@ -1259,12 +1291,12 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-0.1.1.tgz
+    - https://guided-traffic.github.io/quader/trove-0.1.1.tgz
     version: 0.1.1
   trove-bastion:
   - apiVersion: v2
     appVersion: 0.55.3
-    created: "2026-11-14T07:49:02.400011804Z"
+    created: "2026-11-17T20:50:18.717695304Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 84b106785241739dde6e393ae10118da0f756c2bdce3044b181701dc76b137bd
@@ -1275,11 +1307,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.55.3.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.55.3.tgz
     version: 0.55.3
   - apiVersion: v2
     appVersion: 0.55.2
-    created: "2026-11-14T07:49:02.398208306Z"
+    created: "2026-11-17T20:50:18.715374424Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: f5b2ef101f78bc6c9a3e6206db3a15dfb44a10be0b538906460a16ced2b00d8c
@@ -1290,11 +1322,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.55.2.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.55.2.tgz
     version: 0.55.2
   - apiVersion: v2
     appVersion: 0.55.1
-    created: "2026-11-14T07:49:02.396241701Z"
+    created: "2026-11-17T20:50:18.712055999Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: fbbcbceae002f8f5d1cc6efc343252e41e5111aeb24dc38f2e275f0d384586ff
@@ -1305,11 +1337,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.55.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.55.1.tgz
     version: 0.55.1
   - apiVersion: v2
     appVersion: 0.55.0
-    created: "2026-11-14T07:49:02.394111638Z"
+    created: "2026-11-17T20:50:18.70993123Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: c0a187f671519e068c2ae064700ea45e6104b536ee0cf73b09aa852161f6da8d
@@ -1320,11 +1352,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.55.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.55.0.tgz
     version: 0.55.0
   - apiVersion: v2
     appVersion: 0.54.0
-    created: "2026-11-14T07:49:02.390273919Z"
+    created: "2026-11-17T20:50:18.707943862Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: e133695ced63a7ae63dbf3a747718323f572a5f533f7c2a4bd378037d0c8e389
@@ -1335,11 +1367,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.54.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.54.0.tgz
     version: 0.54.0
   - apiVersion: v2
     appVersion: 0.53.0
-    created: "2026-11-14T07:49:02.388160128Z"
+    created: "2026-11-17T20:50:18.70565362Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 62c55281c25c60e933974438487ecfb2e421b20aa23d7c188e8df292f5aad3ce
@@ -1350,11 +1382,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.53.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.53.0.tgz
     version: 0.53.0
   - apiVersion: v2
     appVersion: 0.52.3
-    created: "2026-11-14T07:49:02.386089216Z"
+    created: "2026-11-17T20:50:18.702941181Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: c7adeefe64d04258ed92182d18a77f937320bf20a50d8999a2838e06faa9db00
@@ -1365,11 +1397,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.52.3.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.52.3.tgz
     version: 0.52.3
   - apiVersion: v2
     appVersion: 0.52.2
-    created: "2026-11-14T07:49:02.38369748Z"
+    created: "2026-11-17T20:50:18.698345851Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: c3ce100b83010ef2e884e7ab649ff000515ad48de740a627f47668592babe0e9
@@ -1380,11 +1412,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.52.2.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.52.2.tgz
     version: 0.52.2
   - apiVersion: v2
     appVersion: 0.52.1
-    created: "2026-11-14T07:49:02.381322416Z"
+    created: "2026-11-17T20:50:18.695892571Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 528a7795fac6e92832469709c66637e0f77dc1f692baeb4c6cde78ec5ca19f1e
@@ -1395,11 +1427,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.52.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.52.1.tgz
     version: 0.52.1
   - apiVersion: v2
     appVersion: 0.52.0
-    created: "2026-11-14T07:49:02.377545843Z"
+    created: "2026-11-17T20:50:18.693434022Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 319dbc68842b8c25b1c4d913be5e57832a5980733cb70ee733ad9bf51205120e
@@ -1410,11 +1442,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.52.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.52.0.tgz
     version: 0.52.0
   - apiVersion: v2
     appVersion: 0.51.0
-    created: "2026-11-14T07:49:02.375272149Z"
+    created: "2026-11-17T20:50:18.691024105Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: cbf3d484d89bb10a7e6ede9071fe8c894ffae4165965a631ae7c6568a75a7e6d
@@ -1425,11 +1457,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.51.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.51.0.tgz
     version: 0.51.0
   - apiVersion: v2
     appVersion: 0.50.0
-    created: "2026-11-14T07:49:02.372859153Z"
+    created: "2026-11-17T20:50:18.688875341Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 1ad0ea87727de47f0e8916d4183b4ddf27fa1730edd444af2ec2fab2f86a0c0a
@@ -1440,11 +1472,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.50.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.50.0.tgz
     version: 0.50.0
   - apiVersion: v2
     appVersion: 0.49.0
-    created: "2026-11-14T07:49:02.37053731Z"
+    created: "2026-11-17T20:50:18.684874976Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: d4bb0f9db1400939913ce03ed3ad309666e68a7f082e778c4a7377107ea5ef52
@@ -1455,11 +1487,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.49.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.49.0.tgz
     version: 0.49.0
   - apiVersion: v2
     appVersion: 0.48.0
-    created: "2026-11-14T07:49:02.366641461Z"
+    created: "2026-11-17T20:50:18.682505144Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 0e128151512d31d95ab320fe04b07fef5528109064431b49bdbca6e14494c432
@@ -1470,11 +1502,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.48.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.48.0.tgz
     version: 0.48.0
   - apiVersion: v2
     appVersion: 0.47.0
-    created: "2026-11-14T07:49:02.364227483Z"
+    created: "2026-11-17T20:50:18.680320183Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 3aa1affcefd9e658bbb341c7e4f716f002b7b7d74245a7315260727e2dbdcd14
@@ -1485,11 +1517,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.47.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.47.0.tgz
     version: 0.47.0
   - apiVersion: v2
     appVersion: 0.46.3
-    created: "2026-11-14T07:49:02.36185281Z"
+    created: "2026-11-17T20:50:18.678180697Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: ec8eedb7d1ca7243ebab7fca74f77150f2512b8d13f9899f0a7bcac19d583ff4
@@ -1500,11 +1532,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.46.3.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.46.3.tgz
     version: 0.46.3
   - apiVersion: v2
     appVersion: 0.46.2
-    created: "2026-11-14T07:49:02.359698491Z"
+    created: "2026-11-17T20:50:18.675948055Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 4c2a41784a1ae92e05be1ed4b4c8604aa28e994d6b07e98442be33670d097742
@@ -1515,11 +1547,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.46.2.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.46.2.tgz
     version: 0.46.2
   - apiVersion: v2
     appVersion: 0.46.1
-    created: "2026-11-14T07:49:02.357265519Z"
+    created: "2026-11-17T20:50:18.671400394Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 36d00fb6f2e94c101639e8527713c89283e3e668d3bed80fe16d401db25755ed
@@ -1530,11 +1562,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.46.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.46.1.tgz
     version: 0.46.1
   - apiVersion: v2
     appVersion: 0.46.0
-    created: "2026-11-14T07:49:02.353176476Z"
+    created: "2026-11-17T20:50:18.66940987Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: e8f6ff1f5d5e8b0ca0c8d24895a53d5df3dfe9cbf2dc0791f5125325a1769a75
@@ -1545,11 +1577,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.46.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.46.0.tgz
     version: 0.46.0
   - apiVersion: v2
     appVersion: 0.45.1
-    created: "2026-11-14T07:49:02.351109491Z"
+    created: "2026-11-17T20:50:18.667101724Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 80ddbc63df87a477a47759c3f0412a7bf541ab944d66c46532d0fc089165a7fc
@@ -1560,11 +1592,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.45.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.45.1.tgz
     version: 0.45.1
   - apiVersion: v2
     appVersion: 0.45.0
-    created: "2026-11-14T07:49:02.34901148Z"
+    created: "2026-11-17T20:50:18.665040226Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 38553527b2f31c6bf2b0813a8033618932554ea3da664afacf990df8eddf4ec1
@@ -1575,11 +1607,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.45.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.45.0.tgz
     version: 0.45.0
   - apiVersion: v2
     appVersion: 0.44.0
-    created: "2026-11-14T07:49:02.346928366Z"
+    created: "2026-11-17T20:50:18.66293283Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: ccd2c50c8437517c45bd4cadf9a75d25423c9f3c6ed963369e2738bbb77d519d
@@ -1590,11 +1622,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.44.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.44.0.tgz
     version: 0.44.0
   - apiVersion: v2
     appVersion: 0.43.2
-    created: "2026-11-14T07:49:02.344863746Z"
+    created: "2026-11-17T20:50:18.659438722Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: c2545cab91ee2a91eaa7848e2edd2ab1dde2aae91cefbfc52b61d8433e2ef9c2
@@ -1605,11 +1637,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.43.2.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.43.2.tgz
     version: 0.43.2
   - apiVersion: v2
     appVersion: 0.43.1
-    created: "2026-11-14T07:49:02.340552595Z"
+    created: "2026-11-17T20:50:18.657455632Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 9aa62bbf3ae20f524106dd235bbb8a43a7ec3168e773f42741496f072f865ed7
@@ -1620,11 +1652,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.43.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.43.1.tgz
     version: 0.43.1
   - apiVersion: v2
     appVersion: 0.43.0
-    created: "2026-11-14T07:49:02.338508154Z"
+    created: "2026-11-17T20:50:18.655439239Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 98e96f826f797afbd6ef9d1e2d38a879e10e80602abbc3153c145efcad894d1c
@@ -1635,11 +1667,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.43.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.43.0.tgz
     version: 0.43.0
   - apiVersion: v2
     appVersion: 0.42.0
-    created: "2026-11-14T07:49:02.336567398Z"
+    created: "2026-11-17T20:50:18.653553554Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 0322d630670f7bad90083a5cb18bde9e7ac9666c410fad6f76233e2f0958054e
@@ -1650,11 +1682,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.42.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.42.0.tgz
     version: 0.42.0
   - apiVersion: v2
     appVersion: 0.41.0
-    created: "2026-11-14T07:49:02.33458869Z"
+    created: "2026-11-17T20:50:18.651623183Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 220da867beccc58896d73cb4c9f2698307831a296e29fdc90ee05b1b99655786
@@ -1665,11 +1697,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.41.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.41.0.tgz
     version: 0.41.0
   - apiVersion: v2
     appVersion: 0.40.0
-    created: "2026-11-14T07:49:02.332244515Z"
+    created: "2026-11-17T20:50:18.648567574Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: b7c4d6f229230f4f521ae0ce04ffda95b08c5680e321461696d8b88a0818c9f4
@@ -1680,11 +1712,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.40.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.40.0.tgz
     version: 0.40.0
   - apiVersion: v2
     appVersion: 0.39.0
-    created: "2026-11-14T07:49:02.328431001Z"
+    created: "2026-11-17T20:50:18.645335272Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 52e456055eb95693d9b4947c482c233dfcfece2353513e3df6fe97d348ead251
@@ -1695,11 +1727,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.39.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.39.0.tgz
     version: 0.39.0
   - apiVersion: v2
     appVersion: 0.38.0
-    created: "2026-11-14T07:49:02.326338459Z"
+    created: "2026-11-17T20:50:18.643394601Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 6f7fa55da9e432f9edf4583420d13221a678b3e98b5c14eb0f13dd3aed1633a2
@@ -1710,11 +1742,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.38.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.38.0.tgz
     version: 0.38.0
   - apiVersion: v2
     appVersion: 0.37.0
-    created: "2026-11-14T07:49:02.324204008Z"
+    created: "2026-11-17T20:50:18.641498506Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: b864ce4dd51c81742790b0742c2b525c488dfc07b1c40364d75aa53599848051
@@ -1725,11 +1757,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.37.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.37.0.tgz
     version: 0.37.0
   - apiVersion: v2
     appVersion: 0.36.0
-    created: "2026-11-14T07:49:02.322082282Z"
+    created: "2026-11-17T20:50:18.63958105Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 12831247fd98135a3f30ba3b527a6d8d869ce099fb574432a67ac73bc8f54596
@@ -1740,11 +1772,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.36.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.36.0.tgz
     version: 0.36.0
   - apiVersion: v2
     appVersion: 0.35.0
-    created: "2026-11-14T07:49:02.319662503Z"
+    created: "2026-11-17T20:50:18.637607738Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 32f7f56ebf1b4e598be7e5e1fabcb74b726621cba2dd4268d665e7f8b392a324
@@ -1755,11 +1787,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.35.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.35.0.tgz
     version: 0.35.0
   - apiVersion: v2
     appVersion: 0.34.1
-    created: "2026-11-14T07:49:02.316063844Z"
+    created: "2026-11-17T20:50:18.634188812Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: a9a626438f1176bd3b05c14fbe1dcb1aa444e2f5677f66ede1a0fd7891d28a1e
@@ -1770,11 +1802,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.34.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.34.1.tgz
     version: 0.34.1
   - apiVersion: v2
     appVersion: 0.34.0
-    created: "2026-11-14T07:49:02.313663201Z"
+    created: "2026-11-17T20:50:18.632345707Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: f4cec77af9fb27fcbbf06ce10a15703dfdb07e0d632f4d788c6c231e2a1f242f
@@ -1785,11 +1817,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.34.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.34.0.tgz
     version: 0.34.0
   - apiVersion: v2
     appVersion: 0.33.0
-    created: "2026-11-14T07:49:02.311713819Z"
+    created: "2026-11-17T20:50:18.630335405Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 6e12051f6753c772cece54762fa37ce1f0246bf4e55bf4c58cfe339c5692db1f
@@ -1800,11 +1832,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.33.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.33.0.tgz
     version: 0.33.0
   - apiVersion: v2
     appVersion: 0.32.0
-    created: "2026-11-14T07:49:02.309045051Z"
+    created: "2026-11-17T20:50:18.628332869Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: ab800dd0d24455df94204df352e8e2c095eb6d51c56a30ca3257eac383f10dba
@@ -1815,11 +1847,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.32.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.32.0.tgz
     version: 0.32.0
   - apiVersion: v2
     appVersion: 0.31.0
-    created: "2026-11-14T07:49:02.306929346Z"
+    created: "2026-11-17T20:50:18.626184676Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: e9a4b25196daede47579a0d99d546f4f844ec874475babb49af2a3dbc59763c5
@@ -1830,11 +1862,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.31.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.31.0.tgz
     version: 0.31.0
   - apiVersion: v2
     appVersion: 0.30.1
-    created: "2026-11-14T07:49:02.303530013Z"
+    created: "2026-11-17T20:50:18.622188469Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 2810c18cb8b864c0cbd6e9e7d3f40c047e66209328a34eb828bf448f3f50d59a
@@ -1845,11 +1877,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.30.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.30.1.tgz
     version: 0.30.1
   - apiVersion: v2
     appVersion: 0.30.0
-    created: "2026-11-14T07:49:02.301715043Z"
+    created: "2026-11-17T20:50:18.620314154Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: a24d50f93bed870f8a6f3936d3622f8a1547bdc8e996901d3dde6700c9e689a6
@@ -1860,11 +1892,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.30.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.30.0.tgz
     version: 0.30.0
   - apiVersion: v2
     appVersion: 0.29.0
-    created: "2026-11-14T07:49:02.299761985Z"
+    created: "2026-11-17T20:50:18.618338718Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 1b07b14173d4465209314adef718a6ceac7d68b1e08b7193ce3b93b5df962676
@@ -1875,11 +1907,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.29.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.29.0.tgz
     version: 0.29.0
   - apiVersion: v2
     appVersion: 0.28.0
-    created: "2026-11-14T07:49:02.297753581Z"
+    created: "2026-11-17T20:50:18.616259085Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 58620024e666631dd7e14f245c6341e2cfbe41a4f9efac1612c89f9fd678c4c4
@@ -1890,11 +1922,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.28.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.28.0.tgz
     version: 0.28.0
   - apiVersion: v2
     appVersion: 0.27.1
-    created: "2026-11-14T07:49:02.295407181Z"
+    created: "2026-11-17T20:50:18.613734952Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 567fa2f4292c5cfac10a70bdde38de66ad580bcc16bd6c45e9ca73191e744417
@@ -1905,11 +1937,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.27.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.27.1.tgz
     version: 0.27.1
   - apiVersion: v2
     appVersion: 0.27.0
-    created: "2026-11-14T07:49:02.29106978Z"
+    created: "2026-11-17T20:50:18.610085189Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: e1f7050e9ddfbf2872a56fc776c77b8a131aef5281306533c3611620fa3e4159
@@ -1920,11 +1952,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.27.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.27.0.tgz
     version: 0.27.0
   - apiVersion: v2
     appVersion: 0.26.0
-    created: "2026-11-14T07:49:02.28913186Z"
+    created: "2026-11-17T20:50:18.608233007Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 1365dc2c3159817f1404ca8c460594366c3b97c283c805da3865b8e531867380
@@ -1935,11 +1967,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.26.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.26.0.tgz
     version: 0.26.0
   - apiVersion: v2
     appVersion: 0.25.4
-    created: "2026-11-14T07:49:02.286728603Z"
+    created: "2026-11-17T20:50:18.606239427Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 4bb3dcdc87dedd055ecd2774217d15449101ec6c17b01e6e425cb01c5f3608fb
@@ -1950,11 +1982,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.25.4.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.25.4.tgz
     version: 0.25.4
   - apiVersion: v2
     appVersion: 0.25.3
-    created: "2026-11-14T07:49:02.284454639Z"
+    created: "2026-11-17T20:50:18.604219517Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: ab2eb0e9686d33b63547c36a75ed2edae5210ef50c1aa685f16434cbf03a31c4
@@ -1965,11 +1997,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.25.3.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.25.3.tgz
     version: 0.25.3
   - apiVersion: v2
     appVersion: 0.25.2
-    created: "2026-11-14T07:49:02.281034516Z"
+    created: "2026-11-17T20:50:18.60197374Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 28fa098db696c5df1f9a140c9869f20f27127fc5e19c92df3ad1bbac20e37da5
@@ -1980,11 +2012,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.25.2.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.25.2.tgz
     version: 0.25.2
   - apiVersion: v2
     appVersion: 0.25.0
-    created: "2026-11-14T07:49:02.27872709Z"
+    created: "2026-11-17T20:50:18.598109862Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 838c880025c560c246cba46e26b725465a994314cbf01c861ec6530faa9d6aaf
@@ -1995,11 +2027,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.25.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.25.0.tgz
     version: 0.25.0
   - apiVersion: v2
     appVersion: 0.24.0
-    created: "2026-11-14T07:49:02.276486719Z"
+    created: "2026-11-17T20:50:18.596039889Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: cf1dd8c0de212bc4c285885ed7d8e02d2a4e3b34902f00272fb66c441f727c11
@@ -2010,11 +2042,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.24.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.24.0.tgz
     version: 0.24.0
   - apiVersion: v2
     appVersion: 0.23.0
-    created: "2026-11-14T07:49:02.273961593Z"
+    created: "2026-11-17T20:50:18.593890875Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 9b45d5bd7d338cdc6aa46869fb40a0045bdf76e9fffee4e9be2be8f32d493937
@@ -2025,11 +2057,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.23.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.23.0.tgz
     version: 0.23.0
   - apiVersion: v2
     appVersion: 0.22.0
-    created: "2026-11-14T07:49:02.27089773Z"
+    created: "2026-11-17T20:50:18.591552002Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: f27264eb1b65ce76b2d64a770f5c429a2a112a6ad1cdbde67ddec8698e102f1c
@@ -2040,11 +2072,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.22.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.22.0.tgz
     version: 0.22.0
   - apiVersion: v2
     appVersion: 0.21.0
-    created: "2026-11-14T07:49:02.266968829Z"
+    created: "2026-11-17T20:50:18.589339518Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 01d232aa5dee0eb3bfc3cdfddb0762f9198013b2fe43b2d27321939dc1574bcf
@@ -2055,11 +2087,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.21.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.21.0.tgz
     version: 0.21.0
   - apiVersion: v2
     appVersion: 0.20.2
-    created: "2026-11-14T07:49:02.265013706Z"
+    created: "2026-11-17T20:50:18.585522649Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 302b9be4c63eca161949f75c502cb0012a36889caff3c4ce97d82b8eb251d2cc
@@ -2070,11 +2102,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.20.2.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.20.2.tgz
     version: 0.20.2
   - apiVersion: v2
     appVersion: 0.20.1
-    created: "2026-11-14T07:49:02.263054286Z"
+    created: "2026-11-17T20:50:18.583394955Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 0bec4c5e06203038ca86e2e4d7b64e268dcfb25176f98e345049f1c01301f240
@@ -2085,11 +2117,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.20.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.20.1.tgz
     version: 0.20.1
   - apiVersion: v2
     appVersion: 0.20.0
-    created: "2026-11-14T07:49:02.260778548Z"
+    created: "2026-11-17T20:50:18.580899556Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 4f8c80154c2c73643cea4f3716ffcfd0f108fe655965b8af6ada857157a5fa15
@@ -2100,11 +2132,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.20.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.20.0.tgz
     version: 0.20.0
   - apiVersion: v2
     appVersion: 0.19.5
-    created: "2026-11-14T07:49:02.258276475Z"
+    created: "2026-11-17T20:50:18.578718372Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 53d0a9e17a00d6f8eaaed9a03b57e0187be590bbb99e97202afd73067498e568
@@ -2115,11 +2147,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.19.5.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.19.5.tgz
     version: 0.19.5
   - apiVersion: v2
     appVersion: 0.19.4
-    created: "2026-11-14T07:49:02.254192531Z"
+    created: "2026-11-17T20:50:18.576518602Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 76de62bb41ce2da104cafd5376f1e5e85e146c2d8027741030a57a8e9b55da1f
@@ -2130,11 +2162,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.19.4.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.19.4.tgz
     version: 0.19.4
   - apiVersion: v2
     appVersion: 0.19.3
-    created: "2026-11-14T07:49:02.252102945Z"
+    created: "2026-11-17T20:50:18.572851677Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 4a8b16cdd262c902686a7032a62288827760fb5ffce3b51478e0729da3e2c8b9
@@ -2145,11 +2177,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.19.3.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.19.3.tgz
     version: 0.19.3
   - apiVersion: v2
     appVersion: 0.19.2
-    created: "2026-11-14T07:49:02.250160166Z"
+    created: "2026-11-17T20:50:18.570576344Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 7405c706390e342e3802d3dac8df821415a11463f04cc82256b88521f3b4cf3d
@@ -2160,11 +2192,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.19.2.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.19.2.tgz
     version: 0.19.2
   - apiVersion: v2
     appVersion: 0.19.1
-    created: "2026-11-14T07:49:02.248063726Z"
+    created: "2026-11-17T20:50:18.568496831Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 3ea9c8d3d6e3438a9e66bea6f9d36c3f9a6d945438b41e094beaae40fb2a6232
@@ -2175,11 +2207,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.19.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.19.1.tgz
     version: 0.19.1
   - apiVersion: v2
     appVersion: 0.19.0
-    created: "2026-11-14T07:49:02.245164274Z"
+    created: "2026-11-17T20:50:18.566526455Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 2d7732eee730859497354cb5d94111eadaab9689b5fe5a5d262efea807ea0749
@@ -2190,11 +2222,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.19.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.19.0.tgz
     version: 0.19.0
   - apiVersion: v2
     appVersion: 0.18.0
-    created: "2026-11-14T07:49:02.241655354Z"
+    created: "2026-11-17T20:50:18.564507988Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 0236afe97db7107e6af54c771e60ae161806c9654c35ae0187dd66dd77180c14
@@ -2205,11 +2237,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.18.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.18.0.tgz
     version: 0.18.0
   - apiVersion: v2
     appVersion: 0.17.1
-    created: "2026-11-14T07:49:02.239429952Z"
+    created: "2026-11-17T20:50:18.561196526Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: e14d96dd9f925db5b93243f01e26faf4150fd9f52fc8317b5e8a21f0f3b1f4d2
@@ -2220,11 +2252,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.17.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.17.1.tgz
     version: 0.17.1
   - apiVersion: v2
     appVersion: 0.17.0
-    created: "2026-11-14T07:49:02.237082039Z"
+    created: "2026-11-17T20:50:18.559159253Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: bf439a04fa9185cd5a1dad959678fc4db806fa84b996bc9c735effc5f0b6b5a2
@@ -2235,11 +2267,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.17.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.17.0.tgz
     version: 0.17.0
   - apiVersion: v2
     appVersion: 0.16.0
-    created: "2026-11-14T07:49:02.235003264Z"
+    created: "2026-11-17T20:50:18.556893037Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: c4020c4a1ffe4518ab8758a47dd1f723720fc9362017d4ea395d73bacabfc0c9
@@ -2250,11 +2282,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.16.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.16.0.tgz
     version: 0.16.0
   - apiVersion: v2
     appVersion: 0.15.1
-    created: "2026-11-14T07:49:02.231117152Z"
+    created: "2026-11-17T20:50:18.554428226Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: 0785a84f9933e61869c4493018b3ea8274e85ed096d6d80e315dbc9e5449e77f
@@ -2265,11 +2297,11 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.15.1.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.15.1.tgz
     version: 0.15.1
   - apiVersion: v2
     appVersion: 0.15.0
-    created: "2026-11-14T07:49:02.228963606Z"
+    created: "2026-11-17T20:50:18.551796098Z"
     description: The trove Bastion, a read-only, internet-facing cache instance in
       front of a main trove installation (trove serve --role bastion).
     digest: a7464852c33204d26420e9df62a9f44aa918fcd14db2a4988971b73a5c5787dd
@@ -2280,6 +2312,6 @@ entries:
     - https://github.com/guided-traffic/trove
     type: application
     urls:
-    - https://guided-traffic.github.io/trove/trove-bastion-0.15.0.tgz
+    - https://guided-traffic.github.io/quader/trove-bastion-0.15.0.tgz
     version: 0.15.0
-generated: "2026-11-14T07:49:01.855720107Z"
+generated: "2026-11-17T20:50:18.174461424Z"
