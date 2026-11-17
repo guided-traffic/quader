@@ -5467,13 +5467,17 @@ entry again for its lookback after it was first received. The lookback is measur
 the last entry, so while no entry is committed every read returns the same window, for as long as the feed stays quiet. 5 minutes and
 15 seconds after the first receipt the replica forgot the IDs, the next read applied the same `grants` and `content` entries again with a
 new receipt time, and every URL answer and cache entry validated within 15 s before that was unusable (R-BAS-020 rule 3, R-BAS-022);
-with the IDs recorded again, the cycle would repeat while the feed stayed quiet. In the e2e suite the fixture's policies and packages are
+with the IDs recorded again, the cycle would repeat while the feed stayed quiet. In the e2e suite the fixture's packages are
 the last entries, and the test runs about 5 minutes and 30 seconds after them. The replica logs of the runs show it: in 43578163061 every
 tarball validated before 09:14:43.66 was revalidated and every later one was a hit, which puts a re-application at about 09:14:28.6, some
-5 minutes and 17 seconds after the policies the fixture created at 09:09:10.4 were first received (the time is inferred from the
-boundary; the Bastion logs no applied entry); in 43401661890 the npm publishes of 09:41:41.5 to 42.2
+5 minutes and 17 seconds after the npm packages the fixture published from 09:09:10.6 were first received as `content` entries of
+the repository (the time is inferred from the boundary; the Bastion logs no applied entry); in 43401661890 the npm publishes of 09:41:41.5 to 42.2
 were applied again at about 09:46:58, and the measurement ran from 09:47:11.3 to 12.1. The two content entries the diagnostics saw
-during that measurement were the NuGet pushes of 09:41:53, applied again in the same way.
+during that measurement were the NuGet pushes of 09:41:53, applied again in the same way. The baseline run 44186978088 failed the same way: npm publishes at
+22:22:00.5 to 01.1, every request of the test from 22:27:29.8 to 32.9 revalidated, and the re-application at about 22:27:17 lay before
+the warm-up, so the count since the warm-up was 0. A re-application counts in `quader_bastion_feed_entries_applied_total` like a first
+one (`link.applyEntries` counts every entry `FeedLog.Record` accepts): each failing run shows 88 content entries applied by the time of
+the test, the first run with this decision (44191314996) shows 44, every entry once.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
