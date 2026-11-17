@@ -781,7 +781,7 @@ binary) and rolls nothing, while any change of `config` rolls the pods.
 | Value | Annotations |
 |---|---|
 | `edgeLimit.enabled` | `limit-rps`, `limit-connections`, `limit-whitelist` (joined `config.bastion.blocking.exempt_cidrs`, omitted while empty) |
-| `cacheVolume.routeByPath` | `balance-algorithm: uri`, `assign-backend-server-id: "true"`, `config-backend: hash-type consistent` |
+| `cacheVolume.routeByPath` | `balance-algorithm: uri path-only`, `assign-backend-server-id: "true"`, `config-backend: hash-type consistent` |
 | `tls.enabled` | `secure-backends: "true"`, `secure-sni: <fullname>.<namespace>.svc`, and with `ingress.backendTLS.verify` `secure-verify-ca-secret` (`caSecret`, else the listener's Secret) |
 
 [test/chart/bastion_haproxy_test.go](../../test/chart/bastion_haproxy_test.go) fails when `DEV_HAPROXY_INGRESS_IMAGE` or

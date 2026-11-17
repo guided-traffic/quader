@@ -1492,7 +1492,8 @@ Acceptance criteria:
 Priority: **MVP** · Covers: quader-only
 
 - With `backend: volume` and `cacheVolume.routeByPath: true`, the chart makes HAProxy Ingress choose the replica by a
-  consistent hash of the request path (URI hashing), so each artifact lives on one replica and the volumes together hold more
+  consistent hash of the request path (URI hashing of the path alone, so an HTTP/1.1 and an HTTP/2 request for one path reach
+  the same replica, [Q-BAS-154](#q-bas-154--routing-by-path-hashes-the-path-alone-so-http1-and-http2-clients-meet)), so each artifact lives on one replica and the volumes together hold more
   than one could (owner, Q-BAS-11). The annotation names are R-BAS-045's; the controller has no key for consistent hashing, so
   the chart renders it as a `config-backend` snippet, which a controller that forbids snippets drops without failing (H-434).
 - Routing changes nothing in correctness: a request on another replica is a miss. A replica added or drained moves about
@@ -1910,7 +1911,7 @@ A second Helm chart for this instance type (owner, [Q-BAS-5](#q-bas-5--a-second-
   controller's default prefix `haproxy-ingress.github.io/`:
   - `edgeLimit`: `limit-rps`, `limit-connections` and `limit-whitelist` (from `config.bastion.blocking.exempt_cidrs`,
     comma-separated, omitted while the list is empty);
-  - `cacheVolume.routeByPath`: `balance-algorithm: uri`, `assign-backend-server-id: "true"` (stable server IDs, so a pod added or
+  - `cacheVolume.routeByPath`: `balance-algorithm: uri path-only` (the path alone, Q-BAS-154), `assign-backend-server-id: "true"` (stable server IDs, so a pod added or
     replaced moves about `1 ÷ n` of the paths) and `config-backend: hash-type consistent`, because the controller has no key of
     its own for consistent hashing;
   - `tls.enabled`: `secure-backends: "true"`, `secure-sni: <fullname>.<namespace>.svc` and, while `ingress.backendTLS.verify`,
@@ -5516,6 +5517,32 @@ so nothing becomes usable that is not. The development agent records no revisit 
 
 **Applied in the spec:** R-BAS-034, R-BAS-036; code: `engine.answerStore.get`;
 `TestR_BAS_036_AStaleAnswerInMemoryDoesNotHideTheFreshOneAnotherReplicaShares`.
+
+### Q-BAS-154 · Routing by path hashes the path alone, so HTTP/1 and HTTP/2 clients meet
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: found while reading F-116 (the HAProxy Ingress logs of run 43578163061). The chart rendered `balance-algorithm: uri`, which
+HAProxy hashes over the URI as received. An HTTP/1.1 request carries the path alone; an HTTP/2 request carries the scheme and the
+authority as well (HAProxy logs it as `https://bastion-volume…:8093/api/npm/…`). The npm clients of the cold runs sent HTTP/1.1, `curl`
+of `TestBastion_R_BAS_049_RoutingByPath` HTTP/2, and 18 of the 36 tarball paths reached the other replica, which did not hold them: the
+warm-up round of the test was 18 misses and 18 revalidations. Both HAProxy Ingress pods agreed on the slots (`srv001`, `srv002`), so the
+request form, not the controller, split the paths. HAProxy 2.8, the version in the controller image `v0.16.3`, documents `path-only`:
+"the hashing key starts at the first '/' of the path ... to make sure that HTTP/1 and HTTP/2 URIs will provide the same hash".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `balance-algorithm: uri path-only` (chosen) | The hash covers the path up to the query, whatever the HTTP version | One word; R-BAS-033 holds for every client | None found |
+| (b) Keep `uri` | Each path may live on two replicas, one per HTTP version | Nothing to change | Twice the volume for clients of both versions, and a miss for the second |
+
+**Choice:** (a). The controller copies the value verbatim into `balance` and checks no list of algorithms (`annotations/updater.go`
+and `haproxy.tmpl` at `v0.16.3`).
+
+**Rationale:** R-BAS-033 promises one replica per artifact; the HTTP version of a client is not part of the artifact. The development
+agent records no revisit condition.
+
+**Applied in the spec:** R-BAS-033, R-BAS-045; code: `deploy/helm/quader-bastion/templates/ingress.yaml`; `TestR_BAS_033_RouteByPath`,
+`TestBastion_R_BAS_049_RoutingByPath` (the warm-up finds every path on the replica the cold runs filled).
 
 ## What this does not cover
 
