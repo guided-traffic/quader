@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // lower is the name rule of a package format whose names compare

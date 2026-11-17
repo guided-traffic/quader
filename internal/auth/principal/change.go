@@ -3,8 +3,8 @@ package principal
 import (
 	"encoding/json"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // ChangeVersion is the payload version of the change area auth that this build

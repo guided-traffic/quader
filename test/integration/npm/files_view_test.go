@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The raw view of an npm repository: /files/ and the items API decide an npm item on the
@@ -202,7 +202,7 @@ func TestR_AUTHZ_018_RawRemovalsAskOwnership(t *testing.T) {
 // (R-STOR-018, R-AUTHZ-018, Q-AUTHZ-161).
 func TestR_STOR_018_ARawRemovalAboveTheSyncLimitAsksOwnershipBeforeItsJob(t *testing.T) {
 	e := newEnv(t)
-	web := e.replica("web-a", "TROVE_STORAGE_DELETE_MAX_SYNC_ITEMS=2")
+	web := e.replica("web-a", "QUADER_STORAGE_DELETE_MAX_SYNC_ITEMS=2")
 	e.st.Start(t, testenv.ReplicaOptions{Name: "worker-a", Role: "worker"})
 	e.mustPublish(web, "npm-local", e.tokA, pkg{Name: "@big/p", Version: "1.0.0"})
 	e.mustPublish(web, "npm-local", e.tokA, pkg{Name: "@big/p", Version: "1.1.0"})
@@ -334,7 +334,7 @@ func TestR_EP_014_FilesOnAnEndpointWithRules(t *testing.T) {
 	x := newExposureEnvOn(t, 1, endpoints)
 	r := x.reps[0]
 	on := func(path string) testenv.Answer {
-		return x.st.DoAt(r.Addr("customers"), customersHost, "GET", path, x.acmeSAT, nil, "Trove-Authz-Min-Epoch", x.epoch, "Accept", "application/json")
+		return x.st.DoAt(r.Addr("customers"), customersHost, "GET", path, x.acmeSAT, nil, "Quader-Authz-Min-Epoch", x.epoch, "Accept", "application/json")
 	}
 	t.Run("R-EP-014 an exposed version's tarball is served; a hidden one is the 404 of a missing file", func(t *testing.T) {
 		if ans := on("/files/it/npm-customers/@acme/sdk/-/sdk-2.1.0.tgz"); ans.Status != 200 {

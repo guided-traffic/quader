@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // The security audit (R-NPM-038) against the integration stack, with the counting test
@@ -101,7 +101,7 @@ func TestR_NPM_038_TheForwardedSetThroughARemoteAndAVirtualRepository(t *testing
 		if err := json.Unmarshal(a.Body, &answer); err != nil || len(answer) != 2 || answer["lodash"][0].ID != 1900002 || answer["left-pad"][0].ID != 1900001 {
 			t.Fatalf("the provider's answer is not passed on: %s", a.Body)
 		}
-		want := "trove audited 3 of 6 packages; 3 internal or not yet proxied names were not sent to the advisory provider"
+		want := "Quader audited 3 of 6 packages; 3 internal or not yet proxied names were not sent to the advisory provider"
 		if got := a.Header.Get("npm-notice"); got != want {
 			t.Errorf("npm-notice %q, want %q", got, want)
 		}
@@ -118,7 +118,7 @@ func TestR_NPM_038_TheForwardedSetThroughARemoteAndAVirtualRepository(t *testing
 		if got := askedOf(t, r.stub.Audits(), 1); strings.Join(got, ",") != "JSONStream,lodash" {
 			t.Fatalf("the provider was asked about %v", got)
 		}
-		if got := a.Header.Get("npm-notice"); !strings.HasPrefix(got, "trove audited 2 of 6 packages; 4 ") {
+		if got := a.Header.Get("npm-notice"); !strings.HasPrefix(got, "Quader audited 2 of 6 packages; 4 ") {
 			t.Errorf("npm-notice %q", got)
 		}
 	})
@@ -148,7 +148,7 @@ func TestR_NPM_038_TheForwardedSetThroughARemoteAndAVirtualRepository(t *testing
 	t.Run("the withheld names are counted once, by reason", func(t *testing.T) {
 		m := rep.Metrics(t)
 		for reason, want := range map[string]float64{"local": 3, "claimed": 2, "pinned": 1, "not_proxied": 3} {
-			if got := metricSum(m, "trove_npm_audit_names_withheld_total", `reason="`+reason+`"`); got != want {
+			if got := metricSum(m, "quader_npm_audit_names_withheld_total", `reason="`+reason+`"`); got != want {
 				t.Errorf("reason %s: %v, want %v", reason, got, want)
 			}
 		}
@@ -274,13 +274,13 @@ func TestR_NPM_038_WhereTheAuditAnswers501And413And502(t *testing.T) {
 		if a.Status != 502 || code(t, a) != "upstream_error" {
 			t.Fatalf("%d %s", a.Status, a.Body)
 		}
-		before := metricSum(rep.Metrics(t), "trove_remote_egress_denied_total", "repo=")
+		before := metricSum(rep.Metrics(t), "quader_remote_egress_denied_total", "repo=")
 		e := r.postAudit(rep, "npm-egress", r.tokA, `{"lodash":["4.17.20"]}`, false)
 		if e.Status != 502 || code(t, e) != "egress_denied" {
 			t.Fatalf("%d %s", e.Status, e.Body)
 		}
-		if after := metricSum(rep.Metrics(t), "trove_remote_egress_denied_total", "repo="); after != before+1 {
-			t.Errorf("trove_remote_egress_denied_total %v, then %v", before, after)
+		if after := metricSum(rep.Metrics(t), "quader_remote_egress_denied_total", "repo="); after != before+1 {
+			t.Errorf("quader_remote_egress_denied_total %v, then %v", before, after)
 		}
 	})
 	if n := len(r.stub.Audits()); n != 0 {
@@ -352,7 +352,7 @@ func TestR_NPM_038_TheForwardHoldsNoConnectionAndEndsByItsDeadline(t *testing.T)
 }
 
 func TestR_NPM_038_CredentialsReachOnlyTheUpstreamOrigin(t *testing.T) {
-	const env = "TROVE_CAC_NPM_AUDIT_UPSTREAM"
+	const env = "QUADER_CAC_NPM_AUDIT_UPSTREAM"
 	t.Setenv(env, "secret")
 	r := newRemoteEnv(t, remoteOptions{})
 	// A second provider on another origin of the same CA.

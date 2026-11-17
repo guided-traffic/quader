@@ -14,12 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // Purposes of a login flow (oidc_login_flow.purpose).
@@ -109,7 +109,7 @@ func (s *Service) StartFlow(ctx context.Context, in StartInput) (StartOutput, er
 
 // authorizationURL is the authorization request of OpenID Connect Core 1.0
 // §3.1.2.1 with PKCE S256 (RFC 7636 §4.2) and the configured extra parameters,
-// which cannot override the parameters trove sets (checked at load).
+// which cannot override the parameters quader sets (checked at load).
 func (p *Provider) authorizationURL(doc *discovery, state, nonce, verifier string) (string, error) {
 	u, err := url.Parse(doc.AuthorizationEndpoint)
 	if err != nil {
@@ -132,7 +132,7 @@ func (p *Provider) authorizationURL(doc *discovery, state, nonce, verifier strin
 	return u.String(), nil
 }
 
-// CallbackInput is the provider's redirect back to trove (R-AUTH-006), already
+// CallbackInput is the provider's redirect back to quader (R-AUTH-006), already
 // parsed by the edge.
 type CallbackInput struct {
 	ProviderID string
@@ -165,7 +165,7 @@ type LoginFailure struct {
 	Detail string
 	// Provider says the identity provider is at fault (502).
 	Provider bool
-	// Unavailable says a dependency of trove did not answer (503).
+	// Unavailable says a dependency of quader did not answer (503).
 	Unavailable bool
 }
 
@@ -278,7 +278,7 @@ func refusalReason(err error) (string, bool) {
 	return "", false
 }
 
-// systemFailure is an error of trove itself after the provider answered: a
+// systemFailure is an error of quader itself after the provider answered: a
 // database that does not answer is 503, anything else 500.
 func systemFailure(err error) *loginError {
 	if postgres.IsUnavailable(err) {
@@ -340,7 +340,7 @@ func (p *Provider) checkResponse(in CallbackInput, flow q.TakeLoginFlowRow) *log
 	return nil
 }
 
-// tokenResponse is the part of a token response trove reads.
+// tokenResponse is the part of a token response quader reads.
 type tokenResponse struct {
 	IDToken     string `json:"id_token"`
 	AccessToken string `json:"access_token"`

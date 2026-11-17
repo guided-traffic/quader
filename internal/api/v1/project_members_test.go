@@ -8,14 +8,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/packages/view"
-	"github.com/guided-traffic/trove/internal/project"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln/report"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/packages/view"
+	"github.com/guided-traffic/quader/internal/project"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln/report"
 )
 
 // memberProjects is a project service with recording member operations: the real rules (the last Owner, the

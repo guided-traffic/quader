@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // listingCursor is the position of a listing pass (nuget.md "Cursor", Q-NUGET-100): the rows read so far and the hit count the

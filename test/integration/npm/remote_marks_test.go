@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // documentURL is the path of a tarball below the registry URL of a repository.
@@ -326,8 +326,8 @@ func TestR_NPM_026_AnOlderCopyOfTheDocumentMarksNothingRemoved(t *testing.T) {
 	if got := r.tarball(rep, rRemote, p.Name, newest, r.tokA); got.Status != 200 {
 		t.Errorf("the newest version no longer installs: %d", got.Status)
 	}
-	if n := sumSeries(rep.Metrics(t), "trove_npm_stale_upstream_documents_total{"); n < 1 {
-		t.Errorf("trove_npm_stale_upstream_documents_total = %v", n)
+	if n := sumSeries(rep.Metrics(t), "quader_npm_stale_upstream_documents_total{"); n < 1 {
+		t.Errorf("quader_npm_stale_upstream_documents_total = %v", n)
 	}
 	if listed, unlisted := r.listedVersions(rRemote, p.Name); unlisted != 0 || listed != int64(len(p.Versions)) {
 		t.Errorf("%d listed, %d unlisted", listed, unlisted)

@@ -13,15 +13,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/config"
-	debdata "github.com/guided-traffic/trove/internal/formatdata/deb"
-	_ "github.com/guided-traffic/trove/internal/formats/all"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/secrets"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/config"
+	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
+	_ "github.com/guided-traffic/quader/internal/formats/all"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/secrets"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -55,7 +55,7 @@ func (c *captured) Record(context.Context, audit.Event) {}
 
 func newEnv(t *testing.T) *env {
 	t.Helper()
-	st := testenv.NewStack(t, testenv.StackOptions{Name: "debkeys", Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
+	st := testenv.NewStack(t, testenv.StackOptions{Name: "debkeys", Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
 	e := &env{t: t, st: st, events: &captured{}, tok: map[string]string{}, who: map[string]testenv.Person{}}
 	admin := st.User("ops")
 	st.Bind("admin", admin)

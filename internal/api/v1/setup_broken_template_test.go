@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm"
 )
 
 // R-UI-047 asks that a deliberately broken snippet template fails the client-setup test. The client-setup journey
@@ -23,10 +23,10 @@ const (
 // journeySnippets are the four configure snippets of the journey's repository, which is not anonymously readable, with the credential
 // mode "Reference an environment variable".
 var journeySnippets = map[string]struct{ file, content string }{
-	"npm":          {".npmrc", "registry=" + journeyRegistry + "\n" + journeyScheme + ":_authToken=${TROVE_TOKEN}\n"},
-	"pnpm":         {"~/.npmrc", "registry=" + journeyRegistry + "\n" + journeyScheme + ":_authToken=${TROVE_TOKEN}\n"},
-	"yarn-classic": {".npmrc", "registry=" + journeyRegistry + "\n" + journeyScheme + ":_authToken=${TROVE_TOKEN}\nalways-auth=true\n"},
-	"yarn":         {".yarnrc.yml", "npmRegistryServer: \"" + journeyRegistry + "\"\nnpmAlwaysAuth: true\nnpmAuthToken: \"${TROVE_TOKEN}\"\n"},
+	"npm":          {".npmrc", "registry=" + journeyRegistry + "\n" + journeyScheme + ":_authToken=${QUADER_TOKEN}\n"},
+	"pnpm":         {"~/.npmrc", "registry=" + journeyRegistry + "\n" + journeyScheme + ":_authToken=${QUADER_TOKEN}\n"},
+	"yarn-classic": {".npmrc", "registry=" + journeyRegistry + "\n" + journeyScheme + ":_authToken=${QUADER_TOKEN}\nalways-auth=true\n"},
+	"yarn":         {".yarnrc.yml", "npmRegistryServer: \"" + journeyRegistry + "\"\nnpmAlwaysAuth: true\nnpmAuthToken: \"${QUADER_TOKEN}\"\n"},
 }
 
 // journeyDiffers renders the configure snippet of every client from the templates and reports each one that differs from the
@@ -36,7 +36,7 @@ func journeyDiffers(t *testing.T, templates []formats.SetupTemplate) []string {
 	var differs []string
 	for client, want := range journeySnippets {
 		got, err := renderSnippets(setupInput{
-			Templates: templates, Client: client, Credentials: credEnv, TokenEnvVar: "TROVE_TOKEN",
+			Templates: templates, Client: client, Credentials: credEnv, TokenEnvVar: "QUADER_TOKEN",
 			Data: formats.SetupData{
 				RegistryURL: journeyRegistry, Repository: "e2e/npm-journey", Project: "e2e", Key: "npm-journey", Endpoint: "default", RequiresAuth: true,
 			},
@@ -67,7 +67,7 @@ func TestR_UI_047_TheShippedSnippetTemplatesRenderTheTextsOfTheClientSetupJourne
 func TestR_UI_047_ADeliberatelyBrokenSnippetTemplateFailsTheClientSetupComparison(t *testing.T) {
 	breaks := map[string]func(string) string{
 		"the registry line is dropped":      func(s string) string { return strings.Replace(s, "registry={{end}}{{.RegistryURL}}", "{{end}}", 1) },
-		"the credential line is dropped":    func(s string) string { return strings.Replace(s, ":_authToken=${TROVE_TOKEN}", "", 1) },
+		"the credential line is dropped":    func(s string) string { return strings.Replace(s, ":_authToken=${QUADER_TOKEN}", "", 1) },
 		"the credential is spelled wrongly": func(s string) string { return strings.Replace(s, "_authToken", "_auth", 1) },
 		"a trailing newline is lost":        func(s string) string { return strings.TrimSuffix(s, "\n") },
 		"the always-auth switch is lost": func(s string) string {

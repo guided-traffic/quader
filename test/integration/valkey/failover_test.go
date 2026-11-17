@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const failoverRefresh = 2 * time.Second
@@ -48,7 +48,7 @@ func sentinelSubscriptions(ctx context.Context, t *testing.T, v testenv.Valkey, 
 	t.Helper()
 	for _, s := range v.Sentinels {
 		for _, m := range named(clientList(ctx, t, sentinelAdmin(t, v, s)), c.Instance) {
-			if m["name"] == "trove:"+c.Instance+":sentinel" && m["sub"] != "0" && m["sub"] != "" {
+			if m["name"] == "quader:"+c.Instance+":sentinel" && m["sub"] != "0" && m["sub"] != "" {
 				subscribed++
 			}
 		}
@@ -140,7 +140,7 @@ func TestFailover(t *testing.T) {
 			named := named(clientList(ctx, t, admin), c.Instance)
 			var pubsubConns int
 			for _, m := range named {
-				if m["name"] == "trove:"+c.Instance+":pubsub" {
+				if m["name"] == "quader:"+c.Instance+":pubsub" {
 					pubsubConns++
 				}
 			}
@@ -156,8 +156,8 @@ func TestFailover(t *testing.T) {
 			if pc := change.Load(); pc == nil || pc.Old != oldAddr || pc.New != newAddr {
 				t.Errorf("OnPrimaryChange = %+v, want %s -> %s", pc, oldAddr, newAddr)
 			}
-			if got := metric(t, c.Reg, "trove_valkey_primary_changes_total", ""); got != 1 {
-				t.Errorf("trove_valkey_primary_changes_total = %v, want 1", got)
+			if got := metric(t, c.Reg, "quader_valkey_primary_changes_total", ""); got != 1 {
+				t.Errorf("quader_valkey_primary_changes_total = %v, want 1", got)
 			}
 			eventually(t, "the client to be available", 10*time.Second, c.Available)
 

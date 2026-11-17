@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/items"
+	"github.com/guided-traffic/quader/internal/items"
 )
 
 // The item store is the storage delete path a purger empties a cache through (R-BAK-008).

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // validName is the image-name grammar of R-OCI-002 (the format's, internal/formats/oci, which this package may not import).
@@ -34,7 +34,7 @@ func TestScopeGrammar(t *testing.T) {
 			t.Fatalf("got %+v", got)
 		}
 	})
-	t.Run("entries trove cannot grant are skipped, not refused", func(t *testing.T) {
+	t.Run("entries quader cannot grant are skipped, not refused", func(t *testing.T) {
 		got, err := ParseScopes([]string{
 			"repository(plugin):web/docker-local/app:pull", // a resource class
 			"repository:web/docker-local/App:pull",         // upper case
@@ -92,29 +92,29 @@ func TestScopeGrammar(t *testing.T) {
 
 // R-OCI-004: named in the test name by WP3 once /v2/ is mounted and the grant check runs.
 func TestChallenge(t *testing.T) {
-	realm, service := Realm("https://trove.example.com:8443/")
-	if realm != "https://trove.example.com:8443/v2/_token" || service != "trove.example.com:8443" {
+	realm, service := Realm("https://quader.example.com:8443/")
+	if realm != "https://quader.example.com:8443/v2/_token" || service != "quader.example.com:8443" {
 		t.Fatalf("realm %q service %q", realm, service)
 	}
 	for _, c := range []struct{ scope, code, want string }{
-		{"", "", `Bearer realm="https://trove.example.com:8443/v2/_token",service="trove.example.com:8443"`},
+		{"", "", `Bearer realm="https://quader.example.com:8443/v2/_token",service="quader.example.com:8443"`},
 		{
 			"repository:web/docker-local/app:push", ErrorInsufficientScope,
-			`Bearer realm="https://trove.example.com:8443/v2/_token",service="trove.example.com:8443",scope="repository:web/docker-local/app:push",error="insufficient_scope"`,
+			`Bearer realm="https://quader.example.com:8443/v2/_token",service="quader.example.com:8443",scope="repository:web/docker-local/app:push",error="insufficient_scope"`,
 		},
-		{"", ErrorInvalidToken, `Bearer realm="https://trove.example.com:8443/v2/_token",service="trove.example.com:8443",error="invalid_token"`},
+		{"", ErrorInvalidToken, `Bearer realm="https://quader.example.com:8443/v2/_token",service="quader.example.com:8443",error="invalid_token"`},
 	} {
 		if got := Challenge(realm, service, c.scope, c.code); got != c.want {
 			t.Errorf("got  %s\nwant %s", got, c.want)
 		}
 	}
-	if got := Challenge("", "", "x", ""); got != `Bearer realm="trove"` {
+	if got := Challenge("", "", "x", ""); got != `Bearer realm="quader"` {
 		t.Errorf("without a realm: %s", got)
 	}
 	if realm, service := Realm(""); realm != "" || service != "" {
 		t.Errorf("without a base URL: realm %q service %q, want the plain challenge", realm, service)
 	}
-	if realm, service := Realm(""); Challenge(realm, service, "x", ErrorInsufficientScope) != `Bearer realm="trove"` {
+	if realm, service := Realm(""); Challenge(realm, service, "x", ErrorInsufficientScope) != `Bearer realm="quader"` {
 		t.Errorf("without a base URL the challenge is not the plain one")
 	}
 	if got := Challenge(`a"b\c`+"\n", "", "", ""); got != `Bearer realm="a\"b\\c"` {

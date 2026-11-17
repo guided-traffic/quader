@@ -17,10 +17,10 @@ func trustedCAPods(t *testing.T, sets ...string) map[string]any {
 	for name, pod := range podSpecs(docs) {
 		pods[name] = pod
 	}
-	pods["trove-backup"] = cronJobPod(docs)
+	pods["quader-backup"] = cronJobPod(docs)
 	_, rdocs := render(t, required(), append(restoreSets(), sets...)...)
 	for name, pod := range podSpecs(rdocs) {
-		if strings.HasPrefix(name, "trove-restore") {
+		if strings.HasPrefix(name, "quader-restore") {
 			pods[name] = pod
 		}
 	}
@@ -29,7 +29,7 @@ func trustedCAPods(t *testing.T, sets ...string) map[string]any {
 	return pods
 }
 
-// TestR_HA_043_TrustedCA (R-HA-043, R-REPO-035): the chart mounts the CA bundle of a Secret or a ConfigMap at /etc/trove/ca/ in
+// TestR_HA_043_TrustedCA (R-HA-043, R-REPO-035): the chart mounts the CA bundle of a Secret or a ConfigMap at /etc/quader/ca/ in
 // every pod of the release, lists its files in proxy.outbound.tls.ca_files, and keeps PostgreSQL's CA apart from it.
 func TestR_HA_043_TrustedCA(t *testing.T) {
 	t.Run("R-HA-043 without a source nothing is mounted and the configuration names no bundle", func(t *testing.T) {
@@ -65,8 +65,8 @@ func TestR_HA_043_TrustedCA(t *testing.T) {
 				t.Errorf("%s: the projected key is %q, want the default ca-bundle.crt", name, got)
 			}
 			m := mountOf(pod, vol)
-			if m == nil || str(m, "mountPath") != "/etc/trove/ca" || at(m, "readOnly") != true || at(m, "subPath") != nil {
-				t.Errorf("%s: mount = %v, want a read-only mount at /etc/trove/ca without subPath (a rotated source must reach the pod)", name, m)
+			if m == nil || str(m, "mountPath") != "/etc/quader/ca" || at(m, "readOnly") != true || at(m, "subPath") != nil {
+				t.Errorf("%s: mount = %v, want a read-only mount at /etc/quader/ca without subPath (a rotated source must reach the pod)", name, m)
 			}
 		}
 	})
@@ -89,7 +89,7 @@ func TestR_HA_043_TrustedCA(t *testing.T) {
 		for _, f := range list(cfg, "proxy", "outbound", "tls", "ca_files") {
 			got = append(got, f.(string))
 		}
-		if want := "/etc/mine/extra.pem,/etc/trove/ca/root.pem,/etc/trove/ca/intermediate.pem"; strings.Join(got, ",") != want {
+		if want := "/etc/mine/extra.pem,/etc/quader/ca/root.pem,/etc/quader/ca/intermediate.pem"; strings.Join(got, ",") != want {
 			t.Errorf("ca_files = %v, want %s", got, want)
 		}
 		if at(cfg, "proxy", "outbound", "tls", "use_system_roots") != nil {
@@ -101,25 +101,25 @@ func TestR_HA_043_TrustedCA(t *testing.T) {
 	})
 
 	t.Run("R-HA-043 PostgreSQL trusts its own CA only: the database CA path is the one of secrets.databaseCA and the bundle is not in it", func(t *testing.T) {
-		_, docs := render(t, required(), "trustedCA.existingConfigMap=corp-ca-bundle", "secrets.databaseCA.existingSecret=trove-db-ca")
+		_, docs := render(t, required(), "trustedCA.existingConfigMap=corp-ca-bundle", "secrets.databaseCA.existingSecret=quader-db-ca")
 		cfg := configOf(t, docs)
-		if got := str(cfg, "database", "ssl_root_cert_file"); got != "/var/run/secrets/trove/database-ca/ca.crt" {
+		if got := str(cfg, "database", "ssl_root_cert_file"); got != "/var/run/secrets/quader/database-ca/ca.crt" {
 			t.Errorf("database.ssl_root_cert_file = %q, want the file of secrets.databaseCA", got)
 		}
-		pod := at(find(docs, "Deployment", "trove-api"), "spec", "template", "spec")
-		if str(volumeNamed(pod, "secret-database-ca"), "secret", "secretName") != "trove-db-ca" {
+		pod := at(find(docs, "Deployment", "quader-api"), "spec", "template", "spec")
+		if str(volumeNamed(pod, "secret-database-ca"), "secret", "secretName") != "quader-db-ca" {
 			t.Error("the database CA Secret is not mounted")
 		}
 		m := mountOf(pod, volumeNamed(pod, "secret-database-ca"))
-		if str(m, "mountPath") != "/var/run/secrets/trove/database-ca" {
+		if str(m, "mountPath") != "/var/run/secrets/quader/database-ca" {
 			t.Errorf("the database CA is mounted at %q, which is not its own directory", str(m, "mountPath"))
 		}
 	})
 
 	t.Run("R-HA-043 useForObjectStore makes the one file storage.s3.ca_file", func(t *testing.T) {
 		_, docs := render(t, required(), "trustedCA.existingConfigMap=corp-ca-bundle", "trustedCA.useForObjectStore=true", "trustedCA.keys={s3-ca.pem}")
-		if got := str(configOf(t, docs), "storage", "s3", "ca_file"); got != "/etc/trove/ca/s3-ca.pem" {
-			t.Errorf("storage.s3.ca_file = %q, want /etc/trove/ca/s3-ca.pem", got)
+		if got := str(configOf(t, docs), "storage", "s3", "ca_file"); got != "/etc/quader/ca/s3-ca.pem" {
+			t.Errorf("storage.s3.ca_file = %q, want /etc/quader/ca/s3-ca.pem", got)
 		}
 	})
 
@@ -128,7 +128,7 @@ func TestR_HA_043_TrustedCA(t *testing.T) {
 		renderFails(t, required(), []string{"trustedCA.existingSecret=a", "trustedCA.keys=null"}, "trustedCA.keys")
 		renderFails(t, required(), []string{"trustedCA.useForObjectStore=true"}, "trustedCA.useForObjectStore", "trustedCA.existingSecret")
 		renderFails(t, required(), []string{"trustedCA.existingSecret=a", "trustedCA.useForObjectStore=true", "trustedCA.keys={a.pem,b.pem}"}, "exactly one file", "trustedCA.keys")
-		renderFails(t, required(), []string{"trustedCA.existingSecret=a", "trustedCA.useForObjectStore=true", "secrets.s3CA.existingSecret=trove-s3-ca"}, "trustedCA.useForObjectStore", "secrets.s3CA")
+		renderFails(t, required(), []string{"trustedCA.existingSecret=a", "trustedCA.useForObjectStore=true", "secrets.s3CA.existingSecret=quader-s3-ca"}, "trustedCA.useForObjectStore", "secrets.s3CA")
 		renderFails(t, required(), []string{"trustedCA.existingSecret=a", "trustedCA.keys={../etc/passwd}"}, "/trustedCA/keys/0")
 	})
 }

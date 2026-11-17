@@ -11,15 +11,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/auth/token"
 )
 
-// E1.14: exposure on a customer endpoint. The endpoint `customers` (listener :8443, host packages.trove.localhost,
+// E1.14: exposure on a customer endpoint. The endpoint `customers` (listener :8443, host packages.quader.localhost,
 // its own Ingress; deploy/dev/values-dev.yaml) serves the surface packages, files and api, accepts only
 // service-account tokens bound to it, no anonymous request, and exposes what its rules say (exposure: rules).
 
 const (
-	custHost = "packages.trove.localhost"
+	custHost = "packages.quader.localhost"
 	appZip1  = filesBase + "generic-local/releases/1.0/app.zip"
 	appZip2  = filesBase + "generic-local/releases/2.0/app.zip"
 	internal = filesBase + "generic-local/internal/x.bin"
@@ -252,7 +252,7 @@ func TestE1_14Exposure(t *testing.T) {
 			}
 		}
 
-		pw := secretValue(t, "trove-keycloak", "alice-password")
+		pw := secretValue(t, "quader-keycloak", "alice-password")
 		b := newBrowser(t)
 		b.oidcLogin("alice", pw)
 		pat := b.do(http.MethodPost, "/api/v1/tokens", map[string]any{"description": "e2e customers", "ttlSeconds": 600, "scope": map[string]any{"inherit": true}}).want(t, "alice's PAT", 201)
@@ -268,8 +268,8 @@ func TestE1_14Exposure(t *testing.T) {
 		randomPAT := func() string { raw, _ := token.Generate(token.TypePAT); return raw }
 		lockDone := make(chan error, 1)
 		go func() {
-			_, err := kubectl("-n", cfg.namespace, "exec", pgPrimary(t), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "trove", "-At", "-c",
-				"BEGIN; LOCK TABLE trove.api_token IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(14); COMMIT;")
+			_, err := kubectl("-n", cfg.namespace, "exec", pgPrimary(t), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-c",
+				"BEGIN; LOCK TABLE quader.api_token IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(14); COMMIT;")
 			lockDone <- err
 		}()
 		waitFor(t, "the lock on api_token", 20*time.Second, 200*time.Millisecond, func() bool {
@@ -284,7 +284,7 @@ func TestE1_14Exposure(t *testing.T) {
 			}
 			control <- r
 		}()
-		refused0 := seriesNow(t, "trove_endpoint_credentials_refused_total{", `endpoint="customers"`, `reason="token_type"`)
+		refused0 := seriesNow(t, "quader_endpoint_credentials_refused_total{", `endpoint="customers"`, `reason="token_type"`)
 		slowest := time.Duration(0)
 		for i := 0; i <= n; i++ {
 			tok := pc.Token
@@ -301,8 +301,8 @@ func TestE1_14Exposure(t *testing.T) {
 		if slowest > 2*time.Second {
 			t.Errorf("a PAT on customers took %s with api_token locked: the endpoint looked the token up", slowest)
 		}
-		if d := seriesNow(t, "trove_endpoint_credentials_refused_total{", `endpoint="customers"`, `reason="token_type"`) - refused0; d != float64(n+1) {
-			t.Errorf("trove_endpoint_credentials_refused_total{reason=token_type} rose by %v, want %d", d, n+1)
+		if d := seriesNow(t, "quader_endpoint_credentials_refused_total{", `endpoint="customers"`, `reason="token_type"`) - refused0; d != float64(n+1) {
+			t.Errorf("quader_endpoint_credentials_refused_total{reason=token_type} rose by %v, want %d", d, n+1)
 		}
 		select {
 		case c := <-control:
@@ -317,19 +317,19 @@ func TestE1_14Exposure(t *testing.T) {
 			t.Errorf("the locking session: %v", err)
 		}
 
-		binding0 := seriesNow(t, "trove_endpoint_credentials_refused_total{", `endpoint="customers"`, `reason="token_binding"`)
+		binding0 := seriesNow(t, "quader_endpoint_credentials_refused_total{", `endpoint="customers"`, `reason="token_binding"`)
 		if r := customersAPI(t, unbound.Token).get(appZip1); r.Status != 401 || r.Code() != "invalid_token" {
 			t.Errorf("an unbound SAT on customers = %s, want 401 invalid_token", r)
 		}
-		if d := seriesNow(t, "trove_endpoint_credentials_refused_total{", `endpoint="customers"`, `reason="token_binding"`) - binding0; d != 1 {
+		if d := seriesNow(t, "quader_endpoint_credentials_refused_total{", `endpoint="customers"`, `reason="token_binding"`) - binding0; d != 1 {
 			t.Errorf("reason=token_binding rose by %v, want 1", d)
 		}
 		if r := customersAPI(t, "").get(appZip1); r.Status != 401 || r.Code() != "credentials_required" {
 			t.Errorf("no credential on customers = %s, want 401 credentials_required", r)
 		}
 		// the session cookie is ignored on an endpoint without ui (R-EP-010 item 1)
-		sess := b.cookie("__Host-trv_session")
-		if r := customersAPI(t, "").get(appZip1, "Cookie", "__Host-trv_session="+sess); r.Status != 401 || r.Code() != "credentials_required" {
+		sess := b.cookie("__Host-qdr_session")
+		if r := customersAPI(t, "").get(appZip1, "Cookie", "__Host-qdr_session="+sess); r.Status != 401 || r.Code() != "credentials_required" {
 			t.Errorf("a valid session cookie on customers = %s, want 401 credentials_required", r)
 		}
 		// a token bound to both endpoints reads on both
@@ -439,8 +439,8 @@ func TestE1_14Exposure(t *testing.T) {
 			withValkeyStopped(t, func() {
 				run(t, "Valkey stopped")
 				for _, p := range readyPackagesPods(t) {
-					if v := metricsOf(t, p)[`trove_ratelimit_fallback{limiter="endpoint_external"}`]; v != 1 {
-						t.Errorf("%s trove_ratelimit_fallback{limiter=endpoint_external} = %v, want 1", p, v)
+					if v := metricsOf(t, p)[`quader_ratelimit_fallback{limiter="endpoint_external"}`]; v != 1 {
+						t.Errorf("%s quader_ratelimit_fallback{limiter=endpoint_external} = %v, want 1", p, v)
 					}
 				}
 			})

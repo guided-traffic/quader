@@ -28,7 +28,7 @@ const (
 )
 
 // Mode is how one decision was made; it is the mode label of
-// trove_ratelimit_decisions_total.
+// quader_ratelimit_decisions_total.
 type Mode string
 
 // The decision modes.
@@ -89,8 +89,8 @@ type LimiterOptions struct {
 	// Valkey carries the cluster-scoped counters; nil means every limiter runs
 	// its fallback.
 	Valkey *Valkey
-	// Registry receives trove_ratelimit_decisions_total and
-	// trove_ratelimit_fallback; nil registers nothing.
+	// Registry receives quader_ratelimit_decisions_total and
+	// quader_ratelimit_fallback; nil registers nothing.
 	Registry prometheus.Registerer
 	// LiveReplicas returns the number n of live replicas of this replica's role
 	// in the replica registry, refreshed with the heartbeat (R-ARCH-034). Values
@@ -130,15 +130,15 @@ func NewLimiterSet(o LimiterOptions) (*LimiterSet, error) {
 		ls.now = time.Now
 	}
 	ls.decisions = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "trove_ratelimit_decisions_total",
+		Name: "quader_ratelimit_decisions_total",
 		Help: "Rate-limit checks by limiter, mode (cluster, fallback, replica) and outcome (admitted, refused).",
 	}, []string{"limiter", "mode", "outcome"})
 	if o.Registry != nil {
 		if err := o.Registry.Register(ls.decisions); err != nil {
-			return nil, fmt.Errorf("cluster: registering trove_ratelimit_decisions_total: %w", err)
+			return nil, fmt.Errorf("cluster: registering quader_ratelimit_decisions_total: %w", err)
 		}
 		if err := o.Registry.Register(fallbackCollector{ls}); err != nil {
-			return nil, fmt.Errorf("cluster: registering trove_ratelimit_fallback: %w", err)
+			return nil, fmt.Errorf("cluster: registering quader_ratelimit_fallback: %w", err)
 		}
 	}
 	return ls, nil
@@ -518,13 +518,13 @@ func (l *Limiter) countOutcome(mode Mode, admitted bool) {
 	l.set.decisions.WithLabelValues(l.name, string(mode), outcome).Inc()
 }
 
-// fallbackCollector exports trove_ratelimit_fallback{limiter}: 1 while a
+// fallbackCollector exports quader_ratelimit_fallback{limiter}: 1 while a
 // cluster-scoped limiter answers from its local share, which is the case from
 // its first fallback decision until a decision used the shared counters again,
 // and whenever Valkey cannot be used at all.
 type fallbackCollector struct{ ls *LimiterSet }
 
-var fallbackDesc = prometheus.NewDesc("trove_ratelimit_fallback",
+var fallbackDesc = prometheus.NewDesc("quader_ratelimit_fallback",
 	"1 while a cluster-scoped limiter answers from per-replica shares because Valkey is unavailable.", []string{"limiter"}, nil)
 
 func (c fallbackCollector) Describe(ch chan<- *prometheus.Desc) { ch <- fallbackDesc }

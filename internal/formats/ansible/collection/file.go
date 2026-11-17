@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // ReadFile reads one member of a collection archive for a screen (the README of a version, R-ANS-026): the stream is read from its start

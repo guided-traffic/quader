@@ -5,11 +5,11 @@ import { Tooltip } from './tooltip';
 
 @Component({
   imports: [Tooltip],
-  template: `<button type="button" aria-label="About the column" troveTooltip="Counts the files">?</button>`,
+  template: `<button type="button" aria-label="About the column" quaderTooltip="Counts the files">?</button>`,
 })
 class Host {}
 
-describe('trove tooltip (Q-UI-126)', () => {
+describe('Quader tooltip (Q-UI-126)', () => {
   async function render() {
     await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
     const fixture = TestBed.createComponent(Host);
@@ -18,7 +18,7 @@ describe('trove tooltip (Q-UI-126)', () => {
     const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
     return { fixture, button };
   }
-  const bubble = () => document.querySelector('trove-tooltip');
+  const bubble = () => document.querySelector('quader-tooltip');
 
   it('R-UI-044 describes its element always, shows on focus and pointer, and hides on Escape and blur', async () => {
     const { fixture, button } = await render();

@@ -7,8 +7,8 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The virtual class (R-OCI-027, R-OCI-028). The virtual engine plans a request (the repository's patterns, the pin rules and claims

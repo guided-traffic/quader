@@ -19,13 +19,13 @@ import (
 )
 
 // The second endpoint of the dev profile (deploy/dev/values-dev.yaml, endpoints.customers): its own
-// listener :8443, its own host packages.trove.localhost and wildcard, its own certificates, only the
+// listener :8443, its own host packages.quader.localhost and wildcard, its own certificates, only the
 // package routes, its own Ingress on the same HAProxy Ingress (R-EP-001 to R-EP-005, R-EP-008, E0.16).
 
 const (
-	endpointHost     = "packages.trove.localhost"
-	endpointWildcard = "a.packages.trove.localhost" // under *.packages.trove.localhost
-	endpointService  = "trove-ep-customers"
+	endpointHost     = "packages.quader.localhost"
+	endpointWildcard = "a.packages.quader.localhost" // under *.packages.quader.localhost
+	endpointService  = "quader-ep-customers"
 )
 
 // credentialsRequired is the answer of an endpoint that admits no anonymous request (R-EP-010 item 4,
@@ -60,7 +60,7 @@ func edgeClient(t testing.TB) (*http.Client, string) {
 		t.Fatal(err)
 	}
 	if cfg.caFile == "" {
-		t.Fatal("TROVE_E2E_CA_FILE is not set: the endpoint test needs the dev CA")
+		t.Fatal("QUADER_E2E_CA_FILE is not set: the endpoint test needs the dev CA")
 	}
 	pem, err := os.ReadFile(cfg.caFile)
 	if err != nil {
@@ -104,7 +104,7 @@ func edgeLeaf(t testing.TB, port, sni string) *x509.Certificate {
 func TestE16Endpoint(t *testing.T) {
 	t.Run("R-EP-004 R-HA-063 E0.16 the edge serves the endpoint's certificate for its host and for a host under its wildcard (SNI)", func(t *testing.T) {
 		_, port := edgeClient(t)
-		want := secretSerial(t, "trove-customers-edge-tls")
+		want := secretSerial(t, "quader-customers-edge-tls")
 		for _, host := range []string{endpointHost, endpointWildcard} {
 			leaf := edgeLeaf(t, port, host)
 			got := strings.ToUpper(leaf.SerialNumber.Text(16))
@@ -113,7 +113,7 @@ func TestE16Endpoint(t *testing.T) {
 				t.Errorf("SNI %s got serial %s, want the customers edge certificate %s", host, got, want)
 			}
 		}
-		if other := strings.ToUpper(edgeLeaf(t, port, "localhost").SerialNumber.Text(16)); other != secretSerial(t, "trove-edge-tls") {
+		if other := strings.ToUpper(edgeLeaf(t, port, "localhost").SerialNumber.Text(16)); other != secretSerial(t, "quader-edge-tls") {
 			t.Errorf("SNI localhost got serial %s, want the default endpoint's edge certificate", other)
 		}
 	})
@@ -195,15 +195,15 @@ echo "S2 $(sni %[3]s)"
 		if len(bodies) == 2 && bodies[0] != bodies[1] {
 			t.Errorf("probe D body %s differs from probe E body %s", bodies[0], bodies[1])
 		}
-		if want := secretSerial(t, "trove-customers-tls"); strings.TrimLeft(got["S1"], "0") != want {
+		if want := secretSerial(t, "quader-customers-tls"); strings.TrimLeft(got["S1"], "0") != want {
 			t.Errorf("SNI %s on the endpoint listener: serial %s, want the exact pair %s", endpointHost, got["S1"], want)
 		}
-		if want := secretSerial(t, "trove-customers-wildcard-tls"); strings.TrimLeft(got["S2"], "0") != want {
+		if want := secretSerial(t, "quader-customers-wildcard-tls"); strings.TrimLeft(got["S2"], "0") != want {
 			t.Errorf("SNI %s on the endpoint listener: serial %s, want the wildcard pair %s", endpointWildcard, got["S2"], want)
 		}
 	})
 
-	t.Run("R-EP-008 E0.16 trove_http_requests_total carries both endpoint values and the endpoint listener is up", func(t *testing.T) {
+	t.Run("R-EP-008 E0.16 quader_http_requests_total carries both endpoint values and the endpoint listener is up", func(t *testing.T) {
 		seen := map[string]bool{}
 		for _, p := range livePods(t, selServing) {
 			code, body := ops(p.Name, "/metrics")
@@ -211,20 +211,20 @@ echo "S2 $(sni %[3]s)"
 				t.Fatalf("%s :8081/metrics = %d", p.Name, code)
 			}
 			for _, l := range strings.Split(body, "\n") {
-				if strings.HasPrefix(l, "trove_http_requests_total{") {
+				if strings.HasPrefix(l, "quader_http_requests_total{") {
 					for _, e := range []string{"default", "customers"} {
 						if strings.Contains(l, `endpoint="`+e+`"`) {
 							seen[e] = true
 						}
 					}
 				}
-				if strings.HasPrefix(l, `trove_endpoint_listener_up{endpoint="customers"}`) && !strings.HasSuffix(l, " 1") {
+				if strings.HasPrefix(l, `quader_endpoint_listener_up{endpoint="customers"}`) && !strings.HasSuffix(l, " 1") {
 					t.Errorf("%s: %s", p.Name, l)
 				}
 			}
 		}
 		if !seen["default"] || !seen["customers"] {
-			t.Errorf("trove_http_requests_total endpoint values seen: %v, want default and customers", seen)
+			t.Errorf("quader_http_requests_total endpoint values seen: %v, want default and customers", seen)
 		}
 	})
 }

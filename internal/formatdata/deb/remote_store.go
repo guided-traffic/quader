@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // remoteStore is the group of the data port that holds the release documents, the files they list and the parsed index rows of the

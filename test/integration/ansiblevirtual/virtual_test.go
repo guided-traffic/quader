@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection/collectiontest"
-	"github.com/guided-traffic/trove/test/ansiblestub"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection/collectiontest"
+	"github.com/guided-traffic/quader/test/ansiblestub"
 )
 
 func TestR_ANS_022_TheVersionListIsTheUnionOfTheMembersNewestFirstAndPagedAfterTheMerge(t *testing.T) {
@@ -79,7 +79,7 @@ func TestR_ANS_022_AVersionBothMembersHoldIsServedFromTheLocalMemberAndTheConfli
 	if doc.Status != http.StatusOK || json.Unmarshal(doc.Body, &v) != nil || v.Artifact.Sha256 != local {
 		t.Fatalf("version document: %d %s", doc.Status, doc.Body)
 	}
-	if !strings.HasPrefix(v.DownloadURL, "http://trove.test/api/ansible/it/"+rVirtual+"/v3/artifacts/collections/") {
+	if !strings.HasPrefix(v.DownloadURL, "http://quader.test/api/ansible/it/"+rVirtual+"/v3/artifacts/collections/") {
 		t.Errorf("download_url = %s", v.DownloadURL)
 	}
 	file := e.get(rVirtual, "v3/artifacts/collections/acme-tools-"+shared.Version+".tar.gz", e.reader)
@@ -89,7 +89,7 @@ func TestR_ANS_022_AVersionBothMembersHoldIsServedFromTheLocalMemberAndTheConfli
 	// The merge reads the document of the shared version to compare the digests, and counts the difference.
 	e.versions(rVirtual, "acme", "tools", e.reader)
 	metrics := e.rep.Metrics(t)
-	if !strings.Contains(metrics, `trove_ansible_virtual_digest_conflicts_total{repo="it/`+rVirtual+`"} 1`) {
+	if !strings.Contains(metrics, `quader_ansible_virtual_digest_conflicts_total{repo="it/`+rVirtual+`"} 1`) {
 		t.Errorf("the conflict counter is not 1:\n%s", grepLines(metrics, "digest_conflicts"))
 	}
 }
@@ -153,11 +153,11 @@ func TestR_ANS_024_APublishThroughTheVirtualRepositoryIsStoredInTheTargetAndPoll
 	if err := json.Unmarshal(a.Body, &ans); err != nil {
 		t.Fatal(err)
 	}
-	prefix := "http://trove.test/api/ansible/it/" + rVirtual + "/v3/imports/collections/"
+	prefix := "http://quader.test/api/ansible/it/" + rVirtual + "/v3/imports/collections/"
 	if !strings.HasPrefix(ans.Task, prefix) {
 		t.Fatalf("task = %s, want the address on the virtual repository %s", ans.Task, prefix)
 	}
-	task := e.get(rVirtual, strings.TrimPrefix(ans.Task, "http://trove.test/api/ansible/it/"+rVirtual+"/"), e.reader)
+	task := e.get(rVirtual, strings.TrimPrefix(ans.Task, "http://quader.test/api/ansible/it/"+rVirtual+"/"), e.reader)
 	if task.Status != http.StatusOK || !contains(task, `"state":"completed"`) || !contains(task, `"finished_at"`) {
 		t.Fatalf("task: %d %s", task.Status, task.Body)
 	}
@@ -171,10 +171,10 @@ func TestR_ANS_024_APublishThroughTheVirtualRepositoryIsStoredInTheTargetAndPoll
 	}
 	// The task of the target is looked up through the virtual repository only; the other virtual repository over the target finds it, and
 	// the one without a target does not.
-	if r := e.get(rReverse, strings.TrimPrefix(ans.Task, "http://trove.test/api/ansible/it/"+rVirtual+"/"), e.reader); r.Status != http.StatusOK {
+	if r := e.get(rReverse, strings.TrimPrefix(ans.Task, "http://quader.test/api/ansible/it/"+rVirtual+"/"), e.reader); r.Status != http.StatusOK {
 		t.Errorf("task through ans-rev: %d", r.Status)
 	}
-	if r := e.get(rNoLocal, strings.TrimPrefix(ans.Task, "http://trove.test/api/ansible/it/"+rVirtual+"/"), e.reader); r.Status != http.StatusNotFound {
+	if r := e.get(rNoLocal, strings.TrimPrefix(ans.Task, "http://quader.test/api/ansible/it/"+rVirtual+"/"), e.reader); r.Status != http.StatusNotFound {
 		t.Errorf("task through a repository without a target: %d", r.Status)
 	}
 	// The same publish again is idempotent through the virtual repository.

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_API_029_ListCountsOnlyWhatTheCallerMayRead: a caller without read on a repository

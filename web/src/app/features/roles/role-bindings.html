@@ -1,14 +1,14 @@
-<trove-page-header heading="System roles" i18n-heading="@@roles.heading" />
+<quader-page-header heading="System roles" i18n-heading="@@roles.heading" />
 <p i18n="@@roles.intro">
   System roles are fixed. A role is bound to a user, a group or a service account, and grants the capabilities listed with it.
 </p>
-<trove-needs capability="roles:write" />
+<quader-needs capability="roles:write" />
 
 @if (loadError(); as e) {
-  <trove-error-notice [error]="e" (retry)="load()" />
+  <quader-error-notice [error]="e" (retry)="load()" />
 }
 @if (writeError(); as e) {
-  <trove-error-notice [error]="e" />
+  <quader-error-notice [error]="e" />
 }
 
 @if (loaded()) {
@@ -26,7 +26,7 @@
       @if (holders(r.name).length === 0) {
         <p i18n="@@roles.no-holders">Nobody holds this role.</p>
       } @else {
-        <trove-data-table [caption]="holdersCaption(r.name)" [columns]="bindingColumns()">
+        <quader-data-table [caption]="holdersCaption(r.name)" [columns]="bindingColumns()">
           @for (b of holders(r.name); track b.principal) {
             <tr>
               <th scope="row" translate="no">{{ b.principal }}</th>
@@ -58,21 +58,21 @@
               }
             </tr>
           }
-        </trove-data-table>
+        </quader-data-table>
         @if (r.name === 'admin' && holders('admin').length <= 1 && !hasConfigured('admin')) {
           <p id="last-admin-guard" class="muted" i18n="@@roles.last-admin">The last administrator binding cannot be removed.</p>
         }
         @if (hasConfigured(r.name)) {
           <p class="muted" i18n="@@roles.configuration-hint">
             Bindings with the source Configuration are declared in authz.role_bindings of the system configuration and applied when
-            trove is installed or upgraded. Change or remove them there, not here.
+            Quader is installed or upgraded. Change or remove them there, not here.
           </p>
         }
       }
 
       @if (canWrite()) {
         <form class="toolbar" (submit)="bind($event, r.name)">
-          <trove-text-field
+          <quader-text-field
             width="name"
             i18n-label="@@roles.bind-principal"
             label="Bind to"

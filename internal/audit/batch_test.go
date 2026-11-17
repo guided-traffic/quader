@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // countingRecorder records events one RecordTx at a time and fails on the event of a given type.

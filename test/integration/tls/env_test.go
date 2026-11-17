@@ -25,9 +25,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func randHex(n int) string {
@@ -74,7 +74,7 @@ func newDatabase(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("connect to PostgreSQL: %v", err)
 	}
-	name := "trove_tls_" + randHex(5)
+	name := "quader_tls_" + randHex(5)
 	if _, err := maint.Exec(ctx, "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatal(err)
 	}
@@ -85,25 +85,25 @@ func newDatabase(t *testing.T) string {
 	return name
 }
 
-// databaseEnv are the TROVE_DATABASE_* settings of the stack's PostgreSQL with
+// databaseEnv are the QUADER_DATABASE_* settings of the stack's PostgreSQL with
 // the given root CA file: verify-full, credentials from files.
 func databaseEnv(t *testing.T, dir, name, caFile string) []string {
 	t.Helper()
 	return []string{
-		"TROVE_DATABASE_HOST=" + testenv.Get(t, "TROVE_TEST_PG_HOST"), "TROVE_DATABASE_PORT=" + testenv.Get(t, "TROVE_TEST_PG_PORT"),
-		"TROVE_DATABASE_NAME=" + name,
-		"TROVE_DATABASE_USERNAME_FILE=" + write(t, dir, "db-user", testenv.Get(t, "TROVE_TEST_PG_USER")+"\n"),
-		"TROVE_DATABASE_PASSWORD_FILE=" + write(t, dir, "db-pass", testenv.Get(t, "TROVE_TEST_PG_PASSWORD")+"\n"),
-		"TROVE_DATABASE_SSL_MODE=verify-full", "TROVE_DATABASE_SSL_ROOT_CERT_FILE=" + caFile,
-		"TROVE_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true", "TROVE_DATABASE_RETRY_MAX_ELAPSED=3s", "TROVE_HEALTH_DATABASE_OUTAGE_GRACE=2s",
+		"QUADER_DATABASE_HOST=" + testenv.Get(t, "QUADER_TEST_PG_HOST"), "QUADER_DATABASE_PORT=" + testenv.Get(t, "QUADER_TEST_PG_PORT"),
+		"QUADER_DATABASE_NAME=" + name,
+		"QUADER_DATABASE_USERNAME_FILE=" + write(t, dir, "db-user", testenv.Get(t, "QUADER_TEST_PG_USER")+"\n"),
+		"QUADER_DATABASE_PASSWORD_FILE=" + write(t, dir, "db-pass", testenv.Get(t, "QUADER_TEST_PG_PASSWORD")+"\n"),
+		"QUADER_DATABASE_SSL_MODE=verify-full", "QUADER_DATABASE_SSL_ROOT_CERT_FILE=" + caFile,
+		"QUADER_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true", "QUADER_DATABASE_RETRY_MAX_ELAPSED=3s", "QUADER_HEALTH_DATABASE_OUTAGE_GRACE=2s",
 	}
 }
 
 // loadConfig loads the configuration of env the way the binary does.
 func loadConfig(t *testing.T, cmd config.Command, env []string) *config.Config {
 	t.Helper()
-	empty := write(t, t.TempDir(), "trove.yaml", "")
-	l, err := config.Load(config.Options{Environ: append(env, "TROVE_CONFIG_FILE="+empty), Command: cmd})
+	empty := write(t, t.TempDir(), "quader.yaml", "")
+	l, err := config.Load(config.Options{Environ: append(env, "QUADER_CONFIG_FILE="+empty), Command: cmd})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,26 +130,26 @@ func newInstall(t *testing.T) *install {
 	testenv.RemoveObjectsAtCleanup(t, s3.BlobsBucket, prefix)
 	key := write(t, dir, "2026-10.key", base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32)))
 	env := append(databaseEnv(t, dir, name, testenv.CAFile(t)),
-		"TROVE_VALKEY_SENTINEL_ADDRESSES=["+strings.Join(sentinels, ",")+"]", "TROVE_VALKEY_SENTINEL_PRIMARY_NAME="+vk.PrimaryName,
-		"TROVE_VALKEY_SENTINEL_PASSWORD_FILE="+write(t, dir, "vk-sentinel-pass", vk.SentinelPassword),
-		"TROVE_VALKEY_USERNAME_FILE="+write(t, dir, "vk-user", vk.Username), "TROVE_VALKEY_PASSWORD_FILE="+write(t, dir, "vk-pass", vk.Password),
-		"TROVE_VALKEY_TLS_CA_FILE="+vk.CAFile, "TROVE_VALKEY_KEY_PREFIX="+vk.KeyPrefix,
-		"TROVE_STORAGE_S3_BUCKET="+s3.BlobsBucket, "TROVE_STORAGE_S3_ENDPOINT="+s3.Endpoint, "TROVE_STORAGE_S3_REGION="+s3.Region,
-		"TROVE_STORAGE_S3_FORCE_PATH_STYLE=true", "TROVE_STORAGE_S3_CA_FILE="+testenv.CAFile(t),
-		"TROVE_STORAGE_S3_PREFIX="+prefix,
-		"TROVE_STORAGE_S3_CREDENTIALS_SOURCE=static",
-		"TROVE_STORAGE_S3_CREDENTIALS_ACCESS_KEY_ID_FILE="+write(t, dir, "s3-id", s3.AccessKey),
-		"TROVE_STORAGE_S3_CREDENTIALS_SECRET_ACCESS_KEY_FILE="+write(t, dir, "s3-secret", s3.SecretKey),
-		"TROVE_SECRETS_ENCRYPTION_KEY_FILES=["+strconv.Quote(key)+"]", "TROVE_SECRETS_ACTIVE_KEY_ID=2026-10",
-		"TROVE_SERVER_BASE_URL=https://localhost",
-		"TROVE_HEALTH_CHECK_INTERVAL=300ms", "TROVE_HEALTH_CHECK_TIMEOUT=200ms", "TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY=500ms",
-		"TROVE_SERVER_SHUTDOWN_TIMEOUT=5s", "TROVE_STORAGE_SPOOL_DIR="+filepath.Join(dir, "spool"),
-		"TROVE_LOG_REQUEST_ENABLED=false",
+		"QUADER_VALKEY_SENTINEL_ADDRESSES=["+strings.Join(sentinels, ",")+"]", "QUADER_VALKEY_SENTINEL_PRIMARY_NAME="+vk.PrimaryName,
+		"QUADER_VALKEY_SENTINEL_PASSWORD_FILE="+write(t, dir, "vk-sentinel-pass", vk.SentinelPassword),
+		"QUADER_VALKEY_USERNAME_FILE="+write(t, dir, "vk-user", vk.Username), "QUADER_VALKEY_PASSWORD_FILE="+write(t, dir, "vk-pass", vk.Password),
+		"QUADER_VALKEY_TLS_CA_FILE="+vk.CAFile, "QUADER_VALKEY_KEY_PREFIX="+vk.KeyPrefix,
+		"QUADER_STORAGE_S3_BUCKET="+s3.BlobsBucket, "QUADER_STORAGE_S3_ENDPOINT="+s3.Endpoint, "QUADER_STORAGE_S3_REGION="+s3.Region,
+		"QUADER_STORAGE_S3_FORCE_PATH_STYLE=true", "QUADER_STORAGE_S3_CA_FILE="+testenv.CAFile(t),
+		"QUADER_STORAGE_S3_PREFIX="+prefix,
+		"QUADER_STORAGE_S3_CREDENTIALS_SOURCE=static",
+		"QUADER_STORAGE_S3_CREDENTIALS_ACCESS_KEY_ID_FILE="+write(t, dir, "s3-id", s3.AccessKey),
+		"QUADER_STORAGE_S3_CREDENTIALS_SECRET_ACCESS_KEY_FILE="+write(t, dir, "s3-secret", s3.SecretKey),
+		"QUADER_SECRETS_ENCRYPTION_KEY_FILES=["+strconv.Quote(key)+"]", "QUADER_SECRETS_ACTIVE_KEY_ID=2026-10",
+		"QUADER_SERVER_BASE_URL=https://localhost",
+		"QUADER_HEALTH_CHECK_INTERVAL=300ms", "QUADER_HEALTH_CHECK_TIMEOUT=200ms", "QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY=500ms",
+		"QUADER_SERVER_SHUTDOWN_TIMEOUT=5s", "QUADER_STORAGE_SPOOL_DIR="+filepath.Join(dir, "spool"),
+		"QUADER_LOG_REQUEST_ENABLED=false",
 		// The rotation tests poll /api/v1/system/ping anonymously from one address, far above
 		// the default anonymous class (R-API-016); the limiter stays on with a budget the polling
 		// never reaches. The limits themselves are tested in test/integration/api.
-		"TROVE_API_RATE_LIMITS_ANONYMOUS_REQUESTS_PER_SECOND=1000", "TROVE_API_RATE_LIMITS_ANONYMOUS_BURST=10000",
-		"TROVE_CONFIG_FILE="+write(t, dir, "trove.yaml", ""),
+		"QUADER_API_RATE_LIMITS_ANONYMOUS_REQUESTS_PER_SECOND=1000", "QUADER_API_RATE_LIMITS_ANONYMOUS_BURST=10000",
+		"QUADER_CONFIG_FILE="+write(t, dir, "quader.yaml", ""),
 	)
 	return &install{env: env, dir: dir}
 }
@@ -162,7 +162,7 @@ func (in *install) run(t *testing.T, args ...string) {
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Env = append(os.Environ(), in.env...)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("trove %v: %v\n%s", args, err, out)
+		t.Fatalf("quader %v: %v\n%s", args, err, out)
 	}
 }
 
@@ -179,7 +179,7 @@ func (s *syncBuffer) Write(p []byte) (int, error) {
 
 func (s *syncBuffer) String() string { s.mu.Lock(); defer s.mu.Unlock(); return s.b.String() }
 
-// replica is one running `trove serve`.
+// replica is one running `quader serve`.
 type replica struct {
 	client, ops string // host:port
 	cmd         *exec.Cmd
@@ -187,13 +187,13 @@ type replica struct {
 	exited      chan error
 }
 
-// serve starts `trove serve --role role` with the extra settings and returns at once.
+// serve starts `quader serve --role role` with the extra settings and returns at once.
 func (in *install) serve(t *testing.T, role string, extra ...string) *replica {
 	t.Helper()
 	r := &replica{client: freeAddr(t), ops: freeAddr(t), logs: &syncBuffer{}, exited: make(chan error, 1)}
 	r.cmd = exec.Command(binary, "serve", "--role", role)
 	r.cmd.Env = append(append(append([]string{"PATH=" + os.Getenv("PATH")}, in.env...),
-		"TROVE_SERVER_LISTEN="+r.client, "TROVE_SERVER_OPS_LISTEN="+r.ops, "TROVE_POD_NAME=trove-tls-"+randHex(3)), extra...)
+		"QUADER_SERVER_LISTEN="+r.client, "QUADER_SERVER_OPS_LISTEN="+r.ops, "QUADER_POD_NAME=quader-tls-"+randHex(3)), extra...)
 	r.cmd.Stdout, r.cmd.Stderr = r.logs, r.logs
 	if err := r.cmd.Start(); err != nil {
 		t.Fatal(err)
@@ -209,7 +209,7 @@ func (r *replica) running(t *testing.T) {
 	select {
 	case err := <-r.exited:
 		r.exited <- err
-		t.Fatalf("trove exited: %v\n%s", err, r.logs.String())
+		t.Fatalf("quader exited: %v\n%s", err, r.logs.String())
 	default:
 	}
 }

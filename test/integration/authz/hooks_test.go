@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	_ "github.com/guided-traffic/trove/internal/formats/all" // registers every format
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	_ "github.com/guided-traffic/quader/internal/formats/all" // registers every format
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestR_AUTHZ_028_IdentityAndRepositoryWritesAdvanceTheEpoch extends the

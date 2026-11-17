@@ -3,15 +3,15 @@
 # (test/e2e/clients/fwd, the one of the npm clients) for linux/<arch>, then the Dockerfile on each pinned base image.
 # `make apt-clients-image` and deploy/dev/e2e.sh both call it.
 #
-#   build.sh [tag-prefix]    default trove-e2e-aptclients-: the images are <prefix>debian13:dev, debian12, ubuntu2404 and ubuntu2204
+#   build.sh [tag-prefix]    default quader-e2e-aptclients-: the images are <prefix>debian13:dev, debian12, ubuntu2404 and ubuntu2204
 #
-# Environment: TROVE_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
+# Environment: QUADER_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../deploy/dev" && pwd)/lib.sh"
 
-prefix="${1:-trove-e2e-aptclients-}"
-arch="${TROVE_E2E_CLIENTS_ARCH:-$(arch)}"
+prefix="${1:-quader-e2e-aptclients-}"
+arch="${QUADER_E2E_CLIENTS_ARCH:-$(arch)}"
 for v in E2E_APTCLIENTS_DEBIAN13_IMAGE E2E_APTCLIENTS_DEBIAN12_IMAGE E2E_APTCLIENTS_UBUNTU2404_IMAGE E2E_APTCLIENTS_UBUNTU2204_IMAGE; do
   [ -n "${!v:-}" ] || die "$v is not set in tools/versions.env"
 done

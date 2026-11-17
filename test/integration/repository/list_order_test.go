@@ -8,7 +8,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestR_REPO_012_ListPagesEveryKeyOnceInByteOrder: the list sorts in the order its

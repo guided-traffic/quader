@@ -16,8 +16,8 @@ package generic
 import (
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // ID is the format name.
@@ -60,7 +60,7 @@ func (Format) Match(method, escapedPath string) (*formats.Route, formats.Params,
 
 // Classify describes a /files/ path (R-GENERIC-003). Every stored file is
 // immutable content, so no path is metadata; a folder or the root is the
-// directory index trove renders. The format has no package names, so the
+// directory index quader renders. The format has no package names, so the
 // identity is empty.
 func (Format) Classify(p formats.Path) formats.PathInfo {
 	if p.Folder || p.Path == "" {

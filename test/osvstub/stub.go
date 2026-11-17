@@ -296,7 +296,7 @@ func (s *Stub) Toggles() map[string]bool {
 var fillerID = regexp.MustCompile(`^GHSA-fill-[0-9]{4,}-0000$`)
 
 // SetFiller makes the ecosystem hold exactly n synthetic filler records (GHSA-fill-NNNN-0000, for the packages
-// trove-test-filler-NNNN or Trove.Test.FillerNNNN, the number at least four digits) besides its other records, so a test
+// quader-test-filler-NNNN or Quader.Test.FillerNNNN, the number at least four digits) besides its other records, so a test
 // that needs "30 % fewer" or "2 % invalid" has records to take them from. Every filler record held before is removed
 // first, whatever its number, so lowering the count of a large filler leaves exactly n.
 func (s *Stub) SetFiller(ecosystem string, n int) error {
@@ -317,10 +317,10 @@ func (s *Stub) setFillerLocked(st *ecoState, n int, at time.Time) {
 		}
 	}
 	for i := range n {
-		pkgName := fmt.Sprintf("trove-test-filler-%04d", i)
+		pkgName := fmt.Sprintf("quader-test-filler-%04d", i)
 		rng := Range{Type: "SEMVER", Events: []map[string]string{Introduced("0"), Fixed("1.0.1")}}
 		if st.name == "NuGet" {
-			pkgName = fmt.Sprintf("Trove.Test.Filler%04d", i)
+			pkgName = fmt.Sprintf("Quader.Test.Filler%04d", i)
 			rng.Type = "ECOSYSTEM"
 		}
 		a := Advisory{
@@ -368,7 +368,7 @@ func (s *Stub) Faults() map[string]Fault {
 	return out
 }
 
-// KEVEntry is one vulnerability of the catalog, with the members trove reads (R-VULN-008) and the others the feed
+// KEVEntry is one vulnerability of the catalog, with the members quader reads (R-VULN-008) and the others the feed
 // has.
 type KEVEntry struct {
 	CVEID             string   `json:"cveID"`
@@ -386,19 +386,19 @@ type KEVEntry struct {
 
 func (k KEVEntry) withDefaults(now time.Time) KEVEntry {
 	if k.VendorProject == "" {
-		k.VendorProject = "Trove"
+		k.VendorProject = "Quader"
 	}
 	if k.Product == "" {
-		k.Product = "trove-test"
+		k.Product = "quader-test"
 	}
 	if k.VulnerabilityName == "" {
-		k.VulnerabilityName = "Trove test vulnerability " + k.CVEID
+		k.VulnerabilityName = "Quader test vulnerability " + k.CVEID
 	}
 	if k.DateAdded == "" {
 		k.DateAdded = now.UTC().Format(time.DateOnly)
 	}
 	if k.ShortDescription == "" {
-		k.ShortDescription = "Synthetic entry of the trove test catalog."
+		k.ShortDescription = "Synthetic entry of the quader test catalog."
 	}
 	if k.RequiredAction == "" {
 		k.RequiredAction = "Apply the fix of the test advisory."

@@ -13,9 +13,9 @@ import (
 
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // valkeyAdmin is a direct connection to the primary as the administrator, for the

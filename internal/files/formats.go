@@ -3,12 +3,12 @@ package files
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/servefacts"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/servefacts"
 )
 
 // PathClass is what a format makes of a path of one of its repositories

@@ -21,8 +21,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/version"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/formats/ansible/version"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // The bounds of the three documents the reader holds in memory (R-ANS-031). Everything else in the archive is streamed through a

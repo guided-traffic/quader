@@ -1,10 +1,10 @@
 package deb
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // remoteSetupTemplates are the snippets the remote class adds to the client's (R-DEB-029): the source of a remote that has no
 // deb.upstreamKeys. Such a remote passes its upstream's signed release through, so the client verifies it with the archive's own
-// keyring and not with a key of trove's: the snippet names the keyring that Debian and Ubuntu install on every system, and it
+// keyring and not with a key of quader's: the snippet names the keyring that Debian and Ubuntu install on every system, and it
 // installs no key. A remote with upstreamKeys serves them as signing-key.asc and the configure snippet of the local class installs
 // that block; the guide says which of the two applies (guide_remote.go). No snippet turns the verification off.
 func (f *Format) remoteSetupTemplates() []formats.SetupTemplate {

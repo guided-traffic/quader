@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 type checkBody struct {
@@ -101,7 +101,7 @@ func TestR_BAS_011_ACheckAnswersTheSubjectAndTheShapes(t *testing.T) {
 	if a, _ := f.check(f.bst, nil, "203.0.113.7", "it/npm-all"); a.Subject.Kind != iface.SubjectAnonymousRefused {
 		t.Errorf("no credential, anonymous off: %+v", a.Subject)
 	}
-	if a, _ := f.check(f.bst, str("trv_sat_notatokenatall"), "203.0.113.7", "it/npm-all"); a.Subject.Kind != iface.SubjectInvalid {
+	if a, _ := f.check(f.bst, str("qdr_sat_notatokenatall"), "203.0.113.7", "it/npm-all"); a.Subject.Kind != iface.SubjectInvalid {
 		t.Errorf("a malformed credential: %+v", a.Subject)
 	}
 }

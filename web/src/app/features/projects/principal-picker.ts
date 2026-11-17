@@ -21,13 +21,13 @@ export const PICKER_MIN_CHARS = 2;
  * empties. Enter never submits a surrounding form.
  */
 @Component({
-  selector: 'trove-principal-picker',
+  selector: 'quader-principal-picker',
   // Enter in the search box searches; it must not submit the dialog or form around it.
   host: { '(keydown.enter)': '$event.preventDefault()' },
   imports: [TextField],
   template: `
     <div class="picker">
-      <trove-text-field
+      <quader-text-field
         width="name"
         [label]="label()"
         [name]="name()"
@@ -63,19 +63,19 @@ export const PICKER_MIN_CHARS = 2;
     .status {
       margin: 0;
       min-block-size: 1.25rem;
-      color: var(--trove-text-muted);
-      font: var(--trove-type-body-small);
+      color: var(--quader-text-muted);
+      font: var(--quader-type-body-small);
     }
     .matches {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-2);
-      margin: 0 0 var(--trove-space-3);
+      gap: var(--quader-space-2);
+      margin: 0 0 var(--quader-space-3);
       padding: 0;
       list-style: none;
     }
     .material-icons {
-      margin-inline-end: var(--trove-space-1);
+      margin-inline-end: var(--quader-space-1);
       font-size: 1.125rem;
     }
   `,

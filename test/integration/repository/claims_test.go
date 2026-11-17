@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 func allowGlobal(context.Context) error { return nil }

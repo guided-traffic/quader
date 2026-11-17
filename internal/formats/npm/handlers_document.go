@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/document"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/document"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // The package document and the single-version document (R-NPM-009 to R-NPM-014,

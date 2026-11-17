@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // beginAccess is an Access that takes an index of its own, as the access over the

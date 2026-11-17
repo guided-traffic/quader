@@ -1,16 +1,16 @@
-# Valkey for the local profile (R-HA-051, R-HA-056): the Valkey operator's `Valkey` resource trove-valkey,
+# Valkey for the local profile (R-HA-051, R-HA-056): the Valkey operator's `Valkey` resource quader-valkey,
 # two data pods and three Sentinels, TLS only, no persistence (emptyDir), PodDisruptionBudgets, one pod of
 # each tier per zone. The operator owns the StatefulSets, Services, ConfigMaps and the certificate.
 #
-# Names a client uses (namespace trove):
-#   Sentinels   trove-valkey-sentinel-{0,1,2}.trove-valkey-sentinel-headless.trove.svc.cluster.local:36379
-#   primary     trove-valkey (the resource name, `sentinel monitor`)
-#   data pods   trove-valkey-{0,1}.trove-valkey-headless.trove.svc.cluster.local:16379 (what Sentinel returns)
-#   CA          Secret trove-valkey-tls, key ca.crt (one certificate for both tiers)
-#   password    Secret trove-valkey-auth, key password, user `default`
+# Names a client uses (namespace quader):
+#   Sentinels   quader-valkey-sentinel-{0,1,2}.quader-valkey-sentinel-headless.quader.svc.cluster.local:36379
+#   primary     quader-valkey (the resource name, `sentinel monitor`)
+#   data pods   quader-valkey-{0,1}.quader-valkey-headless.quader.svc.cluster.local:16379 (what Sentinel returns)
+#   CA          Secret quader-valkey-tls, key ca.crt (one certificate for both tiers)
+#   password    Secret quader-valkey-auth, key password, user `default`
 #
 # DEVIATIONS from R-HA-056 / R-ARCH-031 (dev profile only; the integration stack keeps the ACL user):
-# the operator has no ACL users, no separate Sentinel password and no maxmemory. trove connects as the
+# the operator has no ACL users, no separate Sentinel password and no maxmemory. quader connects as the
 # `default` user with the cluster password, and the same password authenticates against the Sentinels.
 # Interim, until the operator offers them or the owner decides otherwise.
 #
@@ -18,7 +18,7 @@
 apiVersion: vko.gtrfc.com/v1
 kind: Valkey
 metadata:
-  name: trove-valkey
+  name: quader-valkey
 spec:
   replicas: 2
   image: ${DEV_VALKEY_IMAGE}
@@ -29,7 +29,7 @@ spec:
       requests: {cpu: 20m, memory: 32Mi}
       limits: {memory: 128Mi}
   auth:
-    secretName: trove-valkey-auth
+    secretName: quader-valkey-auth
     secretPasswordKey: password
   tls:
     enabled: true
@@ -37,7 +37,7 @@ spec:
     certManager:
       issuer:
         kind: Issuer
-        name: trove-dev-ca
+        name: quader-dev-ca
   persistence:
     enabled: false
   podDisruptionBudget:
@@ -51,27 +51,27 @@ spec:
     requests: {cpu: 50m, memory: 64Mi}
     limits: {memory: 320Mi}
 ---
-# The operator's NetworkPolicy admits only its own components (ingress only). trove's pods are admitted
+# The operator's NetworkPolicy admits only its own components (ingress only). quader's pods are admitted
 # here, on the TLS ports only: the chart's api, packages and worker pods and the e2e driver pod, which carries the
-# same labels. Deleting this policy cuts trove off from Valkey (valkey-outage.sh does exactly that).
+# same labels. Deleting this policy cuts quader off from Valkey (valkey-outage.sh does exactly that).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: trove-valkey-clients
+  name: quader-valkey-clients
   labels:
-    app.kubernetes.io/part-of: trove-dev
+    app.kubernetes.io/part-of: quader-dev
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/instance: trove-valkey
+      app.kubernetes.io/instance: quader-valkey
       app.kubernetes.io/managed-by: vko.gtrfc.com
   policyTypes: [Ingress]
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: trove
-              trove/serve: "true"
+              app.kubernetes.io/name: quader
+              quader/serve: "true"
       ports:
         - {port: 16379, protocol: TCP}
         - {port: 36379, protocol: TCP}

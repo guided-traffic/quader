@@ -3,8 +3,8 @@ package v1
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // Store is the database access of the management API: *postgres.DB. A handler

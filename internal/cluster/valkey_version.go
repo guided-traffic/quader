@@ -30,18 +30,18 @@ func parseVersion(s string) (major, minor int, err error) {
 }
 
 // checkServer decides from the server and version fields of the HELLO reply
-// whether trove supports the server. The empty string means supported; any
+// whether quader supports the server. The empty string means supported; any
 // other value is the reason, in the wording R-ARCH-031 fixes.
 func checkServer(server, version string) string {
 	if server != "valkey" {
-		return fmt.Sprintf("server %q is not supported; trove requires Valkey %d.%d or later", server, minValkeyMajor, minValkeyMinor)
+		return fmt.Sprintf("server %q is not supported; Quader requires Valkey %d.%d or later", server, minValkeyMajor, minValkeyMinor)
 	}
 	major, minor, err := parseVersion(version)
 	if err != nil {
-		return fmt.Sprintf("valkey version %q cannot be read; trove requires %d.%d or later", version, minValkeyMajor, minValkeyMinor)
+		return fmt.Sprintf("valkey version %q cannot be read; Quader requires %d.%d or later", version, minValkeyMajor, minValkeyMinor)
 	}
 	if major < minValkeyMajor || (major == minValkeyMajor && minor < minValkeyMinor) {
-		return fmt.Sprintf("valkey %s is not supported; trove requires %d.%d or later", version, minValkeyMajor, minValkeyMinor)
+		return fmt.Sprintf("valkey %s is not supported; Quader requires %d.%d or later", version, minValkeyMajor, minValkeyMinor)
 	}
 	return ""
 }

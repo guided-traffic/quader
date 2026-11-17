@@ -39,7 +39,7 @@ choose another endpoint's ceiling and a decision on a detached context keeps it 
 
 - A credential the endpoint does not accept answers like an unknown token: the body does not tell that the token is valid
   elsewhere. A type refusal makes no database lookup. The reason is recorded in `token.rejected` (`endpoint_not_accepted`)
-  and in `trove_endpoint_credentials_refused_total`, never in the answer.
+  and in `quader_endpoint_credentials_refused_total`, never in the answer.
 - A read the exposure does not admit answers the `404` of a missing resource, decided before the repository is looked up:
   a hidden file, a missing file, an unknown repository and a repository that requires authentication give the same bytes
   apart from `X-Request-Id`, for every subject (Q-EP-4, Q-EP-21). The audit event is `authz.denied` with reason
@@ -91,7 +91,7 @@ same rules (R-EP-018, [developer/endpoints.md](../developer/endpoints.md#package
   by the read scope that holds the same rules, and a term meets only the versions the caller may read, so `totalHits` tells
   nothing of a hidden version (Q-NUGET-74, H-345 for the order). Through a virtual repository the virtual repository's rules
   decide, for the search as for the documents ([nuget-virtual.md](nuget-virtual.md), Q-NUGET-75).
-- **Member names.** On an endpoint with rules no answer carries `Trove-Resolved-From`, and a member's failure is reported as the
+- **Member names.** On an endpoint with rules no answer carries `Quader-Resolved-From`, and a member's failure is reported as the
   addressed repository's, with its code and `Retry-After` (Q-EP-56; H-294).
 - **Cache state.** On an endpoint with rules no answer of a format route carries `Cache-Status`: `formats.ServeRoute` removes it
   when the status line goes out, whoever set it, the npm handlers, the remote engine, the virtual merge or the headers of an error
@@ -102,11 +102,11 @@ same rules (R-EP-018, [developer/endpoints.md](../developer/endpoints.md#package
 
 ## Upstream contact from an endpoint
 
-With `cache_fill: false`, the default of a further endpoint, no request on the endpoint makes trove contact an upstream
+With `cache_fill: false`, the default of a further endpoint, no request on the endpoint makes Quader contact an upstream
 (R-EP-019): the subject carries the flag from the listener, the populate check refuses every subject, the remote engine serves
 what its cache holds and answers an uncached item `403 populate_not_permitted` without a negative entry, and the virtual engine
-treats such a member as a miss. A customer can therefore neither fill trove's cache with packages of its choosing nor make
-trove's upstream traffic depend on its requests. Every prevented contact is counted in `trove_endpoint_cache_fill_refused_total`
+treats such a member as a miss. A customer can therefore neither fill Quader's cache with packages of its choosing nor make
+Quader's upstream traffic depend on its requests. Every prevented contact is counted in `quader_endpoint_cache_fill_refused_total`
 (`TestR_EP_019_TheCacheFillPolicyOfAnEndpoint`).
 
 ## How long a change takes
@@ -115,7 +115,7 @@ A rule is a row of `endpoint_exposure_rule`. Every write runs in one transaction
 `authz` and its audit event; every replica rebuilds its grant index from PostgreSQL, so a narrowed or deleted rule stops
 exposing within the bound of R-AUTHZ-028 (the integration tests hold it to `cluster.epoch_poll_interval` + 1 s), also with
 Valkey stopped, and a replica that cannot confirm its index answers `503 authz_stale` instead of deciding on an old one. A
-request that sends the write's `Trove-Authz-Epoch` in `Trove-Authz-Min-Epoch` sees the change at once. No rule is read from
+request that sends the write's `Quader-Authz-Epoch` in `Quader-Authz-Min-Epoch` sees the change at once. No rule is read from
 Valkey; a forged change message costs at most an epoch read.
 
 ## Who can change what an endpoint exposes
@@ -130,7 +130,7 @@ alone cannot give anyone a right, because exposure only narrows. The endpoints t
 have no write operation. Updated and deleted rules carry a revocation-journal entry with the states before and after
 (R-EP-020), written in the transaction of the change.
 
-- **A session proves a recent sign-in for every write.** The four rule writes declare `x-trove-recent-auth: true`, and the shared
+- **A session proves a recent sign-in for every write.** The four rule writes declare `x-quader-recent-auth: true`, and the shared
   authorization step answers `401 reauthentication_required` to a session whose interactive sign-in is older than
   `auth.sessions.recent_auth_window`, after it decided that the caller holds `endpoints:write` (R-API-007, Q-API-40). A token caller is
   not asked; its scope bounds it.

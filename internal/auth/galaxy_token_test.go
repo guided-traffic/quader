@@ -7,10 +7,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The scheme "Token" of the Ansible Galaxy clients (R-ANS-006, Q-ANS-4, ADR-191). The stage reads "Authorization: Token <token>" only
@@ -37,7 +37,7 @@ func galaxyRules(asked *atomic.Int64) EndpointRules {
 	return ep
 }
 
-func TestR_ANS_006_TheTokenSchemeIsATroveTokenOnlyOnARouteThatDeclaresIt(t *testing.T) {
+func TestR_ANS_006_TheTokenSchemeIsAQuaderTokenOnlyOnARouteThatDeclaresIt(t *testing.T) {
 	c := newAPIKeyCast(t)
 	for _, tc := range []struct {
 		name         string
@@ -50,12 +50,12 @@ func TestR_ANS_006_TheTokenSchemeIsATroveTokenOnlyOnARouteThatDeclaresIt(t *test
 		{"R-ANS-006 a token on a declared GET route", "GET", galaxyRead, "Token " + c.pat, galaxyRules(nil), "", MethodGalaxyToken},
 		{"R-ANS-006 a token on the declared publish route", "POST", galaxyPublish, "Token " + c.pat, galaxyRules(nil), "", MethodGalaxyToken},
 		{"R-ANS-006 the scheme name is case-insensitive", "GET", galaxyRead, "token " + c.sat, galaxyRules(nil), "", MethodGalaxyToken},
-		{"R-ANS-006 a token on a route of another format is not a trove token", "GET", otherFormat, "Token " + c.pat, galaxyRules(nil), errs.CodeInvalidToken, ""},
-		{"R-ANS-006 a token on the management API is not a trove token", "GET", "/api/v1/users/me", "Token " + c.pat, galaxyRules(nil), errs.CodeInvalidToken, ""},
-		{"R-ANS-006 without the declaration anywhere the header is not a trove token", "GET", galaxyRead, "Token " + c.pat, defaultRules(), errs.CodeInvalidToken, ""},
+		{"R-ANS-006 a token on a route of another format is not a quader token", "GET", otherFormat, "Token " + c.pat, galaxyRules(nil), errs.CodeInvalidToken, ""},
+		{"R-ANS-006 a token on the management API is not a quader token", "GET", "/api/v1/users/me", "Token " + c.pat, galaxyRules(nil), errs.CodeInvalidToken, ""},
+		{"R-ANS-006 without the declaration anywhere the header is not a quader token", "GET", galaxyRead, "Token " + c.pat, defaultRules(), errs.CodeInvalidToken, ""},
 		{"R-ANS-006 a token that is revoked is rejected", "GET", galaxyRead, "Token " + c.revoked, galaxyRules(nil), errs.CodeInvalidToken, ""},
 		{"R-ANS-006 a token that is unknown is rejected", "GET", galaxyRead, "Token " + c.unknown, galaxyRules(nil), errs.CodeInvalidToken, ""},
-		{"R-ANS-006 a value that is no token is rejected", "GET", galaxyRead, "Token not-a-trove-token", galaxyRules(nil), errs.CodeInvalidToken, ""},
+		{"R-ANS-006 a value that is no token is rejected", "GET", galaxyRead, "Token not-a-quader-token", galaxyRules(nil), errs.CodeInvalidToken, ""},
 		{"R-ANS-006 a scheme without a value is rejected", "GET", galaxyRead, "Token", galaxyRules(nil), errs.CodeInvalidToken, ""},
 		{"R-ANS-006 Bearer keeps working on a declared route", "GET", galaxyRead, "Bearer " + c.pat, galaxyRules(nil), "", MethodBearer},
 		{"R-ANS-006 a Basic user name is ignored on a declared route", "GET", galaxyRead, basic("anything", c.pat), galaxyRules(nil), "", MethodBasic},
@@ -142,7 +142,7 @@ func TestR_ANS_006_TheRouteIsAskedOnlyForATokenHeader(t *testing.T) {
 	}
 }
 
-// TestR_ANS_006_AttemptsAreCountedUnderTheMethodGalaxyToken: the label of trove_auth_attempts_total is galaxy_token (R-OPS-015).
+// TestR_ANS_006_AttemptsAreCountedUnderTheMethodGalaxyToken: the label of quader_auth_attempts_total is galaxy_token (R-OPS-015).
 func TestR_ANS_006_AttemptsAreCountedUnderTheMethodGalaxyToken(t *testing.T) {
 	c := newAPIKeyCast(t)
 	reg := prometheus.NewRegistry()
@@ -159,7 +159,7 @@ func TestR_ANS_006_AttemptsAreCountedUnderTheMethodGalaxyToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, mf := range mfs {
-		if mf.GetName() != "trove_auth_attempts_total" {
+		if mf.GetName() != "quader_auth_attempts_total" {
 			continue
 		}
 		for _, x := range mf.GetMetric() {
@@ -171,6 +171,6 @@ func TestR_ANS_006_AttemptsAreCountedUnderTheMethodGalaxyToken(t *testing.T) {
 		}
 	}
 	if got["galaxy_token/success/"] != 1 || got["galaxy_token/failure/revoked"] != 1 || len(got) != 2 {
-		t.Fatalf("trove_auth_attempts_total: %v", got)
+		t.Fatalf("quader_auth_attempts_total: %v", got)
 	}
 }

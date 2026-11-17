@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 const (
@@ -154,7 +154,7 @@ func TestTraceContext(t *testing.T) {
 		}
 	})
 
-	t.Run("R-OPS-018 the server span carries http.route and trove attributes", func(t *testing.T) {
+	t.Run("R-OPS-018 the server span carries http.route and quader attributes", func(t *testing.T) {
 		var buf bytes.Buffer
 		h, tr, exp := tracedStack(t, cfgSampled, &buf)
 		serve(t, h, reqFrom("10.1.1.1", ""))
@@ -172,14 +172,14 @@ func TestTraceContext(t *testing.T) {
 		}
 	})
 
-	t.Run("R-OPS-018 no exported attribute carries a trove token", func(t *testing.T) {
+	t.Run("R-OPS-018 no exported attribute carries a quader token", func(t *testing.T) {
 		exp := tracetest.NewInMemoryExporter()
 		tr, err := Tracing(cfgSampled, WithSpanExporter(exp))
 		if err != nil {
 			t.Fatal(err)
 		}
 		_, span := tr.Start(context.Background(), "op", trace.SpanKindInternal,
-			attribute.String("note", "used trv_pat_ABCDEFGHIJKLMNOPQRST here"),
+			attribute.String("note", "used qdr_pat_ABCDEFGHIJKLMNOPQRST here"),
 			attribute.String("authorization", "Bearer xyz"))
 		span.RecordError(io.ErrUnexpectedEOF)
 		span.End()
@@ -246,8 +246,8 @@ func TestSpanQueue(t *testing.T) {
 		case <-time.After(5 * time.Second):
 			t.Fatal("span end blocked on a stuck exporter")
 		}
-		if !strings.Contains(scrapeBody(t, m, ""), "trove_tracing_spans_dropped_total ") ||
-			strings.Contains(scrapeBody(t, m, ""), "trove_tracing_spans_dropped_total 0\n") {
+		if !strings.Contains(scrapeBody(t, m, ""), "quader_tracing_spans_dropped_total ") ||
+			strings.Contains(scrapeBody(t, m, ""), "quader_tracing_spans_dropped_total 0\n") {
 			t.Errorf("drop counter not incremented:\n%s", grepLines(scrapeBody(t, m, ""), "dropped"))
 		}
 		close(exp.release)

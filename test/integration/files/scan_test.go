@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/files"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/files"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // countingRunner counts the transactions, one per query of a listing.

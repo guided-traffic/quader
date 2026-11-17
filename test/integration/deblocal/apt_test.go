@@ -8,50 +8,50 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/debstub/debgen"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // aptScript is what runs in the client container: the source with the repository's key, the credential in auth.conf.d (never in the
-// URL), then the two commands of a user. With TROVE_DEBUG_URIS the update prints the URIs the client requests.
+// URL), then the two commands of a user. With QUADER_DEBUG_URIS the update prints the URIs the client requests.
 const aptScript = `set -eu
 mkdir -p /etc/apt/auth.conf.d
 umask 077
-printf 'machine http://%s login x password %s\n' "$TROVE_HOSTPORT" "$TROVE_TOKEN" > /etc/apt/auth.conf.d/trove.conf
+printf 'machine http://%s login x password %s\n' "$QUADER_HOSTPORT" "$QUADER_TOKEN" > /etc/apt/auth.conf.d/quader.conf
 umask 022
-mkdir -p /etc/apt/keyrings && printf '%s\n' "$TROVE_KEY" > /etc/apt/keyrings/trove.asc
-echo "deb [signed-by=/etc/apt/keyrings/trove.asc] http://$TROVE_HOSTPORT/api/deb/it/deb-local stable main" > /etc/apt/sources.list.d/trove.list
+mkdir -p /etc/apt/keyrings && printf '%s\n' "$QUADER_KEY" > /etc/apt/keyrings/quader.asc
+echo "deb [signed-by=/etc/apt/keyrings/quader.asc] http://$QUADER_HOSTPORT/api/deb/it/deb-local stable main" > /etc/apt/sources.list.d/quader.list
 rm -f /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list.d/ubuntu.sources
 apt-get update --error-on=any -o Debug::pkgAcquire::Worker=1
-apt-get install -y --no-install-recommends hello-trove=2.10-3
-/usr/bin/hello-trove
+apt-get install -y --no-install-recommends hello-quader=2.10-3
+/usr/bin/hello-quader
 `
 
 // runApt runs apt-get update and apt-get install in a client container of each image against the replica and returns the output of
 // each. It needs docker and the images; without docker the test is skipped.
 func runApt(t *testing.T, e *env, images ...string) map[string]string {
 	t.Helper()
-	if _, err := exec.LookPath("docker"); err != nil || os.Getenv("TROVE_IT_NO_DOCKER") != "" {
+	if _, err := exec.LookPath("docker"); err != nil || os.Getenv("QUADER_IT_NO_DOCKER") != "" {
 		t.Skip("no docker")
 	}
-	spec := debgen.Hello("hello-trove", "2.10-3", "amd64")
+	spec := debgen.Hello("hello-quader", "2.10-3", "amd64")
 	d, err := debgen.Build(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	a := e.mustUpload(e.tokA, "hello-trove_2.10-3_amd64.deb", d.Bytes, 201, []string{"stable"})
+	a := e.mustUpload(e.tokA, "hello-quader_2.10-3_amd64.deb", d.Bytes, 201, []string{"stable"})
 	e.waitIndex("stable", seqOf(e, a, "stable"))
 
 	key := e.get("signing-key.asc", e.tokA)
 	if key.Status != 200 {
 		t.Fatalf("signing-key.asc = %d", key.Status)
 	}
-	hostport := "trove.test:" + e.r.Addr("default")[strings.LastIndex(e.r.Addr("default"), ":")+1:]
+	hostport := "quader.test:" + e.r.Addr("default")[strings.LastIndex(e.r.Addr("default"), ":")+1:]
 	out := map[string]string{}
 	for _, image := range images {
 		t.Run(image, func(t *testing.T) {
-			args := append([]string{"run", "--rm"}, testenv.DockerReachHost("trove.test")...)
-			args = append(args, "-e", "TROVE_KEY="+string(key.Body), "-e", "TROVE_HOSTPORT="+hostport, "-e", "TROVE_TOKEN="+e.tokA, image, "sh", "-c", aptScript)
+			args := append([]string{"run", "--rm"}, testenv.DockerReachHost("quader.test")...)
+			args = append(args, "-e", "QUADER_KEY="+string(key.Body), "-e", "QUADER_HOSTPORT="+hostport, "-e", "QUADER_TOKEN="+e.tokA, image, "sh", "-c", aptScript)
 			cmd := exec.Command("docker", args...)
 			b, err := cmd.CombinedOutput()
 			if err != nil {

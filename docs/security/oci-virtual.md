@@ -4,7 +4,7 @@ Status: built (T-16, WP9): the virtual class of the OCI format (R-OCI-027, R-OCI
 lists as unions, and a push that is executed on the deployment target. The routing of virtual repositories (patterns, claims, pin rules) is on
 [repository-model.md](repository-model.md), the decision point and the token scope on [permissions.md](permissions.md) and
 [tokens-and-credentials.md](tokens-and-credentials.md), the exposure rules on [endpoints-and-exposure.md](endpoints-and-exposure.md), what a remote member's
-upstream can make trove store on [oci-remote.md](oci-remote.md), and the upload sessions on [oci-uploads.md](oci-uploads.md).
+upstream can make Quader store on [oci-remote.md](oci-remote.md), and the upload sessions on [oci-uploads.md](oci-uploads.md).
 
 A virtual repository holds nothing of its own: every answer is built from members, so on every road the question is which members take part for this caller and
 which repository's rules apply. The rules are those of the repository the client addressed, the virtual one (`rq.Addressed()`), for exposure and for the scope of a
@@ -26,7 +26,7 @@ Dependency confusion is closed in step 3: a claim of an image name for a local m
 public image of the same name does not replace an internal one. A first push of a name that a remote member serves is a shadowing decision of the writer (R-REPO-048),
 made on the deployment target with the same check as for any format; a writer who holds `manage` decides it and the push claims the name (`autoClaim`).
 
-`Trove-Resolved-From` names the member that served an item. It is never sent on an endpoint with exposure rules, and a member's failure is worded as the addressed
+`Quader-Resolved-From` names the member that served an item. It is never sent on an endpoint with exposure rules, and a member's failure is worded as the addressed
 repository's there, so the code of a failure does not tell that the virtual repository reaches an upstream beyond what H-294 says for every format.
 
 ## Writes: where a push goes
@@ -47,16 +47,16 @@ A `DELETE` through a virtual repository answers 405 `UNSUPPORTED` and reaches no
 
 ## What this does not cover
 
-### H-700 · The resolution of a virtual repository is not counted in `trove_virtual_resolutions_total`
+### H-700 · The resolution of a virtual repository is not counted in `quader_virtual_resolutions_total`
 
 The engine counts which tier served an artifact (`resolved`); the format's own walk calls the members' handlers and does not report the tier to the engine, so the metric
 does not move for a pull through an OCI virtual repository and an operator cannot see from it how often an upstream is asked. The remote members' own request metrics
-(`trove_http_requests_total`, the engine's fetch counters) show the upstream traffic. Live today.
+(`quader_http_requests_total`, the engine's fetch counters) show the upstream traffic. Live today.
 
 ### H-701 · A tags list the upstream cut is continued only when a client addresses the remote itself
 
 A remote member contributes the tags list it stores. An upstream that cuts its list (Docker Hub and GHCR page at a few hundred tags) leaves a stored part and a mark
-(`x-trove-truncated`), and the union through the virtual repository holds the stored part only: a tag beyond it is missing from the listing, never wrong, and a pull by
+(`x-quader-truncated`), and the union through the virtual repository holds the stored part only: a tag beyond it is missing from the listing, never wrong, and a pull by
 its tag still resolves. A client that lists the remote repository itself gets the upstream's further pages (R-OCI-024). Live today for every remote member whose upstream
 cuts its list.
 

@@ -1,5 +1,5 @@
 import { Injectable, Component, inject } from '@angular/core';
-import { DIALOG_DATA, DialogClose, DialogTitle, TroveDialog } from './ui/dialog';
+import { DIALOG_DATA, DialogClose, DialogTitle, QuaderDialog } from './ui/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Versioned } from '../api/repositories-api';
 import { ApiError } from '../api/problem';
@@ -30,10 +30,10 @@ export function diffFields(data: ConflictData): ConflictRow[] {
 
 /** "Changed by someone else since you opened it" (R-UI-042): their version against yours. */
 @Component({
-  selector: 'trove-conflict-dialog',
+  selector: 'quader-conflict-dialog',
   imports: [DialogTitle, DialogClose],
   template: `
-    <h2 troveDialogTitle i18n="@@conflict.title">Changed by someone else since you opened it</h2>
+    <h2 quaderDialogTitle i18n="@@conflict.title">Changed by someone else since you opened it</h2>
     <div class="dialog-body">
       @if (rows.length === 0) {
         <p i18n="@@conflict.same">The stored version already equals yours.</p>
@@ -65,12 +65,12 @@ export function diffFields(data: ConflictData): ConflictRow[] {
       <button class="btn btn-tertiary" type="button" (click)="copyMine()" i18n="@@conflict.copy">
         Copy my changes
       </button>
-      <button class="btn btn-tertiary" type="button" [troveDialogClose]="'reload'" i18n="@@conflict.reload">
+      <button class="btn btn-tertiary" type="button" [quaderDialogClose]="'reload'" i18n="@@conflict.reload">
         Reload (discard mine)
       </button>
       <button class="btn btn-confirm"
         type="button"
-        [troveDialogClose]="'overwrite'"
+        [quaderDialogClose]="'overwrite'"
         i18n="@@conflict.overwrite"
       >
         Overwrite
@@ -84,9 +84,9 @@ export function diffFields(data: ConflictData): ConflictRow[] {
     }
     th,
     td {
-      padding: var(--trove-space-1) var(--trove-space-3);
+      padding: var(--quader-space-1) var(--quader-space-3);
       text-align: start;
-      border-block-end: 1px solid var(--trove-border);
+      border-block-end: 1px solid var(--quader-border);
       overflow-wrap: anywhere;
     }
     .visually-hidden {
@@ -136,7 +136,7 @@ export type GuardedOutcome<T> =
 /** Opens the conflict dialog; resolves with the choice, or null when it was dismissed. */
 @Injectable({ providedIn: 'root' })
 export class ConflictResolver {
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
 
   async resolve(data: ConflictData): Promise<ConflictDecision | null> {
     const ref = this.dialog.open<ConflictDialog, ConflictData, ConflictDecision>(ConflictDialog, {

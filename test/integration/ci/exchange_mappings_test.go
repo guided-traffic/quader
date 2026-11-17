@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 // mrClaims are the claims of a merge request pipeline of the default project whose source branch is protected
@@ -46,7 +46,7 @@ func mrReadOnly(name string, priority int) map[string]any {
 func TestR_CI_007_AReplicaWithALaggingCopyIssuesWhatIsCommitted(t *testing.T) {
 	x := newXEnv(t, options{valkey: false})
 	a, b := x.web("web-a"), x.web("web-b")
-	x.issuer(a, map[string]any{"allowedAudiences": []string{troveAudience, "https://vault.example.com"}})
+	x.issuer(a, map[string]any{"allowedAudiences": []string{quaderAudience, "https://vault.example.com"}})
 	x.addMapping(a, protectedPublish("acme-protected-publish", 100))
 	x.addMapping(a, releaseMapping("acme-release-publish", 50))
 	// The copies on B hold the issuer and this mapping set before B stops listening.
@@ -56,7 +56,7 @@ func TestR_CI_007_AReplicaWithALaggingCopyIssuesWhatIsCommitted(t *testing.T) {
 		t.Fatal(err)
 	}
 	stale := func() float64 {
-		return metric(t, b, fmt.Sprintf(`trove_ci_mapping_set_stale_total{issuer=%q}`, xIssuer))
+		return metric(t, b, fmt.Sprintf(`quader_ci_mapping_set_stale_total{issuer=%q}`, xIssuer))
 	}
 
 	t.Run("R-CI-019 a mapping created on A at priority 10 governs the next exchange on B: the merge request pipeline gets the read-only grants", func(t *testing.T) {
@@ -67,7 +67,7 @@ func TestR_CI_007_AReplicaWithALaggingCopyIssuesWhatIsCommitted(t *testing.T) {
 			t.Errorf("B issued %v with scope %q", g.Mappings, g.Scope)
 		}
 		if got := stale() - before; got != 1 {
-			t.Errorf("trove_ci_mapping_set_stale_total counted %v reloads on B, want 1", got)
+			t.Errorf("quader_ci_mapping_set_stale_total counted %v reloads on B, want 1", got)
 		}
 	})
 
@@ -96,7 +96,7 @@ func TestR_CI_007_AReplicaWithALaggingCopyIssuesWhatIsCommitted(t *testing.T) {
 func TestR_CI_007_AnAudienceRemovedOnAIsRefusedOnBFromTheRowReadInTheTransaction(t *testing.T) {
 	x := newXEnv(t, options{valkey: false})
 	a, b := x.web("web-a"), x.web("web-b")
-	x.issuer(a, map[string]any{"allowedAudiences": []string{troveAudience, "https://vault.example.com"}})
+	x.issuer(a, map[string]any{"allowedAudiences": []string{quaderAudience, "https://vault.example.com"}})
 	x.addMapping(a, releaseMapping("acme-release-publish", 50))
 	vault := map[string]any{"aud": "https://vault.example.com"}
 	// B's copy of the issuer is loaded by a first exchange with the second audience, and nothing reloads it after.
@@ -105,11 +105,11 @@ func TestR_CI_007_AnAudienceRemovedOnAIsRefusedOnBFromTheRowReadInTheTransaction
 		t.Fatal(err)
 	}
 	stale := func() float64 {
-		return metric(t, b, fmt.Sprintf(`trove_ci_mapping_set_stale_total{issuer=%q}`, xIssuer))
+		return metric(t, b, fmt.Sprintf(`quader_ci_mapping_set_stale_total{issuer=%q}`, xIssuer))
 	}
 	g := x.do(a, "GET", issuersPath+"/"+xIssuer, nil)
 	body := g.JSON(t)
-	body["allowedAudiences"] = []string{troveAudience}
+	body["allowedAudiences"] = []string{quaderAudience}
 	wantStatus(t, x.do(a, "PUT", issuersPath+"/"+xIssuer, body, "If-Match", etag(g)), 200, "")
 
 	before, tokens := stale(), x.number("SELECT count(*) FROM api_token WHERE type = 'cit'")
@@ -165,7 +165,7 @@ func TestR_CI_009_AnAbsentClaimFailsTheExchangeEvenIfALaterMappingMatches(t *tes
 }
 
 // forkInParent is the claim set of the recorded fork merge request pipeline run in the parent project
-// (test/oidcstub/testdata/id-token-merge-request-fork-in-parent.json), with this double's issuer, trove's audience
+// (test/oidcstub/testdata/id-token-merge-request-fork-in-parent.json), with this double's issuer, quader's audience
 // and the times of now.
 func (x *xenv) forkInParent(t *testing.T) []byte {
 	t.Helper()
@@ -180,7 +180,7 @@ func (x *xenv) forkInParent(t *testing.T) []byte {
 		t.Fatal(err)
 	}
 	now := time.Now().Unix()
-	f.Claims["iss"], f.Claims["aud"] = x.d.stub.Issuer(), troveAudience
+	f.Claims["iss"], f.Claims["aud"] = x.d.stub.Issuer(), quaderAudience
 	f.Claims["iat"], f.Claims["nbf"], f.Claims["exp"] = now, now-5, now+3600
 	b, _ := json.Marshal(f.Claims)
 	return b

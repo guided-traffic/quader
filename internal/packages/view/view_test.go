@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 func TestR_API_029_PackageIDRoundTrips(t *testing.T) {

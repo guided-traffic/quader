@@ -6,8 +6,8 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The shape rules of a mapping and the answer to a rule violation (R-CI-009, R-CI-019, Q-CI-30). The

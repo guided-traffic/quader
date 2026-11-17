@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Visibility levels (R-AUTHZ-033, Q-AUTHZ-264 to Q-AUTHZ-266, Q-AUTHZ-276): the installation's default, the level of a project
 -- and the two levels of a repository, artifacts and wiki. A level is stored on its object and never inherited when a request is

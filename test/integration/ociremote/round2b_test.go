@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 // Phase B of WP8: the remote class through the real /v2/ mount, and the findings of the re-audit.
 
-// scoped is a trove token whose grant reads the repository only for the packages that match: the patterns of include and exclude.
+// scoped is a quader token whose grant reads the repository only for the packages that match: the patterns of include and exclude.
 func (e *renv) scoped(name, repo string, include, exclude []string) string {
 	e.t.Helper()
 	p := e.st.User(name)

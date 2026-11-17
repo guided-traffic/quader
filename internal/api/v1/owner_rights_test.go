@@ -8,18 +8,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
-// ownerRightsOperations are the operations on the caller's own account that declare x-trove-owner-rights: required
+// ownerRightsOperations are the operations on the caller's own account that declare x-quader-owner-rights: required
 // (R-API-021, Q-API-214).
 var ownerRightsOperations = []string{
 	"endOwnSession", "endOwnSessions", "listOwnSessions", "removeAvatar", "revokeOwnTokens", "setAvatar", "updatePreferences",
 }
 
 // ownerRightsExempt are the operations with an unsafe method that admit every authenticated caller and do not declare
-// x-trove-owner-rights, each with what bounds a token whose scope does not inherit its owner's rights there instead. A new
+// x-quader-owner-rights, each with what bounds a token whose scope does not inherit its owner's rights there instead. A new
 // such operation either declares the attribute or is added here with its reason, read in its handler.
 var ownerRightsExempt = map[string]string{
 	"putDebCoordinates": "decides deploy for every added coordinate and delete for every removed one on the file's package, with the request's " +
@@ -48,7 +48,7 @@ var ownerRightsExempt = map[string]string{
 	"revokeBastionToken":  "endpoints:write or tokens:revoke through the decision point, with the scope (requireAny)",
 }
 
-// ownerRightsReads are the authenticated reads (GET) that do not declare x-trove-owner-rights, each with why a token whose
+// ownerRightsReads are the authenticated reads (GET) that do not declare x-quader-owner-rights, each with why a token whose
 // scope does not inherit its owner's rights may call it: what it returns is the credential's own, is filtered with the
 // token's scope, or holds nothing of the owner's account. A new authenticated read either declares the attribute or is
 // added here with its reason, read in its handler; listOwnSessions declares it.
@@ -106,7 +106,7 @@ func opByID(t *testing.T, doc *Document, id string) Operation {
 
 func TestR_API_021_DocumentDeclaresOwnerRights(t *testing.T) {
 	doc := loadDoc(t)
-	t.Run("R-API-021 exactly the operations on the caller's own account declare x-trove-owner-rights", func(t *testing.T) {
+	t.Run("R-API-021 exactly the operations on the caller's own account declare x-quader-owner-rights", func(t *testing.T) {
 		var got []string
 		for _, op := range doc.Operations() {
 			if op.OwnerRights {
@@ -118,16 +118,16 @@ func TestR_API_021_DocumentDeclaresOwnerRights(t *testing.T) {
 			t.Fatalf("declared:\n%v\nwant:\n%v", got, ownerRightsOperations)
 		}
 	})
-	t.Run("R-API-021 x-trove-owner-rights: optional is refused at load", func(t *testing.T) {
-		raw := strings.Replace(string(EmbeddedYAML()), "x-trove-owner-rights: required", "x-trove-owner-rights: optional", 1)
-		if _, err := LoadDocument([]byte(raw)); err == nil || !strings.Contains(err.Error(), "x-trove-owner-rights") {
+	t.Run("R-API-021 x-quader-owner-rights: optional is refused at load", func(t *testing.T) {
+		raw := strings.Replace(string(EmbeddedYAML()), "x-quader-owner-rights: required", "x-quader-owner-rights: optional", 1)
+		if _, err := LoadDocument([]byte(raw)); err == nil || !strings.Contains(err.Error(), "x-quader-owner-rights") {
 			t.Fatalf("err = %v", err)
 		}
 	})
 	t.Run("R-API-021 the attribute belongs to the form authenticated: true", func(t *testing.T) {
-		op := map[string]any{"x-trove-owner-rights": "required"}
+		op := map[string]any{"x-quader-owner-rights": "required"}
 		if _, err := parseOwnerRights(op, Requirement{Permission: "identities:write"}, "PATCH /api/v1/users/{username}"); err == nil {
-			t.Fatal("a permission declaration with x-trove-owner-rights was accepted")
+			t.Fatal("a permission declaration with x-quader-owner-rights was accepted")
 		}
 		if v, err := parseOwnerRights(op, Requirement{Authenticated: true}, "PATCH /api/v1/users/me/preferences"); err != nil || !v {
 			t.Fatalf("%v %v", v, err)
@@ -151,9 +151,9 @@ func TestR_API_021_EveryAuthenticatedWriteDeclaresItsTokenRule(t *testing.T) {
 			reason, exempt := ownerRightsExempt[op.ID]
 			switch {
 			case op.OwnerRights && exempt:
-				t.Fatalf("%s declares x-trove-owner-rights and is in ownerRightsExempt (%s)", op.ID, reason)
+				t.Fatalf("%s declares x-quader-owner-rights and is in ownerRightsExempt (%s)", op.ID, reason)
 			case !op.OwnerRights && !exempt:
-				t.Fatalf("%s (%s) admits every authenticated caller with an unsafe method: declare x-trove-owner-rights: required "+
+				t.Fatalf("%s (%s) admits every authenticated caller with an unsafe method: declare x-quader-owner-rights: required "+
 					"if it acts on the caller's own account, or add it to ownerRightsExempt with the rule that bounds a narrowed token", op.ID, pattern)
 			}
 		})
@@ -186,9 +186,9 @@ func TestR_API_021_EveryAuthenticatedReadIsClassified(t *testing.T) {
 			reason, listed := ownerRightsReads[op.ID]
 			switch {
 			case op.OwnerRights && listed:
-				t.Fatalf("%s declares x-trove-owner-rights and is in ownerRightsReads (%s)", op.ID, reason)
+				t.Fatalf("%s declares x-quader-owner-rights and is in ownerRightsReads (%s)", op.ID, reason)
 			case !op.OwnerRights && !listed:
-				t.Fatalf("%s (%s) is an authenticated read: declare x-trove-owner-rights: required if it returns the caller's own "+
+				t.Fatalf("%s (%s) is an authenticated read: declare x-quader-owner-rights: required if it returns the caller's own "+
 					"account beyond what the credential may know about itself, or add it to ownerRightsReads with the reason", op.ID, pattern)
 			}
 		})
@@ -215,9 +215,9 @@ func TestR_API_021_TheAttributeIsRefusedOnTheOperationsOfTheFilesHandler(t *test
 			if !strings.Contains(raw, marker) {
 				t.Fatalf("no operation %s", id)
 			}
-			raw = strings.Replace(raw, marker, marker+"      x-trove-owner-rights: required\n", 1)
+			raw = strings.Replace(raw, marker, marker+"      x-quader-owner-rights: required\n", 1)
 			_, err := LoadDocument([]byte(raw))
-			if err == nil || !strings.Contains(err.Error(), "x-trove-owner-rights") || !strings.Contains(err.Error(), "files handler") {
+			if err == nil || !strings.Contains(err.Error(), "x-quader-owner-rights") || !strings.Contains(err.Error(), "files handler") {
 				t.Fatalf("err = %v", err)
 			}
 		})
@@ -368,7 +368,7 @@ func TestR_API_021_TheReadsOfTheOwnProfileAdmitANarrowedToken(t *testing.T) {
 		op := opByID(t, doc, id)
 		t.Run("R-API-021 "+id, func(t *testing.T) {
 			if op.OwnerRights {
-				t.Fatalf("%s declares x-trove-owner-rights", id)
+				t.Fatalf("%s declares x-quader-owner-rights", id)
 			}
 			for name, p := range owners() {
 				if !refusedByTheGate[name] {

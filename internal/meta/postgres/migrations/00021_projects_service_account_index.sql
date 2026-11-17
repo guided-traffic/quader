@@ -1,5 +1,5 @@
--- trove:phase expand
--- trove:no-transaction
+-- quader:phase expand
+-- quader:no-transaction
 --
 -- Projects (R-AUTHZ-026), expand class (R-HA-018): the index of service_account.project_id,
 -- built without blocking writes.

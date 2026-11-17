@@ -10,7 +10,7 @@ What an administrator decides for repositories of the format Ansible Galaxy: the
 | Remote | a cache of a Galaxy-compatible server; `remote.url` is its API root, `https://galaxy.ansible.com/api/` by default. Role archives come from the extra hosts of the repository, `github.com` and `codeload.github.com` by default | `ansible.authUrl`, `ansible.clientId` |
 | Virtual | one address over local and remote members | none of the format |
 
-A remote verifies the SHA-256 that the upstream announces for every collection archive, whatever the checksum policy says, so the policies that skip the check are refused for this format. Signatures of a version pass through unchanged; trove neither signs nor verifies them. A role archive has no announced digest and is stored as fetched, within the limit below.
+A remote verifies the SHA-256 that the upstream announces for every collection archive, whatever the checksum policy says, so the policies that skip the check are refused for this format. Signatures of a version pass through unchanged; Quader neither signs nor verifies them. A role archive has no announced digest and is stored as fetched, within the limit below.
 
 Give clients a virtual repository: one `server_list` entry then reads your own collections and the public ones. The first publish of a name into a local member claims the name for it, so a remote member's versions of that name are not offered through the virtual repository (a public collection cannot slip in under the name of one of yours). A grant with a path pattern that excludes an archive hides that version from the list and from the install of the principal it is granted to.
 
@@ -42,4 +42,4 @@ On the edit form of a local repository, **Import tasks** lists the publishes new
 
 ## Copying the collections of an existing Galaxy
 
-`trove admin import ansible` copies the collections of an existing Galaxy into a local repository; see [Importing from another registry](import.md). Roles are not copied; the report counts them once per run.
+`quader admin import ansible` copies the collections of an existing Galaxy into a local repository; see [Importing from another registry](import.md). Roles are not copied; the report counts them once per run.

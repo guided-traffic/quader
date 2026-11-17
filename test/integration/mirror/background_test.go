@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formathost"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/mirror"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/mirror"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // The background fetches of a remote repository outside a pass (Q-REPO-272, R-REPO-054, R-REPO-055): a pull-through remote that no

@@ -31,7 +31,7 @@ func valkeyCLI(t testing.TB, podName string, args ...string) string {
 
 func valkeyPrimaryPod(t testing.TB) string {
 	t.Helper()
-	for _, p := range []string{"trove-valkey-0", "trove-valkey-1"} {
+	for _, p := range []string{"quader-valkey-0", "quader-valkey-1"} {
 		if strings.HasPrefix(valkeyCLI(t, p, "role"), "master") {
 			return p
 		}
@@ -45,7 +45,7 @@ func valkeyPrimaryPod(t testing.TB) string {
 // probe, so its Ready condition is the answer of /readyz.
 func clonedReplica(t *testing.T, name string, mutate func(spec map[string]any)) {
 	t.Helper()
-	raw := kn(t, "get", "deployment", "trove-packages", "-o", "json")
+	raw := kn(t, "get", "deployment", "quader-packages", "-o", "json")
 	var d map[string]any
 	if err := json.Unmarshal([]byte(raw), &d); err != nil {
 		t.Fatal(err)
@@ -94,7 +94,7 @@ func addEnv(spec map[string]any, name, value string) {
 }
 
 // checkClientList is the connection check of E0.12: CLIENT LIST on the Valkey primary shows connections
-// named trove:<pod>:<class> from every api, packages and worker pod, over TLS only, at most six per replica.
+// named quader:<pod>:<class> from every api, packages and worker pod, over TLS only, at most six per replica.
 func checkClientList(t *testing.T) {
 	t.Helper()
 	primary := valkeyPrimaryPod(t)
@@ -104,10 +104,10 @@ func checkClientList(t *testing.T) {
 	tlsPort := valkeyCLI(t, primary, "config", "get", "tls-port")
 	t.Logf("%s: tls-port %s", primary, strings.ReplaceAll(strings.TrimSpace(tlsPort), "\n", " "))
 	want := map[string]bool{}
-	for _, p := range livePods(t, selTrove) {
+	for _, p := range livePods(t, selQuader) {
 		want[p.Name] = true
 	}
-	names := regexp.MustCompile(`name=trove:([^: ]+):(\S+)`)
+	names := regexp.MustCompile(`name=quader:([^: ]+):(\S+)`)
 	per := map[string]map[string]int{}
 	for _, line := range strings.Split(valkeyCLI(t, primary, "client", "list"), "\n") {
 		if m := names.FindStringSubmatch(line); m != nil {
@@ -124,7 +124,7 @@ func checkClientList(t *testing.T) {
 			n += c
 		}
 		if n == 0 {
-			t.Errorf("no connection named trove:%s:… on %s", pod, primary)
+			t.Errorf("no connection named quader:%s:… on %s", pod, primary)
 		}
 		if n > 6 {
 			t.Errorf("%s holds %d connections, at most 6 allowed (R-ARCH-031)", pod, n)
@@ -139,24 +139,24 @@ func checkClientList(t *testing.T) {
 }
 
 func TestE12Valkey(t *testing.T) {
-	t.Run("R-ARCH-031 R-ARCH-019 E0.12 CLIENT LIST on the primary shows trove:<pod>:… from every pod, TLS only, at most six per replica", checkClientList)
+	t.Run("R-ARCH-031 R-ARCH-019 E0.12 CLIENT LIST on the primary shows quader:<pod>:… from every pod, TLS only, at most six per replica", checkClientList)
 
 	t.Run("R-HA-056 Q-HA-13 E0.12 a new replica with a wrong primary_name stays not ready and logs the cause", func(t *testing.T) {
-		expectStuckWithCause(t, "trove-e2e-wrong-primary", func(t *testing.T, name string) {
-			clonedReplica(t, name, func(spec map[string]any) { addEnv(spec, "TROVE_VALKEY_SENTINEL_PRIMARY_NAME", "wrong-primary") })
+		expectStuckWithCause(t, "quader-e2e-wrong-primary", func(t *testing.T, name string) {
+			clonedReplica(t, name, func(spec map[string]any) { addEnv(spec, "QUADER_VALKEY_SENTINEL_PRIMARY_NAME", "wrong-primary") })
 		})
 	})
 
 	t.Run("R-HA-056 Q-HA-13 E0.12 a new replica with a wrong password stays not ready and logs the cause", func(t *testing.T) {
-		kn(t, "delete", "secret", "trove-e2e-valkey-wrong", "--ignore-not-found")
-		kn(t, "create", "secret", "generic", "trove-e2e-valkey-wrong", "--from-literal=password=not-the-password")
-		t.Cleanup(func() { _, _ = kubectl("-n", cfg.namespace, "delete", "secret", "trove-e2e-valkey-wrong") })
-		expectStuckWithCause(t, "trove-e2e-wrong-password", func(t *testing.T, name string) {
+		kn(t, "delete", "secret", "quader-e2e-valkey-wrong", "--ignore-not-found")
+		kn(t, "create", "secret", "generic", "quader-e2e-valkey-wrong", "--from-literal=password=not-the-password")
+		t.Cleanup(func() { _, _ = kubectl("-n", cfg.namespace, "delete", "secret", "quader-e2e-valkey-wrong") })
+		expectStuckWithCause(t, "quader-e2e-wrong-password", func(t *testing.T, name string) {
 			clonedReplica(t, name, func(spec map[string]any) {
 				for _, v := range spec["volumes"].([]any) {
 					vol := v.(map[string]any)
 					if vol["name"] == "secret-valkey" {
-						vol["secret"].(map[string]any)["secretName"] = "trove-e2e-valkey-wrong"
+						vol["secret"].(map[string]any)["secretName"] = "quader-e2e-valkey-wrong"
 					}
 				}
 			})
@@ -164,12 +164,12 @@ func TestE12Valkey(t *testing.T) {
 	})
 
 	t.Run("R-HA-056 Q-HA-13 E0.12 with every Sentinel unreachable at its first start a new replica becomes ready, degraded valkey", func(t *testing.T) {
-		clonedReplica(t, "trove-e2e-no-sentinel", func(spec map[string]any) {
-			addEnv(spec, "TROVE_VALKEY_SENTINEL_ADDRESSES", `["127.0.0.1:36379"]`)
+		clonedReplica(t, "quader-e2e-no-sentinel", func(spec map[string]any) {
+			addEnv(spec, "QUADER_VALKEY_SENTINEL_ADDRESSES", `["127.0.0.1:36379"]`)
 		})
 		var body string
 		took := waitFor(t, "the replica to become ready", 3*time.Minute, 2*time.Second, func() bool {
-			code, b := ops("trove-e2e-no-sentinel", "/readyz?verbose=1")
+			code, b := ops("quader-e2e-no-sentinel", "/readyz?verbose=1")
 			body = b
 			return code == 200
 		})

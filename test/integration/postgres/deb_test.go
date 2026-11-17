@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	debdata "github.com/guided-traffic/trove/internal/formatdata/deb"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 var debTables = []string{
@@ -76,39 +76,39 @@ func TestDebMigrations(t *testing.T) {
 
 	t.Run("suites, coordinates and generations hang together (R-DEB-008)", func(t *testing.T) {
 		repo := f.repo("deb-local", "deb", "local")
-		mustExec(t, admin, `INSERT INTO trove.deb_suites (repo_id, suite) VALUES ($1, 'stable')`, repo)
-		if scalar[int64](t, admin, `SELECT change_seq FROM trove.deb_suites WHERE repo_id = $1`, repo) != 1 ||
-			scalar[string](t, admin, `SELECT state FROM trove.deb_suites WHERE repo_id = $1`, repo) != "pending" {
+		mustExec(t, admin, `INSERT INTO quader.deb_suites (repo_id, suite) VALUES ($1, 'stable')`, repo)
+		if scalar[int64](t, admin, `SELECT change_seq FROM quader.deb_suites WHERE repo_id = $1`, repo) != 1 ||
+			scalar[string](t, admin, `SELECT state FROM quader.deb_suites WHERE repo_id = $1`, repo) != "pending" {
 			t.Error("a new suite starts at change_seq 1, pending")
 		}
-		wantState(t, admin, "23514", `INSERT INTO trove.deb_suites (repo_id, suite) VALUES ($1, 'Stable')`, repo)
-		wantState(t, admin, "23514", `INSERT INTO trove.deb_suites (repo_id, suite, state) VALUES ($1, 'x1', 'broken')`, repo)
-		wantState(t, admin, "23505", `INSERT INTO trove.deb_suites (repo_id, suite) VALUES ($1, 'stable')`, repo)
+		wantState(t, admin, "23514", `INSERT INTO quader.deb_suites (repo_id, suite) VALUES ($1, 'Stable')`, repo)
+		wantState(t, admin, "23514", `INSERT INTO quader.deb_suites (repo_id, suite, state) VALUES ($1, 'x1', 'broken')`, repo)
+		wantState(t, admin, "23505", `INSERT INTO quader.deb_suites (repo_id, suite) VALUES ($1, 'stable')`, repo)
 
 		item := f.item(repo, "pool/h/hello/hello_2.10-3_amd64.deb", f.blob())
-		const bin = `INSERT INTO trove.deb_binaries (item_id, repo_id, package, version, architecture, source, control) VALUES ($1, $2, 'hello', '2.10-3', 'amd64', 'hello', 'Package: hello')`
+		const bin = `INSERT INTO quader.deb_binaries (item_id, repo_id, package, version, architecture, source, control) VALUES ($1, $2, 'hello', '2.10-3', 'amd64', 'hello', 'Package: hello')`
 		mustExec(t, admin, bin, item, repo)
 		other := f.item(repo, "pool/h/hello/hello_2.10-3_amd64_x.deb", f.blob())
 		wantState(t, admin, "23505", bin, other, repo)
-		wantState(t, admin, "23514", `INSERT INTO trove.deb_binaries (item_id, repo_id, package, version, architecture, source, control) VALUES ($1, $2, 'p', '1', 'all', 'p', repeat('a', 1048577))`, other, repo)
+		wantState(t, admin, "23514", `INSERT INTO quader.deb_binaries (item_id, repo_id, package, version, architecture, source, control) VALUES ($1, $2, 'p', '1', 'all', 'p', repeat('a', 1048577))`, other, repo)
 
-		const coord = `INSERT INTO trove.deb_coordinates (item_id, repo_id, suite, component) VALUES ($1, $2, $3, $4)`
+		const coord = `INSERT INTO quader.deb_coordinates (item_id, repo_id, suite, component) VALUES ($1, $2, $3, $4)`
 		mustExec(t, admin, coord, item, repo, "stable", "main")
 		wantState(t, admin, "23505", coord, item, repo, "stable", "main")
 		wantState(t, admin, "23503", coord, item, repo, "testing", "main")
 		wantState(t, admin, "23514", coord, item, repo, "stable", "Main")
 
-		const gen = `INSERT INTO trove.deb_generations (repo_id, suite, generation, built_seq, files, signed_by) VALUES ($1, 'stable', $2, 1, '{"main/binary-amd64/Packages.gz": "ab"}', ARRAY['3F2A']::text[])`
+		const gen = `INSERT INTO quader.deb_generations (repo_id, suite, generation, built_seq, files, signed_by) VALUES ($1, 'stable', $2, 1, '{"main/binary-amd64/Packages.gz": "ab"}', ARRAY['3F2A']::text[])`
 		mustExec(t, admin, gen, repo, 1)
 		wantState(t, admin, "23505", gen, repo, 1)
 
 		// A suite goes with its coordinates and generations. A binary does not follow its item (migration 00063): the item store deletes the
 		// item first and the format's removal hook, which needs the row, deletes the binary.
-		mustExec(t, admin, `DELETE FROM trove.deb_suites WHERE repo_id = $1`, repo)
+		mustExec(t, admin, `DELETE FROM quader.deb_suites WHERE repo_id = $1`, repo)
 		if n := f.count("deb_coordinates", "repo_id = $1", repo) + f.count("deb_generations", "repo_id = $1", repo); n != 0 {
 			t.Errorf("%d rows of a deleted suite", n)
 		}
-		mustExec(t, admin, `DELETE FROM trove.items WHERE id = $1`, item)
+		mustExec(t, admin, `DELETE FROM quader.items WHERE id = $1`, item)
 		if n := f.count("deb_binaries", "repo_id = $1", repo); n != 1 {
 			t.Errorf("%d binaries after the deletion of one item, want the row to outlive it for the removal hook", n)
 		}
@@ -117,7 +117,7 @@ func TestDebMigrations(t *testing.T) {
 	t.Run("a repository has one primary and one next key, a fingerprint is known once, and only a retired key has no private part (R-DEB-015)", func(t *testing.T) {
 		a := f.repo("deb-keys-a", "deb", "local")
 		b := f.repo("deb-keys-b", "deb", "virtual")
-		const key = `INSERT INTO trove.deb_signing_keys (id, repo_id, fingerprint, algorithm, bits, key_created, bound_since, state, origin, public_key, private_key)
+		const key = `INSERT INTO quader.deb_signing_keys (id, repo_id, fingerprint, algorithm, bits, key_created, bound_since, state, origin, public_key, private_key)
 			VALUES (gen_random_uuid(), $1, $2, $3, 256, now() - interval '1 hour', now() - interval '1 hour', $4, 'generated', 'pub', $5)`
 		fpr := func(c string) string { return strings.Repeat(c, 40) }
 		mustExec(t, admin, key, a, fpr("A"), 22, "primary", "v1:k:sealed")
@@ -137,25 +137,25 @@ func TestDebMigrations(t *testing.T) {
 
 	t.Run("release documents, parsed indexes and their entries (R-DEB-023)", func(t *testing.T) {
 		repo := f.repo("deb-remote", "deb", "remote")
-		const rel = `INSERT INTO trove.deb_remote_releases (repo_id, dir, document, sha256, release_date) VALUES ($1, $2, $3, $4, $5)`
+		const rel = `INSERT INTO quader.deb_remote_releases (repo_id, dir, document, sha256, release_date) VALUES ($1, $2, $3, $4, $5)`
 		mustExec(t, admin, rel, repo, "dists/bookworm", "InRelease", hash(1), "2026-11-08T10:00:00Z")
 		wantState(t, admin, "23505", rel, repo, "dists/bookworm", "InRelease", hash(2), "2026-11-08T10:00:00Z")
 		// An absent record has neither a digest nor a date, every other document has both.
-		mustExec(t, admin, `INSERT INTO trove.deb_remote_releases (repo_id, dir, document) VALUES ($1, 'dists/testing', 'absent')`, repo)
+		mustExec(t, admin, `INSERT INTO quader.deb_remote_releases (repo_id, dir, document) VALUES ($1, 'dists/testing', 'absent')`, repo)
 		wantState(t, admin, "23514", rel, repo, "dists/testing2", "absent", hash(1), "2026-11-08T10:00:00Z")
-		wantState(t, admin, "23514", `INSERT INTO trove.deb_remote_releases (repo_id, dir, document) VALUES ($1, 'dists/x', 'InRelease')`, repo)
+		wantState(t, admin, "23514", `INSERT INTO quader.deb_remote_releases (repo_id, dir, document) VALUES ($1, 'dists/x', 'InRelease')`, repo)
 		wantState(t, admin, "23514", rel, repo, "dists/x", "Packages", hash(1), "2026-11-08T10:00:00Z")
 		wantState(t, admin, "23514", rel, repo, "dists/x", "InRelease", []byte{1}, "2026-11-08T10:00:00Z")
 
-		mustExec(t, admin, `INSERT INTO trove.deb_remote_indexes (repo_id, dir, path, sha256, entries) VALUES ($1, 'dists/bookworm', 'main/binary-amd64/Packages', $2, 1)`, repo, hash(3))
-		const ent = `INSERT INTO trove.deb_remote_entries (repo_id, dir, index_path, package, version, architecture, path, sha256, size)
+		mustExec(t, admin, `INSERT INTO quader.deb_remote_indexes (repo_id, dir, path, sha256, entries) VALUES ($1, 'dists/bookworm', 'main/binary-amd64/Packages', $2, 1)`, repo, hash(3))
+		const ent = `INSERT INTO quader.deb_remote_entries (repo_id, dir, index_path, package, version, architecture, path, sha256, size)
 			VALUES ($1, 'dists/bookworm', $2, 'hello', '2.10-3', 'amd64', 'pool/main/h/hello/hello_2.10-3_amd64.deb', $3, $4)`
 		mustExec(t, admin, ent, repo, "main/binary-amd64/Packages", hash(4), 56000)
 		wantState(t, admin, "23503", ent, repo, "main/binary-arm64/Packages", hash(4), 56000)
 		wantState(t, admin, "23514", ent, repo, "main/binary-amd64/Packages", hash(4), -1)
 		wantState(t, admin, "23514", ent, repo, "main/binary-amd64/Packages", []byte{4}, 1)
 		// Replacing an index drops its entries (deleting the index row cascades).
-		mustExec(t, admin, `DELETE FROM trove.deb_remote_indexes WHERE repo_id = $1`, repo)
+		mustExec(t, admin, `DELETE FROM quader.deb_remote_indexes WHERE repo_id = $1`, repo)
 		if n := f.count("deb_remote_entries", "repo_id = $1", repo); n != 0 {
 			t.Errorf("%d entries of a deleted index", n)
 		}
@@ -177,14 +177,14 @@ func TestDebMigrations(t *testing.T) {
 		if r := lookup(local, "deb_local", path); r.FactKind != "deb_local" || r.FactTombstoned {
 			t.Errorf("before the mark: kind %q, tombstoned %v", r.FactKind, r.FactTombstoned)
 		}
-		mustExec(t, admin, `INSERT INTO trove.deb_tombstones (repo_id, path, sha256) VALUES ($1, $2, $3)`, local, path, hash(9))
+		mustExec(t, admin, `INSERT INTO quader.deb_tombstones (repo_id, path, sha256) VALUES ($1, $2, $3)`, local, path, hash(9))
 		if r := lookup(local, "deb_local", path); !r.FactTombstoned {
 			t.Error("a withheld file is not tombstoned")
 		}
 		if r := lookup(local, "npm_local", path); r.FactTombstoned {
 			t.Error("another kind read the Debian mark")
 		}
-		wantState(t, admin, "23514", `INSERT INTO trove.deb_tombstones (repo_id, path, sha256) VALUES ($1, 'x', '\x01')`, local)
+		wantState(t, admin, "23514", `INSERT INTO quader.deb_tombstones (repo_id, path, sha256) VALUES ($1, 'x', '\x01')`, local)
 
 		remote := f.repo("deb-facts-remote", "deb", "remote")
 		f.item(remote, path, f.blob())
@@ -192,9 +192,9 @@ func TestDebMigrations(t *testing.T) {
 			t.Errorf("no parsed index: kind %q, known %v", r.FactKind, r.FactDebRemoteKnown)
 		}
 		for i, idx := range []string{"main/binary-amd64/Packages", "updates/binary-amd64/Packages"} {
-			mustExec(t, admin, `INSERT INTO trove.deb_remote_indexes (repo_id, dir, path, sha256, entries, parsed_at) VALUES ($1, 'dists/bookworm', $2, $3, 1, now() - make_interval(mins => $4))`,
+			mustExec(t, admin, `INSERT INTO quader.deb_remote_indexes (repo_id, dir, path, sha256, entries, parsed_at) VALUES ($1, 'dists/bookworm', $2, $3, 1, now() - make_interval(mins => $4))`,
 				remote, idx, hash(byte(10+i)), 10-5*i)
-			mustExec(t, admin, `INSERT INTO trove.deb_remote_entries (repo_id, dir, index_path, package, version, architecture, path, sha256, size)
+			mustExec(t, admin, `INSERT INTO quader.deb_remote_entries (repo_id, dir, index_path, package, version, architecture, path, sha256, size)
 				VALUES ($1, 'dists/bookworm', $2, 'hello', '2.10-3', 'amd64', $3, $4, $5)`, remote, idx, path, hash(byte(20+i)), 1000+i)
 		}
 		r := lookup(remote, "deb_remote", path)

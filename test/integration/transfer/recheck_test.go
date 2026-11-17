@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_AUTHZ_015_ADeployIsDecidedAgainWhenItCommits removes the grant of a
@@ -51,7 +51,7 @@ func TestR_AUTHZ_015_ADeployIsDecidedAgainWhenItCommits(t *testing.T) {
 		_ = pw.Close()
 		return <-done
 	}
-	content := strings.Repeat("trove-", 4096)
+	content := strings.Repeat("quader-", 4096)
 
 	t.Run("R-AUTHZ-015 a new file is refused at commit", func(t *testing.T) {
 		grant()

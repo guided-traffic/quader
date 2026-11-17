@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/auth/oidc"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/auth/oidc"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The user operations of R-AUTH-016 and R-AUTH-017. The handlers are thin: the

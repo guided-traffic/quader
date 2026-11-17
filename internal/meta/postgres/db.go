@@ -13,9 +13,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // DB holds the connection classes of one replica (R-ARCH-019).
@@ -121,7 +121,7 @@ func Open(ctx context.Context, cfg config.Database, instance, role string, log *
 	if role == meta.RoleBackup {
 		// The backup pod's one pooled connection is its control connection (run row, heartbeat, pins): class backup, on the
 		// session host, shared by the request path and the control path. The snapshot and export connections come on top of
-		// it, so a run holds 2 + backup.database.parallel connections, all named trove:<pod>:backup (R-BAK-005).
+		// it, so a run holds 2 + backup.database.parallel connections, all named quader:<pod>:backup (R-BAK-005).
 		if err := db.openBackupPool(ctx, common, pool); err != nil {
 			return nil, err
 		}
@@ -287,7 +287,7 @@ type PoolStats struct {
 // Stats are the pool counts of the three classes; Lease is zero on a web replica.
 type Stats struct{ Main, Control, Lease PoolStats }
 
-// Stats reports the pool counts for the trove_db_pool_* metrics.
+// Stats reports the pool counts for the quader_db_pool_* metrics.
 func (db *DB) Stats() Stats {
 	conv := func(p *pgxpool.Pool) PoolStats {
 		if p == nil {

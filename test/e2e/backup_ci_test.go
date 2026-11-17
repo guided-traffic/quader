@@ -4,7 +4,7 @@ package e2e
 
 // The CI part of TestBackupJournal (E5.12, R-CI-020, R-CI-018, R-CI-029, R-HA-054): an issuer of the issuer double with single-use
 // subject tokens and four mappings of its system tier, a mapping disabled after the snapshot, and a subject token issued before the
-// restore finished. The issuer double is started by the set backup (TROVE_E2E_OIDCSTUB=1, deploy/dev/e2e.sh). The restored installation
+// restore finished. The issuer double is started by the set backup (QUADER_E2E_OIDCSTUB=1, deploy/dev/e2e.sh). The restored installation
 // has the source's base URL and the dev CA (restore-ns.sh, values-restore.yaml), so it accepts the source's audience and verifies the
 // double's certificate.
 
@@ -43,7 +43,7 @@ type bakCI struct {
 func bakCISetup(t *testing.T, adm *api, run string) *bakCI {
 	t.Helper()
 	c := &bakCI{
-		dbl:      double(t, "oidcstub", "TROVE_E2E_OIDCSTUB_HOST"),
+		dbl:      double(t, "oidcstub", "QUADER_E2E_OIDCSTUB_HOST"),
 		issuer:   "bak-ci-" + run,
 		audience: "https://localhost:" + edgePort(t),
 		mappings: [4]string{"m0", "m1", "m2", "m3"},
@@ -158,7 +158,7 @@ func ciGranted(t testing.TB, r reply) []string {
 	if r.Status != 200 {
 		t.Fatalf("the exchange answered %s, want 200", r)
 	}
-	if err := json.Unmarshal(r.Body, &g); err != nil || !strings.HasPrefix(g.Token, "trv_cit_") {
+	if err := json.Unmarshal(r.Body, &g); err != nil || !strings.HasPrefix(g.Token, "qdr_cit_") {
 		t.Fatalf("the exchange's answer is no token: %v %s", err, r)
 	}
 	return g.Mappings
@@ -182,6 +182,6 @@ func bakCIWaitPastSkew(t *testing.T) {
 	t.Helper()
 	waitFor(t, "the restored installation's clock to pass restored_at plus the clock skew", 2*time.Minute, time.Second, func() bool {
 		return krSQL(t, fmt.Sprintf(`SELECT coalesce((SELECT extract(epoch FROM now() - (value #>> '{}')::timestamptz) > %d
-			FROM trove.system_state WHERE key = 'restored_at'), false)`, bakCISkew+1)) == "t"
+			FROM quader.system_state WHERE key = 'restored_at'), false)`, bakCISkew+1)) == "t"
 	})
 }

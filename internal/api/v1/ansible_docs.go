@@ -12,21 +12,21 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/ansible/docgen"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/packages/readme"
-	"github.com/guided-traffic/trove/internal/packages/view"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/ansible/docgen"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/packages/readme"
+	"github.com/guided-traffic/quader/internal/packages/view"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The documentation operations of the screens (R-ANS-036, R-UI-060 to R-UI-064, Q-API-260 to Q-API-269): the tree, one entry and one file
-// of the documentation of a package version. Each is declared wiki content in the document (x-trove-part: wiki, [Operation.Part]) and
+// of the documentation of a package version. Each is declared wiki content in the document (x-quader-part: wiki, [Operation.Part]) and
 // reads rows only, never an upstream.
 
 // The bounds of the operations (R-ANS-036).

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 func TestNuGetVirtual(t *testing.T) {

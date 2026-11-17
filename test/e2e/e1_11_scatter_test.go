@@ -309,9 +309,9 @@ func TestE1_11Scatter(t *testing.T) {
 // r042Suite is the acceptance suite of R-AUTH-042 in one mode. logins is the number of browser logins; flush
 // runs valkey-cli FLUSHALL at the points where a lost counter or marker could hurt.
 func r042Suite(t *testing.T, adm *api, mode string, logins int, flush bool) {
-	alicePw := secretValue(t, "trove-keycloak", "alice-password")
-	bobPw := secretValue(t, "trove-keycloak", "bob-password")
-	bgPw := secretValue(t, "trove-break-glass", "password")
+	alicePw := secretValue(t, "quader-keycloak", "alice-password")
+	bobPw := secretValue(t, "quader-keycloak", "bob-password")
+	bgPw := secretValue(t, "quader-break-glass", "password")
 	flushall := func() {
 		if flush {
 			valkeyPrimaryCLI(t, "flushall")
@@ -432,9 +432,9 @@ func r042Suite(t *testing.T, adm *api, mode string, logins int, flush bool) {
 	t.Run(mode+" re-authentication, logout", func(t *testing.T) {
 		b := newBrowser(t)
 		b.oidcLogin("bob", bobPw)
-		oldSession := b.cookie("__Host-trv_session")
+		oldSession := b.cookie("__Host-qdr_session")
 		// A session that signed in two hours ago may not mint tokens (R-AUTH-011).
-		sql(t, `UPDATE trove.ui_session SET authenticated_at = now() - interval '2 hours' WHERE id IN (SELECT s.id FROM trove.ui_session s JOIN trove.principal p ON p.id = s.principal_id WHERE p.kind = 'user' AND p.name = 'bob' AND s.ended_at IS NULL)`)
+		sql(t, `UPDATE quader.ui_session SET authenticated_at = now() - interval '2 hours' WHERE id IN (SELECT s.id FROM quader.ui_session s JOIN quader.principal p ON p.id = s.principal_id WHERE p.kind = 'user' AND p.name = 'bob' AND s.ended_at IS NULL)`)
 		time.Sleep(4 * time.Second) // the session caches of the replicas re-read within their poll
 		tokenReq := map[string]any{"description": "e2e reauth", "ttlSeconds": 600, "scope": map[string]any{"inherit": true}}
 		for i := 0; i < 3; i++ {
@@ -451,7 +451,7 @@ func r042Suite(t *testing.T, adm *api, mode string, logins int, flush bool) {
 		b.do(http.MethodPost, "/api/v1/tokens", tokenReq).want(t, "a token after the re-authentication", 201)
 		sessionEnded(t, oldSession) // the session the re-authentication replaced
 		// logout, then the cookie is dead on every replica
-		sess := b.cookie("__Host-trv_session")
+		sess := b.cookie("__Host-qdr_session")
 		b.do(http.MethodPost, "/auth/logout", nil).want(t, "logout", 200)
 		sessionEnded(t, sess)
 	})
@@ -519,10 +519,10 @@ func (b *browser) reauth(password string) loginTrace {
 // The suite needs `npm ci` in web/ and `npx playwright install --with-deps chromium` on the host (CI does both in
 // the e2e job; docs/developer/e2e.md); without them this test fails and says what to run, it does not skip.
 //
-// The contract with the suite: base URL TROVE_E2E_EDGE_URL, the dev CA in NODE_EXTRA_CA_CERTS (the suite verifies
-// the edge and the IdP against it), TROVE_E2E_KEYCLOAK_ADDR (the address of a port-forward to the test IdP's
-// Service, to which the browser maps the issuer's name), the passwords in TROVE_E2E_ALICE_PASSWORD,
-// TROVE_E2E_BOB_PASSWORD and TROVE_E2E_BREAKGLASS_PASSWORD, the administrator token in TROVE_E2E_ADMIN_TOKEN.
+// The contract with the suite: base URL QUADER_E2E_EDGE_URL, the dev CA in NODE_EXTRA_CA_CERTS (the suite verifies
+// the edge and the IdP against it), QUADER_E2E_KEYCLOAK_ADDR (the address of a port-forward to the test IdP's
+// Service, to which the browser maps the issuer's name), the passwords in QUADER_E2E_ALICE_PASSWORD,
+// QUADER_E2E_BOB_PASSWORD and QUADER_E2E_BREAKGLASS_PASSWORD, the administrator token in QUADER_E2E_ADMIN_TOKEN.
 func TestE1_11Journeys(t *testing.T) {
 	dir := filepath.Join(cfg.repo, "web", "e2e")
 	if _, err := os.Stat(filepath.Join(dir, "playwright.config.ts")); err != nil {
@@ -538,26 +538,26 @@ func TestE1_11Journeys(t *testing.T) {
 	adm.do(http.MethodPost, "/api/v1/users/admin/unlock", nil).want(t, "unlock break-glass", 204)
 	// The journey 13-ci registers the issuer double and exchanges an ID token: the Go side mints the tokens, which carry the claim set of a
 	// protected tag of the example project, recorded from the real thing (ci_env_test.go), and passes them with the issuer URL.
-	dbl := double(t, "oidcstub", "TROVE_E2E_OIDCSTUB_HOST")
+	dbl := double(t, "oidcstub", "QUADER_E2E_OIDCSTUB_HOST")
 	nonce := time.Now().UnixNano() % 1_000_000_000
 	mintCI := func(n int64) string {
 		c := protectedTag(t, "v1.4.0").with(map[string]any{"aud": cfg.edgeURL, "job_id": fmt.Sprint(nonce*10 + n), "pipeline_id": fmt.Sprint(nonce)})
 		return dbl.mint(t, c.set, c.remove)
 	}
-	// TROVE_E2E_PLAYWRIGHT_ARGS narrows a run while a journey is written (for example `tests/13-ci.spec.ts`); a set of CI never sets it.
-	cmd := exec.Command("npx", append([]string{"playwright", "test"}, strings.Fields(os.Getenv("TROVE_E2E_PLAYWRIGHT_ARGS"))...)...)
+	// QUADER_E2E_PLAYWRIGHT_ARGS narrows a run while a journey is written (for example `tests/13-ci.spec.ts`); a set of CI never sets it.
+	cmd := exec.Command("npx", append([]string{"playwright", "test"}, strings.Fields(os.Getenv("QUADER_E2E_PLAYWRIGHT_ARGS"))...)...)
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(),
-		"TROVE_E2E_OIDCSTUB_ISSUER="+dbl.issuer(),
-		"TROVE_E2E_CI_TOKEN_PASTE="+mintCI(1),
-		"TROVE_E2E_CI_TOKEN_EXCHANGE="+mintCI(2),
-		"TROVE_E2E_EDGE_URL="+cfg.edgeURL,
-		"TROVE_E2E_KEYCLOAK_ADDR="+keycloakAddr(t),
+		"QUADER_E2E_OIDCSTUB_ISSUER="+dbl.issuer(),
+		"QUADER_E2E_CI_TOKEN_PASTE="+mintCI(1),
+		"QUADER_E2E_CI_TOKEN_EXCHANGE="+mintCI(2),
+		"QUADER_E2E_EDGE_URL="+cfg.edgeURL,
+		"QUADER_E2E_KEYCLOAK_ADDR="+keycloakAddr(t),
 		"NODE_EXTRA_CA_CERTS="+cfg.caFile,
-		"TROVE_E2E_ALICE_PASSWORD="+secretValue(t, "trove-keycloak", "alice-password"),
-		"TROVE_E2E_BOB_PASSWORD="+secretValue(t, "trove-keycloak", "bob-password"),
-		"TROVE_E2E_BREAKGLASS_PASSWORD="+secretValue(t, "trove-break-glass", "password"),
-		"TROVE_E2E_ADMIN_TOKEN="+adminToken(t),
+		"QUADER_E2E_ALICE_PASSWORD="+secretValue(t, "quader-keycloak", "alice-password"),
+		"QUADER_E2E_BOB_PASSWORD="+secretValue(t, "quader-keycloak", "bob-password"),
+		"QUADER_E2E_BREAKGLASS_PASSWORD="+secretValue(t, "quader-break-glass", "password"),
+		"QUADER_E2E_ADMIN_TOKEN="+adminToken(t),
 	)
 	reportFile := filepath.Join(cfg.repo, ".out", "playwright", "results.json")
 	_ = os.Remove(reportFile)

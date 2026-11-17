@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 var teamLocal = qname.Repo{Project: "web", Key: "team-local"}

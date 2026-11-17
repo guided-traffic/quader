@@ -42,10 +42,10 @@ function valueFor(previous: unknown, text: string): unknown {
  * the dry run covers the project's tier only (Q-CI-26).
  */
 @Component({
-  selector: 'trove-ci-claim-tester',
+  selector: 'quader-ci-claim-tester',
   imports: [PageHeader, ErrorNotice, CiWarnings, SelectField],
   template: `
-    <trove-page-header heading="Claim tester" i18n-heading="@@ci.test.heading" />
+    <quader-page-header heading="Claim tester" i18n-heading="@@ci.test.heading" />
     <p class="subject dot-separated" translate="no">
       @if (project(); as key) {
         <span>{{ key }}</span>
@@ -57,10 +57,10 @@ function valueFor(previous: unknown, text: string): unknown {
     </p>
 
     @if (project() && !issuer()) {
-      <trove-select-field i18n-label="@@ci.test.issuer" label="Issuer" name="issuer" [options]="issuerOptions()" [loading]="issuersLoading() ? loadingIssuers : null" [value]="issuerChoice()" (valueChange)="issuerChoice.set($event)" />
+      <quader-select-field i18n-label="@@ci.test.issuer" label="Issuer" name="issuer" [options]="issuerOptions()" [loading]="issuersLoading() ? loadingIssuers : null" [value]="issuerChoice()" (valueChange)="issuerChoice.set($event)" />
     }
     @if (loadError(); as e) {
-      <trove-error-notice [error]="e" />
+      <quader-error-notice [error]="e" />
     }
 
     <section class="card" aria-labelledby="ci-t-input">
@@ -123,7 +123,7 @@ function valueFor(previous: unknown, text: string): unknown {
     </section>
 
     @if (error(); as e) {
-      <trove-error-notice [error]="e" />
+      <quader-error-notice [error]="e" />
     }
 
     @if (result(); as r) {
@@ -220,14 +220,14 @@ function valueFor(previous: unknown, text: string): unknown {
           <h3 i18n="@@ci.test.token">The token that would be issued</h3>
           <dl class="facts">
             <dt i18n="@@ci.test.token-type">Type</dt>
-            <dd><code translate="no">trv_cit_…</code> <ng-container i18n="@@ci.test.token-type-text">(CI token)</ng-container></dd>
+            <dd><code translate="no">qdr_cit_…</code> <ng-container i18n="@@ci.test.token-type-text">(CI token)</ng-container></dd>
             <dt i18n="@@ci.test.token-scope">Scope</dt>
             <dd translate="no">{{ r.scope || '–' }}</dd>
             <dt i18n="@@ci.test.token-lifetime">Lifetime</dt>
             <dd>{{ r.ttlSeconds ? lifetime(r.ttlSeconds) : '–' }}</dd>
           </dl>
         }
-        <trove-ci-warnings [warnings]="r.warnings ?? []" />
+        <quader-ci-warnings [warnings]="r.warnings ?? []" />
       </section>
     }
   `,
@@ -235,40 +235,40 @@ function valueFor(previous: unknown, text: string): unknown {
   styles: `
     .block-label {
       display: block;
-      margin-block: var(--trove-space-2) var(--trove-space-1);
-      font: var(--trove-type-label-large);
+      margin-block: var(--quader-space-2) var(--quader-space-1);
+      font: var(--quader-type-label-large);
     }
     .claims-input {
       box-sizing: border-box;
       inline-size: 100%;
-      padding: var(--trove-space-2);
-      border: 1px solid var(--trove-border-strong);
-      border-radius: var(--trove-radius-s);
-      background: var(--trove-surface-raised);
-      color: var(--trove-on-surface);
-      font-family: var(--trove-font-mono);
+      padding: var(--quader-space-2);
+      border: 1px solid var(--quader-border-strong);
+      border-radius: var(--quader-radius-s);
+      background: var(--quader-surface-raised);
+      color: var(--quader-on-surface);
+      font-family: var(--quader-font-mono);
       font-size: 0.8125rem;
     }
     .view-switch {
       display: inline-flex;
-      gap: var(--trove-space-1);
-      margin-block-end: var(--trove-space-2);
+      gap: var(--quader-space-1);
+      margin-block-end: var(--quader-space-2);
     }
     .view-switch .switch[aria-pressed='true'] {
-      background: var(--trove-accent-container);
-      color: var(--trove-on-accent-container);
+      background: var(--quader-accent-container);
+      color: var(--quader-on-accent-container);
       font-weight: 600;
     }
     .claim-rows {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-2);
-      margin-block-end: var(--trove-space-2);
+      gap: var(--quader-space-2);
+      margin-block-end: var(--quader-space-2);
     }
     .claim-row {
       display: grid;
       grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 2fr) auto;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       align-items: center;
     }
     .claim-field {
@@ -277,59 +277,59 @@ function valueFor(previous: unknown, text: string): unknown {
     .claim-input {
       box-sizing: border-box;
       inline-size: 100%;
-      padding: var(--trove-space-2);
-      border: 1px solid var(--trove-border-strong);
-      border-radius: var(--trove-radius-s);
-      background: var(--trove-surface-raised);
-      color: var(--trove-on-surface);
-      font-family: var(--trove-font-mono);
+      padding: var(--quader-space-2);
+      border: 1px solid var(--quader-border-strong);
+      border-radius: var(--quader-radius-s);
+      background: var(--quader-surface-raised);
+      color: var(--quader-on-surface);
+      font-family: var(--quader-font-mono);
       font-size: 0.8125rem;
     }
     .hint {
       display: flex;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       align-items: flex-start;
-      margin-block: var(--trove-space-2);
-      padding: var(--trove-space-2) var(--trove-space-3);
-      border: 1px solid var(--trove-border-strong);
-      border-radius: var(--trove-radius-s);
+      margin-block: var(--quader-space-2);
+      padding: var(--quader-space-2) var(--quader-space-3);
+      border: 1px solid var(--quader-border-strong);
+      border-radius: var(--quader-radius-s);
     }
     .hint.warn {
-      border-color: var(--trove-status-warn);
+      border-color: var(--quader-status-warn);
     }
     .verdict {
       display: flex;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       align-items: center;
-      font: var(--trove-type-title-medium);
+      font: var(--quader-type-title-medium);
     }
     h3 {
-      margin: var(--trove-space-4) 0 var(--trove-space-2);
-      font: var(--trove-type-title-small);
+      margin: var(--quader-space-4) 0 var(--quader-space-2);
+      font: var(--quader-type-title-small);
     }
     .candidate {
-      margin-block: var(--trove-space-2);
-      padding: var(--trove-space-2) var(--trove-space-3);
-      border: 1px solid var(--trove-border);
-      border-radius: var(--trove-radius-m);
+      margin-block: var(--quader-space-2);
+      padding: var(--quader-space-2) var(--quader-space-3);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-m);
     }
     .candidate.picked {
-      border-color: var(--trove-accent);
+      border-color: var(--quader-accent);
     }
     .candidate-head {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-3);
+      gap: var(--quader-space-3);
       align-items: center;
       margin: 0;
     }
     tr.failed th,
     tr.failed td {
-      background: color-mix(in srgb, var(--trove-status-bad) 8%, transparent);
+      background: color-mix(in srgb, var(--quader-status-bad) 8%, transparent);
     }
     .grant-list {
       margin: 0;
-      padding-inline-start: var(--trove-space-4);
+      padding-inline-start: var(--quader-space-4);
     }
   `,
 })

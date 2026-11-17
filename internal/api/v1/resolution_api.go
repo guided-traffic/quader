@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/virtual"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/virtual"
 )
 
 // The resolution explanation of a virtual repository (R-REPO-019): GET

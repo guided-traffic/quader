@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Management API conventions (M1, WP1.6): idempotency keys (R-API-014), the
 -- caller's UI preferences (R-API-021) and the canary rows of the stored-secret

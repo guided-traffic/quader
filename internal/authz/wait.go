@@ -14,7 +14,7 @@ const waitTick = 10 * time.Millisecond
 //
 // The index must be confirmed current (staler than authz.cache.max_staleness it
 // is not used, the request waits for a confirmation like it waits for the
-// database) and, when the request carries Trove-Authz-Min-Epoch, at least as new
+// database) and, when the request carries Quader-Authz-Min-Epoch, at least as new
 // as the epoch named. A request without a credential ignores the header.
 func (e *Engine) forRequest(ctx context.Context, sub Subject) (*Index, *Decision) {
 	arrived := time.Now()

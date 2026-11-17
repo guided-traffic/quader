@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // fakeTokens is a token validator over a table of token values.
@@ -200,14 +200,14 @@ func TestR_AUTH_001_PrecedenceAndNoFallThrough(t *testing.T) {
 	t.Run("R-AUTH-001 an expired token is 401 and never the anonymous response", func(t *testing.T) {
 		_, err := s.Authenticate(req("GET", "/api/npm/npm-all/lodash", "Authorization", "Bearer "+expired), defaultRules())
 		e := wantErr(t, err, 401, errs.CodeInvalidToken)
-		if e.Challenge != `Basic realm="trove"` {
+		if e.Challenge != `Basic realm="quader"` {
 			t.Fatalf("package endpoints challenge with Basic: %q", e.Challenge)
 		}
 	})
 	t.Run("R-AUTH-002 the management API challenge names invalid_token", func(t *testing.T) {
 		_, err := s.Authenticate(req("GET", "/api/v1/tokens", "Authorization", "Bearer "+expired), defaultRules())
 		e := wantErr(t, err, 401, errs.CodeInvalidToken)
-		if e.Challenge != `Bearer realm="trove", error="invalid_token"` {
+		if e.Challenge != `Bearer realm="quader", error="invalid_token"` {
 			t.Fatalf("challenge %q", e.Challenge)
 		}
 	})
@@ -315,7 +315,7 @@ func TestR_AUTH_037_AnonymousAccess(t *testing.T) {
 	t.Run("R-AUTH-037 a closed endpoint: a package request without credentials is 401 with the Basic challenge", func(t *testing.T) {
 		_, err := on.Authenticate(req("GET", "/api/npm/npm-all/lodash"), closedRules())
 		e := wantErr(t, err, 401, errs.CodeCredentialsRequired)
-		if e.Challenge != `Basic realm="trove"` {
+		if e.Challenge != `Basic realm="quader"` {
 			t.Fatalf("challenge %q", e.Challenge)
 		}
 	})
@@ -325,13 +325,13 @@ func TestR_AUTH_037_AnonymousAccess(t *testing.T) {
 			hdr  []string
 			want string
 		}{
-			{"/files/generic-local/a.bin", nil, `Basic realm="trove"`},
-			{"/api/npm/npm-all/lodash", nil, `Basic realm="trove"`},
-			{"/files/generic-local/a.bin", []string{"Sec-Fetch-Mode", "navigate", "Sec-Fetch-Dest", "document"}, `Bearer realm="trove"`},
-			{"/api/npm/npm-all/lodash", []string{"Sec-Fetch-Mode", "cors"}, `Bearer realm="trove"`},
-			{"/favicon.ico", []string{"Sec-Fetch-Dest", "image"}, `Bearer realm="trove"`},
-			{"/favicon.ico", nil, `Bearer realm="trove"`},
-			{"/robots.txt", nil, `Bearer realm="trove"`},
+			{"/files/generic-local/a.bin", nil, `Basic realm="quader"`},
+			{"/api/npm/npm-all/lodash", nil, `Basic realm="quader"`},
+			{"/files/generic-local/a.bin", []string{"Sec-Fetch-Mode", "navigate", "Sec-Fetch-Dest", "document"}, `Bearer realm="quader"`},
+			{"/api/npm/npm-all/lodash", []string{"Sec-Fetch-Mode", "cors"}, `Bearer realm="quader"`},
+			{"/favicon.ico", []string{"Sec-Fetch-Dest", "image"}, `Bearer realm="quader"`},
+			{"/favicon.ico", nil, `Bearer realm="quader"`},
+			{"/robots.txt", nil, `Bearer realm="quader"`},
 		} {
 			_, err := on.Authenticate(req("GET", tc.path, tc.hdr...), closedRules())
 			e := wantErr(t, err, 401, errs.CodeCredentialsRequired)
@@ -369,7 +369,7 @@ func TestR_AUTH_037_AnonymousAccess(t *testing.T) {
 		} {
 			_, err := on.Authenticate(req(c.m, c.p), defaultRules())
 			e := wantErr(t, err, 401, errs.CodeCredentialsRequired)
-			if e.Challenge != `Bearer realm="trove"` {
+			if e.Challenge != `Bearer realm="quader"` {
 				t.Errorf("%s %s: challenge %q, the one of /api/v1", c.m, c.p, e.Challenge)
 			}
 		}
@@ -593,7 +593,7 @@ func TestQ_ARCH_306_EveryPathRuleOfTheStageAsksWhetherTheFamilyIsServed(t *testi
 	s := newStage(ft, Options{Sessions: ended})
 	ep := closedRules()
 	ep.Served = servedBy("packages")
-	if got := outcomeOf(s.Authenticate(req("GET", "/files/generic-local/a.bin"), ep)); got.Challenge != `Basic realm="trove"` {
+	if got := outcomeOf(s.Authenticate(req("GET", "/files/generic-local/a.bin"), ep)); got.Challenge != `Basic realm="quader"` {
 		t.Errorf("/files/ on packages: %+v, want the Basic challenge", got)
 	}
 	r := req("GET", "/files/generic-local/a.bin")
@@ -602,7 +602,7 @@ func TestQ_ARCH_306_EveryPathRuleOfTheStageAsksWhetherTheFamilyIsServed(t *testi
 		t.Errorf("an ended session on a served /files/: %+v, want session_expired", got)
 	}
 	ep.Served = servedBy("api")
-	if got := outcomeOf(s.Authenticate(req("GET", "/api/v1/x", "Authorization", "Bearer "+unknownPAT), ep)); got.Challenge != `Bearer realm="trove", error="invalid_token"` {
+	if got := outcomeOf(s.Authenticate(req("GET", "/api/v1/x", "Authorization", "Bearer "+unknownPAT), ep)); got.Challenge != `Bearer realm="quader", error="invalid_token"` {
 		t.Errorf("a rejected token on a served /api/v1: %+v", got)
 	}
 }

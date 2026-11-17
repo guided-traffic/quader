@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/dispatch"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/config"
-	ocidata "github.com/guided-traffic/trove/internal/formatdata/oci"
-	"github.com/guided-traffic/trove/internal/formathost"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/packages"
+	"github.com/guided-traffic/quader/internal/api/dispatch"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/config"
+	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
+	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/packages"
 )
 
 // newOCIJobFixture is newOCIFixture with a worker and storage.delete.max_sync_items 1, so every subtree delete is a job.

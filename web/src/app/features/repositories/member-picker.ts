@@ -16,7 +16,7 @@ export type MemberClass = 'local' | 'remote' | 'unknown';
  * member yet is offered. A refusal of the server at `/virtual/members/<i>` is shown on that member (`errorAt`).
  */
 @Component({
-  selector: 'trove-member-picker',
+  selector: 'quader-member-picker',
   imports: [Listbox, Option],
   host: { '(keydown)': 'onMemberKey($event)' },
   template: `
@@ -93,14 +93,14 @@ export type MemberClass = 'local' | 'remote' | 'unknown';
       display: block;
     }
     h3 {
-      margin-block: 0 var(--trove-space-1);
-      font: var(--trove-type-title-small);
+      margin-block: 0 var(--quader-space-1);
+      font: var(--quader-type-title-small);
     }
     .lists {
       display: flex;
       flex-wrap: wrap;
       align-items: flex-start;
-      gap: var(--trove-space-4);
+      gap: var(--quader-space-4);
     }
     .list {
       flex: 1 1 16rem;
@@ -110,28 +110,28 @@ export type MemberClass = 'local' | 'remote' | 'unknown';
       min-block-size: 8rem;
       max-block-size: 20rem;
       overflow-y: auto;
-      border: 1px solid var(--trove-border);
-      border-radius: var(--trove-radius-m);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-m);
     }
     /* One row per repository: the position, the key that wraps in its own column, the class; an error under them. */
     .option {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: baseline;
-      column-gap: var(--trove-space-2);
-      padding: var(--trove-space-1) var(--trove-space-3);
+      column-gap: var(--quader-space-2);
+      padding: var(--quader-space-1) var(--quader-space-3);
       cursor: pointer;
     }
     .option > :first-child:not(.position) {
       grid-column: 1 / 3;
     }
     .option[aria-selected='true'] {
-      background: var(--trove-btn-tertiary-bg-hover);
+      background: var(--quader-btn-tertiary-bg-hover);
       font-weight: 600;
     }
     .option:focus-visible,
     .option[data-active='true'] {
-      outline: 2px solid var(--trove-focus-ring, currentColor);
+      outline: 2px solid var(--quader-focus-ring, currentColor);
       outline-offset: -2px;
     }
     .member-key {
@@ -139,25 +139,25 @@ export type MemberClass = 'local' | 'remote' | 'unknown';
     }
     .position {
       min-inline-size: 2ch;
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
     .class-tag {
-      color: var(--trove-text-muted);
-      font: var(--trove-type-body-small);
+      color: var(--quader-text-muted);
+      font: var(--quader-type-body-small);
     }
     .buttons {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       align-self: center;
     }
     .field-error {
       grid-column: 1 / -1;
-      color: var(--trove-status-bad);
-      font: var(--trove-type-body-small);
+      color: var(--quader-status-bad);
+      font: var(--quader-type-body-small);
     }
     .hint {
-      margin-block: var(--trove-space-1) 0;
+      margin-block: var(--quader-space-1) 0;
     }
     @media (max-width: 40rem) {
       .buttons {

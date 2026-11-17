@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // entry is the catalog entry of the format with the classes of the full format, so that the settings of every class are validated.
@@ -43,7 +43,7 @@ func TestSettingsSchema(t *testing.T) {
 		doc   string
 		want  []violation
 	}{
-		{"defaults of a local repository", formats.Local, `{"architectures":["amd64","arm64"],"compression":[],"origin":"trove","label":"deb-local"}`, nil},
+		{"defaults of a local repository", formats.Local, `{"architectures":["amd64","arm64"],"compression":[],"origin":"quader","label":"deb-local"}`, nil},
 		{"xz", formats.Local, `{"compression":["xz"]}`, nil},
 		{"bzip2 is not offered", formats.Local, `{"compression":["bz2"]}`, []violation{{"/compression/0", "invalid_value"}}},
 		{"all is not an architecture setting", formats.Local, `{"architectures":["all"]}`, []violation{{"/architectures/0", "invalid_value"}}},
@@ -105,7 +105,7 @@ func contains(list []violation, v violation) bool {
 // The defaults of R-DEB-008 and R-DEB-024 for what a document leaves out.
 func TestSettingsOfDefaults(t *testing.T) {
 	want := Settings{
-		Architectures: []string{"amd64", "arm64"}, Compression: []string{}, Origin: "trove", Suites: []string{}, Components: []string{"main"},
+		Architectures: []string{"amd64", "arm64"}, Compression: []string{}, Origin: "quader", Suites: []string{}, Components: []string{"main"},
 		Mirror: MirrorSettings{Suites: []string{}, Components: []string{"main"}, Architectures: []string{"amd64"}, Translations: []string{"en"}},
 	}
 	for _, member := range []json.RawMessage{nil, json.RawMessage(`{}`), json.RawMessage(`not json`)} {
@@ -114,7 +114,7 @@ func TestSettingsOfDefaults(t *testing.T) {
 		}
 	}
 	got := SettingsOf(json.RawMessage(`{"architectures":["riscv64"],"label":"mine","mirror":{"suites":["noble"],"sources":true}}`))
-	if got.Architectures[0] != "riscv64" || got.Label != "mine" || got.Origin != "trove" || got.Mirror.Suites[0] != "noble" || !got.Mirror.Sources || got.Mirror.Components[0] != "main" {
+	if got.Architectures[0] != "riscv64" || got.Label != "mine" || got.Origin != "quader" || got.Mirror.Suites[0] != "noble" || !got.Mirror.Sources || got.Mirror.Components[0] != "main" {
 		t.Errorf("SettingsOf = %+v", got)
 	}
 }

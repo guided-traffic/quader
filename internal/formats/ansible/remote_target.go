@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection"
-	"github.com/guided-traffic/trove/internal/formats/ansible/version"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
+	"github.com/guided-traffic/quader/internal/formats/ansible/version"
 )
 
 // docKind is the document or file a canonical path of a remote repository addresses (R-ANS-002).

@@ -5,5 +5,5 @@
 #   PODMAN_IMAGE   E2E_OCICLIENTS_PODMAN_IMAGE of tools/versions.env (pinned by digest)
 ARG PODMAN_IMAGE
 FROM ${PODMAN_IMAGE}
-COPY entrypoint-podman.sh /usr/local/bin/trove-entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/trove-entrypoint.sh"]
+COPY entrypoint-podman.sh /usr/local/bin/quader-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/quader-entrypoint.sh"]

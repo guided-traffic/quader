@@ -3,7 +3,7 @@ package deb
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The classification of R-DEB-003, by path and file name only.
@@ -18,7 +18,7 @@ func TestClassify(t *testing.T) {
 			"a pool file with a plus in the version", "pool/libx/libxml2/libxml2-utils_2.9.14+dfsg-1.3_amd64.deb",
 			formats.PathInfo{Kind: formats.Content, Package: "libxml2-utils", Version: "2.9.14+dfsg-1.3"},
 		},
-		{"an architecture-independent file", "pool/main/t/trove-hello/trove-hello_1.0_all.deb", formats.PathInfo{Kind: formats.Content, Package: "trove-hello", Version: "1.0"}},
+		{"an architecture-independent file", "pool/main/q/quader-hello/quader-hello_1.0_all.deb", formats.PathInfo{Kind: formats.Content, Package: "quader-hello", Version: "1.0"}},
 		{"a file of a member", "members/deb-local/pool/h/hello/hello_2.10-3_amd64.deb", formats.PathInfo{Kind: formats.Content, Package: "hello", Version: "2.10-3"}},
 		{"a pool file whose name has not the form gets a routing name", "pool/h/hello/hello-extra.deb", formats.PathInfo{Kind: formats.Content}},
 		{"a pool file with one underscore", "pool/h/hello/hello_2.10-3.deb", formats.PathInfo{Kind: formats.Content, RoutingName: "hello"}},
@@ -31,14 +31,14 @@ func TestClassify(t *testing.T) {
 		{"a by-hash file", "dists/stable/main/binary-amd64/by-hash/SHA256/" + zeros, formats.PathInfo{Kind: formats.Content}},
 		{"a pdiff patch", "dists/bookworm/main/binary-amd64/Packages.diff/2026-11-08-0000.00.gz", formats.PathInfo{Kind: formats.PathMetadata}},
 		{"the signing key", "signing-key.asc", formats.PathInfo{Kind: formats.PathComputed}},
-		{"a flat package file", "binary/trove-hello_1.0_all.deb", formats.PathInfo{Kind: formats.Content, Package: "trove-hello", Version: "1.0"}},
+		{"a flat package file", "binary/quader-hello_1.0_all.deb", formats.PathInfo{Kind: formats.Content, Package: "quader-hello", Version: "1.0"}},
 		{"a flat index", "binary/Packages.gz", formats.PathInfo{Kind: formats.PathMetadata}},
 		{"a flat Sources index", "binary/Sources.xz", formats.PathInfo{Kind: formats.PathMetadata}},
 		{"a flat Contents index", "binary/Contents-amd64.gz", formats.PathInfo{Kind: formats.PathMetadata}},
 		{"a flat translation", "binary/Translation-en.bz2", formats.PathInfo{Kind: formats.PathMetadata}},
 		{"a flat release", "binary/InRelease", formats.PathInfo{Kind: formats.PathMetadata}},
 		{"the flat root release", "InRelease", formats.PathInfo{Kind: formats.PathMetadata}},
-		{"the flat root package", "trove-hello_1.0_all.deb", formats.PathInfo{Kind: formats.Content, Package: "trove-hello", Version: "1.0"}},
+		{"the flat root package", "quader-hello_1.0_all.deb", formats.PathInfo{Kind: formats.Content, Package: "quader-hello", Version: "1.0"}},
 		{"a flat Index of a diff directory", "binary/Packages.diff/Index", formats.PathInfo{Kind: formats.PathMetadata}},
 	}
 	for _, c := range cases {
@@ -56,7 +56,7 @@ func TestPoolPath(t *testing.T) {
 	cases := []struct{ source, pkg, version, arch, want string }{
 		{"hello", "hello", "2.10-3", "amd64", "pool/h/hello/hello_2.10-3_amd64.deb"},
 		{"libxml2", "libxml2-utils", "2.9.14+dfsg-1.3", "amd64", "pool/libx/libxml2/libxml2-utils_2.9.14+dfsg-1.3_amd64.deb"},
-		{"", "trove-hello", "1:1.0-1", "all", "pool/t/trove-hello/trove-hello_1.0-1_all.deb"},
+		{"", "quader-hello", "1:1.0-1", "all", "pool/q/quader-hello/quader-hello_1.0-1_all.deb"},
 		{"lib", "lib", "1.0", "amd64", "pool/lib/lib/lib_1.0_amd64.deb"},
 		{"libc", "libc6", "2.36-9", "arm64", "pool/libc/libc/libc6_2.36-9_arm64.deb"},
 	}

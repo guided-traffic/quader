@@ -4,16 +4,16 @@ import (
 	"context"
 	"net/http"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/project"
-	"github.com/guided-traffic/trove/internal/visibility"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/project"
+	"github.com/guided-traffic/quader/internal/visibility"
 )
 
 // withMinEpoch wraps the authentication stage: once a request authenticated, the
-// header Trove-Authz-Min-Epoch is read into the principal (R-AUTHZ-032). The
+// header Quader-Authz-Min-Epoch is read into the principal (R-AUTHZ-032). The
 // order matters: a request with an invalid credential got its 401 from the stage
 // before the header is looked at, and an anonymous request ignores the header, so
 // an anonymous caller cannot probe the epoch.

@@ -10,13 +10,13 @@ import (
 	"strings"
 	"testing"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/test/integration/idapi"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/test/integration/idapi"
 )
 
 // ownAPI serves the management API on the two replicas of an ownWorld: the real
@@ -44,7 +44,7 @@ func newOwnAPI(t *testing.T) *ownAPI {
 	api.people["ci"] = authz.Subject{Kind: mapping.Kind, ID: mapping.ID, Name: "ci", Mappings: []string{"ci:" + mapping.Name}}
 	serve := func(r *replica, own *authz.Ownership) *httptest.Server {
 		h := idapi.Handler(t, idapi.Components{
-			Name: r.name, DB: r.db, Changes: r.changes, Recorder: r.rec, BaseURL: "http://trove.test", Log: quiet,
+			Name: r.name, DB: r.db, Changes: r.changes, Recorder: r.rec, BaseURL: "http://quader.test", Log: quiet,
 			Engine: r.engine, Validator: api.val, Authenticate: api.authenticate,
 			Options: func(eng *authz.Engine, o *v1.Options) { o.Authz = v1.AuthzServices{Engine: eng, Owners: own} },
 		})
@@ -159,10 +159,10 @@ func TestR_AUTHZ_019_OwnershipOperationsOverHTTP(t *testing.T) {
 			t.Fatalf("%s", got.body)
 		}
 		loc := got.header.Get("Location")
-		if loc != "http://trove.test"+notYet {
+		if loc != "http://quader.test"+notYet {
 			t.Fatalf("Location %q", loc)
 		}
-		read := api.do(t, api.b, "dave", "GET", strings.TrimPrefix(loc, "http://trove.test"), "")
+		read := api.do(t, api.b, "dave", "GET", strings.TrimPrefix(loc, "http://quader.test"), "")
 		want(t, read, 200, "")
 		if !strings.Contains(string(read.body), `"state":"claimed"`) || !strings.Contains(string(read.body), `"group:team-web"`) {
 			t.Fatalf("%s", read.body)

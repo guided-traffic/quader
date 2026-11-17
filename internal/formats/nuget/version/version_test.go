@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_NUGET_003_Forms covers the three forms of R-NUGET-003 with the examples of the spec.

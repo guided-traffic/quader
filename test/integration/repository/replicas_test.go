@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestSnapshotAcrossReplicas covers the repository state on n replicas without

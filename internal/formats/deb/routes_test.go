@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // allClasses is the format as it will be with every class registered: the adapters are placeholders that only make the format
@@ -94,7 +94,7 @@ func TestMatch(t *testing.T) {
 		{"GET", "InRelease", routeFlatRelease, []formats.Class{remote}, formats.Params{"dir": "", "file": "InRelease"}},
 		{"GET", "binary/Packages.gz", routeFlatIndex, []formats.Class{remote}, formats.Params{"dir": "binary", "file": "Packages.gz"}},
 		{"GET", "binary/Packages.diff/Index", routeFlatIndex, []formats.Class{remote}, nil},
-		{"GET", "binary/trove-hello_1.0_all.deb", routeFlatFile, []formats.Class{remote}, formats.Params{"dir": "binary", "file": "trove-hello_1.0_all.deb"}},
+		{"GET", "binary/quader-hello_1.0_all.deb", routeFlatFile, []formats.Class{remote}, formats.Params{"dir": "binary", "file": "quader-hello_1.0_all.deb"}},
 		{"GET", "signing-key.asc", routeSigningKey, nil, nil},
 		{"PUT", "upload/hello_2.10-3_amd64.deb", routeUpload, []formats.Class{local}, formats.Params{"file": "hello_2.10-3_amd64.deb"}},
 	}
@@ -172,7 +172,7 @@ func TestFlatRoot(t *testing.T) {
 	if err != nil || name != routeFlatRelease || p["dir"] != "" || p["file"] != "InRelease" || p[flatRootParam] != "true" {
 		t.Fatalf("./InRelease = %s %v %v", name, p, err)
 	}
-	for _, path := range []string{"./Packages.gz", "./trove-hello_1.0_all.deb"} {
+	for _, path := range []string{"./Packages.gz", "./quader-hello_1.0_all.deb"} {
 		if name, _, err := match(t, f, http.MethodGet, path); err != nil || !strings.HasPrefix(name, "deb.flat.") {
 			t.Errorf("%s = %s, %v", path, name, err)
 		}

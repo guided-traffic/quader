@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_AUTHZ_015_APublishIsDecidedAgainWhenItCommits removes the grant of a publish

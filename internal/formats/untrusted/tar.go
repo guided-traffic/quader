@@ -12,7 +12,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 const (

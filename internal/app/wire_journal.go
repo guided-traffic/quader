@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/journal/ship"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/journal/ship"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // The wiring of the revocation journal's shipper (R-HA-054 "Outbox and shipping"). It is not an area of its own: the shipper

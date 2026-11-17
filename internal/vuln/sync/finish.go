@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/match"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/match"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 type (

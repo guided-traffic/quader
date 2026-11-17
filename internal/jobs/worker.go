@@ -14,11 +14,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // WorkerSignals is the signal path a worker needs: the wake-up subscription and

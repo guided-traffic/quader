@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/test/debstub/debgen"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
 )
 
 // upload stores a generated package in the suite through the upload route of the Host, the way a client does.

@@ -1,6 +1,6 @@
 <!-- The header names the list; inside a project its one muted line is the project's description and, for a plain user, whom
      to ask (Q-UI-317, UI-A-15). The repositories opened last are the start page's only (Q-UI-323, Q-UI-329). -->
-<trove-page-header [heading]="heading" [description]="headerLine()">
+<quader-page-header [heading]="heading" [description]="headerLine()">
   @if (inProject() && canCreateHere()) {
     <a actions class="btn btn-confirm" [routerLink]="['/projects', projectKey(), 'repositories', 'new']" i18n="@@repo.list.create"
       >Create repository</a
@@ -10,16 +10,16 @@
       >Create repository</a
     >
   }
-</trove-page-header>
+</quader-page-header>
 
 @if (deleteFailure(); as f) {
-  <trove-error-notice [error]="f" />
+  <quader-error-notice [error]="f" />
 }
 <div class="list-layout" [class.panel-open]="panelOpen()">
   <div class="list-toolbar">
-    <trove-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
+    <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
   </div>
-  <trove-filter-panel
+  <quader-filter-panel
     #panel
     class="list-side"
     [(open)]="panelOpen"
@@ -28,7 +28,7 @@
     (apply)="submitFilters()"
     (clearAll)="clearFilters()"
   >
-    <trove-filter-category i18n-label="@@repo.filter.text" label="Key or description" [active]="!!q()" [expanded]="!!q()">
+    <quader-filter-category i18n-label="@@repo.filter.text" label="Key or description" [active]="!!q()" [expanded]="!!q()">
       <input
         class="text-input"
         type="search"
@@ -38,9 +38,9 @@
         [value]="search()"
         (input)="search.set($any($event.target).value)"
       />
-    </trove-filter-category>
+    </quader-filter-category>
     @if (!inProject()) {
-      <trove-filter-category i18n-label="@@repo.col.project" label="Project" [active]="!!filterProject()" [expanded]="!!filterProject()">
+      <quader-filter-category i18n-label="@@repo.col.project" label="Project" [active]="!!filterProject()" [expanded]="!!filterProject()">
         <input
           class="text-input"
           type="text"
@@ -50,9 +50,9 @@
           [value]="stagedProject()"
           (input)="stagedProject.set($any($event.target).value)"
         />
-      </trove-filter-category>
+      </quader-filter-category>
     }
-    <trove-filter-category i18n-label="@@repo.col.class" label="Class" [active]="!!class()" [expanded]="!!class()">
+    <quader-filter-category i18n-label="@@repo.col.class" label="Class" [active]="!!class()" [expanded]="!!class()">
       <select
         class="select-input"
         i18n-aria-label="@@repo.col.class"
@@ -64,8 +64,8 @@
           <option [value]="c" [selected]="stagedClass() === c">{{ classText(c) }}</option>
         }
       </select>
-    </trove-filter-category>
-    <trove-filter-category i18n-label="@@repo.col.format" label="Format" [active]="!!format()" [expanded]="!!format()">
+    </quader-filter-category>
+    <quader-filter-category i18n-label="@@repo.col.format" label="Format" [active]="!!format()" [expanded]="!!format()">
       <select
         class="select-input"
         i18n-aria-label="@@repo.col.format"
@@ -77,8 +77,8 @@
           <option [value]="f" [selected]="stagedFormat() === f" translate="no">{{ f }}</option>
         }
       </select>
-    </trove-filter-category>
-    <trove-filter-category i18n-label="@@repo.filter.state" label="State" [active]="state() === 'inactive'" [expanded]="state() === 'inactive'">
+    </quader-filter-category>
+    <quader-filter-category i18n-label="@@repo.filter.state" label="State" [active]="state() === 'inactive'" [expanded]="state() === 'inactive'">
       <label class="check-row">
         <input
           type="checkbox"
@@ -87,11 +87,11 @@
         />
         <span i18n="@@repo.filter.inactive">Disabled only</span>
       </label>
-    </trove-filter-category>
-  </trove-filter-panel>
+    </quader-filter-category>
+  </quader-filter-panel>
 
   <div class="list-main">
-    <trove-data-table
+    <quader-data-table
       [caption]="tableCaption"
       [columns]="columns()"
       [loaded]="list.loaded()"
@@ -100,8 +100,8 @@
       [empty]="list.items().length === 0"
       [emptyText]="filtered() || projectKey() ? emptyFilteredText : emptyText"
       [hasMore]="list.hasMore()"
-      [style.--trove-address-chars]="addressChars()"
-      [style.--trove-address-share]="addressChars()"
+      [style.--quader-address-chars]="addressChars()"
+      [style.--quader-address-share]="addressChars()"
       (more)="list.more()"
       (retry)="list.more()"
     >
@@ -109,7 +109,7 @@
         <tr>
           <th scope="row" class="wrap-name">
             @if (inProject()) {
-              <trove-visibility-icon [level]="row.visibility.artifacts" />
+              <quader-visibility-icon [level]="row.visibility.artifacts" />
             }
             <a
               [routerLink]="['/projects', row.project, 'repositories', row.key]"
@@ -136,20 +136,20 @@
           }
           <!-- A format is its icon and its name (UI-A-24), a class its icon and its name, each a column (Q-UI-330). -->
           <td class="format-cell">
-            <span class="format-name"><trove-format-icon [format]="row.format" /><span translate="no">{{ formatLabel(row.format) }}</span></span>
+            <span class="format-name"><quader-format-icon [format]="row.format" /><span translate="no">{{ formatLabel(row.format) }}</span></span>
           </td>
           <td class="class-cell">
             <span class="class-name"><span class="material-icons" aria-hidden="true">{{ classIcon(row.class) }}</span>{{ classText(row.class) }}</span>
           </td>
           @if (!inProject()) {
             <td class="level-cell">
-              <trove-visibility-icon [level]="row.visibility.artifacts" />{{ levelText(row.visibility.artifacts) }}
+              <quader-visibility-icon [level]="row.visibility.artifacts" />{{ levelText(row.visibility.artifacts) }}
             </td>
           }
           <!-- The plain user's job is to copy the address: inside a project it is a field with its share of the row (Q-UI-330). -->
           @if (inProject()) {
             <td class="address-cell">
-              <trove-address-field [value]="address(row)" [label]="addressLabel(row)" [copyLabel]="copyLabel(row)" />
+              <quader-address-field [value]="address(row)" [label]="addressLabel(row)" [copyLabel]="copyLabel(row)" />
             </td>
           }
           <!-- The date only, the time is its title (Q-UI-305); the administrator's, while a row has one (Q-UI-312, Q-UI-330). -->
@@ -166,7 +166,7 @@
             <!-- The administrator manages and copies the address now and then: a quiet copy button whose name and tooltip carry the
                  address, beside the menu, which has the same action (Q-UI-330). -->
             @if (!inProject() && address(row); as a) {
-              <trove-copy-button [value]="a" [label]="copyValueLabel(a)" [quiet]="true" />
+              <quader-copy-button [value]="a" [label]="copyValueLabel(a)" [quiet]="true" />
             }
             <!-- The row's actions are a menu (ui-style-guide.md, Lists; Q-UI-302): four buttons pushed the list sideways. -->
             <button
@@ -213,7 +213,7 @@
             @if (deleting().get(refOf(row)); as job) {
               <div class="deleting">
                 <span i18n="@@repo.deleting">Deleting</span>
-                <trove-job-progress
+                <quader-job-progress
                   [jobId]="job.id"
                   [label]="deleteLabel"
                   (finished)="jobEnded(refOf(row), $event.state)"
@@ -223,6 +223,6 @@
           </td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   </div>
 </div>

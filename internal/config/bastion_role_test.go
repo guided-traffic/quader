@@ -13,16 +13,16 @@ server:
   base_url: https://packages.example.com
 bastion:
   main:
-    url: https://trove.example.com
+    url: https://quader.example.com
     token_file: /run/secrets/token/token
 `
 
 func loadBastion(t *testing.T, file string, env ...string) (*BastionLoaded, error) {
 	t.Helper()
 	return LoadBastion(Options{
-		File: "/etc/trove/trove.yaml", Environ: env, Command: CommandServe,
+		File: "/etc/quader/quader.yaml", Environ: env, Command: CommandServe,
 		ReadFile: func(name string) ([]byte, error) {
-			if name == "/etc/trove/trove.yaml" {
+			if name == "/etc/quader/quader.yaml" {
 				return []byte(file), nil
 			}
 			return nil, os.ErrNotExist
@@ -76,8 +76,8 @@ func TestR_BAS_001_TheRoleLoadsWithTheMinimalKeysAndTheSpecDefaults(t *testing.T
 		{"cache.documents_max_bytes", b.Cache.DocumentsMaxBytes, 2 * GiB},
 		{"cache.metadata_revalidate_after", b.Cache.MetadataRevalidateAfter, time.Minute},
 		{"cache.artifact_revalidate_after", b.Cache.ArtifactRevalidateAfter, 10 * time.Minute},
-		{"cache.volume.dir", b.Cache.Volume.Dir, "/var/cache/trove-bastion"},
-		{"cache.bucket.prefix", b.Cache.Bucket.Prefix, "trove-bastion"},
+		{"cache.volume.dir", b.Cache.Volume.Dir, "/var/cache/quader-bastion"},
+		{"cache.bucket.prefix", b.Cache.Bucket.Prefix, "quader-bastion"},
 		{"cache.bucket.credentials.source", b.Cache.Bucket.Credentials.Source, "static"},
 		{"limits.authenticated.rps", b.Limits.Authenticated.RequestsPerSecond, 50},
 		{"limits.authenticated.burst", b.Limits.Authenticated.Burst, 200},
@@ -128,19 +128,19 @@ func TestR_BAS_001_AKeyOfAnotherSectionStopsStartupNamingKeyAndRole(t *testing.T
 			}
 		})
 	}
-	msg := bastionIssues(t, bastionMinimal, "TROVE_DATABASE_HOST=db")
-	if !strings.Contains(msg, "TROVE_DATABASE_HOST") || !strings.Contains(msg, "role bastion") {
+	msg := bastionIssues(t, bastionMinimal, "QUADER_DATABASE_HOST=db")
+	if !strings.Contains(msg, "QUADER_DATABASE_HOST") || !strings.Contains(msg, "role bastion") {
 		t.Fatalf("an environment variable of another section: %s", msg)
 	}
 }
 
 // TestR_BAS_044_AnHTTPMainURLStopsStartupNamingTheKey: the connection to the main installation is https only.
 func TestR_BAS_044_AnHTTPMainURLStopsStartupNamingTheKey(t *testing.T) {
-	msg := bastionIssues(t, strings.Replace(bastionMinimal, "https://trove.example.com", "http://trove.example.com", 1))
+	msg := bastionIssues(t, strings.Replace(bastionMinimal, "https://quader.example.com", "http://quader.example.com", 1))
 	if !strings.Contains(msg, "bastion.main.url") || !strings.Contains(msg, "https") {
 		t.Fatalf("error:\n%s", msg)
 	}
-	msg = bastionIssues(t, strings.Replace(bastionMinimal, "https://trove.example.com", "https://trove.example.com/api", 1))
+	msg = bastionIssues(t, strings.Replace(bastionMinimal, "https://quader.example.com", "https://quader.example.com/api", 1))
 	if !strings.Contains(msg, "bastion.main.url") {
 		t.Fatalf("a URL with a path: %s", msg)
 	}
@@ -177,8 +177,8 @@ func TestR_BAS_046_TheRangesOfTheSpecificationAreEnforced(t *testing.T) {
 			file := strings.Replace(bastionMinimal, "bastion:\n", "bastion:\n  "+c.patch, 1)
 			if strings.Contains(c.patch, "\n  main:") {
 				// the patch carries its own main block: merge it with the minimal one
-				file = strings.Replace(bastionMinimal, "bastion:\n  main:\n", "bastion:\n  "+c.patch+"    url: https://trove.example.com\n    token_file: /t\n", 1)
-				file = strings.Replace(file, "    url: https://trove.example.com\n    token_file: /run/secrets/token/token\n", "", 1)
+				file = strings.Replace(bastionMinimal, "bastion:\n  main:\n", "bastion:\n  "+c.patch+"    url: https://quader.example.com\n    token_file: /t\n", 1)
+				file = strings.Replace(file, "    url: https://quader.example.com\n    token_file: /run/secrets/token/token\n", "", 1)
 			}
 			msg := bastionIssues(t, file)
 			if !strings.Contains(msg, c.want) {
@@ -262,7 +262,7 @@ func TestR_BAS_001_ValkeyIsOffByDefaultAndNeedsTheSigningKeyWhenOn(t *testing.T)
 		t.Fatalf("Valkey without a signing key: %s", msg)
 	}
 	c = mustLoadBastion(t, bastionMinimal+"bastion:\n  signing_key_file: /k\nvalkey:\n  mode: sentinel\n  sentinel:\n    addresses: [s:26379]\n    primary_name: p\n")
-	if got := c.Valkey.Valkey().KeyPrefix; got != "trove-bastion:packages.example.com:" {
+	if got := c.Valkey.Valkey().KeyPrefix; got != "quader-bastion:packages.example.com:" {
 		t.Fatalf("derived key prefix = %q", got)
 	}
 	msg = bastionIssues(t, bastionMinimal+"valkey:\n  mode: sentinel\n")

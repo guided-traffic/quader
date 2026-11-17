@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The import tasks of the Ansible Galaxy format (R-ANS-009, Q-ANS-8): a publish is processed in the request, so a task is final when it
 -- is created, and `ansible-galaxy collection publish` reads it back from any replica. The id is a random UUID and unguessable. A task

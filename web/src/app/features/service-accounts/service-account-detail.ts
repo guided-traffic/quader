@@ -24,12 +24,12 @@ import { PageHeader } from '../../shared/ui/page-header';
  * revokes its tokens. Issuing needs recent authentication; the dialog of R-UI-042 handles it.
  */
 @Component({
-  selector: 'trove-service-account-detail',
+  selector: 'quader-service-account-detail',
   imports: [PageHeader, DatePipe, ErrorNotice, Needs, PrincipalRoles, Disclosure, TextField, TokenManager],
   template: `
-    <trove-page-header [heading]="name()" [name]="true">
+    <quader-page-header [heading]="name()" [name]="true">
       <span meta class="badge" i18n="@@sa.heading">Service account</span>
-    </trove-page-header>
+    </quader-page-header>
     @if (projectKey(); as key) {
       <p class="subject">
         <ng-container i18n="@@sa.project">Service account of project</ng-container>&ngsp;
@@ -37,29 +37,29 @@ import { PageHeader } from '../../shared/ui/page-header';
       </p>
     }
     @if (!canWrite()) {
-      <trove-needs capability="identities:write" />
+      <quader-needs capability="identities:write" />
     }
 
     @if (loadError(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     }
     @if (actionError(); as e) {
-      <trove-error-notice [error]="e" />
+      <quader-error-notice [error]="e" />
     }
 
     @if (account(); as a) {
       <div class="settings">
         <form (submit)="save($event)" novalidate>
           <div class="row">
-            <trove-text-field width="full" i18n-label="@@sa.description" label="Description" name="description" [(value)]="description" [readonly]="!canWrite()" [error]="fieldError('/description')" />
-            <trove-text-field width="name" i18n-label="@@sa.id" label="ID" name="id" [value]="a.id" [readonly]="true" />
+            <quader-text-field width="full" i18n-label="@@sa.description" label="Description" name="description" [(value)]="description" [readonly]="!canWrite()" [error]="fieldError('/description')" />
+            <quader-text-field width="name" i18n-label="@@sa.id" label="ID" name="id" [value]="a.id" [readonly]="true" />
           </div>
           @if (canWrite()) {
             <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirty()" i18n="@@sa.save-changes">Save changes</button>
           }
         </form>
 
-        <trove-disclosure
+        <quader-disclosure
           i18n-heading="@@sa.details"
           heading="Details"
           i18n-hint="@@sa.details-hint"
@@ -87,14 +87,14 @@ import { PageHeader } from '../../shared/ui/page-header';
             <dt i18n="@@sa.created">Created</dt>
             <dd>{{ a.createdAt | date: 'medium' }}</dd>
           </dl>
-        </trove-disclosure>
+        </quader-disclosure>
 
         @if (session.has('roles:read') && !a.project) {
-          <trove-principal-roles [principal]="a.principal" />
+          <quader-principal-roles [principal]="a.principal" />
         }
 
         <!-- A quiet section like its siblings, opened when the account holds a token and never closed by itself (Q-UI-333). -->
-        <trove-disclosure
+        <quader-disclosure
           i18n-heading="@@sa.tokens"
           heading="Tokens"
           i18n-hint="@@sa.tokens-hint"
@@ -102,14 +102,14 @@ import { PageHeader } from '../../shared/ui/page-header';
           [expanded]="tokens()?.heldTokens() ?? false"
         >
           @if (canReadTokens()) {
-            <trove-token-manager [scope]="scope()" [accountIsAdmin]="a.isAdmin" [revokeAllHere]="false" />
+            <quader-token-manager [scope]="scope()" [accountIsAdmin]="a.isAdmin" [revokeAllHere]="false" />
           } @else {
             <p i18n="@@sa.tokens-denied">You need the permission to read tokens to manage the tokens of this account.</p>
           }
-        </trove-disclosure>
+        </quader-disclosure>
 
         @if (canWrite() || tokens()?.offersRevokeAll()) {
-          <trove-disclosure
+          <quader-disclosure
             i18n-heading="@@sa.advanced"
             heading="Advanced"
             [hint]="advancedHint()"
@@ -138,7 +138,7 @@ import { PageHeader } from '../../shared/ui/page-header';
               <p class="muted" i18n="@@sa.delete-note">Deleting the account removes it and its tokens. This cannot be undone.</p>
               <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="remove()" i18n="@@sa.delete">Delete</button>
             }
-          </trove-disclosure>
+          </quader-disclosure>
         }
       </div>
     }
@@ -146,15 +146,15 @@ import { PageHeader } from '../../shared/ui/page-header';
   styleUrl: '../../shared/access/access.scss',
   styles: `
     .settings {
-      max-inline-size: var(--trove-settings-measure);
+      max-inline-size: var(--quader-settings-measure);
     }
     form {
-      padding-block-end: var(--trove-space-6);
+      padding-block-end: var(--quader-space-6);
     }
     .row {
       display: grid;
       grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
-      gap: var(--trove-space-6);
+      gap: var(--quader-space-6);
     }
     @media (max-width: 40rem) {
       .row {

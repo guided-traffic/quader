@@ -4,11 +4,11 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/vuln/enforce"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/vuln/enforce"
 )
 
 // liveRef is the reference the item store reads an item of repo with: the repository and, when the vulnerability scanning is

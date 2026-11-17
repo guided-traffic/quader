@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const guard = 30 * time.Second
@@ -331,7 +331,7 @@ func TestR_NUGET_012_PushWithTheAPIKey(t *testing.T) {
 		last = push(nupkg(t, pkgSpec{id: "Key.Five", version: "1.0.0"}), "X-NuGet-ApiKey", e.tokDev, "Authorization", basicAuth("rita", e.tokAdmin))
 		return last.Status == http.StatusUnauthorized
 	})
-	if last.Header.Get("WWW-Authenticate") != `Basic realm="trove"` || code(t, last) != errs.CodeInvalidToken {
+	if last.Header.Get("WWW-Authenticate") != `Basic realm="quader"` || code(t, last) != errs.CodeInvalidToken {
 		t.Errorf("%d %q %v", last.Status, last.Body, last.Header)
 	}
 	if e.st.Number(`SELECT count(*) FROM nuget_version WHERE lower_id = 'key.five'`) != 0 {

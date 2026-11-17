@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // RemoteContext is what a remote adapter learns of the repository it works for.

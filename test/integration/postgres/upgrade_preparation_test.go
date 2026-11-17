@@ -11,7 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // The upgrade preparation of R-HA-021 at the runner, against PostgreSQL: step 4 (the report shows the state of a
@@ -33,7 +33,7 @@ func execT(t *testing.T, c *pgx.Conn, sql string, args ...any) {
 // liveReplica registers a replica of the version whose last heartbeat is now.
 func liveReplica(t *testing.T, admin *pgx.Conn, name, version string) {
 	t.Helper()
-	execT(t, admin, `INSERT INTO trove.replica
+	execT(t, admin, `INSERT INTO quader.replica
 		(instance_uid, name, version, revision, roles, state, secret_key_ids, active_secret_key_id, started_at, heartbeat_at)
 		VALUES (gen_random_uuid(), $1, $2, 'abc', '{api}', 'ready', '{}', 'k1', now() - interval '1 hour', now())`, name, version)
 }
@@ -56,11 +56,11 @@ func TestR_HA_021_UpgradePreparation(t *testing.T) {
 		cfg, _, admin := migrated(t, st)
 		scratch, drop := nextStep(1, "it_scratch"), nextStep(2, "it_drop_scratch")
 		o := opts(stepsWith(t, map[string]string{
-			scratch: "-- trove:phase expand\nCREATE TABLE trove.it_scratch (id int);\n",
-			drop:    "-- trove:phase contract\n-- trove:requires-app >= 0.1.0\n-- trove:requires-background it_backfill\nDROP TABLE trove.it_scratch;\n",
+			scratch: "-- quader:phase expand\nCREATE TABLE quader.it_scratch (id int);\n",
+			drop:    "-- quader:phase contract\n-- quader:requires-app >= 0.1.0\n-- quader:requires-background it_backfill\nDROP TABLE quader.it_scratch;\n",
 		}))
 		o.Background = []postgres.BackgroundMigration{itBackfill}
-		before := scalar[int](t, admin, "SELECT applied FROM trove.schema_state")
+		before := scalar[int](t, admin, "SELECT applied FROM quader.schema_state")
 
 		// report and guard agree on each state the records can be in
 		check := func(t *testing.T, wantState string) postgres.StatusReport {
@@ -94,7 +94,7 @@ func TestR_HA_021_UpgradePreparation(t *testing.T) {
 				}
 			}
 			// nothing was applied, not even the expand step before the contract step
-			if scalar[bool](t, admin, "SELECT to_regclass('trove.it_scratch') IS NOT NULL") || scalar[int](t, admin, "SELECT applied FROM trove.schema_state") != before {
+			if scalar[bool](t, admin, "SELECT to_regclass('quader.it_scratch') IS NOT NULL") || scalar[int](t, admin, "SELECT applied FROM quader.schema_state") != before {
 				t.Fatal("the guard must refuse before anything is applied")
 			}
 			return rep
@@ -103,24 +103,24 @@ func TestR_HA_021_UpgradePreparation(t *testing.T) {
 		// no job and no record: pending
 		check(t, postgres.BackgroundPending)
 		// a queued run: pending
-		execT(t, admin, `INSERT INTO trove.job (id, kind, queue) VALUES (gen_random_uuid(), 'data_migration_it_backfill', 'maintenance')`)
+		execT(t, admin, `INSERT INTO quader.job (id, kind, queue) VALUES (gen_random_uuid(), 'data_migration_it_backfill', 'maintenance')`)
 		check(t, postgres.BackgroundPending)
 		// the run holds it, with its progress
-		execT(t, admin, `UPDATE trove.job SET state = 'running', started_at = now() - interval '1 minute', progress_done = 500, progress_total = 1000
+		execT(t, admin, `UPDATE quader.job SET state = 'running', started_at = now() - interval '1 minute', progress_done = 500, progress_total = 1000
 			WHERE kind = 'data_migration_it_backfill'`)
 		rep := check(t, postgres.BackgroundRunning)
 		if b := backgroundOf(t, rep, "it_backfill"); b.Processed != 500 || b.EstimatedTotal == nil || *b.EstimatedTotal != 1000 || b.StartedAt == nil {
 			t.Fatalf("a running migration's progress: %+v", b)
 		}
 		// the run failed
-		execT(t, admin, `UPDATE trove.job SET state = 'failed', finished_at = now() WHERE kind = 'data_migration_it_backfill'`)
+		execT(t, admin, `UPDATE quader.job SET state = 'failed', finished_at = now() WHERE kind = 'data_migration_it_backfill'`)
 		check(t, postgres.BackgroundFailed)
 		// a second run reaches the end and records the completion
-		execT(t, admin, `INSERT INTO trove.job (id, kind, queue, state, started_at, finished_at, progress_done, progress_total, created_at)
+		execT(t, admin, `INSERT INTO quader.job (id, kind, queue, state, started_at, finished_at, progress_done, progress_total, created_at)
 			VALUES (gen_random_uuid(), 'data_migration_it_backfill', 'maintenance', 'succeeded', now() - interval '10 seconds', now(), 1000, 1000, now())`)
-		execT(t, admin, `INSERT INTO trove.system_state (key, value) VALUES ('it_backfill_done', '{"rows": 1000}')`)
+		execT(t, admin, `INSERT INTO quader.system_state (key, value) VALUES ('it_backfill_done', '{"rows": 1000}')`)
 		rep = check(t, postgres.BackgroundSucceeded)
-		first := scalar[time.Time](t, admin, "SELECT min(started_at) FROM trove.job WHERE kind = 'data_migration_it_backfill'")
+		first := scalar[time.Time](t, admin, "SELECT min(started_at) FROM quader.job WHERE kind = 'data_migration_it_backfill'")
 		if b := backgroundOf(t, rep, "it_backfill"); b.Processed != 1000 || b.StartedAt == nil || !b.StartedAt.Equal(first) {
 			t.Fatalf("a succeeded migration keeps the count of its last run and the start of its first: %+v (first start %s)", b, first)
 		}
@@ -139,26 +139,26 @@ func TestR_HA_021_UpgradePreparation(t *testing.T) {
 	t.Run("R-HA-021 R-HA-018 a direct upgrade over a contract step is refused with status 3 while a replica of an older release is live, and succeeds without an override once the replicas are stopped", func(t *testing.T) {
 		cfg, _, admin := migrated(t, st)
 		o := opts(stepsWith(t, map[string]string{
-			nextStep(1, "it_old_shape"):  "-- trove:phase expand\nCREATE TABLE trove.it_old_shape (id int);\n",
-			nextStep(2, "it_drop_shape"): "-- trove:phase contract\n-- trove:requires-app >= 0.3.0\nDROP TABLE trove.it_old_shape;\n",
+			nextStep(1, "it_old_shape"):  "-- quader:phase expand\nCREATE TABLE quader.it_old_shape (id int);\n",
+			nextStep(2, "it_drop_shape"): "-- quader:phase contract\n-- quader:requires-app >= 0.3.0\nDROP TABLE quader.it_old_shape;\n",
 		}))
 		o.Version = "0.4.0"
 		// The replicas count as stopped once their heartbeat is older than system.heartbeat_stale_after; the test shortens it
 		// from the 30 s of the criterion so that the wait is short.
 		o.ReplicaStaleAfter = 4 * time.Second
-		liveReplica(t, admin, "trove-api-0.2-abc", "0.2.7")
+		liveReplica(t, admin, "quader-api-0.2-abc", "0.2.7")
 
 		_, err := postgres.Migrate(ctxT(t, 30*time.Second), cfg, o)
 		var ref *postgres.Refusal
 		if !errors.As(err, &ref) || ref.ExitCode() != postgres.ExitRefused {
 			t.Fatalf("err = %v, want a refusal with status 3", err)
 		}
-		for _, want := range []string{"requires trove >= 0.3.0", "trove-api-0.2-abc (0.2.7)", "one minor release at a time", "stop all replicas and upgrade with downtime", "nothing was applied"} {
+		for _, want := range []string{"requires Quader >= 0.3.0", "quader-api-0.2-abc (0.2.7)", "one minor release at a time", "stop all replicas and upgrade with downtime", "nothing was applied"} {
 			if !strings.Contains(err.Error(), want) {
 				t.Errorf("the message of R-HA-018 does not say %q: %v", want, err)
 			}
 		}
-		if scalar[bool](t, admin, "SELECT to_regclass('trove.it_old_shape') IS NOT NULL") {
+		if scalar[bool](t, admin, "SELECT to_regclass('quader.it_old_shape') IS NOT NULL") {
 			t.Fatal("the refused run applied a step")
 		}
 
@@ -168,7 +168,7 @@ func TestR_HA_021_UpgradePreparation(t *testing.T) {
 		if err != nil || len(res.Applied) != 2 || res.CompatFloor != "0.3.0" {
 			t.Fatalf("after the replicas stopped: res = %+v, err = %v", res, err)
 		}
-		if n := scalar[int](t, admin, "SELECT count(*) FROM trove.replica WHERE name = 'trove-api-0.2-abc'"); n != 1 {
+		if n := scalar[int](t, admin, "SELECT count(*) FROM quader.replica WHERE name = 'quader-api-0.2-abc'"); n != 1 {
 			t.Fatalf("the registry row of the stopped replica is gone (%d): the guard must pass on its age, not on a deletion", n)
 		}
 	})
@@ -182,14 +182,14 @@ func TestR_HA_021_UpgradePreparation(t *testing.T) {
 				t.Fatal(err)
 			}
 			t.Cleanup(func() { _ = c.Close(context.Background()) })
-			execT(t, c, "SET application_name = 'trove:trove-backup-pre-upgrade-x2v4q:backup'")
+			execT(t, c, "SET application_name = 'quader:quader-backup-pre-upgrade-x2v4q:backup'")
 			execT(t, c, "SELECT pg_advisory_lock_shared(3, 0)")
 			return c
 		}
 
 		// the phase ends within the wait: the migration waits, then applies
 		holder := backup(t)
-		o := opts(stepsWith(t, map[string]string{nextStep(1, "it_after_backup"): "-- trove:phase expand\nCREATE TABLE trove.it_after_backup (id int);\n"}))
+		o := opts(stepsWith(t, map[string]string{nextStep(1, "it_after_backup"): "-- quader:phase expand\nCREATE TABLE quader.it_after_backup (id int);\n"}))
 		o.Migrate.AdvisoryLockWait = 20 * time.Second
 		go func() {
 			time.Sleep(1500 * time.Millisecond)
@@ -203,19 +203,19 @@ func TestR_HA_021_UpgradePreparation(t *testing.T) {
 		// the phase outlasts the wait: the migration fails and names the backup
 		backup(t)
 		o = opts(stepsWith(t, map[string]string{
-			nextStep(1, "it_after_backup"): "-- trove:phase expand\nCREATE TABLE trove.it_after_backup (id int);\n",
-			nextStep(2, "it_too_late"):     "-- trove:phase expand\nCREATE TABLE trove.it_too_late (id int);\n",
+			nextStep(1, "it_after_backup"): "-- quader:phase expand\nCREATE TABLE quader.it_after_backup (id int);\n",
+			nextStep(2, "it_too_late"):     "-- quader:phase expand\nCREATE TABLE quader.it_too_late (id int);\n",
 		}))
 		o.Migrate.AdvisoryLockWait = 1500 * time.Millisecond
 		_, err = postgres.Migrate(ctxT(t, 30*time.Second), cfg, o)
-		if err == nil || !strings.Contains(err.Error(), "trove:trove-backup-pre-upgrade-x2v4q:backup") || !strings.Contains(err.Error(), "migrate.advisory_lock_wait") {
+		if err == nil || !strings.Contains(err.Error(), "quader:quader-backup-pre-upgrade-x2v4q:backup") || !strings.Contains(err.Error(), "migrate.advisory_lock_wait") {
 			t.Fatalf("err = %v, want the bounded wait that names the backup", err)
 		}
 		var ref *postgres.Refusal
 		if errors.As(err, &ref) {
 			t.Fatal("a lock wait that ran out is an error (status 1, the Job retries), not a refusal (status 3)")
 		}
-		if scalar[bool](t, admin, "SELECT to_regclass('trove.it_too_late') IS NOT NULL") {
+		if scalar[bool](t, admin, "SELECT to_regclass('quader.it_too_late') IS NOT NULL") {
 			t.Fatal("a step was applied without the lock")
 		}
 	})

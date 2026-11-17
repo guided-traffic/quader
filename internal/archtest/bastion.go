@@ -1,6 +1,6 @@
 package archtest
 
-// bastionRoot is the tree of the trove Bastion's own code (R-BAS-001, Q-BAS-22).
+// bastionRoot is the tree of the quader Bastion's own code (R-BAS-001, Q-BAS-22).
 const bastionRoot = "internal/bastion"
 
 // bastionAllowed is what the Bastion's packages may import from this module besides their own tree

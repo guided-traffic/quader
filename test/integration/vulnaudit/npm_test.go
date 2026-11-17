@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const bulk = "-/npm/v1/security/advisories/bulk"
@@ -20,13 +20,13 @@ func (e *env) seedNPM() {
 	e.t.Helper()
 	semver := func(events ...string) string { return rangeJSON("SEMVER", events...) }
 	e.advisory("npm", "GHSA-aaaa-aaaa-0001", "GHSA-aaaa-aaaa-0001", "vulnerability", "high", "Test vulnerability", []string{"CVE-2026-0002"}, false,
-		aff{name: "trove-test-vuln", ranges: semver(ev("introduced", "1.0.0"), ev("fixed", "1.0.1"))})
+		aff{name: "quader-test-vuln", ranges: semver(ev("introduced", "1.0.0"), ev("fixed", "1.0.1"))})
 	e.advisory("npm", "GHSA-aaaa-aaaa-0003", "GHSA-aaaa-aaaa-0003", "vulnerability", "medium", "left-pad has no fix", nil, false,
 		aff{name: "left-pad", ranges: semver(ev("introduced", "0"), ev("last_affected", "1.3.0"))})
-	e.advisory("npm", "MAL-2026-1234", "MAL-2026-1234", "malicious", "critical", "", nil, false, aff{name: "trove-test-mal", versions: []string{"1.0.0"}})
+	e.advisory("npm", "MAL-2026-1234", "MAL-2026-1234", "malicious", "critical", "", nil, false, aff{name: "quader-test-mal", versions: []string{"1.0.0"}})
 	e.advisory("npm", "MAL-2026-1235", "MAL-2026-1235", "malicious", "critical", "", nil, false, aff{name: "@acme/ui", versions: []string{"1.0.0"}})
 	e.advisory("npm", "GHSA-aaaa-aaaa-0020", "GHSA-aaaa-aaaa-0020", "vulnerability", "low", "Vendored copy", nil, false, aff{name: "@vendored/lib", every: true})
-	e.advisory("npm", "GHSA-aaaa-aaaa-0009", "GHSA-aaaa-aaaa-0009", "vulnerability", "high", "Withdrawn", nil, true, aff{name: "trove-test-vuln", every: true})
+	e.advisory("npm", "GHSA-aaaa-aaaa-0009", "GHSA-aaaa-aaaa-0009", "vulnerability", "high", "Withdrawn", nil, true, aff{name: "quader-test-vuln", every: true})
 	e.advisory("npm", "GHSA-aaaa-aaaa-0030", "GHSA-aaaa-aaaa-0030", "vulnerability", "high", "Beta inside the range", nil, false,
 		aff{name: "beta-pkg", ranges: semver(ev("introduced", "1.0.0"), ev("fixed", "2.0.0"))})
 	e.data("npm", true, 1, 0)
@@ -54,12 +54,12 @@ func parse(t *testing.T, a testenv.Answer) answer {
 	return out
 }
 
-const body = `{"trove-test-vuln":["1.0.0","1.0.1"],"left-pad":["1.3.0"],"trove-test-mal":["1.0.0"],"@acme/ui":["1.0.0"],"@vendored/lib":["2.0.0"],"lodash":["4.17.21"]}`
+const body = `{"quader-test-vuln":["1.0.0","1.0.1"],"left-pad":["1.3.0"],"quader-test-mal":["1.0.0"],"@acme/ui":["1.0.0"],"@vendored/lib":["2.0.0"],"lodash":["4.17.21"]}`
 
-// TestR_VULN_017_TheAuditIsAnsweredFromTrovesDataOnEveryClass: local, remote and virtual repositories answer in mode local
+// TestR_VULN_017_TheAuditIsAnsweredFromQuadersDataOnEveryClass: local, remote and virtual repositories answer in mode local
 // with the same bytes, on two replicas; withdrawn advisories and advisories of other versions are not listed; an internal
 // name is withheld, a name of a repository that declares public packages is not.
-func TestR_VULN_017_TheAuditIsAnsweredFromTrovesDataOnEveryClass(t *testing.T) {
+func TestR_VULN_017_TheAuditIsAnsweredFromQuadersDataOnEveryClass(t *testing.T) {
 	e := newEnv(t)
 	e.seedNPM()
 	a, b := e.replica("web-a"), e.replica("web-b")
@@ -69,17 +69,17 @@ func TestR_VULN_017_TheAuditIsAnsweredFromTrovesDataOnEveryClass(t *testing.T) {
 	if len(got) != 4 {
 		t.Fatalf("names %v: %s", got, first.Body)
 	}
-	vuln := got["trove-test-vuln"]
+	vuln := got["quader-test-vuln"]
 	if len(vuln) != 1 || vuln[0].VulnerableVersions != ">=1.0.0 <1.0.1" || vuln[0].Severity != "high" ||
 		vuln[0].URL != "https://github.com/advisories/GHSA-aaaa-aaaa-0001" || vuln[0].ID != advisory.NPMAuditID("GHSA-aaaa-aaaa-0001", 0) {
-		t.Errorf("trove-test-vuln: %+v", vuln)
+		t.Errorf("quader-test-vuln: %+v", vuln)
 	}
 	if lp := got["left-pad"]; len(lp) != 1 || lp[0].VulnerableVersions != "<=1.3.0" {
 		t.Errorf("left-pad: %+v", lp)
 	}
-	if mal := got["trove-test-mal"]; len(mal) != 1 || mal[0].Severity != "critical" || mal[0].Title != "Malicious code in trove-test-mal" ||
+	if mal := got["quader-test-mal"]; len(mal) != 1 || mal[0].Severity != "critical" || mal[0].Title != "Malicious code in quader-test-mal" ||
 		!slices.Equal(mal[0].CWE, []string{"CWE-506"}) {
-		t.Errorf("trove-test-mal: %+v", mal)
+		t.Errorf("quader-test-mal: %+v", mal)
 	}
 	if _, ok := got["@acme/ui"]; ok {
 		t.Error("the internal name @acme/ui is answered")
@@ -87,7 +87,7 @@ func TestR_VULN_017_TheAuditIsAnsweredFromTrovesDataOnEveryClass(t *testing.T) {
 	if v := got["@vendored/lib"]; len(v) != 1 {
 		t.Errorf("a name of a repository that holds public packages is withheld: %+v", v)
 	}
-	if want := "trove audited 5 of 6 packages from its own advisory data; 1 internal names were not matched against public advisories"; first.Header.Get("npm-notice") != want {
+	if want := "Quader audited 5 of 6 packages from its own advisory data; 1 internal names were not matched against public advisories"; first.Header.Get("npm-notice") != want {
 		t.Errorf("npm-notice %q", first.Header.Get("npm-notice"))
 	}
 	if first.Header.Get("Cache-Control") != "no-store" {
@@ -128,11 +128,11 @@ func TestR_VULN_017_AClaimChangesWhatIsWithheld(t *testing.T) {
 	e := newEnv(t)
 	e.seedNPM()
 	a, b := e.replica("web-a"), e.replica("web-b")
-	ask := `{"trove-test-mal":["1.0.0"]}`
-	if got := parse(t, e.post(a, npmAll, bulk, e.tokReader, ask)); len(got["trove-test-mal"]) != 1 {
+	ask := `{"quader-test-mal":["1.0.0"]}`
+	if got := parse(t, e.post(a, npmAll, bulk, e.tokReader, ask)); len(got["quader-test-mal"]) != 1 {
 		t.Fatalf("%+v", got)
 	}
-	e.claim(npmLocal, "trove-test-*")
+	e.claim(npmLocal, "quader-test-*")
 	e.changed("claims", `{}`, a, b)
 	for _, r := range []*testenv.Replica{a, b} {
 		x := e.post(r, npmAll, bulk, e.tokReader, ask)
@@ -187,7 +187,7 @@ func TestR_VULN_017_WhereTheAuditStaysRefused(t *testing.T) {
 
 	// An installation that switched the scanning off answers audits like disabled.
 	e.st.Exec(`UPDATE repositories SET config = '{"npm":{"audit":{"mode":"local"}}}'::jsonb || (config - 'npm') WHERE key = $1`, npmRemote)
-	off := e.replica("web-off", "TROVE_VULNERABILITIES_ENABLED=false")
+	off := e.replica("web-off", "QUADER_VULNERABILITIES_ENABLED=false")
 	if x := e.post(off, npmRemote, bulk, e.tokReader, body); x.Status != http.StatusNotImplemented {
 		t.Errorf("local with the scanning disabled: %d %s", x.Status, x.Body)
 	}

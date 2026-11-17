@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // remoteStore is the group of the data port that holds the digests a remote's version documents announce (R-ANS-018): the statements

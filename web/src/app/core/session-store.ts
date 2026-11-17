@@ -16,7 +16,7 @@ export type SessionState = 'unknown' | 'loading' | 'authenticated' | 'anonymous'
 /** Check answers are cached for 60 seconds (R-UI-005). */
 export const CHECK_TTL_MS = 60_000;
 
-const CHANNEL = 'trove-session';
+const CHANNEL = 'quader-session';
 
 /**
  * The session of this tab (R-UI-046): `whoami`, `authz/me`, the check cache and the authorization

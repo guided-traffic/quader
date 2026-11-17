@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection"
-	"github.com/guided-traffic/trove/internal/formats/ansible/galaxydoc"
-	"github.com/guided-traffic/trove/internal/formats/ansible/merge"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
-	"github.com/guided-traffic/trove/internal/formats/ansible/version"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
+	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
+	"github.com/guided-traffic/quader/internal/formats/ansible/merge"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/ansible/version"
 )
 
 // variantFirstPage is the variant of the version list a merge asks for: the first stored page of a remote member, whose further pages

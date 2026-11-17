@@ -5,7 +5,7 @@
   </p>
 
   @if (generalFailure(); as f) {
-    <trove-error-notice [error]="f" />
+    <quader-error-notice [error]="f" />
     @if (stale()) {
       <p>
         <button class="btn btn-default" type="button" (click)="reload.emit()" i18n="@@virtual.reload">Load the stored repository</button>
@@ -14,7 +14,7 @@
   }
 
   <form (submit)="submit($event)" novalidate>
-    <trove-member-picker
+    <quader-member-picker
       [pool]="pool()"
       [(members)]="members"
       [canWrite]="canWrite()"
@@ -24,7 +24,7 @@
     />
 
     <div class="target">
-      <trove-select-field
+      <quader-select-field
         i18n-label="@@virtual.target"
         label="Default deployment target"
         name="deployTarget"
@@ -72,7 +72,7 @@
   }
 
   <form class="explain" (submit)="explain($event)" novalidate>
-    <trove-text-field
+    <quader-text-field
       width="full"
       i18n-label="@@virtual.explain-path"
       label="Explain a path"
@@ -86,7 +86,7 @@
     </button>
   </form>
   @if (explainError(); as e) {
-    <trove-error-notice [error]="e" />
+    <quader-error-notice [error]="e" />
   }
   @if (explanation(); as x) {
     <div data-testid="vm-explanation">

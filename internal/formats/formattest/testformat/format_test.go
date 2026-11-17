@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/formattest/testformat"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/formattest/testformat"
 )
 
 // TestR_ARCH_010_TheTestFormatPassesTheKit: the conforming variant of the test

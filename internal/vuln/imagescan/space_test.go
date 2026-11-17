@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // fakeSpace is a spool with a byte budget: it holds what it was asked for and refuses with ErrNoSpace beyond the budget.

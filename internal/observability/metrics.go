@@ -13,8 +13,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/guided-traffic/trove/internal/buildinfo"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/buildinfo"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // HTTPBuckets are the buckets of the HTTP duration histograms (R-OPS-008). The
@@ -82,7 +82,7 @@ type Metrics struct {
 }
 
 // NewMetrics builds the registry with the Go runtime and process collectors and
-// trove_build_info{version,revision,goversion,role} (R-OPS-006). The role and
+// quader_build_info{version,revision,goversion,role} (R-OPS-006). The role and
 // pool of every other series are target labels the scraper attaches (Q-OPS-13).
 func NewMetrics(role string, opts ...MetricsOption) *Metrics {
 	o := metricsOptions{cfg: config.Metrics{
@@ -97,7 +97,7 @@ func NewMetrics(role string, opts ...MetricsOption) *Metrics {
 
 	bi := buildinfo.Get()
 	info := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "trove_build_info", Help: "Build and process role of the running binary; the value is always 1.",
+		Name: "quader_build_info", Help: "Build and process role of the running binary; the value is always 1.",
 	}, []string{"version", "revision", "goversion", "role"})
 	info.WithLabelValues(bi.Version, bi.Commit, bi.GoVersion, role).Set(1)
 	m.reg.MustRegister(info)
@@ -106,25 +106,25 @@ func NewMetrics(role string, opts ...MetricsOption) *Metrics {
 	for _, n := range o.endpoints {
 		m.endpoints[n] = struct{}{}
 	}
-	m.requests = m.NewCounterVec("trove_http_requests_total", "Completed HTTP requests.", "listener", "endpoint", "handler", "method", "code")
-	m.duration = m.NewHistogramVec("trove_http_request_duration_seconds",
+	m.requests = m.NewCounterVec("quader_http_requests_total", "Completed HTTP requests.", "listener", "endpoint", "handler", "method", "code")
+	m.duration = m.NewHistogramVec("quader_http_request_duration_seconds",
 		"Time from first byte received to last byte sent.", HTTPBuckets(), "listener", "endpoint", "handler", "method", "code_class")
-	m.inFlight = m.NewGaugeVec("trove_http_requests_in_flight", "HTTP requests in progress.", "listener", "endpoint")
-	m.epListenerUp = m.NewGaugeVec("trove_endpoint_listener_up", "1 while this replica's listener of the endpoint accepts connections.", "endpoint")
-	m.epMisdirected = m.NewCounterVec("trove_endpoint_misdirected_total", "421 Misdirected Request answers of the host check.", "endpoint")
-	m.epFwdIgnored = m.NewCounterVec("trove_endpoint_forwarded_host_ignored_total", "Forwarded hosts outside the endpoint's host set.", "endpoint")
-	m.epRefused = m.NewCounterVec("trove_endpoint_credentials_refused_total",
+	m.inFlight = m.NewGaugeVec("quader_http_requests_in_flight", "HTTP requests in progress.", "listener", "endpoint")
+	m.epListenerUp = m.NewGaugeVec("quader_endpoint_listener_up", "1 while this replica's listener of the endpoint accepts connections.", "endpoint")
+	m.epMisdirected = m.NewCounterVec("quader_endpoint_misdirected_total", "421 Misdirected Request answers of the host check.", "endpoint")
+	m.epFwdIgnored = m.NewCounterVec("quader_endpoint_forwarded_host_ignored_total", "Forwarded hosts outside the endpoint's host set.", "endpoint")
+	m.epRefused = m.NewCounterVec("quader_endpoint_credentials_refused_total",
 		"Requests the endpoint's credential rules refused, by reason (token_type, token_binding, anonymous).", "endpoint", "reason")
-	m.shed = m.NewCounterVec("trove_http_requests_shed_total",
+	m.shed = m.NewCounterVec("quader_http_requests_shed_total",
 		"Requests the in-flight stage answered 503 server_busy, by reason (in_flight, memory_slots, heap).", "endpoint", "reason")
-	m.memSlots = m.NewGaugeVec("trove_http_memory_slots", "Concurrent requests this replica's memory admits; 0 when no memory limit is known.")
-	m.recvBytes = m.NewCounterVec("trove_http_received_bytes_total", "Request body bytes.", "handler")
-	m.sentBytes = m.NewCounterVec("trove_http_sent_bytes_total", "Response body bytes.", "handler")
-	m.cut = m.NewCounterVec("trove_http_transfers_cut_total", "Transfers cut at the shutdown deadline.", "direction")
-	m.ready = prometheus.NewGauge(prometheus.GaugeOpts{Name: "trove_ready", Help: "1 while /readyz answers 200, degraded included."})
-	m.overflow = m.NewCounterVec("trove_metrics_label_overflow_total", "Label values folded into _other.", "family", "label")
+	m.memSlots = m.NewGaugeVec("quader_http_memory_slots", "Concurrent requests this replica's memory admits; 0 when no memory limit is known.")
+	m.recvBytes = m.NewCounterVec("quader_http_received_bytes_total", "Request body bytes.", "handler")
+	m.sentBytes = m.NewCounterVec("quader_http_sent_bytes_total", "Response body bytes.", "handler")
+	m.cut = m.NewCounterVec("quader_http_transfers_cut_total", "Transfers cut at the shutdown deadline.", "direction")
+	m.ready = prometheus.NewGauge(prometheus.GaugeOpts{Name: "quader_ready", Help: "1 while /readyz answers 200, degraded included."})
+	m.overflow = m.NewCounterVec("quader_metrics_label_overflow_total", "Label values folded into _other.", "family", "label")
 	m.spansDropped = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "trove_tracing_spans_dropped_total", Help: "Spans lost to a full export queue.",
+		Name: "quader_tracing_spans_dropped_total", Help: "Spans lost to a full export queue.",
 	})
 	m.reg.MustRegister(m.ready, m.spansDropped)
 	m.dbg = newDBGauges(m)
@@ -135,10 +135,10 @@ func NewMetrics(role string, opts ...MetricsOption) *Metrics {
 }
 
 // SlowQueryThreshold is metrics.slow_query_threshold: a database statement slower than this counts in
-// trove_db_slow_queries_total; 0 counts none (R-OPS-008, Q-OPS-188).
+// quader_db_slow_queries_total; 0 counts none (R-OPS-008, Q-OPS-188).
 func (m *Metrics) SlowQueryThreshold() time.Duration { return m.cfg.SlowQueryThreshold }
 
-// DBQueryHistograms is metrics.db_query_histograms: whether trove_db_query_duration_seconds is registered (R-OPS-008).
+// DBQueryHistograms is metrics.db_query_histograms: whether quader_db_query_duration_seconds is registered (R-OPS-008).
 func (m *Metrics) DBQueryHistograms() bool { return m.cfg.DBQueryHistograms }
 
 // Role returns the process role the metrics were built for.
@@ -159,7 +159,7 @@ func (m *Metrics) Check() []error {
 }
 
 // NewCounterVec registers a counter family under the rules of R-OPS-007. A
-// violation (name without trove_ prefix or _total, label outside the allowed
+// violation (name without quader_ prefix or _total, label outside the allowed
 // list) is a programming error and panics at start-up.
 func (m *Metrics) NewCounterVec(name, help string, labels ...string) *prometheus.CounterVec {
 	must(checkName(name, true), checkLabels(name, labels))
@@ -198,7 +198,7 @@ func must(errs ...error) {
 	}
 }
 
-// SetReady sets trove_ready.
+// SetReady sets quader_ready.
 func (m *Metrics) SetReady(ready bool) {
 	if ready {
 		m.ready.Set(1)
@@ -233,7 +233,7 @@ func (m *Metrics) Handler() http.Handler {
 			return
 		}
 		if m.cfg.Auth == "static" && !m.authorized(r) {
-			w.Header().Set("WWW-Authenticate", `Bearer realm="trove metrics"`)
+			w.Header().Set("WWW-Authenticate", `Bearer realm="quader metrics"`)
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -266,7 +266,7 @@ func (m *Metrics) handlerLabel(name string) string {
 		return name
 	}
 	if len(m.handlers) >= maxHandlerLabels {
-		m.overflow.WithLabelValues("trove_http_requests_total", "handler").Inc()
+		m.overflow.WithLabelValues("quader_http_requests_total", "handler").Inc()
 		return "unmatched"
 	}
 	m.handlers[name] = struct{}{}
@@ -299,11 +299,11 @@ func (m *Metrics) endpointLabel(name string) string {
 	if _, ok := m.endpoints[name]; ok {
 		return name
 	}
-	m.overflow.WithLabelValues("trove_http_requests_total", "endpoint").Inc()
+	m.overflow.WithLabelValues("quader_http_requests_total", "endpoint").Inc()
 	return "_other"
 }
 
-// EndpointListenerUp sets trove_endpoint_listener_up{endpoint}: 1 while this
+// EndpointListenerUp sets quader_endpoint_listener_up{endpoint}: 1 while this
 // replica's listener of the endpoint accepts connections (R-EP-009).
 func (m *Metrics) EndpointListenerUp(endpoint string, up bool) {
 	v := 0.0
@@ -325,7 +325,7 @@ func (m *Metrics) EndpointForwardedHostIgnored(endpoint string) {
 }
 
 // credentialRefusals are the values of the reason label of
-// trove_endpoint_credentials_refused_total (R-EP-009).
+// quader_endpoint_credentials_refused_total (R-EP-009).
 func credentialRefusals() []string { return []string{"token_type", "token_binding", "anonymous"} }
 
 // EndpointCredentialsRefused counts a request the endpoint's credential rules
@@ -340,7 +340,7 @@ func (m *Metrics) EndpointCredentialsRefused(endpoint, reason string) {
 }
 
 // shedReasons are the values of the reason label of
-// trove_http_requests_shed_total (R-ARCH-005 step 4, Q-ARCH-240).
+// quader_http_requests_shed_total (R-ARCH-005 step 4, Q-ARCH-240).
 func shedReasons() []string { return []string{"in_flight", "memory_slots", "heap"} }
 
 // RequestShed counts a request the in-flight stage refused; a reason outside
@@ -354,14 +354,14 @@ func (m *Metrics) RequestShed(endpoint, reason string) {
 	}
 }
 
-// MemorySlots sets trove_http_memory_slots.
+// MemorySlots sets quader_http_memory_slots.
 func (m *Metrics) MemorySlots(n int) { m.memSlots.WithLabelValues().Set(float64(n)) }
 
-// MemorySlotsInUse registers trove_http_memory_slots_in_use, read from inUse at each scrape.
+// MemorySlotsInUse registers quader_http_memory_slots_in_use, read from inUse at each scrape.
 func (m *Metrics) MemorySlotsInUse(inUse func() int) {
 	m.reg.MustRegister(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-		Name: "trove_http_memory_slots_in_use",
-		Help: "Memory slots that admitted requests hold now (trove_http_memory_slots is the number there are).",
+		Name: "quader_http_memory_slots_in_use",
+		Help: "Memory slots that admitted requests hold now (quader_http_memory_slots is the number there are).",
 	}, func() float64 { return float64(inUse()) }))
 }
 

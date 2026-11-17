@@ -933,7 +933,7 @@ is generated on first start unless the operator provides one (example: 32 random
 hex-encoded), is viewable in the UI after re-entering the password, and can be rotated by
 distributing a new value to all services within one maintenance window. Open: the mechanism is
 either HMAC-SHA256 signing, as above, or symmetric encryption with a 128- or 256-bit AES key; the
-spec decides. Reason for the priority: trove is a single binary whose replicas coordinate through PostgreSQL only, so there is no
+spec decides. Reason for the priority: Quader is a single binary whose replicas coordinate through PostgreSQL only, so there is no
 service-to-service hop to protect.
 
 ### TOK-048 · Lifetimes and cleanup of internal service credentials
@@ -951,7 +951,7 @@ Timings for the credentials that the services of one deployment issue to and hol
 
 The stale-service job is named after revoking administrator credentials of stale services; what
 it revokes beyond what that name says is unspecified. Reason for the priority: as for TOK-043,
-trove has no separate services that hold credentials for each other.
+Quader has no separate services that hold credentials for each other.
 
 ## Legacy and hosted credentials
 

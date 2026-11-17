@@ -17,7 +17,7 @@ type settingSchema struct {
 	Title       string                   `json:"title"`
 	Description string                   `json:"description"`
 	Enum        []any                    `json:"enum"`
-	EnumTitles  map[string]string        `json:"x-trove-enum-titles"`
+	EnumTitles  map[string]string        `json:"x-quader-enum-titles"`
 	Properties  map[string]settingSchema `json:"properties"`
 }
 
@@ -46,7 +46,7 @@ var (
 )
 
 // TestR_UI_088_EverySettingOfAFormatHasATitleAndPlainTexts: the settings forms label a member with its schema's title, show its
-// description under it (Q-UI-79) and each value of an enum by its label (x-trove-enum-titles), so every member of every format's
+// description under it (Q-UI-79) and each value of an enum by its label (x-quader-enum-titles), so every member of every format's
 // settings schema has a title, every value of a member's enum a label, and no title, description or label names a requirement or
 // decision ID, which means nothing to the user who reads it. A member's description is one or two sentences in plain words: no
 // HTTP status, no dotted configuration key, no error code, no member name in camelCase and no null.
@@ -83,13 +83,13 @@ func checkMembers(t *testing.T, file, prefix string, properties map[string]setti
 		for _, v := range member.Enum {
 			label := member.EnumTitles[fmt.Sprint(v)]
 			if label == "" {
-				t.Errorf("%s: the value %v of %s has no label in x-trove-enum-titles", file, v, where)
+				t.Errorf("%s: the value %v of %s has no label in x-quader-enum-titles", file, v, where)
 			}
 			texts = append(texts, label)
 		}
 		for value := range member.EnumTitles {
 			if !slices.ContainsFunc(member.Enum, func(v any) bool { return fmt.Sprint(v) == value }) {
-				t.Errorf("%s: x-trove-enum-titles of %s labels %q, which its enum does not hold", file, where, value)
+				t.Errorf("%s: x-quader-enum-titles of %s labels %q, which its enum does not hold", file, where, value)
 			}
 		}
 		checkNoSpecID(t, file, where, texts...)
@@ -156,7 +156,7 @@ func TestR_UI_088_APlainTextNamesNoStatusKeyCodeMemberOrNull(t *testing.T) {
 	}
 	for _, text := range []string{
 		"How long to wait for the answer, 1 to 300 seconds, written like 30s.",
-		"The largest audit request trove accepts, 1 KiB to 10 MiB, written like 1MiB.",
+		"The largest audit request Quader accepts, 1 KiB to 10 MiB, written like 1MiB.",
 		"The platforms to keep, such as linux/amd64 or linux/arm64/v8.",
 		"The upstream's public signing keys, pasted as one armored OpenPGP block of up to 32 keys.",
 	} {

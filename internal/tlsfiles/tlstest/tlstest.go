@@ -1,6 +1,6 @@
 // Package tlstest issues throwaway certificates for tests of TLS code: a CA,
 // server and client leaves, PEM files written in place. Nothing outside _test.go
-// files and test/ may import it; no command or library of trove does.
+// files and test/ may import it; no command or library of quader does.
 package tlstest
 
 import (

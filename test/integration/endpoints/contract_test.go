@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 )
 
 // contract runs the convention tests of E1.6 on the exposure rules of customers:
@@ -37,7 +37,7 @@ func contract(t *testing.T, e *env) {
 				return nil, err
 			}
 			out.Header = req.Header.Clone()
-			out.Host = "trove.test"
+			out.Host = "quader.test"
 			out.Header.Set("Authorization", "Bearer "+e.opsPAT)
 			res, err := client.Do(out)
 			if err != nil {
@@ -45,14 +45,14 @@ func contract(t *testing.T, e *env) {
 			}
 			b, _ := io.ReadAll(res.Body)
 			_ = res.Body.Close()
-			check, _ := http.NewRequest(req.Method, "http://trove.test"+u.RequestURI(), nil)
+			check, _ := http.NewRequest(req.Method, "http://quader.test"+u.RequestURI(), nil)
 			if _, verr := e.val.Check(check, res.StatusCode, res.Header, b); verr != nil {
 				t.Errorf("response validation: %v\n%s", verr, b)
 			}
 			res.Body = io.NopCloser(bytes.NewReader(b))
 			return res, nil
 		},
-		Collection: "http://trove.test/api/v1/endpoints/customers/exposure-rules",
+		Collection: "http://quader.test/api/v1/endpoints/customers/exposure-rules",
 		Create: func(n int) map[string]any {
 			return map[string]any{
 				"name": fmt.Sprintf("contract-%d", n), "description": "contract rule", "repository": "it/generic-local",

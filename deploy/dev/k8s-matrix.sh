@@ -4,7 +4,7 @@
 #
 #   k8s-matrix.sh <kind node image> <helm major>      for example: k8s-matrix.sh "$K8S_MIN_KIND_NODE_IMAGE" 3
 #
-# It creates a one-node kind cluster of its own (trove-k8s-<minor>-helm<major>, removed on exit), checks that the API server is
+# It creates a one-node kind cluster of its own (quader-k8s-<minor>-helm<major>, removed on exit), checks that the API server is
 # the minor version the node image names and that the helm on PATH is the major version asked for, lints the chart, asks the
 # API server to admit every set of values below (`helm install --dry-run=server`), then installs the chart for real without
 # waiting (no database, no Valkey and no image are there: the pods never start), reads back the fields that R-HA-049 names as
@@ -28,11 +28,11 @@ have_helm="$(helm version --template '{{.Version}}')"
 [ "${have_helm#v}" != "$have_helm" ] && [ "$(printf '%s' "${have_helm#v}" | cut -d. -f1)" = "$HELM_MAJOR" ] \
   || die "helm $have_helm is on PATH, this leg is for Helm $HELM_MAJOR"
 
-CLUSTER="trove-k8s-${want_minor}-helm${HELM_MAJOR}"
+CLUSTER="quader-k8s-${want_minor}-helm${HELM_MAJOR}"
 CTX="kind-${CLUSTER}"
-RELEASE=trove
-NAMESPACE=trove
-CHART="$REPO_ROOT/deploy/helm/trove"
+RELEASE=quader
+NAMESPACE=quader
+CHART="$REPO_ROOT/deploy/helm/quader"
 OPERATOR="$REPO_ROOT/test/chart/testdata/operator-minimum.yaml"
 OUT="$REPO_ROOT/.out/k8s-matrix"
 mkdir -p "$OUT"
@@ -60,7 +60,7 @@ declare -a SETS=(
   "-f $CHART/profiles/small.yaml -f $OPERATOR"
   "-f $CHART/profiles/medium.yaml -f $OPERATOR"
   "-f $CHART/profiles/large.yaml -f $OPERATOR"
-  "-f $CHART/ci/required-only.yaml --set backup.enabled=true --set config.backup.target.bucket=trove-backups"
+  "-f $CHART/ci/required-only.yaml --set backup.enabled=true --set config.backup.target.bucket=quader-backups"
 )
 i=0
 for args in "${SETS[@]}"; do
@@ -73,7 +73,7 @@ done
 # The install is real, the pods are not: with the migration hook off Helm returns when the API server has accepted the objects.
 log "helm install (medium profile, backup on), not waiting"
 hm install "$RELEASE" "$CHART" -n "$NAMESPACE" -f "$CHART/profiles/medium.yaml" -f "$OPERATOR" \
-  --set migrations.mode=disabled --set backup.enabled=true --set config.backup.target.bucket=trove-backups
+  --set migrations.mode=disabled --set backup.enabled=true --set config.backup.target.bucket=quader-backups
 
 # expect <what> <kubectl jsonpath> <wanted> <kubectl get args...>: the API server stored the field the chart rendered.
 expect() {
@@ -92,7 +92,7 @@ expect "autoscaling/v2 metric" '{.spec.metrics[*].type}' Resource hpa "$RELEASE-
 
 log "helm upgrade to the small profile"
 hm upgrade "$RELEASE" "$CHART" -n "$NAMESPACE" -f "$CHART/profiles/small.yaml" -f "$OPERATOR" \
-  --set migrations.mode=disabled --set backup.enabled=true --set config.backup.target.bucket=trove-backups
+  --set migrations.mode=disabled --set backup.enabled=true --set config.backup.target.bucket=quader-backups
 if kc -n "$NAMESPACE" get hpa "$RELEASE-packages" >/dev/null 2>&1; then die "the autoscaler of the medium profile is still there after the upgrade to small"; fi
 expect "replicas of the small profile" '{.spec.replicas}' 3 deployment "$RELEASE-packages"
 

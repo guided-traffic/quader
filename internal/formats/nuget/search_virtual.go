@@ -6,13 +6,13 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/search"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/search"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // Search through a virtual repository (R-NUGET-018): the result lists of the members that

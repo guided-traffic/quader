@@ -1,15 +1,15 @@
 // Command record-gitlab re-records the GitLab fixtures of the issuer double (test/oidcstub/testdata)
 // against a real GitLab instance (Q-CI-25; R-CI-003, R-CI-006, R-CI-012):
 //
-//	TROVE_GITLAB_URL=https://gitlab.example.com TROVE_GITLAB_TOKEN=<token with scope api> \
+//	QUADER_GITLAB_URL=https://gitlab.example.com QUADER_GITLAB_TOKEN=<token with scope api> \
 //	  go run ./test/oidcstub/cmd/record-gitlab [-ca-file ca.pem] [-out test/oidcstub/testdata]
 //
 // or `make oidc-fixtures`. The token's user must be an administrator (with Admin Mode on, the
 // token also needs the scope admin_mode). The command creates, or reuses on a later run, the group
-// trove-oidc-validation with the subgroups billing and partner, the project billing/invoice-api,
+// quader-oidc-validation with the subgroups billing and partner, the project billing/invoice-api,
 // its fork partner/invoice-api, a protected tag rule v*, the environments production (protected;
 // the claim says so only on a licensed instance) and staging, an inactive pipeline schedule and
-// the user trove-oidcv-partner (Reporter of the parent, Maintainer of partner), whose merge
+// the user quader-oidcv-partner (Reporter of the parent, Maintainer of partner), whose merge
 // request from the fork GitLab cannot move into the parent. It commits .gitlab-ci.yml, starts one
 // pipeline per case, reads the job logs, in which each job prints the base64url-decoded header and
 // payload of its ID tokens and the shape of CI_JOB_TOKEN (never a raw token, never a signature),
@@ -41,8 +41,8 @@ import (
 
 // The environment variables of the instance and the token.
 const (
-	urlEnv   = "TROVE_GITLAB_URL"
-	tokenEnv = "TROVE_GITLAB_TOKEN" //nolint:gosec // the name of a variable, not a credential
+	urlEnv   = "QUADER_GITLAB_URL"
+	tokenEnv = "QUADER_GITLAB_TOKEN" //nolint:gosec // the name of a variable, not a credential
 )
 
 type config struct {
@@ -59,7 +59,7 @@ func main() {
 	var cfg config
 	flag.StringVar(&cfg.caFile, "ca-file", "", "PEM bundle trusted in addition to the system roots (an instance behind an internal CA)")
 	flag.StringVar(&cfg.out, "out", "test/oidcstub/testdata", "directory the fixtures are written to")
-	flag.StringVar(&cfg.group, "group", "trove-oidc-validation", "top-level group the recorder creates or reuses")
+	flag.StringVar(&cfg.group, "group", "quader-oidc-validation", "top-level group the recorder creates or reuses")
 	flag.StringVar(&cfg.jobImage, "job-image", "", "image of the jobs on docker and kubernetes runners (POSIX sh, base64, tr; make oidc-fixtures passes INTEGRATION_TOOLS_IMAGE of tools/versions.env); a shell runner ignores it")
 	flag.DurationVar(&cfg.timeout, "timeout", 30*time.Minute, "give up after this long")
 	flag.Parse()

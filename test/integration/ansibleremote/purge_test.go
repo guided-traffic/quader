@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup/fixup"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup/fixup"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestR_BAK_008_TheAnsiblePurgerEmptiesARemoteCacheAndForgetsItsRecordedDigests(t *testing.T) {

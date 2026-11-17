@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Group, GroupFilters, IdentityApi } from '../../api/identity-api';
@@ -25,7 +25,7 @@ export function groupOriginLabel(origin: Group['origin']): string {
 
 /** Groups (R-UI-025): name, description, origin and member count, with the filter panel, a sortable name and paging. */
 @Component({
-  selector: 'trove-group-list',
+  selector: 'quader-group-list',
   imports: [
     PageHeader,
     RouterLink,
@@ -38,16 +38,16 @@ export function groupOriginLabel(origin: Group['origin']): string {
     TextField,
   ],
   template: `
-    <trove-page-header heading="Groups" i18n-heading="@@groups.heading">
+    <quader-page-header heading="Groups" i18n-heading="@@groups.heading">
       <button actions class="btn btn-confirm" type="button" [disabled]="!session.has('identities:write')" aria-describedby="needs-groups" (click)="add()" i18n="@@groups.add">New group</button>
-    </trove-page-header>
-    <trove-needs id="needs-groups" capability="identities:write" />
+    </quader-page-header>
+    <quader-needs id="needs-groups" capability="identities:write" />
 
     <div class="list-layout" [class.panel-open]="panelOpen()">
       <div class="list-toolbar">
-        <trove-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
+        <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
       </div>
-      <trove-filter-panel
+      <quader-filter-panel
         #panel
         class="list-side"
         [(open)]="panelOpen"
@@ -55,16 +55,16 @@ export function groupOriginLabel(origin: Group['origin']): string {
         (apply)="apply()"
         (clearAll)="clear()"
       >
-        <trove-filter-category i18n-label="@@groups.q" label="Name" [active]="!!q().trim()" [expanded]="!!q().trim()">
-          <trove-text-field width="name" i18n-label="@@groups.q" label="Name" name="q" [(value)]="q" />
-        </trove-filter-category>
-        <trove-filter-category i18n-label="@@groups.origin" label="Origin" [active]="!!origin()" [expanded]="!!origin()">
-          <trove-select-field i18n-label="@@groups.origin" label="Origin" name="origin" [options]="originOptions" [(value)]="origin" />
-        </trove-filter-category>
-      </trove-filter-panel>
+        <quader-filter-category i18n-label="@@groups.q" label="Name" [active]="!!q().trim()" [expanded]="!!q().trim()">
+          <quader-text-field width="name" i18n-label="@@groups.q" label="Name" name="q" [(value)]="q" />
+        </quader-filter-category>
+        <quader-filter-category i18n-label="@@groups.origin" label="Origin" [active]="!!origin()" [expanded]="!!origin()">
+          <quader-select-field i18n-label="@@groups.origin" label="Origin" name="origin" [options]="originOptions" [(value)]="origin" />
+        </quader-filter-category>
+      </quader-filter-panel>
 
       <div class="list-main">
-        <trove-data-table
+        <quader-data-table
           [caption]="caption"
           [columns]="columns"
           [sort]="sort()"
@@ -87,7 +87,7 @@ export function groupOriginLabel(origin: Group['origin']): string {
               <td class="num">{{ g.memberCount }}</td>
             </tr>
           }
-        </trove-data-table>
+        </quader-data-table>
       </div>
     </div>
   `,
@@ -95,7 +95,7 @@ export function groupOriginLabel(origin: Group['origin']): string {
 })
 export class GroupList {
   private readonly api = inject(IdentityApi);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly router = inject(Router);
   protected readonly session = inject(SessionStore);
 

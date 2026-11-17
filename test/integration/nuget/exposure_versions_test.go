@@ -24,7 +24,7 @@ func TestR_NUGET_034_VersionIncludesAndExcludesCompareTheCanonicalForm(t *testin
 		if a.Status != http.StatusOK {
 			t.Fatalf("update the rule: %d %s", a.Status, a.Body)
 		}
-		x.epoch = a.Header.Get("Trove-Authz-Epoch")
+		x.epoch = a.Header.Get("Quader-Authz-Epoch")
 	}
 	versions := func() []string {
 		t.Helper()

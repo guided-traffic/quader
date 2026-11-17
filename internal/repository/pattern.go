@@ -6,7 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // PatternSubject is what a repository's include and exclude patterns match

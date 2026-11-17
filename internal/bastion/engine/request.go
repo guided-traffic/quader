@@ -12,13 +12,13 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/guided-traffic/trove/internal/bastion/guard"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // rq is one request on its way through the flow.
@@ -57,7 +57,7 @@ type rq struct {
 	hold   *mainHold
 }
 
-// countingWriter counts the body bytes served by their source (trove_bastion_bytes_served_total).
+// countingWriter counts the body bytes served by their source (quader_bastion_bytes_served_total).
 type countingWriter struct {
 	http.ResponseWriter
 	q      *rq
@@ -180,9 +180,9 @@ func (q *rq) end() {
 			ri.SetField("main_request_id", q.mainRequestID)
 		}
 	}
-	q.span.SetAttributes(attribute.String("trove.bastion.class", q.class), attribute.String("trove.bastion.result", q.result))
+	q.span.SetAttributes(attribute.String("quader.bastion.class", q.class), attribute.String("quader.bastion.result", q.result))
 	if q.reason != "" {
-		q.span.SetAttributes(attribute.String("trove.bastion.refusal", q.reason))
+		q.span.SetAttributes(attribute.String("quader.bastion.refusal", q.reason))
 	}
 }
 

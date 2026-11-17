@@ -14,7 +14,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
  * one after a confirmation; the number can then be published again, with other bytes, and the clearing is audited.
  */
 @Component({
-  selector: 'trove-ansible-tombstones',
+  selector: 'quader-ansible-tombstones',
   imports: [DatePipe, DataTable, ErrorNotice],
   template: `
     <section class="tombstones" aria-labelledby="ansible-tombstones-heading">
@@ -23,7 +23,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
         A deleted version leaves a tombstone, and its number cannot be published again. Clear the tombstone to allow a new publish of that
         version number with other bytes.
       </p>
-      <trove-data-table
+      <quader-data-table
         [caption]="caption"
         [columns]="columns"
         [loaded]="list.loaded()"
@@ -52,15 +52,15 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
             </td>
           </tr>
         }
-      </trove-data-table>
+      </quader-data-table>
       @if (failure(); as f) {
-        <trove-error-notice [error]="f" />
+        <quader-error-notice [error]="f" />
       }
     </section>
   `,
   styles: `
     .tombstones {
-      margin-block-end: var(--trove-space-6);
+      margin-block-end: var(--quader-space-6);
     }
   `,
 })

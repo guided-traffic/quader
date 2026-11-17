@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 )
 
 // endlessBody is a response body of n zero bytes that counts its Close.

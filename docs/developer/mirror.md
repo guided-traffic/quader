@@ -240,7 +240,7 @@ database.
 |---|---|---|
 | Unit | [policy_test.go](../../internal/mirror/policy_test.go), [engine_test.go](../../internal/mirror/engine_test.go) | the window (slow start, one halving per wait, the ceiling, the floor), the waits and their ranges, the cap of a hint, the failure back-off (60, 120, 240 s, +-20 %), the version bounds with a pinned version, the full or incremental decision, a pass end to end, discovery and its bounds, the long wait and the next job at that time, pre-emption and `*WaitError` not counted as failures, the byte bound and its transitions, a pause, a mode change, offline, the fence, a release, the dispatch, the share B, several workers, the series at 0 |
 | Integration | [test/integration/mirror](../../test/integration/mirror/) | a pass through the job framework, two dispatchers and the dedup key, the claim and the fence at the statements, the lost lease, the release at shutdown, pause and resume, the mode switch, offline, the error back-off against the real table, the byte bound with `repository_usage` and, with the real fold of a replica counting real file items, across three passes (`TestR_REPO_052_TheByteBoundHoldsAcrossPassesWhileTheFoldCountsWhatWasStored`), the restore statement, the gauges |
-| Chart | [rules_test.yaml](../../deploy/helm/trove/tests/rules_test.yaml) (`make chart-test`) | `TroveMirrorFailing`, `TroveMirrorStale` |
+| Chart | [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml) (`make chart-test`) | `QuaderMirrorFailing`, `QuaderMirrorStale` |
 
 ### Not built, and open
 
@@ -261,7 +261,7 @@ stay: they prove the fence, the lost lease, the pause and the mode switch at the
 | [rig_test.go](../../test/integration/mirror/rig_test.go) | | the rig: the stack, the stub behind a recorder, the replicas, the waits |
 | [npm_test.go](../../test/integration/mirror/npm_test.go) | R-REPO-051, [npm.md](../spec/formats/npm.md#mirror-discovery) | the public registry's `feed` (the requests to the replication host, no credential there, the key range, the incremental pass from the stored sequence, a deleted change and a read that answers 404), `names` on a private registry with a held package, `latest` pinned under `maxVersionsPerPackage`, the version bounds, a pattern change that makes the next pass full, a held package the feed missed |
 | [nuget_test.go](../../test/integration/mirror/nuget_test.go) | R-REPO-051, [nuget.md](../spec/formats/nuget.md#mirror-discovery) | the catalog read in full and after the cursor, a `PackageDelete` refreshing the version list, the truncated search listing and its note, exact IDs, the mirrored version served with the stub stopped |
-| [throttle_test.go](../../test/integration/mirror/throttle_test.go) | R-REPO-054, R-REPO-057 | `Retry-After` in seconds and as a date, `503` SlowDown three times in a row, `403` with `X-RateLimit-Remaining: 0`, `Retry-After: 3600` ending the job deferred and the continuation an hour on; the window, `trove_remote_upstream_up`, a client read during the wait, `flight_role: mirror` in the upstream log |
+| [throttle_test.go](../../test/integration/mirror/throttle_test.go) | R-REPO-054, R-REPO-057 | `Retry-After` in seconds and as a date, `503` SlowDown three times in a row, `403` with `X-RateLimit-Remaining: 0`, `Retry-After: 3600` ending the job deferred and the continuation an hour on; the window, `quader_remote_upstream_up`, a client read during the wait, `flight_role: mirror` in the upstream log |
 | [bound_test.go](../../test/integration/mirror/bound_test.go) | R-REPO-052, R-REPO-053 | the byte bound with a 30 MiB stub (`bound_reached`, one event, a client fetch of an unstored version, the raise to 64 MiB), the release at shutdown after 50 of 200 packages and a second process that ends the pass |
 | [preempt_test.go](../../test/integration/mirror/preempt_test.go) | R-REPO-055 | a client-serving replica and a process that claims `mirror`, `maxConcurrentFetches: 8`: the pass's two background fetches, eight client fetches without a wait, the ninth waits and the pass's process pre-empts both |
 | [status_test.go](../../test/integration/mirror/status_test.go) | R-REPO-056, R-REPO-057 | the run (202, then 409 with the same job), the status during the pass and after it from two replicas, the metrics, the populate events, `mirror.pass_completed` |
@@ -270,7 +270,7 @@ stay: they prove the fence, the lost lease, the pause and the mode switch at the
 **The rig** ([rig_test.go](../../test/integration/mirror/rig_test.go)). `newRig` starts the stack, the stub as a TLS server in the test process
 behind a recorder (`traffic`: every request with its time, host, path, query and credential scheme, and the tarball requests in flight), and the
 repository `npm-mirror` (or a NuGet remote, `newNugetRig`). `rig.runner` is a `worker` that claims the queue `mirror` alone
-(`TROVE_JOBS_QUEUES=["mirror"]`), `rig.web` a client-serving replica; neither has a fake host, so the passes run through the real
+(`QUADER_JOBS_QUEUES=["mirror"]`), `rig.web` a client-serving replica; neither has a fake host, so the passes run through the real
 `mirror.Host`. The state row of the repository is created with `next_pass_at` an hour ahead, so that the dispatch the scheduler runs when a
 replica starts starts nothing: `rig.pass` makes the pass due and dispatches, and `waitPass` waits for a `mirror-pass` job created after a time to
 end with an outcome (the job's result is the summary; `last_pass.startedAt` has whole seconds only).
@@ -403,7 +403,7 @@ behind it. Specified in R-REPO-054, R-REPO-055 and R-REPO-057; the decisions are
   spool admission `*mirror.WaitError{spool_busy}` with `After` 5 s; anything else is a failure of the item. A request that waits for a
   slot (the pass's window is above what the replica can give, or a client waits) is not an error: it blocks until it has one or the
   context ends.
-- **The engine counts what it sees.** The host counts nothing: `trove_mirror_preempted_total` and `trove_mirror_items_total{result=preempted}`
+- **The engine counts what it sees.** The host counts nothing: `quader_mirror_preempted_total` and `quader_mirror_items_total{result=preempted}`
   are the engine's, on `mirror.ErrPreempted`, and so are the rate-limit metrics, on `discover.AsRateLimited`.
 - **`Fill`** answers `Present` for an artifact that is stored (no upstream request, no gate, no event). Otherwise it runs the format's
   `BeforeArtifact` (its document requests are background requests of the pass), then the engine's fill. Offline, a negative entry, a
@@ -492,7 +492,7 @@ remote repository and is no pass: the Debian remote's index parse job (R-DEB-023
   (R-REPO-054) without the pass. It starts at 1, grows up to the ceiling, halves on a rate-limit answer and waits the time the upstream named inside the call; a pre-emption is
   repeated after `PreemptRetry` and a `*mirror.WaitError` after its `After`. A wait over `LongWait` ends the run: the call, and every later call, returns a
   `*mirror.DeferredError{Until}` (`discover.AsRateLimited` still finds the answer under it); the job fails and its queue retries it. The wait is not stored, and
-  `trove_mirror_rate_limited_total` counts passes only.
+  `quader_mirror_rate_limited_total` counts passes only.
 - **Errors** are those of the table above; the gate's refusal of an artifact (`gate_refused`) is returned as `*mirror.RefusedError`, not as found=false (only an upstream 404 is).
 
 Tests: [window_test.go](../../internal/mirror/window_test.go), [background_upstream_test.go](../../internal/formathost/background_upstream_test.go) and the integration test

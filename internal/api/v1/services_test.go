@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 )
 
 func TestRingsCompatible(t *testing.T) {

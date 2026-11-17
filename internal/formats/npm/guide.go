@@ -3,7 +3,7 @@ package npm
 import (
 	"embed"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // guideFiles are the Markdown templates of the guide, one file per section.
@@ -15,7 +15,7 @@ var guideFiles embed.FS
 // and a virtual repository is, and how npm, pnpm, Yarn Berry and Yarn Classic
 // configure, sign in, install, publish, tag, unpublish, audit and keep lockfiles
 // through one, what an endpoint with exposure rules changes, and what each answer
-// of the protocol means. Every statement describes trove as built; the tests in
+// of the protocol means. Every statement describes quader as built; the tests in
 // guide_test.go pin the facts the text names to the code.
 func (f *Format) Guide() []formats.GuideSection {
 	local, remote, virtual := []formats.Class{formats.Local}, []formats.Class{formats.Remote}, []formats.Class{formats.Virtual}

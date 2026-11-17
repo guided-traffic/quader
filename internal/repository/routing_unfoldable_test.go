@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // foldingNames is the name rule of a format whose names compare case-insensitively and whose

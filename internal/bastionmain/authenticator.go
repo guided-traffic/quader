@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/token"
 )
 
 // BastionValidator is the part of the token service the authenticator calls (*token.Service).

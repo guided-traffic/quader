@@ -1,0 +1,33 @@
+{{- /* One policy/v1 PodDisruptionBudget of a Deployment. Argument: dict "root" . "unit" <one entry of quader.units>. */ -}}
+{{- define "quader.pdb" -}}
+{{- $ := .root }}
+{{- $unit := .unit }}
+{{- $r := $unit.r }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "quader.fullname" $ }}-{{ $unit.name }}
+  labels:
+    {{- include "quader.labels" (dict "root" $ "component" $unit.role "pool" $unit.pool) | nindent 4 }}
+  {{- with (include "quader.commonAnnotations" $) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if $r.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ $r.podDisruptionBudget.minAvailable }}
+  {{- else }}
+  maxUnavailable: {{ $r.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  unhealthyPodEvictionPolicy: {{ $r.podDisruptionBudget.unhealthyPodEvictionPolicy }}
+  selector:
+    matchLabels:
+      {{- include "quader.selectorLabels" (dict "root" $ "component" $unit.role "pool" $unit.pool) | nindent 6 }}
+{{- end -}}
+{{- /* One PodDisruptionBudget per Deployment that enables it (R-HA-032): every role, every pool, every endpoint pool. */ -}}
+{{- range $unit := include "quader.units" . | fromYamlArray }}
+{{- if $unit.r.podDisruptionBudget.enabled }}
+{{- include "quader.pdb" (dict "root" $ "unit" $unit) | nindent 0 }}
+{{- end }}
+{{- end }}

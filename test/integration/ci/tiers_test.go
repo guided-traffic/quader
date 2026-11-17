@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 // The tiers of one token stay apart (R-CI-009, R-CI-016, R-CI-017, Q-CI-26, Q-CI-47): a project tier's mapping
@@ -26,7 +26,7 @@ type tierEnv struct {
 func newTierEnv(t *testing.T) *tierEnv {
 	t.Helper()
 	// ci.token.min_ttl of 1 s lets a project mapping save the maxTtlSeconds 1 of the audit's finding.
-	x := newXEnv(t, options{valkey: true, env: []string{"TROVE_CI_TOKEN_MIN_TTL=1s"}})
+	x := newXEnv(t, options{valkey: true, env: []string{"QUADER_CI_TOKEN_MIN_TTL=1s"}})
 	e := &tierEnv{xenv: x, a: x.web("web-a"), b: x.web("web-b")}
 	x.issuer(e.a)
 	x.addMapping(e.a, releaseMapping("acme-release-publish", 100))
@@ -41,7 +41,7 @@ func newTierEnv(t *testing.T) *tierEnv {
 // bob sends a request as the administrator of the three projects.
 func (e *tierEnv) bob(method, path string, body any, hdr ...string) testenv.Answer {
 	e.t.Helper()
-	return e.as(e.a, e.bobPAT, method, path, body, append([]string{"Trove-Authz-Min-Epoch", e.epoch}, hdr...)...)
+	return e.as(e.a, e.bobPAT, method, path, body, append([]string{"Quader-Authz-Min-Epoch", e.epoch}, hdr...)...)
 }
 
 // projectReader is a project mapping that reads the project's repository for the double's project 1234.

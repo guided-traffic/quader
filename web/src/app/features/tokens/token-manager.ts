@@ -1,6 +1,6 @@
 import { Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Checkbox } from '../../shared/ui/checkbox';
-import { DialogClose, DialogRef, DialogTitle, TroveDialog } from '../../shared/ui/dialog';
+import { DialogClose, DialogRef, DialogTitle, QuaderDialog } from '../../shared/ui/dialog';
 import { firstValueFrom } from 'rxjs';
 import { newIdempotencyKey } from '../../api/client';
 import { ApiError } from '../../api/problem';
@@ -34,15 +34,15 @@ interface RotateChoice {
 
 /** Asks how long the old value of a rotated token stays valid (R-AUTH-030). */
 @Component({
-  selector: 'trove-rotate-dialog',
+  selector: 'quader-rotate-dialog',
   imports: [DialogTitle, DialogClose, SelectField],
   template: `
-    <h2 troveDialogTitle i18n="@@rotate.title">Rotate this token?</h2>
+    <h2 quaderDialogTitle i18n="@@rotate.title">Rotate this token?</h2>
     <div class="dialog-body">
       <p i18n="@@rotate.text">
         A new token with the same scope is created and shown once. Everything that uses the old token must switch to it.
       </p>
-      <trove-select-field
+      <quader-select-field
         i18n-label="@@rotate.overlap"
         label="The old token stays valid for"
         [options]="options"
@@ -50,7 +50,7 @@ interface RotateChoice {
       />
     </div>
     <div class="dialog-actions">
-      <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@rotate.cancel">Cancel</button>
+      <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@rotate.cancel">Cancel</button>
       <button class="btn btn-confirm" type="button" (click)="confirm()" i18n="@@rotate.confirm">Rotate</button>
     </div>
   `,
@@ -74,35 +74,35 @@ export class RotateDialog {
  * (R-UI-029, R-UI-026), revoke one or all with confirmation, rotate. Revoking all is destructive, so it is a danger button last,
  * in a closed section **Advanced** (ui-style-guide.md, Settings pages): the manager's own at its end, or the page's own where the
  * page has one (`revokeAllHere` false, `offersRevokeAll`, `revokeAllTokens`). A created or rotated value is
- * shown once through `<trove-token-secret>` and lives in this component's signal only (R-UI-043);
+ * shown once through `<quader-token-secret>` and lives in this component's signal only (R-UI-043);
  * it is dropped when the panel is dismissed or the component is destroyed. Writes use the
  * idempotency key of the open form (R-UI-042); a retried creation that answers
  * `token_already_issued` revokes the token whose value was lost and creates again with a new key.
  */
 @Component({
-  selector: 'trove-token-manager',
+  selector: 'quader-token-manager',
   imports: [Checkbox, Disclosure, ErrorNotice, TokenForm, TokenSecret, TokenTable],
   template: `
     <div class="toolbar">
       @if (createInToolbar() && offersCreate()) {
         <button class="btn btn-confirm" type="button" (click)="openForm()" i18n="@@tokens.create">Create token</button>
       }
-      <trove-checkbox [checked]="showAll()" (checkedChange)="setShowAll($event)">
+      <quader-checkbox [checked]="showAll()" (checkedChange)="setShowAll($event)">
         <ng-container i18n="@@tokens.show-all">Show revoked and expired tokens</ng-container>
-      </trove-checkbox>
+      </quader-checkbox>
     </div>
 
     @if (secret(); as s) {
-      <trove-token-secret [value]="s.token" [description]="s.description" (closed)="secret.set(null)" />
+      <quader-token-secret [value]="s.token" [description]="s.description" (closed)="secret.set(null)" />
     }
 
     @if (formOpen()) {
       <section class="card" aria-labelledby="token-form-heading">
         <h2 id="token-form-heading" i18n="@@tokens.form-heading">New token</h2>
         @if (formError(); as e) {
-          <trove-error-notice [error]="e" />
+          <quader-error-notice [error]="e" />
         }
-        <trove-token-form
+        <quader-token-form
           [submitLabel]="createLabel"
           [allowNonExpiring]="allowNonExpiring()"
           [lifetimeCapped]="projectIssues() && !allowNonExpiring()"
@@ -119,13 +119,13 @@ export class RotateDialog {
     }
 
     @if (actionError(); as e) {
-      <trove-error-notice [error]="e" />
+      <quader-error-notice [error]="e" />
     }
     @if (list.error(); as e) {
-      <trove-error-notice [error]="e" (retry)="list.reload()" />
+      <quader-error-notice [error]="e" (retry)="list.reload()" />
     }
     @if (list.loaded()) {
-      <trove-token-table
+      <quader-token-table
         [tokens]="list.items()"
         [emptyText]="emptyText()"
         [canRotate]="canRotate()"
@@ -141,12 +141,12 @@ export class RotateDialog {
     }
 
     @if (revokeAllHere() && offersRevokeAll()) {
-      <trove-disclosure i18n-heading="@@tokens.advanced" heading="Advanced" i18n-hint="@@tokens.advanced-hint" hint="Revoke every token at once.">
+      <quader-disclosure i18n-heading="@@tokens.advanced" heading="Advanced" i18n-hint="@@tokens.advanced-hint" hint="Revoke every token at once.">
         <p class="muted" i18n="@@tokens.revoke-all-note">Every token stops working at once, and the tools that use them are refused. This cannot be undone.</p>
         <p>
           <button class="btn btn-danger" type="button" (click)="revokeAllTokens()" i18n="@@tokens.revoke-all">Revoke all tokens</button>
         </p>
-      </trove-disclosure>
+      </quader-disclosure>
     }
   `,
   styleUrl: '../../shared/access/access.scss',
@@ -168,7 +168,7 @@ export class TokenManager {
   private readonly confirmer = inject(Confirm);
   private readonly notifier = inject(Notifier);
   private readonly drafts = inject(DraftStore);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
 
   protected readonly list = new PagedResource<Token>();
   protected readonly showAll = signal(false);

@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // Log stream names, the value of the log field (R-OPS-009).

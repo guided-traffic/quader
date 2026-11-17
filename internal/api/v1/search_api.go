@@ -8,15 +8,15 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/packages/view"
-	"github.com/guided-traffic/trove/internal/project"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/packages/view"
+	"github.com/guided-traffic/quader/internal/project"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The suggestions of the UI's search field (R-API-060 to R-API-064): one request answers the best matches of a text for each kind

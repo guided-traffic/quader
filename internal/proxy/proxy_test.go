@@ -14,12 +14,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 func TestUpstreamURLBuilder(t *testing.T) {
@@ -79,18 +79,18 @@ func TestCacheStatusHeader(t *testing.T) {
 		cs   CacheStatus
 		want string
 	}{
-		"fresh hit":      {hitStatus(300*time.Second + 900*time.Millisecond), "trove; hit; ttl=300"},
-		"artifact hit":   {CacheStatus{Hit: true, TTL: -1}, "trove; hit"},
-		"miss stored":    {CacheStatus{Forwarded: "uri-miss", FwdStatus: 200, Stored: true}, "trove; fwd=uri-miss; fwd-status=200; stored"},
-		"revalidated":    {CacheStatus{Forwarded: "stale", FwdStatus: 304}, "trove; fwd=stale; fwd-status=304"},
-		"refreshed":      {CacheStatus{Forwarded: "stale", FwdStatus: 200, Stored: true}, "trove; fwd=stale; fwd-status=200; stored"},
-		"stale failure":  {staleAfterFailure(503), "trove; fwd=stale; fwd-status=503; detail=served-stale"},
-		"stale slow":     {staleAfterFailure(0), "trove; fwd=stale; detail=served-stale"},
-		"stale unasked":  {servedStale(), "trove; hit; detail=served-stale"},
-		"negative":       {CacheStatus{Hit: true, Negative: true, Detail: detailNegative}, "trove; hit; detail=negative"},
-		"collapsed hit":  {CacheStatus{Hit: true, TTL: 5 * time.Second, Collapsed: true}, "trove; hit; ttl=5; collapsed"},
-		"collapsed miss": {CacheStatus{Hit: true, TTL: -1, Collapsed: true}, "trove; hit; collapsed"},
-		"expired":        {hitStatus(-time.Second), "trove; hit; ttl=0"},
+		"fresh hit":      {hitStatus(300*time.Second + 900*time.Millisecond), "quader; hit; ttl=300"},
+		"artifact hit":   {CacheStatus{Hit: true, TTL: -1}, "quader; hit"},
+		"miss stored":    {CacheStatus{Forwarded: "uri-miss", FwdStatus: 200, Stored: true}, "quader; fwd=uri-miss; fwd-status=200; stored"},
+		"revalidated":    {CacheStatus{Forwarded: "stale", FwdStatus: 304}, "quader; fwd=stale; fwd-status=304"},
+		"refreshed":      {CacheStatus{Forwarded: "stale", FwdStatus: 200, Stored: true}, "quader; fwd=stale; fwd-status=200; stored"},
+		"stale failure":  {staleAfterFailure(503), "quader; fwd=stale; fwd-status=503; detail=served-stale"},
+		"stale slow":     {staleAfterFailure(0), "quader; fwd=stale; detail=served-stale"},
+		"stale unasked":  {servedStale(), "quader; hit; detail=served-stale"},
+		"negative":       {CacheStatus{Hit: true, Negative: true, Detail: detailNegative}, "quader; hit; detail=negative"},
+		"collapsed hit":  {CacheStatus{Hit: true, TTL: 5 * time.Second, Collapsed: true}, "quader; hit; ttl=5; collapsed"},
+		"collapsed miss": {CacheStatus{Hit: true, TTL: -1, Collapsed: true}, "quader; hit; collapsed"},
+		"expired":        {hitStatus(-time.Second), "quader; hit; ttl=0"},
 	} {
 		t.Run("R-REPO-047 "+name, func(t *testing.T) {
 			if got := tc.cs.Header(); got != tc.want {
@@ -144,7 +144,7 @@ func TestStreamWithholdsTheTail(t *testing.T) {
 	t.Run("R-REPO-041 the last 64 KiB are released by finish and not before", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		s := newStream(rec)
-		s.begin("application/octet-stream", int64(len(body)), "trove", nil)
+		s.begin("application/octet-stream", int64(len(body)), "quader", nil)
 		for i := 0; i < len(body); i += 10_000 {
 			_, _ = s.Write(body[i:min(i+10_000, len(body))])
 		}
@@ -157,14 +157,14 @@ func TestStreamWithholdsTheTail(t *testing.T) {
 		if !s.finish() || rec.Body.Len() != len(body) {
 			t.Fatalf("finish: %d bytes", rec.Body.Len())
 		}
-		if _, done := s.state(); !done || rec.Header().Get("Cache-Status") != "trove" {
+		if _, done := s.state(); !done || rec.Header().Get("Cache-Status") != "quader" {
 			t.Fatal("the response is not complete")
 		}
 	})
 	t.Run("R-REPO-041 a body that ends inside the withheld tail has not started a response", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		s := newStream(rec)
-		s.begin("", -1, "trove", nil)
+		s.begin("", -1, "quader", nil)
 		_, _ = s.Write(body[:1000])
 		if started, _ := s.state(); started || rec.Code != 200 && rec.Body.Len() != 0 {
 			t.Fatalf("started %v", started)
@@ -173,7 +173,7 @@ func TestStreamWithholdsTheTail(t *testing.T) {
 	t.Run("R-REPO-026 a client that goes away does not stop the fetch, and nothing is written after detach", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		s := newStream(rec)
-		s.begin("", -1, "trove", nil)
+		s.begin("", -1, "quader", nil)
 		_, _ = s.Write(body[:2*withheldTail])
 		s.detach()
 		n := rec.Body.Len()
@@ -582,7 +582,7 @@ func TestWithStatusKeepsTheError(t *testing.T) {
 		err := withStatus(orig, CacheStatus{Forwarded: "uri-miss", FwdStatus: 503})
 		rec := httptest.NewRecorder()
 		errs.Write(rec, httptest.NewRequest("GET", "/", nil), err, "id", nil)
-		if rec.Code != 503 || rec.Header().Get("Cache-Status") != "trove; fwd=uri-miss; fwd-status=503" || rec.Header().Get("Retry-After") != "60" {
+		if rec.Code != 503 || rec.Header().Get("Cache-Status") != "quader; fwd=uri-miss; fwd-status=503" || rec.Header().Get("Retry-After") != "60" {
 			t.Fatalf("%d %v", rec.Code, rec.Header())
 		}
 		if orig.Headers != nil {

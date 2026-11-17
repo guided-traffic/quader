@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Metrics configures the metrics endpoint (R-OPS-006, R-OPS-007). The bearer

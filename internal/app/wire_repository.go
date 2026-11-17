@@ -3,13 +3,13 @@ package app
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	_ "github.com/guided-traffic/trove/internal/formats/all" // registers every format (R-ARCH-010)
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln/evaluate"
+	"github.com/guided-traffic/quader/internal/authz"
+	_ "github.com/guided-traffic/quader/internal/formats/all" // registers every format (R-ARCH-010)
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln/evaluate"
 )
 
 // wireRepository is the repository area: the snapshot reader and the service at

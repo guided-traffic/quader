@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/guard"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // probeRec is a probe answer the Bastion keeps per method and target for metadata_revalidate_after
@@ -102,7 +102,7 @@ func (e *engine) replayRefusal(q *rq, ref refusal) {
 	e.writeRefusal(q, &ref, metrics.SourceCache)
 }
 
-// countReadOnly counts a probe answer, fresh or replayed, in trove_bastion_refused_total{reason="read_only"} and sets
+// countReadOnly counts a probe answer, fresh or replayed, in quader_bastion_refused_total{reason="read_only"} and sets
 // the deny reason of the request log when it is the main installation's 403 bastion_read_only. Any other kept
 // answer (the 404 of a path with no route) is the main installation's own and no refusal of the Bastion
 // (R-BAS-040, Q-BAS-147).

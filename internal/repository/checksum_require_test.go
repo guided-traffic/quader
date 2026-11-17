@@ -3,8 +3,8 @@ package repository
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // noDigestCatalog adds a remote-capable format whose upstream announces no digest to the remote catalog.

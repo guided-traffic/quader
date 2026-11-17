@@ -7,7 +7,7 @@ import (
 )
 
 // newID returns a UUIDv7 (RFC 9562): 48 bits of Unix milliseconds, then random
-// bits, so job IDs sort by creation time. trove generates job IDs itself
+// bits, so job IDs sort by creation time. quader generates job IDs itself
 // (R-ARCH-016).
 func newID() string {
 	var b [16]byte

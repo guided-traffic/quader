@@ -1,7 +1,7 @@
 # The management API's edge: rate limits, cross-origin access, stored outcomes
 
 Perspective: what stops one caller from taking the capacity of the others, which origins a browser script may call from, and
-which parts of a response trove keeps. The mechanisms are the cluster limiter ([R-ARCH-034](../spec/architecture.md)), the
+which parts of a response Quader keeps. The mechanisms are the cluster limiter ([R-ARCH-034](../spec/architecture.md)), the
 general rate-limit classes ([R-API-016](../spec/api-and-ui.md)), CORS ([R-API-018](../spec/api-and-ui.md)), the response
 headers of R-API-017 and the idempotency keys of R-API-014. How to use them is in
 [http-api.md](../developer/http-api.md) and [valkey.md](../developer/valkey.md#rate-limit-counters).
@@ -15,7 +15,7 @@ headers of R-API-017 and the idempotency keys of R-API-014. How to use them is i
 | What a request without a credential costs | `api_package_anonymous` leaves out a package request the decision point is certain to challenge: its address names a repository the installed grant index holds with artifacts that are not `public` (`ChallengedByLevels`, [Q-API-290](../spec/api-and-ui.md#q-api-290--package_anonymous-does-not-charge-a-request-the-decision-point-challenges)). A NuGet client's first attempt of every request is such a request; its repetition with the token is charged to the token. Such a request is bounded by stage 4 only, as it was when the authentication stage refused it before the visibility levels; it costs the route match and one decision on the index in memory, no database read. A repository key the index does not hold is charged, because its request asks PostgreSQL whether the repository was just created; so are a path that names no repository, `/files/` and a replica without an index. |
 | What Valkey holds | Counters under the key family `rl` ([valkey_ratelimit.go](../../internal/cluster/valkey_ratelimit.go)): the limiter name, a SHA-256 of the bucket, a window number, a count. No token, no principal, no address in clear (R-ARCH-030), every key with an expiry of two windows. Valkey never holds a grant or a decision. |
 | Refused requests count | The counter is incremented before the decision, so hammering does not win budget back; the `Retry-After` is computed from the same counters. |
-| Without Valkey | Each replica answers from a local token bucket with `rate ÷ n` and `max(1, burst ÷ n)`; no Valkey call is attempted while the client reports itself unavailable, and a failing call costs at most `valkey.command_timeout`. The limiter never fails a request because Valkey failed. `trove_ratelimit_fallback{limiter}` shows it. |
+| Without Valkey | Each replica answers from a local token bucket with `rate ÷ n` and `max(1, burst ÷ n)`; no Valkey call is attempted while the client reports itself unavailable, and a failing call costs at most `valkey.command_timeout`. The limiter never fails a request because Valkey failed. `quader_ratelimit_fallback{limiter}` shows it. |
 | Memory | The local buckets of a limiter are bounded (`MaxFallbackBuckets`, 100,000); idle ones are dropped first, and a dropped bucket starts full. |
 
 An attacker who can write to Valkey can reset or fill counters, which lets requests through or locks callers out of the API.
@@ -86,7 +86,7 @@ only general limits; a route that needs its own bound registers its own limiter 
 
 ### H-112 · A counter lost in a Valkey failover restarts, and Valkey write access moves the limits
 
-Live whenever Valkey fails over or is written by someone other than trove. A failover that loses recent counters admits at
+Live whenever Valkey fails over or is written by someone other than Quader. A failover that loses recent counters admits at
 most one extra window of requests per bucket (R-ARCH-034). A party with write access to Valkey (its ACL user, the node, the
 network path if Valkey TLS is off) can reset any counter or fill one. The limiter is a fairness and abuse control, not a
 credential guard; the break-glass lockout is in PostgreSQL.
@@ -100,7 +100,7 @@ bound the acceptance test checks (300 admitted of 1,000 in 2 s with the defaults
 
 ### H-114 · Anonymous callers behind one address share one bucket
 
-Live when `server.trusted_proxies` does not name the proxy in front of trove: every client then has the proxy's address and
+Live when `server.trusted_proxies` does not name the proxy in front of Quader: every client then has the proxy's address and
 the anonymous class (5 requests per second, burst 20 by default) is spent by all of them together. With the proxy trusted, one
 NAT in front of many users does the same for those users.
 

@@ -1,7 +1,7 @@
 package project
 
 import (
-	"github.com/guided-traffic/trove/internal/authz"
+	"github.com/guided-traffic/quader/internal/authz"
 )
 
 // Role is the role of a member of a project: reader, developer, maintainer or owner

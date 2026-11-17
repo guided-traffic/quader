@@ -17,8 +17,8 @@ import (
 
 // The client pods of the Debian acceptance tests (R-DEB-035, Q-DEB-27): deploy/dev/apt-clients.yaml holds the pod (a real APT of the pinned image
 // with the verifier of its release, curl, a forwarder on 127.0.0.1:<edge port>, the dev CA trusted through Acquire::https::CAInfo),
-// test/e2e/aptclients builds the four images, and deploy/dev/e2e.sh (marker T17 apt-clients) starts the pods trove-e2e-apt-<image> in the
-// namespace trove-e2e-apt. The tests run the clients through `kubectl exec`; the scenarios build on aptImage.run (deb_env_test.go).
+// test/e2e/aptclients builds the four images, and deploy/dev/e2e.sh (marker T17 apt-clients) starts the pods quader-e2e-apt-<image> in the
+// namespace quader-e2e-apt. The tests run the clients through `kubectl exec`; the scenarios build on aptImage.run (deb_env_test.go).
 
 // aptImage is one of the four clients: the pin in tools/versions.env that names it and what the image must be.
 type aptImage struct {
@@ -45,9 +45,9 @@ var (
 // aptPod returns the name of the pod of an image; a missing setting is a failure, never a skip.
 func aptPod(t testing.TB, img aptImage) string {
 	t.Helper()
-	prefix := os.Getenv("TROVE_E2E_APT_CLIENTS_POD_PREFIX")
+	prefix := os.Getenv("QUADER_E2E_APT_CLIENTS_POD_PREFIX")
 	if prefix == "" {
-		t.Fatal("TROVE_E2E_APT_CLIENTS_POD_PREFIX is not set; run `deploy/dev/e2e.sh apt-clients`")
+		t.Fatal("QUADER_E2E_APT_CLIENTS_POD_PREFIX is not set; run `deploy/dev/e2e.sh apt-clients`")
 	}
 	return prefix + img.name
 }
@@ -55,9 +55,9 @@ func aptPod(t testing.TB, img aptImage) string {
 // aptClientsNamespace is the namespace of the client pods (Pod Security level baseline).
 func aptClientsNamespace(t testing.TB) string {
 	t.Helper()
-	ns := os.Getenv("TROVE_E2E_APT_CLIENTS_NAMESPACE")
+	ns := os.Getenv("QUADER_E2E_APT_CLIENTS_NAMESPACE")
 	if ns == "" {
-		t.Fatal("TROVE_E2E_APT_CLIENTS_NAMESPACE is not set; run `deploy/dev/e2e.sh apt-clients`")
+		t.Fatal("QUADER_E2E_APT_CLIENTS_NAMESPACE is not set; run `deploy/dev/e2e.sh apt-clients`")
 	}
 	return ns
 }
@@ -128,7 +128,7 @@ func TestAPTClients(t *testing.T) {
 
 		// The base URL of the setup snippets is https://localhost:<port>/api/deb/... The forwarder in the pod carries it to the cluster; APT and
 		// curl verify the edge's certificate for `localhost` with the dev CA, which the entrypoint put into Acquire::https::CAInfo and .curlrc.
-		// A status line proves the handshake passed; a failed verification ends in curl's exit code 60 and never reaches trove.
+		// A status line proves the handshake passed; a failed verification ends in curl's exit code 60 and never reaches quader.
 		t.Run("R-DEB-035 "+img.name+" verifies the edge's certificate with the dev CA", func(t *testing.T) {
 			out, err := aptTry(t, img, nil, fmt.Sprintf(`curl -sS -o /dev/null -w '%%{http_code}' https://%s/api/v1/formats`, aptEdge(t)))
 			if err != nil {

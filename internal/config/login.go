@@ -18,7 +18,7 @@ import (
 type AuthOIDC struct {
 	// Providers is keyed by the provider ID, the path segment of the redirect URI
 	// (Q-AUTH-30). A map of structs is one key: in the environment it is JSON
-	// (TROVE_AUTH_OIDC_PROVIDERS).
+	// (QUADER_AUTH_OIDC_PROVIDERS).
 	Providers map[string]AuthOIDCProvider `yaml:"providers" default:"{}" doc:"Login providers by ID; see R-AUTH-004. Keys of an entry that are left out take the defaults of R-AUTH-004, R-AUTH-007 and R-AUTH-008."`
 }
 
@@ -74,7 +74,7 @@ type AuthOIDCGroupSync struct {
 	Rules          []AuthOIDCGroupRule `yaml:"rules"`
 }
 
-// AuthOIDCGroupRule maps claim values to a trove group: exactly one of Match
+// AuthOIDCGroupRule maps claim values to a quader group: exactly one of Match
 // (exact, case-sensitive) and MatchRegex (RE2, anchored to the whole value;
 // Group may use $1 or ${name}).
 type AuthOIDCGroupRule struct {
@@ -249,7 +249,7 @@ func (p AuthOIDCProvider) validate(r *Report, key string) {
 	}
 	for _, k := range sortedMapKeys(d.ExtraAuthParams) {
 		if slices.Contains(ReservedAuthParams(), k) {
-			r.Add(key+".extra_auth_params", "must not set %q: trove sets it itself", k)
+			r.Add(key+".extra_auth_params", "must not set %q: Quader sets it itself", k)
 		}
 	}
 	if len(d.AllowedSigningAlgs) == 0 {
@@ -324,12 +324,12 @@ func (p AuthOIDCProvider) validateRules(r *Report, key string, d AuthOIDCProvide
 		}
 	}
 	if d.PublicIssuer && *d.JIT && len(d.LoginRequiresGroups) == 0 {
-		r.Add(key+".login_requires_groups", "must not be empty: provider %s has a public issuer and jit is true, so every account of the issuer would become a trove user", strings.TrimPrefix(key, "providers."))
+		r.Add(key+".login_requires_groups", "must not be empty: provider %s has a public issuer and jit is true, so every account of the issuer would become a Quader user", strings.TrimPrefix(key, "providers."))
 	}
 }
 
 // namespacedPrefix reports whether the literal prefix of an anchored pattern
-// holds a non-empty namespace ending in "/" (acme/ in acme/trove-(.+)).
+// holds a non-empty namespace ending in "/" (acme/ in acme/quader-(.+)).
 func namespacedPrefix(re *regexp.Regexp) bool {
 	prefix, _ := re.LiteralPrefix()
 	return strings.Index(prefix, "/") > 0

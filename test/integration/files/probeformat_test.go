@@ -11,9 +11,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // probeStore is the data port of the probe format: what its hooks reach through

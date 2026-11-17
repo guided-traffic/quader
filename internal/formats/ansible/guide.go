@@ -3,7 +3,7 @@ package ansible
 import (
 	"embed"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // guideFiles are the Markdown templates of the guide, one file per section.
@@ -14,7 +14,7 @@ var guideFiles embed.FS
 // Guide is the guide of the Ansible Galaxy format (R-ANS-025, api-and-ui.md R-UI-049): what a local, a remote and a virtual repository
 // is, how ansible-galaxy is pointed at the repository, which credential it sends where, how a collection and a requirements.yml are
 // installed, what roles are and are not, how a collection is published and removed, and what each answer of the server means. Every
-// statement describes trove as the requirements define it.
+// statement describes quader as the requirements define it.
 //
 // The sections of a class appear with the class: a section written for a class the format does not register is left out, because the
 // kit refuses it (check 8).

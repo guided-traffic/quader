@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // capsRemote is a remote adapter with the two optional interfaces; its upstream requests are built below the

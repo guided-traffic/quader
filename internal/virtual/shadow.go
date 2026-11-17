@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // DefaultShadowRetryAfter is the Retry-After of shadow_check_unavailable when no circuit says how
@@ -32,7 +32,7 @@ type ShadowOutcome struct {
 	// Virtuals are the keys of the virtual repositories the write would shadow in and the caller
 	// holds read on; the error body names them and never a remote member.
 	Virtuals []string
-	// Outcome is the label of trove_shadow_checks_total; empty when the check did not run.
+	// Outcome is the label of quader_shadow_checks_total; empty when the check did not run.
 	Outcome string
 }
 

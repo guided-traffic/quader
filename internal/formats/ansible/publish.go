@@ -14,12 +14,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/galaxydoc"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
-	"github.com/guided-traffic/trove/internal/formats/ansible/version"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/ansible/version"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // maxPreamble bounds what is read of a multipart body before its first part starts: the parser would otherwise read an unbounded run of

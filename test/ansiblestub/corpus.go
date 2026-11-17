@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ansiblestub/ansiblegen"
+	"github.com/guided-traffic/quader/test/ansiblestub/ansiblegen"
 )
 
 // The corpus: collections and roles that the stub serves. Archives are generated on first use and kept; a version document needs

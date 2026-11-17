@@ -14,15 +14,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 const (
-	tokValid   = "trv_bst_validvalidvalidvalidvalidvalid"
-	tokRevoked = "trv_bst_revokedrevokedrevokedrevokedrevoked"
-	tokStore   = "trv_bst_storefailurestorefailurestore"
-	pat        = "trv_pat_0123456789012345678901234567890123"
+	tokValid   = "qdr_bst_validvalidvalidvalidvalidvalid"
+	tokRevoked = "qdr_bst_revokedrevokedrevokedrevokedrevoked"
+	tokStore   = "qdr_bst_storefailurestorefailurestore"
+	pat        = "qdr_pat_0123456789012345678901234567890123"
 )
 
 // fakeTokens is the TokenAuthenticator of the tests. Like the token service, it asks the throttle of the request
@@ -105,7 +105,7 @@ func TestR_BAS_008_ARevokedBastionTokenAnswersAProblemOnAPackageRoute(t *testing
 }
 
 // TestR_BAS_008_ATokenOfAnotherTypeLeavesTheRequestOrdinary: a valid token of another type in
-// Trove-Bastion-Authorization is ignored; no Recognition, no interface header; so is every other Trove-Bastion-*
+// Quader-Bastion-Authorization is ignored; no Recognition, no interface header; so is every other Quader-Bastion-*
 // header without a valid token.
 func TestR_BAS_008_ATokenOfAnotherTypeLeavesTheRequestOrdinary(t *testing.T) {
 	tokens := &fakeTokens{}
@@ -138,7 +138,7 @@ func TestR_BAS_008_ATokenOfAnotherTypeLeavesTheRequestOrdinary(t *testing.T) {
 func TestR_BAS_008_AValidTokenRecognizesTheRequest(t *testing.T) {
 	t.Run("a forwarded request keeps the caller's credential and loses the Bastion token", func(t *testing.T) {
 		r := forwarded("/api/npm/web/npm-all/lodash",
-			iface.HeaderAuthorization, "bearer "+tokValid, iface.HeaderInterface, version(), iface.HeaderReplica, "trove-bastion-7d9c-x2k4q",
+			iface.HeaderAuthorization, "bearer "+tokValid, iface.HeaderInterface, version(), iface.HeaderReplica, "quader-bastion-7d9c-x2k4q",
 			"Authorization", "Bearer caller-credential")
 		w, seen := run(t, RecognizeOptions{Tokens: &fakeTokens{}}, r)
 		if seen == nil {
@@ -150,7 +150,7 @@ func TestR_BAS_008_AValidTokenRecognizesTheRequest(t *testing.T) {
 		}
 		want := Recognition{
 			Bastion: "partners", BastionID: "0192f1c4-0000-7000-8000-0000000000b1", TokenID: "0192f1c4-0000-7000-8000-000000000001",
-			TokenExpiresAt: time.Date(2027, 11, 2, 0, 0, 0, 0, time.UTC), Interface: iface.InterfaceVersion, Replica: "trove-bastion-7d9c-x2k4q",
+			TokenExpiresAt: time.Date(2027, 11, 2, 0, 0, 0, 0, time.UTC), Interface: iface.InterfaceVersion, Replica: "quader-bastion-7d9c-x2k4q",
 		}
 		if rec != want {
 			t.Errorf("Recognition = %+v, want %+v", rec, want)
@@ -265,7 +265,7 @@ func TestR_BAS_008_WithoutAnAuthenticatorEveryBastionTokenIsInvalid(t *testing.T
 	}
 }
 
-// TestR_BAS_008_InterfaceRequestsAreCountedByRegistrationOperationAndOutcome: trove_bastion_interface_requests_total.
+// TestR_BAS_008_InterfaceRequestsAreCountedByRegistrationOperationAndOutcome: quader_bastion_interface_requests_total.
 func TestR_BAS_008_InterfaceRequestsAreCountedByRegistrationOperationAndOutcome(t *testing.T) {
 	reg := prometheus.NewRegistry()
 	m, err := NewMetrics(reg)

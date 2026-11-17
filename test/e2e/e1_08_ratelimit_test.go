@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/auth/token"
 )
 
 // The defaults this test relies on (internal/config, docs/spec): api.rate_limits read 50/s burst 200 and write
@@ -170,12 +170,12 @@ func TestE1_08RateLimits(t *testing.T) {
 		withValkeyStopped(t, func() {
 			// The breaker opens after 5 failed calls per replica; send until every replica reports the fallback.
 			probe := newToken(t, adm, "e2e-rl")
-			waitFor(t, "trove_ratelimit_fallback{limiter=\"api_read\"} = 1 on every api pod", 2*time.Minute, time.Second, func() bool {
+			waitFor(t, "quader_ratelimit_fallback{limiter=\"api_read\"} = 1 on every api pod", 2*time.Minute, time.Second, func() bool {
 				for i := 0; i < 12; i++ {
 					probe.get("/api/v1/auth/whoami")
 				}
 				for _, p := range readyAPIPods(t) {
-					if metricsOf(t, p)[`trove_ratelimit_fallback{limiter="api_read"}`] != 1 {
+					if metricsOf(t, p)[`quader_ratelimit_fallback{limiter="api_read"}`] != 1 {
 						return false
 					}
 				}
@@ -192,8 +192,8 @@ func TestE1_08RateLimits(t *testing.T) {
 				t.Errorf("with Valkey stopped only %d were admitted: every replica has a share of at least one", n)
 			}
 			for _, p := range readyAPIPods(t) {
-				if v := metricsOf(t, p)[`trove_ratelimit_fallback{limiter="api_read"}`]; v != 1 {
-					t.Errorf("%s trove_ratelimit_fallback{limiter=api_read} = %v, want 1", p, v)
+				if v := metricsOf(t, p)[`quader_ratelimit_fallback{limiter="api_read"}`]; v != 1 {
+					t.Errorf("%s quader_ratelimit_fallback{limiter=api_read} = %v, want 1", p, v)
 				}
 			}
 
@@ -213,7 +213,7 @@ func TestE1_08RateLimits(t *testing.T) {
 	t.Run("R-ARCH-034 E1.8 a Valkey that answers a second late costs at most command_timeout on at most failure_threshold checks per replica and nothing once the circuit is open", func(t *testing.T) {
 		waitFor(t, "the circuit closed on every api pod", 2*time.Minute, time.Second, func() bool {
 			for _, p := range readyAPIPods(t) {
-				if metricsOf(t, p)["trove_valkey_circuit_open"] != 0 {
+				if metricsOf(t, p)["quader_valkey_circuit_open"] != 0 {
 					return false
 				}
 			}
@@ -284,7 +284,7 @@ func TestE1_08RateLimits(t *testing.T) {
 		}
 		waitFor(t, "the circuit closed again", 2*time.Minute, time.Second, func() bool {
 			for _, p := range readyAPIPods(t) {
-				if metricsOf(t, p)["trove_valkey_circuit_open"] != 0 {
+				if metricsOf(t, p)["quader_valkey_circuit_open"] != 0 {
 					return false
 				}
 			}
@@ -296,7 +296,7 @@ func TestE1_08RateLimits(t *testing.T) {
 	// ingress and every other test shares it, so these requests go to the replicas through port-forwards, whose
 	// address (127.0.0.1) is a bucket of its own, round robin over the three pods.
 	t.Run("R-AUTH-038 E1.8 brute force against Bearer and Basic: 400 random well-formed tokens are validated at most 300 times, the rest get 429, and a recently used token still works on all three replicas", func(t *testing.T) {
-		pw := secretValue(t, "trove-keycloak", "alice-password")
+		pw := secretValue(t, "quader-keycloak", "alice-password")
 		bro := newBrowser(t)
 		bro.oidcLogin("alice", pw)
 		pat := bro.do(http.MethodPost, "/api/v1/tokens", map[string]any{"description": "e2e brute force", "ttlSeconds": 3600, "scope": map[string]any{"inherit": true}})
@@ -347,7 +347,7 @@ func TestE1_08RateLimits(t *testing.T) {
 		diag := func(label string) {
 			for _, p := range readyAPIPods(t) {
 				for series, v := range metricsOf(t, p) {
-					if strings.HasPrefix(series, "trove_ratelimit_decisions_total{limiter=\"auth.credential_failures\"") || strings.HasPrefix(series, "trove_ratelimit_fallback{limiter=\"auth.credential_failures\"") || series == "trove_valkey_circuit_open" || series == "trove_valkey_available" {
+					if strings.HasPrefix(series, "quader_ratelimit_decisions_total{limiter=\"auth.credential_failures\"") || strings.HasPrefix(series, "quader_ratelimit_fallback{limiter=\"auth.credential_failures\"") || series == "quader_valkey_circuit_open" || series == "quader_valkey_available" {
 						t.Logf("%s %s %s = %v", label, p, series, v)
 					}
 				}
@@ -416,7 +416,7 @@ func TestE1_08RateLimits(t *testing.T) {
 		}
 	})
 
-	t.Run("R-AUTH-038 E1.8 with Valkey stopped the thresholds hold: at most 300 validations, the login flow limit and trove_ratelimit_fallback 1 on each replica", func(t *testing.T) {
+	t.Run("R-AUTH-038 E1.8 with Valkey stopped the thresholds hold: at most 300 validations, the login flow limit and quader_ratelimit_fallback 1 on each replica", func(t *testing.T) {
 		withValkeyStopped(t, func() {
 			addrs, stop := apiForwards(t)
 			defer stop()
@@ -449,8 +449,8 @@ func TestE1_08RateLimits(t *testing.T) {
 				t.Error("no 429 with Valkey stopped")
 			}
 			for _, p := range readyAPIPods(t) {
-				if v := metricsOf(t, p)[`trove_ratelimit_fallback{limiter="auth.credential_failures"}`]; v != 1 {
-					t.Errorf("%s trove_ratelimit_fallback{limiter=auth.credential_failures} = %v, want 1", p, v)
+				if v := metricsOf(t, p)[`quader_ratelimit_fallback{limiter="auth.credential_failures"}`]; v != 1 {
+					t.Errorf("%s quader_ratelimit_fallback{limiter=auth.credential_failures} = %v, want 1", p, v)
 				}
 			}
 

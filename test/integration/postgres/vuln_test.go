@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 const (
@@ -70,42 +70,42 @@ func TestVulnMigration(t *testing.T) {
 	})
 
 	t.Run("R-ARCH-018 the change area vuln_data is seeded", func(t *testing.T) {
-		if scalar[int](t, admin, "SELECT count(*) FROM trove.cluster_epoch WHERE area = 'vuln_data'") != 1 {
+		if scalar[int](t, admin, "SELECT count(*) FROM quader.cluster_epoch WHERE area = 'vuln_data'") != 1 {
 			t.Error("no cluster_epoch row for vuln_data")
 		}
 	})
 
 	t.Run("R-VULN-006 the advisory tables take the record, its cwe ids and its affected entries, and refuse what the model refuses", func(t *testing.T) {
-		const adv = `INSERT INTO trove.vuln_advisory (ecosystem, id, canonical_id, modified, kind, severity, severity_source, record_sha256, cwe_ids, "references")
+		const adv = `INSERT INTO quader.vuln_advisory (ecosystem, id, canonical_id, modified, kind, severity, severity_source, record_sha256, cwe_ids, "references")
 			VALUES ('npm', $1, $1, now(), $2, $3, $4, '\x00', ARRAY['CWE-506'], '[{"url":"https://x.example"}]')`
 		mustExec(t, admin, adv, "MAL-2026-1", "malicious", "critical", "malicious")
 		wantState(t, admin, "23505", adv, "MAL-2026-1", "malicious", "critical", "malicious")
 		wantState(t, admin, "23514", adv, "X-1", "weird", "critical", "cvss")
 		wantState(t, admin, "23514", adv, "X-2", "vulnerability", "severe", "cvss")
 		wantState(t, admin, "23514", adv, "X-3", "vulnerability", "high", "guess")
-		if got := scalar[string](t, admin, "SELECT cwe_ids[1] FROM trove.vuln_advisory WHERE id = 'MAL-2026-1'"); got != "CWE-506" {
+		if got := scalar[string](t, admin, "SELECT cwe_ids[1] FROM quader.vuln_advisory WHERE id = 'MAL-2026-1'"); got != "CWE-506" {
 			t.Errorf("cwe_ids = %q", got)
 		}
-		mustExec(t, admin, `INSERT INTO trove.vuln_affected (ecosystem, advisory_id, ord, name, ranges, every_version) VALUES ('npm', 'MAL-2026-1', 0, 'evil', '[{"type":"SEMVER","events":[{"introduced":"0"}]}]', true)`)
-		wantState(t, admin, "23503", `INSERT INTO trove.vuln_affected (ecosystem, advisory_id, ord, name, every_version) VALUES ('npm', 'MAL-NONE', 0, 'evil', true)`)
-		mustExec(t, admin, "DELETE FROM trove.vuln_advisory WHERE id = 'MAL-2026-1'")
-		if n := scalar[int](t, admin, "SELECT count(*) FROM trove.vuln_affected WHERE advisory_id = 'MAL-2026-1'"); n != 0 {
+		mustExec(t, admin, `INSERT INTO quader.vuln_affected (ecosystem, advisory_id, ord, name, ranges, every_version) VALUES ('npm', 'MAL-2026-1', 0, 'evil', '[{"type":"SEMVER","events":[{"introduced":"0"}]}]', true)`)
+		wantState(t, admin, "23503", `INSERT INTO quader.vuln_affected (ecosystem, advisory_id, ord, name, every_version) VALUES ('npm', 'MAL-NONE', 0, 'evil', true)`)
+		mustExec(t, admin, "DELETE FROM quader.vuln_advisory WHERE id = 'MAL-2026-1'")
+		if n := scalar[int](t, admin, "SELECT count(*) FROM quader.vuln_affected WHERE advisory_id = 'MAL-2026-1'"); n != 0 {
 			t.Errorf("the affected entries survived their advisory: %d", n)
 		}
 	})
 
 	t.Run("R-VULN-004 the source state starts empty", func(t *testing.T) {
-		mustExec(t, admin, "INSERT INTO trove.vuln_source_state (source, ecosystem) VALUES ('osv', 'npm')")
-		if got := scalar[string](t, admin, "SELECT state FROM trove.vuln_source_state WHERE ecosystem = 'npm'"); got != "empty" {
+		mustExec(t, admin, "INSERT INTO quader.vuln_source_state (source, ecosystem) VALUES ('osv', 'npm')")
+		if got := scalar[string](t, admin, "SELECT state FROM quader.vuln_source_state WHERE ecosystem = 'npm'"); got != "empty" {
 			t.Errorf("state = %q, want empty", got)
 		}
-		wantState(t, admin, "23514", "INSERT INTO trove.vuln_source_state (source, ecosystem, state) VALUES ('kev', '', 'done')")
+		wantState(t, admin, "23514", "INSERT INTO quader.vuln_source_state (source, ecosystem, state) VALUES ('kev', '', 'done')")
 	})
 
 	t.Run("R-VULN-012 a finding is unique by its identity, takes the statuses of the model and keeps its history", func(t *testing.T) {
-		mustExec(t, admin, "INSERT INTO trove.repositories (key, format, class, project_id) VALUES ('npm-vuln', 'npm', 'remote', (SELECT id FROM trove.project WHERE key = 'it'))")
-		repo := scalar[int64](t, admin, "SELECT id FROM trove.repositories WHERE key = 'npm-vuln'")
-		const ins = `INSERT INTO trove.vuln_finding (id, repo_id, ecosystem, package_name, version, advisory_id, kind, severity, severity_rank, fix_available, advisory_modified%s)
+		mustExec(t, admin, "INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('npm-vuln', 'npm', 'remote', (SELECT id FROM quader.project WHERE key = 'it'))")
+		repo := scalar[int64](t, admin, "SELECT id FROM quader.repositories WHERE key = 'npm-vuln'")
+		const ins = `INSERT INTO quader.vuln_finding (id, repo_id, ecosystem, package_name, version, advisory_id, kind, severity, severity_rank, fix_available, advisory_modified%s)
 			VALUES ($1, $2, 'npm', 'lodash', $3, 'GHSA-35jh-r3h4-6jhm', 'vulnerability', 'high', 4, true, now()%s)`
 		plain := strings.NewReplacer("%s", "")
 		mustExec(t, admin, plain.Replace(ins), vulnFinding1, repo, "4.17.20")
@@ -120,23 +120,23 @@ func TestVulnMigration(t *testing.T) {
 		}{{"status", "needs_triage"}, {"revision", int64(1)}} {
 			switch w := c.want.(type) {
 			case string:
-				if got := scalar[string](t, admin, "SELECT "+c.col+" FROM trove.vuln_finding WHERE id = $1", vulnFinding1); got != w {
+				if got := scalar[string](t, admin, "SELECT "+c.col+" FROM quader.vuln_finding WHERE id = $1", vulnFinding1); got != w {
 					t.Errorf("%s = %q, want %q", c.col, got, w)
 				}
 			case int64:
-				if got := scalar[int64](t, admin, "SELECT "+c.col+" FROM trove.vuln_finding WHERE id = $1", vulnFinding1); got != w {
+				if got := scalar[int64](t, admin, "SELECT "+c.col+" FROM quader.vuln_finding WHERE id = $1", vulnFinding1); got != w {
 					t.Errorf("%s = %d, want %d", c.col, got, w)
 				}
 			}
 		}
-		mustExec(t, admin, "INSERT INTO trove.vuln_finding_event (finding_id, change, to_status) VALUES ($1, 'detected', 'needs_triage'), ($1, 'status_changed', 'confirmed')", vulnFinding1)
-		if seqs := scalar[int](t, admin, "SELECT count(DISTINCT seq) FROM trove.vuln_finding_event WHERE finding_id = $1", vulnFinding1); seqs != 2 {
+		mustExec(t, admin, "INSERT INTO quader.vuln_finding_event (finding_id, change, to_status) VALUES ($1, 'detected', 'needs_triage'), ($1, 'status_changed', 'confirmed')", vulnFinding1)
+		if seqs := scalar[int](t, admin, "SELECT count(DISTINCT seq) FROM quader.vuln_finding_event WHERE finding_id = $1", vulnFinding1); seqs != 2 {
 			t.Errorf("events with distinct seq = %d, want 2", seqs)
 		}
-		wantState(t, admin, "23514", "INSERT INTO trove.vuln_finding_event (finding_id, change) VALUES ($1, 'invented')", vulnFinding1)
+		wantState(t, admin, "23514", "INSERT INTO quader.vuln_finding_event (finding_id, change) VALUES ($1, 'invented')", vulnFinding1)
 		// Deleting the repository deletes its findings and their events (R-VULN-014).
-		mustExec(t, admin, "DELETE FROM trove.repositories WHERE id = $1", repo)
-		if n := scalar[int](t, admin, "SELECT count(*) FROM trove.vuln_finding WHERE repo_id = $1", repo) + scalar[int](t, admin, "SELECT count(*) FROM trove.vuln_finding_event WHERE finding_id = $1", vulnFinding1); n != 0 {
+		mustExec(t, admin, "DELETE FROM quader.repositories WHERE id = $1", repo)
+		if n := scalar[int](t, admin, "SELECT count(*) FROM quader.vuln_finding WHERE repo_id = $1", repo) + scalar[int](t, admin, "SELECT count(*) FROM quader.vuln_finding_event WHERE finding_id = $1", vulnFinding1); n != 0 {
 			t.Errorf("findings or events survived their repository: %d", n)
 		}
 	})

@@ -3,11 +3,11 @@ package evaluate
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln"
 )
 
 // Hooks wraps the storage hooks of the item store with the evaluation (R-VULN-011): after the format's OnCommit linked the

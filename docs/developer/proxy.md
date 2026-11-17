@@ -32,7 +32,7 @@ request and `AcceptResponse` checks the response; the engine owns everything els
 the circuit is open (503 `upstream_assumed_offline`) and counts a 2xx as a success and a transport or 5xx failure toward the circuit as a fetch does; the URL
 must be on the upstream's host or an `extraHosts` entry (`Allowed`), and an egress or TLS refusal is the same security event. A 404 or 410 is `errs.NotFound`
 and writes no negative entry. Without a current copy, a repository that may not contact its upstream (offline, `proxy.global_offline`, the cache view,
-`only-if-cached`) and a caller whose populate check refuses (R-AUTHZ-008, R-EP-019: counted in `trove_endpoint_cache_fill_refused_total`) get
+`only-if-cached`) and a caller whose populate check refuses (R-AUTHZ-008, R-EP-019: counted in `quader_endpoint_cache_fill_refused_total`) get
 `formats.ErrOffline` and no request leaves. A current copy is served to every caller; `QueryResult.Body` is shared with the cache and must not be changed.
 For a format with a `Discoverer`, the host's `Build` ([internal/formathost/query.go](../../internal/formathost/query.go) `discovery`) resolves the discovery
 document with `Engine.Metadata`, the request's mode and a populate check whose refusal is not audited, and hands the parsed form to `UpstreamQuery` as
@@ -50,7 +50,7 @@ the only place that builds an HTTP client, R-ARCH-002), `internal/repository` (t
 |---|---|
 | [clients.go](../../internal/proxy/upstream/clients.go) | `Clients`, `New`, `For` (cached per repository and `config_version`), `Ephemeral` (uncached, for the unsaved test), the build of an outbound client from the settings, the registered cache `proxy_upstream_clients` |
 | [client.go](../../internal/proxy/upstream/client.go) | `Client` (`HTTP`, `Settings`, `Origin`, `Allowed`, `Close`), the `guard` transport that fails a request whose credential cannot be resolved |
-| [secret.go](../../internal/proxy/upstream/secret.go) | the credential: `secretValue` (fixed, or a reference read again after `RefreshInterval`), `resolver` (file under `config_as_code.secrets_dir`, `TROVE_CAC_` variable), the `Authorization` header, `secretUnavailable` |
+| [secret.go](../../internal/proxy/upstream/secret.go) | the credential: `secretValue` (fixed, or a reference read again after `RefreshInterval`), `resolver` (file under `config_as_code.secrets_dir`, `QUADER_CAC_` variable), the `Authorization` header, `secretUnavailable` |
 | [probe.go](../../internal/proxy/upstream/probe.go) | `TestSaved`, `TestUnsaved`, the probe request, `Classify` and the codes of the result |
 
 ### How a client is built
@@ -83,7 +83,7 @@ answers with 401.
 - a reference is read again by `secretValue.get` when its last read is `RefreshInterval` (10 s) old, `RetryInterval` (1 s) after a failure,
   so a rotated file reaches the next request on every replica without a new client (Q-REPO-89). The rules of R-OPS-029 are checked again when
   the reference is read, so a row written around the API cannot make the client read a file outside `secrets_dir` or a variable outside
-  `TROVE_CAC_`.
+  `QUADER_CAC_`.
 
 A failure is `502 upstream_secret_unavailable` (`errs.CodeUpstreamSecretUnavailable`), logged once when the build fails with the cause (the log
 line names the repository and the field, never the value); the text for the client names the repository only. `Clients` remembers the refusal
@@ -493,7 +493,7 @@ A cached item whose object is gone from the store, or failed verification, is a 
   is the answer when no member serves the item, also for a caller who may not fill the member. A pass that joined a client's flight reads a lost
   item again (`filled`): still lost is a failure, never Present.
 - **The log.** `noteDamaged`: repository, path, digest and status, once a minute per item and replica. The blob store logs the digest and counts
-  `trove_storage_blobs_damaged_total{status="missing"}`, which `TroveBlobMissing` reads.
+  `quader_storage_blobs_damaged_total{status="missing"}`, which `QuaderBlobMissing` reads.
 
 ### Wiring
 
@@ -508,7 +508,7 @@ request for the member (the format's adapter, the kind from the format's classif
 `MayFill` the virtual engine decided; `Engine.Peek` supplies `Negative`, `Offline` and `CircuitOpenFor` of the explanation. A fill made for a
 virtual request records its allowed populate event with the grant reason of the caller (the call carries no grant index to name sources).
 `Engine.FillRefused(endpoint)` is bound to `virtual.Options.FillRefused`: the virtual engine counts in the engine's
-`trove_endpoint_cache_fill_refused_total` the remote members it does not ask for an artifact because the endpoint does not fill caches
+`quader_endpoint_cache_fill_refused_total` the remote members it does not ask for an artifact because the endpoint does not fill caches
 (R-EP-019, Q-EP-58); the engine counts its own refusals in `mayFill`.
 
 ### Tests
@@ -560,7 +560,7 @@ wrapper. Not tested here: the criteria with a `sourceNetwork` on two pods (R-REP
 
 - The engine never sets `Authorization` on a request; the client's hop policy adds the credential (R-REPO-033), and the token of a handshake travels as a mark of the request's context that the policy sends to the origin only. The host of a token request is checked with `Client.Allowed` before anything is sent, and its credential goes to that host on the first hop only. The upstream URL of an artifact comes from
   the recorded map only after `Client.Allowed` accepted its host, and no client path can choose a host (R-REPO-043).
-- The URL builder encodes every canonical segment again and refuses `.` and `..`: a client that sent `%252e%252e` cannot make trove request `..`
+- The URL builder encodes every canonical segment again and refuses `.` and `..`: a client that sent `%252e%252e` cannot make Quader request `..`
   with the upstream credentials.
 - A value read from Valkey (a negative entry, a lock) can only make a request answer 404 or wait at most `proxy.fetch_wait_timeout_seconds`;
   the probe of a shadowing check reads neither (R-ARCH-030).

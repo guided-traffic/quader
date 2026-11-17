@@ -20,7 +20,7 @@ func postRestoreSets(extra ...string) []string {
 // postRestoreJob finds the hook Job, named after the restore point (Q-HA-161).
 func postRestoreJob(docs []doc) doc {
 	for _, d := range ofKind(docs, "Job") {
-		if strings.HasPrefix(str(d, "metadata", "name"), "trove-post-restore-") {
+		if strings.HasPrefix(str(d, "metadata", "name"), "quader-post-restore-") {
 			return d
 		}
 	}
@@ -31,11 +31,11 @@ func postRestorePod(docs []doc) any {
 	return at(postRestoreJob(docs), "spec", "template", "spec")
 }
 
-// TestR_HA_025_PostRestoreJob (R-HA-025 step 4, R-HA-030, R-HA-042): the hook Job that runs trove admin post-restore.
+// TestR_HA_025_PostRestoreJob (R-HA-025 step 4, R-HA-030, R-HA-042): the hook Job that runs quader admin post-restore.
 func TestR_HA_025_PostRestoreJob(t *testing.T) {
 	t.Run("nothing is rendered without postRestore.enabled", func(t *testing.T) {
 		_, docs := render(t, required())
-		for _, c := range [][2]string{{"ServiceAccount", "trove-post-restore"}, {"NetworkPolicy", "trove-post-restore"}, {"ConfigMap", "trove-post-restore"}} {
+		for _, c := range [][2]string{{"ServiceAccount", "quader-post-restore"}, {"NetworkPolicy", "quader-post-restore"}, {"ConfigMap", "quader-post-restore"}} {
 			if find(docs, c[0], c[1]) != nil {
 				t.Errorf("%s %s rendered with postRestore.enabled: false", c[0], c[1])
 			}
@@ -45,7 +45,7 @@ func TestR_HA_025_PostRestoreJob(t *testing.T) {
 	_, docs := render(t, required(), postRestoreSets()...)
 	job := postRestoreJob(docs)
 	if job == nil {
-		t.Fatal("no Job trove-post-restore")
+		t.Fatal("no Job quader-post-restore")
 	}
 	pod := postRestorePod(docs)
 
@@ -73,13 +73,13 @@ func TestR_HA_025_PostRestoreJob(t *testing.T) {
 	})
 
 	t.Run("a ServiceAccount of its own, a policy that admits nothing, no disruption budget", func(t *testing.T) {
-		if str(pod, "serviceAccountName") != "trove-post-restore" || at(pod, "automountServiceAccountToken") != false {
+		if str(pod, "serviceAccountName") != "quader-post-restore" || at(pod, "automountServiceAccountToken") != false {
 			t.Errorf("account = %v", str(pod, "serviceAccountName"))
 		}
-		if find(docs, "ServiceAccount", "trove-post-restore") == nil {
+		if find(docs, "ServiceAccount", "quader-post-restore") == nil {
 			t.Error("no ServiceAccount")
 		}
-		np := find(docs, "NetworkPolicy", "trove-post-restore")
+		np := find(docs, "NetworkPolicy", "quader-post-restore")
 		if np == nil {
 			t.Fatal("no NetworkPolicy")
 		}
@@ -95,13 +95,13 @@ func TestR_HA_025_PostRestoreJob(t *testing.T) {
 				t.Errorf("%s selects the Job's pods", str(p, "metadata", "name"))
 			}
 		}
-		if lbl["trove/serve"] != "" {
-			t.Error("the pod carries trove/serve")
+		if lbl["quader/serve"] != "" {
+			t.Error("the pod carries quader/serve")
 		}
 	})
 
 	t.Run("the Secrets of its scope: the owner login, the blob store; no Valkey, no key ring, nothing of the target", func(t *testing.T) {
-		_, d := render(t, required(), postRestoreSets(append(staticTarget(), "secrets.journalReader.existingSecret=trove-journal", "postRestore.journalCredentials.source=static")...)...)
+		_, d := render(t, required(), postRestoreSets(append(staticTarget(), "secrets.journalReader.existingSecret=quader-journal", "postRestore.journalCredentials.source=static")...)...)
 		v := secretVolumes(postRestorePod(d))
 		has := func(s string) bool {
 			for _, x := range v {
@@ -111,56 +111,56 @@ func TestR_HA_025_PostRestoreJob(t *testing.T) {
 			}
 			return false
 		}
-		for _, want := range []string{"trove-db-owner", "trove-s3", "trove-journal"} {
+		for _, want := range []string{"quader-db-owner", "quader-s3", "quader-journal"} {
 			if !has(want) {
 				t.Errorf("secrets = %v, want %s", v, want)
 			}
 		}
-		for _, no := range []string{"trove-db-app", "trove-db-backup", "trove-valkey", "trove-encryption-keys", "trove-tls", "trove-backup-keys", "trove-backup-ca"} {
+		for _, no := range []string{"quader-db-app", "quader-db-backup", "quader-valkey", "quader-encryption-keys", "quader-tls", "quader-backup-keys", "quader-backup-ca"} {
 			if has(no) {
 				t.Errorf("the post-restore Job mounts %s", no)
 			}
 		}
 		// The journal credential reaches this Job and no other pod.
 		for name, p := range podSpecs(d) {
-			if !strings.HasPrefix(name, "trove-post-restore") && has2(secretVolumes(p), "trove-journal") {
+			if !strings.HasPrefix(name, "quader-post-restore") && has2(secretVolumes(p), "quader-journal") {
 				t.Errorf("%s mounts the journal credential", name)
 			}
 		}
-		if has2(secretVolumes(cronJobPod(d)), "trove-journal") {
+		if has2(secretVolumes(cronJobPod(d)), "quader-journal") {
 			t.Error("the backup pod mounts the journal credential")
 		}
 	})
 
 	t.Run("journal credentials: runtime passes no file, default and static pass the file the chart renders", func(t *testing.T) {
-		if hasMount(pod, "/etc/trove/post-restore") || find(docs, "ConfigMap", "trove-post-restore") != nil {
+		if hasMount(pod, "/etc/quader/post-restore") || find(docs, "ConfigMap", "quader-post-restore") != nil {
 			t.Error("a credentials file with journalCredentials.source runtime")
 		}
 		_, d := render(t, required(), postRestoreSets("postRestore.journalCredentials.source=default")...)
 		args := strings.Join(containerArgs(postRestorePod(d)), " ")
-		if !strings.HasSuffix(args, "--credentials-file /etc/trove/post-restore/credentials.yaml") {
+		if !strings.HasSuffix(args, "--credentials-file /etc/quader/post-restore/credentials.yaml") {
 			t.Errorf("args = %q", args)
 		}
-		cm := str(find(d, "ConfigMap", "trove-post-restore"), "data", "credentials.yaml")
+		cm := str(find(d, "ConfigMap", "quader-post-restore"), "data", "credentials.yaml")
 		if strings.TrimSpace(cm) != "source: default" {
 			t.Errorf("credentials.yaml = %q", cm)
 		}
-		_, d = render(t, required(), postRestoreSets("postRestore.journalCredentials.source=static", "secrets.journalReader.existingSecret=trove-journal")...)
-		cm = str(find(d, "ConfigMap", "trove-post-restore"), "data", "credentials.yaml")
-		for _, want := range []string{"source: static", "access_key_id_file: /var/run/secrets/trove/journal-reader/access-key-id", "secret_access_key_file: /var/run/secrets/trove/journal-reader/secret-access-key"} {
+		_, d = render(t, required(), postRestoreSets("postRestore.journalCredentials.source=static", "secrets.journalReader.existingSecret=quader-journal")...)
+		cm = str(find(d, "ConfigMap", "quader-post-restore"), "data", "credentials.yaml")
+		for _, want := range []string{"source: static", "access_key_id_file: /var/run/secrets/quader/journal-reader/access-key-id", "secret_access_key_file: /var/run/secrets/quader/journal-reader/secret-access-key"} {
 			if !strings.Contains(cm, want) {
 				t.Errorf("credentials.yaml lacks %q: %s", want, cm)
 			}
 		}
-		if !hasMount(postRestorePod(d), "/etc/trove/post-restore") {
+		if !hasMount(postRestorePod(d), "/etc/quader/post-restore") {
 			t.Error("the credentials file is not mounted")
 		}
 	})
 
 	t.Run("L3: one Job per restore point, annotated with it, and a repeat is announced", func(t *testing.T) {
 		name := str(job, "metadata", "name")
-		if len(name) != len("trove-post-restore-")+8 || str(job, "metadata", "annotations", "trove/restored-to") != restoredTo {
-			t.Errorf("job %q, annotation %q", name, str(job, "metadata", "annotations", "trove/restored-to"))
+		if len(name) != len("quader-post-restore-")+8 || str(job, "metadata", "annotations", "quader/restored-to") != restoredTo {
+			t.Errorf("job %q, annotation %q", name, str(job, "metadata", "annotations", "quader/restored-to"))
 		}
 		_, d := render(t, required(), postRestoreSets()...)
 		if str(postRestoreJob(d), "metadata", "name") != name {
@@ -215,7 +215,7 @@ func has2(v map[string]string, secret string) bool {
 func TestR_HA_025_HoldStopsEveryRole(t *testing.T) {
 	hold := []string{"postRestore.hold=true", "api.replicaCount=0", "packages.replicaCount=0", "worker.replicaCount=0"}
 	t.Run("zero replicas are accepted with the hold, even with the enforcement of the minimums on, and no Job is rendered", func(t *testing.T) {
-		_, docs := render(t, required(), append(hold, "highAvailability.enforce=true", "backup.enabled=true", "config.backup.target.bucket=trove-backups")...)
+		_, docs := render(t, required(), append(hold, "highAvailability.enforce=true", "backup.enabled=true", "config.backup.target.bucket=quader-backups")...)
 		if postRestoreJob(docs) != nil {
 			t.Error("the hold rendered the post-restore Job")
 		}

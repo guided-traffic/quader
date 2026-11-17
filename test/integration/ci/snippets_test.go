@@ -10,7 +10,7 @@ import (
 // The CI snippet (R-API-035, R-UI-035; R-CI-027 is the broader P1 requirement): built from the reference pipeline
 // of R-CI-028, a text/plain answer that holds no secret.
 
-const snippetBase = "http://trove.test"
+const snippetBase = "http://quader.test"
 
 func TestR_API_035_TheGitLabCISnippetOfAMapping(t *testing.T) {
 	e := newEnv(t, options{valkey: true})
@@ -38,13 +38,13 @@ func TestR_API_035_TheGitLabCISnippetOfAMapping(t *testing.T) {
 
 	npm := snippet("")
 	for _, want := range []string{
-		"id_tokens:", "TROVE_ID_TOKEN:", "aud: " + snippetBase, // the issuer's first allowed audience
-		`TROVE_URL: "` + snippetBase + `"`,
-		"printf '%s' \"$TROVE_ID_TOKEN\" | curl -sS --retry 3", "subject_token@-",
+		"id_tokens:", "QUADER_ID_TOKEN:", "aud: " + snippetBase, // the issuer's first allowed audience
+		`QUADER_URL: "` + snippetBase + `"`,
+		"printf '%s' \"$QUADER_ID_TOKEN\" | curl -sS --retry 3", "subject_token@-",
 		"grant_type=urn:ietf:params:oauth:grant-type:token-exchange", "subject_token_type=urn:ietf:params:oauth:token-type:id_token",
 		"/api/v1/auth/oidc/token",
 		"{error, error_description, reason, requestId}", // a failed exchange prints what the administrator needs
-		"//trove.test/api/npm/it/npm-internal/:_authToken=${TROVE_TOKEN}",
+		"//quader.test/api/npm/it/npm-internal/:_authToken=${QUADER_TOKEN}",
 		"npm publish --registry " + snippetBase + "/api/npm/it/npm-internal/",
 		"$CI_COMMIT_REF_PROTECTED", // the mapping requires a protected ref
 	} {
@@ -62,7 +62,7 @@ func TestR_API_035_TheGitLabCISnippetOfAMapping(t *testing.T) {
 
 	nuget := snippet("nuget")
 	for _, want := range []string{
-		"dotnet nuget push", "/api/nuget/it/nuget-internal/v3/index.json", `--api-key "$TROVE_TOKEN"`, "%TROVE_TOKEN%",
+		"dotnet nuget push", "/api/nuget/it/nuget-internal/v3/index.json", `--api-key "$QUADER_TOKEN"`, "%QUADER_TOKEN%",
 		"{error, error_description, reason, requestId}", "id_tokens:",
 	} {
 		if !strings.Contains(nuget, want) {
@@ -70,7 +70,7 @@ func TestR_API_035_TheGitLabCISnippetOfAMapping(t *testing.T) {
 		}
 	}
 	for _, s := range []string{npm, nuget} {
-		if strings.Contains(s, "trv_") || strings.Contains(s, "eyJ") {
+		if strings.Contains(s, "qdr_") || strings.Contains(s, "eyJ") {
 			t.Error("a snippet holds a token")
 		}
 	}
@@ -99,7 +99,7 @@ func TestQ_CI_26_AProjectOwnerReadsTheSnippetOfItsMappings(t *testing.T) {
 
 	r := p.bob(a, "GET", path+"web-publish", nil)
 	wantStatus(t, r, 200, "")
-	if !strings.Contains(string(r.Body), "//trove.test/api/npm/web/web-npm/:_authToken=${TROVE_TOKEN}") || !strings.Contains(string(r.Body), "id_tokens:") {
+	if !strings.Contains(string(r.Body), "//quader.test/api/npm/web/web-npm/:_authToken=${QUADER_TOKEN}") || !strings.Contains(string(r.Body), "id_tokens:") {
 		t.Errorf("the snippet of the project's mapping:\n%s", r.Body)
 	}
 	// A mapping of another tier is not the project Owner's: 404, as a mapping that does not exist.

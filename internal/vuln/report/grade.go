@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // The grade of a version (R-VULN-038), as the owner's cogpit grades a container image: a letter from the open findings by

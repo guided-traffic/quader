@@ -38,16 +38,16 @@ const MAINTENANCE_MESSAGE_MAX = 500;
  * next read of the banner store, within a minute (R-UI-033).
  */
 @Component({
-  selector: 'trove-general-settings',
+  selector: 'quader-general-settings',
   imports: [PageHeader, Checkbox, ErrorNotice, Needs, RouterLink, SelectField, Disclosure, TextField, VisibilityLevelControl],
   templateUrl: './general-settings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
     .settings {
-      max-inline-size: var(--trove-settings-measure);
+      max-inline-size: var(--quader-settings-measure);
     }
     .source {
-      margin-block-start: calc(-1 * var(--trove-space-2));
+      margin-block-start: calc(-1 * var(--quader-space-2));
     }
   `,
 })

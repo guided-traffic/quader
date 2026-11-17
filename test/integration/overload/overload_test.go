@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // budget is the replica's container memory limit in this test.
@@ -21,12 +21,12 @@ func TestMemoryAdmission(t *testing.T) {
 	in := newInstall(t)
 	// The caches are off, so all of the memory the guard shares out goes to requests (Q-ARCH-243 leaves their
 	// budgets aside): 0.8 × the Go limit / 640 KiB.
-	r := in.start(t, "overload", fmt.Sprintf("TROVE_RUNTIME_MEMORY_LIMIT_BYTES=%d", budget),
-		"TROVE_CACHE_RENDITION_BYTES=0", "TROVE_PROXY_METADATA_CACHE_BYTES=0", "TROVE_PROXY_MERGED_METADATA_CACHE_BYTES=0",
-		"TROVE_PROXY_QUERY_CACHE_BYTES=0")
+	r := in.start(t, "overload", fmt.Sprintf("QUADER_RUNTIME_MEMORY_LIMIT_BYTES=%d", budget),
+		"QUADER_CACHE_RENDITION_BYTES=0", "QUADER_PROXY_METADATA_CACHE_BYTES=0", "QUADER_PROXY_MERGED_METADATA_CACHE_BYTES=0",
+		"QUADER_PROXY_QUERY_CACHE_BYTES=0")
 	big := in.deploy(t, r, "big.bin", 1<<20)
 	const path = filesRoot + "big.bin"
-	slots := r.metric(t, "trove_http_memory_slots")
+	slots := r.metric(t, "quader_http_memory_slots")
 
 	t.Run("R-HA-036 the Go memory limit is runtime.memory_limit_ratio of the container limit", func(t *testing.T) {
 		ratio := 0.85
@@ -35,7 +35,7 @@ func TestMemoryAdmission(t *testing.T) {
 		}
 		// 0.8 × the Go limit over 640 KiB per request (internal/app/memory.go)
 		if slots != 278 {
-			t.Fatalf("trove_http_memory_slots = %.0f, want 278", slots)
+			t.Fatalf("quader_http_memory_slots = %.0f, want 278", slots)
 		}
 	})
 
@@ -59,10 +59,10 @@ func TestMemoryAdmission(t *testing.T) {
 		go func() {
 			defer close(sampled)
 			for {
-				m := r.metrics(t, "go_memstats_sys_bytes", "go_memstats_heap_released_bytes", `trove_http_requests_in_flight{endpoint="default",listener="client"}`, "trove_http_memory_slots_in_use")
+				m := r.metrics(t, "go_memstats_sys_bytes", "go_memstats_heap_released_bytes", `quader_http_requests_in_flight{endpoint="default",listener="client"}`, "quader_http_memory_slots_in_use")
 				mu.Lock()
-				maxHeld, maxInFlight = max(maxHeld, held(m)), max(maxInFlight, m[`trove_http_requests_in_flight{endpoint="default",listener="client"}`])
-				maxInUse = max(maxInUse, m["trove_http_memory_slots_in_use"])
+				maxHeld, maxInFlight = max(maxHeld, held(m)), max(maxInFlight, m[`quader_http_requests_in_flight{endpoint="default",listener="client"}`])
+				maxInUse = max(maxInUse, m["quader_http_memory_slots_in_use"])
 				samples++
 				mu.Unlock()
 				select {
@@ -73,7 +73,7 @@ func TestMemoryAdmission(t *testing.T) {
 			}
 		}()
 
-		const bySlots, byHeap = `trove_http_requests_shed_total{endpoint="default",reason="memory_slots"}`, `trove_http_requests_shed_total{endpoint="default",reason="heap"}`
+		const bySlots, byHeap = `quader_http_requests_shed_total{endpoint="default",reason="memory_slots"}`, `quader_http_requests_shed_total{endpoint="default",reason="heap"}`
 		shed := func() float64 {
 			m := r.metrics(t, bySlots, byHeap)
 			return m[bySlots] + m[byHeap]
@@ -87,7 +87,7 @@ func TestMemoryAdmission(t *testing.T) {
 			downloads[i] = slowGet(t, r.client, path, in.token)
 		}
 		testenv.WaitFor(t, "every download reached the replica", 60*time.Second, func() bool {
-			return r.completed(t)-base+r.metric(t, `trove_http_requests_in_flight{endpoint="default",listener="client"}`) >= n
+			return r.completed(t)-base+r.metric(t, `quader_http_requests_in_flight{endpoint="default",listener="client"}`) >= n
 		})
 		time.Sleep(2 * time.Second) // the held downloads sit in their writes; the sampler keeps reading
 		if !r.alive() {
@@ -134,7 +134,7 @@ func TestMemoryAdmission(t *testing.T) {
 			t.Errorf("%d complete, %d shed, at most %.0f slots in use of %.0f: the excess must be shed, the admitted ones must complete, and no more than the slots at once", ok, busy, maxInUse, slots)
 		}
 		if got := shed(); got != float64(busy) {
-			t.Errorf("trove_http_requests_shed_total counts %.0f, the clients saw %d", got, busy)
+			t.Errorf("quader_http_requests_shed_total counts %.0f, the clients saw %d", got, busy)
 		}
 		if maxHeld >= budget {
 			t.Errorf("the runtime held %.1f MiB, not below the %d MiB limit", maxHeld/(1<<20), budget>>20)
@@ -169,7 +169,7 @@ func (r *replica) metrics(t *testing.T, series ...string) map[string]float64 {
 	return out
 }
 
-// completed sums trove_http_requests_total of the default endpoint's client listener over every handler, method and
+// completed sums quader_http_requests_total of the default endpoint's client listener over every handler, method and
 // code.
 func (r *replica) completed(t *testing.T) float64 {
 	t.Helper()
@@ -179,7 +179,7 @@ func (r *replica) completed(t *testing.T) float64 {
 	}
 	var sum float64
 	for _, line := range strings.Split(body, "\n") {
-		if !strings.HasPrefix(line, "trove_http_requests_total{") || !strings.Contains(line, `endpoint="default"`) || !strings.Contains(line, `listener="client"`) {
+		if !strings.HasPrefix(line, "quader_http_requests_total{") || !strings.Contains(line, `endpoint="default"`) || !strings.Contains(line, `listener="client"`) {
 			continue
 		}
 		if v, err := strconv.ParseFloat(line[strings.LastIndexByte(line, ' ')+1:], 64); err == nil {

@@ -7,7 +7,7 @@ package e2e
 //
 //   - dotnet restore loops (R-HA-059: four) of a project of 61 packages through the virtual repository nuget-ha-all,
 //     whose members are nuget-ha-local (three packages of this run) and nuget-ha-remote (the corpus of the counting NuGet
-//     test upstream), with trove's cache warm and an empty global packages folder per iteration
+//     test upstream), with quader's cache warm and an empty global packages folder per iteration
 //     (`dotnet restore --no-cache --force` with a new NUGET_PACKAGES);
 //   - a dotnet nuget push of a new version to nuget-ha-local every 10 s;
 //   - the k6 NuGet requests of k6/nuget.js through the edge, the 20 % of R-HA-059's 150 requests/s.
@@ -35,7 +35,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 const (
@@ -153,7 +153,7 @@ func buildNuGetHAFixture(t *testing.T, fx *nugetFixture) *nugetHAFixture {
 	pub.config(h.feed(t, nugetHALocal), true)
 	for i := 0; i < 3; i++ {
 		id := fmt.Sprintf("E2e.NugetHa%s.Lib%d", fx.run, i)
-		file := pub.place(id, "1.0.0", nugetstub.Nupkg(&nugetstub.Package{ID: id, Description: "trove HA load " + id}, nugetstub.Version{Version: "1.0.0"}))
+		file := pub.place(id, "1.0.0", nugetstub.Nupkg(&nugetstub.Package{ID: id, Description: "quader HA load " + id}, nugetstub.Version{Version: "1.0.0"}))
 		pub.mustPush("push of "+id, "dotnet", "nuget", "push", file, "--source", h.feed(t, nugetHALocal), "--api-key", "az")
 		h.locals = append(h.locals, id)
 	}
@@ -172,7 +172,7 @@ func buildNuGetHAFixture(t *testing.T, fx *nugetFixture) *nugetHAFixture {
 </Project>
 `)
 
-	// one restore through nuget-all fills trove's cache: the loops find it warm
+	// one restore through nuget-all fills quader's cache: the loops find it warm
 	warm := fx.client(t, 0, "ha-warm")
 	warm.token = h.tokens[0]
 	warm.config(h.feed(t, nugetHAAll), true)
@@ -226,12 +226,12 @@ func buildNuGetHAFixture(t *testing.T, fx *nugetFixture) *nugetHAFixture {
 // failed (exit status 96).
 const restoreLoopScript = `#!/bin/sh
 mkdir -p out iter
-first="$TROVE_TOKEN"
+first="$QUADER_TOKEN"
 n=0
 while [ ! -e stop ]; do
   n=$((n + 1))
-  if [ $((n % 2)) -eq 0 ]; then TROVE_TOKEN="$TROVE_TOKEN_ALT"; else TROVE_TOKEN="$first"; fi
-  export TROVE_TOKEN
+  if [ $((n % 2)) -eq 0 ]; then QUADER_TOKEN="$QUADER_TOKEN_ALT"; else QUADER_TOKEN="$first"; fi
+  export QUADER_TOKEN
   d="$(mktemp -d -p "$PWD/iter")"
   start="$(date +%s%3N)"
   NUGET_PACKAGES="$d/packages" NUGET_HTTP_CACHE_PATH="$d/http" NUGET_PLUGINS_CACHE_PATH="$d/plugins" \
@@ -323,7 +323,7 @@ func pushArchives(id string) ([]byte, map[string]string) {
 	hashes := map[string]string{}
 	for n := 1; n <= haPushPackages; n++ {
 		v := fmt.Sprintf("1.0.%d", n)
-		pkg := nugetstub.Nupkg(&nugetstub.Package{ID: id, Description: "trove HA load"}, nugetstub.Version{Version: v})
+		pkg := nugetstub.Nupkg(&nugetstub.Package{ID: id, Description: "quader HA load"}, nugetstub.Version{Version: v})
 		_ = tw.WriteHeader(&tar.Header{Name: id + "." + v + ".nupkg", Mode: 0o644, Size: int64(len(pkg))})
 		_, _ = tw.Write(pkg)
 		hashes[v] = nugetstub.PackageHash(pkg)
@@ -339,7 +339,7 @@ func startNuGetLoad(t *testing.T, h *nugetHAFixture, name string, o nugetLoadOpt
 	l := &nugetLoad{name: name, h: h, pubPkg: fmt.Sprintf("E2e.NugetHa%s.%s.Pub", h.fx.run, name)}
 	pods := nugetClientCount(t)
 	loopEnv := func(c *nugetClient, extra ...string) []string {
-		return append([]string{"TROVE_TOKEN=" + c.token}, extra...)
+		return append([]string{"QUADER_TOKEN=" + c.token}, extra...)
 	}
 	var envs [][]string
 	for i := 0; i < o.restoreLoops; i++ {
@@ -350,7 +350,7 @@ func startNuGetLoad(t *testing.T, h *nugetHAFixture, name string, o nugetLoadOpt
 		c.write("fixture.csproj", h.csproj)
 		c.write("loop.sh", []byte(restoreLoopScript))
 		l.loops = append(l.loops, &nugetLoop{name: fmt.Sprintf("restore%d", i), c: c})
-		envs = append(envs, loopEnv(c, "TROVE_TOKEN_ALT="+h.tokens[2*i+1], "EXPECT="+strconv.Itoa(h.packages)))
+		envs = append(envs, loopEnv(c, "QUADER_TOKEN_ALT="+h.tokens[2*i+1], "EXPECT="+strconv.Itoa(h.packages)))
 	}
 	if o.push {
 		c := h.fx.client(t, 0, fmt.Sprintf("ha-%s-push", name))

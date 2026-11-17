@@ -7,7 +7,7 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 func renderSetup(t *testing.T, tpl formats.SetupTemplate, d formats.SetupData) string {
@@ -25,7 +25,7 @@ func renderSetup(t *testing.T, tpl formats.SetupTemplate, d formats.SetupData) s
 
 func setupData(scope string, auth bool) formats.SetupData {
 	return formats.SetupData{
-		RegistryURL: "https://trove.example.com/api/npm/npm-all/", Repository: "npm-all", Endpoint: "default", Variant: scope,
+		RegistryURL: "https://quader.example.com/api/npm/npm-all/", Repository: "npm-all", Endpoint: "default", Variant: scope,
 		RequiresAuth: auth,
 	}
 }
@@ -57,10 +57,10 @@ func TestR_NPM_041_SnippetLint(t *testing.T) {
 					t.Errorf("R-NPM-041 %s: unresolved template text:\n%s", name, out)
 				}
 				for _, line := range strings.Split(out, "\n") {
-					if strings.Contains(line, "_authToken") && !strings.HasPrefix(line, "//trove.example.com/api/npm/npm-all/:_authToken=${TROVE_TOKEN}") {
+					if strings.Contains(line, "_authToken") && !strings.HasPrefix(line, "//quader.example.com/api/npm/npm-all/:_authToken=${QUADER_TOKEN}") {
 						t.Errorf("R-NPM-041 %s: the credential line is not the keyed form: %q", name, line)
 					}
-					if strings.Contains(line, "npmAuthToken") && !strings.Contains(line, `"${TROVE_TOKEN}"`) {
+					if strings.Contains(line, "npmAuthToken") && !strings.Contains(line, `"${QUADER_TOKEN}"`) {
 						t.Errorf("R-NPM-041 %s: the token is not the variable: %q", name, line)
 					}
 				}
@@ -83,11 +83,11 @@ func TestR_NPM_041_SnippetLint(t *testing.T) {
 	}
 	t.Run("R-NPM-041 the scoped form binds the scope, the unscoped form the default registry", func(t *testing.T) {
 		out := renderSetup(t, tpls[0], setupData("acme", false))
-		if !strings.HasPrefix(out, "@acme:registry=https://trove.example.com/api/npm/npm-all/\n//trove.example.com/api/npm/npm-all/:_authToken=${TROVE_TOKEN}") {
+		if !strings.HasPrefix(out, "@acme:registry=https://quader.example.com/api/npm/npm-all/\n//quader.example.com/api/npm/npm-all/:_authToken=${QUADER_TOKEN}") {
 			t.Errorf("%q", out)
 		}
 		out = renderSetup(t, tpls[0], setupData("", false))
-		if !strings.HasPrefix(out, "registry=https://trove.example.com/api/npm/npm-all/\n") {
+		if !strings.HasPrefix(out, "registry=https://quader.example.com/api/npm/npm-all/\n") {
 			t.Errorf("%q", out)
 		}
 	})

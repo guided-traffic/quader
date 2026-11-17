@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // fakeDebKeys stands in for the key group of the Debian data port; it records the calls.

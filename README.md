@@ -1,8 +1,8 @@
-# trove
+# Quader
 
-[![Build Status](https://github.com/guided-traffic/trove/actions/workflows/release.yml/badge.svg)](https://github.com/guided-traffic/trove/actions)
-[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/guided-traffic/trove/main/.github/badges/coverage.json)](https://github.com/guided-traffic/trove)
-[![Go Report Card](https://goreportcard.com/badge/github.com/guided-traffic/trove)](https://goreportcard.com/report/github.com/guided-traffic/trove)
+[![Build Status](https://github.com/guided-traffic/quader/actions/workflows/release.yml/badge.svg)](https://github.com/guided-traffic/quader/actions)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/guided-traffic/quader/main/.github/badges/coverage.json)](https://github.com/guided-traffic/quader)
+[![Go Report Card](https://goreportcard.com/badge/github.com/guided-traffic/quader)](https://goreportcard.com/report/github.com/guided-traffic/quader)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 > **Status: pre-release. Phases 1 to 3 are built (milestones M0 to M2); phase 4, NuGet (M3), is built and open for the findings of its reviews.** The platform: the binary, its configuration, the PostgreSQL
@@ -14,14 +14,14 @@
 > NuGet on customer endpoints, the forwarded search, and the format contract frozen at version 1; the findings of its reviews and
 > security audits are fixed but for the open ones ([open findings](docs/projektplan/promt.md#8--open-findings)).
 > GitLab CI OIDC federation (M4) is built; its end-to-end tests run in the `ci` set. Vulnerability scanning (M4b, beta phase 6) is
-> built: trove's own advisory mirror (the OSV archives of npm and NuGet, which carry the GitHub Advisory Database and the OpenSSF
+> built: Quader's own advisory mirror (the OSV archives of npm and NuGet, which carry the GitHub Advisory Database and the OpenSSF
 > malicious packages, and the CISA KEV catalog), findings with triage, download blocking (malicious versions by default, any other
 > version when a triager blocks its finding), `npm audit`, `pnpm audit`, `yarn npm audit` and NuGet's `VulnerabilityInfo` answered
-> from trove's data, and the report in the API and the UI; the client runs and the browser journeys run in the end-to-end sets `vuln` and
+> from Quader's data, and the report in the API and the UI; the client runs and the browser journeys run in the end-to-end sets `vuln` and
 > `vuln-long` ([vulnerability scanning](docs/developer/vulnerabilities.md)). The mirror mode of remote repositories (beta phase 6b) is
 > built: a remote can mirror the npm or NuGet packages its upstream offers in the background, bounded by its patterns and a byte
 > bound, throttled by the upstream's rate limits and pre-empted by client fetches ([mirror](docs/developer/mirror.md)). Backup and
-> restore with the revocation journal (the backup lane of M5) is built: `trove backup create`, `list`, `verify`, `delete`, `prune` and
+> restore with the revocation journal (the backup lane of M5) is built: `quader backup create`, `list`, `verify`, `delete`, `prune` and
 > `restore` against an S3 target of its own, the chart's backup CronJob (off by default, `backup.enabled`), restore Job and post-restore
 > hook Job, and the journal of revocations that a restore replays; the restore drill, the drain and the journal scenarios run in the
 > end-to-end set `backup`, nightly and on dispatch ([backup](docs/developer/backup.md)). The OCI (Docker) registry (phase T-16) is
@@ -37,15 +37,15 @@
 > the organisation's CI and release standard; it was published to `ghcr.io`. Releases from now on are cut by Semantic Release from
 > the conventional commits on `main`, and published to Docker Hub and to the chart repository ([releasing](docs/developer/releasing.md)).
 
-trove is a self-hosted, highly available binary repository manager. Its target: host your own packages, proxy and cache public
+Quader is a self-hosted, highly available binary repository manager. Its target: host your own packages, proxy and cache public
 registries on demand (pull-through), and put both behind one URL per ecosystem. People sign in through your OpenID Connect
 provider. Access is denied by default and granted through permission policies that reach down to package-name patterns. GitLab CI
-jobs need no stored secret: a job trades its GitLab-issued ID token for a short-lived trove token. npm and NuGet come first.
+jobs need no stored secret: a job trades its GitLab-issued ID token for a short-lived Quader token. npm and NuGet come first.
 
-trove is one Go binary with an embedded Angular UI, deployed with a Helm chart in two roles, `web` and `worker`. `web` replicas
+Quader is one Go binary with an embedded Angular UI, deployed with a Helm chart in two roles, `web` and `worker`. `web` replicas
 answer HTTP requests behind a Kubernetes Service that spreads them at random, without session affinity. `worker` replicas run
 background jobs. No replica keeps state between requests. PostgreSQL is the system of record; Valkey with Sentinel holds shared
-ephemeral state. Every connection can run TLS, trove's own listeners included, and certificates are reloaded without a
+ephemeral state. Every connection can run TLS, Quader's own listeners included, and certificates are reloaded without a
 restart.
 
 ```mermaid
@@ -53,10 +53,10 @@ flowchart LR
   cl["Clients<br/>curl, browser, npm, pnpm, Yarn, dotnet, nuget.exe"]
   subgraph k8s["Kubernetes (Helm chart)"]
     edge["Ingress controller<br/>HAProxy Ingress, HTTPS to the backend"]
-    svc["Service trove<br/>web pods"]
-    web["web Deployment<br/>trove serve --role web"]
-    wrk["worker Deployment<br/>trove serve --role worker"]
-    mig["migrate Job<br/>trove migrate up"]
+    svc["Service quader<br/>web pods"]
+    web["web Deployment<br/>quader serve --role web"]
+    wrk["worker Deployment<br/>quader serve --role worker"]
+    mig["migrate Job<br/>quader migrate up"]
   end
   pg[("PostgreSQL<br/>CloudNativePG, system of record")]
   vk[("Valkey with Sentinel<br/>shared ephemeral state")]
@@ -76,9 +76,9 @@ flowchart LR
 
 Built (M0):
 
-- 🧱 **One binary, roles by configuration.** `trove serve --role api|packages|worker|web|all`: `api` serves the UI, the management API and the CI exchange and holds the sessions and login secrets, `packages` the package protocols and raw files with tokens only, `worker` the jobs, `web` both halves in one process (the bridge of the upgrade across the cut, the chart still renders it as the only serving Deployment until phase 6a is complete), `all` for development;, `trove migrate`, `trove admin config validate`. See [R-ARCH-001](docs/spec/architecture.md).
-- ⚙️ **One configuration file, environment overrides, strict validation.** `/etc/trove/trove.yaml`, every key overridable with `TROVE_<SECTION>_<KEY>`, secrets only as files, a redacted effective view. See [R-OPS-028](docs/spec/operations-and-observability.md).
-- 🔒 **TLS on every connection trove makes or accepts.** Listeners, endpoints, PostgreSQL, Valkey and Sentinels, the object store and outbound HTTP; certificates picked by SNI and reloaded without a restart. Plain HTTP is an explicit chart setting. See [transport encryption](docs/security/transport-encryption.md) and [INV-20](docs/spec/README.md#design-invariants).
+- 🧱 **One binary, roles by configuration.** `quader serve --role api|packages|worker|web|all`: `api` serves the UI, the management API and the CI exchange and holds the sessions and login secrets, `packages` the package protocols and raw files with tokens only, `worker` the jobs, `web` both halves in one process (the bridge of the upgrade across the cut, the chart still renders it as the only serving Deployment until phase 6a is complete), `all` for development;, `quader migrate`, `quader admin config validate`. See [R-ARCH-001](docs/spec/architecture.md).
+- ⚙️ **One configuration file, environment overrides, strict validation.** `/etc/quader/quader.yaml`, every key overridable with `QUADER_<SECTION>_<KEY>`, secrets only as files, a redacted effective view. See [R-OPS-028](docs/spec/operations-and-observability.md).
+- 🔒 **TLS on every connection Quader makes or accepts.** Listeners, endpoints, PostgreSQL, Valkey and Sentinels, the object store and outbound HTTP; certificates picked by SNI and reloaded without a restart. Plain HTTP is an explicit chart setting. See [transport encryption](docs/security/transport-encryption.md) and [INV-20](docs/spec/README.md#design-invariants).
 - 🌐 **Endpoints.** One client listener per endpoint, identified by the listener, not by the `Host` header; a foreign host answers `421`. See [endpoints](docs/developer/endpoints.md) and [ADR-128](docs/decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
 - 🗃️ **Migrations with a compatibility gate.** Embedded in the binary, applied under an advisory lock; a replica waits, not ready, until the schema is current. See [R-ARCH-026](docs/spec/architecture.md).
 - 🔁 **Cross-replica coordination.** A PostgreSQL change log that every replica polls, Valkey Pub/Sub as an early eviction path, and singleton work under session advisory-lock leases with fencing. See [isolation and coordination](docs/security/isolation-and-coordination.md).
@@ -95,10 +95,10 @@ Built (M1, access core):
 
 - 🔐 **OIDC login with PKCE.** Providers under `auth.oidc.providers`, the authorization-code flow with PKCE, a server-side session per browser login, CSRF protection and logout. See [login](docs/developer/login.md) and [login and sessions](docs/security/login-and-sessions.md).
 - 🆘 **Break-glass administrator.** One local account whose password comes from a file: a plaintext password of at least 20 characters or an Argon2id hash; lockout and a rotation hold. See [login](docs/developer/login.md).
-- 🎟️ **Own tokens.** Personal (`trv_pat_`) and service-account (`trv_sat_`) tokens with lifetimes, rotation, revocation, a per-address failed-credential throttle. See [identity](docs/developer/identity.md) and [tokens and credentials](docs/security/tokens-and-credentials.md).
+- 🎟️ **Own tokens.** Personal (`qdr_pat_`) and service-account (`qdr_sat_`) tokens with lifetimes, rotation, revocation, a per-address failed-credential throttle. See [identity](docs/developer/identity.md) and [tokens and credentials](docs/security/tokens-and-credentials.md).
 - 🖼️ **User avatars.** A user uploads a PNG, JPEG or WebP of at most 1 MiB for their own record; the server decodes it, bounds its size before decoding and stores a new 256 x 256 PNG (no metadata, no animation, never SVG) as a blob, served by the `api` role with image headers; users without one get a generated avatar in the UI ([security](docs/security/user-avatars.md), R-API-055).
 - 🛂 **Permission policies.** Deny by default; allow-only policies over repository and package-name patterns, five system roles and role bindings; a grant index per replica that is consistent through an epoch. See [authorization](docs/developer/authorization.md) and [permissions](docs/security/permissions.md).
-- 🪪 **Role bindings from the Helm values.** `authz.role_bindings` makes an IdP group the administrator or the auditor from a GitOps repository: `trove migrate` applies the list, the API and the UI show it read-only. See [sign-in and identity](docs/manual/admin/sign-in-and-identity.md#administrators-from-the-helm-values).
+- 🪪 **Role bindings from the Helm values.** `authz.role_bindings` makes an IdP group the administrator or the auditor from a GitOps repository: `quader migrate` applies the list, the API and the UI show it read-only. See [sign-in and identity](docs/manual/admin/sign-in-and-identity.md#administrators-from-the-helm-values).
 - 🔎 **Auditor.** Reads the configuration, the audit log and the metadata of every repository (package lists, documents, search, package pages) and downloads, publishes and changes nothing. See [permissions](docs/security/permissions.md#the-auditor).
 - 🗂️ **Projects, members and roles.** Every repository belongs to exactly one project and is addressed inside it (`/api/<format>/<projectKey>/<repoKey>/`), its key unique within the project; users and groups are members with the role Reader, Developer, Maintainer or Owner, which grants the project's repositories through the member's session and personal tokens; the Owner administers the project: members, repositories of every class, a move to another project it owns, policies, service accounts of external partners with their tokens and CI mappings, all named within the project (`sa:<projectKey>/<name>`) and never reaching beyond it. An administrator creates projects and names their first Owners. See [projects](docs/developer/projects.md), [delegated administration](docs/security/delegated-administration.md) and the [manual](docs/manual/admin/projects.md).
 - 🚪 **Endpoints and exposure rules.** Further endpoints on their own listeners and hosts; exposure rules are a ceiling on what each endpoint serves. See [endpoints](docs/developer/endpoints.md) and [endpoints and exposure](docs/security/endpoints-and-exposure.md).
@@ -114,15 +114,15 @@ Built (M2, npm registry):
 - 📦 **npm local repositories.** Publish, package documents, dist-tags, unpublish, `whoami` and `ping`, for npm, pnpm, Yarn Classic and Yarn Berry. See [npm](docs/developer/npm.md).
 - 🔁 **npm remote repositories.** A pull-through proxy of the public npm registry, with tarball URL rewriting, request collapsing through Valkey, metadata and negative caches, and stale metadata while the upstream is down. See [proxy](docs/developer/proxy.md).
 - 🧩 **npm virtual repositories.** Merged package documents and dist-tags over several members, writes through one deployment target, namespace claims against dependency confusion. See [virtual](docs/developer/virtual.md).
-- 🛡️ **npm security audit.** `npm audit`, `pnpm audit` and `yarn npm audit` on every class. While vulnerability scanning is on and the OSV source is not `off`, a repository that does not set `npm.audit.mode` answers from trove's own advisory data and sends nothing out (`mode: local`, M4b); `npm.audit.mode: forward` keeps the forward of remote and virtual repositories to the provider (the upstream by default), never cached ([Q-ARCH-341](docs/spec/architecture.md#q-arch-341--code-shaped-only-by-the-compatibility-rules-is-cleaned-up-the-cluster-minimum-version-stays). See [npm](docs/developer/npm.md) and [client audits](docs/security/vulnerability-scanning.md#client-audits).
+- 🛡️ **npm security audit.** `npm audit`, `pnpm audit` and `yarn npm audit` on every class. While vulnerability scanning is on and the OSV source is not `off`, a repository that does not set `npm.audit.mode` answers from Quader's own advisory data and sends nothing out (`mode: local`, M4b); `npm.audit.mode: forward` keeps the forward of remote and virtual repositories to the provider (the upstream by default), never cached ([Q-ARCH-341](docs/spec/architecture.md#q-arch-341--code-shaped-only-by-the-compatibility-rules-is-cleaned-up-the-cluster-minimum-version-stays). See [npm](docs/developer/npm.md) and [client audits](docs/security/vulnerability-scanning.md#client-audits).
 - 🌐 **npm on customer endpoints.** Package documents and dist-tags list only the versions an endpoint exposes; a hidden version answers `404`. See [endpoints](docs/developer/endpoints.md).
 - 🖼️ **Package screens and client setup.** The package list and detail with the README, an install panel, client setup snippets, and repository settings rendered from the format's schema. See [packages](docs/developer/packages.md) and [web UI](docs/developer/web-ui.md).
 - 📖 **In-app guides.** A guide for every npm variant (local, remote and virtual) with npm, pnpm, Yarn Berry and Yarn Classic, in the UI's guides area. See [npm](docs/developer/npm.md) and [web UI](docs/developer/web-ui.md).
 
 Built (M3, NuGet; the phase is open for its [remaining findings](docs/projektplan/promt.md#8--open-findings)):
 
-- 🐳 **OCI (Docker) local repositories.** `docker push` and `podman push` of images, multi-platform indexes from Buildx and Podman, and any OCI artifact to `<host>/<projectKey>/<repoKey>/<name>:<tag>`: chunked and monolithic blob uploads that any replica continues (the session lives in PostgreSQL and the object store, never in Valkey), the cross-repository mount, manifests stored byte for byte and pulled by tag or digest, a moved tag that keeps its old manifest pullable by digest, the tags list, the referrers API, deletion with a cascade and an hourly sweep of unreferenced blobs, and a restore that withholds a deleted image until `trove admin oci reinstate`. It passes the distribution conformance suite v1.1.1. Repository and project keys follow the OCI component grammar for every format. See [OCI](docs/developer/oci.md) and [container images](docs/manual/user/container-images.md).
-- 🎟️ **Registry tokens.** `docker login` and `podman login` take a trove token; the token service at `/v2/_token` answers with a short-lived `trv_rgt_` registry token that names the trove token and narrows it to the scopes asked, so revoking the trove token ends it, and every request is decided again on the current grants. See [OCI registry](docs/security/oci-registry.md).
+- 🐳 **OCI (Docker) local repositories.** `docker push` and `podman push` of images, multi-platform indexes from Buildx and Podman, and any OCI artifact to `<host>/<projectKey>/<repoKey>/<name>:<tag>`: chunked and monolithic blob uploads that any replica continues (the session lives in PostgreSQL and the object store, never in Valkey), the cross-repository mount, manifests stored byte for byte and pulled by tag or digest, a moved tag that keeps its old manifest pullable by digest, the tags list, the referrers API, deletion with a cascade and an hourly sweep of unreferenced blobs, and a restore that withholds a deleted image until `quader admin oci reinstate`. It passes the distribution conformance suite v1.1.1. Repository and project keys follow the OCI component grammar for every format. See [OCI](docs/developer/oci.md) and [container images](docs/manual/user/container-images.md).
+- 🎟️ **Registry tokens.** `docker login` and `podman login` take a Quader token; the token service at `/v2/_token` answers with a short-lived `qdr_rgt_` registry token that names the Quader token and narrows it to the scopes asked, so revoking the Quader token ends it, and every request is decided again on the current grants. See [OCI registry](docs/security/oci-registry.md).
 - 🔁 **OCI remote repositories.** Docker Hub (with the `library/` mapping), GHCR or any registry as an upstream: the token handshake with the upstream's realm, a `HEAD` per stale tag instead of a pull from the quota, every manifest and layer verified against its digest, the quota answer of Docker Hub honoured, and the tags list and referrers passed through. See [OCI remote](docs/security/oci-remote.md).
 - 🧩 **OCI virtual repositories.** One image address over local and remote members: a tag from the first member that has it, a digest from wherever the bytes are, unions of tags lists and referrers, claims against a public image of an internal name, and pushes to the deployment target with the layers a remote member cached linked in. See [OCI virtual](docs/security/oci-virtual.md).
 - 🪞 **Registry mirror and Docker Engine mirror.** A remote OCI repository in mode `mirror` keeps the tags (`oci.mirror.tags`, `excludeTags`) and platforms (`oci.mirror.platforms`) it selects, so they stay pullable while the registry is gone; a host bound to a repository (`host_roots`) is the distribution API of that repository, for a Docker Engine's `registry-mirrors`. See [container repositories](docs/manual/admin/container-repositories.md).
@@ -130,24 +130,24 @@ Built (M3, NuGet; the phase is open for its [remaining findings](docs/projektpla
 - 📦 **NuGet push, unlist, relist and delete.** `dotnet nuget push` and `nuget push` store a package byte for byte with its generated `.nuspec`; a version never changes, a removed version number is blocked for good by a tombstone, and the identical package pushed again is accepted without a change, so a client's retry after a lost answer succeeds. `dotnet nuget delete` unlists by default, or removes with `deleteMode: delete`. Every change is audited in its transaction and journaled for a restore. See [NuGet](docs/developer/nuget.md#the-write-side) and [NuGet publishing](docs/security/nuget-publish.md).
 - 🔣 **NuGet symbol packages.** `dotnet nuget push` of a `.nupkg` with its `.snupkg` stores both: the symbol package is validated (the entry types, the `.pdb` signatures), stored byte for byte next to its package and indexed by a `nuget-symbol-index` job on the `worker`; serving the symbols to a debugger is not built yet. See [NuGet](docs/developer/nuget.md#symbol-packages).
 - 📄 **NuGet documents and package files.** The version list of the flat container, the `.nupkg` and the `.nuspec` of a version, and the registration index, pages and leaves in the three hives (SemVer 1, SemVer 1 gzip, SemVer 2 gzip), with a weak `ETag` that gzip and identity share, `304` on `If-None-Match`, paging at 64 versions per page and inlined below 128 versions, and the filter of an endpoint with exposure rules, where the `ETag` of a local, remote or virtual document follows only what the endpoint shows. See [NuGet](docs/developer/nuget.md#rendered-documents-and-package-files).
-- 🔁 **NuGet remote repositories.** A pull-through proxy of a NuGet v3 feed (nuget.org by default): the service index is read as the discovery document and the resources may live on several hosts, the registration is rendered again with trove's paging and addresses in the three hives (an upstream's gzip-coded hive is read within a bound), the version list and the packages are cached, every package is held to the ID and version of its request before it is stored (`502 upstream_package_mismatch` otherwise), and a cached package gets the rows of origin `cache`. Request collapsing, stale metadata and the gone-ID rule come from the engine. Search is forwarded to the upstream (`nuget.forwardSearch`, on by default) and answered with its download counts, owners and `verified` under the remote's addresses, filtered for patterns, claims and the caller's reads on every use and kept per replica for `nuget.search.remote_result_ttl`; a query that names a protected package is answered from the cache, as is every search when the upstream fails. See [NuGet](docs/developer/nuget.md#the-remote-class) and [NuGet remote repositories](docs/security/nuget-remote.md).
+- 🔁 **NuGet remote repositories.** A pull-through proxy of a NuGet v3 feed (nuget.org by default): the service index is read as the discovery document and the resources may live on several hosts, the registration is rendered again with Quader's paging and addresses in the three hives (an upstream's gzip-coded hive is read within a bound), the version list and the packages are cached, every package is held to the ID and version of its request before it is stored (`502 upstream_package_mismatch` otherwise), and a cached package gets the rows of origin `cache`. Request collapsing, stale metadata and the gone-ID rule come from the engine. Search is forwarded to the upstream (`nuget.forwardSearch`, on by default) and answered with its download counts, owners and `verified` under the remote's addresses, filtered for patterns, claims and the caller's reads on every use and kept per replica for `nuget.search.remote_result_ttl`; a query that names a protected package is answered from the cache, as is every search when the upstream fails. See [NuGet](docs/developer/nuget.md#the-remote-class) and [NuGet remote repositories](docs/security/nuget-remote.md).
 - 🪞 **Remote full mirror.** A remote repository in mode `mirror` discovers what its upstream offers (npm: the public registry's change feed and key ranges, or exact names; NuGet: the catalog, the search listing, or exact IDs; OCI: a registry's catalog or exact image names, with the tags, the tag bound and the platforms of `oci.mirror`, so that the selected images stay pullable when the registry is gone) and stores it in the background on the queue `mirror`, within its include and exclude patterns, the version bounds and `maxBytes`; a well-known public upstream is refused without a bound. Passes resume from a cursor after a drain or a failure, honour `429`, `503` with `SlowDown` and quota headers with back-off and a halving window, never move the clients' circuit, and give way to client fetches on every replica. Status, pause, resume and a pass on request in the API and in the Mirror section of the repository's settings. See [mirror](docs/developer/mirror.md) and [mirror security](docs/security/mirror.md).
-- 📦 **Import from the registry you leave.** `trove admin import npm`, `trove admin import nuget` and `trove admin import ansible` copy the packages of an existing registry into a local repository through the target's own publish protocol: permissions, digests, immutability, the audit event, the vulnerability evaluation and the quota apply to every version, the strongest digest the source announces is verified before a byte is sent, a version with other content is a reported conflict and never overwritten, and a cut run resumes. For Ansible Galaxy the collections are copied and the roles are named in the report. See [R-IMP-001](docs/spec/import.md) and the [manual](docs/manual/admin/import.md).
+- 📦 **Import from the registry you leave.** `quader admin import npm`, `quader admin import nuget` and `quader admin import ansible` copy the packages of an existing registry into a local repository through the target's own publish protocol: permissions, digests, immutability, the audit event, the vulnerability evaluation and the quota apply to every version, the strongest digest the source announces is verified before a byte is sent, a version with other content is a reported conflict and never overwritten, and a cut run resumes. For Ansible Galaxy the collections are copied and the roles are named in the report. See [R-IMP-001](docs/spec/import.md) and the [manual](docs/manual/admin/import.md).
 - 🧭 **A new repository in one form.** A page of format tiles opens one form named after the format ("New OCI (Docker) repository"): the class, a suggested key, the description, the visibility and, for a remote, the upstream with the well-known registries and Test connection, or, for a virtual repository, its members; every other setting waits in a closed Advanced settings section, and the settings page is one column of sections with a save each. See [repositories](docs/manual/admin/repositories.md).
-- 🔀 **NuGet virtual repositories.** One source for local packages and, nuget.org through a remote: the service index, the version list and the registration documents are the union of the members that remain after permissions, pin rules and claims; a version two members hold comes from the first one, and its package is the one the registration describes (`Trove-Resolved-From`). A push, unlist, relist or delete addressed to the virtual repository runs on its deployment target. Search merges the members (exact ID first, then member by member, window `nuget.search.virtual_merge_window`), four at a time, with the include and exclude patterns of the virtual repository and of each member; a remote member contributes its forwarded search, withheld for the names the virtual repository's claims and pin rules protect. A remote member's registration is merged whole, gzip-coded and paged as nuget.org serves it, and shows the same entries as the remote (Q-NUGET-82). See [NuGet](docs/developer/nuget.md#virtual-repositories).
+- 🔀 **NuGet virtual repositories.** One source for local packages and, nuget.org through a remote: the service index, the version list and the registration documents are the union of the members that remain after permissions, pin rules and claims; a version two members hold comes from the first one, and its package is the one the registration describes (`Quader-Resolved-From`). A push, unlist, relist or delete addressed to the virtual repository runs on its deployment target. Search merges the members (exact ID first, then member by member, window `nuget.search.virtual_merge_window`), four at a time, with the include and exclude patterns of the virtual repository and of each member; a remote member contributes its forwarded search, withheld for the names the virtual repository's claims and pin rules protect. A remote member's registration is merged whole, gzip-coded and paged as nuget.org serves it, and shows the same entries as the remote (Q-NUGET-82). See [NuGet](docs/developer/nuget.md#virtual-repositories).
 - 🌐 **NuGet on customer endpoints.** Version lists, registrations and search list only the versions an endpoint exposes, and a search term meets only those, so `totalHits` tells nothing of a hidden version; through a virtual repository the virtual repository's rules decide, also for a token scoped to it. `dotnet add package` of a hidden version fails with `NU1102`, and the endpoint offers no push (`403`). See [endpoints](docs/developer/endpoints.md) and [NuGet virtual repositories](docs/security/nuget-virtual.md).
 - 🖥️ **NuGet package screens, setup and guides.** The package pages of NuGet repositories, setup snippets for `dotnet`, nuget.exe and `nuget.config` with the token in each shell's spelling, and a guide for local, remote and virtual repositories with the .NET CLI, nuget.exe and Visual Studio. See [NuGet](docs/developer/nuget.md) and [web UI](docs/developer/web-ui.md).
-- 🪪 **GitLab CI OIDC federation (M4).** A GitLab job exchanges its ID token for a `trv_cit_` token that lives minutes: issuers with discovery and rotating signing keys, ordered mappings with claim conditions, templated grants and ownership binding, replay protection, issuance records, revocation (also by the job itself as its last step), the dry run and the claim tester, and the admin screens. The reference pipeline runs with the real npm and .NET clients against an issuer double on kind. See [GitLab CI pipelines](docs/manual/user/gitlab-ci-pipelines.md), [GitLab CI federation](docs/manual/admin/gitlab-ci.md) and [ci-oidc.md](docs/developer/ci-oidc.md).
+- 🪪 **GitLab CI OIDC federation (M4).** A GitLab job exchanges its ID token for a `qdr_cit_` token that lives minutes: issuers with discovery and rotating signing keys, ordered mappings with claim conditions, templated grants and ownership binding, replay protection, issuance records, revocation (also by the job itself as its last step), the dry run and the claim tester, and the admin screens. The reference pipeline runs with the real npm and .NET clients against an issuer double on kind. See [GitLab CI pipelines](docs/manual/user/gitlab-ci-pipelines.md), [GitLab CI federation](docs/manual/admin/gitlab-ci.md) and [ci-oidc.md](docs/developer/ci-oidc.md).
 - 🔒 **Format contract frozen.** The contract between the core and a format is at version 1, its surface is recorded and checked, and npm and NuGet pass all eleven conformance checks; every later change is an ADR ([ADR-141](docs/decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)). See [formats](docs/developer/formats.md).
 
 Built (T-17, the APT registry for Debian and Ubuntu; [spec](docs/spec/formats/debian.md), [contracts](docs/developer/deb.md), [security](docs/security/deb-signing.md)):
 
-- 📦 **Debian local repositories.** `curl --upload-file` of a `.deb` to `/api/deb/<projectKey>/<repoKey>/upload/<file>.deb?distribution=<suite>&component=<component>` stores it at its pool path with its suites and components (`201`, or `200` when the identical bytes only gain coordinates); a package, version and architecture is stored once (`409 deb_version_exists`); `PUT …/deb/coordinates` moves a file between suites (adding needs deploy, removing delete); the control data is read under strict bounds and a package trove cannot index is refused. See [Debian](docs/developer/deb.md#the-local-class).
+- 📦 **Debian local repositories.** `curl --upload-file` of a `.deb` to `/api/deb/<projectKey>/<repoKey>/upload/<file>.deb?distribution=<suite>&component=<component>` stores it at its pool path with its suites and components (`201`, or `200` when the identical bytes only gain coordinates); a package, version and architecture is stored once (`409 deb_version_exists`); `PUT …/deb/coordinates` moves a file between suites (adding needs deploy, removing delete); the control data is read under strict bounds and a package Quader cannot index is refused. See [Debian](docs/developer/deb.md#the-local-class).
 - 🗂️ **Signed indexes built by a job.** The job `deb-index` builds `Packages.gz` (and `Packages.xz`), `Release`, `InRelease` and `Release.gpg` of each suite from one snapshot of the rows and publishes the whole suite in one transaction, with every index file also by hash, so `apt-get update` sees one generation on any replica; `GET …/deb/index?waitFor=<suite>:<changeSeq>` waits for an upload, `POST …/reindex` rebuilds. See [index builds](docs/security/deb-index.md).
 - 🔑 **A signing key per repository, and its rotation.** Every local and virtual repository gets an EdDSALegacy key in the transaction that creates it, sealed with the stored-secret key ring and opened only to sign; a next key co-signs until it is promoted, so clients replace their key file without an outage; imported keys, and a restore that withholds a retired key instead of reviving it. See [signing keys](docs/security/deb-signing.md).
 - 🔁 **Debian and Ubuntu archives through a remote.** A pull-through cache of an APT archive (`https://deb.debian.org/debian/` by default) that passes the archive's signed release files through byte for byte, serves only the index files that release lists, checks package files against the parsed indexes and, with `deb.upstreamKeys`, stores only releases a key of the archive verifies and never an older one. See [Debian remote](docs/security/deb-remote.md).
 - 🪞 **Mirror of an APT archive.** A remote in mode `mirror` keeps the suites, components and architectures of `deb.mirror` so that `apt-get install` keeps working with the archive unreachable. See [Debian mirror](docs/security/deb-mirror.md) and [Debian (APT) repositories](docs/manual/admin/apt-repositories.md).
-- 🧩 **Debian (APT) virtual repositories.** One APT source over local and remote repositories: a job merges the members' indexes, in member order, with the first member keeping a version two members share, the claims of a local member keeping an internal name away from a remote one, and signs the result with the virtual repository's own key. Every package file is fetched from the member whose paragraph the client read (`members/<member>/pool/…`, `Trove-Resolved-From`); a remote member's release is merged only while a current upstream key verifies it, it has not expired and is not older than the last one merged, and a build that cannot merge a member keeps the last index and says why (`GET …/deb/index`). Reading the index needs `read` on every member; an upload goes to the deployment target. `apt-get update` and `apt-get install` are proven from `debian:13` and `ubuntu:22.04`. See [Debian](docs/developer/deb.md#the-virtual-class) and [Debian virtual repositories](docs/security/deb-virtual.md).
+- 🧩 **Debian (APT) virtual repositories.** One APT source over local and remote repositories: a job merges the members' indexes, in member order, with the first member keeping a version two members share, the claims of a local member keeping an internal name away from a remote one, and signs the result with the virtual repository's own key. Every package file is fetched from the member whose paragraph the client read (`members/<member>/pool/…`, `Quader-Resolved-From`); a remote member's release is merged only while a current upstream key verifies it, it has not expired and is not older than the last one merged, and a build that cannot merge a member keeps the last index and says why (`GET …/deb/index`). Reading the index needs `read` on every member; an upload goes to the deployment target. `apt-get update` and `apt-get install` are proven from `debian:13` and `ubuntu:22.04`. See [Debian](docs/developer/deb.md#the-virtual-class) and [Debian virtual repositories](docs/security/deb-virtual.md).
 - 🖥️ **Debian screens, setup and guides.** The package pages, the tabs **Signing keys** and **Index** of a local or virtual repository, setup snippets for APT that install the key under `Signed-By` and the token in `/etc/apt/auth.conf.d/`, and a guide per class. See [Debian packages with APT](docs/manual/user/apt-packages.md).
 
 Built (M4b, vulnerability scanning, beta phase 6; [spec](docs/spec/vulnerability-scanning.md), [contracts](docs/developer/vulnerabilities.md), [security](docs/security/vulnerability-scanning.md)):
@@ -155,18 +155,18 @@ Built (M4b, vulnerability scanning, beta phase 6; [spec](docs/spec/vulnerability
 - 🗄️ **Own advisory mirror and offline import.** The `worker` role copies the OSV archives of npm and NuGet (GitHub Advisory Database, OpenSSF malicious packages) and the CISA KEV catalog into PostgreSQL, incrementally every 15 minutes and in full weekly, behind guards for digest, size, shrink and invalid records; an installation without internet access imports the same files from a generic local repository (`mode: repository`). See [advisory sources](docs/manual/admin/vulnerability-sources.md).
 - 🔍 **Matching and findings with triage.** A stored version is matched by name and version, never by its bytes, in its commit and again when the data changes; public advisories never apply to a claimed internal name. A finding is `needs_triage`, `confirmed`, `blocked`, `dismissed` or `resolved`, changed one by one or in bulk by holders of `vulnerabilities:triage`, with history and audit. See [vulnerabilities](docs/manual/user/vulnerabilities.md).
 - ⛔ **Download blocking.** An open malicious finding blocks its version (`blockMalicious`, on by default); any other finding blocks only when a triager blocks it, and `onMissingData: block` refuses what cannot be evaluated yet (`vulnerability_data_missing`); `403 vulnerability_blocked` on the format routes, `/files/`, the cache view and every virtual tier, and a blocked remote miss is never fetched. `vulnerabilities.enforcement: report` only counts. See [download block](docs/security/vulnerability-scanning.md#download-block).
-- 🧾 **NuGet audit warnings from trove's data.** `nuget.vulnerabilityInfo` (local by default while scanning is on) lists `VulnerabilityInfo/6.7.0` in the service index and serves `vulnerabilities/index.json` and `trove.json`, so `dotnet restore` reports NU1901 to NU1904; internal names are left out. See [client audits](docs/security/vulnerability-scanning.md#client-audits).
+- 🧾 **NuGet audit warnings from Quader's data.** `nuget.vulnerabilityInfo` (local by default while scanning is on) lists `VulnerabilityInfo/6.7.0` in the service index and serves `vulnerabilities/index.json` and `quader.json`, so `dotnet restore` reports NU1901 to NU1904; internal names are left out. See [client audits](docs/security/vulnerability-scanning.md#client-audits).
 - 📊 **Vulnerability report and package-page tab.** The Vulnerabilities screen (counts, trend, filters, CSV export, finding, advisory and advisory-source pages), the API under `/api/v1/vulnerabilities/`, and a Vulnerabilities tab on the package page, each narrowed to the findings the caller can read. See [vulnerabilities](docs/manual/user/vulnerabilities.md).
-- 🚨 **Alerts.** Twelve `trove_vuln_*` metric families and the chart's PrometheusRule (`metrics.prometheusRule.enabled`) with `TroveVulnerabilityDataStale`, `TroveVulnerabilitySyncFailing` and `TroveVulnerabilityClaimedNameMalicious`, the last for a malicious advisory that names a claimed internal name. See [operations](docs/security/vulnerability-scanning.md#operations-what-an-operator-sees-and-what-a-restore-leaves).
+- 🚨 **Alerts.** Twelve `quader_vuln_*` metric families and the chart's PrometheusRule (`metrics.prometheusRule.enabled`) with `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing` and `QuaderVulnerabilityClaimedNameMalicious`, the last for a malicious advisory that names a claimed internal name. See [operations](docs/security/vulnerability-scanning.md#operations-what-an-operator-sees-and-what-a-restore-leaves).
 
 Built (M5, the backup lane; [spec](docs/spec/backup-and-restore.md), [contracts](docs/developer/backup.md), [security](docs/security/backup-and-restore.md)):
 
-- 💾 **Consistent backups into a target of their own.** `trove backup create` exports every table from one PostgreSQL snapshot as zstd-compressed `COPY` files and copies the blobs that snapshot references into a content-addressed pool that every backup of the target shares, so the next backup copies only new content; a garbage-collection hold keeps a blob from being collected before the run has copied it, and a target marker refuses a target that another installation writes (exit `4`). See [R-BAK-002](docs/spec/backup-and-restore.md#r-bak-002--target-layout-backup-id-and-target-marker).
-- 🗂️ **List, verify and retention.** `trove backup list` reads the target, `verify` checks the files and pool objects of a backup (`--deep` downloads and hashes each one), and `prune` and every `create` keep the newest `retention.keep_last` backups (and those younger than `keep_within`) and sweep the pool objects no remaining backup lists.
-- ⏪ **Restore into an empty installation.** `trove backup restore <id>` checks eight preconditions before it writes (the key ring must open the backup's canary rows, the database and the blob prefix must be empty), copies the blobs, loads the tables in one transaction, rebuilds derived state, gives the installation a new incarnation and Valkey keyspace, and resumes where it stopped after an eviction. The chart's restore Job runs it with every role at zero.
+- 💾 **Consistent backups into a target of their own.** `quader backup create` exports every table from one PostgreSQL snapshot as zstd-compressed `COPY` files and copies the blobs that snapshot references into a content-addressed pool that every backup of the target shares, so the next backup copies only new content; a garbage-collection hold keeps a blob from being collected before the run has copied it, and a target marker refuses a target that another installation writes (exit `4`). See [R-BAK-002](docs/spec/backup-and-restore.md#r-bak-002--target-layout-backup-id-and-target-marker).
+- 🗂️ **List, verify and retention.** `quader backup list` reads the target, `verify` checks the files and pool objects of a backup (`--deep` downloads and hashes each one), and `prune` and every `create` keep the newest `retention.keep_last` backups (and those younger than `keep_within`) and sweep the pool objects no remaining backup lists.
+- ⏪ **Restore into an empty installation.** `quader backup restore <id>` checks eight preconditions before it writes (the key ring must open the backup's canary rows, the database and the blob prefix must be empty), copies the blobs, loads the tables in one transaction, rebuilds derived state, gives the installation a new incarnation and Valkey keyspace, and resumes where it stopped after an eviction. The chart's restore Job runs it with every role at zero.
 - 📜 **Revocation journal.** Every change that removes access (a revoked token, a disabled user, a removed binding or policy entry, a withdrawn package version) is written to an outbox in its own transaction, shipped by a job to `<storage.s3.prefix>/_journal/revocations/`, and replayed after a restore, so a restore does not bring back what was revoked after its snapshot; a replay never grants access and never deletes content. See [the revocation journal](docs/security/backup-and-restore.md#the-revocation-journal).
-- 🩹 **Platform restores.** After a point-in-time restore of PostgreSQL by the platform, `trove admin post-restore --restored-to <t>` (the chart's `postRestore` hook Job) puts running jobs back in the queue, gives the installation a new keyspace and replays the journal from `t`; `trove admin backup check` and the daily task `backup-check` verify the platform protection that `backup.recovery_window` and `backup.object_versioning` declare.
-- 📈 **Run visibility.** The Backups screen under System status, `GET /api/v1/system/backups` with the summary and its overdue mark, the `trove_backup_*` and `trove_revocation_journal_*` metric families and the backup alerts of the chart's PrometheusRule. See [Backups](docs/manual/admin/operations.md#backups).
+- 🩹 **Platform restores.** After a point-in-time restore of PostgreSQL by the platform, `quader admin post-restore --restored-to <t>` (the chart's `postRestore` hook Job) puts running jobs back in the queue, gives the installation a new keyspace and replays the journal from `t`; `quader admin backup check` and the daily task `backup-check` verify the platform protection that `backup.recovery_window` and `backup.object_versioning` declare.
+- 📈 **Run visibility.** The Backups screen under System status, `GET /api/v1/system/backups` with the summary and its overdue mark, the `quader_backup_*` and `quader_revocation_journal_*` metric families and the backup alerts of the chart's PrometheusRule. See [Backups](docs/manual/admin/operations.md#backups).
 
 Not built yet (see the [roadmap](docs/coverage/roadmap.md)): the symbol server of NuGet; the P1 parts of vulnerability scanning
 (exploit-probability enrichment, time-limited dismissals, vulnerabilities in NuGet registrations: R-VULN-030 to R-VULN-032) and the
@@ -185,14 +185,14 @@ Built names are the ones the code produces. *Planned* marks a name the spec fixe
 
 | Name | Value | Source |
 |---|---|---|
-| Binary | `trove`, static (`CGO_ENABLED=0`); `make build` writes `bin/trove` | `Makefile`, `cmd/trove` |
-| Roles | `web`, `worker`, `all` (`all` is for local runs outside the chart) | `cmd/trove/serve.go`, `internal/config/process.go` |
+| Binary | `quader`, static (`CGO_ENABLED=0`); `make build` writes `bin/quader` | `Makefile`, `cmd/quader` |
+| Roles | `web`, `worker`, `all` (`all` is for local runs outside the chart) | `cmd/quader/serve.go`, `internal/config/process.go` |
 | Default client listener | `:8080` (`server.listen`) | `internal/config/server.go` |
 | Ops listener | `:8081` (`server.ops_listen`) | `internal/config/server.go` |
 | Further endpoint listener | any free port, one per endpoint, name `^[a-z][a-z0-9-]{0,19}$` (`server.endpoints.<name>.listen`) | `internal/config/endpoints.go` |
 | Endpoint name in metrics, logs and spans | `default` for the default endpoint, the configured name otherwise; a name outside the configured set folds into `_other` | `internal/observability` |
-| Backup commands | `trove backup create`, `list`, `verify`, `delete`, `prune`, `restore`; commands of the binary, not roles: they serve nothing and open no port but the ops port of a `create` run, which exports its counters for as long as it lasts | `cmd/trove/backup*.go` |
-| Recovery commands of the backup lane | `trove admin post-restore`, `trove admin backup check`, `trove admin storage verify`, `trove admin storage restore-versions`, `trove admin maintenance pause-deletions` and `resume-deletions`, `trove admin npm reinstate`, `trove admin oci reinstate`, `trove admin deb reinstate` | `cmd/trove/admin_postrestore.go`, `admin_backupcheck.go`, `admin_storage.go`, `admin_npm.go`, `admin_oci.go`, `admin_deb.go` |
+| Backup commands | `quader backup create`, `list`, `verify`, `delete`, `prune`, `restore`; commands of the binary, not roles: they serve nothing and open no port but the ops port of a `create` run, which exports its counters for as long as it lasts | `cmd/quader/backup*.go` |
+| Recovery commands of the backup lane | `quader admin post-restore`, `quader admin backup check`, `quader admin storage verify`, `quader admin storage restore-versions`, `quader admin maintenance pause-deletions` and `resume-deletions`, `quader admin npm reinstate`, `quader admin oci reinstate`, `quader admin deb reinstate` | `cmd/quader/admin_postrestore.go`, `admin_backupcheck.go`, `admin_storage.go`, `admin_npm.go`, `admin_oci.go`, `admin_deb.go` |
 | Backup ID | `<yyyymmdd>T<hhmmss>Z-<4 lower-case hex>`, the UTC start of the run and 16 random bits, for example `20261028T020000Z-7f3a`; lexical order is chronological | `internal/backup/format/id.go` |
 | Backup actor | `system:backup`, the actor of the `system.backup.*` audit events | `internal/audit/events_backup.go` |
 
@@ -210,7 +210,7 @@ Built names are the ones the code produces. *Planned* marks a name the spec fixe
 | `/api/v1/…` (the management API) | see the [API families](#management-api) | yes (M1; [api/openapi.yaml](api/openapi.yaml)) |
 | `/api/<format>/<projectKey>/<repoKey>/…` | per route (npm: GET, PUT, DELETE, POST; NuGet: GET, HEAD, PUT, DELETE, POST) | yes, npm (M2) and NuGet (M3; [dispatcher](internal/api/dispatch/dispatcher.go)); the OCI format is not served here (`/api/oci/…` answers nothing), it is served below `/v2/` |
 | `/v2`, `/v2/` | GET, HEAD | yes (T-16): the version check of the distribution API, `200 {}`; an anonymous caller without a registry token gets `401` with `WWW-Authenticate: Bearer realm="<base URL>/v2/_token",service="<host>"` ([ping.go](internal/api/registry/ping.go)) |
-| `/v2/_token?service=&scope=` | GET, POST (the OAuth 2.0 form) | yes: the token service; takes one trove token as Basic, as `Bearer`, or as the password of the form, answers `{"token", "access_token", "expires_in", "issued_at"}` with a `trv_rgt_` registry token for the scopes the caller may hold; the route is not authenticated by the chain ([token.go](internal/api/registry/token.go)) |
+| `/v2/_token?service=&scope=` | GET, POST (the OAuth 2.0 form) | yes: the token service; takes one Quader token as Basic, as `Bearer`, or as the password of the form, answers `{"token", "access_token", "expires_in", "issued_at"}` with a `qdr_rgt_` registry token for the scopes the caller may hold; the route is not authenticated by the chain ([token.go](internal/api/registry/token.go)) |
 | `/v2/_catalog?n=&last=` | GET | yes: the image names the caller may read, in byte order over the repositories, pages with `Link`; a virtual repository lists no names ([catalog.go](internal/api/registry/catalog.go)) |
 | `/v2/<projectKey>/<repoKey>/<name>/manifests/<tag>` or `…/manifests/sha256:<hex>` | GET, HEAD, PUT, DELETE | yes: pull and push of a manifest or index, `DELETE` of a tag or a manifest; a push needs deploy, a moved tag overwrite as well ([routes.go](internal/formats/oci/routes.go)) |
 | `/v2/<projectKey>/<repoKey>/<name>/blobs/sha256:<hex>` | GET, HEAD, DELETE | yes: a layer or configuration of the image name; `Range` works |
@@ -227,12 +227,12 @@ Built names are the ones the code produces. *Planned* marks a name the spec fixe
 | `/api/nuget/<projectKey>/<repoKey>/v3/symbolpackage` | PUT | yes, the push of a `.snupkg` to a local repository after its package (R-NUGET-020); `201` (also for the identical package again), `400`, `403`, `404` (no such package), `409` `nuget_symbol_package_exists`; one `nuget-symbol-index` job per symbol package ([NuGet](docs/developer/nuget.md#symbol-packages)) |
 | `/api/nuget/<projectKey>/<repoKey>/v3/package/{id}/{version}` | DELETE, POST | yes, DELETE unlists (or removes, with `deleteMode: delete`) and answers `204`, POST lists again and answers `200` |
 | `/api/nuget/<projectKey>/<repoKey>/v3/…` of a remote repository (and `<projectKey>/<repoKey>~cache`, the cache view) | GET, HEAD | yes, the service index, version list, registrations and package files of a cached NuGet feed; a push, unlist or delete answers `405` ([NuGet](docs/developer/nuget.md#the-remote-class)) |
-| `/api/nuget/<projectKey>/<repoKey>/v3/vulnerabilities/index.json`, `…/v3/vulnerabilities/trove.json` | GET, HEAD | yes (M4b), every class: the index of the `VulnerabilityInfo/6.7.0` resource and its one page, trove's NuGet advisory data keyed by the lower-case ID, `Cache-Control: private, max-age=1800`; listed in the service index while `nuget.vulnerabilityInfo` is `local` and the NuGet data is complete; a request answers `404` when the mode is not `local`, on the cache view and on an endpoint with exposure rules, and `503 vulnerability_data_unavailable` before the data is complete ([vuln_documents.go](internal/formats/nuget/vuln_documents.go)) |
+| `/api/nuget/<projectKey>/<repoKey>/v3/vulnerabilities/index.json`, `…/v3/vulnerabilities/quader.json` | GET, HEAD | yes (M4b), every class: the index of the `VulnerabilityInfo/6.7.0` resource and its one page, Quader's NuGet advisory data keyed by the lower-case ID, `Cache-Control: private, max-age=1800`; listed in the service index while `nuget.vulnerabilityInfo` is `local` and the NuGet data is complete; a request answers `404` when the mode is not `local`, on the cache view and on an endpoint with exposure rules, and `503 vulnerability_data_unavailable` before the data is complete ([vuln_documents.go](internal/formats/nuget/vuln_documents.go)) |
 | any other path below `/api/nuget/<projectKey>/<repoKey>/` (every NuGet v2 shape) | any | `404 nuget_v2_unsupported`, the message names `…/v3/index.json` of the repository |
-| `/api/deb/<projectKey>/<repoKey>/dists/<suite>/…`, `…/by-hash/SHA256/<hex>`, `pool/…`, `signing-key.asc`, `members/…` (a virtual repository's member paths) | GET, HEAD | yes (T-17): a local or virtual repository serves its published generation (`InRelease`, `Release`, `Release.gpg`, `Packages.gz`, `Packages.xz` with `deb.compression: ["xz"]`, the by-hash copies) and its package files; a remote serves its archive's files (also `SHA512` by-hash paths, pdiffs and every other file of any suite) and the flat-repository paths of a source line `<dir>/` or `./`; `Packages.bz2` and every variant a local repository does not build answer `404`, a path a remote's stored release does not list `404 deb_not_in_release`; a virtual repository serves a package file at `members/<memberKey>/<Filename>` from that member (`Trove-Resolved-From`), and its generated files need `read` on every member (`403 deb_members_unreadable`) ([Debian](docs/developer/deb.md#the-routes)) |
+| `/api/deb/<projectKey>/<repoKey>/dists/<suite>/…`, `…/by-hash/SHA256/<hex>`, `pool/…`, `signing-key.asc`, `members/…` (a virtual repository's member paths) | GET, HEAD | yes (T-17): a local or virtual repository serves its published generation (`InRelease`, `Release`, `Release.gpg`, `Packages.gz`, `Packages.xz` with `deb.compression: ["xz"]`, the by-hash copies) and its package files; a remote serves its archive's files (also `SHA512` by-hash paths, pdiffs and every other file of any suite) and the flat-repository paths of a source line `<dir>/` or `./`; `Packages.bz2` and every variant a local repository does not build answer `404`, a path a remote's stored release does not list `404 deb_not_in_release`; a virtual repository serves a package file at `members/<memberKey>/<Filename>` from that member (`Quader-Resolved-From`), and its generated files need `read` on every member (`403 deb_members_unreadable`) ([Debian](docs/developer/deb.md#the-routes)) |
 | `/api/deb/<projectKey>/<repoKey>/upload/<file>.deb?distribution=&component=`, `…/pool/…` | PUT; DELETE | yes: the upload of a package file to a local repository (`201`, `200` for the identical bytes) and its deletion; a remote answers `405`; through a virtual repository both go to its deployment target, and without one the decision point answers `403` |
 | `/api/v1/projects/{projectKey}/repositories/{repoKey}/deb/{signing-keys, signing-keys/promote, signing-keys/{fingerprint}, signing-keys/{fingerprint}/reinstate, coordinates, index}`, `…/reindex` | GET, POST, PUT, DELETE | yes (T-17): the signing keys, the coordinates of a file, the index state with `waitFor` and the rebuild ([the operations](#management-api)) |
-| `/api/npm/<projectKey>/<repoKey>/-/npm/v1/security/advisories/bulk` | POST | yes: the bulk audit, answered from trove's data (mode `local`, M4b) or forwarded (`npm.audit.mode: forward`, M2); `…/-/npm/v1/security/audits` and `…/audits/quick` answer `501 npm_audit_unavailable` in every mode ([routes.go](internal/formats/npm/routes.go)) |
+| `/api/npm/<projectKey>/<repoKey>/-/npm/v1/security/advisories/bulk` | POST | yes: the bulk audit, answered from Quader's data (mode `local`, M4b) or forwarded (`npm.audit.mode: forward`, M2); `…/-/npm/v1/security/audits` and `…/audits/quick` answer `501 npm_audit_unavailable` in every mode ([routes.go](internal/formats/npm/routes.go)) |
 | `/api/v1/vulnerabilities/findings`, `…/findings/export`, `…/findings/{id}`, `…/findings/set-status`, `…/advisories/{ecosystem}/{id}`, `…/summary`, `…/trend`, `…/sources`, `…/claimed-name-matches` | GET; PATCH on `…/findings/{id}`, POST on `…/set-status` | yes (M4b; [the operations](#management-api)) |
 | `/api/v1/packages/{packageId}/vulnerabilities`, `/api/v1/packages/{packageId}/versions/{version}/vulnerabilities`, `/api/v1/projects/{projectKey}/repositories/{repoKey}/vulnerabilities/rescan` | GET; POST for the rescan | yes (M4b) |
 | `/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror`, `/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror/run` | GET; POST | yes (phase 6b): the status of a remote repository's mirror and a request for a pass now ([mirror_api.go](internal/api/v1/mirror_api.go)); both answer `400 not_applicable` for a local or virtual repository |
@@ -261,19 +261,19 @@ What a container client, a token and the storage see of an OCI repository ([name
 
 | Name | Value | Built |
 |---|---|---|
-| Image reference | `<host>/<projectKey>/<repoKey>/<name>[:<tag>\|@sha256:<hex>]`, for example `trove.example.com/web/docker-local/team/app:1.0`; the login target of the setup snippets is `<host>/<projectKey>/<repoKey>` | yes |
+| Image reference | `<host>/<projectKey>/<repoKey>/<name>[:<tag>\|@sha256:<hex>]`, for example `quader.example.com/web/docker-local/team/app:1.0`; the login target of the setup snippets is `<host>/<projectKey>/<repoKey>` | yes |
 | Image reference on a bound host | `<bound host>/<name>[:<tag>]`, the host an endpoint's `host_roots` binds to `<projectKey>/<repoKey>` | yes |
 | Cache view of a remote | `<host>/<projectKey>/<repoKey>~cache/<name>`: what the remote has stored, without asking the upstream | yes |
 | Image name | components `^[a-z0-9]+(?:(?:[._]\|__\|-+)[a-z0-9]+)*$` joined by `/`; `<projectKey>/<repoKey>/<name>` at most 255 bytes; the package of the package screens | yes |
 | Tag | `^[a-zA-Z0-9_][a-zA-Z0-9._-]{0,127}$`; the version of the package screens | yes |
 | Digest | `sha256:` and 64 lower-case hexadecimal digits; nothing else is a digest (`400 DIGEST_INVALID`), and a push with a `digest-algorithm` other than `sha256` answers `400 UNSUPPORTED` | yes |
 | Storage layout of a local repository | `<name>/_manifests/sha256:<hex>` (a manifest), `<name>/_tags/<tag>` (the bytes of the manifest the tag points at), `<name>/_blobs/sha256:<hex>` (a layer or configuration), seen through `/files/` and the item API | yes |
-| Registry token | `trv_rgt_` + base64url(`1:<key id>:<claims JSON>`) + `.` + MAC, at most 4 KiB, lifetime `oci.token_lifetime` (default `300s`), never beyond the trove token it names; MAC keys derived from the stored-secret key ring with info `trove registry token v1` ([token.go](internal/auth/registrytoken/token.go)) | yes |
+| Registry token | `qdr_rgt_` + base64url(`1:<key id>:<claims JSON>`) + `.` + MAC, at most 4 KiB, lifetime `oci.token_lifetime` (default `300s`), never beyond the Quader token it names; MAC keys derived from the stored-secret key ring with info `quader registry token v1` ([token.go](internal/auth/registrytoken/token.go)) | yes |
 | Token realm and service | realm `<response base URL>/v2/_token`, service the host of that base URL with its port | yes |
 | Scope of a token request | `repository:<projectKey>/<repoKey>/<name>:<actions>` with the actions `pull`, `push`, `delete` or `*`, and `registry:catalog:*`; on a bound host `repository:<name>:…`; at most 16 entries | yes |
-| Login user name | any; recorded and ignored, the snippets use `trove` | yes |
+| Login user name | any; recorded and ignored, the snippets use `quader` | yes |
 | Upload session | `Location: /v2/<projectKey>/<repoKey>/<name>/blobs/uploads/<uuid>`, `Docker-Upload-UUID: <uuid>`; staged at `<storage.s3.prefix>/_uploads/<session id>/data` | yes |
-| Client IDs and setup snippets | `docker` (Docker CLI with Buildx), `podman`; snippets `docker.shell.configure`, `docker.kubernetes.configure` (the image pull secret `trove-registry`), `podman.shell.configure`, `docker.install`, `podman.install`, `docker.publish`, `docker.buildx.publish`, `podman.publish` | yes |
+| Client IDs and setup snippets | `docker` (Docker CLI with Buildx), `podman`; snippets `docker.shell.configure`, `docker.kubernetes.configure` (the image pull secret `quader-registry`), `podman.shell.configure`, `docker.install`, `podman.install`, `docker.publish`, `docker.buildx.publish`, `podman.publish` | yes |
 | Repository document member | `oci.mirror` (remote repositories only; below) | yes |
 | Configuration keys | `oci.token_lifetime`, `oci.unreferenced_blob_grace` ([configuration](#configuration-keys)) | yes |
 
@@ -311,16 +311,16 @@ What an APT client, a token and the storage see of a Debian repository ([names.g
 | Pool path of a stored file | `pool/<prefix>/<source>/<package>_<version without epoch>_<architecture>.deb`; `<source>` is the `Source` field or the package, `<prefix>` its first character, or its first four for a source starting with `lib` (`pool/h/hello/hello_2.10-3_amd64.deb`, `pool/libx/libxml2/…`) | yes |
 | Generated files of a local repository | `dists/<suite>/InRelease`, `Release`, `Release.gpg`, `dists/<suite>/<component>/binary-<arch>/Packages.gz` (`.xz` with `deb.compression: ["xz"]`), and each index file at `<directory>/by-hash/SHA256/<hex>`; package-less generated items, written only by the job `deb-index` | yes |
 | Public keys | `signing-key.asc` below the repository address: a local repository's primary and next key, a remote's `deb.upstreamKeys` (`404 deb_no_upstream_keys` without them) | yes |
-| Signing key | OpenPGP v4, algorithm 22 (EdDSALegacy) over Ed25519, user ID `trove <projectKey>/<repoKey>`, no expiry, created an hour before the creating transaction; states `primary`, `next`, `withheld`, `retired` | yes |
+| Signing key | OpenPGP v4, algorithm 22 (EdDSALegacy) over Ed25519, user ID `quader <projectKey>/<repoKey>`, no expiry, created an hour before the creating transaction; states `primary`, `next`, `withheld`, `retired` | yes |
 | Client ID and setup snippets | `apt` ("APT (apt, apt-get)"); snippets `apt.shell.configure`, `apt.list.configure`, `apt.install`, `apt.curl.publish`, and for a remote without upstream keys `apt.shell.configure.upstream-keyring`; the variant of a configure snippet is the suite, `stable` without one | yes |
-| Files the setup writes | `/etc/apt/keyrings/trove-<projectKey>-<repoKey>.asc` (the keys, named in `Signed-By`), `/etc/apt/sources.list.d/trove-<projectKey>-<repoKey>.sources` (deb822) or `….list` (the one-line form), `/etc/apt/auth.conf.d/trove-<projectKey>-<repoKey>.conf` (mode `0600`, `machine <host>/api/deb/<projectKey>/<repoKey>/`); a remote without keys names `/usr/share/keyrings/debian-archive-keyring.gpg` (Ubuntu: `ubuntu-archive-keyring.gpg`) | yes |
+| Files the setup writes | `/etc/apt/keyrings/quader-<projectKey>-<repoKey>.asc` (the keys, named in `Signed-By`), `/etc/apt/sources.list.d/quader-<projectKey>-<repoKey>.sources` (deb822) or `….list` (the one-line form), `/etc/apt/auth.conf.d/quader-<projectKey>-<repoKey>.conf` (mode `0600`, `machine <host>/api/deb/<projectKey>/<repoKey>/`); a remote without keys names `/usr/share/keyrings/debian-archive-keyring.gpg` (Ubuntu: `ubuntu-archive-keyring.gpg`) | yes |
 | Read-only properties | `deb.package`, `deb.version`, `deb.architecture`, `deb.source`, `deb.coordinate` (the coordinates as `<distribution>/<component>`, sorted, comma-separated) | yes |
 | Repository document member | `deb`: `architectures`, `compression`, `origin`, `label` (local), `suites`, `components` (virtual), `upstreamKeys`, the read-only `upstreamKeyFingerprints` and `mirror.{suites,components,architectures,translations,sources}` (remote); [the reference](#configuration-keys) | yes |
-| Member path of a virtual repository | `members/<memberKey>/<Filename of the member's index entry>`, the `Filename` a merged index lists (`members/deb-local/pool/h/hello/hello_2.10-3_amd64.deb`); served from that member, named in `Trove-Resolved-From` | yes |
+| Member path of a virtual repository | `members/<memberKey>/<Filename of the member's index entry>`, the `Filename` a merged index lists (`members/deb-local/pool/h/hello/hello_2.10-3_amd64.deb`); served from that member, named in `Quader-Resolved-From` | yes |
 | Codes of a virtual repository | `403 deb_members_unreadable` (an index read without `read` on every member), `422 deb_member_unverified` (a remote member without `deb.upstreamKeys`); the reasons of a failed build in the index state: `member_unverified: <key>`, `member_expired: <key>`, `member_rollback: <key>`, `member_unavailable: <key>` | yes |
 | Configuration keys | `deb.index_delay`, `deb.virtual_index_interval`, `deb.by_hash_keep`, `deb.index_wait_max` ([configuration](#configuration-keys)) | yes |
 | Job kinds and task | `deb-index` (key `index:<repository id>`), `deb-remote-parse`, the task `deb-index-refresh` ([job kinds](#job-kinds-and-tasks)) | yes |
-| Admin command | `trove admin deb reinstate <projectKey>/<repoKey> <path>` | yes |
+| Admin command | `quader admin deb reinstate <projectKey>/<repoKey> <path>` | yes |
 
 ### Debian remote cache paths
 
@@ -348,126 +348,126 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 | Collection name and version | `<namespace>.<name>`, each part lower case `[a-z0-9_]`, 1 to 64 characters; a semantic version, newest first by precedence with build metadata ignored | yes |
 | Stored path of an archive | `collections/<namespace>/<name>/<namespace>-<name>-<version>.tar.gz` (lower case); a remote also stores `collections/<namespace>/<name>/collection.json`, `versions.json` (variant `offset=<n>`), `<version>.json`, `api-root.json` and below `roles/` | yes |
 | Authorization schemes | `Authorization: Token <token>` (the scheme of `ansible-galaxy`, accepted on the routes of this format only), `Bearer`, and `Basic` with the token as the password | yes |
-| Files the setup writes | `ansible.cfg` (`[galaxy] server_list = trove`, `[galaxy_server.trove] url=`), the variable `ANSIBLE_GALAXY_SERVER_TROVE_TOKEN` in the shell, `~/.netrc` (`machine <host> login trove password …`, appended by a command, needed for roles), `requirements.yml` | yes |
+| Files the setup writes | `ansible.cfg` (`[galaxy] server_list = quader`, `[galaxy_server.quader] url=`), the variable `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN` in the shell, `~/.netrc` (`machine <host> login quader password …`, appended by a command, needed for roles), `requirements.yml` | yes |
 | Snippet ids | `ansible-galaxy.configure.{ansible-cfg,token-env,token-env-powershell,token-env-cmd,netrc}`, `ansible-galaxy.install.{collection,requirements}`, `ansible-galaxy.publish.collection` | yes |
 | Repository document member | `ansible`: `authUrl` and `clientId` (remote only; the hub's token exchange is not built) | yes |
 | Management API | `GET …/repositories/<repoKey>/ansible/imports`, `GET …/ansible/tombstones`, `DELETE …/ansible/tombstones/<collection>/<version>` | yes |
 | Configuration keys | `ansible.max_archive_bytes`, `ansible.role_archive_max_bytes`, `ansible.import_task_keep` ([configuration](#configuration-keys)) | yes |
 | Job kinds and task | `ansible-reindex`, the task `ansible-import-task-sweep` | yes |
 | Audit events | `ansible.version.deleted` (a deleted version and its tombstone), `ansible.tombstone.cleared` | yes |
-| Client images of the tests | `trove-e2e-ansibleclients-<core217\|core221>:dev`, the pods `trove-e2e-ansible-<core217\|core221>` in the namespace `trove-e2e-ansible` | yes |
+| Client images of the tests | `quader-e2e-ansibleclients-<core217\|core221>:dev`, the pods `quader-e2e-ansible-<core217\|core221>` in the namespace `quader-e2e-ansible` | yes |
 
 ### Headers
 
 | Header | Value | Built |
 |---|---|---|
 | `X-Request-Id` | every response; the same value is `requestId` in problem bodies and the trace ID of the request | yes (`internal/httpserver/chain.go`) |
-| `X-Trove-Replica` | the instance name, on responses where `server.replica_header` allows it (default `authenticated`) | yes (`internal/httpserver/chain.go`) |
+| `X-Quader-Replica` | the instance name, on responses where `server.replica_header` allows it (default `authenticated`) | yes (`internal/httpserver/chain.go`) |
 | `X-Forwarded-For` or `Forwarded` | the family the edge rewrites: exactly one, chosen by `server.forwarded_header`; the other is never read | yes (`internal/httpserver/clientaddr.go`) |
-| `Authorization` | `Bearer <token>` with a `trv_pat_`, `trv_sat_` or `trv_cit_` value (the CI token of the exchange); a `trv_bst_` value (a Bastion token) is `401 invalid_token` on every route but the Bastion interface. Below `/v2/` also `Bearer trv_rgt_…` (a registry token, accepted nowhere else) or a trove token as the password of Basic; never the session cookie there. The status code of a refused value is not restated here | yes (`internal/auth/stage.go`) |
+| `Authorization` | `Bearer <token>` with a `qdr_pat_`, `qdr_sat_` or `qdr_cit_` value (the CI token of the exchange); a `qdr_bst_` value (a Bastion token) is `401 invalid_token` on every route but the Bastion interface. Below `/v2/` also `Bearer qdr_rgt_…` (a registry token, accepted nowhere else) or a Quader token as the password of Basic; never the session cookie there. The status code of a refused value is not restated here | yes (`internal/auth/stage.go`) |
 | `WWW-Authenticate` below `/v2/` | `Bearer realm="<base URL>/v2/_token",service="<host>"[,scope="repository:<name>:<actions>"][,error="invalid_token"\|"insufficient_scope"]`; the challenge of a mount also names `pull` on the source | yes ([challenge.go](internal/auth/registrytoken/challenge.go)) |
 | `Docker-Distribution-API-Version` | `registry/2.0` on every answer below `/v2/` | yes (`internal/api/registry/route/route.go`) |
 | `Docker-Content-Digest`, `ETag` of a manifest or blob | `sha256:<hex>`; the `ETag` is `"sha256:<hex>"` and `If-None-Match` gives `304` | yes (`internal/formats/oci`) |
 | `Docker-Upload-UUID`, `OCI-Chunk-Min-Length`, `Range` of an upload | the session ID; the part size of the session (`storage.uploads.part_size`, default 16 MiB); `0-<received-1>` | yes (`internal/formats/oci/handlers_upload.go`) |
 | `OCI-Filters-Applied` | `artifactType` on a referrers answer that applied the filter | yes |
-| `Trove-Resolved-From` | the key of the member of a virtual NuGet or OCI repository that answered | yes |
+| `Quader-Resolved-From` | the key of the member of a virtual NuGet or OCI repository that answered | yes |
 | `X-NuGet-ApiKey` | `<token>` or `<any>:<token>`, read first and only on a route that declares the API key (NuGet's push, delete, relist and symbol push) while `auth.clients.nuget_api_key_header` is on; a value without a well-formed token, such as `az`, is ignored and `Authorization` applies | yes (`internal/auth/stage.go`); the NuGet routes are not registered yet |
-| `X-CSRF-Token` | the value of the `__Host-trv_csrf` cookie, on a state-changing request that the session cookie authenticates; with a same-origin `Origin` or `Sec-Fetch-Site`. Failure: `403 csrf_failed` | yes (`internal/auth/session`) |
+| `X-CSRF-Token` | the value of the `__Host-qdr_csrf` cookie, on a state-changing request that the session cookie authenticates; with a same-origin `Origin` or `Sec-Fetch-Site`. Failure: `403 csrf_failed` | yes (`internal/auth/session`) |
 | `Idempotency-Key` | on a create: a replay answers the stored outcome; the same key with another body answers `422 idempotency_key_reused`, a concurrent duplicate `409 idempotency_in_progress` | yes (`internal/api/v1/idempotency.go`) |
 | `If-Match`, `If-None-Match` | the ETag of a resource on `PUT` and `PATCH`; `If-Match` is required there, and `If-Match: *` is the explicit blind write. `If-None-Match: *` on `/files/` makes a deploy create-only | yes (`internal/api/v1`, `internal/api/rawfiles/conditional.go`) |
 | `ETag` of a repository read | `"<config_version>.<µs>"`; the consumer view has a tag of its own | yes (`internal/api/v1/repositories_api.go`) |
-| `Trove-Authz-Epoch` | the authorization epoch a write produced, on the answer of the write | yes (`internal/authz/errors.go`) |
-| `Trove-Authz-Min-Epoch` | a decimal integer from 1: the replica waits until its grant index has reached that epoch; an epoch the database has not reached answers `412 authz_epoch_unknown` | yes (`internal/authz/wait.go`) |
+| `Quader-Authz-Epoch` | the authorization epoch a write produced, on the answer of the write | yes (`internal/authz/errors.go`) |
+| `Quader-Authz-Min-Epoch` | a decimal integer from 1: the replica waits until its grant index has reached that epoch; an epoch the database has not reached answers `412 authz_epoch_unknown` | yes (`internal/authz/wait.go`) |
 
 ### Cookies and credential prefixes
 
 | Name | Value | Built |
 |---|---|---|
-| Session cookie | `__Host-trv_session` (`internal/auth/session/cookie.go`); a browser login, `Secure`, `Path=/`, no `Domain` | yes |
-| CSRF cookie | `__Host-trv_csrf`, readable by the UI; its value goes into `X-CSRF-Token` | yes |
-| Login-flow binding cookie | `__Host-trv_oidc_binding`, `Path=/`, `HttpOnly`, about 10 minutes; it binds a callback to the browser that started the login (Q-AUTH-2) | yes |
-| Personal token prefix | `trv_pat_` (`internal/auth/token/token.go`, `TypePAT`) | yes |
-| Service-account token prefix | `trv_sat_` | yes |
-| CI token prefix | `trv_cit_` (`TypeCIT`); issued by the GitLab CI exchange `POST /api/v1/auth/oidc/token` only | yes ([GitLab CI OIDC](docs/spec/gitlab-ci-oidc.md)) |
-| Registry token prefix | `trv_rgt_` (`internal/auth/registrytoken`); issued by the token service `/v2/_token` for a `trv_pat_`, `trv_sat_` or `trv_cit_` token, accepted as `Bearer` below `/v2/` only, not stored anywhere | yes ([OCI registry](docs/security/oci-registry.md)) |
-| Bastion token prefix | `trv_bst_` (`TypeBST`, 57 characters like every token); issued by `POST /api/v1/bastions/{name}/tokens` or `trove admin bastion token create`; refused as `401 invalid_token` on every route but the Bastion interface | yes ([R-BAS-004](docs/spec/bastion.md), [identity](docs/developer/identity.md#bastion-registrations-and-tokens-r-bas-004-r-bas-005)) |
+| Session cookie | `__Host-qdr_session` (`internal/auth/session/cookie.go`); a browser login, `Secure`, `Path=/`, no `Domain` | yes |
+| CSRF cookie | `__Host-qdr_csrf`, readable by the UI; its value goes into `X-CSRF-Token` | yes |
+| Login-flow binding cookie | `__Host-qdr_oidc_binding`, `Path=/`, `HttpOnly`, about 10 minutes; it binds a callback to the browser that started the login (Q-AUTH-2) | yes |
+| Personal token prefix | `qdr_pat_` (`internal/auth/token/token.go`, `TypePAT`) | yes |
+| Service-account token prefix | `qdr_sat_` | yes |
+| CI token prefix | `qdr_cit_` (`TypeCIT`); issued by the GitLab CI exchange `POST /api/v1/auth/oidc/token` only | yes ([GitLab CI OIDC](docs/spec/gitlab-ci-oidc.md)) |
+| Registry token prefix | `qdr_rgt_` (`internal/auth/registrytoken`); issued by the token service `/v2/_token` for a `qdr_pat_`, `qdr_sat_` or `qdr_cit_` token, accepted as `Bearer` below `/v2/` only, not stored anywhere | yes ([OCI registry](docs/security/oci-registry.md)) |
+| Bastion token prefix | `qdr_bst_` (`TypeBST`, 57 characters like every token); issued by `POST /api/v1/bastions/{name}/tokens` or `quader admin bastion token create`; refused as `401 invalid_token` on every route but the Bastion interface | yes ([R-BAS-004](docs/spec/bastion.md), [identity](docs/developer/identity.md#bastion-registrations-and-tokens-r-bas-004-r-bas-005)) |
 
 ### Environment variables
 
 | Name | Pattern | Built |
 |---|---|---|
-| Configuration override | `TROVE_<SECTION>_<KEY>`, e.g. `TROVE_AUDIT_RETENTION_DAYS` (the `x-trove-env` of [schema.json](internal/config/schema.json)) | yes |
-| Configuration file | `/etc/trove/trove.yaml`, or `--config`, or `TROVE_CONFIG_FILE` (an explicit path must exist) | yes (`internal/config/load.go`) |
-| Reserved names | `TROVE_CAC_*` and `TROVE_TEST_*` (ignored by the strict check), `TROVE_CONFIG_FILE`, `TROVE_POD_NAME`, `TROVE_POD_NAMESPACE`, `TROVE_NODE_NAME`, `TROVE_POOL_NAME` | yes |
-| Tokens of the import command | `TROVE_IMPORT_TOKEN` (the trove token of the target) and `TROVE_IMPORT_SOURCE_PASSWORD` (the source's password or token), read when no file is given; the command has no flag that takes a secret ([R-IMP-002](docs/spec/import.md)) | yes (`cmd/trove/admin_import.go`) |
-| Instance name | `TROVE_POD_NAME`, then `POD_NAME`, then `HOSTNAME` inside Kubernetes, otherwise `<hostname>-<pid>` | yes (`internal/app/identity.go`) |
-| Pool name | `TROVE_POOL_NAME`, set by the chart on every pool Deployment (the pool's name, `ep-<name>` for an endpoint pool; unset on the main Deployments) | yes (`deploy/helm/trove/templates/_deployment.tpl`) |
-| Job of a backup run | `TROVE_JOB_NAME`, set by the chart on the backup CronJob's pods from the label `job-name` and recorded in `backup_run`: the retry pod of the same Job waits for its predecessor's lease instead of exiting `3` ([R-BAK-010](docs/spec/backup-and-restore.md#r-bak-010--one-target-writing-operation-at-a-time)). Empty outside a Job | yes (`_backup.tpl`, `cmd/trove/backup_create.go`) |
+| Configuration override | `QUADER_<SECTION>_<KEY>`, e.g. `QUADER_AUDIT_RETENTION_DAYS` (the `x-quader-env` of [schema.json](internal/config/schema.json)) | yes |
+| Configuration file | `/etc/quader/quader.yaml`, or `--config`, or `QUADER_CONFIG_FILE` (an explicit path must exist) | yes (`internal/config/load.go`) |
+| Reserved names | `QUADER_CAC_*` and `QUADER_TEST_*` (ignored by the strict check), `QUADER_CONFIG_FILE`, `QUADER_POD_NAME`, `QUADER_JOB_NAME`, `QUADER_POD_NAMESPACE`, `QUADER_NODE_NAME`, `QUADER_POOL_NAME` (`internal/config/load.go`) | yes |
+| Tokens of the import command | `QUADER_IMPORT_TOKEN` (the Quader token of the target) and `QUADER_IMPORT_SOURCE_PASSWORD` (the source's password or token), read when no file is given; the command has no flag that takes a secret ([R-IMP-002](docs/spec/import.md)) | yes (`cmd/quader/admin_import.go`) |
+| Instance name | `QUADER_POD_NAME`, then `POD_NAME`, then `HOSTNAME` inside Kubernetes, otherwise `<hostname>-<pid>` | yes (`internal/app/identity.go`) |
+| Pool name | `QUADER_POOL_NAME`, set by the chart on every pool Deployment (the pool's name, `ep-<name>` for an endpoint pool; unset on the main Deployments) | yes (`deploy/helm/quader/templates/_deployment.tpl`) |
+| Job of a backup run | `QUADER_JOB_NAME`, set by the chart on the backup CronJob's pods from the label `job-name` and recorded in `backup_run`: the retry pod of the same Job waits for its predecessor's lease instead of exiting `3` ([R-BAK-010](docs/spec/backup-and-restore.md#r-bak-010--one-target-writing-operation-at-a-time)). Empty outside a Job | yes (`_backup.tpl`, `cmd/quader/backup_create.go`) |
 | Scratch of the backup, restore and post-restore pods | `TMPDIR=/tmp`, an `emptyDir` of `backup.tmpSizeLimit` (the commands use at most 64 MiB of it) | yes (`_backup.tpl`) |
-| Worker queues | `TROVE_JOBS_QUEUES='["vuln"]'` on a worker pool, `TROVE_JOBS_EXCLUDE_QUEUES='["index","vuln"]'` on the main worker beside pools (JSON lists) | yes (`_deployment.tpl`) |
-| Object-store settings from a Secret | `TROVE_STORAGE_S3_BUCKET`, `TROVE_STORAGE_S3_ENDPOINT`, `TROVE_STORAGE_S3_REGION`, each read from a key of `secrets.s3` when that key is set | yes (`deploy/helm/trove/templates/_endpoints.tpl`) |
-| Dev profile | `TROVE_DEV_HTTP_PORT` (edge port, default `8080`), `TROVE_PROFILE` (`default` or `scatter`) | yes (`deploy/dev/`) |
-| M1 settings | `TROVE_<SECTION>_<KEY>` for `auth`, `authz`, `api`, `repositories`, with nested keys joined by `_`: `TROVE_AUTH_BREAK_GLASS_PASSWORD_FILE`, `TROVE_API_RATE_LIMITS_EXEMPT_ADMINS` (the rule of the configuration override above) | yes |
+| Worker queues | `QUADER_JOBS_QUEUES='["vuln"]'` on a worker pool, `QUADER_JOBS_EXCLUDE_QUEUES='["index","vuln"]'` on the main worker beside pools (JSON lists) | yes (`_deployment.tpl`) |
+| Object-store settings from a Secret | `QUADER_STORAGE_S3_BUCKET`, `QUADER_STORAGE_S3_ENDPOINT`, `QUADER_STORAGE_S3_REGION`, each read from a key of `secrets.s3` when that key is set | yes (`deploy/helm/quader/templates/_endpoints.tpl`) |
+| Dev profile | `QUADER_DEV_HTTP_PORT` (edge port, default `8080`), `QUADER_PROFILE` (`default` or `scatter`) | yes (`deploy/dev/`) |
+| M1 settings | `QUADER_<SECTION>_<KEY>` for `auth`, `authz`, `api`, `repositories`, with nested keys joined by `_`: `QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE`, `QUADER_API_RATE_LIMITS_EXEMPT_ADMINS` (the rule of the configuration override above) | yes |
 
 ### TLS material
 
 | Name | Value | Built |
 |---|---|---|
-| Listener certificate mount | `/var/run/secrets/trove/tls/` (`tls.crt`, `tls.key`; only in pods that load the pair, see `tls.ops`) | yes (`_secrets.tpl`) |
-| Listener client CA mount | `/var/run/secrets/trove/tls-client-ca/ca.crt` (the pods that open :8080: `api`, `packages` and their path pools) | yes |
-| Ops listener certificate mount | `/var/run/secrets/trove/tls-ops/` | yes |
-| Endpoint certificate mount | `/var/run/secrets/trove/endpoints/<name>/<n>/` (`tls.crt`, `tls.key`; `n` is the position in `tls.certificates`), client CA at `…/<name>/client-ca/ca.crt` | yes (`_endpoints.tpl`) |
-| PostgreSQL CA and client pair | `/var/run/secrets/trove/database-ca/ca.crt`, `/var/run/secrets/trove/database-client/tls.{crt,key}` | yes |
-| Object-store CA | `/var/run/secrets/trove/s3-ca/ca.crt` (`secrets.s3CA`; renders `storage.s3.ca_file`) | yes |
-| Trusted CA bundle | `/etc/trove/ca/<key>` for each file of `trustedCA.keys` (default `ca-bundle.crt`), from a Secret or ConfigMap, in every pod of the release; listed in `proxy.outbound.tls.ca_files` after the operator's own, and with `trustedCA.useForObjectStore` the one file is `storage.s3.ca_file` | yes (`_secrets.tpl`, `_helpers.tpl`) |
-| Break-glass password mount | `/var/run/secrets/trove/break-glass/password` (`secrets.breakGlass`; renders `auth.break_glass.password_file`; `api` pods only) | yes (`_secrets.tpl`) |
-| OIDC client secret mount | `/var/run/secrets/trove/oidc-<providerId>/client-secret` (`secrets.oidc[]`; renders `auth.oidc.providers.<providerId>.client_secret_file`; `api` pods only) | yes |
-| Valkey CA and client pair | `/var/run/secrets/trove/valkey-ca/ca.crt`, `/var/run/secrets/trove/valkey-client/tls.{crt,key}` | yes |
-| Backup target keys | `/var/run/secrets/trove/backup-target/{access-key-id,secret-access-key}`, and `session-token` with `secrets.backupTarget.sessionTokenKey` (`secrets.backupTarget`, with `config.backup.target.credentials.source: static`; renders `backup.target.credentials.*_file`; backup and restore pods only) | yes (`_secrets.tpl`, `_helpers.tpl`) |
-| Backup target CA | `/var/run/secrets/trove/backup-target-ca/ca.crt` (`secrets.backupTargetCA`; renders `backup.target.ca_file`, the target's whole trust store; backup and restore pods only) | yes |
-| Blob read login of the backup | `/var/run/secrets/trove/backup-source/{access-key-id,secret-access-key}` (`secrets.backupSource`, with `config.storage.s3.credentials.source: static` and `backup.enabled`; renders `backup.source`; backup pods only, in place of `secrets.s3`) | yes |
-| Journal reader | `/var/run/secrets/trove/journal-reader/{access-key-id,secret-access-key}` (`secrets.journalReader`, with `journalCredentials.source: static`), named by the credentials file `/etc/trove/restore/credentials.yaml` or `/etc/trove/post-restore/credentials.yaml` (ConfigMap `<fullname>-restore`, `<fullname>-post-restore`); restore and post-restore pods only | yes (`_backup.tpl`) |
+| Listener certificate mount | `/var/run/secrets/quader/tls/` (`tls.crt`, `tls.key`; only in pods that load the pair, see `tls.ops`) | yes (`_secrets.tpl`) |
+| Listener client CA mount | `/var/run/secrets/quader/tls-client-ca/ca.crt` (the pods that open :8080: `api`, `packages` and their path pools) | yes |
+| Ops listener certificate mount | `/var/run/secrets/quader/tls-ops/` | yes |
+| Endpoint certificate mount | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`tls.crt`, `tls.key`; `n` is the position in `tls.certificates`), client CA at `…/<name>/client-ca/ca.crt` | yes (`_endpoints.tpl`) |
+| PostgreSQL CA and client pair | `/var/run/secrets/quader/database-ca/ca.crt`, `/var/run/secrets/quader/database-client/tls.{crt,key}` | yes |
+| Object-store CA | `/var/run/secrets/quader/s3-ca/ca.crt` (`secrets.s3CA`; renders `storage.s3.ca_file`) | yes |
+| Trusted CA bundle | `/etc/quader/ca/<key>` for each file of `trustedCA.keys` (default `ca-bundle.crt`), from a Secret or ConfigMap, in every pod of the release; listed in `proxy.outbound.tls.ca_files` after the operator's own, and with `trustedCA.useForObjectStore` the one file is `storage.s3.ca_file` | yes (`_secrets.tpl`, `_helpers.tpl`) |
+| Break-glass password mount | `/var/run/secrets/quader/break-glass/password` (`secrets.breakGlass`; renders `auth.break_glass.password_file`; `api` pods only) | yes (`_secrets.tpl`) |
+| OIDC client secret mount | `/var/run/secrets/quader/oidc-<providerId>/client-secret` (`secrets.oidc[]`; renders `auth.oidc.providers.<providerId>.client_secret_file`; `api` pods only) | yes |
+| Valkey CA and client pair | `/var/run/secrets/quader/valkey-ca/ca.crt`, `/var/run/secrets/quader/valkey-client/tls.{crt,key}` | yes |
+| Backup target keys | `/var/run/secrets/quader/backup-target/{access-key-id,secret-access-key}`, and `session-token` with `secrets.backupTarget.sessionTokenKey` (`secrets.backupTarget`, with `config.backup.target.credentials.source: static`; renders `backup.target.credentials.*_file`; backup and restore pods only) | yes (`_secrets.tpl`, `_helpers.tpl`) |
+| Backup target CA | `/var/run/secrets/quader/backup-target-ca/ca.crt` (`secrets.backupTargetCA`; renders `backup.target.ca_file`, the target's whole trust store; backup and restore pods only) | yes |
+| Blob read login of the backup | `/var/run/secrets/quader/backup-source/{access-key-id,secret-access-key}` (`secrets.backupSource`, with `config.storage.s3.credentials.source: static` and `backup.enabled`; renders `backup.source`; backup pods only, in place of `secrets.s3`) | yes |
+| Journal reader | `/var/run/secrets/quader/journal-reader/{access-key-id,secret-access-key}` (`secrets.journalReader`, with `journalCredentials.source: static`), named by the credentials file `/etc/quader/restore/credentials.yaml` or `/etc/quader/post-restore/credentials.yaml` (ConfigMap `<fullname>-restore`, `<fullname>-post-restore`); restore and post-restore pods only | yes (`_backup.tpl`) |
 | Kubernetes Service port of an endpoint | `<fullname>-ep-<name>`, port from `endpoints.<name>.port` | yes (`endpoint-services.yaml`) |
-| Metric families | `trove_tls_certificate_expiry_timestamp_seconds`, `trove_tls_reloads_total`, `trove_tls_reload_errors_total`, labels `kind`, `listener`, `name` | yes (`internal/tlsfiles/metrics.go`) |
+| Metric families | `quader_tls_certificate_expiry_timestamp_seconds`, `quader_tls_reloads_total`, `quader_tls_reload_errors_total`, labels `kind`, `listener`, `name` | yes (`internal/tlsfiles/metrics.go`) |
 
 ### Valkey
 
 | Name | Pattern | Built |
 |---|---|---|
-| Key prefix | `valkey.key_prefix`, default `trove:`, must end in `:` | yes |
+| Key prefix | `valkey.key_prefix`, default `quader:`, must end in `:` | yes |
 | Keyspace | the first 12 hex digits of `system_state.keyspace_id`, dashes removed | yes (`internal/app/wire_valkey.go`) |
 | Key shape | `<key_prefix><keyspace>:<mechanism>:v<version>[:<part>…]`; a part matches `^[A-Za-z0-9_-]{1,128}$` | yes (`internal/cluster/valkey_keys.go`) |
-| Health probe | `trove:<ks>:probe:v1:<instance>`, expires after 30 s | yes (`internal/cluster/valkey.go`) |
-| Change channel | `trove:<ks>:inv:v1` | yes (`internal/cluster/changelog*.go`) |
-| Client names | `trove:<instance>:pubsub` (Pub/Sub), `trove:<instance>:probe` (Sentinel probe) | yes (`internal/cluster/valkey_pubsub.go`, `valkey_sentinel.go`) |
+| Health probe | `quader:<ks>:probe:v1:<instance>`, expires after 30 s | yes (`internal/cluster/valkey.go`) |
+| Change channel | `quader:<ks>:inv:v1` | yes (`internal/cluster/changelog*.go`) |
+| Client names | `quader:<instance>:pubsub` (Pub/Sub), `quader:<instance>:probe` (Sentinel probe) | yes (`internal/cluster/valkey_pubsub.go`, `valkey_sentinel.go`) |
 | Rate limits | `<key_prefix><keyspace>:rl:v1:<…>`, family `rl` with a 24 h expiry (`internal/cluster/valkey_keys.go`, `valkey_ratelimit.go`) | yes |
 | Token-seen markers | `<key_prefix><keyspace>:tokseen:v1:<…>`, family `tokseen`, expiry bounded by `MaxTokenSeenWindow` (`valkey_keys.go`) | yes |
 | Negative cache, flight locks, fill channel | `…:neg:v1:…`, `…:lock:fetch:v1:…`, the `fill` channel | yes ([valkey_keys.go](internal/cluster/valkey_keys.go)) |
-| Bastion key prefix | `trove-bastion:<valkey.key_prefix>:` (the Bastion's own `valkey` section; empty means the host of `server.base_url`); the Bastion's client has no keyspace segment | yes ([bastion_role.go](internal/config/bastion_role.go), `WithoutKeyspace`) |
+| Bastion key prefix | `quader-bastion:<valkey.key_prefix>:` (the Bastion's own `valkey` section; empty means the host of `server.base_url`); the Bastion's client has no keyspace segment | yes ([bastion_role.go](internal/config/bastion_role.go), `WithoutKeyspace`) |
 | Bastion block list, level, timeout | `<bastion prefix>block:v1:<address>`, `block:level:v1:<address>`, `timeout:v1:<address>`; the address is an IPv4 address or an IPv6 `/64`, written with `:` as `_` and `.` and `/` as `-` (`203-0-113-7`, `2001_db8_1_2__-64`) | yes ([valkey_bastion.go](internal/cluster/valkey_bastion.go)) |
 | Bastion answers, sweep lease, fetch lock | `<bastion prefix>ans:v1:<kind>:<sha256>` (signed), `sweep:v1`, `lock:fetch:v1:<sha256 of the cache key>` | yes (same file, [valkey_flight.go](internal/cluster/valkey_flight.go)) |
-| Bastion limiters | `bastion.requests_authenticated`, `bastion.requests_anonymous`, `bastion.misses_authenticated`, `bastion.misses_anonymous`, `bastion.failed_auth`, `bastion.refusals` (the `limiter` label of `trove_ratelimit_*`; counters under `rl:v1:bastion-<name>:…`) | yes ([guard/instance.go](internal/bastion/guard/instance.go)) |
+| Bastion limiters | `bastion.requests_authenticated`, `bastion.requests_anonymous`, `bastion.misses_authenticated`, `bastion.misses_anonymous`, `bastion.failed_auth`, `bastion.refusals` (the `limiter` label of `quader_ratelimit_*`; counters under `rl:v1:bastion-<name>:…`) | yes ([guard/instance.go](internal/bastion/guard/instance.go)) |
 
 ### Object storage
 
 | Name | Pattern | Built |
 |---|---|---|
-| Blob object | `<prefix>/sha256/<h0h1>/<h2h3>/<64 hex>`; `<prefix>` defaults to `trove` (`storage.s3.prefix`) | yes (`internal/blob/key.go`); npm publish, the generic `/files/` writes and the pull-through cache store their content here |
+| Blob object | `<prefix>/sha256/<h0h1>/<h2h3>/<64 hex>`; `<prefix>` defaults to `quader` (`storage.s3.prefix`) | yes (`internal/blob/key.go`); npm publish, the generic `/files/` writes and the pull-through cache store their content here |
 | Readiness probe | `<prefix>/_probe/health`, a `HEAD` | yes (`internal/app/wire_blob.go`) |
-| Revocation journal | `<prefix>/_journal/revocations/<yyyy>/<mm>/<dd>/<entry id>.json`, one object per entry, the date the UTC date of the change; written by the job `revocation-journal-ship`, listed and read by a restore and by `trove admin post-restore` | yes ([internal/journal/object.go](internal/journal/object.go), R-HA-054) |
+| Revocation journal | `<prefix>/_journal/revocations/<yyyy>/<mm>/<dd>/<entry id>.json`, one object per entry, the date the UTC date of the change; written by the job `revocation-journal-ship`, listed and read by a restore and by `quader admin post-restore` | yes ([internal/journal/object.go](internal/journal/object.go), R-HA-054) |
 | Restore probe | `<prefix>/_probe/<pod>`, written and deleted by a restore's check 7 | yes (`internal/backup/restore/ports.go`, `checks.go`) |
 | Upload staging | `<prefix>/_uploads/…` | planned ([R-STOR-001](docs/spec/storage.md)) |
 
 ### Backup target
 
-The objects `trove backup` writes below `backup.target.prefix` (default `trove`) in `backup.target.bucket`
+The objects `quader backup` writes below `backup.target.prefix` (default `quader`) in `backup.target.bucket`
 ([R-BAK-002](docs/spec/backup-and-restore.md#r-bak-002--target-layout-backup-id-and-target-marker),
 [layout.go](internal/backup/format/layout.go)). Nothing under `backups/<id>/` or `pool/` is ever modified; a backup exists if and
 only if its `manifest.json` exists.
 
 | Object | Pattern | Holds |
 |---|---|---|
-| Target marker | `<prefix>/trove-backup-target.json` | `format`, `installationId`, `incarnation`, `createdAt`, `adoptedAt`; written by the first run on an empty prefix, read by every `create` and `delete` |
+| Target marker | `<prefix>/quader-backup-target.json` | `format`, `installationId`, `incarnation`, `createdAt`, `adoptedAt`; written by the first run on an empty prefix, read by every `create` and `delete` |
 | Blob pool | `<prefix>/pool/sha256/<h0h1>/<h2h3>/<64 hex>` | one object per blob, shared by every backup of the target, the fan-out of the blob store |
 | Table file | `<prefix>/backups/<backup id>/db/<table>.copy.zst` | one zstd-compressed PostgreSQL `COPY` text file per exported table |
 | Blob list | `<prefix>/backups/<backup id>/blobs.idx.zst` | `<64 hex> <size>` per line, sorted by digest |
@@ -477,12 +477,12 @@ only if its `manifest.json` exists.
 
 | Name | Value | Built |
 |---|---|---|
-| Schema | `trove` (`database.schema`) | yes |
+| Schema | `quader` (`database.schema`) | yes |
 | Migration records | `schema_migration`, `schema_state` (the runtime login may only read them) | yes (`internal/meta/postgres/migrations/`) |
-| Migration file headers | `-- trove:phase expand\|contract`, `-- trove:no-transaction`, `-- trove:requires-app >= <version>` and `-- trove:requires-background <name>` (contract steps) | yes (`internal/meta/postgres/steps.go`) |
+| Migration file headers | `-- quader:phase expand\|contract`, `-- quader:no-transaction`, `-- quader:requires-app >= <version>` and `-- quader:requires-background <name>` (contract steps) | yes (`internal/meta/postgres/steps.go`) |
 | Background data migrations | job kind `data_migration_<name>`, listed as `<name>` by `GET /api/v1/system/migrations`: `nuget_semver2` | yes (`internal/app/migration_report.go`); R-HA-022's table `background_migration` is planned |
 | Job kinds | `gc`, `gc-full`, `repository-delete`, `items-delete` (one job per deletion), `token-cleanup`, `token-expiry-notice`, `session-cleanup`, `audit-retention`, `idempotency-cleanup`, `secrets-reencrypt` (manual only), `nuget-symbol-index` (one job per symbol package), `deb-index` (one coalescing job per Debian repository), `deb-remote-parse`, `deb-index-refresh` (task), `data_migration_nuget_semver2` (a background data migration, once per installation), `vuln-sync-osv`, `vuln-sync-osv-full`, `vuln-sync-kev`, `vuln-evaluate`, `vuln-rescan` (one job per repository), `vuln-findings-retention`, `backup-check` (task), `revocation-journal-ship` (enqueued while the outbox holds a row), `cluster-change-prune`, `replica-registry-prune`, `system.probe`. The list of the registrations is in the [job kinds](#job-kinds-and-tasks) reference | yes (`internal/app/wire_*.go`, `internal/jobs`) |
-| `system_state` keys | `installation_id`, `keyspace_id`, `incarnation` (the first migration writes them; a restore and a post-restore write a new keyspace and incarnation); `nuget_semver2_recomputed`, the completion of `data_migration_nuget_semver2`; the backup lane's: `restore_in_progress` (the marker of a running restore, with its phase), `restored_from` (the installation, incarnation, backup ID and snapshot a restore came from), `restored_at`, `post_restore_in_progress`, `deletions_paused_at` and `deletions_paused_reason` (the deletion pause a post-restore sets), `journal_quarantined` (outbox rows the shipper could not encode), `journal_suppressed_bindings` (role bindings a replay removed), `backup_role` (the role `trove migrate` granted the backup's privileges to) and `backup_check` (the newest report of the task `backup-check`) | yes (`internal/meta/postgres/migrations/00001_foundation.sql`, `internal/formatdata/nuget/semver2.go`, `internal/backup/fixup/system_state.go`, [journal.sql](internal/meta/postgres/queries/journal.sql), [backup_restore.sql](internal/meta/postgres/queries/backup_restore.sql)) |
+| `system_state` keys | `installation_id`, `keyspace_id`, `incarnation` (the first migration writes them; a restore and a post-restore write a new keyspace and incarnation); `nuget_semver2_recomputed`, the completion of `data_migration_nuget_semver2`; the backup lane's: `restore_in_progress` (the marker of a running restore, with its phase), `restored_from` (the installation, incarnation, backup ID and snapshot a restore came from), `restored_at`, `post_restore_in_progress`, `deletions_paused_at` and `deletions_paused_reason` (the deletion pause a post-restore sets), `journal_quarantined` (outbox rows the shipper could not encode), `journal_suppressed_bindings` (role bindings a replay removed), `backup_role` (the role `quader migrate` granted the backup's privileges to) and `backup_check` (the newest report of the task `backup-check`) | yes (`internal/meta/postgres/migrations/00001_foundation.sql`, `internal/formatdata/nuget/semver2.go`, `internal/backup/fixup/system_state.go`, [journal.sql](internal/meta/postgres/queries/journal.sql), [backup_restore.sql](internal/meta/postgres/queries/backup_restore.sql)) |
 | Backup tables | `backup_run` (one row per `create`, `delete` or `verify` run: state, lease, heartbeat, progress, result; at most one active `create` or `delete`), `backup_blob_pin` (the blobs a running backup still has to copy, kept from garbage collection); both export class `transient`. `revocation_outbox` (the journal entries not yet shipped, written in the transaction of the change; export class `data`) | yes (migrations 00006, 00046; [tables_backup.go](internal/meta/postgres/tables_backup.go)) |
 | Upload session tables | `upload_sessions` (one row per multi-request upload: the repository written to, the repository addressed, the format's binding, the principal, the received count, the hash state, the multipart upload, the tail, the writer claim and the state) and `upload_session_parts`; both export class `transient`: staged bytes are not backed up, a client restarts its upload after a restore | yes (migration 00054, [tables_uploads.go](internal/meta/postgres/tables_uploads.go)); the sessions that use them are not built yet |
 | OCI tables | `oci_manifests` (a row per manifest of an image name), `oci_references` (a manifest's references to manifests and blobs of the same name; the platform of an index entry is on the edge) and `oci_tombstones` (a manifest the journal replay withheld after a restore); export class `data`. Migration 00055 also adds `remote_cache_entries.media_type` | yes (migration 00055, [tables.go](internal/formatdata/oci/tables.go)); the data port answers `not_implemented` until its work package lands |
@@ -490,7 +490,7 @@ only if its `manifest.json` exists.
 | Key grammar | `repositories.key` and `project.key` carry the checks of the OCI component grammar (`repositories_key_check`, `project_key_check`), and the checks of the composite names that embed a project key (`principal_check`, `authz_policy_name_check`, `ci_mappings_tier_check`) follow it; the step is a contract step (`requires-app >= 0.1.0`, so the compatibility floor does not move: pre-alpha, no replica of an older release has to keep serving) and stops at a key it refuses | yes (migration 00056) |
 | Mirror tables | `mirror_state` (one row per remote in mode `mirror`: the pass in progress with its fence `pass_job_id` and `pass_holder`, the cursor of the last complete pass, failures, rate-limit waits, the bound; export class `data`), `mirror_pending` (the names a pass has discovered and not filled; export class `transient`) | yes (migration 00040) |
 | Advisory-lock categories | two-`int4` form: `1` lease, `2` fetch (retired, never reused), `3` migration, `4` configuration | yes (`internal/cluster/locks.go`) |
-| Roles and `application_name` | `trove_owner`, `trove_app`, `trove:<replica>:<class>` | planned ([R-HA-014](docs/spec/ha-and-helm.md)) for the role names; the `application_name` is built |
+| Roles and `application_name` | `quader_owner`, `quader_app`, `quader:<replica>:<class>` | planned ([R-HA-014](docs/spec/ha-and-helm.md)) for the role names; the `application_name` is built |
 
 ### Change-log areas
 
@@ -508,81 +508,81 @@ Names of the areas of the PostgreSQL change log ([internal/cluster/areas.go](int
 
 ### Metrics
 
-Built families, all with the `trove_` prefix:
+Built families, all with the `quader_` prefix:
 
 | Family | Labels |
 |---|---|
-| `trove_build_info` | build information, with the role |
-| `trove_http_requests_total`, `trove_http_request_duration_seconds` | `listener`, `endpoint`, `handler`, `method`, `code` (and `le` for the histogram) |
-| `trove_http_requests_in_flight` | `listener`, `endpoint` |
-| `trove_http_requests_shed_total` | `endpoint`, `reason` (`in_flight`, `memory_slots`, `heap`): requests answered `503 server_busy` by the replica's load protection |
-| `trove_http_memory_slots` | none; the downloads of a large object the replica's memory admits beside the bytes its caches hold, `0` without a known memory limit |
-| `trove_endpoint_listener_up`, `trove_endpoint_misdirected_total`, `trove_endpoint_forwarded_host_ignored_total` | `endpoint` |
-| `trove_ready` | none; 1 while `/readyz` answers 200 |
-| `trove_tls_certificate_expiry_timestamp_seconds`, `trove_tls_reloads_total`, `trove_tls_reload_errors_total` | `kind` (`listener`, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`, `client:<endpoint>`, `ops`, or empty), `name` (the configured file) |
-| `trove_cluster_changes_applied_total` | `area`, `source` (`poll`, `message`, `local`) |
-| `trove_cluster_changes_published_total`, `trove_cluster_changes_dropped_total` | `area` |
-| `trove_cluster_poll_errors_total`, `trove_cluster_poll_last_success_timestamp_seconds` | counter, gauge |
-| `trove_cluster_signals_published_total`, `trove_cluster_signals_dropped_total` | `area` |
-| `trove_cache_flushes_total` | `cache`, `reason` |
-| `trove_valkey_pubsub_subscribed` | gauge |
-| `trove_outbound_requests_total`, `trove_outbound_request_duration_seconds`, `trove_outbound_egress_denied_total` | `kind` (the purpose of the outbound client; `vuln_source` for the advisory sources, [sync/service.go](internal/vuln/sync/service.go)) |
-| `trove_storage_s3_requests_total`, `trove_storage_s3_request_duration_seconds` | `operation`, `outcome` |
-| `trove_metrics_label_overflow_total` | `family`, `label` |
-| `trove_tracing_spans_dropped_total` | none |
-| `trove_auth_attempts_total`, `trove_auth_ratelimited_total`, `trove_auth_throttle_exempt_total`, `trove_auth_cache_bypassed_total`, `trove_auth_cache_invalidations_total`, `trove_auth_group_claim_missing_total`, `trove_auth_lastused_flush_failures_total` | the labels of `internal/auth/principal/gate.go` | yes |
-| `trove_auth_session_touch_failures_total`, `trove_auth_csrf_failures_total` | the labels of `internal/auth/session/metrics.go` | yes |
-| `trove_authz_decisions_total`, `trove_authz_evaluation_seconds`, `trove_authz_epoch`, `trove_authz_min_epoch_total`, `trove_authz_stale_waits_total`, `trove_authz_index_rebuilds_total`, `trove_authz_index_rebuild_seconds`, `trove_authz_index_staleness_seconds`, `trove_authz_index_builds_discarded_total`, `trove_exposure_rules`, `trove_exposure_hidden_total` | the labels of `internal/authz/metrics.go` | yes |
-| `trove_api_rate_limited_total`, `trove_ratelimit_decisions_total` | the labels of `internal/api/v1/ratelimit.go` and `internal/cluster/limiter.go` | yes |
-| `trove_jobs_claimed_total`, `trove_jobs_completed_total`, `trove_jobs_running`, `trove_jobs_duration_seconds`, `trove_jobs_claim_errors_total` | the labels of `internal/jobs/metrics.go` | yes |
-| `trove_cache_requests_total`, `trove_cache_entries`, `trove_cache_bytes` | the labels of `internal/cache/metrics.go` | yes |
-| `trove_ci_exchanges_total`, `trove_ci_exchange_duration_seconds`, `trove_ci_signing_keys_refresh_total`, `trove_ci_mapping_set_stale_total`, `trove_ci_job_token_lookups_total`, `trove_ci_job_token_lookup_duration_seconds` | `issuer` and, as the name says, `outcome`, `reason`, `trigger` ([internal/ci/metrics.go](internal/ci/metrics.go), R-CI-020); `trove_ci_signing_keys_refresh_total` counts key fetches by `trigger` (`scheduled`, `unknown_kid`, `admin`) and `outcome` (`success`, `error`) since the key store exists; `trove_ci_exchanges_total` counts every exchange by `issuer` (empty before an issuer was resolved), `outcome` (`success`, `denied` for a 400 or 429, `error` for a 5xx) and `reason` (empty on success), `trove_ci_exchange_duration_seconds` times it by `issuer`, `trove_ci_mapping_set_stale_total` counts the exchanges whose copy lagged and evaluated again from PostgreSQL; the two job-token series stay at zero (R-CI-022, P2) |
-| `trove_ci_signing_keys_age_seconds`, `trove_ci_tokens_active` | `issuer`; gauges read from PostgreSQL once per `metrics.db_gauge_interval`, aggregate with `max`; `trove_ci_tokens_active` is 0 for an issuer without a live token ([internal/app/wire_ci.go](internal/app/wire_ci.go), [internal/ci/issuances.go](internal/ci/issuances.go)) |
-| `trove_oci_registry_tokens_total` | `outcome` (`issued`, `anonymous`, `denied`): answers of the OCI registry's token service ([internal/auth/registrytoken/metrics.go](internal/auth/registrytoken/metrics.go), R-OCI-034) | yes |
-| `trove_oci_sweep_blobs_removed_total` | none: blob items of an image name that no manifest referenced after `oci.unreferenced_blob_grace`, removed by the job `oci-sweep` ([wire_formats.go](internal/app/wire_formats.go)) | yes |
-| `trove_deb_index_builds_total`, `trove_deb_index_build_seconds`, `trove_deb_index_delay_seconds` | `class` (`local`, `virtual`: the class of the repository built), `outcome` (`published`, `unchanged`, `failed`) on the counter: the builds of the indexes of a Debian suite, their duration and the delay from the first unpublished change to the commit of the generation that lists it ([wire_deb_index.go](internal/app/wire_deb_index.go), R-DEB-010, R-DEB-033) | yes |
-| `trove_deb_upstream_signature_failures_total`, `trove_deb_release_rollbacks_total`, `trove_deb_unverified_fills_total` | `repo` and, on the first, `reason` (`bad_signature`, `key_invalid`, `signature_expired`, `future`, `weak_hash`, `hash_header`, `unknown_key`, `malformed`, `no_signature`, `too_many`): releases of a Debian remote that failed the verification against `deb.upstreamKeys`, older releases kept out below a verified one, package files stored without a digest to check them against ([bind.go](internal/formats/deb/bind.go), R-DEB-019, R-DEB-020, R-DEB-022) | yes; a failure only a job meets is logged and not counted ([H-738](docs/security/deb-remote.md#h-738--a-failed-verification-is-written-once-an-hour-per-replica-and-only-where-a-client-meets-it)) |
-| `trove_deb_remote_parse_total` | `outcome` (`parsed`, `skipped`, `failed`): runs of `deb-remote-parse` (R-DEB-033) | *Planned*: the spec names it, no code counts it yet |
-| `trove_storage_upload_sessions_total` | `outcome` (`completed`, `aborted`, `expired`): multi-request upload sessions (OCI blob uploads) by how they ended ([internal/blob/metrics.go](internal/blob/metrics.go)) | yes |
-| `trove_oci_upstream_token_requests_total` | `repo`, `outcome` (`ok`, `denied`, `failed`): token handshakes of OCI remote repositories with their upstream's realm (R-OCI-034) | *Planned*: the spec names it, no code counts it yet |
-| `trove_nuget_push_replayed_total` | `repo`: pushes of the identical package of a stored version, answered `201` without a change | yes |
-| `trove_nuget_remote_unparseable_packages_total` | `repo`: content a NuGet remote cached that is no NuGet package at all (no ZIP archive, no `.nuspec`, a `.nuspec` that is not XML) and served without NuGet rows | yes |
-| `trove_nuget_virtual_member_skipped_total` | `repo`, `reason` (`unavailable`): answers of a virtual NuGet repository that left out a member that could not be asked | yes |
-| `trove_nuget_search_withheld_total` | `repo`: searches a NuGet remote answered from its cache because the query names a package an exclude pattern, a claim or a pin rule protects | yes |
-| `trove_nuget_search_forward_failures_total` | `repo`: forwarded searches of a NuGet remote the upstream did not answer usefully, answered from the cache | yes |
-| `trove_lease_held`, `trove_lease_lost_total` | the labels of `internal/cluster/lease_manager.go` | yes |
-| `trove_bastion_interface_requests_total`, `trove_bastion_forwarded_requests_total` | `bastion` (the registration name), and `operation` (`handshake`, `check`, `feed`, `downloads`) with `outcome` (`ok`, `invalid_token`, `interface_mismatch`, `refused`, `error`, `not_implemented`), or `class` (`artifact`, `shared`, `private`, `absent`, `pass`, `probe`): the main installation's side of the Bastion, [internal/bastionmain/metrics.go](internal/bastionmain/metrics.go) (R-BAS-008); a request whose token names no registration counts under `unknown`; the forwarded counter is filled by the marking (R-BAS-013) | `trove_bastion_interface_requests_total` yes |
+| `quader_build_info` | build information, with the role |
+| `quader_http_requests_total`, `quader_http_request_duration_seconds` | `listener`, `endpoint`, `handler`, `method`, `code` (and `le` for the histogram) |
+| `quader_http_requests_in_flight` | `listener`, `endpoint` |
+| `quader_http_requests_shed_total` | `endpoint`, `reason` (`in_flight`, `memory_slots`, `heap`): requests answered `503 server_busy` by the replica's load protection |
+| `quader_http_memory_slots` | none; the downloads of a large object the replica's memory admits beside the bytes its caches hold, `0` without a known memory limit |
+| `quader_endpoint_listener_up`, `quader_endpoint_misdirected_total`, `quader_endpoint_forwarded_host_ignored_total` | `endpoint` |
+| `quader_ready` | none; 1 while `/readyz` answers 200 |
+| `quader_tls_certificate_expiry_timestamp_seconds`, `quader_tls_reloads_total`, `quader_tls_reload_errors_total` | `kind` (`listener`, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`, `client:<endpoint>`, `ops`, or empty), `name` (the configured file) |
+| `quader_cluster_changes_applied_total` | `area`, `source` (`poll`, `message`, `local`) |
+| `quader_cluster_changes_published_total`, `quader_cluster_changes_dropped_total` | `area` |
+| `quader_cluster_poll_errors_total`, `quader_cluster_poll_last_success_timestamp_seconds` | counter, gauge |
+| `quader_cluster_signals_published_total`, `quader_cluster_signals_dropped_total` | `area` |
+| `quader_cache_flushes_total` | `cache`, `reason` |
+| `quader_valkey_pubsub_subscribed` | gauge |
+| `quader_outbound_requests_total`, `quader_outbound_request_duration_seconds`, `quader_outbound_egress_denied_total` | `kind` (the purpose of the outbound client; `vuln_source` for the advisory sources, [sync/service.go](internal/vuln/sync/service.go)) |
+| `quader_storage_s3_requests_total`, `quader_storage_s3_request_duration_seconds` | `operation`, `outcome` |
+| `quader_metrics_label_overflow_total` | `family`, `label` |
+| `quader_tracing_spans_dropped_total` | none |
+| `quader_auth_attempts_total`, `quader_auth_ratelimited_total`, `quader_auth_throttle_exempt_total`, `quader_auth_cache_bypassed_total`, `quader_auth_cache_invalidations_total`, `quader_auth_group_claim_missing_total`, `quader_auth_lastused_flush_failures_total` | the labels of `internal/auth/principal/gate.go` | yes |
+| `quader_auth_session_touch_failures_total`, `quader_auth_csrf_failures_total` | the labels of `internal/auth/session/metrics.go` | yes |
+| `quader_authz_decisions_total`, `quader_authz_evaluation_seconds`, `quader_authz_epoch`, `quader_authz_min_epoch_total`, `quader_authz_stale_waits_total`, `quader_authz_index_rebuilds_total`, `quader_authz_index_rebuild_seconds`, `quader_authz_index_staleness_seconds`, `quader_authz_index_builds_discarded_total`, `quader_exposure_rules`, `quader_exposure_hidden_total` | the labels of `internal/authz/metrics.go` | yes |
+| `quader_api_rate_limited_total`, `quader_ratelimit_decisions_total` | the labels of `internal/api/v1/ratelimit.go` and `internal/cluster/limiter.go` | yes |
+| `quader_jobs_claimed_total`, `quader_jobs_completed_total`, `quader_jobs_running`, `quader_jobs_duration_seconds`, `quader_jobs_claim_errors_total` | the labels of `internal/jobs/metrics.go` | yes |
+| `quader_cache_requests_total`, `quader_cache_entries`, `quader_cache_bytes` | the labels of `internal/cache/metrics.go` | yes |
+| `quader_ci_exchanges_total`, `quader_ci_exchange_duration_seconds`, `quader_ci_signing_keys_refresh_total`, `quader_ci_mapping_set_stale_total`, `quader_ci_job_token_lookups_total`, `quader_ci_job_token_lookup_duration_seconds` | `issuer` and, as the name says, `outcome`, `reason`, `trigger` ([internal/ci/metrics.go](internal/ci/metrics.go), R-CI-020); `quader_ci_signing_keys_refresh_total` counts key fetches by `trigger` (`scheduled`, `unknown_kid`, `admin`) and `outcome` (`success`, `error`) since the key store exists; `quader_ci_exchanges_total` counts every exchange by `issuer` (empty before an issuer was resolved), `outcome` (`success`, `denied` for a 400 or 429, `error` for a 5xx) and `reason` (empty on success), `quader_ci_exchange_duration_seconds` times it by `issuer`, `quader_ci_mapping_set_stale_total` counts the exchanges whose copy lagged and evaluated again from PostgreSQL; the two job-token series stay at zero (R-CI-022, P2) |
+| `quader_ci_signing_keys_age_seconds`, `quader_ci_tokens_active` | `issuer`; gauges read from PostgreSQL once per `metrics.db_gauge_interval`, aggregate with `max`; `quader_ci_tokens_active` is 0 for an issuer without a live token ([internal/app/wire_ci.go](internal/app/wire_ci.go), [internal/ci/issuances.go](internal/ci/issuances.go)) |
+| `quader_oci_registry_tokens_total` | `outcome` (`issued`, `anonymous`, `denied`): answers of the OCI registry's token service ([internal/auth/registrytoken/metrics.go](internal/auth/registrytoken/metrics.go), R-OCI-034) | yes |
+| `quader_oci_sweep_blobs_removed_total` | none: blob items of an image name that no manifest referenced after `oci.unreferenced_blob_grace`, removed by the job `oci-sweep` ([wire_formats.go](internal/app/wire_formats.go)) | yes |
+| `quader_deb_index_builds_total`, `quader_deb_index_build_seconds`, `quader_deb_index_delay_seconds` | `class` (`local`, `virtual`: the class of the repository built), `outcome` (`published`, `unchanged`, `failed`) on the counter: the builds of the indexes of a Debian suite, their duration and the delay from the first unpublished change to the commit of the generation that lists it ([wire_deb_index.go](internal/app/wire_deb_index.go), R-DEB-010, R-DEB-033) | yes |
+| `quader_deb_upstream_signature_failures_total`, `quader_deb_release_rollbacks_total`, `quader_deb_unverified_fills_total` | `repo` and, on the first, `reason` (`bad_signature`, `key_invalid`, `signature_expired`, `future`, `weak_hash`, `hash_header`, `unknown_key`, `malformed`, `no_signature`, `too_many`): releases of a Debian remote that failed the verification against `deb.upstreamKeys`, older releases kept out below a verified one, package files stored without a digest to check them against ([bind.go](internal/formats/deb/bind.go), R-DEB-019, R-DEB-020, R-DEB-022) | yes; a failure only a job meets is logged and not counted ([H-738](docs/security/deb-remote.md#h-738--a-failed-verification-is-written-once-an-hour-per-replica-and-only-where-a-client-meets-it)) |
+| `quader_deb_remote_parse_total` | `outcome` (`parsed`, `skipped`, `failed`): runs of `deb-remote-parse` (R-DEB-033) | *Planned*: the spec names it, no code counts it yet |
+| `quader_storage_upload_sessions_total` | `outcome` (`completed`, `aborted`, `expired`): multi-request upload sessions (OCI blob uploads) by how they ended ([internal/blob/metrics.go](internal/blob/metrics.go)) | yes |
+| `quader_oci_upstream_token_requests_total` | `repo`, `outcome` (`ok`, `denied`, `failed`): token handshakes of OCI remote repositories with their upstream's realm (R-OCI-034) | *Planned*: the spec names it, no code counts it yet |
+| `quader_nuget_push_replayed_total` | `repo`: pushes of the identical package of a stored version, answered `201` without a change | yes |
+| `quader_nuget_remote_unparseable_packages_total` | `repo`: content a NuGet remote cached that is no NuGet package at all (no ZIP archive, no `.nuspec`, a `.nuspec` that is not XML) and served without NuGet rows | yes |
+| `quader_nuget_virtual_member_skipped_total` | `repo`, `reason` (`unavailable`): answers of a virtual NuGet repository that left out a member that could not be asked | yes |
+| `quader_nuget_search_withheld_total` | `repo`: searches a NuGet remote answered from its cache because the query names a package an exclude pattern, a claim or a pin rule protects | yes |
+| `quader_nuget_search_forward_failures_total` | `repo`: forwarded searches of a NuGet remote the upstream did not answer usefully, answered from the cache | yes |
+| `quader_lease_held`, `quader_lease_lost_total` | the labels of `internal/cluster/lease_manager.go` | yes |
+| `quader_bastion_interface_requests_total`, `quader_bastion_forwarded_requests_total` | `bastion` (the registration name), and `operation` (`handshake`, `check`, `feed`, `downloads`) with `outcome` (`ok`, `invalid_token`, `interface_mismatch`, `refused`, `error`, `not_implemented`), or `class` (`artifact`, `shared`, `private`, `absent`, `pass`, `probe`): the main installation's side of the Bastion, [internal/bastionmain/metrics.go](internal/bastionmain/metrics.go) (R-BAS-008); a request whose token names no registration counts under `unknown`; the forwarded counter is filled by the marking (R-BAS-013) | `quader_bastion_interface_requests_total` yes |
 
 The families of the vulnerability scanning (M4b), defined once in [internal/vuln/metrics](internal/vuln/metrics/metrics.go) (R-VULN-024); no label carries a package name, an advisory identifier or a repository key. The five gauges are read from PostgreSQL once per `metrics.db_gauge_interval`; aggregate them with `max`, not `sum`, across replicas:
 
 | Family | Labels |
 |---|---|
-| `trove_vuln_source_last_success_timestamp_seconds`, `trove_vuln_source_records`, `trove_vuln_source_consecutive_failures` | `source` (`osv`, `kev`), `ecosystem`; gauges: the last run that ended changed or unchanged, the stored records, the failed runs in a row |
-| `trove_vuln_sync_runs_total` | `source`, `ecosystem`, `kind` (`full`, `incremental`), `outcome` (`changed`, `unchanged`, `failed`, `cancelled`) |
-| `trove_vuln_sync_records_total` | `source`, `ecosystem`, `result` (`written`, `skipped`, `rejected`, `deleted`) |
-| `trove_vuln_unevaluable_ranges_total` | `ecosystem`: advisory ranges the format's version order cannot evaluate |
-| `trove_vuln_evaluations_total`, `trove_vuln_evaluation_duration_seconds` | `trigger` (`publish`, `fill`, `miss`, `advisory`, `full`, `rescan`) |
-| `trove_vuln_findings` | `severity`, `status`, `kind`; gauge |
-| `trove_vuln_downloads_blocked_total` | `format`, `reason` (`malicious`, `triage`, `missing_data`), `mode` (`enforce`, `report`: the would-be refusals of `vulnerabilities.enforcement: report`) |
-| `trove_vuln_audit_requests_total` | `format`, `mode` (`local`, `forward`, `disabled`), `outcome` (`ok`, `refused`, `unavailable`, `error`): the npm bulk audits of every mode ([handlers_audit.go](internal/formats/npm/handlers_audit.go)); the NuGet vulnerability documents are not counted |
-| `trove_vuln_claimed_name_matches` | `ecosystem`, `kind` (`vulnerability`, `malicious`); gauge: public advisories that name a claimed internal name |
+| `quader_vuln_source_last_success_timestamp_seconds`, `quader_vuln_source_records`, `quader_vuln_source_consecutive_failures` | `source` (`osv`, `kev`), `ecosystem`; gauges: the last run that ended changed or unchanged, the stored records, the failed runs in a row |
+| `quader_vuln_sync_runs_total` | `source`, `ecosystem`, `kind` (`full`, `incremental`), `outcome` (`changed`, `unchanged`, `failed`, `cancelled`) |
+| `quader_vuln_sync_records_total` | `source`, `ecosystem`, `result` (`written`, `skipped`, `rejected`, `deleted`) |
+| `quader_vuln_unevaluable_ranges_total` | `ecosystem`: advisory ranges the format's version order cannot evaluate |
+| `quader_vuln_evaluations_total`, `quader_vuln_evaluation_duration_seconds` | `trigger` (`publish`, `fill`, `miss`, `advisory`, `full`, `rescan`) |
+| `quader_vuln_findings` | `severity`, `status`, `kind`; gauge |
+| `quader_vuln_downloads_blocked_total` | `format`, `reason` (`malicious`, `triage`, `missing_data`), `mode` (`enforce`, `report`: the would-be refusals of `vulnerabilities.enforcement: report`) |
+| `quader_vuln_audit_requests_total` | `format`, `mode` (`local`, `forward`, `disabled`), `outcome` (`ok`, `refused`, `unavailable`, `error`): the npm bulk audits of every mode ([handlers_audit.go](internal/formats/npm/handlers_audit.go)); the NuGet vulnerability documents are not counted |
+| `quader_vuln_claimed_name_matches` | `ecosystem`, `kind` (`vulnerability`, `malicious`); gauge: public advisories that name a claimed internal name |
 
-The families of the mirror mode (twelve, phase 6b, [R-REPO-057](docs/spec/repositories-and-proxy.md), defined in [internal/mirror/metrics.go](internal/mirror/metrics.go)); the label `repo` is the repository key, one value per mirrored repository, and no label carries a package name. The counters and `trove_mirror_concurrency` belong to the process that runs the pass and exist from the first pass attempt at 0; the gauges read from PostgreSQL and the interval gauge are exported by every process of every role (the area `mirror` is on all of them), through the database gauge source, once per `metrics.db_gauge_interval`, so that a mirror that nobody runs is still seen.
+The families of the mirror mode (twelve, phase 6b, [R-REPO-057](docs/spec/repositories-and-proxy.md), defined in [internal/mirror/metrics.go](internal/mirror/metrics.go)); the label `repo` is the repository key, one value per mirrored repository, and no label carries a package name. The counters and `quader_mirror_concurrency` belong to the process that runs the pass and exist from the first pass attempt at 0; the gauges read from PostgreSQL and the interval gauge are exported by every process of every role (the area `mirror` is on all of them), through the database gauge source, once per `metrics.db_gauge_interval`, so that a mirror that nobody runs is still seen.
 
 | Family | Labels |
 |---|---|
-| `trove_mirror_passes_total` | `repo`, `kind` (`full`, `incremental`), `outcome` (`complete`, `partial`, `bound_reached`, `offline`, `stopped`, `failed`, `deferred`): pass attempts by how they ended |
-| `trove_mirror_items_total` | `repo`, `result` (`stored`, `present`, `bounded`, `failed`, `preempted`, `refused`): the artifacts of the plans |
-| `trove_mirror_bytes_total` | `repo`: bytes the passes stored |
-| `trove_mirror_rate_limited_total` | `repo`, `reason` (`too_many_requests`, `slow_down`, `retry_after`, `quota_header`): every rate-limit answer |
-| `trove_mirror_rate_limit_wait_seconds_total` | `repo`: seconds the passes waited for rate limits |
-| `trove_mirror_concurrency` | `repo`; gauge: the running pass's window, 0 when no pass runs in the process |
-| `trove_mirror_preempted_total` | `repo`: background fetches a client pre-empted |
-| `trove_mirror_pending_packages` | `repo`; gauge from PostgreSQL: the pending names a pass still takes, 0 without a pass in progress |
-| `trove_mirror_last_complete_pass_timestamp_seconds` | `repo`; gauge from PostgreSQL: the end of the last pass that ended `complete`, `partial` or `bound_reached`; no series before the first |
-| `trove_mirror_interval_seconds` | `repo`; gauge: the configured `intervalSeconds` of a mirrored repository, from the snapshot |
-| `trove_mirror_consecutive_failures` | `repo`; gauge from PostgreSQL: failed pass attempts in a row; no series for a paused or disabled mirror |
-| `trove_mirror_next_pass_timestamp_seconds` | `repo`; gauge from PostgreSQL: when the mirror next acts (a due pass, or the last write of the pass in progress); no series for a paused or disabled mirror |
+| `quader_mirror_passes_total` | `repo`, `kind` (`full`, `incremental`), `outcome` (`complete`, `partial`, `bound_reached`, `offline`, `stopped`, `failed`, `deferred`): pass attempts by how they ended |
+| `quader_mirror_items_total` | `repo`, `result` (`stored`, `present`, `bounded`, `failed`, `preempted`, `refused`): the artifacts of the plans |
+| `quader_mirror_bytes_total` | `repo`: bytes the passes stored |
+| `quader_mirror_rate_limited_total` | `repo`, `reason` (`too_many_requests`, `slow_down`, `retry_after`, `quota_header`): every rate-limit answer |
+| `quader_mirror_rate_limit_wait_seconds_total` | `repo`: seconds the passes waited for rate limits |
+| `quader_mirror_concurrency` | `repo`; gauge: the running pass's window, 0 when no pass runs in the process |
+| `quader_mirror_preempted_total` | `repo`: background fetches a client pre-empted |
+| `quader_mirror_pending_packages` | `repo`; gauge from PostgreSQL: the pending names a pass still takes, 0 without a pass in progress |
+| `quader_mirror_last_complete_pass_timestamp_seconds` | `repo`; gauge from PostgreSQL: the end of the last pass that ended `complete`, `partial` or `bound_reached`; no series before the first |
+| `quader_mirror_interval_seconds` | `repo`; gauge: the configured `intervalSeconds` of a mirrored repository, from the snapshot |
+| `quader_mirror_consecutive_failures` | `repo`; gauge from PostgreSQL: failed pass attempts in a row; no series for a paused or disabled mirror |
+| `quader_mirror_next_pass_timestamp_seconds` | `repo`; gauge from PostgreSQL: when the mirror next acts (a due pass, or the last write of the pass in progress); no series for a paused or disabled mirror |
 
 The families of the backup lane (M5, [R-BAK-014](docs/spec/backup-and-restore.md#r-bak-014--run-visibility-api-metrics-alerts-and-audit), defined in
 [internal/backup/metrics.go](internal/backup/metrics.go) and [internal/journal/metrics.go](internal/journal/metrics.go)). The gauges are
@@ -592,50 +592,50 @@ its ops port, for as long as the run lasts:
 
 | Family | Labels |
 |---|---|
-| `trove_backup_last_success_timestamp_seconds`, `trove_backup_last_failure_timestamp_seconds` | none; no series until a create run succeeded or failed; an `interrupted` run (a drain) is no failure |
-| `trove_backup_expected_interval_seconds` | none; `backup.expected_interval` of the replica's configuration, the threshold of `TroveBackupStale` |
-| `trove_backup_last_duration_seconds`, `trove_backup_last_database_bytes`, `trove_backup_last_blob_bytes`, `trove_backup_last_copied_bytes`, `trove_backup_source_blobs_damaged` | none; from the newest successful create run |
-| `trove_backup_running` | `operation` (`create`, `delete`), `state`; 1 for the active run with a valid lease |
-| `trove_backup_running_seconds`, `trove_backup_pinned_blobs`, `trove_backup_snapshot_open_seconds` | none; of the active run, 0 without one |
-| `trove_backup_gc_hold` | `mode` (`all`, `pinned`); 1 while a valid hold of that mode exists |
-| `trove_backup_last_verify_timestamp_seconds`, `trove_backup_last_verify_findings` | none; the newest `verify` run |
-| `trove_backup_copied_objects_total`, `trove_backup_copied_bytes_total` | `mode` (`server`, `stream`); backup pod |
-| `trove_backup_check_ok` | `check` (`archive_mode`, `object_versioning`, `noncurrent_expiry`, `grace_period`); 1 when a declared platform protection holds, 0 when not, no series for a check that is not declared or not readable |
-| `trove_gc_candidates_held_total` | none; collection candidates a backup hold kept ([internal/blob/metrics.go](internal/blob/metrics.go)) |
-| `trove_revocation_journal_pending` | none; outbox rows not yet shipped |
-| `trove_revocation_journal_quarantined_total` | none; outbox rows that could not be encoded and were set aside: each one is a change missing from the journal |
+| `quader_backup_last_success_timestamp_seconds`, `quader_backup_last_failure_timestamp_seconds` | none; no series until a create run succeeded or failed; an `interrupted` run (a drain) is no failure |
+| `quader_backup_expected_interval_seconds` | none; `backup.expected_interval` of the replica's configuration, the threshold of `QuaderBackupStale` |
+| `quader_backup_last_duration_seconds`, `quader_backup_last_database_bytes`, `quader_backup_last_blob_bytes`, `quader_backup_last_copied_bytes`, `quader_backup_source_blobs_damaged` | none; from the newest successful create run |
+| `quader_backup_running` | `operation` (`create`, `delete`), `state`; 1 for the active run with a valid lease |
+| `quader_backup_running_seconds`, `quader_backup_pinned_blobs`, `quader_backup_snapshot_open_seconds` | none; of the active run, 0 without one |
+| `quader_backup_gc_hold` | `mode` (`all`, `pinned`); 1 while a valid hold of that mode exists |
+| `quader_backup_last_verify_timestamp_seconds`, `quader_backup_last_verify_findings` | none; the newest `verify` run |
+| `quader_backup_copied_objects_total`, `quader_backup_copied_bytes_total` | `mode` (`server`, `stream`); backup pod |
+| `quader_backup_check_ok` | `check` (`archive_mode`, `object_versioning`, `noncurrent_expiry`, `grace_period`); 1 when a declared platform protection holds, 0 when not, no series for a check that is not declared or not readable |
+| `quader_gc_candidates_held_total` | none; collection candidates a backup hold kept ([internal/blob/metrics.go](internal/blob/metrics.go)) |
+| `quader_revocation_journal_pending` | none; outbox rows not yet shipped |
+| `quader_revocation_journal_quarantined_total` | none; outbox rows that could not be encoded and were set aside: each one is a change missing from the journal |
 
 The label sets of the M1 families are not restated per family in this pass; read the file named in each row.
 
 ### Kubernetes and Helm
 
-`<fullname>` is the release name, or `fullnameOverride` ([_helpers.tpl](deploy/helm/trove/templates/_helpers.tpl)).
+`<fullname>` is the release name, or `fullnameOverride` ([_helpers.tpl](deploy/helm/quader/templates/_helpers.tpl)).
 
 | Name | Value | Built |
 |---|---|---|
-| Chart | `deploy/helm/trove` | yes |
-| Sizing profiles | `deploy/helm/trove/profiles/small.yaml`, `medium.yaml`, `large.yaml` (R-HA-050), layered before your own values file | yes |
+| Chart | `deploy/helm/quader` | yes |
+| Sizing profiles | `deploy/helm/quader/profiles/small.yaml`, `medium.yaml`, `large.yaml` (R-HA-050), layered before your own values file | yes |
 | Deployments | `<fullname>-api` (`--role api`), `<fullname>-packages` (`--role packages`), `<fullname>-worker` (`--role worker`) | yes |
-| Pools | `<fullname>-api-<pool>`, `<fullname>-packages-<pool>` (path pools, with a Service of the same name), `<fullname>-worker-<pool>` (label `trove/pool: <pool>`) | yes (`_units.tpl`) |
-| Endpoint pools | `<fullname>-packages-ep-<name>` and `<fullname>-api-ep-<name>`, label `trove/pool: ep-<name>`, for an endpoint with `endpoints.<name>.pool.enabled` (one per role its surface holds) | yes (`_units.tpl`) |
+| Pools | `<fullname>-api-<pool>`, `<fullname>-packages-<pool>` (path pools, with a Service of the same name), `<fullname>-worker-<pool>` (label `quader/pool: <pool>`) | yes (`_units.tpl`) |
+| Endpoint pools | `<fullname>-packages-ep-<name>` and `<fullname>-api-ep-<name>`, label `quader/pool: ep-<name>`, for an endpoint with `endpoints.<name>.pool.enabled` (one per role its surface holds) | yes (`_units.tpl`) |
 | Upgrade bridge | `<fullname>-web` (`--role web`) and the Service `<fullname>`, only with `web.enabled` | yes |
 | Endpoint objects | `<fullname>-ep-<name>` (and `<fullname>-api-ep-<name>` for a surface over both roles) for the Services and the Ingress of a further endpoint | yes |
 | Disruption budgets, autoscalers | one per Deployment, named as the Deployment | yes |
 | Migration hook Job | `<fullname>-migrate`; not rendered while `restore.enabled`, because the restore applies the migrations itself | yes |
-| ConfigMap | `<fullname>-config`, holding `trove.yaml` | yes |
+| ConfigMap | `<fullname>-config`, holding `quader.yaml` | yes |
 | Services | `<fullname>-api`, `<fullname>-packages` (client port), `<fullname>-ops` (ops port) | yes |
 | Network policies | one per Deployment, named as it (ingress only, a rule per port), and `<fullname>-migrate`, `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` with their Jobs (no rule: those pods accept nothing) | yes |
 | Edge | per host: `/` and `/api/v1` to `<fullname>-api`; `/api`, `/files`, `/v2`, `/.well-known` to `<fullname>-packages`; the paths of path pools to their Services | yes |
-| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 32 alerts: 26 always (`TroveReplicasNotReady`, `TroveDatabaseUnreachable`, `TroveObjectStoreUnreachable`, `TroveObjectStoreUnreachableSingleReplica`, `TroveDatabasePoolSaturated`, `TroveControlConnectionWaits`, `TroveJobsStuck`, `TroveLeaseLost`, `TroveMixedVersions`, `TroveSpoolNearlyFull`, `TroveVulnerabilityDataStale`, `TroveVulnerabilitySyncFailing`, `TroveVulnerabilityClaimedNameMalicious`, `TroveMirrorFailing`, `TroveMirrorStale`, `TroveBridgeLeftOn`, `TroveBlobMissing`, `TroveGCStale`, `TroveBackupCheckFailed`, `TroveRevocationJournalBacklog`, `TroveRevocationJournalQuarantined`, `TroveValkeyUnavailable`, `TroveValkeyUnavailableSingleReplica`, `TroveValkeySentinelsDegraded`, `TroveValkeyFailoverFlapping`, `TroveValkeyPrimaryDisagreement`) and the six run alerts of the backup only with `backup.enabled` (`TroveBackupStale`, `TroveBackupFailed`, `TroveBackupRunningLong`, `TroveBackupGlobalHoldLong`, `TroveBackupSourceDamage`, `TroveBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/trove/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/trove/templates/_rules.tpl)) |
-| Backup CronJob | `<fullname>-backup` with `backup.enabled` (default `false`), `trove backup create --trigger schedule`, `concurrencyPolicy: Forbid`; the controller names its Jobs `<fullname>-backup-<10 digits>`, so the render fails when `<fullname>-backup` exceeds 52 characters; a manual run is `kubectl create job --from=cronjob/<fullname>-backup <name>` | yes ([backup.yaml](deploy/helm/trove/templates/backup.yaml)) |
-| Restore Job | `<fullname>-restore` with `restore.enabled`, `trove backup restore <restore.backupId>`; an ordinary Job, not a Helm hook | yes ([restore.yaml](deploy/helm/trove/templates/restore.yaml)) |
-| Post-restore Job | `<fullname>-post-restore-<the first 8 hex digits of the SHA-256 of postRestore.restoredTo>` with `postRestore.enabled`, annotation `trove/restored-to`, a `post-install,post-upgrade` hook; one Job per restore point | yes ([post-restore.yaml](deploy/helm/trove/templates/post-restore.yaml)) |
-| ServiceAccounts of the Jobs | `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` (`<key>.serviceAccount.name` overrides), without a token; one per Job, so a workload identity maps each to a cloud role of its own | yes ([_helpers.tpl](deploy/helm/trove/templates/_helpers.tpl)) |
-| Journal credentials ConfigMaps | `<fullname>-restore`, `<fullname>-post-restore`, key `credentials.yaml`, when `journalCredentials.source` is not `runtime` and the journal is not skipped | yes ([_backup.tpl](deploy/helm/trove/templates/_backup.tpl)) |
-| Labels of the Job pods | `app.kubernetes.io/component` `backup`, `restore` or `post-restore`; no `trove/serve` label, so no Service selects them; annotation `cluster-autoscaler.kubernetes.io/safe-to-evict: "false"` | yes |
-| Dev profile objects of the OCI e2e set | the namespace `trove-e2e-clients` (Pod Security level `privileged`), its pods `trove-e2e-oci-<i>` (containers `docker` and `podman`) and the ConfigMap `trove-e2e-oci-ca`; in the release namespace the Services `ocistub`, `ocistub-auth` and `ocistub-cdn` of the counting OCI test upstream and the endpoint `ocimirror` (port 8444, host `oci-mirror.trove.localhost`, bound to the repository `e2e/oci-engine-mirror`, Services `<fullname>-ep-ocimirror`); images `trove-e2e-ociclients-docker:dev`, `trove-e2e-ociclients-podman:dev`, `trove-e2e-ocistub:dev` | dev profile only ([e2e.md](docs/developer/e2e.md#the-oci-clients)) |
-| Dev profile objects of the Debian e2e set | the namespace `trove-e2e-apt` (Pod Security level `baseline`), its pods `trove-e2e-apt-<debian13\|debian12\|ubuntu2404\|ubuntu2204>` (container `apt`) and the ConfigMap `trove-e2e-apt-ca`; in the release namespace the Service `debstub` of the counting Debian test upstream (the Deployment and Secret `trove-debstub`); images `trove-e2e-aptclients-<debian13\|debian12\|ubuntu2404\|ubuntu2204>:dev`, `trove-e2e-debstub:dev` | dev profile only ([e2e.md](docs/developer/e2e.md#the-apt-clients)) |
-| Bastion chart | `deploy/helm/trove-bastion`, released with the chart `trove` at the same version; its own `<fullname>` (release name, or `<release>-trove-bastion`) | yes (phase 5b) |
+| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 32 alerts: 26 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBridgeLeftOn`, `QuaderBlobMissing`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
+| Backup CronJob | `<fullname>-backup` with `backup.enabled` (default `false`), `quader backup create --trigger schedule`, `concurrencyPolicy: Forbid`; the controller names its Jobs `<fullname>-backup-<10 digits>`, so the render fails when `<fullname>-backup` exceeds 52 characters; a manual run is `kubectl create job --from=cronjob/<fullname>-backup <name>` | yes ([backup.yaml](deploy/helm/quader/templates/backup.yaml)) |
+| Restore Job | `<fullname>-restore` with `restore.enabled`, `quader backup restore <restore.backupId>`; an ordinary Job, not a Helm hook | yes ([restore.yaml](deploy/helm/quader/templates/restore.yaml)) |
+| Post-restore Job | `<fullname>-post-restore-<the first 8 hex digits of the SHA-256 of postRestore.restoredTo>` with `postRestore.enabled`, annotation `quader/restored-to`, a `post-install,post-upgrade` hook; one Job per restore point | yes ([post-restore.yaml](deploy/helm/quader/templates/post-restore.yaml)) |
+| ServiceAccounts of the Jobs | `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` (`<key>.serviceAccount.name` overrides), without a token; one per Job, so a workload identity maps each to a cloud role of its own | yes ([_helpers.tpl](deploy/helm/quader/templates/_helpers.tpl)) |
+| Journal credentials ConfigMaps | `<fullname>-restore`, `<fullname>-post-restore`, key `credentials.yaml`, when `journalCredentials.source` is not `runtime` and the journal is not skipped | yes ([_backup.tpl](deploy/helm/quader/templates/_backup.tpl)) |
+| Labels of the Job pods | `app.kubernetes.io/component` `backup`, `restore` or `post-restore`; no `quader/serve` label, so no Service selects them; annotation `cluster-autoscaler.kubernetes.io/safe-to-evict: "false"` | yes |
+| Dev profile objects of the OCI e2e set | the namespace `quader-e2e-clients` (Pod Security level `privileged`), its pods `quader-e2e-oci-<i>` (containers `docker` and `podman`) and the ConfigMap `quader-e2e-oci-ca`; in the release namespace the Services `ocistub`, `ocistub-auth` and `ocistub-cdn` of the counting OCI test upstream and the endpoint `ocimirror` (port 8444, host `oci-mirror.quader.localhost`, bound to the repository `e2e/oci-engine-mirror`, Services `<fullname>-ep-ocimirror`); images `quader-e2e-ociclients-docker:dev`, `quader-e2e-ociclients-podman:dev`, `quader-e2e-ocistub:dev` | dev profile only ([e2e.md](docs/developer/e2e.md#the-oci-clients)) |
+| Dev profile objects of the Debian e2e set | the namespace `quader-e2e-apt` (Pod Security level `baseline`), its pods `quader-e2e-apt-<debian13\|debian12\|ubuntu2404\|ubuntu2204>` (container `apt`) and the ConfigMap `quader-e2e-apt-ca`; in the release namespace the Service `debstub` of the counting Debian test upstream (the Deployment and Secret `quader-debstub`); images `quader-e2e-aptclients-<debian13\|debian12\|ubuntu2404\|ubuntu2204>:dev`, `quader-e2e-debstub:dev` | dev profile only ([e2e.md](docs/developer/e2e.md#the-apt-clients)) |
+| Bastion chart | `deploy/helm/quader-bastion`, released with the chart `quader` at the same version; its own `<fullname>` (release name, or `<release>-quader-bastion`) | yes (phase 5b) |
 | Bastion workload | `<fullname>` (Deployment, or StatefulSet with `cacheVolume.type: persistent`), `--role bastion`, ports `https` 8443 and `ops` 8081 | yes |
 | Bastion objects | ConfigMap `<fullname>-config`, Services `<fullname>` and `<fullname>-ops`, Ingress, NetworkPolicy, PodDisruptionBudget, HorizontalPodAutoscaler, ServiceMonitor and PrometheusRule `<fullname>`; Certificate `<fullname>-tls` (cert-manager); no Secret, Role or RoleBinding | yes |
 | Bastion Ingress annotations | `haproxy-ingress.github.io/` `limit-rps`, `limit-connections`, `limit-whitelist` (edge limit), `balance-algorithm`, `assign-backend-server-id`, `config-backend` (routing by path), `secure-backends`, `secure-sni`, `secure-verify-ca-secret` | yes |
@@ -648,7 +648,7 @@ The label sets of the M1 families are not restated per family in this pass; read
 | Mapping name | `^[a-z0-9][a-z0-9._-]{1,63}$` | unique within the issuer and the tier (the system tier, or one project's tier `project:<projectKey>`); immutable |
 | Mapping principal | `<issuer>/<mapping>` for the system tier, `<issuer>/<projectKey>/<mapping>` for a project's tier (kind `ci_mapping`); API reference `ci:<issuer>/<mapping>`, `ci:<issuer>/<projectKey>/<mapping>` | created and deleted with the mapping; the principal set of a CI token ([Q-AUTHZ-214](docs/spec/authorization.md)) |
 | Package owner identity of a CI project | `ci:<issuer>:project:<project_id>` | the immutable project ID with the issuer; stored by issuer ID ([R-CI-015](docs/spec/gitlab-ci-oidc.md)) |
-| CI token | `trv_cit_…` | issued by `POST /api/v1/auth/oidc/token`; `created_via` `ci-exchange`; owner is the mapping principal; its grants are `api_token.ci_context` |
+| CI token | `qdr_cit_…` | issued by `POST /api/v1/auth/oidc/token`; `created_via` `ci-exchange`; owner is the mapping principal; its grants are `api_token.ci_context` |
 | Limiters | `ci_exchange_address`, `ci_exchange_subject` | cluster scope ([R-CI-021](docs/spec/gitlab-ci-oidc.md)) |
 | Tasks | `ci-keys-refresh` (`*/5 * * * *`), `ci-replay-cleanup` (`7 * * * *`), `ci-issuance-retention` (`40 3 * * *`) | exclusive, `maintenance.tasks.<name>` |
 | Tables | `ci_issuers`, `ci_issuer_keys` (transient in backups), `ci_mappings`, `ci_subject_token_uses`, `ci_token_issuances` | migrations 00026 to 00031 |
@@ -659,8 +659,8 @@ The label sets of the M1 families are not restated per family in this pass; read
 |---|---|---|
 | Registration name | `^[a-z][a-z0-9-]{0,19}$` | unique; immutable; the handle in the API, the audit trail and the `bastion` label of the metrics; at most `bastions.max_registrations` exist |
 | Registration principal | kind `bastion`; API reference `bastion:<name>` | holds no policy entry, role, ownership or membership: every such write answers `422 principal_not_allowed` |
-| Bastion token | `trv_bst_…` (57 characters) | owner is the registration; always expires; at most `auth.tokens.max_active_per_principal.bst` unrevoked per registration; `created_via` `api`, `ui` or `admin-cli`; hint `trv_bst_` and four characters |
-| Commands | `trove admin bastion create <name>`, `trove admin bastion token create <name> [--ttl <duration>]`, `trove admin bastion token revoke <name> <token-id>` | from a `web` pod, actor `admin-cli` |
+| Bastion token | `qdr_bst_…` (57 characters) | owner is the registration; always expires; at most `auth.tokens.max_active_per_principal.bst` unrevoked per registration; `created_via` `api`, `ui` or `admin-cli`; hint `qdr_bst_` and four characters |
+| Commands | `quader admin bastion create <name>`, `quader admin bastion token create <name> [--ttl <duration>]`, `quader admin bastion token revoke <name> <token-id>` | from a `web` pod, actor `admin-cli` |
 | Tables | `bastion`, `bastion_contact` (transient) | migrations 00032 to 00034 |
 | Limiter of the download intake | `bastion.download_events`, bucket `bastion:<registration ID>`, a batch charged by its events in units of 100 (`bastions.downloads.events_per_second`, `events_burst`) | cluster scope ([R-BAS-016](docs/spec/bastion.md)) |
 
@@ -686,15 +686,15 @@ The label sets of the M1 families are not restated per family in this pass; read
 |---|---|---|
 | Capability | `vulnerabilities:triage` | held by the roles `admin`, `security-admin` and `auditor`; no repository action grants it; a system scope item, so a token's scope can carry it; effective only with `read` on the finding's repository ([authz.go](internal/authz/authz.go), [roles.go](internal/authz/roles.go)) |
 | Repository member | `vulnerabilities` (`enabled`, `matchPublicAdvisories`, `blockMalicious`, `onMissingData`) | local and remote npm and NuGet repositories; a virtual repository or another format answers `422 not_applicable` at `/vulnerabilities` ([settings.go](internal/vuln/settings.go)) |
-| Finding statuses | `needs_triage`, `confirmed`, `blocked`, `dismissed`, `resolved` | `resolved` is set by trove only (`422 status_not_settable`) |
+| Finding statuses | `needs_triage`, `confirmed`, `blocked`, `dismissed`, `resolved` | `resolved` is set by Quader only (`422 status_not_settable`) |
 | Advisory sources | `osv` (ecosystems `npm`, `NuGet`, as OSV spells them), `kev` | the `source` and `ecosystem` labels, the rows of `GET /api/v1/vulnerabilities/sources` |
 | Mirror repository paths (`mode: repository`) | `osv/<ecosystem>/all.zip`, `kev/known_exploited_vulnerabilities.json` | in a generic local repository named by `vulnerabilities.sources.<source>.repository` |
 | Tasks | `vuln-sync-osv` (`*/15 * * * *`), `vuln-sync-osv-full` (`17 3 * * 0`), `vuln-sync-kev` (`41 */6 * * *`), `vuln-findings-retention` (`50 3 * * *`) | `maintenance.tasks.<name>`; the defaults are in [internal/vuln/jobs.go](internal/vuln/jobs.go) and the default of `maintenance.tasks` |
 | Rescan dedup key | `vuln-rescan:<repository id>` | one rescan per repository queued or running |
-| Outbound purpose | `vuln_source` | the `kind` label of `trove_outbound_*` and the purpose of the upstream log |
+| Outbound purpose | `vuln_source` | the `kind` label of `quader_outbound_*` and the purpose of the upstream log |
 | Caches | `vuln_source_state` (safety TTL 60 s), `vuln_nuget_page` (the rendered NuGet page, at most four entries, safety TTL 15 min) | per replica; the change area `vuln_data` empties both, `claims` and `repo_config` the page too ([coordination.go](internal/vuln/coordination.go), [audits_pages.go](internal/vuln/store/audits_pages.go)) |
-| NuGet page | `@name` `trove`, at `<feed>/vulnerabilities/trove.json` | the one entry of `<feed>/vulnerabilities/index.json` |
-| Alerts | `TroveReplicasNotReady`, `TroveDatabaseUnreachable`, `TroveObjectStoreUnreachable`, `TroveObjectStoreUnreachableSingleReplica`, `TroveDatabasePoolSaturated`, `TroveControlConnectionWaits`, `TroveJobsStuck`, `TroveLeaseLost`, `TroveMixedVersions`, `TroveSpoolNearlyFull`, `TroveGCStale`, `TroveValkeyUnavailable`, `TroveValkeyUnavailableSingleReplica`, `TroveValkeySentinelsDegraded`, `TroveValkeyFailoverFlapping`, `TroveValkeyPrimaryDisagreement`, `TroveVulnerabilityDataStale`, `TroveVulnerabilitySyncFailing`, `TroveVulnerabilityClaimedNameMalicious`, `TroveMirrorFailing`, `TroveMirrorStale`, `TroveBridgeLeftOn`, `TroveBlobMissing` | the names `metrics.prometheusRule.disabledAlerts` accepts |
+| NuGet page | `@name` `quader`, at `<feed>/vulnerabilities/quader.json` | the one entry of `<feed>/vulnerabilities/index.json` |
+| Alerts | `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderGCStale`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBridgeLeftOn`, `QuaderBlobMissing` | the names `metrics.prometheusRule.disabledAlerts` accepts |
 | Tables | `vuln_source_state`, `vuln_advisory`, `vuln_affected`, `vuln_pending_evaluation`, `vuln_kev`, `vuln_claimed_match`, `vuln_finding`, `vuln_finding_event`, `vuln_sync_touched` | migrations 00035 to 00039; `vuln_finding` and `vuln_finding_event` are data in an export, the others transient ([tables_vuln.go](internal/meta/postgres/tables_vuln.go)) |
 
 ### Audit event types
@@ -717,14 +717,14 @@ The names of the event registry ([internal/audit](internal/audit/)). Each event 
 | Repositories and endpoints | `repository.created`, `repository.updated`, `repository.disabled` (an update that sets `disabled`, journaled), `repository.deleted` (journaled: a restore brings the repository back disabled), `repository.moved` (a move to another project, journaled as a narrowing), `endpoint.exposure.created`, `endpoint.exposure.updated`, `endpoint.exposure.deleted` |
 | Mirror | `mirror.pass_requested` (transactional, the caller; `full` and the `job` it enqueued; [internal/audit/events_mirror_api.go](internal/audit/events_mirror_api.go)) |
 | Files | `artifact.deployed`, `artifact.deleted`, `artifact.downloaded` |
-| OCI | `oci.manifest.deleted` (transactional; a manifest deleted by a `DELETE`, the cascade of a tag, a raw delete or a removal without a request, with `name`, `digest` and the number of items the cascade removed; carries the journal entry `{"repository", "name", "digest"}`, so a restore's replay withholds the manifest), `oci.reinstate` (transactional, `trove admin oci reinstate`; not journaled) ([internal/audit/events_oci.go](internal/audit/events_oci.go)); `auth.registry_token.denied` (asynchronous: a token request whose credential the stage refused, with `reason` `invalid_token`, `credentials_required` or `principal_disabled` and the form of the credential, deduplicated per client address, endpoint, reason and credential within `audit.token_rejection_dedup_window`; no event per issued token, [internal/audit/events_registry_token.go](internal/audit/events_registry_token.go)) |
+| OCI | `oci.manifest.deleted` (transactional; a manifest deleted by a `DELETE`, the cascade of a tag, a raw delete or a removal without a request, with `name`, `digest` and the number of items the cascade removed; carries the journal entry `{"repository", "name", "digest"}`, so a restore's replay withholds the manifest), `oci.reinstate` (transactional, `quader admin oci reinstate`; not journaled) ([internal/audit/events_oci.go](internal/audit/events_oci.go)); `auth.registry_token.denied` (asynchronous: a token request whose credential the stage refused, with `reason` `invalid_token`, `credentials_required` or `principal_disabled` and the form of the credential, deduplicated per client address, endpoint, reason and credential within `audit.token_rejection_dedup_window`; no event per issued token, [internal/audit/events_registry_token.go](internal/audit/events_registry_token.go)) |
 | Debian | `deb.package.deleted`, `deb.coordinates.removed`, `deb.signing_key.promoted` and `deb.signing_key.retired` (transactional, journaled: a restore's replay withholds the file or the key and never deletes or erases, R-DEB-032), `deb.coordinates.changed`, `deb.signing_key.created`, `deb.signing_key.reinstated`, `deb.reinstate`, `deb.upstream_signature_invalid` (async, security); the replay handlers of all four are built; [internal/audit/events_deb.go](internal/audit/events_deb.go) |
 | Packages (NuGet) | `package.published`, `package.deleted`, `package.metadata_changed`; `package.published` and `package.deleted` carry the journal entry `{"repository", "id", "version", "sha512"}` of a local NuGet repository |
 | System and audit | `system.task_triggered`, `system.job.cancelled`, `audit.exported`, `system.maintenance_mode_changed` (`from`, `to`, `message`; [internal/audit/events_maintenance.go](internal/audit/events_maintenance.go)), `system.banner_changed` (`changes`: the names of the members that changed, never the text) |
 | Backup and restore | `system.backup.completed`, `system.backup.failed`, `system.backup.deleted` (`reason` `retention` or `manual`), `system.backup.target_adopted`, written by the backup commands as `system:backup` into the source database through `backup_record_event()`; `system.restored` (`source` `backup` or `pitr`) and `system.restore.journal_replayed` (the counts per outcome), written into the restored database ([internal/audit/events_backup.go](internal/audit/events_backup.go)); `system.deletions_paused`, `system.deletions_resumed` and `system.storage.versions_restored`, written by the maintenance commands as `system:admin` ([internal/audit/events_maintenance.go](internal/audit/events_maintenance.go)) |
 | Bastion interface | `bastion.contact` (a Bastion replica reported for the first time or a reported value changed, R-BAS-010), `bastion.downloads.dropped` (a batch of download events reported or lost events, R-BAS-016); `artifact.downloaded` carries `origin: bastion`, `bastion` and `replica` for a download a Bastion served from its cache |
 | Mirror mode | `mirror.pass_completed` (a pass attempt ended `complete`, `partial`, `bound_reached`, `offline` or `stopped`), `mirror.pass_failed`, `mirror.bound_reached` (once per transition), `mirror.rate_limited` (at most once per pass and hour); all asynchronous with the system as actor ([internal/audit/events_mirror.go](internal/audit/events_mirror.go)); the details hold counts, codes and the upstream's host name, never a URL; `mirror.pass_requested` (transactional, the caller) belongs to the run operation |
-| Vulnerability scanning | `vulnerability.finding.status_changed` (a triager's change, each change of a bulk `set-status` with one `bulk` identifier), `vulnerability.finding.reopened` (trove reopens a dismissed finding), both transactional and carrying the journal entry when the change sets a download block; `vulnerability.download_blocked` (asynchronous, at most once a minute per repository, version and client address on each replica, `enforced: false` in mode `report`), `vulnerability.claimed_name_match` (asynchronous, once per advisory and name), `vulnerability.source.failed` (asynchronous, at most once an hour per source and ecosystem), `vulnerability.source.imported` (an import of mode `repository`, with the digest and `deployedBy`, or a run with `acceptShrink`), `vulnerability.advisory.kind_changed` (an alias group's canonical record changed kind) ([internal/audit/events_vuln.go](internal/audit/events_vuln.go)); `repository.updated` of a write that weakens the member `vulnerabilities` carries `block: lifted` and the members in `weakened` |
+| Vulnerability scanning | `vulnerability.finding.status_changed` (a triager's change, each change of a bulk `set-status` with one `bulk` identifier), `vulnerability.finding.reopened` (Quader reopens a dismissed finding), both transactional and carrying the journal entry when the change sets a download block; `vulnerability.download_blocked` (asynchronous, at most once a minute per repository, version and client address on each replica, `enforced: false` in mode `report`), `vulnerability.claimed_name_match` (asynchronous, once per advisory and name), `vulnerability.source.failed` (asynchronous, at most once an hour per source and ecosystem), `vulnerability.source.imported` (an import of mode `repository`, with the digest and `deployedBy`, or a run with `acceptShrink`), `vulnerability.advisory.kind_changed` (an alias group's canonical record changed kind) ([internal/audit/events_vuln.go](internal/audit/events_vuln.go)); `repository.updated` of a write that weakens the member `vulnerabilities` carries `block: lifted` and the members in `weakened` |
 
 </details>
 
@@ -790,7 +790,7 @@ Registrations at start-up, in `internal/app/wire_*.go` and in the packages that 
 | `audit-retention` | `internal/app/wire_audit.go` | task |
 | `idempotency-cleanup` | `internal/api/v1/cleanup.go` | task, `13 * * * *` |
 | `secrets-reencrypt` | `internal/app/wire_api.go` | manual only (`POST /api/v1/system/tasks/{name}/run`); walks the repository secrets and the private keys of the Debian signing keys |
-| `backup-check` | `internal/app/wire_backup_check.go` | task (`maintenance` queue, exclusive, 3 attempts), `40 5 * * *`: checks the platform protection that `backup.recovery_window` and `backup.object_versioning` declare (`archive_mode`, bucket versioning, the expiry of noncurrent versions, the garbage-collection grace period) and stores the report in `system_state` `backup_check`, which every replica exports as `trove_backup_check_ok`; a failed check is a result, not a failed job |
+| `backup-check` | `internal/app/wire_backup_check.go` | task (`maintenance` queue, exclusive, 3 attempts), `40 5 * * *`: checks the platform protection that `backup.recovery_window` and `backup.object_versioning` declare (`archive_mode`, bucket versioning, the expiry of noncurrent versions, the garbage-collection grace period) and stores the report in `system_state` `backup_check`, which every replica exports as `quader_backup_check_ok`; a failed check is a result, not a failed job |
 | `revocation-journal-ship` | `internal/jobs/journal.go`, `internal/app/wire_journal.go` | not a task: a replica with job loops enqueues it every `backup.revocation_journal.ship_interval` while the outbox holds a row; queue `maintenance`, coalesce, 3 attempts, 5 minutes; writes the outbox rows to `<storage.s3.prefix>/_journal/revocations/` and deletes them |
 | `cluster-change-prune`, `replica-registry-prune` | `internal/jobs/builtin.go` | tasks, `*/10 * * * *` |
 | `system.probe` | `internal/jobs/probe.go` | probe kind |
@@ -805,13 +805,13 @@ Registrations at start-up, in `internal/app/wire_*.go` and in the packages that 
 | [docs/developer/](docs/developer/README.md) | Contributor entry point; the M1 pages: [login](docs/developer/login.md), [identity](docs/developer/identity.md), [authorization](docs/developer/authorization.md), [files](docs/developer/files.md), [m1-contracts](docs/developer/m1-contracts.md), [audit](docs/developer/audit.md), [repositories](docs/developer/repositories.md); the package screens: [packages](docs/developer/packages.md); projects: [projects](docs/developer/projects.md) |
 | [docs/developer/deb.md](docs/developer/deb.md) | The Debian (APT) format for contributors, in the order of a request: the address and the routes, the files, the upload and the coordinates of the local class, the index builder, the signing keys and the OpenPGP library, the remote class and its jobs, the mirror, the virtual class, the restore, the screens, the tests and the counting stub archive (R-DEB-001 to R-DEB-035) |
 | [docs/security/deb-signing.md](docs/security/deb-signing.md), [deb-index.md](docs/security/deb-index.md), [deb-remote.md](docs/security/deb-remote.md), [deb-mirror.md](docs/security/deb-mirror.md), [deb-virtual.md](docs/security/deb-virtual.md) | The Debian format's security: the custody, rotation and restore of the signing keys; what turns rows into a signed index; what a remote checks of its archive; what a mirror stores; what a virtual repository merges and signs; and the gaps of each |
-| [docs/manual/user/apt-packages.md](docs/manual/user/apt-packages.md), [docs/manual/admin/apt-repositories.md](docs/manual/admin/apt-repositories.md) | User manual: APT on Debian and Ubuntu against trove, uploads, suites, key rotation and the client's errors; administrator manual: local, remote and virtual repositories, upstream keys, the mirror, signing keys, the index state and a restore |
+| [docs/manual/user/apt-packages.md](docs/manual/user/apt-packages.md), [docs/manual/admin/apt-repositories.md](docs/manual/admin/apt-repositories.md) | User manual: APT on Debian and Ubuntu against Quader, uploads, suites, key rotation and the client's errors; administrator manual: local, remote and virtual repositories, upstream keys, the mirror, signing keys, the index state and a restore |
 | [docs/developer/ansible.md](docs/developer/ansible.md), [ansible-remote.md](docs/developer/ansible-remote.md), [docs/security/ansible.md](docs/security/ansible.md), [ansible-remote.md](docs/security/ansible-remote.md) | The Ansible Galaxy format for contributors and its security perspectives: the routes, the leaf packages, the local and remote classes, the counting stub, the credentials and the untrusted archives |
-| [docs/manual/user/ansible-collections.md](docs/manual/user/ansible-collections.md), [docs/manual/admin/ansible-repositories.md](docs/manual/admin/ansible-repositories.md) | User manual: `ansible-galaxy` against a trove repository (the configuration, the token, the netrc line for roles, install, publish, errors); administrator manual: the classes, the settings, the limits, import tasks and tombstones |
+| [docs/manual/user/ansible-collections.md](docs/manual/user/ansible-collections.md), [docs/manual/admin/ansible-repositories.md](docs/manual/admin/ansible-repositories.md) | User manual: `ansible-galaxy` against a Quader repository (the configuration, the token, the netrc line for roles, install, publish, errors); administrator manual: the classes, the settings, the limits, import tasks and tombstones |
 | [docs/spec/formats/ansible.md](docs/spec/formats/ansible.md) | Target design of the Ansible Galaxy format: R-ANS-001 to R-ANS-032 and the decisions |
 | [docs/developer/oci.md](docs/developer/oci.md) | The OCI (Docker) registry for contributors: the registry root and its dispatch, the token service and registry tokens, manifests and the push path, uploads and the mount, removal and the sweep, the remote, mirror and virtual classes, the tests, the conformance suite and the counting stub registry |
 | [docs/security/oci-registry.md](docs/security/oci-registry.md), [oci-uploads.md](docs/security/oci-uploads.md), [oci-content.md](docs/security/oci-content.md), [oci-remote.md](docs/security/oci-remote.md), [oci-virtual.md](docs/security/oci-virtual.md) | The OCI registry's security: what a client presents and what a registry token is worth; the upload routes and the mount; removal, the sweep and a restore; what an upstream registry can make a remote store and show, and the mirror; how a virtual repository decides and where a push goes |
-| [docs/manual/user/container-images.md](docs/manual/user/container-images.md), [docs/manual/admin/container-repositories.md](docs/manual/admin/container-repositories.md) | User manual: Docker, Podman, Buildx and Kubernetes against trove; administrator manual: local, remote (Docker Hub, GHCR) and virtual OCI repositories, the mirror and the Docker Engine mirror |
+| [docs/manual/user/container-images.md](docs/manual/user/container-images.md), [docs/manual/admin/container-repositories.md](docs/manual/admin/container-repositories.md) | User manual: Docker, Podman, Buildx and Kubernetes against Quader; administrator manual: local, remote (Docker Hub, GHCR) and virtual OCI repositories, the mirror and the Docker Engine mirror |
 | [docs/developer/ci-oidc.md](docs/developer/ci-oidc.md) | GitLab CI OIDC: the contracts laid for beta phase 5 (schema, packages, the token and evaluation seam, API, configuration, events), the work packages and their files |
 | [docs/developer/vulnerabilities.md](docs/developer/vulnerabilities.md) | Vulnerability scanning (M4b): the packages and layers, the ports, the download policy, the format contract's addition, the schema, the API, the configuration and the work packages with their files |
 | [docs/security/](docs/security/README.md) | Security architecture, one page per perspective, with the open gaps of each page: trust boundaries, transport encryption, data and secret flow, privilege footprint, isolation and coordination, egress, login and sessions, tokens and credentials, permissions, delegated administration, endpoints and exposure, repository model, file transfer, audit, vulnerability scanning, backup and restore |
@@ -841,14 +841,14 @@ Registrations at start-up, in `internal/app/wire_*.go` and in the packages that 
 The production platform is the owner's stack: guided-traffic operators, and the upstream projects they run on. The chart consumes
 them and does not bundle them:
 
-| Need | Component | What trove reads from it |
+| Need | Component | What Quader reads from it |
 |---|---|---|
 | Ingress with TLS to the backend | HAProxy Ingress (chart `haproxy-ingress`, `haproxy-ingress.github.io/` annotations) | the Ingress and the `secure-*` backend keys the chart renders |
 | PostgreSQL | [CloudNativePG](https://cloudnative-pg.io/documentation/) | the application Secret with `username` and `password`, and `ca.crt` for verification |
 | Valkey with Sentinel, TLS only | [guided-traffic valkey-operator](https://github.com/guided-traffic/valkey-operator) | the password Secret and the CA; Sentinel addresses and the primary name. *Pending: ACL users, a separate Sentinel password and `maxmemory` are not in the operator yet; see [Q-HA-15](docs/spec/ha-and-helm.md#q-ha-15--valkey-with-sentinel-in-the-local-profile-and-ci)* |
-| Generated Secrets (passwords, key ring) | [guided-traffic internal-secrets-operator](https://github.com/guided-traffic/internal-secrets-operator) | Secrets whose keys the chart reads; trove reads a 32-byte raw key file or base64 text, the `bytes` type gives raw bytes |
+| Generated Secrets (passwords, key ring) | [guided-traffic internal-secrets-operator](https://github.com/guided-traffic/internal-secrets-operator) | Secrets whose keys the chart reads; Quader reads a 32-byte raw key file or base64 text, the `bytes` type gives raw bytes |
 | Buckets and object-store credentials | [guided-traffic stackit-s3-provisioner](https://github.com/guided-traffic/stackit-s3-provisioner) (STACKIT); SeaweedFS in the local profile | a Secret with `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT` |
-| OIDC client credentials (M1) | [guided-traffic dex-operator](https://github.com/guided-traffic/dex-operator) | the client ID and secret of trove's OIDC client. *Not used before M1* |
+| OIDC client credentials (M1) | [guided-traffic dex-operator](https://github.com/guided-traffic/dex-operator) | the client ID and secret of Quader's OIDC client. *Not used before M1* |
 | Certificates | [cert-manager](https://cert-manager.io/docs/) | the `kubernetes.io/tls` Secret of the listeners, with `ca.crt` |
 
 The local profile uses the same operators where they exist; [local-profile.md](docs/developer/local-profile.md) states which
@@ -860,28 +860,28 @@ parts are in place today and which are pending.
 `go.mod` (Go 1.27.4) and in `web/.nvmrc` (Node.js 26.13.0). Install Docker, Go, Node.js and GNU Make 3.81 or later, plus the pinned
 kind, kubectl and Helm for the dev profile. `make versions-check` reports any installed tool that differs from its pin.
 
-**Install a release.** The image is `docker.io/guidedtraffic/trove` on Docker Hub, and the chart is in its own repository.
+**Install a release.** The image is `docker.io/guidedtraffic/quader` on Docker Hub, and the chart is in its own repository.
 The chart needs its values and the existing Secrets of [the Helm values](#helm-values):
 
 ```shell
-helm repo add trove https://guided-traffic.github.io/trove/
-helm repo update trove
-helm install trove trove/trove -n trove -f values.yaml --version <v>   # example: <v> from helm search repo trove --versions
-helm status trove -n trove                                             # example: STATUS: deployed
+helm repo add quader https://guided-traffic.github.io/quader/
+helm repo update quader
+helm install quader quader/quader -n quader -f values.yaml --version <v>   # example: <v> from helm search repo quader --versions
+helm status quader -n quader                                             # example: STATUS: deployed
 ```
 
 **1. Start the local profile** (a kind cluster, CloudNativePG PostgreSQL with a standby, Valkey with a replica and three
 Sentinels over TLS, SeaweedFS, the Ingress controller and the chart with `web` and `worker`):
 
 ```shell
-make dev-up                          # example: TROVE_DEV_HTTP_PORT=18080 make dev-up if 8080 is taken
+make dev-up                          # example: QUADER_DEV_HTTP_PORT=18080 make dev-up if 8080 is taken
 ```
 
 The profile runs the owner's stack: HAProxy Ingress as the edge, cert-manager with the dev CA, CloudNativePG, the valkey-operator
 and internal-secrets-operator. The edge serves HTTPS on `localhost` with a certificate of the dev CA, written to `.dev/pki/ca.crt`.
 The state of each part, and what is still pending, is in [local-profile.md](docs/developer/local-profile.md).
 
-**2. Verify through the edge** on `https://localhost:8080` (or your `TROVE_DEV_HTTP_PORT`), trusting the dev CA in `.dev/pki/ca.crt`.
+**2. Verify through the edge** on `https://localhost:8080` (or your `QUADER_DEV_HTTP_PORT`), trusting the dev CA in `.dev/pki/ca.crt`.
 The dev values set `system.bootstrap_anonymous_read`, a development-only switch, so the replica list reads without a credential:
 
 ```shell
@@ -897,48 +897,48 @@ password and the client secret are files of existing Secrets; the chart never cr
 ```yaml
 config:
   server:
-    base_url: https://trove.example.com   # example; the redirect URI at the provider is <base_url>/auth/oidc/corp/callback
+    base_url: https://quader.example.com   # example; the redirect URI at the provider is <base_url>/auth/oidc/corp/callback
   auth:
     oidc:
       providers:
         corp:                             # example: the provider ID
           display_name: Corporate sign-in # example
           issuer: https://id.example.com  # example
-          client_id: trove                # example
+          client_id: quader                # example
 secrets:
   breakGlass:
-    existingSecret: trove-break-glass     # example; the key `password`: plaintext of at least 20 characters or an Argon2id PHC hash
+    existingSecret: quader-break-glass     # example; the key `password`: plaintext of at least 20 characters or an Argon2id PHC hash
     key: password                         # default
   oidc:
     - providerId: corp                    # example: must be a key of config.auth.oidc.providers
-      existingSecret: trove-oidc-corp     # example
+      existingSecret: quader-oidc-corp     # example
       key: client-secret                  # default
 ```
 
 Sign in as the break-glass administrator with a cookie jar, create a project and a generic repository in it, mint a personal
 token, then upload and download a file. Every repository belongs to a project, and its addresses carry the project key. The
-`__Host-trv_csrf` cookie goes back as `X-CSRF-Token` on each change, with a same-origin `Origin`:
+`__Host-qdr_csrf` cookie goes back as `X-CSRF-Token` on each change, with a same-origin `Origin`:
 
 ```shell
 curl -s -c jar.txt -b jar.txt -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"<the password>"}' https://trove.example.com/auth/local/login       # example
-CSRF=$(awk '$6 == "__Host-trv_csrf" {print $7}' jar.txt)
-curl -s -b jar.txt -H "X-CSRF-Token: $CSRF" -H 'Origin: https://trove.example.com' -H 'Content-Type: application/json' \
-  -d '{"key":"demo","displayName":"Demo"}' https://trove.example.com/api/v1/projects                        # example
-curl -s -b jar.txt -H "X-CSRF-Token: $CSRF" -H 'Origin: https://trove.example.com' -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"<the password>"}' https://quader.example.com/auth/local/login       # example
+CSRF=$(awk '$6 == "__Host-qdr_csrf" {print $7}' jar.txt)
+curl -s -b jar.txt -H "X-CSRF-Token: $CSRF" -H 'Origin: https://quader.example.com' -H 'Content-Type: application/json' \
+  -d '{"key":"demo","displayName":"Demo"}' https://quader.example.com/api/v1/projects                        # example
+curl -s -b jar.txt -H "X-CSRF-Token: $CSRF" -H 'Origin: https://quader.example.com' -H 'Content-Type: application/json' \
   -d '{"key":"generic-local","class":"local","format":"generic"}' \
-  https://trove.example.com/api/v1/projects/demo/repositories                                             # example
-curl -s -b jar.txt -H "X-CSRF-Token: $CSRF" -H 'Origin: https://trove.example.com' -H 'Content-Type: application/json' \
-  -d '{"description":"laptop","ttlSeconds":2592000,"scope":{"inherit":true}}' https://trove.example.com/api/v1/tokens  # example
-TOKEN=trv_pat_...                                     # example: the value the token answer carries once
+  https://quader.example.com/api/v1/projects/demo/repositories                                             # example
+curl -s -b jar.txt -H "X-CSRF-Token: $CSRF" -H 'Origin: https://quader.example.com' -H 'Content-Type: application/json' \
+  -d '{"description":"laptop","ttlSeconds":2592000,"scope":{"inherit":true}}' https://quader.example.com/api/v1/tokens  # example
+TOKEN=qdr_pat_...                                     # example: the value the token answer carries once
 curl -s -H "Authorization: Bearer $TOKEN" -H 'If-None-Match: *' --data-binary @hello.txt \
-  https://trove.example.com/files/demo/generic-local/docs/hello.txt                                        # example
-curl -s -H "Authorization: Bearer $TOKEN" https://trove.example.com/files/demo/generic-local/docs/hello.txt   # example
+  https://quader.example.com/files/demo/generic-local/docs/hello.txt                                        # example
+curl -s -H "Authorization: Bearer $TOKEN" https://quader.example.com/files/demo/generic-local/docs/hello.txt   # example
 ```
 
 To hand the project to a team, add its group as Owner: `PUT /api/v1/projects/demo/members/group:<name>` with
 `{"role": "owner"}` ([projects](docs/manual/admin/projects.md#members-and-roles)). Verify the session and the principal:
-`curl -s -b jar.txt https://trove.example.com/api/v1/auth/whoami` answers the principal, and its `principal.kind` is `break_glass` for this account (the kinds are listed in Q-AUTH-44 of [the identity spec](docs/spec/identity-and-authentication.md#q-auth-44--the-shape-of-whoami)).
+`curl -s -b jar.txt https://quader.example.com/api/v1/auth/whoami` answers the principal, and its `principal.kind` is `break_glass` for this account (the kinds are listed in Q-AUTH-44 of [the identity spec](docs/spec/identity-and-authentication.md#q-auth-44--the-shape-of-whoami)).
 
 Not verified in this pass: no stack was started for these steps. The request shapes come from the OpenAPI document and the
 login code. The dev edge serves HTTPS (`tls.enabled: true` in the dev values), which the `__Host-` cookies need. Whether a break-glass session may
@@ -952,27 +952,27 @@ of plaintext keep their own settings on purpose:
 make integration-up && make test-integration
 ```
 
-**4. Use trove from GitLab CI** (no stored secret). Register the GitLab instance once, give the pipelines of one project a mapping, and let
+**4. Use Quader from GitLab CI** (no stored secret). Register the GitLab instance once, give the pipelines of one project a mapping, and let
 the job exchange its ID token (the steps are those of [GitLab CI pipelines](docs/manual/user/gitlab-ci-pipelines.md)):
 
 ```shell
 curl -s -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' -d '{"name":"gitlab-main","kind":"gitlab","issuer":"https://gitlab.example.com"}' \
-  https://trove.example.com/api/v1/ci/issuers                                                             # example
+  https://quader.example.com/api/v1/ci/issuers                                                             # example
 curl -s -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' -d @mapping.json \
-  https://trove.example.com/api/v1/ci/issuers/gitlab-main/mappings                                        # example: mapping.json as in docs/spec/gitlab-ci-oidc.md
+  https://quader.example.com/api/v1/ci/issuers/gitlab-main/mappings                                        # example: mapping.json as in docs/spec/gitlab-ci-oidc.md
 ```
 
 ```yaml
-.trove:
+.quader:
   id_tokens:
-    TROVE_ID_TOKEN: {aud: "https://trove.example.com"}                                                    # example: trove's base URL
+    QUADER_ID_TOKEN: {aud: "https://quader.example.com"}                                                    # example: Quader's base URL
   before_script:
     - |
-      TROVE_TOKEN="$(printf '%s' "$TROVE_ID_TOKEN" | curl -sS --retry 3 \
+      QUADER_TOKEN="$(printf '%s' "$QUADER_ID_TOKEN" | curl -sS --retry 3 \
         --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
         --data-urlencode 'subject_token_type=urn:ietf:params:oauth:token-type:id_token' \
-        --data-urlencode 'subject_token@-' https://trove.example.com/api/v1/auth/oidc/token | jq -er .access_token)"
-      export TROVE_TOKEN
+        --data-urlencode 'subject_token@-' https://quader.example.com/api/v1/auth/oidc/token | jq -er .access_token)"
+      export QUADER_TOKEN
 ```
 
 Verify with the claim tester (**Admin area › CI identity**, the issuer, **Test with claims**) before the first pipeline runs, and with
@@ -982,9 +982,9 @@ Verify with the claim tester (**Admin area › CI identity**, the issuer, **Test
 minutes), or at once through the task API. The source list needs `settings:read`, the findings list returns what the caller can read:
 
 ```shell
-curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://trove.example.com/api/v1/system/tasks/vuln-sync-osv/run    # example: 202 with the job
-curl -s -H "Authorization: Bearer $ADMIN_TOKEN" https://trove.example.com/api/v1/vulnerabilities/sources                  # example: state "complete" per source and ecosystem
-curl -s -H "Authorization: Bearer $TOKEN" 'https://trove.example.com/api/v1/vulnerabilities/findings?severity=critical'   # example
+curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://quader.example.com/api/v1/system/tasks/vuln-sync-osv/run    # example: 202 with the job
+curl -s -H "Authorization: Bearer $ADMIN_TOKEN" https://quader.example.com/api/v1/vulnerabilities/sources                  # example: state "complete" per source and ecosystem
+curl -s -H "Authorization: Bearer $TOKEN" 'https://quader.example.com/api/v1/vulnerabilities/findings?severity=critical'   # example
 ```
 
 An installation without internet access sets `vulnerabilities.sources.osv.mode: repository` and uploads the archives instead
@@ -996,39 +996,39 @@ values only, and a restore refuses a key ring that does not open them ([R-BAK-02
 
 ```yaml
 backup:
-  enabled: true                           # default: false; renders the CronJob trove-backup, daily at 02:00 UTC
+  enabled: true                           # default: false; renders the CronJob quader-backup, daily at 02:00 UTC
 config:
   backup:
     target:
-      bucket: trove-backups               # example; required with backup.enabled; not the blob bucket
+      bucket: quader-backups               # example; required with backup.enabled; not the blob bucket
       region: eu-central-1                # example
       credentials:
-        source: static                    # example: the keys of secrets.backupTarget; the default chain instead takes a workload identity of the ServiceAccount trove-backup
+        source: static                    # example: the keys of secrets.backupTarget; the default chain instead takes a workload identity of the ServiceAccount quader-backup
 secrets:
   backupTarget:
-    existingSecret: trove-backup-target   # example; keys access-key-id and secret-access-key
+    existingSecret: quader-backup-target   # example; keys access-key-id and secret-access-key
   backupSource:
-    existingSecret: trove-blob-reader     # example; required while config.storage.s3.credentials.source is static: a login that may only read the blob bucket
+    existingSecret: quader-blob-reader     # example; required while config.storage.s3.credentials.source is static: a login that may only read the blob bucket
 ```
 
 ```shell
-kubectl -n trove create job --from=cronjob/trove-backup trove-backup-manual-$(date +%s)                     # a backup now, beside the schedule
-curl -s -H "Authorization: Bearer $ADMIN_TOKEN" https://trove.example.com/api/v1/system/backups/summary   # example: lastSuccessAt, overdue false
-kubectl -n trove create job trove-backup-verify --from=cronjob/trove-backup --dry-run=client -o json \
-  | jq '.spec.template.spec.containers[0].args = ["backup", "verify", "--latest"]' | kubectl -n trove create -f -
-kubectl -n trove wait --for=condition=complete job/trove-backup-verify --timeout=1h && kubectl -n trove logs job/trove-backup-verify
+kubectl -n quader create job --from=cronjob/quader-backup quader-backup-manual-$(date +%s)                     # a backup now, beside the schedule
+curl -s -H "Authorization: Bearer $ADMIN_TOKEN" https://quader.example.com/api/v1/system/backups/summary   # example: lastSuccessAt, overdue false
+kubectl -n quader create job quader-backup-verify --from=cronjob/quader-backup --dry-run=client -o json \
+  | jq '.spec.template.spec.containers[0].args = ["backup", "verify", "--latest"]' | kubectl -n quader create -f -
+kubectl -n quader wait --for=condition=complete job/quader-backup-verify --timeout=1h && kubectl -n quader logs job/quader-backup-verify
 ```
 
 **Restore** into a new installation with an empty database schema, an empty blob prefix and the source's key ring:
 
 ```shell
-helm install trove trove/trove -n trove -f values.yaml --version <v> \
+helm install quader quader/quader -n quader -f values.yaml --version <v> \
   --set api.replicaCount=0 --set api.autoscaling.enabled=false \
   --set packages.replicaCount=0 --set packages.autoscaling.enabled=false \
   --set worker.replicaCount=0 --set worker.autoscaling.enabled=false \
   --set restore.enabled=true --set restore.backupId=20261028T020000Z-7f3a   # example: an ID of storedBackups in the summary
-kubectl -n trove wait --for=condition=complete job/trove-restore --timeout=24h       # repeat when the timeout passes: the Job keeps running
-helm upgrade trove trove/trove -n trove -f values.yaml --version <v>                 # your normal values: restore off, the roles start
+kubectl -n quader wait --for=condition=complete job/quader-restore --timeout=24h       # repeat when the timeout passes: the Job keeps running
+helm upgrade quader quader/quader -n quader -f values.yaml --version <v>                 # your normal values: restore off, the roles start
 ```
 
 A pool in the values needs `replicaCount: 0` as well; the render names every replica it refuses. The restore drill of the
@@ -1037,8 +1037,8 @@ the same `jq` step ([backup_env_test.go](test/e2e/backup_env_test.go)); the comm
 point-in-time restore of PostgreSQL by your platform, run `postRestore` instead ([the Helm values](#helm-values)).
 
 **7. Push and pull container images with Docker.** Create a local OCI repository, a remote one for Docker Hub and a virtual one
-over both in the project `demo`, sign the Docker CLI in with a trove token, then push to the local repository and pull through the
-virtual one. The Docker daemon has to trust trove's certificate (`/etc/docker/certs.d/<host>/ca.crt` for a certificate of your
+over both in the project `demo`, sign the Docker CLI in with a Quader token, then push to the local repository and pull through the
+virtual one. The Docker daemon has to trust Quader's certificate (`/etc/docker/certs.d/<host>/ca.crt` for a certificate of your
 own authority):
 
 ```shell
@@ -1046,57 +1046,57 @@ for body in '{"key":"docker-local","class":"local","format":"oci"}' \
             '{"key":"docker-hub","class":"remote","format":"oci"}' \
             '{"key":"docker","class":"virtual","format":"oci","virtual":{"members":["docker-local","docker-hub"],"deployTarget":"docker-local"}}'; do
   curl -s -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' -d "$body" \
-    https://trove.example.com/api/v1/projects/demo/repositories                                           # example
+    https://quader.example.com/api/v1/projects/demo/repositories                                           # example
 done                                                                                                       # docker-hub: the upstream defaults to https://registry-1.docker.io/
-curl -s -u "trove:$TOKEN" https://trove.example.com/v2/                                                   # example: {}
-printf '%s' "$TOKEN" | docker login trove.example.com --username trove --password-stdin                   # example: Login Succeeded
-docker tag myapp:1.0 trove.example.com/demo/docker-local/myapp:1.0                                         # example
-docker push trove.example.com/demo/docker-local/myapp:1.0
-docker pull trove.example.com/demo/docker/myapp:1.0                                                        # from the local member
-docker pull trove.example.com/demo/docker/alpine:3.20                                                      # Docker Hub's library/alpine through the remote member
+curl -s -u "quader:$TOKEN" https://quader.example.com/v2/                                                   # example: {}
+printf '%s' "$TOKEN" | docker login quader.example.com --username quader --password-stdin                   # example: Login Succeeded
+docker tag myapp:1.0 quader.example.com/demo/docker-local/myapp:1.0                                         # example
+docker push quader.example.com/demo/docker-local/myapp:1.0
+docker pull quader.example.com/demo/docker/myapp:1.0                                                        # from the local member
+docker pull quader.example.com/demo/docker/alpine:3.20                                                      # Docker Hub's library/alpine through the remote member
 ```
 
 Podman takes the same commands (`podman login`, `podman push`, `podman pull`); the Client setup page of the UI gives the snippets
 of your installation, a Kubernetes image pull secret among them ([container images](docs/manual/user/container-images.md)). A
-Docker Hub remote without credentials shares the anonymous pull allowance of trove's address; give it an account
+Docker Hub remote without credentials shares the anonymous pull allowance of Quader's address; give it an account
 ([container repositories](docs/manual/admin/container-repositories.md#a-remote-repository-for-docker-hub)). Not verified in this
 pass: no stack was started for these steps; the same requests run in the e2e set `oci` with real Docker and Podman clients
 ([e2e.md](docs/developer/e2e.md#the-oci-tests)), the protocol tests of `test/integration/oci` and the conformance suite.
 
 **8. Serve Debian packages to APT.** Create a local Debian repository in the project `demo`, upload a `.deb`, wait until its
 index lists it, and configure a Debian or Ubuntu client with the repository's key and a credential file; then add a remote of the
-Debian archive whose releases trove checks against the archive's keys:
+Debian archive whose releases Quader checks against the archive's keys:
 
 ```shell
 curl -s -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' \
-  -d '{"key":"deb-local","class":"local","format":"deb"}' https://trove.example.com/api/v1/projects/demo/repositories   # example; the first signing key is made with it
-curl -fsS -u "trove:$TOKEN" --upload-file ./hello_2.10-3_amd64.deb \
-  'https://trove.example.com/api/deb/demo/deb-local/upload/hello_2.10-3_amd64.deb?distribution=stable&component=main'   # example: 201, "index":[{"distribution":"stable","changeSeq":1,…}]
-curl -s -u "trove:$TOKEN" \
-  'https://trove.example.com/api/v1/projects/demo/repositories/deb-local/deb/index?waitFor=stable:1'                   # example: returns once publishedSeq reaches 1
+  -d '{"key":"deb-local","class":"local","format":"deb"}' https://quader.example.com/api/v1/projects/demo/repositories   # example; the first signing key is made with it
+curl -fsS -u "quader:$TOKEN" --upload-file ./hello_2.10-3_amd64.deb \
+  'https://quader.example.com/api/deb/demo/deb-local/upload/hello_2.10-3_amd64.deb?distribution=stable&component=main'   # example: 201, "index":[{"distribution":"stable","changeSeq":1,…}]
+curl -s -u "quader:$TOKEN" \
+  'https://quader.example.com/api/v1/projects/demo/repositories/deb-local/deb/index?waitFor=stable:1'                   # example: returns once publishedSeq reaches 1
 
-# on the Debian or Ubuntu client, with TROVE_TOKEN set
+# on the Debian or Ubuntu client, with QUADER_TOKEN set
 sudo install -d -m 0755 /etc/apt/keyrings
-curl -fsSL -u trove:"${TROVE_TOKEN}" https://trove.example.com/api/deb/demo/deb-local/signing-key.asc \
-  | sudo tee /etc/apt/keyrings/trove-demo-deb-local.asc >/dev/null
-printf 'Types: deb\nURIs: %s\nSuites: stable\nComponents: main\nSigned-By: %s\n' https://trove.example.com/api/deb/demo/deb-local/ \
-  /etc/apt/keyrings/trove-demo-deb-local.asc | sudo tee /etc/apt/sources.list.d/trove-demo-deb-local.sources >/dev/null
-sudo install -m 0600 /dev/null /etc/apt/auth.conf.d/trove-demo-deb-local.conf
-printf 'machine %s\nlogin trove\npassword %s\n' trove.example.com/api/deb/demo/deb-local/ "${TROVE_TOKEN}" \
-  | sudo tee /etc/apt/auth.conf.d/trove-demo-deb-local.conf >/dev/null
+curl -fsSL -u quader:"${QUADER_TOKEN}" https://quader.example.com/api/deb/demo/deb-local/signing-key.asc \
+  | sudo tee /etc/apt/keyrings/quader-demo-deb-local.asc >/dev/null
+printf 'Types: deb\nURIs: %s\nSuites: stable\nComponents: main\nSigned-By: %s\n' https://quader.example.com/api/deb/demo/deb-local/ \
+  /etc/apt/keyrings/quader-demo-deb-local.asc | sudo tee /etc/apt/sources.list.d/quader-demo-deb-local.sources >/dev/null
+sudo install -m 0600 /dev/null /etc/apt/auth.conf.d/quader-demo-deb-local.conf
+printf 'machine %s\nlogin quader\npassword %s\n' quader.example.com/api/deb/demo/deb-local/ "${QUADER_TOKEN}" \
+  | sudo tee /etc/apt/auth.conf.d/quader-demo-deb-local.conf >/dev/null
 sudo apt-get update --error-on=any && sudo apt-get install hello
 
 # a remote of deb.debian.org with the archive's keys, exported on a Debian machine with gpg installed
 gpg --no-default-keyring --keyring /usr/share/keyrings/debian-archive-keyring.gpg --export --armor > debian-archive.asc
 jq -n --rawfile k debian-archive.asc '{key:"debian",class:"remote",format:"deb",deb:{upstreamKeys:$k}}' | \
   curl -s -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' -d @- \
-  https://trove.example.com/api/v1/projects/demo/repositories                                                        # example; remote.url defaults to https://deb.debian.org/debian/
+  https://quader.example.com/api/v1/projects/demo/repositories                                                        # example; remote.url defaults to https://deb.debian.org/debian/
 
 # one source over both: a virtual repository that merges the local and the remote member and signs the result with its own key
 curl -s -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' \
   -d '{"key":"apt","class":"virtual","format":"deb","virtual":{"members":["deb-local","debian"],"deployTarget":"deb-local"},"deb":{"suites":["trixie"]}}' \
-  https://trove.example.com/api/v1/projects/demo/repositories                                                        # example; the first build runs at once
-# on the client: the configure snippet of apt (key file trove-demo-apt.asc); stable merges deb-local's stable with Debian's, trixie is Debian's alone
+  https://quader.example.com/api/v1/projects/demo/repositories                                                        # example; the first build runs at once
+# on the client: the configure snippet of apt (key file quader-demo-apt.asc); stable merges deb-local's stable with Debian's, trixie is Debian's alone
 ```
 
 The Client setup page gives these snippets for your repository and suite, and for the remote a source whose `Signed-By` is the
@@ -1116,7 +1116,7 @@ the closing section of [apt-work-packages.md](docs/projektplan/apt-work-packages
 - Uninstall: `make dev-down` deletes the dev cluster; `make integration-down` stops the integration stack and removes its volumes.
 - Failure scripts, under load: `make dev-failover` (PostgreSQL switchover), `make dev-valkey-failover`, `make dev-valkey-kill`,
   `make dev-valkey-outage DURATION=60s`, `make dev-drain`.
-- A production install is the chart with existing Secrets: `helm upgrade --install trove deploy/helm/trove -n trove -f values.yaml`.
+- A production install is the chart with existing Secrets: `helm upgrade --install quader deploy/helm/quader -n quader -f values.yaml`.
   The chart never creates a Secret, so the Secrets of [the Helm values](#helm-values) must exist first.
 
 </details>
@@ -1125,50 +1125,50 @@ the closing section of [apt-work-packages.md](docs/projektplan/apt-work-packages
 
 Every public interface of M0 and M1 is listed once here: the command line, every configuration key of `internal/config`, the
 management API by family, the system API and the ops endpoints, and the Helm values. The backup lane of M5 is listed in full: the
-`trove backup` and recovery commands with their exit codes, the `backup` configuration section, the backup operations of the API, and
+`quader backup` and recovery commands with their exit codes, the `backup` configuration section, the backup operations of the API, and
 the chart's `backup`, `restore`, `postRestore` and backup Secret values. The configuration keys are generated from the struct tags in
 [internal/config](internal/config/); [schema.json](internal/config/schema.json) is the generated JSON Schema. A value marked
 `# default` is the default of its struct tag or of the code path that applies it; a value marked `# example` is illustrative. The vulnerability scanning of M4b is listed here in full: its configuration section and repository members, its operations and its chart values. The M2 keys of the remote engine, the virtual engine and npm are in [configuration.md](docs/developer/configuration.md#m2-keys), and the npm routes in [npm.md](docs/developer/npm.md).
 
 ### Command line
 
-`trove <command> [flags]`
+`quader <command> [flags]`
 
 | Command | Flags | Behaviour |
 |---|---|---|
-| `trove serve` | `--role api\|packages\|worker\|web\|all` (overrides `process.role`, which has no default), `--config <file>`, `--log-level <level>` | Runs one replica until `SIGTERM` or `SIGINT`. A second signal ends the process at once. |
-| `trove migrate [up\|status]` | `--config <file>`, `--log-level <level>` | `up` (the default) applies the embedded migrations under the migration lock. `status` prints the state as JSON. |
-| `trove admin config validate` | `--format table\|json` (default `table`), `--config <file>`, `--log-level <level>` | Validates the file and the environment and prints the effective configuration with each value's source. Secrets are redacted. A map or a list prints as one JSON value, such as `server.endpoints`. |
-| `trove version`, `trove --version` | none | Version, commit and build date |
-| `trove help`, `-h`, `--help` | none | Usage |
-| `trove admin break-glass …` | `status`, `unlock`, `end-sessions`; `--user`, `--all` for ending sessions | Recovery of the break-glass account (R-AUTH-015). Source: [cmd/trove/admin_login.go](cmd/trove/admin_login.go). The nesting of the subcommands is read from that file, not restated here. |
-| `trove admin service-account …` | `create` with `--description`, `--admin` (bind the admin role); `revoke` | Bootstrap and recovery of service accounts. Source: [cmd/trove/admin_identity.go](cmd/trove/admin_identity.go). |
-| `trove admin token …` | `--service-account`, `--ttl` (default 15m, at most the SAT maximum), `--scope-file`, `--id`, `--value-stdin` | Flags of the token command; the subcommand names are in the source. Source: [cmd/trove/admin_identity.go](cmd/trove/admin_identity.go). |
-| `trove admin user …` | `--keep-tokens` | Keeps the user's tokens when the user is disabled; they then fail with `principal_disabled`. Source: [cmd/trove/admin_identity.go](cmd/trove/admin_identity.go). |
-| `trove backup create` | `--trigger schedule\|manual` (default `manual`; the chart's CronJob passes `schedule`), `--exclude-remote-caches` (also `backup.exclude.remote_caches`), `--no-prune` (skips retention and the pool sweep), `--adopt-target` (chart: `backup.adoptTarget`) | Writes one backup to `backup.target` ([R-BAK-009](docs/spec/backup-and-restore.md#r-bak-009--trove-backup-create-phases-and-run-record)): the snapshot and the table files, the blob list, the copy into the pool, the manifest, then retention. Prints the backup ID, the outcome, the blobs and bytes copied and the damaged blobs. One `create` or `delete` runs at a time per installation (exit `3`); a target another installation writes is refused (exit `4`); a target in the blob store's bucket on the same endpoint is refused without `backup.target.allow_same_bucket` (exit `2`). |
-| `trove backup list` | `--all` (also the incomplete directories, which have no manifest) | Lists the backups of the target, newest first ([R-BAK-018](docs/spec/backup-and-restore.md#r-bak-018--listing-backups)); reads the target, not the database. |
-| `trove backup verify` | exactly one of `<id>`, `--latest`, `--all`; `--deep` (download every pool object and recompute its SHA-256), `--bytes-per-second N` (default `0`, unlimited; throttles `--deep`) | Checks backups without changing them ([R-BAK-019](docs/spec/backup-and-restore.md#r-bak-019--verifying-backups)) and prints one line per finding; exit `5` with findings, `6` for an unknown manifest format. The run is recorded in `backup_run` when the database can be reached. |
-| `trove backup delete <id>` | `--yes` (no confirmation; without it the command asks on the terminal), `--allow-last` (allow deleting the only complete backup) | Deletes one backup, manifest first, then sweeps the pool ([R-BAK-016](docs/spec/backup-and-restore.md#r-bak-016--retention-and-deletion-of-backups)). |
-| `trove backup prune` | none | Applies `backup.retention` and sweeps the pool ([R-BAK-017](docs/spec/backup-and-restore.md#r-bak-017--pool-sweep)); prints the backups, incomplete directories and pool objects deleted. |
-| `trove backup restore <id>` | `--check` (run the preconditions only, exit `0` or `6`), `--skip-revocation-journal` (only when the source's bucket is gone), `--journal-credentials-file <path>` (a credential that lists the source's journal when the blob-store credential cannot), `--identity-file <path>` (refused with exit `2`: client-side encrypted backups are not built, R-BAK-027) | Restores a backup into an empty installation ([R-BAK-020](docs/spec/backup-and-restore.md#r-bak-020--restore-preconditions), [R-BAK-021](docs/spec/backup-and-restore.md#r-bak-021--restore-procedure)): eight checks, then the schema up to the backup's step, the blobs, the load, the remaining migrations, the fix-ups and the journal replay; a second run of the same backup resumes, a finished one answers "already restored". Needs the owner database login and the key ring. |
-| `trove admin post-restore` | `--restored-to <RFC 3339 time>` (required), `--credentials-file <path>` (a credential that may list object versions, so a delete marker cannot hide a journal entry), `--skip-revocation-journal`, `--json` | The clean-up after a point-in-time restore of PostgreSQL by the platform ([R-HA-025](docs/spec/ha-and-helm.md)): jobs back to the queue, a new keyspace and incarnation, the deletion pause, `restored_at`, the journal replay from the restore point; prints one line per step and the quarantined outbox rows. A repeat for the same point runs no step again. Source: [cmd/trove/admin_postrestore.go](cmd/trove/admin_postrestore.go). |
-| `trove admin storage verify` | `--since <RFC 3339 time>` (default: every `live` blob row; limits the run to rows created or changed at or after the time), `--concurrency N` (`16`, simultaneous existence checks), `--max-items N` (`20`, items listed per damaged blob), `--json` | Asks the object store for the object of every `live` blob row and prints one line per item that references a blob without its object or with an object of another size (`item <project>/<repository>:<path>`, `(trashed)` marked), then the totals ([R-STOR-027](docs/spec/storage.md#r-stor-027--integrity-scrub), [R-HA-025](docs/spec/ha-and-helm.md)). Read-only: it runs with the replicas' own database role and object-store credential, writes no status and no audit event, and reads the table in pages, so its memory does not grow with it. Exit `5` with a finding, `75` when the store did not answer for some blob and nothing is damaged. Source: [cmd/trove/admin_storage.go](cmd/trove/admin_storage.go). |
-| `trove admin storage restore-versions` | `--before <RFC 3339 time>` (required, the time *t* the platform restore went to), `--credentials-file <path>` (example: `/etc/trove/post-restore/credentials.yaml`; a credential with `s3:ListBucketVersions` and `s3:DeleteObjectVersion`, which the runtime credential lacks; default: the blob store's credential), `--dry-run` (`false`), `--concurrency N` (`16`), `--json` | Step 5 of the [restore procedure](docs/spec/ha-and-helm.md) (R-HA-025): runs the check of `storage verify` over every live blob, and for each blob without an object removes the delete markers younger than *t* from its key, so that the version before the marker is current again (`restored`; `no_delete_marker` and `no_version` are left and reported). It deletes delete markers only, never an object version, and writes `system.storage.versions_restored` when it removed any. Exit `5` while a blob is still without an object, `75` when the store did not answer, `2` for a usage or credential error (a store that refuses the version listing included). Source: [cmd/trove/admin_restoreversions.go](cmd/trove/admin_restoreversions.go). |
-| `trove admin maintenance pause-deletions` | `--reason <text>` (required), `--json` | Sets the deletion pause in `system_state`: garbage collection, the orphan sweep, retention and cap enforcement delete nothing until it is cleared; for a planned restore drill. A pause that is already set keeps its time and reason. Writes `system.deletions_paused`. Source: [cmd/trove/admin_maintenance.go](cmd/trove/admin_maintenance.go). |
-| `trove admin maintenance resume-deletions` | `--json` | Step 7 of the restore procedure: clears the deletion pause that a post-restore or `pause-deletions` set, prints when and why it had been set, and writes `system.deletions_resumed`; a repeat changes nothing and exits `0`. Run it after the restored installation is verified. Source: [cmd/trove/admin_maintenance.go](cmd/trove/admin_maintenance.go). |
-| `trove admin backup check` | `--json` | Runs the checks of the declared platform protection (`backup.recovery_window`, `backup.object_versioning`) and prints one line per check; changes and stores nothing (the task `backup-check` stores its report). Exit `5` when a declared protection does not hold. Source: [cmd/trove/admin_backupcheck.go](cmd/trove/admin_backupcheck.go). |
-| `trove admin npm reinstate <projectKey>/<repoKey> <name>@<version>` | `--config <file>`, `--log-level <level>` | Puts back an npm version that a journal replay withheld, while the version is stored with the integrity of the replay's tombstone; writes `npm.reinstate` (R-NPM-047). Source: [cmd/trove/admin_npm.go](cmd/trove/admin_npm.go). |
-| `trove admin import npm\|nuget --from <source> --to <repository>` | `--package <name>` (repeatable), `--packages-file <file>`, `--search <text>`, `--source-auth none\|basic\|bearer` (`none`), `--source-username <name>`, `--source-password-file <file>`, `--source-extra-host <pattern>` (repeatable), `--token-file <file>`, `--state <file>`, `--report <file>`, `--concurrency N` (`2`), `--rate N` (`5`, requests per second to the source), `--max-package-bytes N` (`536870912`), `--spool-dir <dir>`, `--dry-run`, `--config <file>`, `--log-level <level>` | Copies the packages of an existing npm registry or NuGet feed into a local repository of trove through the target's own publish protocol with a trove token, so permissions, digests, immutability, the audit event, the vulnerability evaluation and the quota apply to every version. Verifies the strongest digest the source announces before it sends a byte, never overwrites a version with other content (reports a `conflict`), skips what is identical, reports per package, and resumes from the target and an optional state file. The tokens come from `--token-file` or `TROVE_IMPORT_TOKEN` and `--source-password-file` or `TROVE_IMPORT_SOURCE_PASSWORD`, never from an argument. Exit `0` when every package is complete, `1` with a conflict, a failure or a stop, `2` for a usage error ([R-IMP-001](docs/spec/import.md)). Source: [cmd/trove/admin_import.go](cmd/trove/admin_import.go), [internal/importer](internal/importer). |
-| `trove admin deb reinstate <projectKey>/<repoKey> <path>` | `--config <file>`, `--log-level <level>` | Puts back a Debian package file that a journal replay withheld after a restore, while the file is stored with the digest of the replay's mark; raises the file's suites so the next build lists it again, and writes `deb.reinstate` (R-DEB-032). Source: [cmd/trove/admin_deb.go](cmd/trove/admin_deb.go) |
-| `trove admin oci reinstate <projectKey>/<repoKey> <name>@sha256:<hex>` | `--config <file>`, `--log-level <level>` | Puts back an OCI manifest that a journal replay withheld after a restore, while the manifest and its item are stored with that digest; writes `oci.reinstate` (R-OCI-033). Source: [cmd/trove/admin_oci.go](cmd/trove/admin_oci.go). |
+| `quader serve` | `--role api\|packages\|worker\|web\|all` (overrides `process.role`, which has no default), `--config <file>`, `--log-level <level>` | Runs one replica until `SIGTERM` or `SIGINT`. A second signal ends the process at once. |
+| `quader migrate [up\|status]` | `--config <file>`, `--log-level <level>` | `up` (the default) applies the embedded migrations under the migration lock. `status` prints the state as JSON. |
+| `quader admin config validate` | `--format table\|json` (default `table`), `--config <file>`, `--log-level <level>` | Validates the file and the environment and prints the effective configuration with each value's source. Secrets are redacted. A map or a list prints as one JSON value, such as `server.endpoints`. |
+| `quader version`, `quader --version` | none | Version, commit and build date |
+| `quader help`, `-h`, `--help` | none | Usage |
+| `quader admin break-glass …` | `status`, `unlock`, `end-sessions`; `--user`, `--all` for ending sessions | Recovery of the break-glass account (R-AUTH-015). Source: [cmd/quader/admin_login.go](cmd/quader/admin_login.go). The nesting of the subcommands is read from that file, not restated here. |
+| `quader admin service-account …` | `create` with `--description`, `--admin` (bind the admin role); `revoke` | Bootstrap and recovery of service accounts. Source: [cmd/quader/admin_identity.go](cmd/quader/admin_identity.go). |
+| `quader admin token …` | `--service-account`, `--ttl` (default 15m, at most the SAT maximum), `--scope-file`, `--id`, `--value-stdin` | Flags of the token command; the subcommand names are in the source. Source: [cmd/quader/admin_identity.go](cmd/quader/admin_identity.go). |
+| `quader admin user …` | `--keep-tokens` | Keeps the user's tokens when the user is disabled; they then fail with `principal_disabled`. Source: [cmd/quader/admin_identity.go](cmd/quader/admin_identity.go). |
+| `quader backup create` | `--trigger schedule\|manual` (default `manual`; the chart's CronJob passes `schedule`), `--exclude-remote-caches` (also `backup.exclude.remote_caches`), `--no-prune` (skips retention and the pool sweep), `--adopt-target` (chart: `backup.adoptTarget`) | Writes one backup to `backup.target` ([R-BAK-009](docs/spec/backup-and-restore.md#r-bak-009--quader-backup-create-phases-and-run-record)): the snapshot and the table files, the blob list, the copy into the pool, the manifest, then retention. Prints the backup ID, the outcome, the blobs and bytes copied and the damaged blobs. One `create` or `delete` runs at a time per installation (exit `3`); a target another installation writes is refused (exit `4`); a target in the blob store's bucket on the same endpoint is refused without `backup.target.allow_same_bucket` (exit `2`). |
+| `quader backup list` | `--all` (also the incomplete directories, which have no manifest) | Lists the backups of the target, newest first ([R-BAK-018](docs/spec/backup-and-restore.md#r-bak-018--listing-backups)); reads the target, not the database. |
+| `quader backup verify` | exactly one of `<id>`, `--latest`, `--all`; `--deep` (download every pool object and recompute its SHA-256), `--bytes-per-second N` (default `0`, unlimited; throttles `--deep`) | Checks backups without changing them ([R-BAK-019](docs/spec/backup-and-restore.md#r-bak-019--verifying-backups)) and prints one line per finding; exit `5` with findings, `6` for an unknown manifest format. The run is recorded in `backup_run` when the database can be reached. |
+| `quader backup delete <id>` | `--yes` (no confirmation; without it the command asks on the terminal), `--allow-last` (allow deleting the only complete backup) | Deletes one backup, manifest first, then sweeps the pool ([R-BAK-016](docs/spec/backup-and-restore.md#r-bak-016--retention-and-deletion-of-backups)). |
+| `quader backup prune` | none | Applies `backup.retention` and sweeps the pool ([R-BAK-017](docs/spec/backup-and-restore.md#r-bak-017--pool-sweep)); prints the backups, incomplete directories and pool objects deleted. |
+| `quader backup restore <id>` | `--check` (run the preconditions only, exit `0` or `6`), `--skip-revocation-journal` (only when the source's bucket is gone), `--journal-credentials-file <path>` (a credential that lists the source's journal when the blob-store credential cannot), `--identity-file <path>` (refused with exit `2`: client-side encrypted backups are not built, R-BAK-027) | Restores a backup into an empty installation ([R-BAK-020](docs/spec/backup-and-restore.md#r-bak-020--restore-preconditions), [R-BAK-021](docs/spec/backup-and-restore.md#r-bak-021--restore-procedure)): eight checks, then the schema up to the backup's step, the blobs, the load, the remaining migrations, the fix-ups and the journal replay; a second run of the same backup resumes, a finished one answers "already restored". Needs the owner database login and the key ring. |
+| `quader admin post-restore` | `--restored-to <RFC 3339 time>` (required), `--credentials-file <path>` (a credential that may list object versions, so a delete marker cannot hide a journal entry), `--skip-revocation-journal`, `--json` | The clean-up after a point-in-time restore of PostgreSQL by the platform ([R-HA-025](docs/spec/ha-and-helm.md)): jobs back to the queue, a new keyspace and incarnation, the deletion pause, `restored_at`, the journal replay from the restore point; prints one line per step and the quarantined outbox rows. A repeat for the same point runs no step again. Source: [cmd/quader/admin_postrestore.go](cmd/quader/admin_postrestore.go). |
+| `quader admin storage verify` | `--since <RFC 3339 time>` (default: every `live` blob row; limits the run to rows created or changed at or after the time), `--concurrency N` (`16`, simultaneous existence checks), `--max-items N` (`20`, items listed per damaged blob), `--json` | Asks the object store for the object of every `live` blob row and prints one line per item that references a blob without its object or with an object of another size (`item <project>/<repository>:<path>`, `(trashed)` marked), then the totals ([R-STOR-027](docs/spec/storage.md#r-stor-027--integrity-scrub), [R-HA-025](docs/spec/ha-and-helm.md)). Read-only: it runs with the replicas' own database role and object-store credential, writes no status and no audit event, and reads the table in pages, so its memory does not grow with it. Exit `5` with a finding, `75` when the store did not answer for some blob and nothing is damaged. Source: [cmd/quader/admin_storage.go](cmd/quader/admin_storage.go). |
+| `quader admin storage restore-versions` | `--before <RFC 3339 time>` (required, the time *t* the platform restore went to), `--credentials-file <path>` (example: `/etc/quader/post-restore/credentials.yaml`; a credential with `s3:ListBucketVersions` and `s3:DeleteObjectVersion`, which the runtime credential lacks; default: the blob store's credential), `--dry-run` (`false`), `--concurrency N` (`16`), `--json` | Step 5 of the [restore procedure](docs/spec/ha-and-helm.md) (R-HA-025): runs the check of `storage verify` over every live blob, and for each blob without an object removes the delete markers younger than *t* from its key, so that the version before the marker is current again (`restored`; `no_delete_marker` and `no_version` are left and reported). It deletes delete markers only, never an object version, and writes `system.storage.versions_restored` when it removed any. Exit `5` while a blob is still without an object, `75` when the store did not answer, `2` for a usage or credential error (a store that refuses the version listing included). Source: [cmd/quader/admin_restoreversions.go](cmd/quader/admin_restoreversions.go). |
+| `quader admin maintenance pause-deletions` | `--reason <text>` (required), `--json` | Sets the deletion pause in `system_state`: garbage collection, the orphan sweep, retention and cap enforcement delete nothing until it is cleared; for a planned restore drill. A pause that is already set keeps its time and reason. Writes `system.deletions_paused`. Source: [cmd/quader/admin_maintenance.go](cmd/quader/admin_maintenance.go). |
+| `quader admin maintenance resume-deletions` | `--json` | Step 7 of the restore procedure: clears the deletion pause that a post-restore or `pause-deletions` set, prints when and why it had been set, and writes `system.deletions_resumed`; a repeat changes nothing and exits `0`. Run it after the restored installation is verified. Source: [cmd/quader/admin_maintenance.go](cmd/quader/admin_maintenance.go). |
+| `quader admin backup check` | `--json` | Runs the checks of the declared platform protection (`backup.recovery_window`, `backup.object_versioning`) and prints one line per check; changes and stores nothing (the task `backup-check` stores its report). Exit `5` when a declared protection does not hold. Source: [cmd/quader/admin_backupcheck.go](cmd/quader/admin_backupcheck.go). |
+| `quader admin npm reinstate <projectKey>/<repoKey> <name>@<version>` | `--config <file>`, `--log-level <level>` | Puts back an npm version that a journal replay withheld, while the version is stored with the integrity of the replay's tombstone; writes `npm.reinstate` (R-NPM-047). Source: [cmd/quader/admin_npm.go](cmd/quader/admin_npm.go). |
+| `quader admin import npm\|nuget --from <source> --to <repository>` | `--package <name>` (repeatable), `--packages-file <file>`, `--search <text>`, `--source-auth none\|basic\|bearer` (`none`), `--source-username <name>`, `--source-password-file <file>`, `--source-extra-host <pattern>` (repeatable), `--token-file <file>`, `--state <file>`, `--report <file>`, `--concurrency N` (`2`), `--rate N` (`5`, requests per second to the source), `--max-package-bytes N` (`536870912`), `--spool-dir <dir>`, `--dry-run`, `--config <file>`, `--log-level <level>` | Copies the packages of an existing npm registry or NuGet feed into a local repository of Quader through the target's own publish protocol with a Quader token, so permissions, digests, immutability, the audit event, the vulnerability evaluation and the quota apply to every version. Verifies the strongest digest the source announces before it sends a byte, never overwrites a version with other content (reports a `conflict`), skips what is identical, reports per package, and resumes from the target and an optional state file. The tokens come from `--token-file` or `QUADER_IMPORT_TOKEN` and `--source-password-file` or `QUADER_IMPORT_SOURCE_PASSWORD`, never from an argument. Exit `0` when every package is complete, `1` with a conflict, a failure or a stop, `2` for a usage error ([R-IMP-001](docs/spec/import.md)). Source: [cmd/quader/admin_import.go](cmd/quader/admin_import.go), [internal/importer](internal/importer). |
+| `quader admin deb reinstate <projectKey>/<repoKey> <path>` | `--config <file>`, `--log-level <level>` | Puts back a Debian package file that a journal replay withheld after a restore, while the file is stored with the digest of the replay's mark; raises the file's suites so the next build lists it again, and writes `deb.reinstate` (R-DEB-032). Source: [cmd/quader/admin_deb.go](cmd/quader/admin_deb.go) |
+| `quader admin oci reinstate <projectKey>/<repoKey> <name>@sha256:<hex>` | `--config <file>`, `--log-level <level>` | Puts back an OCI manifest that a journal replay withheld after a restore, while the manifest and its item are stored with that digest; writes `oci.reinstate` (R-OCI-033). Source: [cmd/quader/admin_oci.go](cmd/quader/admin_oci.go). |
 
-Every `trove backup` command, `trove admin post-restore`, `trove admin storage verify`, `restore-versions`, `trove admin maintenance` and `trove admin backup check` take `--config <file>`, `--log-level <level>` and
-`--json` (the result as one JSON document). They load the configuration without a role and never open Valkey; every `trove backup`
+Every `quader backup` command, `quader admin post-restore`, `quader admin storage verify`, `restore-versions`, `quader admin maintenance` and `quader admin backup check` take `--config <file>`, `--log-level <level>` and
+`--json` (the result as one JSON document). They load the configuration without a role and never open Valkey; every `quader backup`
 command needs `backup.target.bucket`, the three admin commands need no target. `SIGTERM` or `SIGINT` ends a run cleanly within
 the pod's grace period: a `create` sets its run `interrupted`, releases its pins and exits `75`.
 
-Exit status of the other commands: `0` success, `1` failed command, `2` usage error. The backup commands, `trove admin post-restore`,
-`trove admin storage verify` and `trove admin backup check` use the codes of [R-BAK-013](docs/spec/backup-and-restore.md#r-bak-013--exit-codes-interruption-and-resumption),
+Exit status of the other commands: `0` success, `1` failed command, `2` usage error. The backup commands, `quader admin post-restore`,
+`quader admin storage verify` and `quader admin backup check` use the codes of [R-BAK-013](docs/spec/backup-and-restore.md#r-bak-013--exit-codes-interruption-and-resumption),
 which the chart's Jobs read as their failure policy:
 
 | Code | Meaning | Job |
@@ -1184,9 +1184,9 @@ which the chart's Jobs read as their failure policy:
 
 ### Configuration keys
 
-Keys are snake_case in `trove.yaml`; the environment override is `TROVE_` plus the key path in upper case
-(`database.ssl_mode` → `TROVE_DATABASE_SSL_MODE`). A map key takes JSON in the environment (`TROVE_SERVER_ENDPOINTS`,
-`TROVE_MAINTENANCE_TASKS`). A key without a default is required by the command that uses it. A key marked as a secret in the
+Keys are snake_case in `quader.yaml`; the environment override is `QUADER_` plus the key path in upper case
+(`database.ssl_mode` → `QUADER_DATABASE_SSL_MODE`). A map key takes JSON in the environment (`QUADER_SERVER_ENDPOINTS`,
+`QUADER_MAINTENANCE_TASKS`). A key without a default is required by the command that uses it. A key marked as a secret in the
 struct tags (for example `database.password_file`) takes a file path only, read where the key says; the value is never inline.
 
 <details>
@@ -1205,7 +1205,7 @@ server:
   max_in_flight: 4096                   # default: concurrent requests per replica; the memory slots of runtime.memory_limit_bytes bound them too
   shutdown_timeout: 0s                  # default: 0 derives it from runtime.termination_grace_period
   tls:                                  # the default endpoint's client listener; empty certificates = plain HTTP
-    certificates: []                    # default; example: [{cert_file: /var/run/secrets/trove/tls/tls.crt, key_file: /var/run/secrets/trove/tls/tls.key}]
+    certificates: []                    # default; example: [{cert_file: /var/run/secrets/quader/tls/tls.crt, key_file: /var/run/secrets/quader/tls/tls.key}]
     client_ca_file: ""                  # default; required unless client_auth is none
     client_auth: none                   # default: none | verify_if_given | require
     min_version: "1.2"                  # default: 1.2 | 1.3
@@ -1219,7 +1219,7 @@ server:
     reload_interval: 10s                # default; with inherit false only
   content_base_url: ""                  # default: empty = one origin (planned, P1)
   content_url_ttl: 300s                 # default
-  base_url: ""                          # default: empty for development only; example: https://trove.example.com
+  base_url: ""                          # default: empty for development only; example: https://quader.example.com
   trusted_proxies: []                   # default: no proxy is trusted; example: ["10.244.3.17", "10.244.5.9"]; a /0 prefix is refused
   forwarded_header: x-forwarded-for     # default: x-forwarded-for | forwarded
   additional_base_urls: []              # default; origins the forwarded scheme and host may select
@@ -1250,7 +1250,7 @@ server:
       pool: ""                          # default: served by the main web Deployment; example: ep-customers
       max_in_flight: 1024               # default, per replica and endpoint
       tls:
-        certificates: []                # default: the pair(s) of server.tls; example: [{cert_file: /var/run/secrets/trove/endpoints/customers/0/tls.crt, key_file: /var/run/secrets/trove/endpoints/customers/0/tls.key}]
+        certificates: []                # default: the pair(s) of server.tls; example: [{cert_file: /var/run/secrets/quader/endpoints/customers/0/tls.crt, key_file: /var/run/secrets/quader/endpoints/customers/0/tls.key}]
         client_ca_file: ""              # default: no client certificates; set = require and verify, never inherited
       surface: [packages]               # default for a further endpoint: ui | api | ci_exchange | packages | files; ui is refused
       auth:
@@ -1262,7 +1262,7 @@ server:
       rate_limit_class: external        # default for a further endpoint; names an entry of endpoint_rate_limits
       replica_header: never             # default for a further endpoint: authenticated | always | never
     default:                            # example: tunes the default endpoint only
-      hosts: [trove.example.com]        # example; the default endpoint's defaults: surface all five, token_types [pat, sat, cit], bound_tokens_only false, anonymous true, exposure all, cache_fill true
+      hosts: [quader.example.com]        # example; the default endpoint's defaults: surface all five, token_types [pat, sat, cit], bound_tokens_only false, anonymous true, exposure all, cache_fill true
 ```
 
 </details>
@@ -1272,18 +1272,18 @@ server:
 
 ```yaml
 database:
-  host: ""                              # no default, required; example: trove-db-rw.trove.svc
+  host: ""                              # no default, required; example: quader-db-rw.quader.svc
   port: 5432                            # default
   session_host: ""                      # default: empty = host; the lease pool and the migration use it
   session_port: 0                       # default: 0 = port
   control_host: ""                      # default: empty = host
   control_port: 0                       # default: 0 = port
   control_name: ""                      # default: empty = name
-  name: ""                              # no default, required; example: trove
-  schema: trove                         # default
-  backup_role: ""                       # default: empty = no grants; example: trove_backup, the login of secrets.databaseBackup, to which trove migrate grants the backup's privileges
-  username_file: /var/run/secrets/trove/database/username   # default; file only
-  password_file: /var/run/secrets/trove/database/password   # default; file only; read again on every new connection
+  name: ""                              # no default, required; example: quader
+  schema: quader                         # default
+  backup_role: ""                       # default: empty = no grants; example: quader_backup, the login of secrets.databaseBackup, to which quader migrate grants the backup's privileges
+  username_file: /var/run/secrets/quader/database/username   # default; file only
+  password_file: /var/run/secrets/quader/database/password   # default; file only; read again on every new connection
   ssl_mode: verify-full                 # default: verify-full | verify-ca | require | disable | allow | prefer
   ssl_root_cert_file: ""                # default: empty = the system roots; required by verify-ca
   ssl_cert_file: ""                     # default: client certificate, read on every new connection
@@ -1337,7 +1337,7 @@ migrate:
 
 - The login needs role defaults for the four session settings, because a pooler cannot pass them as startup parameters: `ALTER ROLE <login> IN DATABASE <name> SET statement_timeout = '30s'` (and `lock_timeout = '5s'`, `idle_in_transaction_session_timeout = '60s'`, `search_path = <schema>`, with the configured values). Start-up refuses to proceed, naming the login and the setting, when one differs.
 - `database.session_host` and `database.control_host` must be set (a direct host, and a second pooler for the control connection); the pooler's server certificate must name the pooler Services for `verify-full`.
-- Each pooler runs at least two instances on different nodes with a PodDisruptionBudget. A stopping instance must outwait trove's connections: a `preStop` sleep of at least `max_conn_lifetime + max_conn_lifetime_jitter + health_check_period` (390 s with `5m`, `1m` and the default `30s`), and a termination grace period longer than the sleep. The CloudNativePG pooler does not wait for clients on `SIGTERM`, so without the sleep every drain drops the connections of the instance and some requests fail.
+- Each pooler runs at least two instances on different nodes with a PodDisruptionBudget. A stopping instance must outwait Quader's connections: a `preStop` sleep of at least `max_conn_lifetime + max_conn_lifetime_jitter + health_check_period` (390 s with `5m`, `1m` and the default `30s`), and a termination grace period longer than the sleep. The CloudNativePG pooler does not wait for clients on `SIGTERM`, so without the sleep every drain drops the connections of the instance and some requests fail.
 
 </details>
 
@@ -1348,15 +1348,15 @@ migrate:
 valkey:
   mode: sentinel                        # default: sentinel | standalone (development only)
   sentinel:
-    addresses: []                       # default; required in sentinel mode; example: ["trove-valkey-sentinel-0.trove-valkey-sentinel-headless.trove.svc.cluster.local:36379"]
-    primary_name: ""                    # default; required in sentinel mode; the name in the Sentinels' monitor line, example: trove-valkey
+    addresses: []                       # default; required in sentinel mode; example: ["quader-valkey-sentinel-0.quader-valkey-sentinel-headless.quader.svc.cluster.local:36379"]
+    primary_name: ""                    # default; required in sentinel mode; the name in the Sentinels' monitor line, example: quader-valkey
     username_file: ""                   # default; file only; empty = no Sentinel user
     password_file: ""                   # default; file only; empty = no Sentinel password
     tls: true                           # default: use valkey.tls for the Sentinel connections too
     refresh_interval: 5s                # default; at least 1s
-  address: ""                           # default; standalone mode only; example: trove-valkey:6379
+  address: ""                           # default; standalone mode only; example: quader-valkey:6379
   database: 0                           # default
-  key_prefix: "trove:"                  # default; must end in ":"
+  key_prefix: "quader:"                  # default; must end in ":"
   username_file: ""                     # default; file only; empty = the default user
   password_file: ""                     # default; file only
   tls:
@@ -1389,8 +1389,8 @@ storage:
   s3:
     endpoint: ""                        # default: empty = AWS endpoint resolution for the region; a host without scheme means https://
     region: ""                          # default; required when no region is in the environment
-    bucket: ""                          # default; required to serve; example: trove-blobs
-    prefix: trove                       # default: letters, digits and !_.*'()/- ; no leading or trailing /
+    bucket: ""                          # default; required to serve; example: quader-blobs
+    prefix: quader                       # default: letters, digits and !_.*'()/- ; no leading or trailing /
     force_path_style: false             # default; true for SeaweedFS, MinIO and Ceph RGW
     allow_insecure_endpoint: false      # default; needed for an http:// endpoint
     ca_file: ""                         # default: empty = the outbound trust store (system roots plus proxy.outbound.tls.ca_files); set = the whole trust store of the object-store client. The chart sets it through secrets.s3CA
@@ -1439,7 +1439,7 @@ storage:
       ttl: 60s                          # default; at least 1s
       min_size: 1MiB                    # default
   spool:
-    dir: /var/lib/trove/spool           # default
+    dir: /var/lib/quader/spool           # default
     max_bytes: 50GiB                    # default; at least 1MiB; the budget shared by the uploads of a replica
     min_free_bytes: 2GiB                # default
     memory_threshold: 1MiB              # default: content below it stays in memory
@@ -1504,7 +1504,7 @@ jobs:
     mirror: 2                           # the passes of mirrored remote repositories
     vuln: 1                             # the advisory sync (vuln-sync-osv, vuln-sync-osv-full, vuln-sync-kev)
   queues: []                            # default: every queue; the queues this worker claims, for example ["index"] on a worker pool
-  exclude_queues: []                    # default: none; the queues this worker does not claim; not together with queues. As variables: TROVE_JOBS_QUEUES='["index"]' (one JSON list)
+  exclude_queues: []                    # default: none; the queues this worker does not claim; not together with queues. As variables: QUADER_JOBS_QUEUES='["index"]' (one JSON list)
   poll_interval: 2s                     # default; at least 100ms; below health.watchdog_timeout
   lease_duration: 60s                   # default; at least 3 times heartbeat_interval
   heartbeat_interval: 15s               # default
@@ -1536,7 +1536,7 @@ health:
   shutdown_drain_delay: 5s              # default; must exceed the edge's endpoint removal time
   database_outage_grace: 20s            # default; below database.retry.max_elapsed; 0 disables it
 secrets:
-  encryption_key_files: []              # default; example: [/var/run/secrets/trove/encryption/2026-10.key]; 32 random bytes, raw or base64; the file name without .key is the key ID
+  encryption_key_files: []              # default; example: [/var/run/secrets/quader/encryption/2026-10.key]; 32 random bytes, raw or base64; the file name without .key is the key ID
   active_key_id: ""                     # default; example: 2026-10; must name one of the listed files
 system:
   public_version: false                 # default
@@ -1637,8 +1637,8 @@ backup:
   target:                               # the S3 location of the backups; a client and a credential of its own, never storage.s3's
     endpoint: ""                        # default: empty = AWS endpoint resolution for the region; a host without a scheme means https://
     region: ""                          # default; example: eu-central-1
-    bucket: ""                          # default: empty; required by every trove backup command; example: trove-backups
-    prefix: trove                       # default; in the blob store's bucket it must neither contain storage.s3.prefix nor lie inside it
+    bucket: ""                          # default: empty; required by every quader backup command; example: quader-backups
+    prefix: quader                       # default; in the blob store's bucket it must neither contain storage.s3.prefix nor lie inside it
     force_path_style: false             # default; true for SeaweedFS, MinIO and Ceph RGW
     allow_insecure_endpoint: false      # default: an http:// endpoint is refused
     ca_file: ""                         # default: empty = the system trust store; else the whole trust store of the target client; the chart sets it from secrets.backupTargetCA
@@ -1677,7 +1677,7 @@ backup:
     keep_last: 7                        # default; at least 1
     keep_within: 0s                     # default: 0s = count only; a backup is deleted only outside both keep_last and keep_within
     sweep_interval: 168h                # default: a full pool sweep at least this often
-  expected_interval: 24h                # default; at least 1m; TroveBackupStale and the overdue mark of the API and the UI fire after 1.5 times this value
+  expected_interval: 24h                # default; at least 1m; QuaderBackupStale and the overdue mark of the API and the UI fire after 1.5 times this value
   manual_run:                           # chart-managed with backup.enabled: the CronJob the manual-run command of the UI names
     namespace: ""                       # default
     cronjob: ""                         # default
@@ -1707,8 +1707,8 @@ and has no key.
 These keys are required by the command that uses them, and have no default in the struct tags:
 `process.role` (by `serve`), `database.host`, `database.name`, `valkey.sentinel.addresses` and `primary_name` (in sentinel mode),
 `valkey.address` (in standalone mode), `storage.s3.bucket` (to serve), `secrets.encryption_key_files` and `active_key_id` (to
-serve and to restore), `backup.target.bucket` (by every `trove backup` command). The chart sets the secret-file paths and `storage.spool.dir` of the pods; those keys must not be set under `config`
-(the comment of [values.yaml](deploy/helm/trove/values.yaml) says so, R-HA-029).
+serve and to restore), `backup.target.bucket` (by every `quader backup` command). The chart sets the secret-file paths and `storage.spool.dir` of the pods; those keys must not be set under `config`
+(the comment of [values.yaml](deploy/helm/quader/values.yaml) says so, R-HA-029).
 
 </details>
 
@@ -1774,7 +1774,7 @@ auth:
   break_glass:
     enabled: true                       # default; the account is unusable without password_file (Q-AUTH-33)
     username: admin                     # default
-    password_file: ""                   # default; file only; the chart renders /var/run/secrets/trove/break-glass/password
+    password_file: ""                   # default; file only; the chart renders /var/run/secrets/quader/break-glass/password
     show_on_login_page: false           # default
     idle_timeout: 15m                   # default; 1m to 24h
     absolute_timeout: 1h                # default; 1m to 168h
@@ -1792,7 +1792,7 @@ authz:
     safety_ttl: 10m                     # default; at least 10s: a full rebuild of the grant index, jittered by 10 percent
   audit:
     reads: denied                       # default: none | denied | all
-  role_bindings: []                     # default: no declaration; trove migrate applies the list and removes what it no longer holds (R-AUTHZ-010)
+  role_bindings: []                     # default: no declaration; quader migrate applies the list and removes what it no longer holds (R-AUTHZ-010)
   # role_bindings:                      # example: a system role and exactly one of group, user, service_account per entry
   #   - {role: admin, group: gh-wds18-k8s-main-admins}     # a missing group is created; a missing user or service account fails the run
 api:
@@ -1850,7 +1850,7 @@ ci:                                     # GitLab CI OIDC (docs/spec/gitlab-ci-oi
     retention: 8760h                    # default; 24h to 87600h: one year; Go durations have no day unit
   job_token_fallback:
     enabled: false                      # default; true is refused: the CI_JOB_TOKEN fallback is not built (R-CI-022)
-  issuers: []                           # default: no declaration; trove migrate applies the list (read-only in the API and the UI, Q-CI-16)
+  issuers: []                           # default: no declaration; quader migrate applies the list (read-only in the API and the UI, Q-CI-16)
   # issuers:                            # example: the fields of the issuer API in snake_case; a key left out takes the default of R-CI-001
   #   - name: gitlab-main               # required: ^[a-z0-9][a-z0-9._-]{1,63}$
   #     kind: gitlab                    # required: gitlab (github and generic are not available)
@@ -1872,10 +1872,10 @@ ui:
     max_source_bytes: 512KiB            # default; 1KiB to 16MiB: a longer README is cut and flagged `truncated`
     external_image_origins: []          # default: every external README image is shown as a link; example: ["https://img.shields.io"]; exact https origins, no path, no wildcard, none of this installation's own origins; they also become the img-src of the UI's Content-Security-Policy
   client_setup:
-    token_env_var: TROVE_TOKEN          # default; the variable the credentials=env setup snippets read the token from
+    token_env_var: QUADER_TOKEN          # default; the variable the credentials=env setup snippets read the token from
     token_ttl: 720h                     # default; the lifetime the setup dialog asks for; at most auth.tokens.pat.max_ttl
 oci:                                    # the OCI registry (R-OCI-005, R-OCI-019); the per-repository settings are the repository member oci.mirror, the upload sessions storage.uploads
-  token_lifetime: 300s                  # default; 60s to 3600s; the lifetime of a registry token, never beyond the expiry of the trove token it was issued for
+  token_lifetime: 300s                  # default; 60s to 3600s; the lifetime of a registry token, never beyond the expiry of the Quader token it was issued for
   unreferenced_blob_grace: 24h          # default; at least 1m and above storage.uploads.session_max_age; the age a blob of an image name needs before the sweep removes it for being referenced by no manifest
 deb:                                    # the Debian (APT) format (R-DEB-010, R-DEB-012, R-DEB-014, R-DEB-026); the per-repository settings are the repository member deb
   index_delay: 2s                       # default; 1s to 60s; the wait after the first change of a suite before its build starts
@@ -1897,7 +1897,7 @@ and [vulnerabilities.md](docs/developer/vulnerabilities.md).
 vulnerabilities:
   enabled: true                         # default; false: no sync, no evaluation, no block, and no client-audit mode local; the stored findings stay as they are
   enforcement: enforce                  # default: enforce | report; report blocks nothing anywhere and counts the would-be blocks (mode="report")
-  stale_after: 24h                      # default; 1m to 8760h: older data shows a banner and fires TroveVulnerabilityDataStale; never affects readiness
+  stale_after: 24h                      # default; 1m to 8760h: older data shows a banner and fires QuaderVulnerabilityDataStale; never affects readiness
   sources:
     osv:
       mode: online                      # default: online | repository | off; only the worker role fetches; off keeps the stored data, which ages
@@ -1931,7 +1931,7 @@ vulnerabilities:
 Security notes:
 
 - `enforcement: report` turns every block off for the whole installation, malicious versions included; the would-be refusals are
-  counted in `trove_vuln_downloads_blocked_total{mode="report"}` and recorded as `vulnerability.download_blocked` with
+  counted in `quader_vuln_downloads_blocked_total{mode="report"}` and recorded as `vulnerability.download_blocked` with
   `enforced: false`. It is the switch for an emergency and for measuring a policy before enforcing it.
 - `enabled: false` also drops the default of the npm audit to the mode of a repository without the scanning: a remote or virtual
   npm repository that does not set `npm.audit.mode` then forwards the audited names to its upstream.
@@ -1943,7 +1943,7 @@ Security notes:
   Listing the host of a private feed applies public advisories, and the malicious block, to its packages.
 - `epss`: the operator who switches it on decides whether the data's terms permit the installation's use. FIRST publishes the EPSS
   scores without a stated licence, its site reads "All Rights Reserved", and it asks for attribution in products that use the
-  scores; trove makes no statement about what that permits ([Q-VULN-21](docs/spec/vulnerability-scanning.md#q-vuln-21--epss-is-an-operator-option-whose-terms-the-operator-decides)).
+  scores; Quader makes no statement about what that permits ([Q-VULN-21](docs/spec/vulnerability-scanning.md#q-vuln-21--epss-is-an-operator-option-whose-terms-the-operator-decides)).
 
 </details>
 
@@ -1951,7 +1951,7 @@ Security notes:
 <summary>Vulnerability scanning: the repository document members (M4b)</summary>
 
 Members of the repository document of `POST /api/v1/projects/{projectKey}/repositories`, `PUT` and `PATCH /api/v1/projects/{projectKey}/repositories/{repoKey}` (JSON, shown as YAML), not keys of
-`trove.yaml`. Sources: [internal/vuln/settings.go](internal/vuln/settings.go), the schemas
+`quader.yaml`. Sources: [internal/vuln/settings.go](internal/vuln/settings.go), the schemas
 [npm/settings.schema.json](internal/formats/npm/settings.schema.json) and
 [nuget/settings.schema.json](internal/formats/nuget/settings.schema.json). A member that sets some fields takes the defaults of the
 others.
@@ -2028,8 +2028,8 @@ The token service and the registry API, as a client reaches them:
 
 | Request | Answer |
 |---|---|
-| `GET /v2/_token?service=<host>&scope=repository:<projectKey>/<repoKey>/<name>:pull,push` with `Authorization: Basic <any user>:<trove token>` | `200 {"token": "trv_rgt_…", "access_token": "trv_rgt_…", "expires_in": 300, "issued_at": "<RFC 3339>"}` (`expires_in` is `oci.token_lifetime`, less when the trove token expires sooner); the grant holds the actions of each scope the caller may hold, and nothing for the others. Without a credential: an anonymous token where anonymous access is on, else `401` |
-| `POST /v2/_token` with `grant_type=password&username=<any>&password=<trove token>&service=…&scope=…` (containerd) | the same |
+| `GET /v2/_token?service=<host>&scope=repository:<projectKey>/<repoKey>/<name>:pull,push` with `Authorization: Basic <any user>:<quader token>` | `200 {"token": "qdr_rgt_…", "access_token": "qdr_rgt_…", "expires_in": 300, "issued_at": "<RFC 3339>"}` (`expires_in` is `oci.token_lifetime`, less when the Quader token expires sooner); the grant holds the actions of each scope the caller may hold, and nothing for the others. Without a credential: an anonymous token where anonymous access is on, else `401` |
+| `POST /v2/_token` with `grant_type=password&username=<any>&password=<quader token>&service=…&scope=…` (containerd) | the same |
 | a malformed request (a wrong `service`, a bad form) | `400` with one body for both kinds of client: the distribution list `{"errors": [{"code": "UNSUPPORTED", …}]}` and OAuth 2.0's `error` and `error_description` |
 | a repository route with a registry token that lacks the action | `401` `UNAUTHORIZED` with `error="insufficient_scope"`, so the client asks for a new token |
 | a repository route with a token that holds the action, but no permission | `403` `DENIED`; a repository the caller may not see answers `404` `NAME_UNKNOWN`, the same as one that does not exist |
@@ -2059,7 +2059,7 @@ local:
 deb:                                    # a change of any member rebuilds every suite at once
   architectures: [amd64, arm64]         # default; 1 to 32 of ^[a-z0-9][a-z0-9-]{0,31}$, not all; the architectures of stored files are added
   compression: []                       # default; [xz] adds Packages.xz beside the Packages.gz that is always built
-  origin: trove                         # default; the Origin of every Release, 1 to 64 printable ASCII characters without ':'
+  origin: quader                         # default; the Origin of every Release, 1 to 64 printable ASCII characters without ':'
   label: deb-local                      # default: the repository key; the Label of every Release, same rule
 ---
 # a remote repository
@@ -2098,7 +2098,7 @@ deb:
   components: [main]                    # default; the components merged, 1 to 32
   architectures: [amd64, arm64]         # default; as for a local repository, plus binary-all
   compression: []                       # default; [xz] adds Packages.xz
-  origin: trove                         # default
+  origin: quader                         # default
   label: apt                            # default: the repository key
 ```
 
@@ -2158,9 +2158,9 @@ and the problem details of R-ARCH-023 with the `deb_*` codes of [error codes](#e
 | `proxy.outbound.address_policy` | loopback, link-local, metadata, multicast denied; private ranges allowed | Upstream clients refuse denied addresses after DNS resolution; zoned IPv6 always; the object store and span export are not checked. | [egress](docs/security/egress.md), [H-6](docs/spec/repositories-and-proxy.md) |
 | `secrets.encryption_key_files` | empty (required) | Keys are read once at start-up; a rotated key file takes effect after a restart. | [H-55](docs/spec/architecture.md), [data and secret flow](docs/security/data-and-secret-flow.md) |
 | `auth.break_glass.enabled`, `auth.break_glass.password_file` | `true`, empty | Without a password file the account is unusable, not open. With `secrets.breakGlass` it is the local administrator that holds system administration without a role binding. The password is a file, never inline. | [login](docs/developer/login.md), [Q-AUTH-33](docs/spec/identity-and-authentication.md#q-auth-33--an-enabled-break-glass-account-without-a-password-file) |
-| `auth.clients.basic.enabled` | `true` | Basic authentication for NuGet restore, the `_auth` users and the OCI token service, which takes the trove token as Basic or as the password of the OAuth 2.0 form (Q-OCI-57). Off breaks those clients, Docker, Podman and containerd included; a Basic request with a password is refused either way. | [identity](docs/developer/identity.md), [OCI registry](docs/security/oci-registry.md) |
+| `auth.clients.basic.enabled` | `true` | Basic authentication for NuGet restore, the `_auth` users and the OCI token service, which takes the Quader token as Basic or as the password of the OAuth 2.0 form (Q-OCI-57). Off breaks those clients, Docker, Podman and containerd included; a Basic request with a password is refused either way. | [identity](docs/developer/identity.md), [OCI registry](docs/security/oci-registry.md) |
 | `auth.clients.nuget_api_key_header` | `true` | A token in `X-NuGet-ApiKey` is the credential of a push, delete or relist and decides over `Authorization`; a rejected one is `401` without fallback. Off, only `Authorization` counts there. A damaged key falls back to the source credentials. | [tokens and credentials](docs/security/tokens-and-credentials.md#credential-sources-and-precedence), [H-332](docs/security/tokens-and-credentials.md#h-332--a-broken-token-in-the-api-key-header-falls-back-to-the-source-credentials) |
-| `authz.role_bindings` | `[]` | Each entry binds a system role in `trove migrate`; whoever controls the membership of a declared IdP group holds the role, and the API cannot remove the binding (409). A removal that would leave no active administrator while break-glass is off stops the run. | [permissions](docs/security/permissions.md#role-bindings-from-the-configuration), [Q-AUTHZ-170](docs/spec/authorization.md#q-authz-170--system-role-bindings-declared-in-the-configuration) |
+| `authz.role_bindings` | `[]` | Each entry binds a system role in `quader migrate`; whoever controls the membership of a declared IdP group holds the role, and the API cannot remove the binding (409). A removal that would leave no active administrator while break-glass is off stops the run. | [permissions](docs/security/permissions.md#role-bindings-from-the-configuration), [Q-AUTHZ-170](docs/spec/authorization.md#q-authz-170--system-role-bindings-declared-in-the-configuration) |
 | `authz.hide_existence` | `true` | A refused read answers 404, indistinguishable from a missing resource. `false` answers 403 for a resource that exists, for troubleshooting only. A repository's `hideExistence` overrides it. | [permissions](docs/security/permissions.md) |
 | `api.rate_limits.exempt_admins` | `false` | Callers who hold the admin capability bypass the rate limits. | [API edge](docs/security/api-edge.md) |
 | `server.endpoints.<name>.auth`, `…exposure` | further endpoints: `token_types: [sat]`, `bound_tokens_only: true`, `anonymous: false`; `exposure: rules` | Which credentials an endpoint accepts, and the ceiling on what it serves (exposure rules are a ceiling, never a grant). | [endpoints and exposure](docs/security/endpoints-and-exposure.md), [ADR-128](docs/decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling) |
@@ -2171,22 +2171,22 @@ and the problem details of R-ARCH-023 with the `deb_*` codes of [error codes](#e
 | `vulnerabilities.sources.epss.mode` | `off` | Only `off` is accepted in this build. The operator who switches it on later decides whether the data's terms permit the use. | [Q-VULN-21](docs/spec/vulnerability-scanning.md#q-vuln-21--epss-is-an-operator-option-whose-terms-the-operator-decides) |
 | Repository member `vulnerabilities.blockMalicious` | `true` | `false` serves a version with an open malicious finding. A write that weakens the member (`enabled` off, a `matchPublicAdvisories` that matches fewer advisories, `blockMalicious` off, `onMissingData` from `block` to `allow`) needs `repositories:write-config` or `vulnerabilities:triage`: the role Owner of the project alone answers `403 vulnerability_weakening_refused`. Its `repository.updated` event carries `block: lifted` and `weakened`. | [Q-VULN-69](docs/spec/vulnerability-scanning.md#q-vuln-69--weakening-the-vulnerabilities-member-needs-the-triage-capability-or-repositorieswrite-config) |
 | Repository member `vulnerabilities.onMissingData` | `allow` | `allow` serves versions of an ecosystem whose data was never imported completely, unevaluated. `block` refuses them with `403 vulnerability_data_missing` until the first complete import, claimed names of a local repository included (H-502). | [R-VULN-015](docs/spec/vulnerability-scanning.md#r-vuln-015--download-blocking), [H-502](docs/security/vulnerability-scanning.md#h-502--a-claimed-name-in-a-local-repository-that-blocks-missing-data-is-refused-until-the-first-import-completes) |
-| Repository member `vulnerabilities.matchPublicAdvisories` | `auto` | `always` on a local repository applies public advisories to its claimed names: a public package published under an internal name can then make trove report, and with `blockMalicious` block, the internal package, and the name is no longer withheld from the audits. | [R-VULN-010](docs/spec/vulnerability-scanning.md#r-vuln-010--which-stored-versions-public-advisories-apply-to) |
-| Repository member `npm.audit.mode` (`local`, `forward`, `disabled`) | left out: `local` while scanning is on | `local` answers from trove's data and sends nothing out; withheld internal names are counted in `npm-notice`, so a reader can tell them apart (H-486). `forward` sends the audited names that nothing marks internal to the provider. | [client audits](docs/security/vulnerability-scanning.md#client-audits), [H-486](docs/security/vulnerability-scanning.md#h-486--a-reader-of-an-npm-repository-can-tell-internal-names-from-the-audit) |
+| Repository member `vulnerabilities.matchPublicAdvisories` | `auto` | `always` on a local repository applies public advisories to its claimed names: a public package published under an internal name can then make Quader report, and with `blockMalicious` block, the internal package, and the name is no longer withheld from the audits. | [R-VULN-010](docs/spec/vulnerability-scanning.md#r-vuln-010--which-stored-versions-public-advisories-apply-to) |
+| Repository member `npm.audit.mode` (`local`, `forward`, `disabled`) | left out: `local` while scanning is on | `local` answers from Quader's data and sends nothing out; withheld internal names are counted in `npm-notice`, so a reader can tell them apart (H-486). `forward` sends the audited names that nothing marks internal to the provider. | [client audits](docs/security/vulnerability-scanning.md#client-audits), [H-486](docs/security/vulnerability-scanning.md#h-486--a-reader-of-an-npm-repository-can-tell-internal-names-from-the-audit) |
 | Repository member `nuget.vulnerabilityInfo` | left out: local while scanning is on | `local` serves the public NuGet advisory set, without internal names, to every reader of a NuGet repository; the absences tell internal names apart (H-487). `off` lists nothing. | [H-487](docs/security/vulnerability-scanning.md#h-487--the-nuget-pages-absences-tell-internal-names-apart) |
 | Repository member `deb.upstreamKeys` (Debian remote) | `null` | Without keys a Debian remote stores the release files its archive sends unchecked and only the clients verify them; it cannot be a mirror. With keys it stores only releases a key of the set verifies and never an older one than it verified; removing a key is journaled and re-verifies what it verified. Compare the fingerprints (`deb.upstreamKeyFingerprints`) through a second channel. | [Debian remote](docs/security/deb-remote.md), [H-623](docs/spec/formats/debian.md#h-623--a-pull-through-remote-without-upstream-keys-stores-what-its-upstream-sends) |
 | `backup.target.allow_same_bucket` | `false` | `true` accepts a target in the blob store's bucket on the same endpoint: the backups then share the bucket's failure modes (a deleted bucket, a lifecycle rule, a compromised runtime credential), and every run warns. The prefixes still must not contain each other, or the orphan sweep of the blob store would delete the backups. | [R-BAK-002](docs/spec/backup-and-restore.md#r-bak-002--target-layout-backup-id-and-target-marker) |
 | `backup.target.allow_insecure_endpoint`, `backup.target.ca_file`, `backup.target.sse.mode` | `false`, empty, `s3` | An `http://` target is refused without the switch; `ca_file` is the target client's whole trust store; every write repeats the server-side encryption, and a preflight compares what the store reports with it. | [who holds what](docs/security/backup-and-restore.md#who-holds-what), [R-BAK-026](docs/spec/backup-and-restore.md#r-bak-026--encryption-in-transit-and-at-rest-on-the-target) |
 | `backup.revocation_journal.enabled` | `true` | `false` deletes the journal entries unshipped, so a restore brings back the revoked tokens, disabled users and removed permissions of everything after its snapshot. | [the revocation journal](docs/security/backup-and-restore.md#the-revocation-journal) |
-| `backup.recovery_window`, `backup.object_versioning` | `0s`, `false` | A declared window longer than `storage.gc.grace_period` stops a replica from starting unless the bucket keeps deleted objects (`object_versioning: true`): a restore to an older point could otherwise reference a deleted blob. The task `backup-check` and `TroveBackupCheckFailed` report a declared protection that does not hold. | [R-HA-023](docs/spec/ha-and-helm.md), [R-HA-024](docs/spec/ha-and-helm.md) |
+| `backup.recovery_window`, `backup.object_versioning` | `0s`, `false` | A declared window longer than `storage.gc.grace_period` stops a replica from starting unless the bucket keeps deleted objects (`object_versioning: true`): a restore to an older point could otherwise reference a deleted blob. The task `backup-check` and `QuaderBackupCheckFailed` report a declared protection that does not hold. | [R-HA-023](docs/spec/ha-and-helm.md), [R-HA-024](docs/spec/ha-and-helm.md) |
 
 ### Management API
 
 The operations below are the paths of [api/openapi.yaml](api/openapi.yaml), grouped by family, as the document declares them. The
 document is the source: `GET /api/v1/openapi.json` serves it, and the operations declare their capability in an
-`x-trove-permission` block; `Document.CheckRoutes` checks the routes against the document at start-up. The table lists every operation with its
-`x-trove-permission`, whether it requires a recent sign-in (`x-trove-recent-auth`, R-API-007), and whether a token must inherit its owner's
-rights because the operation acts on the caller's own account (`x-trove-owner-rights`, R-API-021).
+`x-quader-permission` block; `Document.CheckRoutes` checks the routes against the document at start-up. The table lists every operation with its
+`x-quader-permission`, whether it requires a recent sign-in (`x-quader-recent-auth`, R-API-007), and whether a token must inherit its owner's
+rights because the operation acts on the caller's own account (`x-quader-owner-rights`, R-API-021).
 
 "or Owner of the project" and "or a member of the project" are the second way in of a declaration with `project: path.projectKey` and `projectRole: owner` or `reader` (R-AUTHZ-026, Q-AUTHZ-207): the shared step admits the holder of the capability, or a member of the project the path names whose role is at least the declared one; the Owner's administration needs a session or a token with `admin: true`, through any other token an Owner counts as a Maintainer. A project the caller is no member of answers `404` like a missing one, a role below the declared one `403`. The repository-content operations declare their action on `path.projectKey`/`path.repoKey` and are decided with the roles, the policies and the token scope.
 
@@ -2241,8 +2241,8 @@ rights because the operation acts on the caller's own account (`x-trove-owner-ri
 | `GET /api/v1/users` | `listUsers` | `identities:read` |
 | `POST /api/v1/users` | `createUser` | `identities:write` |
 | `GET /api/v1/users/me` | `getCurrentUser` | authenticated |
-| `PUT /api/v1/users/me/avatar` | `setAvatar` | authenticated; the body is a PNG, JPEG or WebP of at most 1 MiB, stored as a new 256 x 256 PNG ([security](docs/security/user-avatars.md)) · a session or an inheriting token (`x-trove-owner-rights`) |
-| `DELETE /api/v1/users/me/avatar` | `removeAvatar` | authenticated · a session or an inheriting token (`x-trove-owner-rights`) |
+| `PUT /api/v1/users/me/avatar` | `setAvatar` | authenticated; the body is a PNG, JPEG or WebP of at most 1 MiB, stored as a new 256 x 256 PNG ([security](docs/security/user-avatars.md)) · a session or an inheriting token (`x-quader-owner-rights`) |
+| `DELETE /api/v1/users/me/avatar` | `removeAvatar` | authenticated · a session or an inheriting token (`x-quader-owner-rights`) |
 | `DELETE /api/v1/users/{username}/avatar` | `removeUserAvatar` | `identities:write` |
 | `GET /api/v1/avatars/{digest}` | `getAvatar` | authenticated; `image/png`, immutable private cache |
 | `GET /api/v1/users/{username}` | `getUser` | `identities:read` |
@@ -2297,7 +2297,7 @@ rights because the operation acts on the caller's own account (`x-trove-owner-ri
 | `GET /api/v1/tokens/{id}` | `getToken` | authenticated; a token that does not inherit its owner's rights sees only itself and its derived tokens (404 otherwise) |
 | `DELETE /api/v1/tokens/{id}` | `revokeToken` | authenticated; the owner, a holder of `tokens:revoke` or an Owner of the account's project, decided in the handler; a token that does not inherit its owner's rights revokes only itself and its derived tokens (404 otherwise) |
 | `POST /api/v1/tokens/{id}/rotate` | `rotateToken` | authenticated; a token that does not inherit its owner's rights rotates only itself and its derived tokens · recent sign-in |
-| `DELETE /api/v1/users/me/tokens` | `revokeOwnTokens` | authenticated · a session or an inheriting token (`x-trove-owner-rights`) |
+| `DELETE /api/v1/users/me/tokens` | `revokeOwnTokens` | authenticated · a session or an inheriting token (`x-quader-owner-rights`) |
 | `DELETE /api/v1/users/{username}/tokens` | `revokeUserTokens` | `tokens:revoke` |
 | `POST /api/v1/service-accounts/{name}/tokens` | `createServiceAccountToken` | authenticated; an administrator, or a token of the account itself, decided in the handler · recent sign-in |
 | `DELETE /api/v1/service-accounts/{name}/tokens` | `revokeServiceAccountTokens` | `tokens:revoke` |
@@ -2330,9 +2330,9 @@ rights because the operation acts on the caller's own account (`x-trove-owner-ri
 
 | Method and path | Operation | Permission |
 |---|---|---|
-| `GET /api/v1/users/me/sessions` | `listOwnSessions` | authenticated · a session or an inheriting token (`x-trove-owner-rights`) |
-| `DELETE /api/v1/users/me/sessions` | `endOwnSessions` | authenticated · a session or an inheriting token (`x-trove-owner-rights`) |
-| `DELETE /api/v1/users/me/sessions/{id}` | `endOwnSession` | authenticated · a session or an inheriting token (`x-trove-owner-rights`) |
+| `GET /api/v1/users/me/sessions` | `listOwnSessions` | authenticated · a session or an inheriting token (`x-quader-owner-rights`) |
+| `DELETE /api/v1/users/me/sessions` | `endOwnSessions` | authenticated · a session or an inheriting token (`x-quader-owner-rights`) |
+| `DELETE /api/v1/users/me/sessions/{id}` | `endOwnSession` | authenticated · a session or an inheriting token (`x-quader-owner-rights`) |
 | `GET /api/v1/users/{username}/sessions` | `listUserSessions` | `identities:read` |
 | `DELETE /api/v1/users/{username}/sessions` | `endUserSessions` | `identities:write` |
 
@@ -2341,7 +2341,7 @@ rights because the operation acts on the caller's own account (`x-trove-owner-ri
 | Method and path | Operation | Permission |
 |---|---|---|
 | `GET /api/v1/users/me/preferences` | `getPreferences` | authenticated |
-| `PATCH /api/v1/users/me/preferences` | `updatePreferences` | authenticated · a session or an inheriting token (`x-trove-owner-rights`) |
+| `PATCH /api/v1/users/me/preferences` | `updatePreferences` | authenticated · a session or an inheriting token (`x-quader-owner-rights`) |
 
 **permissions**
 
@@ -2404,7 +2404,7 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 | `GET /api/v1/ci/issuances` | `listCiIssuances` | `tokens:read` |
 | `GET /api/v1/ci/issuances/{tokenId}` | `getCiIssuance` | `tokens:read` |
 | `POST /api/v1/ci/issuances/revoke` | `revokeCiIssuances` | `tokens:revoke` |
-| `POST /api/v1/auth/oidc/token` | `exchangeCiToken` | public: the subject token is the credential; no trove credential, session or CSRF token is read |
+| `POST /api/v1/auth/oidc/token` | `exchangeCiToken` | public: the subject token is the credential; no Quader credential, session or CSRF token is read |
 | `GET /api/v1/projects/{projectKey}/ci/issuers` | `listProjectCiIssuers` | `ci:read` or Owner of the project |
 | `GET /api/v1/projects/{projectKey}/ci/mappings` | `listProjectCiMappings` | `ci:read` or Owner of the project |
 | `POST /api/v1/projects/{projectKey}/ci/mappings` | `createProjectCiMapping` | `ci:write` or Owner of the project · recent sign-in |
@@ -2577,9 +2577,9 @@ The OpenAPI 3.1 document is [api/openapi.yaml](api/openapi.yaml); the binary ser
 | `GET /api/v1/system/version` | Version and revision | public only with `system.public_version: true`, otherwise as declared |
 | `GET /api/v1/system/info` | Installation facts: version, base URL, replicas per role, database and schema versions, Valkey facts, and `vulnerabilityData` (the enforcement mode and the state of each advisory source; never affects readiness) | the capability `settings:read` ([R-AUTHZ-010](docs/spec/authorization.md)); anonymous on the default endpoint only with `system.bootstrap_anonymous_read` |
 | `GET /api/v1/system/replicas` | Replica registry: name, instance, node, version, revision, roles, state, checks, degraded checks, leases and the Valkey view of each replica | the same as `info` |
-| `GET /api/v1/system/migrations` | Migration report: schema version and compatibility floor, the answering replica's binary, pending steps with what the contract guard checks, applied steps, background data migrations with their states; the report of `trove migrate status` | `settings:read`; never anonymous |
+| `GET /api/v1/system/migrations` | Migration report: schema version and compatibility floor, the answering replica's binary, pending steps with what the contract guard checks, applied steps, background data migrations with their states; the report of `quader migrate status` | `settings:read`; never anonymous |
 | `GET /api/v1/system/backups` | The runs of the backup job (`create`, `delete`, `verify`) from `backup_run`, newest first: state, trigger, pod, progress, result, error and `leaseExpired` for a run whose process is gone. What the runs recorded, not the live target: the replicas hold no target credential | `settings:read` |
-| `GET /api/v1/system/backups/summary` | `expectedIntervalSeconds`, `lastSuccessAt`, `overdue` (the last success older than 1.5 times the interval, the condition of `TroveBackupStale`), `lastFailure`, `active`, `target`, `retention`, `storedBackups` (from the newest run that listed the target), `restoredFrom`, `manualRun` (the `kubectl` command of a manual run) | `settings:read` |
+| `GET /api/v1/system/backups/summary` | `expectedIntervalSeconds`, `lastSuccessAt`, `overdue` (the last success older than 1.5 times the interval, the condition of `QuaderBackupStale`), `lastFailure`, `active`, `target`, `retention`, `storedBackups` (from the newest run that listed the target), `restoredFrom`, `manualRun` (the `kubectl` command of a manual run) | `settings:read` |
 | `GET /api/v1/system/backups/{runId}` | One run | `settings:read` |
 | `GET /api/v1/problems/{code}` | Description of a problem code | as declared |
 
@@ -2601,11 +2601,11 @@ The ops listener has no authentication of its own in M0. Limit it with a Network
 
 ### Helm values
 
-The chart is [deploy/helm/trove](deploy/helm/trove/). The defaults below are from
-[values.yaml](deploy/helm/trove/values.yaml); [values.schema.json](deploy/helm/trove/values.schema.json) refuses unknown keys.
-The `config` object is rendered to `/etc/trove/trove.yaml`, with the chart-managed paths of the mounted Secrets filled in.
+The chart is [deploy/helm/quader](deploy/helm/quader/). The defaults below are from
+[values.yaml](deploy/helm/quader/values.yaml); [values.schema.json](deploy/helm/quader/values.schema.json) refuses unknown keys.
+The `config` object is rendered to `/etc/quader/quader.yaml`, with the chart-managed paths of the mounted Secrets filled in.
 The chart never creates a Secret; every Secret named below must exist before the install.
-[examples/production.yaml](deploy/helm/trove/examples/production.yaml) puts the values of a production installation together (autoscalers, disruption budgets,
+[examples/production.yaml](deploy/helm/quader/examples/production.yaml) puts the values of a production installation together (autoscalers, disruption budgets,
 topology spreading, the pooler, Ingress and HTTPRoute, ingress policies, ServiceMonitor and PrometheusRule, the backup); every name in it is an example.
 
 <details>
@@ -2614,7 +2614,7 @@ topology spreading, the pooler, Ingress and HTTPRoute, ingress policies, Service
 ```yaml
 image:
   registry: docker.io                   # default: Docker Hub (build.yml publishes there)
-  repository: guidedtraffic/trove       # default: the image of the release pipeline
+  repository: guidedtraffic/quader       # default: the image of the release pipeline
   tag: ""                               # default: empty = the chart's appVersion
   digest: ""                            # default; example: sha256:<64 hex>; wins over tag
 highAvailability:
@@ -2678,8 +2678,8 @@ securityContext:
 serviceAccount:
   create: true                          # default
   name: ""                              # default: <fullname>
-  annotations: {}                       # default; example (IRSA): {eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/trove-s3"}
-  automountServiceAccountToken: false   # default: trove never calls the Kubernetes API
+  annotations: {}                       # default; example (IRSA): {eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/quader-s3"}
+  automountServiceAccountToken: false   # default: Quader never calls the Kubernetes API
 service:
   type: ClusterIP                       # default: ClusterIP | LoadBalancer | NodePort
   port: 8080                            # default
@@ -2694,25 +2694,25 @@ migrations:
 </details>
 
 <details>
-<summary>TLS on trove's listeners and the backend</summary>
+<summary>TLS on Quader's listeners and the backend</summary>
 
 ```yaml
 tls:
   enabled: true                         # default; false = plain HTTP inside the cluster (H-38)
-  secretName: ""                        # required with tls.enabled; example: trove-tls (a kubernetes.io/tls Secret with tls.crt, tls.key and ca.crt)
+  secretName: ""                        # required with tls.enabled; example: quader-tls (a kubernetes.io/tls Secret with tls.crt, tls.key and ca.crt)
   certKey: tls.crt                      # default
   keyKey: tls.key                       # default
   minVersion: "1.2"                     # default: 1.2 | 1.3 (server.tls.min_version)
   reloadInterval: 10s                   # default (server.tls.reload_interval)
   clientCA:                             # optional mutual TLS on :8080
-    secretName: ""                      # default: empty = no client certificates; example: trove-edge-ca
+    secretName: ""                      # default: empty = no client certificates; example: quader-edge-ca
     key: ca.crt                         # default
     auth: require                       # default: require | verify_if_given
   ops:                                  # a separate pair for :8081; empty = the same material as :8080 (inherit), which puts the :8080 private key into every pod. Set it when you run workers or endpoint pools (H-57)
-    secretName: ""                      # default; example: trove-ops-tls
+    secretName: ""                      # default; example: quader-ops-tls
     certKey: tls.crt                    # default
     keyKey: tls.key                     # default
-  backendTLSPolicy:                     # Gateway API: how the Gateway verifies trove; needs the BackendTLSPolicy CRD
+  backendTLSPolicy:                     # Gateway API: how the Gateway verifies Quader; needs the BackendTLSPolicy CRD
     enabled: false                      # default
     caConfigMapName: ""                 # required when enabled; a ConfigMap with ca.crt
     hostname: ""                        # default: <fullname>.<namespace>.svc; must be a SAN of the certificate
@@ -2721,18 +2721,18 @@ ingress:
   className: ""                         # default: the cluster's default IngressClass
   annotations: {}                       # default; controller settings; never cookie affinity
   hosts: []                             # default: empty = the host of server.base_url
-  tls: []                               # default; example: [{secretName: trove-tls, hosts: [trove.example.com]}]
-  backendTLS:                           # how the controller reaches trove over TLS
+  tls: []                               # default; example: [{secretName: quader-tls, hosts: [quader.example.com]}]
+  backendTLS:                           # how the controller reaches Quader over TLS
     controller: haproxy                 # default: haproxy | traefik | ingress-nginx | manual
-    verify: true                        # default: the controller verifies the trove certificate; with true, caSecret is required (haproxy, ingress-nginx), also for the Ingress of an endpoint
-    caSecret: ""                        # required with verify on haproxy and ingress-nginx; a Secret with ca.crt; example: trove-tls
-    clientCertSecret: ""                # haproxy: a Secret with tls.crt and tls.key presented to trove; required with tls.clientCA
+    verify: true                        # default: the controller verifies the Quader certificate; with true, caSecret is required (haproxy, ingress-nginx), also for the Ingress of an endpoint
+    caSecret: ""                        # required with verify on haproxy and ingress-nginx; a Secret with ca.crt; example: quader-tls
+    clientCertSecret: ""                # haproxy: a Secret with tls.crt and tls.key presented to Quader; required with tls.clientCA
     serversTransport: ""                # traefik only: <namespace>-<name>@kubernetescrd; required with verify
 ```
 
 With `controller: haproxy` the chart renders `haproxy-ingress.github.io/secure-backends`, `secure-verify-ca-secret`,
 `secure-sni` and `secure-crt-secret`. Other controllers get their own annotations as listed in
-[ingress.yaml](deploy/helm/trove/templates/ingress.yaml).
+[ingress.yaml](deploy/helm/quader/templates/ingress.yaml).
 
 </details>
 
@@ -2765,19 +2765,19 @@ implementation-specific policies the chart does not render. With `helm template`
 ```yaml
 secrets:
   database:
-    existingSecret: ""                  # required; example: trove-db-app (CloudNativePG application Secret)
+    existingSecret: ""                  # required; example: quader-db-app (CloudNativePG application Secret)
     usernameKey: username               # default
     passwordKey: password               # default
   databaseMigration:
-    existingSecret: ""                  # default: empty = single-role mode (R-HA-014); example: trove-db-owner
+    existingSecret: ""                  # default: empty = single-role mode (R-HA-014); example: quader-db-owner
     usernameKey: username               # default
     passwordKey: password               # default
   databaseBackup:
-    existingSecret: ""                  # default: empty = secrets.database; example: trove-db-backup, the login of config.database.backup_role. Backup pods only
+    existingSecret: ""                  # default: empty = secrets.database; example: quader-db-backup, the login of config.database.backup_role. Backup pods only
     usernameKey: username               # default
     passwordKey: password               # default
   databaseCA:
-    existingSecret: ""                  # example: trove-db-ca; only ca.crt is projected
+    existingSecret: ""                  # example: quader-db-ca; only ca.crt is projected
     key: ca.crt                         # default
   databaseClientCert:
     existingSecret: ""                  # default: no client certificate
@@ -2787,38 +2787,38 @@ secrets:
     existingSecret: ""                  # default; required with credentials.source static; also the provisioner's Secret when a key below is set
     accessKeyIdKey: access-key-id       # default; the provisioner writes AWS_ACCESS_KEY_ID
     secretAccessKeyKey: secret-access-key   # default; the provisioner writes AWS_SECRET_ACCESS_KEY
-    bucketKey: ""                       # default: empty = config.storage.s3.bucket; example: S3_BUCKET (set = TROVE_STORAGE_S3_BUCKET reads it)
+    bucketKey: ""                       # default: empty = config.storage.s3.bucket; example: S3_BUCKET (set = QUADER_STORAGE_S3_BUCKET reads it)
     regionKey: ""                       # default: empty = config.storage.s3.region; example: S3_REGION
     endpointKey: ""                     # default: empty = config.storage.s3.endpoint; example: S3_ENDPOINT (a host without scheme, reached over https)
   valkey:
-    existingSecret: ""                  # required; example: trove-valkey
+    existingSecret: ""                  # required; example: quader-valkey
     usernameKey: username               # default; empty = the default user, the file is not mounted
     passwordKey: password               # default
   valkeySentinel:
-    existingSecret: ""                  # default: empty = Sentinels without a password; example: trove-valkey-sentinel
+    existingSecret: ""                  # default: empty = Sentinels without a password; example: quader-valkey-sentinel
     usernameKey: ""                     # default: empty = no Sentinel user
     passwordKey: password               # default
   backupTarget:
-    existingSecret: ""                  # default; required with config.backup.target.credentials.source static, whatever backup.enabled says; example: trove-backup-target. Backup and restore pods only
+    existingSecret: ""                  # default; required with config.backup.target.credentials.source static, whatever backup.enabled says; example: quader-backup-target. Backup and restore pods only
     accessKeyIdKey: access-key-id       # default
     secretAccessKeyKey: secret-access-key   # default
     sessionTokenKey: ""                 # default: empty = no session token
   backupSource:
-    existingSecret: ""                  # default; required with backup.enabled and config.storage.s3.credentials.source static; example: trove-blob-reader, a login that may only read the blob bucket (s3:GetObject, s3:ListBucket). Backup pods only, in place of secrets.s3
+    existingSecret: ""                  # default; required with backup.enabled and config.storage.s3.credentials.source static; example: quader-blob-reader, a login that may only read the blob bucket (s3:GetObject, s3:ListBucket). Backup pods only, in place of secrets.s3
     accessKeyIdKey: access-key-id       # default
     secretAccessKeyKey: secret-access-key   # default
   journalReader:
-    existingSecret: ""                  # default; required with journalCredentials.source static of restore or postRestore; example: trove-journal-reader, a login that may list the object versions of the blob bucket (s3:ListBucketVersions). Those Jobs only
+    existingSecret: ""                  # default; required with journalCredentials.source static of restore or postRestore; example: quader-journal-reader, a login that may list the object versions of the blob bucket (s3:ListBucketVersions). Those Jobs only
     accessKeyIdKey: access-key-id       # default
     secretAccessKeyKey: secret-access-key   # default
   backupTargetCA:
-    existingSecret: ""                  # default: empty = the system trust store; example: trove-backup-target-tls. Renders backup.target.ca_file; backup and restore pods only
+    existingSecret: ""                  # default: empty = the system trust store; example: quader-backup-target-tls. Renders backup.target.ca_file; backup and restore pods only
     key: ca.crt                         # default
   s3CA:
-    existingSecret: ""                  # default: empty = the outbound trust store (system roots, config.proxy.outbound.tls.ca_files); example: trove-s3-tls
-    key: ca.crt                         # default; mounted at /var/run/secrets/trove/s3-ca/ca.crt, renders storage.s3.ca_file (the whole trust store of the object-store client)
+    existingSecret: ""                  # default: empty = the outbound trust store (system roots, config.proxy.outbound.tls.ca_files); example: quader-s3-tls
+    key: ca.crt                         # default; mounted at /var/run/secrets/quader/s3-ca/ca.crt, renders storage.s3.ca_file (the whole trust store of the object-store client)
   valkeyCA:
-    existingSecret: ""                  # default: empty = the system roots; example: trove-valkey-ca
+    existingSecret: ""                  # default: empty = the system roots; example: quader-valkey-ca
     key: ca.crt                         # default
   valkeyClientCert:
     existingSecret: ""                  # default: no client certificate
@@ -2826,13 +2826,13 @@ secrets:
     keyKey: tls.key                     # default
   oidc: []                              # default: no client secrets. Web pods only, never worker, Job or backup pods (R-AUTH-042)
   #  - providerId: corp                 # example: the ID of a provider in config.auth.oidc.providers, ^[a-z0-9][a-z0-9-]{0,31}$; the render fails for a provider that does not exist
-  #    existingSecret: trove-oidc-corp  # example; required
-  #    key: client-secret               # default; mounted at /var/run/secrets/trove/oidc-<providerId>/client-secret, renders client_secret_file of that provider
+  #    existingSecret: quader-oidc-corp  # example; required
+  #    key: client-secret               # default; mounted at /var/run/secrets/quader/oidc-<providerId>/client-secret, renders client_secret_file of that provider
   breakGlass:
-    existingSecret: ""                  # default: empty = the chart renders auth.break_glass.enabled: false; example: trove-break-glass. Web pods only (R-AUTH-014, R-AUTH-042)
-    key: password                       # default; plaintext of at least 20 characters or an Argon2id PHC hash; mounted at /var/run/secrets/trove/break-glass/password
+    existingSecret: ""                  # default: empty = the chart renders auth.break_glass.enabled: false; example: quader-break-glass. Web pods only (R-AUTH-014, R-AUTH-042)
+    key: password                       # default; plaintext of at least 20 characters or an Argon2id PHC hash; mounted at /var/run/secrets/quader/break-glass/password
   encryption:
-    existingSecret: ""                  # required; example: trove-encryption-keys
+    existingSecret: ""                  # required; example: quader-encryption-keys
     keys: []                            # required; ordered, first = active; example: [2026-10.key, 2026-04.key]
   metricsToken:
     existingSecret: ""                  # default; needed with config.metrics.auth static
@@ -2846,7 +2846,7 @@ secrets:
 trustedCA:
   existingSecret: ""                    # default: empty = no bundle; at most one of existingSecret and existingConfigMap; example: corp-ca-bundle
   existingConfigMap: ""                 # default; example: corp-ca-bundle (a trust-manager Bundle target)
-  keys: [ca-bundle.crt]                 # default; the files of the source that are mounted at /etc/trove/ca/, each a PEM bundle; a plain file name
+  keys: [ca-bundle.crt]                 # default; the files of the source that are mounted at /etc/quader/ca/, each a PEM bundle; a plain file name
   useForObjectStore: false              # default; true also sets storage.s3.ca_file to the one file of keys (exactly one key, not with secrets.s3CA)
 ```
 
@@ -2854,13 +2854,13 @@ The files are added to the system roots for every outbound TLS connection (upstr
 release, the Jobs included, after the files that `config.proxy.outbound.tls.ca_files` already lists. They are mounted without `subPath`, so a
 rotation of the source reaches the pods at the kubelet's pace and the binary reads the files again within 60 s
 ([R-HA-043](docs/spec/ha-and-helm.md), [H-804](docs/spec/ha-and-helm.md#h-804--a-change-of-the-ca-source-reaches-the-pods-at-the-kubelets-pace)).
-Security: whoever can write the source can make trove accept a certificate it signs, so protect it like `tls.secretName`. PostgreSQL never uses
+Security: whoever can write the source can make Quader accept a certificate it signs, so protect it like `tls.secretName`. PostgreSQL never uses
 the bundle: the database connection trusts `secrets.databaseCA` only. With `useForObjectStore` the file is the object store's whole trust store.
 
 Sizing profiles ([R-HA-050](docs/spec/ha-and-helm.md)) are values files of the chart; layer one before your own:
 
 ```shell
-helm upgrade --install trove ./deploy/helm/trove -f deploy/helm/trove/profiles/medium.yaml -f my-values.yaml
+helm upgrade --install quader ./deploy/helm/quader -f deploy/helm/quader/profiles/medium.yaml -f my-values.yaml
 ```
 
 | Profile | `packages` | `worker` | `packages` requests / memory limit | `config.database.pool.max_conns` | `packages` spool | The operator provides |
@@ -2884,7 +2884,7 @@ Security notes on the login secrets:
   the cluster; a plaintext password is hashed in memory by each `web` replica. Without the value the account is off, not open.
 - Both secrets are mounted as a directory of the Secret, read-only, without `subPath`, `defaultMode: 0440`, and only into `api`
   pods (the main Deployment, its pools and its endpoint pools, and the bridge's `web`): `packages`, `worker`, the migration Job and the backup pods never get them. A rotated Secret
-  reaches the pods through the kubelet, trove notices the new file within `auth.break_glass.check_interval` and refuses the local
+  reaches the pods through the kubelet, Quader notices the new file within `auth.break_glass.check_interval` and refuses the local
   login for `auth.break_glass.rotation_hold` (Q-AUTH-14) and ends the break-glass sessions.
 - `config.auth.break_glass.password_file` and `config.auth.oidc.providers.<id>.client_secret_file` are chart-managed
   for a provider named in `secrets.oidc`; setting them inside `config` fails the render. `client_secret_env` stays free for
@@ -2894,23 +2894,23 @@ Security notes on the login secrets:
 generates and, with `iso.gtrfc.com/rotate`, rotates the password (a rotation opens the 2-minute hold above):
 
 ```shell
-kubectl -n trove apply -f - <<'EOF'
+kubectl -n quader apply -f - <<'EOF'
 apiVersion: v1
 kind: Secret
 metadata:
-  name: trove-break-glass                    # example
+  name: quader-break-glass                    # example
   annotations:
     iso.gtrfc.com/autogenerate: password     # the field to generate
-    iso.gtrfc.com/length: "32"               # default: 32; trove needs at least 20
+    iso.gtrfc.com/length: "32"               # default: 32; Quader needs at least 20
     # iso.gtrfc.com/rotate: 90d              # example: optional rotation; the operator's minimum is 5m
 type: Opaque
 EOF
-helm upgrade --install trove trove/trove -n trove -f values.yaml --set secrets.breakGlass.existingSecret=trove-break-glass
-kubectl -n trove get secret trove-break-glass -o jsonpath='{.data.password}' | base64 -d; echo
+helm upgrade --install quader quader/quader -n quader -f values.yaml --set secrets.breakGlass.existingSecret=quader-break-glass
+kubectl -n quader get secret quader-break-glass -o jsonpath='{.data.password}' | base64 -d; echo
 ```
 
-Open `/ui/login?auto_sign_in=false` on the installation's base URL (trove redirects it to the negotiated locale, `/ui/<locale>/login?auto_sign_in=false`) and sign in as `admin` (`auth.break_glass.username`, default `admin`) with that
-password. Without the operator, `kubectl create secret generic trove-break-glass --from-literal=password="$(head -c 24 /dev/urandom | base64)"`
+Open `/ui/login?auto_sign_in=false` on the installation's base URL (Quader redirects it to the negotiated locale, `/ui/<locale>/login?auto_sign_in=false`) and sign in as `admin` (`auth.break_glass.username`, default `admin`) with that
+password. Without the operator, `kubectl create secret generic quader-break-glass --from-literal=password="$(head -c 24 /dev/urandom | base64)"`
 does the same once.
 
 Secret keys the platform produces for these values: the provisioner of the object store writes `AWS_ACCESS_KEY_ID`,
@@ -2939,9 +2939,9 @@ endpoints: {}                           # default: only the default endpoint; th
 #    maxInFlight: 1024                  # default, per replica and endpoint
 #    trustedProxies: []                 # default: config.server.trusted_proxies
 #    tls:
-#      existingSecret: ""               # default: empty = the pair of tls.secretName; example: trove-packages-tls
-#      extraSecrets: []                 # default; further pairs, chosen by SNI; example: [trove-packages-wildcard-tls]
-#      clientCaSecret: ""               # default: no client certificates; example: trove-customer-ca (key ca.crt)
+#      existingSecret: ""               # default: empty = the pair of tls.secretName; example: quader-packages-tls
+#      extraSecrets: []                 # default; further pairs, chosen by SNI; example: [quader-packages-wildcard-tls]
+#      clientCaSecret: ""               # default: no client certificates; example: quader-customer-ca (key ca.crt)
 #    pool:
 #      enabled: false                   # default: true renders <fullname>-packages-ep-<name> and, with api families in the surface, <fullname>-api-ep-<name>
 #      replicaCount: 2                  # default when enabled; every key of the role's values may be overridden here
@@ -2964,28 +2964,28 @@ networkPolicy:
       from:                             # default: port 8081 only from the monitoring namespace
         - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: monitoring}}
     probeCIDRs: []                      # default; example: ["10.0.0.0/16"]; where the CNI does not exempt kubelet probes
-config:                                 # rendered to /etc/trove/trove.yaml; chart-managed keys (secret paths, spool dir) must not be set here
+config:                                 # rendered to /etc/quader/quader.yaml; chart-managed keys (secret paths, spool dir) must not be set here
   server:
-    base_url: ""                        # required; example: https://trove.example.com
+    base_url: ""                        # required; example: https://quader.example.com
     trusted_proxies: []                 # default; example: ["10.244.3.17", "10.244.5.9"] (the edge's addresses, never a whole pod CIDR)
     forwarded_header: x-forwarded-for   # default
   health:
     shutdown_drain_delay: 5s            # default
   database:
-    host: ""                            # required; example: trove-db-rw.trove.svc
-    name: trove                         # example
+    host: ""                            # required; example: quader-db-rw.quader.svc
+    name: quader                         # example
     ssl_mode: verify-full               # default
   valkey:
     mode: sentinel                      # default
     sentinel:
-      addresses: []                     # required; example: ["trove-valkey-sentinel-0.trove-valkey-sentinel.trove.svc:26379"]
-      primary_name: ""                  # required; example: trove
+      addresses: []                     # required; example: ["quader-valkey-sentinel-0.quader-valkey-sentinel.quader.svc:26379"]
+      primary_name: ""                  # required; example: quader
       tls: true                         # default
     tls:
       mode: verify-full                 # default
   storage:
     s3:
-      bucket: ""                        # required; example: trove-blobs
+      bucket: ""                        # required; example: quader-blobs
       force_path_style: false           # default
   metrics:
     auth: none                          # default: none | static
@@ -3015,7 +3015,7 @@ migrations:
     limits: {memory: 512Mi}                # default
   podAnnotations: {}                    # default
   extraEnv: []                          # default
-extraEnv: []                            # default; example: [{name: TROVE_LOG_LEVEL, value: debug}]
+extraEnv: []                            # default; example: [{name: QUADER_LOG_LEVEL, value: debug}]
 extraEnvFrom: []                        # default
 extraVolumes: []                        # default
 extraVolumeMounts: []                   # default
@@ -3029,9 +3029,9 @@ commonAnnotations: {}                   # default
 <details>
 <summary>Backup CronJob, restore Job and post-restore Job (M5)</summary>
 
-The three are Jobs of the binary's commands, not roles ([backup.yaml](deploy/helm/trove/templates/backup.yaml),
-[restore.yaml](deploy/helm/trove/templates/restore.yaml), [post-restore.yaml](deploy/helm/trove/templates/post-restore.yaml),
-[_backup.tpl](deploy/helm/trove/templates/_backup.tpl)): they serve nothing, have no probe, mount no volume but `/tmp`, the extra volumes of their own values and their
+The three are Jobs of the binary's commands, not roles ([backup.yaml](deploy/helm/quader/templates/backup.yaml),
+[restore.yaml](deploy/helm/quader/templates/restore.yaml), [post-restore.yaml](deploy/helm/quader/templates/post-restore.yaml),
+[_backup.tpl](deploy/helm/quader/templates/_backup.tpl)): they serve nothing, have no probe, mount no volume but `/tmp`, the extra volumes of their own values and their
 Secrets, take neither the global `extraEnv` nor `extraVolumes`, and run as a ServiceAccount of their own without a token. Their pod
 failure policy ignores a disruption (a drain, a preemption) first, then fails the Job on exit `2`, `3`, `4` and `6`; `1` and `75`
 are retried within `backoffLimit`.
@@ -3056,7 +3056,7 @@ backup:
   serviceAccount:
     create: true                        # default
     name: ""                            # default: <fullname>-backup
-    annotations: {}                     # default; example (IRSA, read on the blob bucket, write on the target): {eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/trove-backup"}
+    annotations: {}                     # default; example (IRSA, read on the blob bucket, write on the target): {eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/quader-backup"}
   nodeSelector: {}                      # default
   tolerations: []                       # default
   affinity: {}                          # default
@@ -3070,7 +3070,7 @@ restore:
   enabled: false                        # default; true renders the Job <fullname>-restore, no migration Job and a suspended CronJob, and refuses any replica or autoscaler of a role, pool or the bridge
   backupId: ""                          # default; required with enabled; example: 20261028T020000Z-7f3a
   skipRevocationJournal: false          # default; true only when the source's blob bucket is gone: revocations after the snapshot then come back
-  extraArgs: []                         # default; appended to trove backup restore; example: [--check], a run of the preconditions only
+  extraArgs: []                         # default; appended to quader backup restore; example: [--check], a run of the preconditions only
   journalCredentials:
     source: runtime                     # default: runtime (the blob store's credential, a plain listing) | default (the Job's workload identity lists object versions) | static (secrets.journalReader)
   backoffLimit: 2                       # default; a drain or an eviction does not count, and every retry resumes the restore
@@ -3079,7 +3079,7 @@ restore:
   serviceAccount:
     create: true                        # default
     name: ""                            # default: <fullname>-restore
-    annotations: {}                     # default; example (IRSA, read on the target, write on the new blob prefix, read on the source's journal): {eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/trove-restore"}
+    annotations: {}                     # default; example (IRSA, read on the target, write on the new blob prefix, read on the source's journal): {eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/quader-restore"}
   resources:
     requests: {cpu: "1", memory: 1Gi}   # default
     limits: {memory: 2Gi}               # default
@@ -3099,7 +3099,7 @@ postRestore:
   serviceAccount:
     create: true                        # default
     name: ""                            # default: <fullname>-post-restore
-    annotations: {}                     # default; example (IRSA, s3:ListBucketVersions on the blob bucket with journalCredentials.source default): {eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/trove-post-restore"}
+    annotations: {}                     # default; example (IRSA, s3:ListBucketVersions on the blob bucket with journalCredentials.source default): {eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/quader-post-restore"}
   resources:
     requests: {cpu: 100m, memory: 128Mi}   # default
     limits: {memory: 512Mi}             # default
@@ -3110,18 +3110,18 @@ postRestore:
 config:
   backup:                               # the keys the chart reads; the whole section is in the configuration reference above
     target:
-      bucket: ""                        # default: empty; required with backup.enabled or restore.enabled; example: trove-backups
+      bucket: ""                        # default: empty; required with backup.enabled or restore.enabled; example: quader-backups
       endpoint: ""                      # default: AWS resolution; compared with config.storage.s3.endpoint for the same-bucket rule
-      prefix: trove                     # default; in a shared bucket it must neither contain config.storage.s3.prefix nor lie inside it
+      prefix: quader                     # default; in a shared bucket it must neither contain config.storage.s3.prefix nor lie inside it
       allow_same_bucket: false          # default
       credentials:
         source: default                 # default: default | webIdentity | static (secrets.backupTarget)
-    expected_interval: 24h              # default; also the window of TroveBackupStale for a backup that never succeeded
+    expected_interval: 24h              # default; also the window of QuaderBackupStale for a backup that never succeeded
 ```
 
-What the render refuses ([_validate_backup.tpl](deploy/helm/trove/templates/_validate_backup.tpl)), each time naming the value:
+What the render refuses ([_validate_backup.tpl](deploy/helm/quader/templates/_validate_backup.tpl)), each time naming the value:
 `backup.enabled` or `restore.enabled` without `config.backup.target.bucket`; a `<fullname>-backup` longer than 52 characters; a
-`backup.schedule` outside the dialect of trove's cron parser; the target in the blob store's bucket on the same endpoint without
+`backup.schedule` outside the dialect of Quader's cron parser; the target in the blob store's bucket on the same endpoint without
 `allow_same_bucket`, or with prefixes that contain each other (the orphan sweep of the blob store would delete the backups);
 `config.backup.target.credentials.source: static` without `secrets.backupTarget`; `backup.enabled` with static S3 keys and no
 `secrets.backupSource`; `restore.enabled` without `restore.backupId`; `restore.enabled` or `postRestore.enabled` with a replica or an
@@ -3142,7 +3142,7 @@ Security notes ([backup and restore](docs/security/backup-and-restore.md#who-hol
   static`, the journal reader. It is the only Job with the key ring.
 - **The post-restore Job** holds the owner login, the blob store's credential and, with `journalCredentials.source: static`, the journal
   reader; no key ring and nothing of the target.
-- **The replicas** never receive a target credential: the shared `trove.yaml` names the paths, and nothing exists under them outside the
+- **The replicas** never receive a target credential: the shared `quader.yaml` names the paths, and nothing exists under them outside the
   backup and restore pods. The API shows what the runs recorded, never the target itself.
 - **`journalCredentials.source: runtime`** lists the journal with the blob store's own credential, which can also delete there: a deletion
   or a delete marker made with it hides an entry from the replay. `default` or `static` lists object versions, which the runtime
@@ -3166,14 +3166,14 @@ metrics:
     labels: {}                          # default; example: {release: kube-prometheus-stack}
     relabelings: []                     # default; appended after the fixed role and pool relabelings
     metricRelabelings: []               # default
-  prometheusRule:                       # R-HA-045; 32 alerts, of which the six TroveBackup* run alerts only with backup.enabled
+  prometheusRule:                       # R-HA-045; 32 alerts, of which the six QuaderBackup* run alerts only with backup.enabled
     enabled: false                      # default; true renders the PrometheusRule <fullname>; needs the Prometheus operator's CRDs
     labels: {}                          # default; example: {release: kube-prometheus-stack}
-    disabledAlerts: []                  # default; example: [TroveVulnerabilitySyncFailing]; a name that is no alert of the chart fails the render
+    disabledAlerts: []                  # default; example: [QuaderVulnerabilitySyncFailing]; a name that is no alert of the chart fails the render
     extraRules: []                      # default; rules appended after the chart's alerts
 config:
   vulnerabilities:
-    stale_after: 24h                    # default; also the threshold of TroveVulnerabilityDataStale, so the alert and the report's banner agree
+    stale_after: 24h                    # default; also the threshold of QuaderVulnerabilityDataStale, so the alert and the report's banner agree
     sources:
       osv:
         max_archive_size: 1GiB          # default; must fit the worker spool budget (worker.spool.sizeLimit minus spool.headroom)
@@ -3181,24 +3181,24 @@ config:
 
 | Alert | Expression | Severity |
 |---|---|---|
-| `TroveVulnerabilityDataStale` | `time() - max by (source, ecosystem) (trove_vuln_source_last_success_timestamp_seconds) > stale_after` for 15m; a source that never synced fires too | warning |
-| `TroveVulnerabilitySyncFailing` | `max by (source, ecosystem) (trove_vuln_source_consecutive_failures) >= 3` | warning |
-| `TroveVulnerabilityClaimedNameMalicious` | `max(trove_vuln_claimed_name_matches{kind="malicious"}) > 0` | critical |
-| `TroveMirrorFailing` | `max by (repo) (trove_mirror_consecutive_failures) >= 3`: three failed pass attempts in a row, the status's `failing`; a complete pass resets it | warning |
-| `TroveMirrorStale` | `time() - max by (repo) (trove_mirror_next_pass_timestamp_seconds) > 3600` for 30m: the next pass was due an hour ago and nothing started it (no process claims the queue, a lost job), or the pass in progress has not written for an hour; a mirror that never completed a pass fires too; a paused mirror has no series | warning |
-| `TroveBridgeLeftOn` | `count(trove_build_info{role="web"}) > 0` for 24h: `web.enabled` stayed true for a day: the third step of the upgrade across the cut has not run | warning |
-| `TroveBackupCheckFailed` | `min(trove_backup_check_ok) == 0` for 1h: a platform protection that `backup.recovery_window` or `backup.object_versioning` declares does not hold; the label `check` names it, `trove admin backup check` prints the reason; an undeclared or unreadable check has no series | critical |
-| `TroveRevocationJournalBacklog` | `max(trove_revocation_journal_pending) > 0` for 15m: the shipper does not write `_journal/revocations/` of the blob bucket, so a restore taken now would replay a journal without those entries | warning |
-| `TroveRevocationJournalQuarantined` | `sum(increase(trove_revocation_journal_quarantined_total[1h])) > 0`: a change could not be written to the journal and was set aside in `system_state` `journal_quarantined`; `trove admin post-restore` prints it | critical |
-| `TroveBackupStale` | with `backup.enabled`: `time() - max(trove_backup_last_success_timestamp_seconds) > 1.5 * max(trove_backup_expected_interval_seconds)`, or no success one `config.backup.expected_interval` after the replicas first reported; the condition of the overdue mark in the API and the UI | critical |
-| `TroveBackupFailed` | with `backup.enabled`: `max(trove_backup_last_failure_timestamp_seconds) > (max(trove_backup_last_success_timestamp_seconds) or vector(0))`: the newest create run failed, was abandoned or lost its lease after the last success; a drain is no failure; resolves with the next success | critical |
-| `TroveBackupRunningLong` | with `backup.enabled`: `max(trove_backup_running_seconds) > 0.5 * max(trove_backup_expected_interval_seconds)`: a create or delete run holds the target's slot and its pins for more than half an interval | warning |
-| `TroveBackupGlobalHoldLong` | with `backup.enabled`: `max(trove_backup_gc_hold{mode="all"}) == 1` for 30m: the hold that stops the collection of every blob, meant to last minutes | warning |
-| `TroveBackupSourceDamage` | with `backup.enabled`: `max(trove_backup_source_blobs_damaged) > 0`: the newest successful backup lacks blobs whose objects it could not copy correctly | critical |
-| `TroveBackupVerifyFindings` | with `backup.enabled`: `max(trove_backup_last_verify_findings) > 0`: the newest `verify` found missing, damaged or mismatching objects | critical |
+| `QuaderVulnerabilityDataStale` | `time() - max by (source, ecosystem) (quader_vuln_source_last_success_timestamp_seconds) > stale_after` for 15m; a source that never synced fires too | warning |
+| `QuaderVulnerabilitySyncFailing` | `max by (source, ecosystem) (quader_vuln_source_consecutive_failures) >= 3` | warning |
+| `QuaderVulnerabilityClaimedNameMalicious` | `max(quader_vuln_claimed_name_matches{kind="malicious"}) > 0` | critical |
+| `QuaderMirrorFailing` | `max by (repo) (quader_mirror_consecutive_failures) >= 3`: three failed pass attempts in a row, the status's `failing`; a complete pass resets it | warning |
+| `QuaderMirrorStale` | `time() - max by (repo) (quader_mirror_next_pass_timestamp_seconds) > 3600` for 30m: the next pass was due an hour ago and nothing started it (no process claims the queue, a lost job), or the pass in progress has not written for an hour; a mirror that never completed a pass fires too; a paused mirror has no series | warning |
+| `QuaderBridgeLeftOn` | `count(quader_build_info{role="web"}) > 0` for 24h: `web.enabled` stayed true for a day: the third step of the upgrade across the cut has not run | warning |
+| `QuaderBackupCheckFailed` | `min(quader_backup_check_ok) == 0` for 1h: a platform protection that `backup.recovery_window` or `backup.object_versioning` declares does not hold; the label `check` names it, `quader admin backup check` prints the reason; an undeclared or unreadable check has no series | critical |
+| `QuaderRevocationJournalBacklog` | `max(quader_revocation_journal_pending) > 0` for 15m: the shipper does not write `_journal/revocations/` of the blob bucket, so a restore taken now would replay a journal without those entries | warning |
+| `QuaderRevocationJournalQuarantined` | `sum(increase(quader_revocation_journal_quarantined_total[1h])) > 0`: a change could not be written to the journal and was set aside in `system_state` `journal_quarantined`; `quader admin post-restore` prints it | critical |
+| `QuaderBackupStale` | with `backup.enabled`: `time() - max(quader_backup_last_success_timestamp_seconds) > 1.5 * max(quader_backup_expected_interval_seconds)`, or no success one `config.backup.expected_interval` after the replicas first reported; the condition of the overdue mark in the API and the UI | critical |
+| `QuaderBackupFailed` | with `backup.enabled`: `max(quader_backup_last_failure_timestamp_seconds) > (max(quader_backup_last_success_timestamp_seconds) or vector(0))`: the newest create run failed, was abandoned or lost its lease after the last success; a drain is no failure; resolves with the next success | critical |
+| `QuaderBackupRunningLong` | with `backup.enabled`: `max(quader_backup_running_seconds) > 0.5 * max(quader_backup_expected_interval_seconds)`: a create or delete run holds the target's slot and its pins for more than half an interval | warning |
+| `QuaderBackupGlobalHoldLong` | with `backup.enabled`: `max(quader_backup_gc_hold{mode="all"}) == 1` for 30m: the hold that stops the collection of every blob, meant to last minutes | warning |
+| `QuaderBackupSourceDamage` | with `backup.enabled`: `max(quader_backup_source_blobs_damaged) > 0`: the newest successful backup lacks blobs whose objects it could not copy correctly | critical |
+| `QuaderBackupVerifyFindings` | with `backup.enabled`: `max(quader_backup_last_verify_findings) > 0`: the newest `verify` found missing, damaged or mismatching objects | critical |
 
 The six alerts marked "with `backup.enabled`" read gauges that every replica exports whether a backup runs or not, so without the
-CronJob `TroveBackupStale` would fire one interval after the install; the chart renders them only while the CronJob is on. The other
+CronJob `QuaderBackupStale` would fire one interval after the install; the chart renders them only while the CronJob is on. The other
 alerts of the chart (replicas, database, object store, Valkey, jobs, leases, spool, versions) are described in
 [operations](docs/manual/admin/operations.md#alerts).
 
@@ -3207,21 +3207,21 @@ The chart renders no ServiceMonitor; the scrape is the operator's.
 
 The render fails while `config.vulnerabilities.enabled` is `true` (the default) and `sources.osv.mode` is not `off`, when
 `max_archive_size` is larger than the worker's spool budget: the default `worker.spool.sizeLimit: 8Gi` minus `spool.headroom: 2GiB`
-holds the default 1 GiB ([_validate.tpl](deploy/helm/trove/templates/_validate.tpl), [the chart check](docs/security/vulnerability-scanning.md#the-chart-refuses-a-spool-that-cannot-hold-the-archive)).
+holds the default 1 GiB ([_validate.tpl](deploy/helm/quader/templates/_validate.tpl), [the chart check](docs/security/vulnerability-scanning.md#the-chart-refuses-a-spool-that-cannot-hold-the-archive)).
 The `worker` pods need egress on port 443 to the hosts of the sources in mode `online`; the chart renders no egress policy.
 
 </details>
 
-The chart's values are checked by [values.schema.json](deploy/helm/trove/values.schema.json) and by `make chart-lint`. The
+The chart's values are checked by [values.schema.json](deploy/helm/quader/values.schema.json) and by `make chart-lint`. The
 requirement of the chart is [HA and Helm](docs/spec/ha-and-helm.md).
 
 ### Development targets
 
 | Target | What it does |
 |---|---|
-| `make build` | Static binary in `bin/trove` |
+| `make build` | Static binary in `bin/quader` |
 | `make web` | Angular build into `internal/webui/dist/` (needs Node.js 26.13.0) |
-| `make ui-dev-up`, `make ui-dev-backend`, `make ui-dev-web`, `make ui-dev-down` | UI work with hot reload: backing containers, one trove on the host with a sign-in provider of its own, the Angular dev server on `https://localhost:4200/ui/` ([local UI development](docs/developer/web-ui.md#local-ui-development)) |
+| `make ui-dev-up`, `make ui-dev-backend`, `make ui-dev-web`, `make ui-dev-down` | UI work with hot reload: backing containers, one Quader on the host with a sign-in provider of its own, the Angular dev server on `https://localhost:4200/ui/` ([local UI development](docs/developer/web-ui.md#local-ui-development)) |
 | `make ui-renders` | Every screen as pictures, as the three kinds of user, light and dark, at 1440, 1024 and 390 px, with a contact sheet in `.out/ui-renders/` ([renders](docs/developer/web-ui.md#renders-of-every-screen)) |
 | `make generate`, `make generate-check` | Every `go:generate` directive; the check fails on any diff |
 | `make lint`, `make fmt` | `golangci-lint` and `go vet`; the formatters of `.golangci.yml` |
@@ -3235,7 +3235,7 @@ requirement of the chart is [HA and Helm](docs/spec/ha-and-helm.md).
 | `make chart-lint`, `make chart-test` | Helm lint over every value set; render assertions (`chart` build tag) |
 | `make integration-up`, `make test-integration`, `make integration-down` | Integration stack and tests (`integration` build tag, `test/integration/<area>`) |
 | `make coverage` | Regenerates the requirement checklist in `docs/coverage/` |
-| `make dev-up`, `make dev-down`, `make e2e` | Local profile, its teardown, and the end-to-end suite (`e2e` build tag; `SET=access` runs the access-core tests, `SET=ci` the GitLab CI reference pipeline, `SET=ci-ha` its long legs, `SET=oci` the Docker and Podman client tests of the OCI registry in the namespace `trove-e2e-clients`, `SET=oci-closing` and `SET=oci-long` its closing and drain tests, `SET=deb` and `SET=deb-closing` the APT client tests of the Debian format and its closing run (a real APT of Debian 13 and 12 and Ubuntu 24.04 and 22.04 in the namespace `trove-e2e-apt`), `SET=upgrade` the upgrade across the cut and the rolling upgrade, `SET=backup` the backup drill with a restore into the namespace `trove-restore`, the drain of a backup and of a restore, and the journal across a restore). A second `dev-up` rolls the pods when the loaded image changed |
+| `make dev-up`, `make dev-down`, `make e2e` | Local profile, its teardown, and the end-to-end suite (`e2e` build tag; `SET=access` runs the access-core tests, `SET=ci` the GitLab CI reference pipeline, `SET=ci-ha` its long legs, `SET=oci` the Docker and Podman client tests of the OCI registry in the namespace `quader-e2e-clients`, `SET=oci-closing` and `SET=oci-long` its closing and drain tests, `SET=deb` and `SET=deb-closing` the APT client tests of the Debian format and its closing run (a real APT of Debian 13 and 12 and Ubuntu 24.04 and 22.04 in the namespace `quader-e2e-apt`), `SET=upgrade` the upgrade across the cut and the rolling upgrade, `SET=backup` the backup drill with a restore into the namespace `quader-restore`, the drain of a backup and of a restore, and the journal across a restore). A second `dev-up` rolls the pods when the loaded image changed |
 | `make dev-valkey-stop`, `make dev-valkey-start` | Stops Valkey and the Sentinels until the start target; the test holds the outage for a criterion of unknown length |
 | `make oci-stub-image`, `make oci-clients-image` | The image of the counting OCI test upstream (`test/ocistub`, `OCI_STUB_IMAGE`); the two client images of the OCI e2e set, the pinned Docker Engine with Buildx and the pinned Podman (`test/e2e/ociclients`, pins in `tools/versions.env`) |
 | `make deb-stub-image`, `make apt-clients-image` | The image of the counting Debian archive test upstream (`test/debstub`, `DEB_STUB_IMAGE`); the four client images of the Debian e2e set, the official Debian 13, Debian 12, Ubuntu 24.04 and Ubuntu 22.04 images with curl and a forwarder (`test/e2e/aptclients`, digest pins `E2E_APTCLIENTS_*_IMAGE` in `tools/versions.env`) |
@@ -3255,4 +3255,4 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 
 Apache License 2.0. See [LICENSE](LICENSE). The web UI bundles third-party software under its own licences; each installation serves their notices at `/ui/en/3rdpartylicenses.txt` (and `/ui/de/3rdpartylicenses.txt`).
 
-The web UI names a package format with its ecosystem's logo where the logo's owner allows it: the Debian Open Use Logo (© 1999 Software in the Public Interest, Inc., CC BY-SA 3.0), the NuGet logo (the NuGet project, CC BY 2.0) and the Open Container Initiative logo (The Linux Foundation, Apache-2.0), each unchanged; [web/public/formats/NOTICE.txt](web/public/formats/NOTICE.txt) lists the sources. The logos and names are trademarks of their owners, used only to name the formats. trove is not affiliated with, sponsored or endorsed by any of them. *Debian* is a registered trademark owned by Software in the Public Interest, Inc.; Open Container Initiative® is a registered trademark of The Linux Foundation; npm is a registered trademark of npm, Inc.; Ansible is a trademark of Red Hat, LLC, registered in the United States and other countries; Docker is a trademark or registered trademark of Docker, Inc. in the United States and/or other countries.
+The web UI names a package format with its ecosystem's logo where the logo's owner allows it: the Debian Open Use Logo (© 1999 Software in the Public Interest, Inc., CC BY-SA 3.0), the NuGet logo (the NuGet project, CC BY 2.0) and the Open Container Initiative logo (The Linux Foundation, Apache-2.0), each unchanged; [web/public/formats/NOTICE.txt](web/public/formats/NOTICE.txt) lists the sources. The logos and names are trademarks of their owners, used only to name the formats. Quader is not affiliated with, sponsored or endorsed by any of them. *Debian* is a registered trademark owned by Software in the Public Interest, Inc.; Open Container Initiative® is a registered trademark of The Linux Foundation; npm is a registered trademark of npm, Inc.; Ansible is a trademark of Red Hat, LLC, registered in the United States and other countries; Docker is a trademark or registered trademark of Docker, Inc. in the United States and/or other countries.

@@ -3,13 +3,13 @@ package items
 import (
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/servefacts"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/servefacts"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // Kinds of an item.

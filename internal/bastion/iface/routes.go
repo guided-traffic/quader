@@ -29,8 +29,8 @@ const (
 )
 
 // The operation names of the interface: the operation label of
-// trove_bastion_interface_requests_total on the main installation (R-BAS-008) and
-// the kind of trove_bastion_main_requests_total on the Bastion for the
+// quader_bastion_interface_requests_total on the main installation (R-BAS-008) and
+// the kind of quader_bastion_main_requests_total on the Bastion for the
 // non-forwarded ones (R-BAS-040).
 const (
 	OperationHandshake = "handshake"

@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
-// ensureRuntimeRole creates the two-role setup's runtime login (trove_app,
+// ensureRuntimeRole creates the two-role setup's runtime login (quader_app,
 // R-HA-014) if the cluster has none. Roles are cluster-wide and the databases of
 // other tests hold privileges on it, so the role is never dropped; creating it
 // early only makes later migrations of other databases grant and revoke on it,
@@ -24,19 +24,19 @@ func ensureRuntimeRole(t *testing.T, st stack) {
 	ctx := ctxT(t, 10*time.Second)
 	for range 5 {
 		_, err := admin.Exec(ctx, `DO $$ BEGIN
-			IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trove_app') THEN
-				CREATE ROLE trove_app LOGIN PASSWORD 'trove-app-it';
+			IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'quader_app') THEN
+				CREATE ROLE quader_app LOGIN PASSWORD 'quader-app-it';
 			END IF;
 		END $$`)
 		if err == nil {
-			_, err = admin.Exec(ctx, `ALTER ROLE trove_app LOGIN PASSWORD 'trove-app-it'`)
+			_, err = admin.Exec(ctx, `ALTER ROLE quader_app LOGIN PASSWORD 'quader-app-it'`)
 		}
 		if err == nil {
 			return
 		}
 		time.Sleep(100 * time.Millisecond) // a parallel package created it at the same moment
 	}
-	t.Fatal("could not create the runtime role trove_app")
+	t.Fatal("could not create the runtime role quader_app")
 }
 
 func TestBookkeepingPrivileges(t *testing.T) {
@@ -45,16 +45,16 @@ func TestBookkeepingPrivileges(t *testing.T) {
 	cfg, _, admin := migrated(t, st)
 
 	priv := func(table, p string) bool {
-		return scalar[bool](t, admin, `SELECT has_table_privilege('trove_app', 'trove.`+table+`', '`+p+`')`)
+		return scalar[bool](t, admin, `SELECT has_table_privilege('quader_app', 'quader.`+table+`', '`+p+`')`)
 	}
 	t.Run("R-HA-018 the runtime role reads the migration bookkeeping and cannot write it", func(t *testing.T) {
 		for _, table := range []string{"schema_migration", "schema_state"} {
 			if !priv(table, "SELECT") {
-				t.Errorf("trove_app cannot read %s", table)
+				t.Errorf("quader_app cannot read %s", table)
 			}
 			for _, p := range []string{"INSERT", "UPDATE", "DELETE", "TRUNCATE"} {
 				if priv(table, p) {
-					t.Errorf("trove_app holds %s on %s", p, table)
+					t.Errorf("quader_app holds %s on %s", p, table)
 				}
 			}
 		}
@@ -63,7 +63,7 @@ func TestBookkeepingPrivileges(t *testing.T) {
 		for _, table := range []string{"system_state", "repositories", "job", "cluster_epoch"} {
 			for _, p := range []string{"INSERT", "UPDATE", "DELETE"} {
 				if !priv(table, p) {
-					t.Errorf("trove_app lacks %s on %s", p, table)
+					t.Errorf("quader_app lacks %s on %s", p, table)
 				}
 			}
 		}
@@ -73,10 +73,10 @@ func TestBookkeepingPrivileges(t *testing.T) {
 		t.Helper()
 		dir := t.TempDir()
 		user, pass := filepath.Join(dir, "username"), filepath.Join(dir, "password")
-		if err := os.WriteFile(user, []byte("trove_app\n"), 0o600); err != nil {
+		if err := os.WriteFile(user, []byte("quader_app\n"), 0o600); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(pass, []byte("trove-app-it\n"), 0o600); err != nil {
+		if err := os.WriteFile(pass, []byte("quader-app-it\n"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 		c := cfg
@@ -100,8 +100,8 @@ func TestBookkeepingPrivileges(t *testing.T) {
 				t.Fatalf("%s: %v", sql, err)
 			}
 		}
-		scalarExec(`GRANT UPDATE ON trove.schema_state TO trove_app`)
-		defer scalarExec(`REVOKE UPDATE ON trove.schema_state FROM trove_app`)
+		scalarExec(`GRANT UPDATE ON quader.schema_state TO quader_app`)
+		defer scalarExec(`REVOKE UPDATE ON quader.schema_state FROM quader_app`)
 		err := runtime(t)
 		if err == nil || !strings.Contains(err.Error(), "schema_state") || !strings.Contains(err.Error(), "REVOKE") {
 			t.Fatalf("err = %v", err)

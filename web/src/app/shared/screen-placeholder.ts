@@ -7,7 +7,7 @@ import { ActivatedRoute } from '@angular/router';
  * the owning work package replaces this component in the area's `*.routes.ts`.
  */
 @Component({
-  selector: 'trove-screen-placeholder',
+  selector: 'quader-screen-placeholder',
   template: `
     <h1 tabindex="-1">{{ title }}</h1>
     <p i18n="@@placeholder.text">This screen is not available yet.</p>

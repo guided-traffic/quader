@@ -13,10 +13,10 @@ export interface FolderDialogData {
 
 /** "New folder" (R-UI-011): an explicit folder below the selected one, created with `PUT …/folder/`. */
 @Component({
-  selector: 'trove-folder-dialog',
+  selector: 'quader-folder-dialog',
   imports: [DialogTitle, DialogClose, ErrorNotice],
   template: `
-    <h2 troveDialogTitle i18n="@@folder.title">New folder</h2>
+    <h2 quaderDialogTitle i18n="@@folder.title">New folder</h2>
     <div class="dialog-body">
       <div class="field">
         <label class="field-label" for="folder-name" i18n="@@folder.name">Folder name</label>
@@ -37,11 +37,11 @@ export interface FolderDialogData {
         </p>
       </div>
       @if (failure(); as f) {
-        <trove-error-notice [error]="f" />
+        <quader-error-notice [error]="f" />
       }
     </div>
     <div class="dialog-actions">
-      <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@folder.cancel">Cancel</button>
+      <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@folder.cancel">Cancel</button>
       <button class="btn btn-confirm"
         type="button"
         [disabled]="busy() || name().trim() === ''"
@@ -56,7 +56,7 @@ export interface FolderDialogData {
     .field {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-1);
+      gap: var(--quader-space-1);
     }
   `,
 })

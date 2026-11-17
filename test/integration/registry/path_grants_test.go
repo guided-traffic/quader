@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // A caller whose grant has path patterns obtains a registry token for the images the patterns admit (R-OCI-006, R-AUTHZ-005): the

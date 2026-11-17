@@ -36,11 +36,11 @@ module.exports = defineConfig([
     rules: {
       '@angular-eslint/directive-selector': [
         'error',
-        { type: 'attribute', prefix: 'trove', style: 'camelCase' },
+        { type: 'attribute', prefix: 'quader', style: 'camelCase' },
       ],
       '@angular-eslint/component-selector': [
         'error',
-        { type: 'element', prefix: 'trove', style: 'kebab-case' },
+        { type: 'element', prefix: 'quader', style: 'kebab-case' },
       ],
       'no-restricted-syntax': ['error', ...restrictedSyntax],
       'no-restricted-imports': [

@@ -9,14 +9,14 @@ import (
 func TestR_ARCH_001_ProcessRoles(t *testing.T) {
 	t.Run("R-ARCH-001 serve accepts api, packages, worker, web and all", func(t *testing.T) {
 		for _, role := range []string{"api", "packages", "worker", "web", "all"} {
-			if _, err := Load(Options{Environ: servableEnv("TROVE_PROCESS_ROLE=" + role), Command: CommandServe, ReadFile: fakeFS(nil)}); err != nil {
+			if _, err := Load(Options{Environ: servableEnv("QUADER_PROCESS_ROLE=" + role), Command: CommandServe, ReadFile: fakeFS(nil)}); err != nil {
 				t.Errorf("%s: %v", role, err)
 			}
 		}
 	})
 	t.Run("R-ARCH-001 a role outside the set is refused, naming the set", func(t *testing.T) {
 		for _, role := range []string{"fetch", "bastion", "backup", "Web"} {
-			_, err := Load(Options{Environ: servableEnv("TROVE_PROCESS_ROLE=" + role), Command: CommandServe, ReadFile: fakeFS(nil)})
+			_, err := Load(Options{Environ: servableEnv("QUADER_PROCESS_ROLE=" + role), Command: CommandServe, ReadFile: fakeFS(nil)})
 			containsAll(t, issuesOf(t, err), "process.role must be one of api, packages, worker, web, all")
 		}
 	})
@@ -97,16 +97,16 @@ func TestR_HA_016_ExpectedServingReplicas(t *testing.T) {
 	})
 	t.Run("Q-HA-77 both keys set to different values are refused naming the deprecated one", func(t *testing.T) {
 		_, err := Load(Options{
-			Environ: servableEnv("TROVE_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS=6", "TROVE_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS=4"),
+			Environ: servableEnv("QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS=6", "QUADER_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS=4"),
 			Command: CommandServe, ReadFile: fakeFS(nil),
 		})
 		containsAll(t, issuesOf(t, err), "database.preflight.expected_web_replicas", "expected_serving_replicas")
 	})
 	t.Run("Q-HA-77 the same value in both keys, and either key alone, load", func(t *testing.T) {
 		for _, env := range [][]string{
-			{"TROVE_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS=4", "TROVE_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS=4"},
-			{"TROVE_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS=4"},
-			{"TROVE_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS=4"},
+			{"QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS=4", "QUADER_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS=4"},
+			{"QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS=4"},
+			{"QUADER_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS=4"},
 		} {
 			if _, err := Load(Options{Environ: servableEnv(env...), Command: CommandServe, ReadFile: fakeFS(nil)}); err != nil {
 				t.Errorf("%v: %v", env, err)
@@ -116,8 +116,8 @@ func TestR_HA_016_ExpectedServingReplicas(t *testing.T) {
 	t.Run("Q-HA-77 the key is a schema key with its environment variable, and the deprecated one stays", func(t *testing.T) {
 		s := MustDescribe()
 		for path, env := range map[string]string{
-			"database.preflight.expected_serving_replicas": "TROVE_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS",
-			"database.preflight.expected_web_replicas":     "TROVE_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS",
+			"database.preflight.expected_serving_replicas": "QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS",
+			"database.preflight.expected_web_replicas":     "QUADER_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS",
 		} {
 			if k, ok := s.ByPath(path); !ok || k.Env != env {
 				t.Errorf("%s: env %q (found %v), want %q", path, k.Env, ok, env)
@@ -128,7 +128,7 @@ func TestR_HA_016_ExpectedServingReplicas(t *testing.T) {
 
 func TestR_BAS_044_PackagesURL(t *testing.T) {
 	withPackages := func(u string) string {
-		return strings.Replace(bastionMinimal, "    url: https://trove.example.com\n", "    url: https://trove.example.com\n    packages_url: "+u+"\n", 1)
+		return strings.Replace(bastionMinimal, "    url: https://quader.example.com\n", "    url: https://quader.example.com\n    packages_url: "+u+"\n", 1)
 	}
 	t.Run("R-BAS-044 packages_url defaults to empty, which means url", func(t *testing.T) {
 		c := mustLoadBastion(t, bastionMinimal)
@@ -137,19 +137,19 @@ func TestR_BAS_044_PackagesURL(t *testing.T) {
 		}
 	})
 	t.Run("R-BAS-044 an https packages_url loads", func(t *testing.T) {
-		c := mustLoadBastion(t, withPackages("https://trove-packages.trove.svc:8080"))
-		if got := c.Bastion.Main.PackagesURL; got != "https://trove-packages.trove.svc:8080" {
+		c := mustLoadBastion(t, withPackages("https://quader-packages.quader.svc:8080"))
+		if got := c.Bastion.Main.PackagesURL; got != "https://quader-packages.quader.svc:8080" {
 			t.Errorf("packages_url %q", got)
 		}
 	})
 	t.Run("R-BAS-044 an http packages_url stops startup naming the key", func(t *testing.T) {
-		msg := bastionIssues(t, withPackages("http://trove-packages.trove.svc:8080"))
+		msg := bastionIssues(t, withPackages("http://quader-packages.quader.svc:8080"))
 		if !strings.Contains(msg, "bastion.main.packages_url") || !strings.Contains(msg, "https") {
 			t.Errorf("error:\n%s", msg)
 		}
 	})
 	t.Run("R-BAS-044 a packages_url with a path is refused naming the key", func(t *testing.T) {
-		msg := bastionIssues(t, withPackages("https://trove-packages.trove.svc/api"))
+		msg := bastionIssues(t, withPackages("https://quader-packages.quader.svc/api"))
 		if !strings.Contains(msg, "bastion.main.packages_url") {
 			t.Errorf("error:\n%s", msg)
 		}

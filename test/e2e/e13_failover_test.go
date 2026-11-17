@@ -143,7 +143,7 @@ func TestE13Failover(t *testing.T) {
 		if turned == 0 {
 			t.Errorf("/readyz never answered 503 on any replica while PostgreSQL was stopped")
 		}
-		for _, p := range livePods(t, selTrove) {
+		for _, p := range livePods(t, selQuader) {
 			if code, body := ops(p.Name, "/readyz"); code != 200 {
 				t.Errorf("%s /readyz = %d after the recovery: %s", p.Name, code, strings.TrimSpace(body))
 			}

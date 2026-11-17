@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
 )
 
 // viewPort is the part of the data port the package view reads (R-API-029): the

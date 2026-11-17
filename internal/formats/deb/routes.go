@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The names of the routes (R-DEB-003): "deb.<resource>[.<operation>]". The request log and the metrics name the handler of a request
@@ -215,7 +215,7 @@ func (f *Format) buildRoutes() []formats.Route {
 		route(routeFlatIndex, "/{dir...}/{file}", formats.Metadata, read, []formats.Class{remote}, matchFlatIndex,
 			"binary/Packages.gz", "Packages.xz", "binary/Packages.diff/Index", "Contents-amd64.gz"),
 		route(routeFlatFile, "/{dir...}/{file}", formats.Download, read, []formats.Class{remote}, matchFlatFile,
-			"binary/trove-hello_1.0_all.deb", "trove-hello_1.0_all.deb"),
+			"binary/quader-hello_1.0_all.deb", "quader-hello_1.0_all.deb"),
 
 		route(routeSigningKey, "/signing-key.asc", formats.Computed, read, nil, matchSigningKey, "signing-key.asc"),
 		route(routeUpload, "/upload/{file}", formats.Upload, deploy, []formats.Class{local}, matchUpload,

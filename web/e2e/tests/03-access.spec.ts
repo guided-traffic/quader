@@ -29,7 +29,7 @@ test('R-UI-025 R-UI-026 a group, a policy with its preview, and the effect for b
   const bobCsp = await watchCsp(bob);
   const bobReplicas = new Set<string>();
   bob.on('response', (r) => {
-    const id = r.headers()['x-trove-replica'];
+    const id = r.headers()['x-quader-replica'];
     if (id) bobReplicas.add(id);
   });
   await signInWithKeycloak(bob, 'bob', bobPassword);

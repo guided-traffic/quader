@@ -20,7 +20,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
 
 // Version is the version of the code that derives the rows, stored as ansible_version_docs.generator: the reindex rebuilds a version whose

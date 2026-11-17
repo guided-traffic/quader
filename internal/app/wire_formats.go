@@ -6,35 +6,35 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/guided-traffic/trove/internal/api/dispatch"
-	"github.com/guided-traffic/trove/internal/api/edge"
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/files"
-	ansibledata "github.com/guided-traffic/trove/internal/formatdata/ansible"
-	debdata "github.com/guided-traffic/trove/internal/formatdata/deb"
-	"github.com/guided-traffic/trove/internal/formatdata/npm"
-	nugetdata "github.com/guided-traffic/trove/internal/formatdata/nuget"
-	ocidata "github.com/guided-traffic/trove/internal/formatdata/oci"
-	"github.com/guided-traffic/trove/internal/formathost"
-	"github.com/guided-traffic/trove/internal/formats"
-	ansibleformat "github.com/guided-traffic/trove/internal/formats/ansible"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	debformat "github.com/guided-traffic/trove/internal/formats/deb"
-	npmformat "github.com/guided-traffic/trove/internal/formats/npm"
-	nugetformat "github.com/guided-traffic/trove/internal/formats/nuget"
-	ociformat "github.com/guided-traffic/trove/internal/formats/oci"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/packages"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/api/dispatch"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/files"
+	ansibledata "github.com/guided-traffic/quader/internal/formatdata/ansible"
+	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
+	"github.com/guided-traffic/quader/internal/formatdata/npm"
+	nugetdata "github.com/guided-traffic/quader/internal/formatdata/nuget"
+	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
+	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/formats"
+	ansibleformat "github.com/guided-traffic/quader/internal/formats/ansible"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	debformat "github.com/guided-traffic/quader/internal/formats/deb"
+	npmformat "github.com/guided-traffic/quader/internal/formats/npm"
+	nugetformat "github.com/guided-traffic/quader/internal/formats/nuget"
+	ociformat "github.com/guided-traffic/quader/internal/formats/oci"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/packages"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // The areas of the format plug-in contract (R-ARCH-008 to R-ARCH-010): the storage
@@ -117,7 +117,7 @@ func (a *App) startOCISweep(in infra, ports map[formats.ID]any) error {
 	if !ok {
 		return fmt.Errorf("formats: the OCI data port is not the PostgreSQL store")
 	}
-	removed := a.tele.metrics.NewCounterVec("trove_oci_sweep_blobs_removed_total", "Blob items removed by oci-sweep.").WithLabelValues()
+	removed := a.tele.metrics.NewCounterVec("quader_oci_sweep_blobs_removed_total", "Blob items removed by oci-sweep.").WithLabelValues()
 	sw, err := ocidata.NewSweeper(ocidata.SweepOptions{
 		Store: st, DB: in.db, Grace: a.cfg.OCI.UnreferencedBlobGrace, Log: a.log.With("component", "oci-sweep"),
 		Items: func() ocidata.Remover {

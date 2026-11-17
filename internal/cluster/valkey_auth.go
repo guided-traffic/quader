@@ -10,8 +10,8 @@ import (
 
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // peerKind says whether a connection goes to a data node or to a Sentinel, so

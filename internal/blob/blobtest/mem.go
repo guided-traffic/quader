@@ -2,7 +2,7 @@
 // the unit tests of the packages that use the blob store. It follows the
 // behaviour the conformance check asks of a real store (strong consistency,
 // atomic keys, multipart objects visible on completion only) and the rules of
-// S3 that matter to trove: parts below 5 MiB except the last are refused, and a
+// S3 that matter to quader: parts below 5 MiB except the last are refused, and a
 // payload checksum that does not match fails the request.
 package blobtest
 
@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 type object struct {

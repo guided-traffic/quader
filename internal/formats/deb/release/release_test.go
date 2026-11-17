@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/release"
-	"github.com/guided-traffic/trove/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/formats/deb/release"
+	"github.com/guided-traffic/quader/internal/openpgp"
 )
 
 const file = "0000000000000000000000000000000000000000000000000000000000000001"

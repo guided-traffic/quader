@@ -1,6 +1,6 @@
 package npm
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // ArtifactSuffix names the files of a remote repository that are a version of a package: the tarballs. The scanning's backfill
 // looks the cached files without a version up by it (Q-VULN-67).

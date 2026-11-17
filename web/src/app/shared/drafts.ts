@@ -2,7 +2,7 @@ import { DestroyRef, Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { BrowserStorage } from '../core/storage';
 
-const PREFIX = 'trove.draft:';
+const PREFIX = 'quader.draft:';
 
 /**
  * Drafts of non-secret forms (R-UI-042). Two jobs:

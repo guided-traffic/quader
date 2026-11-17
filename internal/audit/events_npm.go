@@ -5,7 +5,7 @@ package audit
 // edits this file: publish, unpublish, dist-tag changes and deprecation are
 // produced by the local repository, the version removal by the remote fill, the
 // trusted publishing exchange by the identity exchange of R-NPM-022, and the
-// reinstate by `trove admin npm reinstate`.
+// reinstate by `quader admin npm reinstate`.
 //
 // The state changes are transactional: the producer records them in the
 // transaction of the change. npm.unpublish carries the journal flag (R-OPS-014,

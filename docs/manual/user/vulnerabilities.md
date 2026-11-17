@@ -2,9 +2,9 @@
 
 The Vulnerabilities screen shows which stored package versions are affected by a known security advisory or a known malicious package, how serious each finding is, and what has been decided about it. People with the triage permission confirm, dismiss or block findings here. This page explains the report, a finding, the triage actions and the package page.
 
-## What trove checks
+## What Quader checks
 
-trove keeps a copy of public advisory data for the package formats it serves (npm and NuGet) and compares it with the versions stored in your repositories. It compares names and versions only; it does not open the files. A match is a **finding**: one advisory affects one stored version in one repository. A finding is created when a version is published or fetched into a repository, and again when the advisory data changes.
+Quader keeps a copy of public advisory data for the package formats it serves (npm and NuGet) and compares it with the versions stored in your repositories. It compares names and versions only; it does not open the files. A match is a **finding**: one advisory affects one stored version in one repository. A finding is created when a version is published or fetched into a repository, and again when the advisory data changes.
 
 The report shows the findings of the repositories you may read, and only those. A repository you may not read contributes no row and no count. An auditor, who reads the metadata of every project, finds the findings of all projects in the [security dashboard](../admin/security-dashboard.md) of the admin area, with a search by advisory identifier, package and project.
 
@@ -28,7 +28,7 @@ Select **Vulnerabilities** in the side bar of a project. The report shows the fi
 | **Package** | The package, with the version under it; opens the package page on its **Vulnerabilities** tab |
 | **Repository** | The repository that holds the version |
 | **Fixed in** | The versions that fix the advisory |
-| **Detected** | When trove found it |
+| **Detected** | When Quader found it |
 
 On a narrower window the list leaves out **Fixed in**, which the finding shows. Select a heading to sort by severity, status, identifier, package or detection time. The list opens sorted by severity, worst first. **Load more** adds the next page.
 
@@ -40,7 +40,7 @@ On a narrower window the list leaves out **Fixed in**, which the finding shows. 
 
 Select an identifier to open the finding. It shows the status, the severity and score, the package and version, the repository, the virtual repositories that expose it, the versions that fix it, when it was detected, and its history. Below that is the advisory itself: aliases, CVSS vector, weaknesses, affected ranges, references and the source with its license.
 
-The advisory text comes from a public source and is untrusted, so trove formats it the way it formats a package's README: headings, lists and code show as formatted text, and anything that could run (scripts, event handlers, unsafe links, images from other sites) is removed. References are links only for addresses that start with http or https; they open another site in a new tab. **Where else is it used?** opens the advisory page, which lists every finding of the advisory that you may read, across repositories and versions.
+The advisory text comes from a public source and is untrusted, so Quader formats it the way it formats a package's README: headings, lists and code show as formatted text, and anything that could run (scripts, event handlers, unsafe links, images from other sites) is removed. References are links only for addresses that start with http or https; they open another site in a new tab. **Where else is it used?** opens the advisory page, which lists every finding of the advisory that you may read, across repositories and versions.
 
 When the download of the version is refused, a banner at the top says so: **Downloads of the package@version are blocked in the repository**, with the reason. A block for a malicious package is lifted by dismissing the finding. A block set in triage shows who set it, when, and their comment.
 
@@ -54,7 +54,7 @@ Triage needs the permission `vulnerabilities:triage`. Without it the actions, th
 | **Confirmed** | **Block downloads**, **Dismiss**, **Mark as needs triage** |
 | **Blocked** | **Lift block** (back to confirmed), **Dismiss** |
 | **Dismissed** | **Confirm**, **Mark as needs triage** |
-| **Resolved** | None. trove resolves a finding when the version is no longer affected, the advisory is withdrawn, the version is removed or scanning is switched off, and detects it again if it returns |
+| **Resolved** | None. Quader resolves a finding when the version is no longer affected, the advisory is withdrawn, the version is removed or scanning is switched off, and detects it again if it returns |
 
 Every action opens a dialog. **Dismiss** asks for a reason (**Not exploitable**, **False positive**, **Risk accepted**, **Mitigated elsewhere** or **Test code only**). You can add a comment of up to 4,000 characters; it stays in the history of the finding.
 
@@ -101,6 +101,6 @@ version is blocked there.
 
 ## Advisory sources
 
-If you may read the settings, **Advisory sources** at the top of the report opens the table of sources: per source and ecosystem its mode, whether its data is current or stale, when it was last synchronised, the failed runs in a row with the last error, the number of records, rejected records and ranges trove cannot compare, and the next run. With the permission to change settings you can start a synchronisation from there.
+If you may read the settings, **Advisory sources** at the top of the report opens the table of sources: per source and ecosystem its mode, whether its data is current or stale, when it was last synchronised, the failed runs in a row with the last error, the number of records, rejected records and ranges Quader cannot compare, and the next run. With the permission to change settings you can start a synchronisation from there.
 
 A source in the mode **Mirror repository** reads its files from a generic local repository instead of the network, for installations without internet access. The screen shows the commands that download each file on a connected machine and upload it to that repository, which the commands name (the setting `vulnerabilities.sources.<source>.repository`, the repository's qualified name `<projectKey>/<repoKey>`).

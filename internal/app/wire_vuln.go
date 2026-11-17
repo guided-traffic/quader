@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/enforce"
-	"github.com/guided-traffic/trove/internal/vuln/evaluate"
-	"github.com/guided-traffic/trove/internal/vuln/imagescan"
-	vmetrics "github.com/guided-traffic/trove/internal/vuln/metrics"
-	"github.com/guided-traffic/trove/internal/vuln/store"
-	vsync "github.com/guided-traffic/trove/internal/vuln/sync"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/enforce"
+	"github.com/guided-traffic/quader/internal/vuln/evaluate"
+	"github.com/guided-traffic/quader/internal/vuln/imagescan"
+	vmetrics "github.com/guided-traffic/quader/internal/vuln/metrics"
+	"github.com/guided-traffic/quader/internal/vuln/store"
+	vsync "github.com/guided-traffic/quader/internal/vuln/sync"
 )
 
 // The wiring of the vulnerability scanning (docs/developer/vulnerabilities.md, section "Composition root"). This file is the
@@ -136,7 +136,7 @@ func (a *App) wireVuln(ctx context.Context, in infra, repo repositoryArea, vir v
 	return out, nil
 }
 
-// countAudit counts one client audit (trove_vuln_audit_requests_total); the Host hands it to the formats' audit routes.
+// countAudit counts one client audit (quader_vuln_audit_requests_total); the Host hands it to the formats' audit routes.
 func (v vulnArea) countAudit(format, mode, outcome string) {
 	if v.metrics != nil {
 		v.metrics.AuditRequests.WithLabelValues(format, mode, outcome).Inc()

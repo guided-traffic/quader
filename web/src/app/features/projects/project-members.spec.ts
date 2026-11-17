@@ -36,11 +36,11 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
       capabilities: [],
       setup: asMember('owner'),
     });
-    const members = root.querySelector('trove-project-members') as HTMLElement;
+    const members = root.querySelector('quader-project-members') as HTMLElement;
     expect(text(members)).toContain('web-leads');
     buttonByText(root, 'Add member').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-project-member-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-project-member-dialog') as HTMLElement;
     typeInto(dialog, 'Find a user or group', 'bo');
     await sleep(fixture, 400);
     buttonByText(dialog, 'user:bob').click();
@@ -72,13 +72,13 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
         ];
       },
     });
-    const members = root.querySelector('trove-project-members') as HTMLElement;
+    const members = root.querySelector('quader-project-members') as HTMLElement;
     const row = members.querySelector('tbody tr') as HTMLElement;
     expect(text(row)).toContain('Alice Doe');
     expect(text(row)).toContain('@alice');
     expect(text(row)).toContain("It's you");
     expect(text(row)).toContain('Direct member');
-    expect(row.querySelector('trove-avatar img')?.getAttribute('src')).toBe('/api/v1/avatars/abc');
+    expect(row.querySelector('quader-avatar img')?.getAttribute('src')).toBe('/api/v1/avatars/abc');
     expect(text(members.querySelector('.tab-link') as HTMLElement)).toContain('2');
     // Below 48 rem the rows stack (Q-UI-306); the role's cell carries its column's name for its own line.
     expect(row.querySelector('td[data-label="Role"] select')).toBeTruthy();
@@ -96,7 +96,7 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
         ];
       },
     });
-    const members = root.querySelector('trove-project-members') as HTMLElement;
+    const members = root.querySelector('quader-project-members') as HTMLElement;
     const names = (): (string | undefined)[] => Array.from(members.querySelectorAll('tbody .name')).map((n) => n.textContent?.trim());
     expect(names()).toEqual(['alice', 'bob']);
     members.querySelector<HTMLButtonElement>('button[aria-label="Reverse the order"]')!.click();
@@ -119,7 +119,7 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
       capabilities: [],
       setup: asMember('owner'),
     });
-    const members = root.querySelector('trove-project-members') as HTMLElement;
+    const members = root.querySelector('quader-project-members') as HTMLElement;
     await removeMember(fixture, members, 'group:web-leads');
     expect(text(members)).toContain('A project keeps at least one Owner');
     expect((get(ProjectsApi) as FakeProjectsApi).memberLists['web']).toHaveLength(1);
@@ -135,7 +135,7 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
       capabilities: [],
       setup: asMember('reader'),
     });
-    const members = root.querySelector('trove-project-members') as HTMLElement;
+    const members = root.querySelector('quader-project-members') as HTMLElement;
     expect(text(members)).toContain('web-leads');
     expect(text(members)).toContain('Owner');
     expect(members.querySelector('select')).toBeNull();

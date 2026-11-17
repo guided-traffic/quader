@@ -3,7 +3,7 @@ package match
 import (
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // zeroVersion is the version of an introduced event that sorts before every version (the OSV schema).

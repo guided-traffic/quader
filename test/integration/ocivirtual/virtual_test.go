@@ -10,7 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // local pushes an image to docker-local itself, as the owner of the image does before others pull it through a virtual repository.
@@ -40,16 +40,16 @@ func TestR_OCI_027_ALocalMembersTagIsPulledBeforeAnUpstreamsAndNamesTheMember(t 
 		if got := a.Header.Get("Docker-Content-Digest"); got != mine.digest() {
 			t.Errorf("%s: pulled %s, want the local image %s", repo, got, mine.digest())
 		}
-		if got := a.Header.Get("Trove-Resolved-From"); got != rLocal {
-			t.Errorf("%s: Trove-Resolved-From = %q, want %s (local members first, whatever the member order)", repo, got, rLocal)
+		if got := a.Header.Get("Quader-Resolved-From"); got != rLocal {
+			t.Errorf("%s: Quader-Resolved-From = %q, want %s (local members first, whatever the member order)", repo, got, rLocal)
 		}
 	}
 	if n := e.stubA.Counts().ManifestGets("app", ""); n != 0 {
 		t.Errorf("the stub saw %d manifest requests for app although a local member has the tag", n)
 	}
 	for _, m := range []string{"HEAD", "GET"} {
-		if a := e.do(e.reader, "pull", m, rVirtual, "app/manifests/1", nil); a.Status != http.StatusOK || a.Header.Get("Trove-Resolved-From") != rLocal {
-			t.Errorf("%s: %d from %q", m, a.Status, a.Header.Get("Trove-Resolved-From"))
+		if a := e.do(e.reader, "pull", m, rVirtual, "app/manifests/1", nil); a.Status != http.StatusOK || a.Header.Get("Quader-Resolved-From") != rLocal {
+			t.Errorf("%s: %d from %q", m, a.Status, a.Header.Get("Quader-Resolved-From"))
 		}
 	}
 }
@@ -60,8 +60,8 @@ func TestATagOnlyAnUpstreamHasIsPulledAndCachedByTheRemoteMember(t *testing.T) {
 	e := newEnv(t, options{})
 
 	a := e.pull(rVirtual, "acme/tool", "1")
-	if got := a.Header.Get("Trove-Resolved-From"); got != rHubA {
-		t.Errorf("Trove-Resolved-From = %q, want %s", got, rHubA)
+	if got := a.Header.Get("Quader-Resolved-From"); got != rHubA {
+		t.Errorf("Quader-Resolved-From = %q, want %s", got, rHubA)
 	}
 	if got, want := a.Header.Get("Docker-Content-Digest"), e.stubDigest("acme/tool", "1"); got != want {
 		t.Errorf("digest %s, want the upstream's %s", got, want)
@@ -79,8 +79,8 @@ func TestATagOnlyAnUpstreamHasIsPulledAndCachedByTheRemoteMember(t *testing.T) {
 			t.Errorf("blob %s was fetched %d times, want once", d, n)
 		}
 	}
-	if b := e.get(rVirtual, "acme/tool/manifests/"+a.Header.Get("Docker-Content-Digest")); b.Status != http.StatusOK || b.Header.Get("Trove-Resolved-From") != rHubA {
-		t.Errorf("the manifest by digest: %d from %q", b.Status, b.Header.Get("Trove-Resolved-From"))
+	if b := e.get(rVirtual, "acme/tool/manifests/"+a.Header.Get("Docker-Content-Digest")); b.Status != http.StatusOK || b.Header.Get("Quader-Resolved-From") != rHubA {
+		t.Errorf("the manifest by digest: %d from %q", b.Status, b.Header.Get("Quader-Resolved-From"))
 	}
 	if n := e.stubA.Counts().ManifestGets("acme/tool", ""); n != gets {
 		t.Errorf("a pull by digest of a cached manifest asked the upstream again: %d requests after %d", n, gets)
@@ -97,8 +97,8 @@ func TestR_OCI_027_AClaimKeepsARemoteMemberFromServingAClaimedName(t *testing.T)
 		t.Errorf("the stub recorded %d requests for a name claimed for a local member", n)
 	}
 	// A name the claim does not cover is served from the upstream.
-	if b := e.get(rVirtual, "app/manifests/1"); b.Status != http.StatusOK || b.Header.Get("Trove-Resolved-From") != rHubA {
-		t.Errorf("app:1: %d from %q", b.Status, b.Header.Get("Trove-Resolved-From"))
+	if b := e.get(rVirtual, "app/manifests/1"); b.Status != http.StatusOK || b.Header.Get("Quader-Resolved-From") != rHubA {
+		t.Errorf("app:1: %d from %q", b.Status, b.Header.Get("Quader-Resolved-From"))
 	}
 }
 
@@ -157,8 +157,8 @@ func TestR_OCI_027_ARemoteMemberBeforeAnotherIsAskedFirstEvenWhenTheLaterOneHasA
 	e.stubB.Reset()
 
 	a := e.get(rTwo, "app/manifests/1")
-	if a.Status != http.StatusOK || a.Header.Get("Trove-Resolved-From") != rHubA {
-		t.Fatalf("%d from %q: the first remote member in member order answers", a.Status, a.Header.Get("Trove-Resolved-From"))
+	if a.Status != http.StatusOK || a.Header.Get("Quader-Resolved-From") != rHubA {
+		t.Fatalf("%d from %q: the first remote member in member order answers", a.Status, a.Header.Get("Quader-Resolved-From"))
 	}
 	if got := a.Header.Get("Docker-Content-Digest"); got != e.stubDigest("app", "1") {
 		t.Errorf("digest %s, want the first member's %s", got, e.stubDigest("app", "1"))
@@ -176,12 +176,12 @@ func TestR_OCI_027_ADigestIsServedFromACacheBeforeAnUpstreamIsAsked(t *testing.T
 	e.stubA.Reset()
 
 	a := e.get(rTwo, "acme/tool/manifests/"+digest)
-	if a.Status != http.StatusOK || a.Header.Get("Trove-Resolved-From") != rHubB {
-		t.Fatalf("%d from %q: the cache of the later member answers before the earlier member's upstream is asked", a.Status, a.Header.Get("Trove-Resolved-From"))
+	if a.Status != http.StatusOK || a.Header.Get("Quader-Resolved-From") != rHubB {
+		t.Fatalf("%d from %q: the cache of the later member answers before the earlier member's upstream is asked", a.Status, a.Header.Get("Quader-Resolved-From"))
 	}
 	for _, d := range manifestBlobs(t, a.Body) {
-		if b := e.get(rTwo, "acme/tool/blobs/"+d); b.Status != http.StatusOK || b.Header.Get("Trove-Resolved-From") != rHubB {
-			t.Errorf("blob %s: %d from %q", d, b.Status, b.Header.Get("Trove-Resolved-From"))
+		if b := e.get(rTwo, "acme/tool/blobs/"+d); b.Status != http.StatusOK || b.Header.Get("Quader-Resolved-From") != rHubB {
+			t.Errorf("blob %s: %d from %q", d, b.Status, b.Header.Get("Quader-Resolved-From"))
 		}
 	}
 	if n := e.stubA.Counts().Total(); n != 0 {

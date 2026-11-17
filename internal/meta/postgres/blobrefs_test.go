@@ -9,16 +9,16 @@ import (
 
 func TestBlobRefsStatements(t *testing.T) {
 	cols := []pgx.Identifier{
-		{"trove", "items", "blob_sha256"},
-		{"trove", "retention_run_items", "blob_sha256"},
+		{"quader", "items", "blob_sha256"},
+		{"quader", "retention_run_items", "blob_sha256"},
 		{`od"d`, "table", `Col`},
 	}
 	r := newBlobRefs(cols)
 
 	t.Run("R-STOR-024 the full sweep anti-joins every table with a foreign key to blobs", func(t *testing.T) {
 		for _, want := range []string{
-			`NOT EXISTS (SELECT 1 FROM "trove"."items" r WHERE r."blob_sha256" = b.sha256)`,
-			`NOT EXISTS (SELECT 1 FROM "trove"."retention_run_items" r WHERE r."blob_sha256" = b.sha256)`,
+			`NOT EXISTS (SELECT 1 FROM "quader"."items" r WHERE r."blob_sha256" = b.sha256)`,
+			`NOT EXISTS (SELECT 1 FROM "quader"."retention_run_items" r WHERE r."blob_sha256" = b.sha256)`,
 			"b.state = 'live'", "ORDER BY b.sha256 LIMIT $3",
 		} {
 			if !strings.Contains(r.sweep, want) {
@@ -32,8 +32,8 @@ func TestBlobRefsStatements(t *testing.T) {
 		}
 	})
 	t.Run("R-STOR-024 the reference check asks every table in one statement", func(t *testing.T) {
-		want := `SELECT EXISTS (SELECT 1 FROM "trove"."items" WHERE "blob_sha256" = $1) OR ` +
-			`EXISTS (SELECT 1 FROM "trove"."retention_run_items" WHERE "blob_sha256" = $1) OR ` +
+		want := `SELECT EXISTS (SELECT 1 FROM "quader"."items" WHERE "blob_sha256" = $1) OR ` +
+			`EXISTS (SELECT 1 FROM "quader"."retention_run_items" WHERE "blob_sha256" = $1) OR ` +
 			`EXISTS (SELECT 1 FROM "od""d"."table" WHERE "Col" = $1)`
 		if r.referenced != want {
 			t.Errorf("referenced =\n%s\nwant\n%s", r.referenced, want)

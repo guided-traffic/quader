@@ -1,8 +1,8 @@
 // Command devidp runs the sign-in provider of the UI development profile (package devidp). deploy/ui-dev/serve.sh
-// starts it next to trove:
+// starts it next to quader:
 //
 //	devidp -listen 127.0.0.1:19090 -issuer https://localhost:19090 -tls-cert server.crt -tls-key server.key \
-//	       -client-id trove-ui-dev -client-secret-file idp-client-secret -client-base https://localhost:4200
+//	       -client-id quader-ui-dev -client-secret-file idp-client-secret -client-base https://localhost:4200
 //
 // It answers over TLS only; the certificate is read again when its files change.
 package main
@@ -22,8 +22,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/guided-traffic/trove/test/devidp"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/test/devidp"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 func main() {
@@ -36,12 +36,12 @@ func main() {
 func run(args []string) error {
 	fs := flag.NewFlagSet("devidp", flag.ContinueOnError)
 	listen := fs.String("listen", "127.0.0.1:19090", "address to listen on (TLS); keep it on the loopback address")
-	issuer := fs.String("issuer", "https://localhost:19090", "the issuer as the browser and trove reach it")
+	issuer := fs.String("issuer", "https://localhost:19090", "the issuer as the browser and Quader reach it")
 	certFile := fs.String("tls-cert", "", "PEM certificate file; read again when it changes")
 	keyFile := fs.String("tls-key", "", "PEM key file")
-	clientID := fs.String("client-id", "trove-ui-dev", "the client ID trove signs in with")
-	clientBase := fs.String("client-base", "https://localhost:4200", "trove's base URL: redirect URIs must lie below it")
-	secretFile := fs.String("client-secret-file", "", "file with the client secret trove signs in with")
+	clientID := fs.String("client-id", "quader-ui-dev", "the client ID Quader signs in with")
+	clientBase := fs.String("client-base", "https://localhost:4200", "Quader's base URL: redirect URIs must lie below it")
+	secretFile := fs.String("client-secret-file", "", "file with the client secret Quader signs in with")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}

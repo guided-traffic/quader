@@ -7,7 +7,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // Bindings are the data ports of the formats, one value per format ID. The

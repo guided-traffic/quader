@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/claims"
 )
 
 // The questions the exchange asks the index (R-CI-007, scope_malformed, scope_not_granted and the answer's scope),

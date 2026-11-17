@@ -55,7 +55,7 @@ describe('Users list (R-UI-024)', () => {
     const { fixture, root, get } = await renderScreen(UserList);
     buttonByText(root, 'Add user').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-user-create-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-user-create-dialog') as HTMLElement;
     expect(dialog.querySelector('input[type="password"]')).toBeNull();
     typeInto(dialog, 'User name', 'carol');
     typeInto(dialog, 'Email', 'carol@example.com');
@@ -73,7 +73,7 @@ describe('Users list (R-UI-024)', () => {
     });
     buttonByText(root, 'Add user').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-user-create-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-user-create-dialog') as HTMLElement;
     typeInto(dialog, 'User name', 'Bad Name');
     buttonByText(dialog, 'Add user').click();
     await settle(fixture);
@@ -118,7 +118,7 @@ describe('User detail (R-UI-024)', () => {
 
   it('R-UI-024 identity-provider memberships are read only; a manual one can be removed', async () => {
     const { fixture, root, get } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
-    const rows = [...root.querySelectorAll('trove-disclosure tbody tr')];
+    const rows = [...root.querySelectorAll('quader-disclosure tbody tr')];
     const web = rows.find((r) => text(r).includes('team-web'))!;
     const platform = rows.find((r) => text(r).includes('platform'))!;
     expect(web.querySelector('button')).toBeNull();
@@ -136,17 +136,17 @@ describe('User detail (R-UI-024)', () => {
         api.userList = api.userList.map((u) => (u.username === 'bob' ? { ...u, avatarUrl: `/api/v1/avatars/${'b'.repeat(64)}` } : u));
       },
     });
-    expect(root.querySelector('dd trove-avatar img')?.getAttribute('src')).toBe(`/api/v1/avatars/${'b'.repeat(64)}`);
+    expect(root.querySelector('dd quader-avatar img')?.getAttribute('src')).toBe(`/api/v1/avatars/${'b'.repeat(64)}`);
     buttonByText(root, 'Remove avatar').click();
     await settle(fixture);
-    const confirm = overlay().querySelector('trove-confirm-dialog') as HTMLElement;
+    const confirm = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
     expect(confirm.textContent).toContain('Remove the avatar of this user?');
     expect((get(IdentityApi) as FakeIdentityApi).calls).not.toContain('removeUserAvatar bob');
     buttonByText(confirm, 'Remove avatar').click();
     await sleep(fixture, 300);
     expect((get(IdentityApi) as FakeIdentityApi).calls).toContain('removeUserAvatar bob');
     expect(root.textContent).not.toContain('Remove avatar');
-    expect(root.querySelector('dd trove-avatar img')?.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
+    expect(root.querySelector('dd quader-avatar img')?.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
   });
 
   it('R-UI-024 Q-UI-333 the break-glass account, read with tokens:read and no Advanced action, shows its tokens and no section Advanced', async () => {
@@ -161,7 +161,7 @@ describe('User detail (R-UI-024)', () => {
         ];
       },
     });
-    const headings = [...root.querySelectorAll('trove-disclosure .heading')].map((h) => text(h).replace('chevron_right', '').trim());
+    const headings = [...root.querySelectorAll('quader-disclosure .heading')].map((h) => text(h).replace('chevron_right', '').trim());
     expect(headings).toContain('Tokens');
     expect(headings).not.toContain('Advanced');
     expect(root.textContent).not.toContain('Revoke all tokens');
@@ -189,7 +189,7 @@ describe('User detail (R-UI-024)', () => {
     await settle(fixture);
     buttonByText(root, 'Disable').click();
     await settle(fixture);
-    const confirm = overlay().querySelector('trove-confirm-dialog') as HTMLElement;
+    const confirm = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
     expect(confirm.textContent).toContain('Also revoke all tokens');
     buttonByText(confirm, 'Disable').click();
     await sleep(fixture, 300);
@@ -201,9 +201,9 @@ describe('User detail (R-UI-024)', () => {
   it('R-UI-024 revoking all of a user\'s tokens is a danger button in the page\'s one section Advanced, not beside the token list', async () => {
     const { root } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     const heading = (d: Element): string => d.querySelector('.heading')?.textContent?.replace('chevron_right', '').trim() ?? '';
-    const tokens = [...root.querySelectorAll('trove-disclosure')].find((d) => heading(d) === 'Tokens')!;
+    const tokens = [...root.querySelectorAll('quader-disclosure')].find((d) => heading(d) === 'Tokens')!;
     expect([...tokens.querySelectorAll('button')].map((b) => b.textContent?.trim())).not.toContain('Revoke all tokens');
-    const advanced = [...root.querySelectorAll('trove-disclosure')].filter((d) => heading(d) === 'Advanced');
+    const advanced = [...root.querySelectorAll('quader-disclosure')].filter((d) => heading(d) === 'Advanced');
     expect(advanced).toHaveLength(1);
     const revoke = [...advanced[0]!.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Revoke all tokens')!;
     expect(revoke.classList.contains('btn-danger')).toBe(true);
@@ -213,20 +213,20 @@ describe('User detail (R-UI-024)', () => {
     const { root, fixture } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     await settle(fixture);
     expect(root.querySelector('section.tokens, h2#user-tokens')).toBeNull();
-    const tokens = [...root.querySelectorAll('trove-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))!;
-    expect(tokens.querySelector('trove-token-table')).toBeTruthy();
+    const tokens = [...root.querySelectorAll('quader-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))!;
+    expect(tokens.querySelector('quader-token-table')).toBeTruthy();
     expect(tokens.querySelector('.toggle')?.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('R-UI-024 Q-UI-333 revoking the user\'s last token leaves the section Tokens open with its empty line', async () => {
     const { root, fixture } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     await settle(fixture);
-    const tokens = [...root.querySelectorAll('trove-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))!;
+    const tokens = [...root.querySelectorAll('quader-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))!;
     const toggle = tokens.querySelector('.toggle')!;
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     buttonByText(tokens, 'Revoke').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'Revoke').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Revoke').click();
     await sleep(fixture, 300);
     expect(text(tokens)).toContain('No active tokens.');
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
@@ -236,7 +236,7 @@ describe('User detail (R-UI-024)', () => {
     const { root, fixture } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     await settle(fixture);
     const expanded = (): string | null | undefined =>
-      [...root.querySelectorAll('trove-disclosure')]
+      [...root.querySelectorAll('quader-disclosure')]
         .find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))
         ?.querySelector('.toggle')
         ?.getAttribute('aria-expanded');
@@ -250,7 +250,7 @@ describe('User detail (R-UI-024)', () => {
     const { fixture, root, get } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     buttonByText(root, 'End all sessions').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'End sessions').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'End sessions').click();
     await sleep(fixture, 300);
     expect((get(SessionsApi) as FakeSessionsApi).calls).toContain('endAllOfUser alice');
   });
@@ -289,7 +289,7 @@ describe('User detail (R-UI-024)', () => {
     await settle(fixture);
     buttonByText(root, 'Save changes').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-conflict-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-conflict-dialog') as HTMLElement;
     expect(dialog).toBeTruthy();
     expect(text(dialog)).toContain('displayName');
     buttonByText(dialog, 'Overwrite').click();
@@ -307,7 +307,7 @@ describe('User detail (R-UI-024)', () => {
     await settle(fixture);
     buttonByText(root, 'Save changes').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-conflict-dialog') as HTMLElement, 'Reload (discard mine)').click();
+    buttonByText(overlay().querySelector('quader-conflict-dialog') as HTMLElement, 'Reload (discard mine)').click();
     await sleep(fixture, 300);
     expect(api.userList[0]!.displayName).toBe('Alice Example');
     expect(api.ifMatch).toEqual(['"1"']);

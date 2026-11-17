@@ -5,12 +5,12 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The revoker of CI tokens (R-CI-017, R-CI-020), work package W5. Every revocation runs in one transaction, the
@@ -94,7 +94,7 @@ func (r *TokenRevoker) RevokeMappingTx(ctx context.Context, tx meta.Tx, actor Ac
 }
 
 // RevokeIssuerTx revokes every unexpired token issued through an issuer, in the caller's transaction (disable,
-// delete, and the removal from ci.issuers that `trove migrate` applies).
+// delete, and the removal from ci.issuers that `quader migrate` applies).
 func (r *TokenRevoker) RevokeIssuerTx(ctx context.Context, tx meta.Tx, actor Actor, issuerID, issuerName string, cause RevokeCause) (Revoked, error) {
 	qs, err := queriesOf(tx)
 	if err != nil {

@@ -19,7 +19,7 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // The codes of a scan that did not finish (R-VULN-034). Terminal ones are not retried until the manifest, the limits or the analyser change.

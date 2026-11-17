@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestR_REPO_063_TheDefaultsAreWhatABareCreateStores: for every class of a format with presets and of generic, the document of

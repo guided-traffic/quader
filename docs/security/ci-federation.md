@@ -2,13 +2,13 @@
 
 Status: the issuer record, its read-only configuration form and the signing-key store (work package W1 of
 [ci-oidc.md](../developer/ci-oidc.md)), the identity mappings with their save-time rules (work package W3), the token exchange (work
-package W4) and the use time of a CI token (work package W5) are built. This page answers three questions: what does trove trust when it
+package W4) and the use time of a CI token (work package W5) are built. This page answers three questions: what does Quader trust when it
 trusts a CI issuer, and what can reach or change that trust; what an anonymous caller of the exchange can cause; and what decides what a
 verified job receives.
 
 ## What trust in an issuer means
 
-A CI issuer ([R-CI-001](../spec/gitlab-ci-oidc.md)) is a name, an issuer URL and the keys that URL publishes. trove accepts a token as
+A CI issuer ([R-CI-001](../spec/gitlab-ci-oidc.md)) is a name, an issuer URL and the keys that URL publishes. Quader accepts a token as
 that issuer's when the `iss` claim equals the stored URL byte for byte and the signature verifies with one of the stored keys. Nothing
 else makes a token trusted: the audience, the algorithm list and the claims are checks on top of that
 ([R-CI-004](../spec/gitlab-ci-oidc.md)). Whoever controls the issuer's key set, a GitLab administrator or whoever takes over its domain
@@ -20,12 +20,12 @@ or its TLS, can sign for it; the specification keeps that case as
 | a system administrator (`ci:write`, recent authentication) | create, replace and delete issuers; force a key refresh | the operation declarations; [issuers_write.go](../../internal/ci/issuers_write.go) |
 | an auditor or security administrator (`ci:read`) | read issuers and their key status | the declarations |
 | an Owner of a project | list the issuers read-only: name, kind, issuer URL, public flag | [ci_project_api.go](../../internal/api/v1/ci_project_api.go) (`requireProject`) |
-| `trove migrate` | create, replace and disable the issuers of `ci.issuers` (source `configuration`) | [issuers_declared.go](../../internal/ci/issuers_declared.go) |
+| `quader migrate` | create, replace and disable the issuers of `ci.issuers` (source `configuration`) | [issuers_declared.go](../../internal/ci/issuers_declared.go) |
 | a CI token | nothing: the management API refuses it ([Q-CI-18](../spec/gitlab-ci-oidc.md)) | `ciGate` |
 
 An issuer with source `configuration` cannot be changed or deleted through the API (409 `issuer_managed_by_configuration`) and is
 deleted only after it was removed from the configuration. That keeps a GitOps repository the one author of such an issuer; no replica
-writes it, so replicas of two releases never overwrite each other. A declared name keeps its issuer URL and its kind: `trove migrate`
+writes it, so replicas of two releases never overwrite each other. A declared name keeps its issuer URL and its kind: `quader migrate`
 stops on an entry that changes either, naming both values, so the pins, the package owners and the mappings of the name never move to
 another GitLab instance under the same issuer ID ([Q-CI-48](../spec/gitlab-ci-oidc.md#q-ci-48--a-declared-issuers-issuer-url-and-kind-never-change-under-its-name)).
 
@@ -39,7 +39,7 @@ would fail the pin rule of a save under the new settings, and the answer names t
 The rules that keep a bad issuer out are the pure ones of [issuers_validate.go](../../internal/ci/issuers_validate.go): an https issuer
 URL without credentials, no `none` and no HMAC algorithm (RFC 8725), pin claims limited to the immutable ID claims, a public issuer
 URL (`gitlab.com`) that cannot be declared private, the closed `kind` enum, and `ca_bundle_ref` limited to `file:<absolute path>` or a
-variable named `TROVE_CIC_<NAME>`, so that no variable of trove's own can be named
+variable named `QUADER_CIC_<NAME>`, so that no variable of Quader's own can be named
 ([Q-CI-31](../spec/gitlab-ci-oidc.md)).
 
 ## Key handling
@@ -78,7 +78,7 @@ connection; the failure class is `egress_denied`.
 What a failure records is the class, the HTTP status when the issuer answered, and the host of the URL
 ([FetchError](../../internal/ci/keys_fetch.go)): in `last_error`, in the key status and in the event `ci.keys.refresh_failed`. No byte of a
 response body and no address or rule text is in any of them, so a discovery document that points `jwks_uri` at an internal service cannot
-read that service's answer back through trove. URLs come only from the issuer record and its discovery document: `jku`, `x5u`, `jwk`
+read that service's answer back through Quader. URLs come only from the issuer record and its discovery document: `jku`, `x5u`, `jwk`
 and `x5c` of a token never reach the key store, whose lookup takes the `kid` and the algorithm and nothing else.
 
 ## What a forged `kid` costs
@@ -170,7 +170,7 @@ an `.updated`.
 ## The exchange: an anonymous endpoint
 
 `POST /api/v1/auth/oidc/token` ([ci_exchange.go](../../internal/api/v1/ci_exchange.go),
-[exchange_service.go](../../internal/ci/exchange_service.go)) takes no trove credential. The authentication stage answers the anonymous
+[exchange_service.go](../../internal/ci/exchange_service.go)) takes no Quader credential. The authentication stage answers the anonymous
 principal for the route whatever the request carries, a session and a CSRF token play no part, and the general API rate limit does not
 count it (`ExchangePath` in [ratelimit.go](../../internal/api/v1/ratelimit.go)). The subject token is the credential, so what an
 anonymous caller can cause is bounded by the order of the checks: each step is cheaper than the next and refuses before it.
@@ -195,17 +195,17 @@ same transaction and refreshes the copies, so a token reflects the configuration
 message reached the replica. A refused or failed transaction leaves no `jti`, no token and no record.
 Single use, the restore cut-off and the `jti` are PostgreSQL's alone ([Q-CI-13](../spec/gitlab-ci-oidc.md)): concurrent exchanges of
 one `jti` serialise on its row, and Valkey holds nothing but the two budgets' counters, so its loss or a forged entry can refuse
-exchanges with 429 and cannot make trove accept one.
+exchanges with 429 and cannot make Quader accept one.
 
 **What reaches the answer, the log and the audit trail.**
 
 - The answer is the OAuth error response with `reason` and `requestId`. Its description names parameters, settings, claims by name and
   mappings, never a claim value, a parameter value or token material; the success answer is the one place a CI token appears. Both
   carry `Cache-Control: no-store` and `Pragma: no-cache`. With `ci.exchange.expose_reason: false` every 400 is `invalid_request` with a
-  generic description ([H-420](#h-420--the-reason-of-a-refusal-tells-an-anonymous-caller-which-issuers-trove-trusts)).
+  generic description ([H-420](#h-420--the-reason-of-a-refusal-tells-an-anonymous-caller-which-issuers-quader-trusts)).
 - The log line of a refusal holds the reason, the issuer's name once it is resolved and the request ID; the request type prints without
   its tokens (`ExchangeRequest.LogValue`). The integration tests grep every answer and every log line of the replicas for the subject
-  tokens they sent and for any `trv_cit_` value.
+  tokens they sent and for any `qdr_cit_` value.
 - `ci.exchange.succeeded` is written in the transaction with the token ID, the mappings, the allowlisted claim snapshot (no
   `user_email`), the scope and the lifetime; `token.created` beside it. `ci.exchange.denied` holds the reason and, before the signature
   is verified, only the unverified `iss` (cut to 256 bytes) and `kid` (at most 256 characters, R-CI-004), after it the snapshot. Denials
@@ -225,7 +225,7 @@ repositories exist ([H-418](#h-418--a-matched-job-learns-which-repository-keys-e
 
 ## What a CI token can do
 
-A CI token (`trv_cit_`) carries the frozen bundle of its exchange in `api_token.ci_context` ([Q-CI-17](../spec/gitlab-ci-oidc.md)):
+A CI token (`qdr_cit_`) carries the frozen bundle of its exchange in `api_token.ci_context` ([Q-CI-17](../spec/gitlab-ci-oidc.md)):
 its issuer, its GitLab project, the authorization epoch of its exchange and, per contributing mapping, the tier, the project of a
 project tier, the groups, the rendered inline grants, the caps and the end of its own window when its mapping's `maxTtlSeconds` is
 shorter than the token's lifetime. The token validator decodes it with `claims.DecodeFrozen` into the token cache entry (version 2, and
@@ -268,7 +268,7 @@ project that later takes over a released path gains nothing.
 | Cause | Who | Row reason | Events |
 |---|---|---|---|
 | a mapping disabled or deleted (W3 calls the revoker): the tokens it owns, for a system mapping also those whose record lists it | `ci:write`, the project's administrators | `mapping_deleted` | `ci.token.revoked` cause `mapping` |
-| an issuer disabled, deleted, or removed from `ci.issuers` | `ci:write`, `trove migrate` | `admin` | `ci.token.revoked` cause `issuer` |
+| an issuer disabled, deleted, or removed from `ci.issuers` | `ci:write`, `quader migrate` | `admin` | `ci.token.revoked` cause `issuer` |
 | `POST /api/v1/ci/issuances/revoke` | `tokens:revoke` | `admin` | `ci.token.revoked` cause `bulk`, with the filter |
 | `DELETE /api/v1/tokens/{id}` | `tokens:revoke` | `admin` | `token.revoked`, `ci.token.revoked` cause `single` |
 | `DELETE /api/v1/tokens/current` | the token itself | `owner` | `token.revoked`, `ci.token.revoked` cause `self` |
@@ -322,11 +322,11 @@ progress; the cost is a retryable 400 `unknown_signing_key` for that interval, a
 `ca_bundle_ref` takes an absolute path. The bundle is never shown, but a path that does not load fails the fetch with the class
 `trust_store_unavailable` and one that loads does not, so a holder of `ci:write` learns whether a readable PEM file exists at a path
 on the replica. Live for holders of `ci:write` only, which the role `admin` and the role `security-admin` hold; the variable form is
-limited to the `TROVE_CIC_` prefix and gives no such probe.
+limited to the `QUADER_CIC_` prefix and gives no such probe.
 
 ### H-411 · An issuer administrator can probe addresses that the egress policy allows
 
-Creating an issuer with validation, or forcing a refresh, makes trove request a URL that the administrator chose. The answer is never
+Creating an issuer with validation, or forcing a refresh, makes Quader request a URL that the administrator chose. The answer is never
 returned, but the failure class and the HTTP status code are: with the default policy every internal range is denied and only public
 hosts can be probed; a policy that allows an internal range through `proxy.outbound.address_policy.allow_cidrs` also lets a holder of
 `ci:write` learn whether a host in that range answers on https and with which status. Dormant with the default policy; live as soon as
@@ -401,12 +401,12 @@ addresses, an IPv6 prefix or a botnet. The aggregation is per address and reason
 up to 10,000 rows per replica, reason and minute before the bounded buffer counts further addresses under the reason alone, and each of
 the first rows may carry up to 256 bytes of a chosen `iss` and a chosen `kid`. Live today. What bounds it: the per-address budget
 before the body is read, the 10,000 keys of the buffer, the audit buffer that drops and counts
-(`trove_audit_events_dropped_total`) when it is full, and the retention of the audit store.
+(`quader_audit_events_dropped_total`) when it is full, and the retention of the audit store.
 
-### H-420 · The reason of a refusal tells an anonymous caller which issuers trove trusts
+### H-420 · The reason of a refusal tells an anonymous caller which issuers Quader trusts
 
 Component: the error answer of the exchange (R-CI-008). Subject: an anonymous caller that sends tokens with chosen `iss` values, or a
-validly signed token of a public issuer. With `ci.exchange.expose_reason: true`, the default, `unknown_issuer` tells an `iss` that trove
+validly signed token of a public issuer. With `ci.exchange.expose_reason: true`, the default, `unknown_issuer` tells an `iss` that Quader
 does not trust from one it does (`signature_invalid`, `unknown_signing_key`), and for a token of gitlab.com `no_matching_mapping` tells
 whether a mapping matches its claims. Live with the default. What bounds it: the per-address budget; `expose_reason: false` answers every
 400 with `invalid_request` and keeps the reason in the log and the audit trail, at the cost of the diagnosis a pipeline prints.
@@ -441,7 +441,7 @@ them.
 Component: the mapping limits (R-CI-009, Q-CI-49). Subject: an issuer on which many projects save mappings. `ci.mappings.max_per_project`
 (100) keeps one project from filling `ci.mappings.max_per_issuer` (1,000), but ten projects at their quota fill it, and the next save of
 any tier, a system administrator's included, answers `422 mapping_limit_reached`. Live when many projects use one issuer. What bounds
-it: project Owners are named by the administrators of trove or by other Owners, the quota is a configuration key, and every mapping is listed
+it: project Owners are named by the administrators of Quader or by other Owners, the quota is a configuration key, and every mapping is listed
 with its project.
 
 ### H-427 · A replica of the previous release refuses the CI tokens of bundle version 2
@@ -453,23 +453,23 @@ contribution beyond its bound. Live during that one update and dormant afterward
 package requests reach replicas of different releases while the update rolls; it fails and runs again. The reverse direction works:
 this release reads version 1.
 
-### H-565 · A replayed disable of a configuration-declared CI issuer is undone by `trove migrate` when the restore runs with an older configuration
+### H-565 · A replayed disable of a configuration-declared CI issuer is undone by `quader migrate` when the restore runs with an older configuration
 
-Stage: the apply of `ci.issuers` in `trove migrate` (R-CI-001, Q-CI-16; `ApplyDeclared` in
+Stage: the apply of `ci.issuers` in `quader migrate` (R-CI-001, Q-CI-16; `ApplyDeclared` in
 [issuers_declared.go](../../internal/ci/issuers_declared.go)), which the chart's migration Job runs at every `helm install` and
 `helm upgrade`, so also at the final `helm upgrade` of the restore sequence that starts the replicas again
 ([ha-and-helm.md](../spec/ha-and-helm.md) R-HA-060), with the values file given there. It runs after the journal replay of
-`trove backup restore` (R-BAK-024) or `trove admin post-restore` (R-HA-025), which disables the issuer
+`quader backup restore` (R-BAK-024) or `quader admin post-restore` (R-HA-025), which disables the issuer
 ([journal_replay.go](../../internal/ci/journal_replay.go)).
 
 Subject, case by case:
 
 - **A declared issuer disabled after the restore point.** The API refuses to write an issuer with source `configuration`, so such a
   disable came from the configuration itself. The replay disables the restored row and revokes its unexpired tokens. A configuration
-  that still declares the issuer enabled, or omits `enabled` (the default is `true`), makes the next `trove migrate` write the
+  that still declares the issuer enabled, or omits `enabled` (the default is `true`), makes the next `quader migrate` write the
   declaration over the row: the issuer is enabled again (`ci.issuer.enabled`, actor `system:configuration`) and its jobs obtain CI
   tokens again. The tokens the replay revoked stay revoked.
-- **A declared issuer that the replay suspended** because it could not prove a `ci.issuer.updated` entry a narrowing. `trove migrate`
+- **A declared issuer that the replay suspended** because it could not prove a `ci.issuer.updated` entry a narrowing. `quader migrate`
   writes the declared settings over the suspension, whatever they are: the after-state of the narrowing when the configuration is the
   one in force at the restore, the wider settings of an older one.
 - **A declared issuer the configuration no longer lists** is disabled again by the same step (`removeOne`), so the replay's disable
@@ -478,7 +478,7 @@ Subject, case by case:
 Confirmed in the code, not run as this case: `applyOne` builds the issuer from the declaration and, when the stored settings differ
 (`sameSettings`), writes it with `writeUpdate`, which enables a disabled row. `TestR_CI_001_DeclaredIssuersAreReadOnlyAndFollowTheConfiguration`
 shows the same path enabling a declared issuer that was disabled, through a removal and a declaration again; no test runs a restore
-followed by `trove migrate`.
+followed by `quader migrate`.
 
 Live or dormant: dormant while the restored installation is deployed with the configuration in force when the issuer was disabled,
 because that configuration declares it disabled or not at all. Live when the restore is deployed with the values of the backup's time

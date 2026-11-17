@@ -5,12 +5,12 @@ operator's page is [manual/admin/import.md](../manual/admin/import.md), and the 
 [../security/import.md](../security/import.md). The decisions are Q-IMP-1 to Q-IMP-9, decided by the development agent for the
 owner's walkthrough.
 
-This page specifies how an operator copies the packages of an existing registry into a trove local repository, so that a team can
-move to trove without publishing every version again by hand. It covers:
+This page specifies how an operator copies the packages of an existing registry into a Quader local repository, so that a team can
+move to Quader without publishing every version again by hand. It covers:
 
 - who runs the import and where its state lives (R-IMP-001);
 - how the source is addressed, authenticated and bounded (R-IMP-002) and how its packages are named (R-IMP-003);
-- the road a package takes into trove, and what that road guarantees (R-IMP-004);
+- the road a package takes into Quader, and what that road guarantees (R-IMP-004);
 - what is kept from the source and what is not (R-IMP-005);
 - the outcome of a version, idempotence and conflicts (R-IMP-006), and the resume of a cut run (R-IMP-007);
 - the politeness towards the source (R-IMP-008) and the seam for another format (R-IMP-009).
@@ -24,7 +24,7 @@ move to trove without publishing every version again by hand. It covers:
 | Permissions on a repository and a path, the audit events | [authorization.md](authorization.md) R-AUTHZ-005, R-AUTHZ-007; [operations-and-observability.md](operations-and-observability.md) |
 | The vulnerability evaluation of a stored package | [vulnerability-scanning.md](vulnerability-scanning.md) |
 
-Conventions: `https://trove.example.com` is the main endpoint *(example)*; `web/npm-local` and `web/nuget-local` are local
+Conventions: `https://quader.example.com` is the main endpoint *(example)*; `web/npm-local` and `web/nuget-local` are local
 repositories of project `web` *(examples)*; `https://registry.example.com/` is the source registry *(example)*.
 
 ## Scope
@@ -39,26 +39,26 @@ changed for it.
 |---|---|---|---|---|---|---|
 | `npm` | [npm.go](../../internal/importer/npm.go) | the registry address | package names, scoped or not | the package document | `PUT` of the package document | deprecations, provenance |
 | `nuget` | [nuget.go](../../internal/importer/nuget.go) | the service index | package IDs | the registration | `PUT` of a multipart body to the publish resource | deprecation, the unlisted state where unsafe |
-| `ansible` | [ansible.go](../../internal/importer/ansible.go) | the API root of the Galaxy (`https://galaxy.example.com/api/`), and the repository address of trove (`.../api/ansible/web/ansible-local/`) | `<namespace>.<name>` | `v3/collections/…/versions/` and the version documents | `POST v3/artifacts/collections/`, then the import task | roles, the deprecation flag, signatures, publication times |
+| `ansible` | [ansible.go](../../internal/importer/ansible.go) | the API root of the Galaxy (`https://galaxy.example.com/api/`), and the repository address of Quader (`.../api/ansible/web/ansible-local/`) | `<namespace>.<name>` | `v3/collections/…/versions/` and the version documents | `POST v3/artifacts/collections/`, then the import task | roles, the deprecation flag, signatures, publication times |
 
 ## Requirements
 
 ### R-IMP-001 · The command, and what it is
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
-The import is the subcommand `trove admin import <format>`. It is a **client** of the source registry and of the target
+The import is the subcommand `quader admin import <format>`. It is a **client** of the source registry and of the target
 repository: it holds no database connection, reads no storage and writes through no other door than the target's package protocol
 ([Q-IMP-1](#q-imp-1--the-import-is-an-admin-subcommand-that-is-a-client-of-both-registries),
 [Q-IMP-2](#q-imp-2--an-imported-version-takes-the-road-of-a-publish-with-the-token-of-the-operator)). It loads the configuration
 file for `proxy.outbound` (the trust store and the egress address policy) and nothing else of it.
 
 ```
-trove admin import npm   --from https://registry.example.com/ \
-                         --to   https://trove.example.com/api/npm/web/npm-local/ [flags]
-trove admin import nuget --from https://nuget.example.com/v3/index.json \
-                         --to   https://trove.example.com/api/nuget/web/nuget-local/v3/index.json [flags]
-trove admin import ansible --from https://galaxy.example.com/api/ \
-                           --to   https://trove.example.com/api/ansible/web/ansible-local/ [flags]
+quader admin import npm   --from https://registry.example.com/ \
+                         --to   https://quader.example.com/api/npm/web/npm-local/ [flags]
+quader admin import nuget --from https://nuget.example.com/v3/index.json \
+                         --to   https://quader.example.com/api/nuget/web/nuget-local/v3/index.json [flags]
+quader admin import ansible --from https://galaxy.example.com/api/ \
+                           --to   https://quader.example.com/api/ansible/web/ansible-local/ [flags]
 ```
 
 | Flag | Meaning | Default |
@@ -67,7 +67,7 @@ trove admin import ansible --from https://galaxy.example.com/api/ \
 | `--package <name>` (repeatable), `--packages-file <file>` | the packages to copy (R-IMP-003) | none |
 | `--search <text>` | also copy what the source's search finds (R-IMP-003) | not given |
 | `--source-auth none\|basic\|bearer\|token`, `--source-username`, `--source-password-file`, `--source-extra-host <pattern>` (repeatable) | how the source is asked (R-IMP-002) | `none` |
-| `--token-file` | the trove token of the target (R-IMP-002) | `TROVE_IMPORT_TOKEN` |
+| `--token-file` | the Quader token of the target (R-IMP-002) | `QUADER_IMPORT_TOKEN` |
 | `--state <file>` | the state file (R-IMP-007) | none |
 | `--report <file>` | the report as JSON (R-IMP-006) | none |
 | `--concurrency <n>`, `--rate <per second>` | packages in flight, requests per second to the source (R-IMP-008) | `2`, `5` |
@@ -87,12 +87,12 @@ trove admin import ansible --from https://galaxy.example.com/api/ \
 
 Acceptance criteria:
 
-- `trove admin import npm` without `--from` and `--to` exits 2 and prints the usage.
+- `quader admin import npm` without `--from` and `--to` exits 2 and prints the usage.
 - A dry run against a source with three versions and a target holding one reports one `skipped` and two `would_import` and sends no
   `PUT` and no file request.
 
 ### R-IMP-002 · The source and the credentials
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - **Address rule.** `--from` and `--to` obey the upstream URL rule of a remote repository (R-REPO-024): an absolute `http` or `https`
   URL with a host, without user information, without a fragment (`repository.NormalizeUpstreamURL`), and in addition without a
@@ -110,11 +110,11 @@ Priority: **P1** · Covers: trove-only
   `bearer` sends `Authorization: Bearer <password>`, as `authMode` of a remote repository does (R-REPO-033); `token` sends
   `Authorization: Token <password>`, the scheme of a Galaxy server's API token (galaxy_ng answers a Bearer token as "credentials were not
   provided", read on 2026-11-11). The password is read from
-  `--source-password-file` (the trailing line break removed, at most 8 KiB) or from `TROVE_IMPORT_SOURCE_PASSWORD`. It is **never** a
+  `--source-password-file` (the trailing line break removed, at most 8 KiB) or from `QUADER_IMPORT_SOURCE_PASSWORD`. It is **never** a
   command-line argument. The credential is attached by the hop policy of a remote repository (`outbound.CredentialPolicy`): it goes
   to the source's origin on every hop to that origin, to no other host and to no redirect target, and over `https` only, unless the
   origin itself is `http`.
-- **Target credential.** The trove token of the target is read from `--token-file` or `TROVE_IMPORT_TOKEN`, never from an argument,
+- **Target credential.** The Quader token of the target is read from `--token-file` or `QUADER_IMPORT_TOKEN`, never from an argument,
   and goes to the target's origin only, as `Authorization: Bearer` (for NuGet also as `X-NuGet-ApiKey`, as `dotnet nuget push` sends
   it).
 - Neither credential is written to the state file, the report, a log line or an error message; addresses in messages and in the
@@ -127,7 +127,7 @@ Acceptance criteria:
 - A file on an extra host is requested without `Authorization`; a file on an unlisted host is not requested.
 
 ### R-IMP-003 · Which packages
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 A registry has no protocol that lists every package, so the operator says which ([Q-IMP-3](#q-imp-3--the-packages-are-named-by-the-operator-or-found-by-the-search-of-the-source)):
 
@@ -147,8 +147,8 @@ Acceptance criteria:
 - A names file with a comment, an empty line and `@acme/ui` yields exactly that one package.
 - `--package a --package a` copies `a` once.
 
-### R-IMP-004 · The road into trove, and what it guarantees
-Priority: **P1** · Covers: trove-only
+### R-IMP-004 · The road into Quader, and what it guarantees
+Priority: **P1** · Covers: quader-only
 
 An imported version is written by **the publish request of the format's own protocol** to the target repository, with the operator's
 token: `PUT {name}` with the `.tgz` attachment as `npm publish` sends it (R-NPM-007), `PUT <feed>/package` with a multipart body
@@ -189,30 +189,30 @@ Acceptance criteria:
   the next package.
 
 ### R-IMP-005 · What is kept, and what is not
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 | From the source | Kept? | How, or why not |
 |---|---|---|
 | The package files | yes | the verified bytes (R-IMP-004) |
 | npm: the manifest of each version | yes | the `package.json` of the tarball and the source's `readme`, `readmeFilename`, `gitHead` |
-| NuGet: the `.nuspec`, the metadata | yes | trove reads them from the package, as for any push (R-NUGET-005) |
-| Version order | yes, as an order of publication | versions are published one after the other in the order of the **source's publication times**, by version number where times are equal or unknown; the order trove serves (by version) is its own rule |
+| NuGet: the `.nuspec`, the metadata | yes | Quader reads them from the package, as for any push (R-NUGET-005) |
+| Version order | yes, as an order of publication | versions are published one after the other in the order of the **source's publication times**, by version number where times are equal or unknown; the order Quader serves (by version) is its own rule |
 | npm: dist-tags | yes | each tag of the source is set with `PUT -/package/{name}/dist-tags/{tag}` after the versions are in, `latest` last; a tag whose version the target does not hold is reported and skipped |
 | NuGet: unlisted | only where safe | after the versions are in, a version the source lists as unlisted is unlisted with the protocol `DELETE` (R-NUGET-007), but **only** when the importer has read the repository's configuration with the token and `nuget.deleteMode` is `unlist` (or unset); with `deleteMode: delete` that request would remove the version and write its tombstone, so the version stays listed and the report says why. A token that may not read the configuration (the response is the consumer view, `ETag` ending in `-consumer`) cannot know, and the state is not set |
-| **Publication timestamps** | **no** | trove sets the time of a publish itself, on the database clock. No client can give a version an earlier time: a field that did would let any publisher forge the history that cooldown rules, audits and incident analysis read ([Q-IMP-5](#q-imp-5--publication-times-are-not-copied)). The source's time is used only for the order above |
-| npm: deprecation messages | **no, reported** | trove has no way to set a deprecation yet (R-NPM-018 answers `404`); the report names the deprecated versions under "not kept". When R-NPM-018 is built, the importer sets it after the versions, as it sets tags |
-| NuGet: deprecation, vulnerabilities | no | trove stores neither for a local package (R-NUGET-009); trove evaluates the vulnerabilities of what it stores itself |
+| **Publication timestamps** | **no** | Quader sets the time of a publish itself, on the database clock. No client can give a version an earlier time: a field that did would let any publisher forge the history that cooldown rules, audits and incident analysis read ([Q-IMP-5](#q-imp-5--publication-times-are-not-copied)). The source's time is used only for the order above |
+| npm: deprecation messages | **no, reported** | Quader has no way to set a deprecation yet (R-NPM-018 answers `404`); the report names the deprecated versions under "not kept". When R-NPM-018 is built, the importer sets it after the versions, as it sets tags |
+| NuGet: deprecation, vulnerabilities | no | Quader stores neither for a local package (R-NUGET-009); Quader evaluates the vulnerabilities of what it stores itself |
 | npm: provenance attestations, signatures | no, reported | the importer sends no `.sigstore` attachment; the source's bundle is for the source's tarball URL and publisher |
-| Ansible: the collection archives, hence their manifest and README | yes | the verified bytes; trove reads the manifest from the archive, as for any publish (R-ANS-010) |
+| Ansible: the collection archives, hence their manifest and README | yes | the verified bytes; Quader reads the manifest from the archive, as for any publish (R-ANS-010) |
 | Ansible: roles | **no, reported** | a local repository has no role API (R-ANS-014); the report names the number of roles the source's `v1` API counts, once per run, with the first collection planned ([Q-ANS-43](formats/ansible.md#q-ans-43--the-roles-of-the-source-are-reported-once-per-run-with-the-first-collection)) |
-| Ansible: the deprecation flag of a collection, signatures, namespace metadata | no, reported or ignored | trove stores none of them for a local collection (R-ANS-027) |
-| Owners, maintainers, download counts, the source's users and tokens | no | trove's ownership and permissions are its own; the importing token's principal owns a name by the rules of the repository (`local.autoClaim`, R-REPO-023) |
+| Ansible: the deprecation flag of a collection, signatures, namespace metadata | no, reported or ignored | Quader stores none of them for a local collection (R-ANS-027) |
+| Owners, maintainers, download counts, the source's users and tokens | no | Quader's ownership and permissions are its own; the importing token's principal owns a name by the rules of the repository (`local.autoClaim`, R-REPO-023) |
 | npm: unpublished versions, the source's tombstones | no | only versions the source lists are copied |
 
 The report lists, per package, the states that are not kept (`notKept`), so an operator sees them before the source is switched off.
 
 ### R-IMP-006 · Outcomes, idempotence and conflicts
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 For each version of each package the run reports exactly one outcome:
 
@@ -249,7 +249,7 @@ Acceptance criteria:
   `1.1.0`: `1.0.0` is `conflict`, `1.1.0` is `imported`, the stored digest of `1.0.0` is unchanged, the run exits 1.
 
 ### R-IMP-007 · Resume after an interruption
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 An import of tens of thousands of versions survives a kill, a pod drain and a restart, and goes on without publishing a version twice
 and without leaving a gap ([Q-IMP-8](#q-imp-8--a-run-resumes-from-the-targets-idempotence-and-an-optional-state-file)):
@@ -267,7 +267,7 @@ and without leaving a gap ([Q-IMP-8](#q-imp-8--a-run-resumes-from-the-targets-id
 - **Signals.** `SIGINT` and `SIGTERM` cancel the run: the request in flight is cancelled, the packages in progress are reported as
   stopped, and the process exits with status 1 and the report of what was done. A publish that was cancelled either committed or did
   not, because the target stores a version in one transaction (R-ARCH-019); the next run finds out which.
-- A pod drain of the pod that runs the command needs nothing from trove: the Job is started again and resumes. For a Job, the state
+- A pod drain of the pod that runs the command needs nothing from Quader: the Job is started again and resumes. For a Job, the state
   file belongs on a volume that survives the restart; without one the resume costs a re-read of the packages (two requests per
   package, plus one `HEAD` per version of NuGet) and nothing else.
 
@@ -279,7 +279,7 @@ Acceptance criteria:
 - A state file that was written by a different `--to` is refused with "belongs to another import".
 
 ### R-IMP-008 · Politeness towards the source
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - Requests to the source are spaced by a limiter: `--rate` per second (default 5), counted over all packages of the run; `0` turns the
   spacing off. A source's `429`, and a `503`, **halve** the rate for the rest of the run (down to one request in ten seconds), as a
@@ -297,7 +297,7 @@ Acceptance criteria:
   answers `404` is not retried.
 
 ### R-IMP-009 · The seam for a format
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 A format of the importer is one implementation of `importer.Format` and one line in `importer.FormatByID`
 ([Q-IMP-9](#q-imp-9--a-format-is-one-implementation-of-one-interface)): `ValidName`, `Preflight` (the target accepts the token and has
@@ -306,7 +306,7 @@ the states not kept), `Held` (what the target holds, with its digests), `Publish
 protocol) and `Finish` (the state a publish cannot carry). The runner, the limiter, the retry, the state file, the report and the
 digest rule are shared and know no format.
 
-The formats of the importer are the formats of the target repositories: a format the importer gains needs the format in trove first.
+The formats of the importer are the formats of the target repositories: a format the importer gains needs the format in Quader first.
 Ansible Galaxy is both ([Scope](#scope)): its `importer.Format` is [ansible.go](../../internal/importer/ansible.go), registered in
 `FormatByID`, with a section on the pages of the admin manual and of the developer documentation and tests against the counting stub
 of the Galaxy API (R-ANS-027).
@@ -320,14 +320,14 @@ decision point decides every write with the token's permissions.
 
 ## Tests
 
-Unit tests are in [internal/importer](../../internal/importer/importer_test.go) and [cmd/trove](../../cmd/trove/admin_import_test.go):
+Unit tests are in [internal/importer](../../internal/importer/importer_test.go) and [cmd/quader](../../cmd/quader/admin_import_test.go):
 the limiter, the retry, the address rules, the egress denial, the credential scope, the state file, the runner's outcomes with a fake
 format, the npm plan and publish body. The integration suite [test/integration/importer](../../test/integration/importer) runs the
 importer against the counting stubs [test/npmstub](../../test/npmstub) and [test/nugetstub](../../test/nugetstub) and a replica on
 the shared stack: a full import of each format, the rerun, a run cut short and resumed, a conflicting version, a digest the file does
 not have, a token without the publish right, and the unlisted state with a repository whose delete removes the version. The Galaxy
 format is run against [test/ansiblestub](../../test/ansiblestub) the same way (`ansible_test.go` in both places); its unit tests also
-run against a small Galaxy and trove target written in the test file, which is where the cases the stub cannot produce are.
+run against a small Galaxy and Quader target written in the test file, which is where the cases the stub cannot produce are.
 No end-to-end test with the real clients is written: it needs the kind cluster, which the tooling run did not use; the e2e wave
 adds `npm install` and `dotnet restore` of imported packages to the sets of the two formats.
 
@@ -341,8 +341,8 @@ Status: **Decided by the development agent — selected from the options below; 
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) An admin subcommand that is a client (chosen) | `trove admin import` runs where the operator runs it and talks to the two registries over HTTP | No new server surface, no new table, no stored source secret; the road is the real publish (Q-IMP-2); a cut run is stopped by the operator's tools and resumes by idempotence (Q-IMP-8) | The operator keeps a process running, or a Job |
-| (b) A job on the worker role | an enqueued job copies the packages inside trove, resumable by the job queue | Survives a drain by the framework; visible in the UI | The job needs the source's credential stored server-side (a new secret and a new egress path per run), needs an internal publish path that is not the protocol (a second road to keep as strict as the first), and needs a table for its pending set and an API to start it. All for a tool that runs once per team |
+| (a) An admin subcommand that is a client (chosen) | `quader admin import` runs where the operator runs it and talks to the two registries over HTTP | No new server surface, no new table, no stored source secret; the road is the real publish (Q-IMP-2); a cut run is stopped by the operator's tools and resumes by idempotence (Q-IMP-8) | The operator keeps a process running, or a Job |
+| (b) A job on the worker role | an enqueued job copies the packages inside Quader, resumable by the job queue | Survives a drain by the framework; visible in the UI | The job needs the source's credential stored server-side (a new secret and a new egress path per run), needs an internal publish path that is not the protocol (a second road to keep as strict as the first), and needs a table for its pending set and an API to start it. All for a tool that runs once per team |
 | (c) The CLI starts a job on the server | (b) with a command to enqueue | The operator's process ends early | everything of (b) |
 
 **Choice:** (a).
@@ -402,7 +402,7 @@ Status: **Decided by the development agent — selected from the options below; 
 
 **Choice:** (a).
 
-**Rationale:** the target's digest check compares a request with its own attachment, so it protects the transfer to trove and not the
+**Rationale:** the target's digest check compares a request with its own attachment, so it protects the transfer to Quader and not the
 transfer from the source; the check against the source's announcement is the importer's. A version with no digest is rare (npm has
 had `dist.shasum` since the beginning) and can be republished by hand. Revisit only with the owner's decision to accept unverified
 versions.
@@ -415,7 +415,7 @@ Status: **Decided by the development agent — selected from the options below; 
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Not copied; the source's time orders the publishes (chosen) | trove's time is the time of the import | No client can forge history; no change to the publish protocol | The imported versions show the import date |
+| (a) Not copied; the source's time orders the publishes (chosen) | Quader's time is the time of the import | No client can forge history; no change to the publish protocol | The imported versions show the import date |
 | (b) A header or field of the publish that sets the time | with a permission | History is kept | A time any holder of the permission can set; every consumer of the time (age rules, audit, incident analysis) must then ask whether it is real |
 | (c) An admin-only import endpoint that sets it | | History is kept | A privileged write path (Q-IMP-2 (c)) |
 
@@ -449,13 +449,13 @@ Status: **Decided by the development agent — selected from the options below; 
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A file or an environment variable, the hop policy of a remote repository (chosen) | `--token-file`, `--source-password-file`, `TROVE_IMPORT_TOKEN`, `TROVE_IMPORT_SOURCE_PASSWORD`; `outbound.CredentialPolicy` | Not in `ps` or the shell history; the same scope rule as an upstream credential | The operator prepares a file |
+| (a) A file or an environment variable, the hop policy of a remote repository (chosen) | `--token-file`, `--source-password-file`, `QUADER_IMPORT_TOKEN`, `QUADER_IMPORT_SOURCE_PASSWORD`; `outbound.CredentialPolicy` | Not in `ps` or the shell history; the same scope rule as an upstream credential | The operator prepares a file |
 | (b) Flags that take the secret | | Convenient | Visible to every user of the host, and in history |
 | (c) Use the stored credential of a remote repository by name | | One place for source secrets | The importer would need the database and the decryption key: a new, strong capability for a client tool |
 
 **Choice:** (a).
 
-**Rationale:** the existing handling of an upstream credential that a client can reach without trove's keys is the hop policy and the
+**Rationale:** the existing handling of an upstream credential that a client can reach without Quader's keys is the hop policy and the
 file/environment form of `secretRef`; the importer uses both. Revisit when the import becomes a server job (Q-IMP-1).
 
 **Applied in the spec:** R-IMP-002.
@@ -466,8 +466,8 @@ Status: **Decided by the development agent — selected from the options below; 
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Idempotence of the target, plus a state file of complete packages (chosen) | a rerun reads each package and copies the rest; the file skips complete packages | Correct with no file; cheap with one; nothing in trove's database | A rerun without the file re-reads every package |
-| (b) A table of pending versions in trove | the mirror's design | A server job can resume | See Q-IMP-1 |
+| (a) Idempotence of the target, plus a state file of complete packages (chosen) | a rerun reads each package and copies the rest; the file skips complete packages | Correct with no file; cheap with one; nothing in Quader's database | A rerun without the file re-reads every package |
+| (b) A table of pending versions in Quader | the mirror's design | A server job can resume | See Q-IMP-1 |
 | (c) A state file as the only record | | Cheapest | A lost or stale file would hide a gap or re-publish |
 
 **Choice:** (a).
@@ -499,4 +499,4 @@ The open gaps of the mechanism are on [../security/import.md](../security/import
 - Timestamps, deprecations and attestations of the source are not copied (R-IMP-005); the importer reports them.
 - An import is a copy at a moment; changes at the source afterwards are copied by a later run (with a new state file). A standing
   synchronization of a foreign registry is the mirror mode of a remote repository ([repositories-and-proxy.md](repositories-and-proxy.md)).
-- The roles of an Ansible Galaxy, and every format trove does not have.
+- The roles of an Ansible Galaxy, and every format Quader does not have.

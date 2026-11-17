@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // TestR_AUTH_031_LastUsedIsRecordedInBatches: a successful authentication records

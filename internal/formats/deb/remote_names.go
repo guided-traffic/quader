@@ -3,8 +3,8 @@ package deb
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 // ServesName answers the shadowing check of repositories-and-proxy.md R-REPO-048 for a remote member: an APT archive has no document

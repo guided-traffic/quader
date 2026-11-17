@@ -56,7 +56,7 @@ func (l *Loaded) EffectiveJSON() ([]byte, error) {
 }
 
 // WriteTable prints one line per key: key, value, source and the environment
-// variable that overrides it. This is the output of `trove admin config validate`.
+// variable that overrides it. This is the output of `quader admin config validate`.
 func (l *Loaded) WriteTable(w io.Writer) error {
 	tw := tabwriter.NewWriter(w, 2, 4, 2, ' ', 0)
 	fmt.Fprintln(tw, "KEY\tVALUE\tSOURCE\tENV")

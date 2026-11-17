@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Endpoints and exposure (M1, WP1.9). The endpoints themselves (hosts, listeners,
 -- accepted credentials, rate-limit class) are configuration-file data (R-EP-001,

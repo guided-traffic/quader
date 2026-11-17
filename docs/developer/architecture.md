@@ -9,7 +9,7 @@ stops. Requirements: [R-ARCH-001](../spec/architecture.md), [R-ARCH-005](../spec
 
 | Package | Responsibility |
 |---|---|
-| [cmd/trove/serve.go](../../cmd/trove/serve.go) | Loads the configuration, turns `SIGTERM`/`SIGINT` into a context, calls `app.RunWith`. A second signal ends the process at once |
+| [cmd/quader/serve.go](../../cmd/quader/serve.go) | Loads the configuration, turns `SIGTERM`/`SIGINT` into a context, calls `app.RunWith`. A second signal ends the process at once |
 | [internal/app](../../internal/app) | Composition root: role subsystems, start order, shutdown sequence, wiring of every infrastructure client |
 | [internal/httpserver](../../internal/httpserver) | Listeners and their TLS (`ListenerTLS`), `Router` (ServeMux wrapper), the middleware `Chain`, client address, in-flight limit and memory guard (`memory.go`), route-table rules, graceful shutdown (`server.go`; `linger*.go` holds a closing connection until the peer has acknowledged its last bytes and resets a cut one, Q-ARCH-187; `unread_body.go` sends the answer to a request with an unread body and then discards the rest within a bound, so the close is a FIN and not an RST, Q-ARCH-446), and the endpoint model (`Endpoint`, host check, surface), see [endpoints.md](endpoints.md) |
 | [internal/tlsfiles](../../internal/tlsfiles) | Reloadable TLS material of every listener and client (leaf package), see [tls.md](tls.md) |
@@ -25,7 +25,7 @@ stops. Requirements: [R-ARCH-001](../spec/architecture.md), [R-ARCH-005](../spec
 | [roles.go](../../internal/app/roles.go) | `SubsystemsFor(role)`: the table of R-ARCH-001 as data; a role's wiring `Area`s are the steps of the list that run in it (`areasFor`); the explicit shell profile (`Subsystems.shell`) |
 | [steps.go](../../internal/app/steps.go) | The wiring framework: `step`, `newStep`, `wiringSteps` (the list, in start order, with the roles each step runs in), `planSteps` (checked in `New`), `runSteps`, `part[T]`, `requireInputs`, `late[T]` |
 | [areas.go](../../internal/app/areas.go) | The typed results of the steps: `keysArea`, `postgresArea`, `auditArea`, `blobArea`, `valkeyArea`, `coordArea`, the bundle `infra` that every domain step takes, and the domain areas (`repositoryArea`, `identityArea`, `authzArea`, `filesArea`, ...); an area added later declares its own result type in its own file |
-| [identity.go](../../internal/app/identity.go) | Instance name (`TROVE_POD_NAME`, `POD_NAME`, `HOSTNAME` in Kubernetes, else `hostname-pid`), random instance UID, node name |
+| [identity.go](../../internal/app/identity.go) | Instance name (`QUADER_POD_NAME`, `POD_NAME`, `HOSTNAME` in Kubernetes, else `hostname-pid`), random instance UID, node name |
 | [wire_observability.go](../../internal/app/wire_observability.go), [wire_keys.go](../../internal/app/wire_keys.go), [wire_postgres.go](../../internal/app/wire_postgres.go), [wire_audit.go](../../internal/app/wire_audit.go), [wire_blob.go](../../internal/app/wire_blob.go), [wire_valkey.go](../../internal/app/wire_valkey.go), [wire_coordination.go](../../internal/app/wire_coordination.go) | One file per infrastructure area: the step (`wireKeys`, `wirePostgres`, `wireAudit`, `wireBlob`, `wireValkey`, `wireCoordination`, `wireInfra`) and its component |
 | [wire_tls.go](../../internal/app/wire_tls.go) | `startTLS`: one `ListenerTLS` per listener of the role (every endpoint listener included), the `tls` first-readiness check |
 | [wire_endpoints.go](../../internal/app/wire_endpoints.go) | The endpoints this process serves, their TLS, chain and listener; see [endpoints.md](endpoints.md) |
@@ -35,7 +35,7 @@ stops. Requirements: [R-ARCH-001](../spec/architecture.md), [R-ARCH-005](../spec
 
 ## The role bastion
 
-`trove serve --role bastion` does not go through `app.New`: [cmd/trove/serve.go](../../cmd/trove/serve.go) chooses it before the main
+`quader serve --role bastion` does not go through `app.New`: [cmd/quader/serve.go](../../cmd/quader/serve.go) chooses it before the main
 tree is loaded and calls [`app.RunBastion`](../../internal/app/bastion.go), which runs [internal/bastion/server](../../internal/bastion/server).
 The server builds the same shell as the other roles (the TLS reloaders of `internal/httpserver`, the request log and metrics of
 `internal/observability`, the health registry, the client address resolver) around two listeners, `:8443` and `:8081`, and enables none of the main
@@ -99,7 +99,7 @@ no CORS answer, no rate-limit class. A new path rule in a stage asks the same qu
 `/does-not-exist` and fails on a rule that does not.
 
 A client listener exists per **endpoint** (R-EP-002): the default endpoint on `server.listen` and every entry of
-`server.endpoints` that belongs to the process's pool (`TROVE_POOL_NAME`) and whose surface holds a family of the role
+`server.endpoints` that belongs to the process's pool (`QUADER_POOL_NAME`) and whose surface holds a family of the role
 (`servesEndpoint`, [wire_endpoints.go](../../internal/app/wire_endpoints.go)). A process in a pool no endpoint names opens those without a
 pool, `all` opens every one, a `worker` none. The endpoint's effective surface on the process is its configured surface intersected with
 the role's families (`httpserver.ForRoleFamilies`, Q-ARCH-298). Each endpoint has its own `http.Server`, router (built from its surface),
@@ -120,12 +120,12 @@ A `worker` claims the queues of `jobs.queues`, or all but `jobs.exclude_queues` 
 net/http server ── track (stall deadlines, active-request registry for the shutdown)
   └─ 1 recovery        panic -> 500 problem "internal"; logger into context; r.Pattern resolved; Connection: close while draining
      └─ 2 trace        observability Tracer.Middleware (traceparent, trace ID)   [injected]
-        └─ 2 request ID  X-Request-Id = trace ID (minted if no trace stage); X-Trove-Replica for replica_header=always; OnRequest hook names the handler
+        └─ 2 request ID  X-Request-Id = trace ID (minted if no trace stage); X-Quader-Replica for replica_header=always; OnRequest hook names the handler
            └─ 3 request log + metrics   observability.RequestLog               [injected]
               └─ 4 in-flight limit, then the replica's memory guard (slots, heap gate)   503 server_busy + Retry-After: 1
                  └─ 5 client address    Resolver: peer, trusted proxies, base URL; Annotate hook; per endpoint: effective host, host check (421), binding
                     └─ preflight  CORS preflight of an allowed origin, answered before authentication (Q-API-138)
-                       └─ 6 authentication principal or anonymous (bearer token or session cookie); invalid credential -> 401; X-Trove-Replica for authenticated callers
+                       └─ 6 authentication principal or anonymous (bearer token or session cookie); invalid credential -> 401; X-Quader-Replica for authenticated callers
                        └─ 7 rate limits: api_read, api_write, api_anonymous classes (cluster-wide in Valkey, per-replica share as fallback; ADR-102)
                           └─ 8 Router (ServeMux): API operations, /ui/, ... ; unmatched -> 404 problem, wrong method -> 405 + Allow
                                                   (404 where the route hides its methods from the caller, Router.HideMethods)
@@ -173,7 +173,7 @@ in-flight limit and no memory guard, so a probe is never refused because the req
    A closed gate that sees `/gc/cycles/total:gc-cycles` unchanged for a second calls `runtime.GC` (Q-ARCH-242): an idle replica
    would otherwise keep the last cycle's high value for two minutes.
 4. `Chain.shed` answers every refusal the same way, `503 server_busy` with `Retry-After: 1`, rendered through the path's error
-   shape, and calls `OnShed(reason)`, which the composition root counts in `trove_http_requests_shed_total{endpoint,reason}`.
+   shape, and calls `OnShed(reason)`, which the composition root counts in `quader_http_requests_shed_total{endpoint,reason}`.
 
 The endpoint's `max_in_flight` is asked first and its slot released if the guard refuses. The charges are what makes a burst safe:
 admission happens before the request allocates, so the heap gate alone would admit a whole burst inside one GC cycle. What they
@@ -227,7 +227,7 @@ Serve
 
 `httpserver.NewListenerTLS` never fails on a file: a pair that does not load at start lets the listener bind and refuse
 handshakes, and the `tls` check holds the first readiness until it loads (no restart). A rotation that does not load
-keeps the previous pair, counts `trove_tls_reload_errors_total` and logs an error; readiness does not change. TLS 1.2
+keeps the previous pair, counts `quader_tls_reload_errors_total` and logs an error; readiness does not change. TLS 1.2
 offers ECDHE AEAD suites only, ALPN offers `h2` and `http/1.1`. Each further endpoint listener takes its own block
 the same way, with the reloader label `client:<endpoint>` (R-EP-004, [endpoints.md](endpoints.md#tls)). Details, rotation and
 tests: [tls.md](tls.md).
@@ -284,22 +284,22 @@ draining replica had been ready (Q-OPS-30), so the drain delay answers every req
 `Stop()` when it ends on purpose.
 
 Metrics beyond the observability package: [wire_gauges.go](../../internal/app/wire_gauges.go) exports
-`trove_db_pool_connections`, `trove_db_pool_max_connections`, `trove_db_pool_empty_acquires_total`,
-`trove_db_pool_canceled_acquires_total` and `trove_db_pool_connections_opened_total` (read from the pools at scrape time) and the
-background gauges `trove_jobs_queued{kind}`, `trove_jobs_oldest_queued_age_seconds{kind}` (both from the `JobQueueGauges` query) and
-`trove_valkey_primary_views` (the `ValkeyPrimaryViews` query over the replica registry). The database layer records what the pools'
-counters cannot give in [metrics.go](../../internal/meta/postgres/metrics.go): `trove_db_retries_total{kind}`,
-`trove_db_commit_unknown_total` and the histogram `trove_db_pool_acquire_duration_seconds{db_pool}`, which the pool tracer
+`quader_db_pool_connections`, `quader_db_pool_max_connections`, `quader_db_pool_empty_acquires_total`,
+`quader_db_pool_canceled_acquires_total` and `quader_db_pool_connections_opened_total` (read from the pools at scrape time) and the
+background gauges `quader_jobs_queued{kind}`, `quader_jobs_oldest_queued_age_seconds{kind}` (both from the `JobQueueGauges` query) and
+`quader_valkey_primary_views` (the `ValkeyPrimaryViews` query over the replica registry). The database layer records what the pools'
+counters cannot give in [metrics.go](../../internal/meta/postgres/metrics.go): `quader_db_retries_total{kind}`,
+`quader_db_commit_unknown_total` and the histogram `quader_db_pool_acquire_duration_seconds{db_pool}`, which the pool tracer
 (`stmtTracer`, a `pgxpool.AcquireTracer`) fills for the pools `request`, `control` and `lease`; `postgres.WithMetrics` hands them to `Open`.
-The same tracer, as a `pgx.QueryTracer`, times every statement: `trove_db_slow_queries_total{query}` counts those slower than
-`metrics.slow_query_threshold` (0 counts none), and `trove_db_query_duration_seconds{query}` exists only with `metrics.db_query_histograms`.
+The same tracer, as a `pgx.QueryTracer`, times every statement: `quader_db_slow_queries_total{query}` counts those slower than
+`metrics.slow_query_threshold` (0 counts none), and `quader_db_query_duration_seconds{query}` exists only with `metrics.db_query_histograms`.
 `query` is the sqlc name of the `-- name:` header, `unnamed` for inline SQL, and a pipeline's batch is one `pipeline` sample (Q-OPS-188);
 the text of a statement is never a label. A statement is timed from its start until its result is closed, so a streamed cursor counts for as
 long as it is read (the backup's referenced-blob stream is named `BackupReferencedBlobs` for that reason); `CopyFrom` and the raw `COPY`
 of the backup bypass the tracer and are not recorded. pgx's own `begin`, `commit` and `rollback` are labelled by their verb.
-The blob store exports `trove_spool_used_bytes`, `trove_spool_free_bytes` and `trove_gc_last_success_timestamp_seconds`
-([internal/blob/metrics.go](../../internal/blob/metrics.go)). Not exported: `trove_db_pool_resets_total` (no mechanism resets a pool
-yet), the inventory gauges and every `trove_backup_*` and `trove_revocation_journal_pending` (the backup and the revocation journal are
+The blob store exports `quader_spool_used_bytes`, `quader_spool_free_bytes` and `quader_gc_last_success_timestamp_seconds`
+([internal/blob/metrics.go](../../internal/blob/metrics.go)). Not exported: `quader_db_pool_resets_total` (no mechanism resets a pool
+yet), the inventory gauges and every `quader_backup_*` and `quader_revocation_journal_pending` (the backup and the revocation journal are
 phase 7). The PrometheusRule of the chart reads these names ([helm-chart.md](helm-chart.md#the-prometheusrule), Q-HA-135).
 
 ## Shutdown
@@ -307,8 +307,8 @@ phase 7). The PrometheusRule of the chart reads these names ([helm-chart.md](hel
 `App.Shutdown` (R-ARCH-024). `server.shutdown_timeout` is derived by the config loader when it is
 unset (`0s`): `runtime.termination_grace_period - health.shutdown_drain_delay - 5 s` (R-HA-011), or
 25 s when the grace period is unknown. The chart passes the grace period as
-`TROVE_RUNTIME_TERMINATION_GRACE_PERIOD`, so a worker with 300 s and a 15 s drain gets 280 s. The source of the
-value shows as `derived` in `trove admin config validate`. An explicit value that does not fit
+`QUADER_RUNTIME_TERMINATION_GRACE_PERIOD`, so a worker with 300 s and a 15 s drain gets 280 s. The source of the
+value shows as `derived` in `quader admin config validate`. An explicit value that does not fit
 (`drain + timeout + 5 s > grace`), or a grace period that leaves less than 1 s, is a start-up error
 ([finalize.go](../../internal/config/finalize.go)).
 
@@ -336,7 +336,7 @@ start ──drain──▶ ReleaseAt ─▶ QuiesceAt ─▶ ServerBy ──comm
    When step 3 ends, `Shutdown` stops the timer of this step, or waits for a callback that has started, up to `CloseBy`
    ([Q-ARCH-331](../spec/architecture.md#q-arch-331--the-quiesce-of-the-shutdown-is-stopped-when-the-server-phase-ends-or-waited-for)).
 5. At `ServerBy` the remaining requests are cut by closing their connections and counted in
-   `trove_http_transfers_cut_total{direction}`, with one exception: a request that is **committing** runs
+   `quader_http_transfers_cut_total{direction}`, with one exception: a request that is **committing** runs
    on until `CommitBy`. A handler marks itself with `httpserver.BeginCommit(ctx)` right before the step
    that must not be interrupted; the arrival of the complete request body is the fallback signal. The cut waits for the answer, not only the handler: a committing request whose handler has returned keeps its connection in a flushing set until `net/http` has written the response (`ConnState` idle or closed), so a commit that went through is never reported to the client as a broken connection. The
    grace is `min(4 s, margin - close reserve - ops reserve - slack)`, i.e. 3 s with the default 5 s margin
@@ -432,7 +432,7 @@ One new file and one line in the list.
 [test/integration/tls](../../test/integration/tls) builds the binary as well and runs `serve --role all` with TLS on both
 listeners, rotating the certificate under load (E0.15 at process level, [tls.md](tls.md#how-to-test)).
 [test/integration/overload](../../test/integration/overload) seeds an installation through `testenv.NewStack` and runs the binary
-(`Stack.Environ`) with `TROVE_RUNTIME_MEMORY_LIMIT_BYTES` of 256 MiB: 1,000 downloads whose clients read nothing, the memory
+(`Stack.Environ`) with `QUADER_RUNTIME_MEMORY_LIMIT_BYTES` of 256 MiB: 1,000 downloads whose clients read nothing, the memory
 guard's slots and `503`s, and the memory the runtime holds, sampled from `/metrics` ([Stage 4 and the memory guard](#stage-4-and-the-memory-guard)).
 `TestBurstBesideEmptyCaches` offers 300 held downloads to a 1 GiB replica with the default caches (none is shed, where the
 budgets would have left 77 slots), and `TestHeldDownloadCost` measures what a held download of 5 and 8 MiB costs (heap in use,
@@ -442,7 +442,7 @@ A memory limit is per process, which is why this suite cannot use the in-process
 ## Test builds
 
 `go build -tags drainfixture` starts the HTTP shell without PostgreSQL and Valkey and adds
-`/test-fixture/hold` and `/test-fixture/stream`. [serve_process_test.go](../../cmd/trove/serve_process_test.go)
+`/test-fixture/hold` and `/test-fixture/stream`. [serve_process_test.go](../../cmd/quader/serve_process_test.go)
 compiles it and sends a real `SIGTERM` while a request is in flight. No release build contains it.
 
 ## Known gaps

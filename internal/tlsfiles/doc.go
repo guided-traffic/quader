@@ -1,4 +1,4 @@
-// Package tlsfiles holds the TLS material that trove presents or trusts, read
+// Package tlsfiles holds the TLS material that quader presents or trusts, read
 // from PEM files and replaced without a restart (R-ARCH-035, INV-20).
 //
 // A [Reloader] owns one set of material: certificate/key pairs, CA bundles and,
@@ -11,7 +11,7 @@
 //
 // Each pair and each bundle is one piece. A piece whose new content does not
 // load keeps its previous content in service, logs an error and counts
-// trove_tls_reload_errors_total once per distinct content; the other pieces swap
+// quader_tls_reload_errors_total once per distinct content; the other pieces swap
 // independently. The pieces that loaded are published as one immutable snapshot
 // behind an atomic pointer, so a handshake never sees half a rotation.
 //

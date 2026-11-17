@@ -17,10 +17,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // Class says on whose behalf a request to the main installation is made; the budget gives anonymous callers a
@@ -33,7 +33,7 @@ const (
 	Anonymous     Class = "anonymous"
 )
 
-// Kind is the kind of a request to the main installation (R-BAS-040 trove_bastion_main_requests_total).
+// Kind is the kind of a request to the main installation (R-BAS-040 quader_bastion_main_requests_total).
 type Kind string
 
 // The kinds. The handshake and the feed take no slot of the budget (R-BAS-025).
@@ -58,9 +58,9 @@ type Budget interface {
 // Token is the Bastion token in use and what is known about it (R-BAS-006). The server's token reloader owns
 // the value and replaces it atomically; requests in flight finish with the old one.
 type Token struct {
-	// Value is the trv_bst_ string. It is a secret: never logged, never in an error.
+	// Value is the qdr_bst_ string. It is a secret: never logged, never in an error.
 	Value string
-	// Hint is the public hint (trv_bst_ and the first four characters) for logs.
+	// Hint is the public hint (qdr_bst_ and the first four characters) for logs.
 	Hint string
 }
 
@@ -77,10 +77,10 @@ var (
 	ErrBusy = errors.New("mainclient: no slot of the concurrency budget")
 	// ErrTokenRefused: 401 bastion_token_invalid in the answer to a call of the interface's own (handshake,
 	// feed, check, downloads). The link treats the main installation as unreachable and the client sets
-	// trove_bastion_main_token_refused (R-BAS-006). On a forward the same answer is an *AnswerError: the path of
+	// quader_bastion_main_token_refused (R-BAS-006). On a forward the same answer is an *AnswerError: the path of
 	// a forward is the caller's (Q-BAS-121).
 	ErrTokenRefused = errors.New("mainclient: the main installation refused the Bastion token")
-	// ErrInterfaceMismatch: 400 bastion_interface_mismatch, or an answer whose Trove-Bastion-Interface differs
+	// ErrInterfaceMismatch: 400 bastion_interface_mismatch, or an answer whose Quader-Bastion-Interface differs
 	// (R-BAS-009, R-BAS-028). The wrapping error is *MismatchError.
 	ErrInterfaceMismatch = errors.New("mainclient: the interface versions differ")
 	// ErrUnreachable: a connect or TLS error, a timeout or an unmarked 5xx; 502 main_failed or 504 main_timeout
@@ -152,7 +152,7 @@ func (e *AnswerError) Is(target error) bool { return target == ErrBadAnswer }
 // Forward is a caller's request on its way to the main installation (R-BAS-021, R-BAS-017).
 type Forward struct {
 	// Request is the caller's request: method, path and query as received, the caller's Authorization, the
-	// end-to-end headers. The client removes Cookie, Forwarded, X-Forwarded-*, Trove-*, Range, If-* and the
+	// end-to-end headers. The client removes Cookie, Forwarded, X-Forwarded-*, Quader-*, Range, If-* and the
 	// hop-by-hop headers, adds the interface headers and the forwarded-for headers of ClientAddress, and the
 	// Bastion token in iface.HeaderAuthorization. Conditional headers are the Bastion's own: Conditional.
 	Request *http.Request
@@ -180,17 +180,17 @@ type Response struct {
 	Body   io.ReadCloser
 	// Marking is the parsed marking of the response; Marked is false for an answer without iface.HeaderClass
 	// (a proxy in front of the main installation). An unmarked 5xx never arrives here: it is an
-	// [ErrUnreachable]. The Trove-Bastion-* headers are removed from Header, so that nothing replays them.
+	// [ErrUnreachable]. The Quader-Bastion-* headers are removed from Header, so that nothing replays them.
 	Marking iface.Marking
 	Marked  bool
-	// Route is the value of Trove-Bastion-Route, read before the marking headers are removed: the answer of a
+	// Route is the value of Quader-Bastion-Route, read before the marking headers are removed: the answer of a
 	// probe to a read route that takes a body is a 204 with iface.RouteReadWithBody (R-BAS-014).
 	Route string
 }
 
 // Client is the Bastion's view of the main installation. Every method takes the budget slot its kind needs
 // (except Handshake and Feed), applies the headers of R-BAS-008, decodes with iface.DecodeStrict and counts
-// trove_bastion_main_requests_total and the duration. The errors are the ones above.
+// quader_bastion_main_requests_total and the duration. The errors are the ones above.
 type Client interface {
 	// Handshake calls GET /api/v1/bastion/handshake (R-BAS-010). The client also reads the main installation's
 	// interface version from the header and returns *MismatchError on a difference.
@@ -226,7 +226,7 @@ type Options struct {
 	ResponseHeaderTimeout time.Duration
 	// CAFile is bastion.main.ca_file: a bundle added to the system roots and read again without a restart.
 	CAFile string
-	// Metrics counts trove_bastion_main_requests_total, the duration and trove_bastion_main_token_refused.
+	// Metrics counts quader_bastion_main_requests_total, the duration and quader_bastion_main_token_refused.
 	Metrics *metrics.Metrics
 	// Log, Tracer, Obs and TLSMetrics wire the shared outbound factory (upstream log, client spans with
 	// traceparent, outbound and trust-store metrics); all may be nil.

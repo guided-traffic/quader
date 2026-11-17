@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_STOR_018_ARemovalDoesNotWaitForAFolderAnotherTransactionHolds: a removing transaction

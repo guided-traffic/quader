@@ -11,7 +11,7 @@
 //   - ports.go: the object-store port, the outbox port, and the shipper and reader interfaces.
 //   - replay.go: the outcomes of a replay, the [Handler] registry (one handler per event name, registered by the domain
 //     that owns the event), the update rule of R-HA-054 as the generic [ApplyUpdate] over a domain's [Narrower], and the
-//     [Replayer] that the restore and `trove admin post-restore` run.
+//     [Replayer] that the restore and `quader admin post-restore` run.
 //
 // A domain adds replay for its events in its own file with [Register]: identity (token, user, service account, group),
 // authorization (role binding, policy, project, ownership, settings, repository move), CI issuers and mappings, endpoint

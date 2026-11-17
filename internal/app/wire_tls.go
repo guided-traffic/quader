@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/observability/health"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/observability/health"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // tlsListener names a listener's TLS for the readiness check.

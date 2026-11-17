@@ -10,12 +10,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // RouteKind says what a route does, which fixes the content headers its response
@@ -30,7 +30,7 @@ const (
 	// (remote). The response carries the content headers without
 	// Content-Disposition.
 	Metadata
-	// Computed is rendered by trove from rows and never fetched. Same headers as
+	// Computed is rendered by quader from rows and never fetched. Same headers as
 	// Metadata.
 	Computed
 	// Upload stores content or documents.
@@ -129,9 +129,9 @@ type Route struct {
 	// it learns the route from the dispatcher's match. The field does not name the
 	// header; auth.clients.nuget_api_key_header switches its examination off.
 	APIKey bool
-	// TokenScheme marks a route that accepts "Authorization: Token <trove token>", the scheme the Galaxy clients send a configured
+	// TokenScheme marks a route that accepts "Authorization: Token <quader token>", the scheme the Galaxy clients send a configured
 	// token with (Ansible Galaxy, R-ANS-006). The authentication stage reads that scheme only on such a route, from the
-	// dispatcher's own match like APIKey, and treats the header as "not a trove token" everywhere else (Q-ANS-4, ADR-191).
+	// dispatcher's own match like APIKey, and treats the header as "not a quader token" everywhere else (Q-ANS-4, ADR-191).
 	TokenScheme bool
 	// Wiki marks a route that serves only wiki content (R-AUTHZ-034): the dispatcher's coarse check decides it with the part
 	// wiki, so a caller who may read the artifacts and not the wiki is refused as for a missing resource. The kit (check 15)
@@ -352,7 +352,7 @@ type Refusal struct {
 	// CacheView is true when the path addressed the cache view of the remote repository, Name
 	// without the "~cache" suffix.
 	CacheView bool
-	// BaseURL is the response base URL, "https://trove.example.com", without a
+	// BaseURL is the response base URL, "https://quader.example.com", without a
 	// trailing slash.
 	BaseURL string
 	// A refusal on a host whose root is bound to one repository (R-EP-006, R-OCI-029) is still addressed by the repository's
@@ -400,9 +400,9 @@ func RefusalFrom(r *http.Request) (Refusal, bool) {
 type EndpointFacts struct {
 	Name string
 	// Rules is true for an endpoint with exposure: rules. Its responses carry no
-	// Trove-Resolved-From, no Cache-Status and no member names (R-EP-018).
+	// Quader-Resolved-From, no Cache-Status and no member names (R-EP-018).
 	Rules bool
-	// CacheFill says whether the endpoint may make trove contact an upstream
+	// CacheFill says whether the endpoint may make quader contact an upstream
 	// (R-EP-019). The core folds it into every populate decision; a format only
 	// reads it.
 	CacheFill bool
@@ -446,7 +446,7 @@ const (
 	// PathMetadata is a document that expires on a remote repository and is
 	// rendered from rows on a local one (R-ARCH-012).
 	PathMetadata
-	// PathComputed is rendered by trove and never fetched.
+	// PathComputed is rendered by quader and never fetched.
 	PathComputed
 	// PathVolatile is passed through and never cached.
 	PathVolatile

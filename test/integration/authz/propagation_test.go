@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_AUTHZ_028_RemovedGrantIsRefusedOnEveryReplica: a policy is deleted through
@@ -181,14 +181,14 @@ func TestR_AUTHZ_028_ConsistentBuild(t *testing.T) {
 	}
 }
 
-// rebuilds reads trove_authz_index_rebuilds_total{trigger} of a replica.
+// rebuilds reads quader_authz_index_rebuilds_total{trigger} of a replica.
 func rebuilds(r *replica, trigger string) float64 {
 	mfs, err := r.reg.Gather()
 	if err != nil {
 		return 0
 	}
 	for _, mf := range mfs {
-		if mf.GetName() != "trove_authz_index_rebuilds_total" {
+		if mf.GetName() != "quader_authz_index_rebuilds_total" {
 			continue
 		}
 		for _, m := range mf.GetMetric() {
@@ -204,7 +204,7 @@ func rebuilds(r *replica, trigger string) float64 {
 
 // TestE1_12_OwnPermissionChangeOnEveryReplica: three replicas, Valkey stopped,
 // propagation slowed to a poll every 30 s. Twenty parallel checks carrying
-// Trove-Authz-Min-Epoch follow a new grant and then its removal on every
+// Quader-Authz-Min-Epoch follow a new grant and then its removal on every
 // replica.
 func TestE1_12_OwnPermissionChangeOnEveryReplica(t *testing.T) {
 	e := newEnv(t)

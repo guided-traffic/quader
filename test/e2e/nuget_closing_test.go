@@ -4,7 +4,7 @@ package e2e
 
 // The additions of the full run of Test and Release on the commit that closes the phase (roadmap M3, E3.6, R-NUGET-027):
 // R-NUGET-030 and R-NUGET-031 with Valkey stopped. The workflow starts them only when it is dispatched with closing=true;
-// a run of them without TROVE_E2E_NUGET_CLOSING=1 is a failure, never a skip, so they cannot go missing from the closing
+// a run of them without QUADER_E2E_NUGET_CLOSING=1 is a failure, never a skip, so they cannot go missing from the closing
 // run (deploy/dev/e2e.sh nuget-closing). The drain part of E3.6 moved to phase 7 (owner, 2026-11-01).
 
 import (
@@ -14,12 +14,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 func requireNuGetClosingRun(t testing.TB) {
 	t.Helper()
-	if os.Getenv("TROVE_E2E_NUGET_CLOSING") != "1" {
+	if os.Getenv("QUADER_E2E_NUGET_CLOSING") != "1" {
 		t.Fatal("this test belongs to the closing run: start it with deploy/dev/e2e.sh nuget-closing (the closing=true dispatch of the workflow)")
 	}
 }

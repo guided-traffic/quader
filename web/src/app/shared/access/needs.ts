@@ -11,7 +11,7 @@ import { SessionStore } from '../../core/session-store';
  * "Read only: changing this needs the permission X".
  */
 @Component({
-  selector: 'trove-needs',
+  selector: 'quader-needs',
   template: `
     @if (missing()) {
       <p class="needs" role="note">
@@ -30,9 +30,9 @@ import { SessionStore } from '../../core/session-store';
     .needs {
       display: flex;
       align-items: center;
-      gap: var(--trove-space-2);
-      margin-block: var(--trove-space-2);
-      color: var(--trove-text-muted);
+      gap: var(--quader-space-2);
+      margin-block: var(--quader-space-2);
+      color: var(--quader-text-muted);
     }
     .material-icons {
       font-size: 1.125rem;

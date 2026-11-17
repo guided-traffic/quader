@@ -107,7 +107,7 @@ func codeOf(body string) string {
 
 // requestsReached adds the requests the replicas of the release counted (every class and result).
 func requestsReached(t testing.TB, s *basSite) float64 {
-	return basSum(t, s, "trove_bastion_requests_total")
+	return basSum(t, s, "quader_bastion_requests_total")
 }
 
 // TestBastion_R_BAS_049_EdgeLimit (R-BAS-038): 20,000 requests from one address within about 10 s are partly refused by the
@@ -119,7 +119,7 @@ func TestBastion_R_BAS_049_EdgeLimit(t *testing.T) {
 	doc := npmDocPath(env.open)
 	site.get(t, env.full.Token, doc).want(t, "the Bastion serves before the flood", 200)
 	before := requestsReached(t, site)
-	shedBefore := basSum(t, site, "trove_http_requests_shed_total")
+	shedBefore := basSum(t, site, "quader_http_requests_shed_total")
 	res := site.flood(t, 20000, 200, 0, func(int) string { return doc }, func(int) string { return env.full.Token })
 	reached := requestsReached(t, site) - before
 	t.Logf("%d requests in %s: statuses %v, %d from the ingress, %d from the Bastion %v; %v requests reached the Bastion",
@@ -130,7 +130,7 @@ func TestBastion_R_BAS_049_EdgeLimit(t *testing.T) {
 	if reached > float64(res.sent-res.edge429)+50 {
 		t.Errorf("%v requests reached the Bastion, but the ingress refused %d of %d: the refused ones reached it as well", reached, res.edge429, res.sent)
 	}
-	if shed := basSum(t, site, "trove_http_requests_shed_total") - shedBefore; shed != 0 || res.codes[503] != 0 {
+	if shed := basSum(t, site, "quader_http_requests_shed_total") - shedBefore; shed != 0 || res.codes[503] != 0 {
 		t.Errorf("the replicas shed %v requests and answered %d 503: the in-flight limit was reached", shed, res.codes[503])
 	}
 	for _, p := range basReadyPods(t, site) {
@@ -147,22 +147,22 @@ func TestBastion_R_BAS_049_FloodingAddress(t *testing.T) {
 	site := env.bkt
 	doc := npmDocPath(env.open)
 	other := func() string {
-		return strings.TrimSpace(npmClientExec(t, 0, "curl", "-sS", "--cacert", "/etc/trove-ca/ca.crt", "-o", "/dev/null", "-w", "%{http_code}",
+		return strings.TrimSpace(npmClientExec(t, 0, "curl", "-sS", "--cacert", "/etc/quader-ca/ca.crt", "-o", "/dev/null", "-w", "%{http_code}",
 			"-H", "Authorization: Bearer "+env.full.Token, site.baseURL(t)+doc))
 	}
 	if got := other(); got != "200" {
 		t.Fatalf("another address before the flood: %s, want 200", got)
 	}
-	blocksBefore := basSum(t, site, "trove_bastion_blocks_total")
+	blocksBefore := basSum(t, site, "quader_bastion_blocks_total")
 	res := site.flood(t, 2000, 20, 80, func(int) string { return doc }, func(int) string { return env.full.Token })
 	t.Logf("%d requests in %s: statuses %v, codes of the Bastion's 429 %v, %d from the ingress", res.sent, res.took.Round(time.Millisecond), res.codes, res.problemCode, res.edge429)
 	waitFor(t, "the address to be blocked", 30*time.Second, time.Second, func() bool {
-		return basSum(t, site, "trove_bastion_blocks_total") > blocksBefore
+		return basSum(t, site, "quader_bastion_blocks_total") > blocksBefore
 	})
 	// blocked on every replica: the requests of this address are refused by both
 	refusedBefore := map[string]float64{}
 	for _, p := range basReadyPods(t, site) {
-		refusedBefore[p.Name] = msum(basMetrics(t, p.Name), "trove_bastion_refused_total", `reason="blocked"`)
+		refusedBefore[p.Name] = msum(basMetrics(t, p.Name), "quader_bastion_refused_total", `reason="blocked"`)
 	}
 	blocked := 0
 	for range 60 {
@@ -178,7 +178,7 @@ func TestBastion_R_BAS_049_FloodingAddress(t *testing.T) {
 		t.Errorf("only %d of 60 requests after the block answered 429 address_blocked", blocked)
 	}
 	for _, p := range basReadyPods(t, site) {
-		if d := msum(basMetrics(t, p.Name), "trove_bastion_refused_total", `reason="blocked"`) - refusedBefore[p.Name]; d == 0 {
+		if d := msum(basMetrics(t, p.Name), "quader_bastion_refused_total", `reason="blocked"`) - refusedBefore[p.Name]; d == 0 {
 			t.Errorf("replica %s refused nothing as blocked: the block did not reach it", p.Name)
 		}
 	}

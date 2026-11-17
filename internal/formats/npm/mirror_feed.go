@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The method `feed` of the public registry (R-REPO-051, Q-NPM-69): the replication service at replicate.npmjs.com. A full

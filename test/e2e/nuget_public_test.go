@@ -6,7 +6,7 @@ package e2e
 // closing run against nuget.org; Q-NUGET-91, Q-NUGET-92): a remote repository of nuget.org's service index and a
 // virtual repository with nuget-e2e and that remote, read by the real clients and by the test. Nothing is pushed, and
 // nothing changes upstream. The test belongs to the set nuget-closing and fails, never skips, without
-// TROVE_E2E_NUGET_CLOSING=1, as the subset of TestNPMClosing against the public npm registry does.
+// QUADER_E2E_NUGET_CLOSING=1, as the subset of TestNPMClosing against the public npm registry does.
 
 import (
 	"encoding/json"
@@ -24,7 +24,7 @@ const (
 	nugetOrgOne        = "Newtonsoft.Json"
 	nugetOrgOneVersion = "13.0.3"
 	// More than 128 versions upstream (602 on 2026-11-02), in registration pages nuget.org does not inline: what the
-	// merge of a remote member reads for this ID is the upstream's paging, which trove has to follow (R-NUGET-017).
+	// merge of a remote member reads for this ID is the upstream's paging, which quader has to follow (R-NUGET-017).
 	nugetOrgMany        = "Serilog"
 	nugetOrgManyVersion = "4.3.0"
 )
@@ -80,9 +80,9 @@ func foreignAddresses(raw []byte, prefix string) (addressCheck, error) {
 	return c, nil
 }
 
-// requireTroveAddresses fails the test when a document names an address outside the repository; it lists the first
+// requireQuaderAddresses fails the test when a document names an address outside the repository; it lists the first
 // ten, which is enough to see the member and the host.
-func requireTroveAddresses(t *testing.T, what string, raw []byte, prefix string) {
+func requireQuaderAddresses(t *testing.T, what string, raw []byte, prefix string) {
 	t.Helper()
 	c, err := foreignAddresses(raw, prefix)
 	if err != nil {
@@ -110,7 +110,7 @@ func registrationLeaves(t *testing.T, a *api, key, lowerID string) []string {
 	t.Helper()
 	prefix := repoPrefix(key)
 	idx := a.get(nugetAddr(key)+"/v3/index.json").want(t, "the service index of "+key, 200)
-	requireTroveAddresses(t, "the service index of "+key, idx.Body, prefix)
+	requireQuaderAddresses(t, "the service index of "+key, idx.Body, prefix)
 	var service struct {
 		Resources []struct {
 			ID   string `json:"@id"`
@@ -137,7 +137,7 @@ func registrationLeaves(t *testing.T, a *api, key, lowerID string) []string {
 		Items []leaf `json:"items"`
 	}
 	r := a.get(base+lowerID+"/index.json").want(t, "the registration index of "+lowerID+" through "+key, 200)
-	requireTroveAddresses(t, "the registration index of "+lowerID+" through "+key, r.Body, prefix)
+	requireQuaderAddresses(t, "the registration index of "+lowerID+" through "+key, r.Body, prefix)
 	var index struct {
 		Items []page `json:"items"`
 	}
@@ -148,7 +148,7 @@ func registrationLeaves(t *testing.T, a *api, key, lowerID string) []string {
 		if len(p.Items) == 0 { // a page listed by its address
 			byAddress++
 			pr := a.get(p.ID).want(t, "the registration page "+p.ID, 200)
-			requireTroveAddresses(t, "the registration page "+p.ID, pr.Body, prefix)
+			requireQuaderAddresses(t, "the registration page "+p.ID, pr.Body, prefix)
 			pr.JSON(t, &p)
 		}
 		for _, l := range p.Items {
@@ -205,7 +205,7 @@ func TestNuGetClosingPublic(t *testing.T) {
 
 	// First, while the remote has cached nothing: a remote that searched only its cache would list nothing, so a hit
 	// with nuget.org's download count is the forwarded search (R-NUGET-016).
-	t.Run("R-NUGET-016 R-NUGET-027 E3.1 dotnet package search Newtonsoft through a remote of nuget.org that has cached nothing lists Newtonsoft.Json with nuget.org's download count and trove's addresses", func(t *testing.T) {
+	t.Run("R-NUGET-016 R-NUGET-027 E3.1 dotnet package search Newtonsoft through a remote of nuget.org that has cached nothing lists Newtonsoft.Json with nuget.org's download count and quader's addresses", func(t *testing.T) {
 		c := fx.client(t, 0, "public-search")
 		c.config(remoteFeed, true)
 		out := c.exec("dotnet", "package", "search", "Newtonsoft", "--source", remoteFeed, "--format", "json", "--take", "20")
@@ -220,7 +220,7 @@ func TestNuGetClosingPublic(t *testing.T) {
 		}
 		a := newAPI(t).withToken(fx.token)
 		r := a.get(nugetAddr(remote)+"/v3/search?q=newtonsoft&take=20&semVerLevel=2.0.0").want(t, "search through "+remote, 200)
-		requireTroveAddresses(t, "the search answer of "+remote, r.Body, repoPrefix(remote))
+		requireQuaderAddresses(t, "the search answer of "+remote, r.Body, repoPrefix(remote))
 	})
 
 	t.Run("R-NUGET-014 R-NUGET-015 R-NUGET-027 E3.1 nuget.exe installs Newtonsoft.Json 13.0.3 through the remote of nuget.org", func(t *testing.T) {

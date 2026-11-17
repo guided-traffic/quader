@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/api/registry"
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/config"
-	ocidata "github.com/guided-traffic/trove/internal/formatdata/oci"
-	ociformat "github.com/guided-traffic/trove/internal/formats/oci"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/registry"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/config"
+	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
+	ociformat "github.com/guided-traffic/quader/internal/formats/oci"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The registry root of an endpoint (R-OCI-001, R-OCI-003, Q-OCI-100): one enforcement point of the registry tokens' grants, the

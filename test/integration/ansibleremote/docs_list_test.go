@@ -47,7 +47,7 @@ func TestR_ANS_026_ACollectionInstalledThroughARemoteIsListedAndItsDocumentation
 	if detail["licenses"].([]any)[0] != "GPL-3.0-or-later" || md["requiresAnsible"] != ">=2.15.0" || deps["acme.base"] != ">=1.0.0" || md["authors"] == nil {
 		t.Errorf("the page shows %v", detail)
 	}
-	if items[0].(map[string]any)["description"] != "trove test collection acme.tools" {
+	if items[0].(map[string]any)["description"] != "quader test collection acme.tools" {
 		t.Errorf("the list shows %v", items[0])
 	}
 	if files := listOf(detail["files"]); len(files) != 1 {

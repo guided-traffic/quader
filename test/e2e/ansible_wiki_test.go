@@ -28,7 +28,7 @@ func TestAnsibleDocsWiki_R_ANS_046(t *testing.T) {
 	t.Run("R-AUTHZ-034 R-ANS-046 the real client installs the collection without a credential", func(t *testing.T) {
 		awaitStatusOnEveryReplica(t, "the anonymous read of the collection on every replica", anon,
 			ansibleRepoPath(key)+"/v3/collections/"+col.ns+"/"+col.name+"/versions/1.0.0/", 200)
-		out := c.must(withCfg(ansibleCfg(ansibleRepoURL(t, key)), "ansible-galaxy collection install "+col.full()+" -p coll && ansible-galaxy collection list -p coll"), "TROVE_TOKEN=")
+		out := c.must(withCfg(ansibleCfg(ansibleRepoURL(t, key)), "ansible-galaxy collection install "+col.full()+" -p coll && ansible-galaxy collection list -p coll"), "QUADER_TOKEN=")
 		if !strings.Contains(out, col.full()) {
 			t.Errorf("the anonymous install did not install %s:\n%s", col.full(), out)
 		}

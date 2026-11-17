@@ -17,24 +17,24 @@ import { PageHeader } from '../../shared/ui/page-header';
  * has no filter and no paging.
  */
 @Component({
-  selector: 'trove-ci-issuer-list',
+  selector: 'quader-ci-issuer-list',
   imports: [PageHeader, DatePipe, RouterLink, ErrorNotice, DataTable, Needs],
   template: `
-    <trove-page-header heading="CI identity" i18n-heading="@@ci.issuers.heading">
+    <quader-page-header heading="CI identity" i18n-heading="@@ci.issuers.heading">
       <a actions class="btn btn-default" routerLink="/admin/ci/issuances" i18n="@@ci.issuers.issuances">Issued tokens</a>
       @if (session.has('ci:write')) {
         <a actions class="btn btn-confirm" routerLink="/admin/ci/new" i18n="@@ci.issuers.add">New issuer</a>
       }
-    </trove-page-header>
-    <trove-needs capability="ci:write" />
+    </quader-page-header>
+    <quader-needs capability="ci:write" />
     <p i18n="@@ci.issuers.hint">
-      A CI issuer is a GitLab instance whose jobs may exchange their ID token for a short-lived trove token. Mappings decide what a job receives.
+      A CI issuer is a GitLab instance whose jobs may exchange their ID token for a short-lived Quader token. Mappings decide what a job receives.
     </p>
 
     @if (error(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     }
-    <trove-data-table
+    <quader-data-table
       [caption]="caption"
       [columns]="columns"
       [loaded]="loaded()"
@@ -79,7 +79,7 @@ import { PageHeader } from '../../shared/ui/page-header';
           </td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -90,7 +90,7 @@ import { PageHeader } from '../../shared/ui/page-header';
     .detail {
       max-inline-size: 16rem;
       overflow-wrap: anywhere;
-      font-size: var(--trove-text-muted-size);
+      font-size: var(--quader-text-muted-size);
     }
   `,
 })

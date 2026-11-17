@@ -7,16 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 func finding(status vuln.Status) *store.Finding {

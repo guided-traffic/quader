@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 // KindRevocationJournalShip writes the rows of revocation_outbox to the journal in object storage (R-HA-054 "Outbox and

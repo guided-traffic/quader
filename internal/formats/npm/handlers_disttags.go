@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
 )
 
 // Dist-tags (R-NPM-016, flow F5). The read is a document of the package; the writes

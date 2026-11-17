@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 // testResult is the part of an upstream test's answer the login is read from.

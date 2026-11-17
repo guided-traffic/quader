@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // ErrNoLeasePool is returned when a lease manager is created without a lease
@@ -78,8 +78,8 @@ func NewLeases(o LeaseOptions) (*Leases, error) {
 		return nil, ErrNoLeasePool
 	}
 	m := &leaseMetrics{
-		lost: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "trove_lease_lost_total", Help: "Leases lost because the lease connection failed, by task."}, []string{"task"}),
-		held: prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "trove_lease_held", Help: "1 while this replica holds the lease of the task."}, []string{"task"}),
+		lost: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "quader_lease_lost_total", Help: "Leases lost because the lease connection failed, by task."}, []string{"task"}),
+		held: prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "quader_lease_held", Help: "1 while this replica holds the lease of the task."}, []string{"task"}),
 	}
 	if err := register(o.Metrics, m.lost, m.held); err != nil {
 		return nil, err

@@ -13,11 +13,11 @@ import (
 )
 
 // DefaultFile is the configuration file read when neither --config nor
-// TROVE_CONFIG_FILE names one.
-const DefaultFile = "/etc/trove/trove.yaml"
+// QUADER_CONFIG_FILE names one.
+const DefaultFile = "/etc/quader/quader.yaml"
 
 // EnvConfigFile is the reserved variable that names the configuration file.
-const EnvConfigFile = "TROVE_CONFIG_FILE"
+const EnvConfigFile = "QUADER_CONFIG_FILE"
 
 // Source says where a value came from.
 type Source struct {
@@ -40,7 +40,7 @@ func (s Source) String() string {
 
 // Options controls one Load.
 type Options struct {
-	// File is the configuration file (--config). Empty means TROVE_CONFIG_FILE,
+	// File is the configuration file (--config). Empty means QUADER_CONFIG_FILE,
 	// then DefaultFile. A file named explicitly must exist; a missing DefaultFile
 	// is not an error, so a replica can run from defaults and the environment.
 	File string
@@ -71,14 +71,14 @@ type Loaded struct {
 	root    reflect.Value
 }
 
-// reservedEnv are environment variables with the TROVE_ prefix that are not
-// configuration keys (R-OPS-028), plus TROVE_TEST_ for the integration suite.
+// reservedEnv are environment variables with the QUADER_ prefix that are not
+// configuration keys (R-OPS-028), plus QUADER_TEST_ for the integration suite.
 func reservedEnv(name string) bool {
 	switch name {
-	case EnvConfigFile, "TROVE_POD_NAME", "TROVE_JOB_NAME", "TROVE_POD_NAMESPACE", "TROVE_NODE_NAME", "TROVE_POOL_NAME":
+	case EnvConfigFile, "QUADER_POD_NAME", "QUADER_JOB_NAME", "QUADER_POD_NAMESPACE", "QUADER_NODE_NAME", "QUADER_POOL_NAME":
 		return true
 	}
-	return strings.HasPrefix(name, "TROVE_CAC_") || strings.HasPrefix(name, "TROVE_TEST_")
+	return strings.HasPrefix(name, "QUADER_CAC_") || strings.HasPrefix(name, "QUADER_TEST_")
 }
 
 type loader struct {

@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci/manifest"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // What a client sees of a remote repository (R-OCI-021 to R-OCI-025). The routes are the ones of the local class; the handlers of
@@ -253,7 +253,7 @@ func (f *Format) remoteBlobGet(ctx context.Context, rq *formats.Request, w http.
 type storedTaglist struct {
 	Name      string   `json:"name"`
 	Tags      []string `json:"tags"`
-	Truncated bool     `json:"x-trove-truncated"`
+	Truncated bool     `json:"x-quader-truncated"`
 }
 
 // parseTaglist reads an upstream's tags list within the bounds of R-OCI-020: 4 MiB and 100,000 entries. A tag that is none is

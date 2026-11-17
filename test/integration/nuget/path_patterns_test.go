@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The path dimension of a resource set on the NuGet protocol (R-AUTHZ-005, Q-AUTHZ-250): a protocol request

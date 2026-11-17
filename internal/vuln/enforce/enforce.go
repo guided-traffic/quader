@@ -1,6 +1,6 @@
 // Package enforce applies the download policy of the vulnerability scanning (R-VULN-015, R-VULN-016): it resolves the policy of a
 // repository for the item lookup, turns the lookup's blocking row into a verdict, evaluates a remote miss before it is
-// fetched, and renders the refusal: the 403 with its code and text, the metric trove_vuln_downloads_blocked_total and the
+// fetched, and renders the refusal: the 403 with its code and text, the metric quader_vuln_downloads_blocked_total and the
 // audit event vulnerability.download_blocked.
 //
 // Every route that serves a stored item calls it after its serve-time check; none decides on its own. A nil *Enforcer is a
@@ -23,13 +23,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/metrics"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/metrics"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // DedupWindow is the window of the audit deduplication (R-VULN-016, R-OPS-015): one event per repository, version and client
@@ -400,7 +400,7 @@ func refusal(baseURL string, d Download, pkg, version string) error {
 	if d.Block.FindingID != "" {
 		opts = append(opts, errs.WithExtension("findingId", d.Block.FindingID))
 	}
-	text := fmt.Sprintf("trove blocked %s in %s: %s. Details: %s", name, d.Addressed, reasonText(d.Block), link(baseURL, d))
+	text := fmt.Sprintf("Quader blocked %s in %s: %s. Details: %s", name, d.Addressed, reasonText(d.Block), link(baseURL, d))
 	return errs.E(errs.Forbidden, d.Block.Code(), oneLine(text), opts...)
 }
 

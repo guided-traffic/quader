@@ -1,15 +1,15 @@
 @if (failure(); as f) {
-  <trove-error-notice [error]="f" (retry)="loaded.reload()" />
+  <quader-error-notice [error]="f" (retry)="loaded.reload()" />
 } @else if (repository(); as r) {
-  <trove-page-header [heading]="r.key" [name]="true" [description]="sentence()" [addresses]="headerAddresses()">
+  <quader-page-header [heading]="r.key" [name]="true" [description]="sentence()" [addresses]="headerAddresses()">
     <div meta class="facts">
-      <span class="badge format-badge" translate="no"><trove-format-icon [format]="r.format" />{{ formatName() }}</span>
+      <span class="badge format-badge" translate="no"><quader-format-icon [format]="r.format" />{{ formatName() }}</span>
       <span class="badge">
         <span class="material-icons" aria-hidden="true">{{ r.class === 'local' ? 'storage' : r.class === 'remote' ? 'cloud_download' : 'layers' }}</span>
         {{ classText() }}
       </span>
       @if (r.visibility; as levels) {
-        <span class="badge"><trove-visibility-icon [level]="levels.artifacts" />{{ levelText(levels.artifacts) }}</span>
+        <span class="badge"><quader-visibility-icon [level]="levels.artifacts" />{{ levelText(levels.artifacts) }}</span>
       }
       @if (disabled()) {
         <span class="badge warn" i18n="@@repo.badge.disabled">disabled</span>
@@ -39,11 +39,11 @@
         </ng-template>
       }
     </ng-container>
-  </trove-page-header>
+  </quader-page-header>
 
   <!-- The content alone: the client setup is the header's Set up client (Q-UI-321). -->
   @if (isGeneric()) {
-    <trove-repository-files [repository]="ref()" [format]="descriptor()" [path]="folder()" [offerSetup]="!disabled()" (pathChange)="setPath($event)" />
+    <quader-repository-files [repository]="ref()" [format]="descriptor()" [path]="folder()" [offerSetup]="!disabled()" (pathChange)="setPath($event)" />
   } @else {
     @if (r.class === 'remote') {
       @if (r.format === 'oci') {
@@ -55,7 +55,7 @@
     @if (!scanned()) {
       <p class="content-note">{{ shape().notScannedText }}</p>
     }
-    <trove-repository-items
+    <quader-repository-items
       [repository]="ref()"
       [format]="r.format"
       [shape]="shape()"
@@ -70,11 +70,11 @@
 
 
   @if (upstream() || members().length > 0 || otherAddresses().length > 0) {
-    <trove-disclosure class="details" [heading]="detailsHeading" [hint]="detailsText">
+    <quader-disclosure class="details" [heading]="detailsHeading" [hint]="detailsText">
       @for (a of otherAddresses(); track a.value) {
         <p class="other-address">
           <span class="field-label">{{ a.label }}</span>
-          <trove-address-field [value]="a.value" [label]="a.label" [copyLabel]="a.copyLabel" />
+          <quader-address-field [value]="a.value" [label]="a.label" [copyLabel]="a.copyLabel" />
         </p>
       }
       @if (upstream(); as u) {
@@ -90,6 +90,6 @@
           }
         </p>
       }
-    </trove-disclosure>
+    </quader-disclosure>
   }
 }

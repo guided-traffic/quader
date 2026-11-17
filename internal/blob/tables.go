@@ -1,6 +1,6 @@
 package blob
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // The tables this package owns (R-BAK-004, R-STOR-047). Migration 00002
 // creates them; the registrations moved here from internal/meta/postgres.

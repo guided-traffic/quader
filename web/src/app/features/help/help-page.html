@@ -21,7 +21,7 @@
   <div class="help-main">
     <a class="help-back" routerLink="/help" i18n="@@help.all-pages">All documentation pages</a>
     @if (answer.error(); as e) {
-      <trove-error-notice [error]="error(e)" (retry)="answer.reload()" />
+      <quader-error-notice [error]="error(e)" (retry)="answer.reload()" />
     } @else if (current(); as p) {
       <article class="help-article" aria-labelledby="help-page-title">
         <h1 id="help-page-title" lang="en">{{ p.title }}</h1>
@@ -37,7 +37,7 @@
             </ul>
           </nav>
         }
-        <trove-package-readme class="help-readme" lang="en" [readme]="readme()" pageLinks="help/" />
+        <quader-package-readme class="help-readme" lang="en" [readme]="readme()" pageLinks="help/" />
         @if (p.previous || p.next) {
           <nav class="help-pager" i18n-aria-label="@@help.pager" aria-label="Previous and next page">
             @if (p.previous; as prev) {

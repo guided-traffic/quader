@@ -205,8 +205,8 @@ func TestFacts(t *testing.T) {
 
 // TestNormalizeAgainstNpm replays a corpus through npm's own prepare() step
 // (testdata/prepare/generate.js): the manifest a client publishes and the raw
-// package.json of the tarball must compare equal after trove's normalization,
-// and trove must not change what npm already normalized.
+// package.json of the tarball must compare equal after quader's normalization,
+// and quader must not change what npm already normalized.
 func TestNormalizeAgainstNpm(t *testing.T) {
 	var corpus []struct {
 		Name     string   `json:"name"`

@@ -3,8 +3,8 @@
 Status: implemented (phase 7); P1 parts not built: client-side encryption of the database files (R-BAK-027) and restore onto
 an existing blob store (R-BAK-025)
 
-This page specifies trove's own backup (INV-19): the commands of the `backup` role
-(`trove backup create`, `list`, `verify`, `delete` and `restore`), what a backup contains and how it
+This page specifies Quader's own backup (INV-19): the commands of the `backup` role
+(`quader backup create`, `list`, `verify`, `delete` and `restore`), what a backup contains and how it
 is laid out in an S3 target, how the PostgreSQL snapshot is taken and exported, how the blobs that
 snapshot references are copied into a content-addressed pool that all backups of a target share,
 how garbage collection is kept from deleting a blob that a running backup still has to copy, the
@@ -16,7 +16,7 @@ The chart side (the rendered CronJob and restore Job, their values, Secrets and 
 [ha-and-helm.md](ha-and-helm.md) R-HA-060; this page states what the commands require from it.
 Platform-level protection stays in [ha-and-helm.md](ha-and-helm.md) R-HA-023 to R-HA-026:
 PostgreSQL point-in-time recovery, bucket versioning and replication, cross-site disaster recovery
-and `trove admin post-restore`. It complements this page with a shorter recovery point, and it does
+and `quader admin post-restore`. It complements this page with a shorter recovery point, and it does
 not replace the consistent, portable backup the owner requires. The garbage-collection protocol
 this page hooks into is [storage.md](storage.md) R-STOR-024, the stored-secret key ring is
 [architecture.md](architecture.md) R-ARCH-021, the Valkey keyspace is
@@ -93,7 +93,7 @@ Priority: **MVP** · Covers: OPS-032, OPS-033, OPS-034
 A backup MUST be restorable on its own, without the source database, the source blob store or
 Valkey. It contains:
 
-1. **Database.** Every row of every trove table in one transactionally consistent snapshot of the
+1. **Database.** Every row of every Quader table in one transactionally consistent snapshot of the
    source database (R-BAK-005), except the transient tables of R-BAK-004, plus the sequence
    values.
 2. **Blobs.** Every blob that a row of that snapshot references (R-BAK-006), as an object in the
@@ -130,11 +130,11 @@ Acceptance criteria:
 ### R-BAK-002 · Target layout, backup ID and target marker
 Priority: **MVP** · Covers: OPS-032
 
-Objects trove writes below `backup.target.prefix`:
+Objects Quader writes below `backup.target.prefix`:
 
 ```text
 <prefix>/
-  trove-backup-target.json                     target marker
+  quader-backup-target.json                     target marker
   pool/sha256/<h0h1>/<h2h3>/<h0…h63>           shared blob pool, same fan-out as R-STOR-001
   backups/<backup-id>/db/<table>.copy.zst      one file per exported table
   backups/<backup-id>/blobs.idx.zst            blob list
@@ -148,7 +148,7 @@ Objects trove writes below `backup.target.prefix`:
   written last, in one `PutObject`, after every other object of the backup and every pool object
   it lists has been confirmed. A `backups/<id>/` directory without a manifest is incomplete: it is
   never restored, listed only with `--all`, and removed by retention (R-BAK-016).
-- **Immutability.** No trove command modifies an object under `backups/<id>/` or `pool/`. A pool
+- **Immutability.** No Quader command modifies an object under `backups/<id>/` or `pool/`. A pool
   object is written only when the run does not know it to exist; a repeated write carries the
   same bytes, because the key is the content's SHA-256.
 - **Blob list.** zstd-compressed UTF-8 text, one line per blob, `<64 lowercase hex> <size in
@@ -160,7 +160,7 @@ Objects trove writes below `backup.target.prefix`:
   reads it at start and again before it writes a manifest or deletes anything. If its
   `installationId` or `incarnation` differs from the source's (`system_state`, R-BAK-022), the run
   exits `4` without writing.
-- **Adoption after a restore.** `trove backup create --adopt-target` (chart value
+- **Adoption after a restore.** `quader backup create --adopt-target` (chart value
   `backup.adoptTarget`, [ha-and-helm.md](ha-and-helm.md) R-HA-060, cross-page) rewrites the marker
   for this incarnation only if the marker names the installation ID and incarnation that this
   installation was restored from (`system_state` key `restored_from`, R-BAK-022). It then sets
@@ -183,12 +183,12 @@ Objects trove writes below `backup.target.prefix`:
 
 Acceptance criteria:
 
-- After one `create`, `aws s3api head-object --bucket trove-backups --key
-  trove/pool/sha256/<h0h1>/<h2h3>/<hex>` succeeds for the SHA-256 of a published tarball.
+- After one `create`, `aws s3api head-object --bucket quader-backups --key
+  quader/pool/sha256/<h0h1>/<h2h3>/<hex>` succeeds for the SHA-256 of a published tarball.
 - A second `create` without new uploads writes no pool object (`aws s3 ls --recursive …/pool/`
   is unchanged) and a second manifest.
-- A backup directory whose manifest was deleted by hand is absent from `trove backup list` and
-  present in `trove backup list --all` as `incomplete`.
+- A backup directory whose manifest was deleted by hand is absent from `quader backup list` and
+  present in `quader backup list --all` as `incomplete`.
 - Two installations configured with the same target: the second one's `create` exits `4` and
   names the marker's installation ID.
 - Two installations restored from the same backup, both with `--adopt-target`: the first one's
@@ -208,7 +208,7 @@ Priority: **MVP** · Covers: OPS-032, OPS-034
   "backupId": "20261028T020000Z-7f3a",
   "installationId": "0191c2d4-…",
   "incarnation": "0192f0a1-…",
-  "trove": {"version": "1.0.0", "revision": "3f2c1a…"},
+  "quader": {"version": "1.0.0", "revision": "3f2c1a…"},
   "schema": {"step": 57, "steps": [{"step": 1, "name": "00001_core", "sha256": "…"}]},
   "postgres": {"serverVersion": "17.6", "isolation": "repeatable read"},
   "startedAt": "2026-10-28T02:00:00.412Z",
@@ -216,7 +216,7 @@ Priority: **MVP** · Covers: OPS-032, OPS-034
   "completedAt": "2026-10-28T02:41:17.903Z",
   "previousBackupId": "20261027T020000Z-1c9e",
   "options": {"excludeRemoteCaches": false},
-  "source": {"storage": {"endpoint": "", "bucket": "trove-blobs", "prefix": "trove"},
+  "source": {"storage": {"endpoint": "", "bucket": "quader-blobs", "prefix": "quader"},
              "revocationJournal": true},
   "tables": [
     {"name": "items", "class": "data", "file": "db/items.copy.zst",
@@ -234,7 +234,7 @@ Priority: **MVP** · Covers: OPS-032, OPS-034
 
 - `format` is an integer. A reader MUST refuse a manifest with a higher `format` than it knows
   (exit `6`) and MUST ignore unknown fields.
-- `sha256`, `bytes` and `compressedBytes` of each file are computed by trove while the file
+- `sha256`, `bytes` and `compressedBytes` of each file are computed by Quader while the file
   streams; `rows` counts the rows `COPY` produced. `verify` and `restore` check them (R-BAK-019,
   R-BAK-020).
 - `schema.steps` lists every applied migration step with its file SHA-256 from
@@ -254,15 +254,15 @@ Acceptance criteria:
 
 - A JSON Schema of the manifest (`internal/backup/format/manifest.schema.json`, Q-BAK-13) validates every manifest
   the test suite writes.
-- A manifest edited to `"format": 2` makes `trove backup restore` and `verify` exit `6` and name
+- A manifest edited to `"format": 2` makes `quader backup restore` and `verify` exit `6` and name
   the format.
 
 ## Database snapshot
 
 ### R-BAK-004 · Table registry and export classes
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
-Every table of trove's schema has an export class, registered in code by its owning package with
+Every table of Quader's schema has an export class, registered in code by its owning package with
 `backup.RegisterTable(name, class, backup.TableOptions{CycleBreak: …})`, the same pattern as the
 sealed-column registry of R-ARCH-021.
 
@@ -322,16 +322,16 @@ R-VULN-026, from M4b) stay `data`: triage is work people did and cannot be fetch
 the advisory tables are empty after a restore no evaluation resolves a finding, so restored blocks
 hold until the first complete import (R-VULN-011).
 
-`trove migrate up` checks the registry after it has applied the migrations: it compares the tables of the schema with
+`quader migrate up` checks the registry after it has applied the migrations: it compares the tables of the schema with
 `tables.Default()` and refuses with exit `3`, naming the unregistered tables, so an installation never runs with a
-table that no backup classifies. The check is built in M0 (the `cmd/trove` binary links the blob, cluster and jobs
+table that no backup classifies. The check is built in M0 (the `cmd/quader` binary links the blob, cluster and jobs
 packages that own the tables).
 
 Acceptance criteria:
 
 - The migration test above runs in CI and fails on a test migration that adds an unregistered
   table.
-- `trove migrate up` on a schema with an unregistered table exits `3` and names the table.
+- `quader migrate up` on a schema with an unregistered table exits `3` and names the table.
 
 - A run against a schema with an extra table `x_new` (created by hand) exports it and lists it in
   `result.unregisteredTables`.
@@ -343,7 +343,7 @@ The export MUST read every table from one snapshot taken after the run's hold is
 (R-BAK-007).
 
 1. **Primary only, session host.** Every connection of the run belongs to the `backup` class of
-   [architecture.md](architecture.md) R-ARCH-019 (`application_name` `trove:<pod>:backup`) and
+   [architecture.md](architecture.md) R-ARCH-019 (`application_name` `quader:<pod>:backup`) and
    goes to the session host
    (`database.session_host`, or `database.host` when no transaction-mode pooler is configured;
    [ha-and-helm.md](ha-and-helm.md) R-HA-058), with the backup database credential (R-BAK-015). A
@@ -372,7 +372,7 @@ The export MUST read every table from one snapshot taken after the run's hold is
      travel as startup parameters of those connections, because session-level `SET` is reserved for the migration runner
      ([architecture.md](architecture.md) R-ARCH-019), and the wait for the migration lock polls `pg_try_advisory_lock_shared`
      for at most `backup.database.migration_wait` (Q-BAK-23).
-   - **Migrations.** `trove migrate` takes the same advisory lock exclusively
+   - **Migrations.** `quader migrate` takes the same advisory lock exclusively
      ([ha-and-helm.md](ha-and-helm.md) R-HA-019), so no migration step runs while the database is
      exported, and the export never sees a half-applied migration. A running migration makes the
      run wait up to `backup.database.migration_wait`, then exit `75`. A migration started during
@@ -418,13 +418,13 @@ The export MUST read every table from one snapshot taken after the run's hold is
 - The snapshot and the shared migration lock are held only while the database is exported; the
   blob copy runs on after them (R-BAK-009). While the snapshot is open, vacuum cannot remove rows
   deleted after it began, so the export time bounds that effect. Its duration is in the run's
-  progress and in `trove_backup_snapshot_open_seconds`.
+  progress and in `quader_backup_snapshot_open_seconds`.
 - A `helm upgrade` whose migration Job starts during an export fails after
   `migrate.advisory_lock_wait` and is repeated after the export. Operators schedule backups apart
   from upgrades; the upgrade preparation of [ha-and-helm.md](ha-and-helm.md) R-HA-021 runs its
   pre-upgrade backup to completion first.
 - Connections per run: one control connection (run row, heartbeat, pins), one snapshot connection
-  and `backup.database.parallel` export connections, `application_name` `trove:<pod>:backup`.
+  and `backup.database.parallel` export connections, `application_name` `quader:<pod>:backup`.
   With defaults that is 4, once per cluster, because only one run is active (R-BAK-010); the
   number does not depend on the replica count. A restore uses 1: the session connection that holds the
   migration lock and runs the migration runner, the load and the fix-ups (Q-BAK-31). Both belong in the connection budget of
@@ -433,7 +433,7 @@ The export MUST read every table from one snapshot taken after the run's hold is
 Acceptance criteria:
 
 - With `backup.database.parallel: 2`, `SELECT count(*) FROM pg_stat_activity WHERE
-  application_name LIKE 'trove:%:backup'` never exceeds 4 during a run.
+  application_name LIKE 'quader:%:backup'` never exceeds 4 during a run.
 - A run against a standby endpoint exits `2` with a message naming `pg_is_in_recovery`.
 - A test holds `ACCESS EXCLUSIVE` on `items` in another session for 90 s with
   `backup.database.lock_timeout: 60s`: the run exits `75` and writes no manifest.
@@ -441,7 +441,7 @@ Acceptance criteria:
   (a rewrite) with `lock_timeout = '5s'`; it fails with `55P03`, and the restored row count of
   `item_properties` equals the source's count at `snapshotAt`.
 - `audit_event` (partitioned) is exported with every row of every partition.
-- With `migrate.advisory_lock_wait: 10s`, `trove migrate up` started during an export exits
+- With `migrate.advisory_lock_wait: 10s`, `quader migrate up` started during an export exits
   non-zero without applying a step and names the backup; started during the blob copy, it
   succeeds. A run started while a test session holds `pg_advisory_lock(3, 0)` waits and exits `75`
   after `backup.database.migration_wait`.
@@ -522,7 +522,7 @@ Acceptance criteria:
 - After a first backup, a second one with 10 new tarballs reports `blobs.copied: 10` and
   `referenced` equal to the source's referenced count.
 - With source and target on the local profile's S3 store and one credential that can read both,
-  `trove_backup_copied_objects_total{mode="server"}` grows and `{mode="stream"}` does not; with a
+  `quader_backup_copied_objects_total{mode="server"}` grows and `{mode="stream"}` does not; with a
   target credential lacking `s3:GetObject` on the source, the run falls back to streaming and
   completes.
 - A 6 GiB generic upload is copied with `UploadPartCopy` and `aws s3api head-object` on the pool
@@ -532,7 +532,7 @@ Acceptance criteria:
   blob row has `content_status = 'missing'`.
 
 ### R-BAK-007 · Garbage-collection hold
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Garbage collection MUST NOT delete a blob that a running `create` still has to copy, whatever
 `storage.gc.grace_period` is and however long the run takes (Q-BAK-2).
@@ -571,7 +571,7 @@ SELECT EXISTS (SELECT 1 FROM backup_run r
 ```
 
 If it returns true, the blob stays `live`, its `blob_gc_queue` entry stays, and
-`trove_gc_candidates_held_total` grows. The next collection run considers it again. The orphan
+`quader_gc_candidates_held_total` grows. The next collection run considers it again. The orphan
 sweep (R-STOR-026) needs no check: it deletes only objects without a blob row, and a row
 disappears only through the protocol above.
 
@@ -614,14 +614,14 @@ hangs leaves a hold that garbage collection ignores once the lease has expired; 
 it `abandoned` (R-BAK-010). A stalled run whose lease
 expired may find a blob gone; it then fails with `hold_lost` (R-BAK-006) and never writes a
 manifest, so safety holds. A long global hold (`all`) delays collection only for the time it takes
-to stream the referenced set and insert the pins; `TroveBackupGlobalHoldLong` alerts when that
+to stream the referenced set and insert the pins; `QuaderBackupGlobalHoldLong` alerts when that
 takes longer than 30 minutes.
 
 Acceptance criteria:
 
 - With `storage.gc.grace_period: 0s` and a fault-injection pause after step 4 of a run, a package
   whose only blob is pinned is deleted and `POST /api/v1/system/tasks/gc/run` runs: the blob stays
-  `live`, `trove_gc_candidates_held_total` grows by 1, and the run completes. The first collection
+  `live`, `quader_gc_candidates_held_total` grows by 1, and the run completes. The first collection
   after the run deletes the blob.
 - With a pause between steps 1 and 3, a collection run deletes no blob at all.
 - The backup pod is stopped with `kill -STOP` for longer than `backup.lease_duration`; a
@@ -669,10 +669,10 @@ Acceptance criteria:
 
 ## The backup job
 
-### R-BAK-009 · `trove backup create`: phases and run record
+### R-BAK-009 · `quader backup create`: phases and run record
 Priority: **MVP** · Covers: OPS-032
 
-`trove backup create [--trigger schedule|manual] [--exclude-remote-caches] [--no-prune]
+`quader backup create [--trigger schedule|manual] [--exclude-remote-caches] [--no-prune]
 [--adopt-target] [--json]` runs one backup in the `backup` role. It never listens on a client port,
 never uses Valkey, and needs no local disk beyond 64 MiB of scratch space (R-BAK-012).
 
@@ -694,7 +694,7 @@ CREATE TABLE backup_run (
   trigger          text        NOT NULL CHECK (trigger IN ('schedule', 'manual')),
   target           text        NOT NULL,                         -- 's3://<bucket>/<prefix>' and endpoint host; no credentials
   pod              text        NOT NULL,                         -- pod name (downward API)
-  trove_version    text        NOT NULL,
+  quader_version    text        NOT NULL,
   snapshot_at      timestamptz,
   progress         jsonb       NOT NULL DEFAULT '{}',            -- phase, tablesDone/Total, blobsToCopy, blobsCopied, bytesCopied
   result           jsonb,                                        -- manifest summary, retention outcome, warnings
@@ -741,7 +741,7 @@ Phases of a `create` run:
   dead run of any operation ends `abandoned` and never looks active forever.
 - **Spot check.** Before the manifest, the run sends `HeadObject` for `backup.verify_sample`
   random digests of the blob list that it did not copy itself (they come from earlier backups);
-  a missing object fails the run with `pool_damaged` and the advice to run `trove backup verify`.
+  a missing object fails the run with `pool_damaged` and the advice to run `quader backup verify`.
 - **Pruning failure.** The manifest is the commit point. A failure of the pruning phase after it ends the run
   `completed_with_warnings` with the cause in `result.warnings`, not `failed`; only a run that was taken over stops (Q-BAK-24).
 - **History.** `backup_run` rows older than `backup.run_history` are deleted by the next run.
@@ -752,7 +752,7 @@ Acceptance criteria:
 
 - During a run, `GET /api/v1/system/backups` shows it with state `copying` and growing
   `progress.blobsCopied`.
-- A completed run's `result.backupId` names a manifest in the target, and `trove backup list`
+- A completed run's `result.backupId` names a manifest in the target, and `quader backup list`
   shows it.
 
 ### R-BAK-010 · One target-writing operation at a time
@@ -774,7 +774,7 @@ At most one `create` or `delete` run is active per installation (Q-BAK-4).
   A unique violation on `backup_run_one_active` (SQLSTATE `23505`) means another run holds the
   slot:
   - If that run belongs to the same Kubernetes Job as the starting pod (both rows carry the Job name, the
-    pod's `job-name` label, which the chart passes as `TROVE_JOB_NAME`), its pod is gone: a Job with
+    pod's `job-name` label, which the chart passes as `QUADER_JOB_NAME`), its pod is gone: a Job with
     parallelism 1 runs one pod at a time and starts the retry pod only after the failed one has
     terminated. The command waits as in the next case, whatever the age of the heartbeat (Q-BAK-44).
   - Otherwise, if that run's `heartbeat_at` is younger than 3 × `backup.heartbeat_interval`, it is alive.
@@ -820,7 +820,7 @@ Acceptance criteria:
 ### R-BAK-011 · Configuration
 Priority: **MVP** · Covers: OPS-032
 
-Keys under `backup` in `/etc/trove/trove.yaml` (INV-15); the chart renders them from
+Keys under `backup` in `/etc/quader/quader.yaml` (INV-15); the chart renders them from
 `config.backup` ([ha-and-helm.md](ha-and-helm.md) R-HA-031). This page owns their names: the
 proposals `backup.skip` and `backup.retention.max_age` in R-HA-031 become
 `backup.exclude.remote_caches` and `backup.retention.keep_within` (cross-page). The keys
@@ -833,8 +833,8 @@ backup:
   target:
     endpoint: ""                    # default (proposed): empty = AWS endpoint resolution for region
     region: eu-central-1            # example
-    bucket: trove-backups           # example; required by every backup command
-    prefix: trove                   # default (proposed); same validation as storage.s3.prefix (R-STOR-030)
+    bucket: quader-backups           # example; required by every backup command
+    prefix: quader                   # default (proposed); same validation as storage.s3.prefix (R-STOR-030)
     force_path_style: false         # default (proposed)
     allow_insecure_endpoint: false  # default (proposed)
     ca_file: ""                     # default (proposed): system trust store
@@ -842,11 +842,11 @@ backup:
     allow_same_bucket: false        # default (proposed); R-BAK-002
     credentials:                    # same keys and semantics as storage.s3.credentials (R-STOR-031)
       source: default               # default (proposed): default | webIdentity | static
-      role_arn: ""                  # example: arn:aws:iam::210987654321:role/trove-backup-writer
+      role_arn: ""                  # example: arn:aws:iam::210987654321:role/quader-backup-writer
       web_identity_token_file: ""
       sts_endpoint: ""
-      access_key_id_file: ""        # example: /var/run/secrets/trove/backup-target/access-key-id (set by the chart, R-HA-030)
-      secret_access_key_file: ""    # example: /var/run/secrets/trove/backup-target/secret-access-key
+      access_key_id_file: ""        # example: /var/run/secrets/quader/backup-target/access-key-id (set by the chart, R-HA-030)
+      secret_access_key_file: ""    # example: /var/run/secrets/quader/backup-target/secret-access-key
       session_token_file: ""
     sse:
       mode: s3                      # default (proposed): s3 | kms | none (R-BAK-026)
@@ -870,10 +870,10 @@ backup:
     keep_last: 7                    # default (proposed); ≥ 1
     keep_within: 0s                 # default (proposed): 0s = count only; example: 720h
     sweep_interval: 168h            # default (proposed); full pool sweep at least this often (R-BAK-017)
-  expected_interval: 24h            # default (proposed); drives TroveBackupStale and the API's and UI's overdue mark (R-BAK-014)
+  expected_interval: 24h            # default (proposed); drives QuaderBackupStale and the API's and UI's overdue mark (R-BAK-014)
   manual_run:                       # read by web replicas for the UI's manual-run command (api-and-ui.md R-API-050, R-UI-048)
-    namespace: ""                   # default (proposed): empty; the chart sets the release namespace; example: trove
-    cronjob: ""                     # default (proposed): empty; the chart sets <fullname>-backup; example: trove-backup
+    namespace: ""                   # default (proposed): empty; the chart sets the release namespace; example: quader
+    cronjob: ""                     # default (proposed): empty; the chart sets <fullname>-backup; example: quader-backup
   lease_duration: 5m                # default (proposed)
   heartbeat_interval: 15s           # default (proposed)
   stall_timeout: 30m                # default (proposed); a run without progress for this long cancels itself (R-BAK-013)
@@ -895,11 +895,11 @@ backup:
   R-HA-030, R-HA-060, cross-page; [api-and-ui.md](api-and-ui.md) Q-API-10). Empty values make the
   UI show placeholders (R-UI-048).
 - Every key can be overridden by an environment variable per INV-15, for example
-  `TROVE_BACKUP_TARGET_BUCKET`.
+  `QUADER_BACKUP_TARGET_BUCKET`.
 
 Acceptance criteria:
 
-- `backup.heartbeat_interval: 2m` with `lease_duration: 5m` makes `trove backup create` exit `2`
+- `backup.heartbeat_interval: 2m` with `lease_duration: 5m` makes `quader backup create` exit `2`
   and name both keys.
 - A web pod rendered by the chart has no file and no environment variable carrying the target
   credentials (`kubectl exec … -- ls /var/run/secrets` and `env` checks in the chart test).
@@ -932,7 +932,7 @@ it is listed as a cross-page change.
   sets `hold = 'none'` and exits `75` within the grace period. The Job then starts a new pod,
   whose run starts over with a new snapshot and skips the objects its predecessor already copied
   (`check_existing: auto`). A restore pod that is evicted resumes in the next pod (R-BAK-021).
-- **Manual run.** `kubectl -n trove create job --from=cronjob/trove-backup trove-backup-manual-$(date +%s)`.
+- **Manual run.** `kubectl -n quader create job --from=cronjob/quader-backup quader-backup-manual-$(date +%s)`.
   The Job copies the CronJob's arguments, so the run records `trigger: schedule`; its `pod` column
   starts with the Job name, which tells manual runs apart. The UI shows this command filled from
   `backup.manual_run` (R-BAK-011) and keeps the Job name within 63 characters
@@ -943,7 +943,7 @@ it is listed as a cross-page change.
   CronJob's arguments (R-BAK-002, cross-page R-HA-060, R-HA-031); `kubectl create job --from`
   cannot add an argument to a single run.
 - **Restore Job** ([ha-and-helm.md](ha-and-helm.md) Q-HA-18). R-HA-060 renders it as an ordinary
-  Job, not a `pre-install` or `pre-upgrade` hook, that runs `trove backup restore
+  Job, not a `pre-install` or `pre-upgrade` hook, that runs `quader backup restore
   <restore.backupId>`. Helm does not wait for it, so a restore that takes many hours meets no Helm
   or GitOps timeout; the operator waits with `kubectl wait` (R-BAK-021). While `restore.enabled`
   is set:
@@ -968,10 +968,10 @@ Acceptance criteria:
 - `kubectl drain --ignore-daemonsets --delete-emptydir-data` of the node running a backup pod
   finishes without waiting for it; the run ends `interrupted`, the eviction does not count against
   `backoffLimit` (a test with `backoffLimit: 0` still ends `Complete`), a new pod starts, its run
-  completes, and `TroveBackupFailed` does not fire.
-- In a pod of the CronJob, `trove backup create` exits `3` while another live run is active, and
+  completes, and `QuaderBackupFailed` does not fire.
+- In a pod of the CronJob, `quader backup create` exits `3` while another live run is active, and
   the Job ends `Failed` without a retry (`podFailurePolicy`).
-- `trove backup create` started by hand while `restore_in_progress` is set exits `75` and writes
+- `quader backup create` started by hand while `restore_in_progress` is set exits `75` and writes
   nothing to the target.
 - Draining the node of the restore pod during R-BAK-021 step 3 ends with the restore Job
   `Complete`, also with `restore.backoffLimit: 0`, and the `kubectl wait` of R-BAK-021 returning
@@ -1026,16 +1026,16 @@ Priority: **MVP** · Covers: OPS-032, OPS-012
 
 | Method and path | Result |
 |---|---|
-| `GET /api/v1/system/backups` | Runs from `backup_run`, newest first, cursor-paged: `id`, `operation`, `backupId`, `state`, `trigger`, `pod`, `troveVersion`, `target`, `startedAt`, `heartbeatAt`, `leaseExpired`, `finishedAt`, `snapshotAt`, `progress`, `result`, `error` |
+| `GET /api/v1/system/backups` | Runs from `backup_run`, newest first, cursor-paged: `id`, `operation`, `backupId`, `state`, `trigger`, `pod`, `quaderVersion`, `target`, `startedAt`, `heartbeatAt`, `leaseExpired`, `finishedAt`, `snapshotAt`, `progress`, `result`, `error` |
 | `GET /api/v1/system/backups/{runId}` | One run |
 | `GET /api/v1/system/backups/summary` | Status of the backup job: `expectedIntervalSeconds`, `lastSuccessAt`, `overdue`, the last failure, the active run, the stored backups and the retention that produced them (R-BAK-016), the target, the restore origin and the manual-run command (`backup.manual_run`, R-BAK-011) |
 
 The replicas read only `backup_run`, `system_state` and their configuration; they never hold
 target credentials, so the API shows runs and what the newest listing run recorded, not the
-target's live contents (`trove backup list` does that). `leaseExpired` is true for a run in an
+target's live contents (`quader backup list` does that). `leaseExpired` is true for a run in an
 active state whose lease has passed (R-BAK-010). The UI ([api-and-ui.md](api-and-ui.md) R-UI-048)
 shows the runs, the last success, the stored backups and an overdue mark after
-1.5 × `backup.expected_interval`, the condition of `TroveBackupStale`.
+1.5 × `backup.expected_interval`, the condition of `QuaderBackupStale`.
 
 **Metrics** (families for [operations-and-observability.md](operations-and-observability.md)
 R-OPS-008). Gauges are read from PostgreSQL by every web and worker replica, so every replica
@@ -1048,45 +1048,45 @@ scrape Jobs.
 
 | Family | Type | Labels | Meaning |
 |---|---|---|---|
-| `trove_backup_last_success_timestamp_seconds` | gauge | — | `finished_at` of the newest `completed` or `completed_with_warnings` create run |
-| `trove_backup_last_failure_timestamp_seconds` | gauge | — | The newest of: `finished_at` of a `failed` or `abandoned` create run, and `lease_expires_at` of a create run that is still in an active state with an expired lease. `interrupted` runs do not count: a drain is not a failure |
-| `trove_backup_expected_interval_seconds` | gauge | — | `backup.expected_interval`, from the replica's configuration |
-| `trove_backup_last_duration_seconds` | gauge | — | Duration of the newest successful create run |
-| `trove_backup_last_database_bytes`, `trove_backup_last_blob_bytes`, `trove_backup_last_copied_bytes` | gauge | — | From the newest successful run's result |
-| `trove_backup_running` | gauge | `operation` (`create`, `delete`), `state` | 1 for the operation and state of the active run with a valid lease, if any |
-| `trove_backup_running_seconds` | gauge | — | Age of the active create or delete run with a valid lease, else 0 |
-| `trove_backup_gc_hold` | gauge | `mode` (`all`, `pinned`) | 1 while a valid hold of that kind exists |
-| `trove_backup_pinned_blobs` | gauge | — | Pins left, from the active run's `progress` (written by its heartbeat) |
-| `trove_backup_snapshot_open_seconds` | gauge | — | Age of the active run's open snapshot, else 0 |
-| `trove_backup_source_blobs_damaged` | gauge | — | `blobs.damaged` count of the newest successful run |
-| `trove_backup_last_verify_timestamp_seconds`, `trove_backup_last_verify_findings` | gauge | — | Newest `verify` run |
-| `trove_backup_copied_objects_total`, `trove_backup_copied_bytes_total` | counter | `mode` (`server`, `stream`) | Backup pod only |
-| `trove_gc_candidates_held_total` | counter | — | Collection candidates kept by a backup hold (R-BAK-007; storage.md) |
+| `quader_backup_last_success_timestamp_seconds` | gauge | — | `finished_at` of the newest `completed` or `completed_with_warnings` create run |
+| `quader_backup_last_failure_timestamp_seconds` | gauge | — | The newest of: `finished_at` of a `failed` or `abandoned` create run, and `lease_expires_at` of a create run that is still in an active state with an expired lease. `interrupted` runs do not count: a drain is not a failure |
+| `quader_backup_expected_interval_seconds` | gauge | — | `backup.expected_interval`, from the replica's configuration |
+| `quader_backup_last_duration_seconds` | gauge | — | Duration of the newest successful create run |
+| `quader_backup_last_database_bytes`, `quader_backup_last_blob_bytes`, `quader_backup_last_copied_bytes` | gauge | — | From the newest successful run's result |
+| `quader_backup_running` | gauge | `operation` (`create`, `delete`), `state` | 1 for the operation and state of the active run with a valid lease, if any |
+| `quader_backup_running_seconds` | gauge | — | Age of the active create or delete run with a valid lease, else 0 |
+| `quader_backup_gc_hold` | gauge | `mode` (`all`, `pinned`) | 1 while a valid hold of that kind exists |
+| `quader_backup_pinned_blobs` | gauge | — | Pins left, from the active run's `progress` (written by its heartbeat) |
+| `quader_backup_snapshot_open_seconds` | gauge | — | Age of the active run's open snapshot, else 0 |
+| `quader_backup_source_blobs_damaged` | gauge | — | `blobs.damaged` count of the newest successful run |
+| `quader_backup_last_verify_timestamp_seconds`, `quader_backup_last_verify_findings` | gauge | — | Newest `verify` run |
+| `quader_backup_copied_objects_total`, `quader_backup_copied_bytes_total` | counter | `mode` (`server`, `stream`) | Backup pod only |
+| `quader_gc_candidates_held_total` | counter | — | Collection candidates kept by a backup hold (R-BAK-007; storage.md) |
 
 **Alerts** (PrometheusRule of [ha-and-helm.md](ha-and-helm.md) R-HA-045). The names
-`TroveBackupStale` and `TroveBackupFailed` are R-HA-045's; this page gives their expressions, and
+`QuaderBackupStale` and `QuaderBackupFailed` are R-HA-045's; this page gives their expressions, and
 R-HA-045 takes them over (cross-page):
 
 | Alert | Expression (sketch) | For |
 |---|---|---|
-| `TroveBackupStale` | `time() - max(trove_backup_last_success_timestamp_seconds) > 1.5 * max(trove_backup_expected_interval_seconds)`, or `trove_backup_last_success_timestamp_seconds` absent for longer than `expected_interval` | 0m |
-| `TroveBackupFailed` | `max(trove_backup_last_failure_timestamp_seconds) > max(trove_backup_last_success_timestamp_seconds)` | 0m |
-| `TroveBackupRunningLong` | `max(trove_backup_running_seconds) > 0.5 * max(trove_backup_expected_interval_seconds)` | 0m |
-| `TroveBackupGlobalHoldLong` | `max(trove_backup_gc_hold{mode="all"}) == 1` | 30m |
-| `TroveBackupSourceDamage` | `max(trove_backup_source_blobs_damaged) > 0` | 0m |
-| `TroveBackupVerifyFindings` | `max(trove_backup_last_verify_findings) > 0` | 0m |
+| `QuaderBackupStale` | `time() - max(quader_backup_last_success_timestamp_seconds) > 1.5 * max(quader_backup_expected_interval_seconds)`, or `quader_backup_last_success_timestamp_seconds` absent for longer than `expected_interval` | 0m |
+| `QuaderBackupFailed` | `max(quader_backup_last_failure_timestamp_seconds) > max(quader_backup_last_success_timestamp_seconds)` | 0m |
+| `QuaderBackupRunningLong` | `max(quader_backup_running_seconds) > 0.5 * max(quader_backup_expected_interval_seconds)` | 0m |
+| `QuaderBackupGlobalHoldLong` | `max(quader_backup_gc_hold{mode="all"}) == 1` | 30m |
+| `QuaderBackupSourceDamage` | `max(quader_backup_source_blobs_damaged) > 0` | 0m |
+| `QuaderBackupVerifyFindings` | `max(quader_backup_last_verify_findings) > 0` | 0m |
 
-- One threshold source. `TroveBackupStale` reads `backup.expected_interval` through its gauge, the
+- One threshold source. `QuaderBackupStale` reads `backup.expected_interval` through its gauge, the
   same value that the summary returns as `expectedIntervalSeconds`. The API's `overdue` uses the
   same condition, older than 1.5 × the expected interval ([api-and-ui.md](api-and-ui.md)
   R-API-050), and the UI's overdue mark shows it, so API, UI and alert agree. The chart values of
   R-HA-031 therefore carry no separate staleness threshold.
-- `TroveBackupFailed` needs no kube-state-metrics and resolves with the next success. R-HA-045's
+- `QuaderBackupFailed` needs no kube-state-metrics and resolves with the next success. R-HA-045's
   current expression, `kube_job_status_failed{…} > 0`, keeps firing for as long as the failed Job
   object is kept by `failedJobsHistoryLimit`, also after later runs succeeded (cross-page).
 - Only with the backup. The chart renders these six alerts only while `backup.enabled` is true
   ([ha-and-helm.md](ha-and-helm.md) R-HA-045, Q-BAK-9): without the CronJob no run ever succeeds,
-  and the clause of `TroveBackupStale` for a backup that never succeeded would fire on every
+  and the clause of `QuaderBackupStale` for a backup that never succeeded would fire on every
   installation that leaves the backup off.
 
 **Audit events** (catalog of
@@ -1100,12 +1100,12 @@ R-HA-045 takes them over (cross-page):
 
 Acceptance criteria:
 
-- After a successful run, `trove_backup_last_success_timestamp_seconds` on every web and worker
+- After a successful run, `quader_backup_last_success_timestamp_seconds` on every web and worker
   replica equals the run's `finished_at` within 30 s plus one scrape.
-- With `backup.expected_interval: 1h` and the CronJob suspended, `TroveBackupStale` fires 90
+- With `backup.expected_interval: 1h` and the CronJob suspended, `QuaderBackupStale` fires 90
   minutes after the last success (rule test with `promtool test rules`).
 - A run ended `interrupted` by a drain, followed by a successful retry, never makes
-  `TroveBackupFailed` fire; a run that ends `failed` makes it fire until the next success
+  `QuaderBackupFailed` fire; a run that ends `failed` makes it fire until the next success
   (rule test).
 - While a first backup with 400,000 pins runs, no `SELECT count(*) FROM backup_blob_pin` appears in
   `pg_stat_statements`.
@@ -1133,24 +1133,24 @@ Priority: **MVP** · Covers: OPS-033
   credentials, and the backup pod holds no key ring (R-BAK-012).
 - **Database role.** The backup pod's database credential is `secrets.databaseBackup`
   ([ha-and-helm.md](ha-and-helm.md) R-HA-030, R-HA-060). In two-role mode, the database
-  administrator creates the login role behind it once (trove never creates roles, R-HA-014;
+  administrator creates the login role behind it once (Quader never creates roles, R-HA-014;
   cross-page):
 
   ```sql
-  CREATE ROLE trove_backup LOGIN PASSWORD :'backup_password';
-  GRANT CONNECT ON DATABASE trove TO trove_backup;
-  GRANT USAGE ON SCHEMA trove TO trove_backup;
+  CREATE ROLE quader_backup LOGIN PASSWORD :'backup_password';
+  GRANT CONNECT ON DATABASE quader TO quader_backup;
+  GRANT USAGE ON SCHEMA quader TO quader_backup;
   ```
 
-  When `database.backup_role` names it, `trove migrate` (run as the owner) grants the rest after
+  When `database.backup_role` names it, `quader migrate` (run as the owner) grants the rest after
   applying the steps, idempotently on every run, so tables added by later migrations are covered:
 
   ```sql
-  GRANT SELECT ON ALL TABLES IN SCHEMA trove TO trove_backup;
-  GRANT SELECT ON ALL SEQUENCES IN SCHEMA trove TO trove_backup;
-  GRANT INSERT, UPDATE, DELETE ON backup_run, backup_blob_pin TO trove_backup;
-  GRANT EXECUTE ON FUNCTION backup_record_event(text, text, text, text, jsonb) TO trove_backup;
-  ALTER DEFAULT PRIVILEGES IN SCHEMA trove GRANT SELECT ON TABLES TO trove_backup;
+  GRANT SELECT ON ALL TABLES IN SCHEMA quader TO quader_backup;
+  GRANT SELECT ON ALL SEQUENCES IN SCHEMA quader TO quader_backup;
+  GRANT INSERT, UPDATE, DELETE ON backup_run, backup_blob_pin TO quader_backup;
+  GRANT EXECUTE ON FUNCTION backup_record_event(text, text, text, text, jsonb) TO quader_backup;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA quader GRANT SELECT ON TABLES TO quader_backup;
   ```
 
   The backup writes its audit events through `backup_record_event()`, a `SECURITY DEFINER` function of the schema owner that
@@ -1184,9 +1184,9 @@ Acceptance criteria:
 
 - With an IAM policy limited to the target-writer row, `create`, prune and `delete` succeed, and
   `aws s3api delete-object --version-id …` with the same credential fails with `AccessDenied`.
-- With the `trove_backup` role, `create` succeeds and `psql -U trove_backup -c 'DELETE FROM
-  trove.items'` fails with `42501`.
-- A restore started with the `trove_backup` credential exits `6` and names the missing owner
+- With the `quader_backup` role, `create` succeeds and `psql -U quader_backup -c 'DELETE FROM
+  quader.items'` fails with `42501`.
+- A restore started with the `quader_backup` credential exits `6` and names the missing owner
   privilege.
 
 ## Retention
@@ -1199,7 +1199,7 @@ Priority: **MVP** · Covers: OPS-032
   newest complete backup is never deleted by retention. Backups of earlier incarnations in the
   same target are subject to the same policy.
 - **When.** At the end of every successful `create` (state `pruning`, unless `--no-prune`), and by
-  `trove backup prune`. `trove backup delete <id> [--yes]` deletes one backup regardless of the
+  `quader backup prune`. `quader backup delete <id> [--yes]` deletes one backup regardless of the
   policy; deleting the only complete backup needs `--allow-last`. Both are target-writing runs
   (R-BAK-010).
 - **Order.** A backup is deleted manifest first, so it stops being a backup at once; then its other
@@ -1212,7 +1212,7 @@ Priority: **MVP** · Covers: OPS-032
   `result`:
   - `retention: {keepLast, keepWithinSeconds}`, as applied;
   - `retained`, the complete backups left after its deletions, each with `backupId`, `snapshotAt`,
-    `troveVersion`, `schemaStep`, `databaseBytes`, `blobCount`, `blobBytes` and `damaged`.
+    `quaderVersion`, `schemaStep`, `databaseBytes`, `blobCount`, `blobBytes` and `damaged`.
 
   [api-and-ui.md](api-and-ui.md) R-API-050 shows the newest such record as `storedBackups` and
   `retention` (Q-API-11). A `create` with `--no-prune` skips the pruning phase, takes no retention
@@ -1221,9 +1221,9 @@ Priority: **MVP** · Covers: OPS-032
 Acceptance criteria:
 
 - With `keep_last: 2` and three complete backups A < B < C sharing blobs, the run that creates C
-  deletes A; `trove backup verify B` and `verify C` report no findings; a blob referenced only by
+  deletes A; `quader backup verify B` and `verify C` report no findings; a blob referenced only by
   A is gone from the pool.
-- `trove backup delete <newest>` without `--allow-last` on a target with one backup exits `2`.
+- `quader backup delete <newest>` without `--allow-last` on a target with one backup exits `2`.
 
 ### R-BAK-017 · Pool sweep
 Priority: **MVP** · Covers: OPS-032
@@ -1261,21 +1261,21 @@ Acceptance criteria:
 ### R-BAK-018 · Listing backups
 Priority: **MVP** · Covers: OPS-032
 
-`trove backup list [--all] [--json]` reads the target (target-reader credential) and prints one
+`quader backup list [--all] [--json]` reads the target (target-reader credential) and prints one
 line per backup, newest first: ID, state (`complete`, or `incomplete` with `--all`), snapshot time,
-trove version, schema step, database bytes, referenced blob count and bytes, blobs copied by that
+Quader version, schema step, database bytes, referenced blob count and bytes, blobs copied by that
 run, options, key IDs, incarnation, and whether the backup is damaged (`blobs.damaged` not
 empty). It writes nothing. `--json` prints the same as an array of objects.
 
 Acceptance criteria:
 
-- After two runs, `trove backup list --json | jq length` is 2 and the newest entry's `schemaStep`
-  equals `trove migrate status`'s highest applied step.
+- After two runs, `quader backup list --json | jq length` is 2 and the newest entry's `schemaStep`
+  equals `quader migrate status`'s highest applied step.
 
 ### R-BAK-019 · Verifying backups
 Priority: **MVP** · Covers: OPS-033
 
-`trove backup verify <id> | --latest | --all [--deep] [--bytes-per-second N]` checks backups
+`quader backup verify <id> | --latest | --all [--deep] [--bytes-per-second N]` checks backups
 without changing them:
 
 - the manifest parses, has a known `format` and names the target's installation;
@@ -1293,8 +1293,8 @@ verification is P1 (see [Deferred](#deferred)).
 
 Acceptance criteria:
 
-- `aws s3 rm` of one pool object listed by the newest backup: `trove backup verify --latest`
-  exits `5` and prints `missing <digest>`; `trove_backup_last_verify_findings` reports 1.
+- `aws s3 rm` of one pool object listed by the newest backup: `quader backup verify --latest`
+  exits `5` and prints `missing <digest>`; `quader_backup_last_verify_findings` reports 1.
 - Overwriting a pool object with other bytes of the same length: `verify` exits `0`, `verify
   --deep` exits `5` with `digest_mismatch`.
 
@@ -1303,7 +1303,7 @@ Acceptance criteria:
 ### R-BAK-020 · Restore preconditions
 Priority: **MVP** · Covers: OPS-035
 
-`trove backup restore <backup-id> [--check] [--skip-revocation-journal]
+`quader backup restore <backup-id> [--check] [--skip-revocation-journal]
 [--journal-credentials-file <path>]` restores into an empty installation (Q-BAK-7), and it resumes
 an interrupted restore of the same backup on its own (Q-BAK-10). It first takes the migration lock
 `pg_advisory_lock(3, 0)` on its session connection (R-BAK-021) and then, before writing anything
@@ -1312,7 +1312,7 @@ but check 7's probe object, MUST check, and exit `6` naming the first failed che
 1. The manifest exists, has a known `format`, and every file it names exists with the recorded
    size (`HeadObject`).
 2. The binary embeds every migration step of `manifest.schema.steps` with the same SHA-256
-   (R-BAK-023). Otherwise the message names `manifest.trove.version` as a release that can
+   (R-BAK-023). Otherwise the message names `manifest.quader.version` as a release that can
    restore it.
 3. The configured key ring holds every key ID of `manifest.secrets.keyIds`, and it opens every
    canary row of the backup's `secret_key_canary` file (read and decrypted before any load). The
@@ -1357,16 +1357,16 @@ R-HA-060, Q-HA-18):
 
 ```shell
 # new, empty database (R-HA-014 provisioning) and an empty blob prefix; Secrets in place (R-BAK-028)
-helm repo add trove https://guided-traffic.github.io/trove/
+helm repo add quader https://guided-traffic.github.io/quader/
 # <v>: the chart version to install; example 0.1.0
-helm install trove trove/trove -n trove -f values.yaml --version <v> \
+helm install quader quader/quader -n quader -f values.yaml --version <v> \
   --set api.replicaCount=0 --set api.autoscaling.enabled=false \
   --set packages.replicaCount=0 --set packages.autoscaling.enabled=false \
   --set worker.replicaCount=0 --set worker.autoscaling.enabled=false \
   --set restore.enabled=true --set restore.backupId=20261028T020000Z-7f3a   # example ID
-kubectl -n trove wait --for=condition=complete job/trove-restore --timeout=24h
-helm repo update trove
-helm upgrade trove trove/trove -n trove -f values.yaml --version <v>   # normal values
+kubectl -n quader wait --for=condition=complete job/quader-restore --timeout=24h
+helm repo update quader
+helm upgrade quader quader/quader -n quader -f values.yaml --version <v>   # normal values
 ```
 
 - The first command renders the restore Job with both roles at zero, no migration Job and a
@@ -1378,28 +1378,28 @@ helm upgrade trove trove/trove -n trove -f values.yaml --version <v>   # normal 
   Job again, which finds the schema at the binary's step (step 5) and applies nothing, and starts
   both roles on the restored data.
 - **A Job that failed for good** (its retries used up, or a `FailJob` exit of R-BAK-012) is
-  continued after the cause is fixed: `kubectl -n trove delete job trove-restore`, then the
+  continued after the cause is fixed: `kubectl -n quader delete job quader-restore`, then the
   `helm upgrade` with the restore values (both roles at zero, `restore.enabled`) again. Helm creates
   the Job anew, and its pod resumes the restore (below).
 - **Nothing overtakes the restore.** While `restore.enabled` is set, the chart refuses a `web` or
   `worker` replica count above zero or enabled autoscaling ([ha-and-helm.md](ha-and-helm.md)
   R-HA-029, R-HA-060), so an upgrade that would start the roles fails at rendering. Turning
   `restore.enabled` off before the Job completes deletes the Job and renders the migration Job,
-  and `trove migrate` refuses an anchored database ([ha-and-helm.md](ha-and-helm.md) R-HA-019), so
+  and `quader migrate` refuses an anchored database ([ha-and-helm.md](ha-and-helm.md) R-HA-019), so
   that upgrade fails too and the unfinished restore is resumed instead of being migrated past.
 
-What `trove backup restore` does:
+What `quader backup restore` does:
 
 1. **Lock and checks.** Takes `pg_advisory_lock(3, 0)` on its session connection and holds it until
    step 9 ends; the migration runner runs on that connection, so it re-enters the lock. A second
    restore process (an old pod still terminating while the Job's next pod, or a Job created anew,
-   starts) and a `trove migrate` started meanwhile wait for it; a restore waits up to
-   `backup.database.migration_wait` and then exits `75`, and `trove migrate` waits up to
+   starts) and a `quader migrate` started meanwhile wait for it; a restore waits up to
+   `backup.database.migration_wait` and then exits `75`, and `quader migrate` waits up to
    `migrate.advisory_lock_wait` and refuses a database that still carries the anchor when it gets
    the lock ([ha-and-helm.md](ha-and-helm.md) R-HA-019). On `SIGTERM` a restore rolls back an
    open step-4 transaction, closes its connections, which releases the lock, and exits `75`. Then
    the checks of R-BAK-020. It writes nothing until step 2 starts.
-2. **Anchor and schema.** Sets `COMMENT ON SCHEMA <database.schema> IS 'trove-restore <backup-id>'`,
+2. **Anchor and schema.** Sets `COMMENT ON SCHEMA <database.schema> IS 'quader-restore <backup-id>'`,
    the anchor that makes the database this restore's from its first write on. Applies the embedded
    migrations up to the backup's step through the runner's internal mode (R-BAK-023). The runner's
    final `schema_state` update and the insert of `system_state` key `restore_in_progress` =
@@ -1445,7 +1445,7 @@ What `trove backup restore` does:
 8. **Revocation journal and verification.** Replays the revocation journal (R-BAK-024) unless
    `--skip-revocation-journal` was given. Then: every `live` blob row with `content_status = 'ok'`
    has a copied object (a join against the copied digests); the canary check of R-ARCH-021
-   passes; `trove migrate status` shows no pending step. A failure exits `1` and leaves the anchor
+   passes; `quader migrate status` shows no pending step. A failure exits `1` and leaves the anchor
    and `restore_in_progress` in place.
 9. **Finish,** in one transaction: deletes `restore_in_progress`, sets the `system_state` key
    `restored_at` to the transaction's time (`now()`, R-BAK-022), removes the anchor
@@ -1461,7 +1461,7 @@ What `trove backup restore` does:
   [operations-and-observability.md](operations-and-observability.md) R-OPS-001). Before the marker
   exists, the schema is not servable, so the replica waits as well. The chart keeps replicas away
   during a restore anyway: it refuses a replica count above zero while `restore.enabled` is set
-  ([ha-and-helm.md](ha-and-helm.md) R-HA-060), and `trove migrate` refuses an anchored database
+  ([ha-and-helm.md](ha-and-helm.md) R-HA-060), and `quader migrate` refuses an anchored database
   (R-HA-019), so neither a replica nor a migration overtakes the restore. The guard covers
   [ha-and-helm.md](ha-and-helm.md) R-HA-025's path and pods started by hand.
 - **Resumption** (Q-BAK-10). A restore that ends without finishing (evicted by a drain, killed,
@@ -1516,7 +1516,7 @@ Acceptance criteria:
   step 9, and `SELECT count(*) FROM replica` at the end of step 4 is 0.
 
 ### R-BAK-022 · State a restore rebuilds or invalidates
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 A restore moves the installation back to `snapshotAt`. Derived state that outlives the old
 database MUST NOT be mistaken for restored state (Q-BAK-5). Transient tables are empty after the
@@ -1577,7 +1577,7 @@ Acceptance criteria:
 ### R-BAK-023 · Schema and PostgreSQL version compatibility on restore
 Priority: **MVP** · Covers: OPS-035, OPS-039
 
-- A backup is restored by any trove binary that embeds every migration step of the backup with
+- A backup is restored by any Quader binary that embeds every migration step of the backup with
   the same file SHA-256 (Q-BAK-8). The restore applies the steps up to the backup's step, loads
   the data into exactly the schema it was exported from, then applies the binary's later steps,
   expand and contract alike: no replica is registered, so R-HA-018's contract guard has nothing to
@@ -1587,7 +1587,7 @@ Priority: **MVP** · Covers: OPS-035, OPS-039
   restore mode of [architecture.md](architecture.md) R-ARCH-026. It runs on a connection that
   already holds the migration lock, and it lets the caller add statements to the transaction of
   its final `schema_state` update (R-BAK-021 step 2). It is not exposed as a CLI flag of
-  `trove migrate`.
+  `quader migrate`.
 - A binary older than the backup's schema step, or one whose migration files differ from the
   backup's checksums, refuses (R-BAK-020 check 2). From the first stable release on, applied
   migration files are checksummed and never edited (R-HA-018, R-ARCH-026); this page adds that
@@ -1596,7 +1596,7 @@ Priority: **MVP** · Covers: OPS-035, OPS-039
   the last release that restores older backups. Before the first stable release a migration file
   may be edited or removed ([Q-ARCH-340](architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release)), so a later build restores an earlier
   backup only while the steps up to the backup's step are unchanged.
-- PostgreSQL: the table files are `COPY` text and the schema is built by trove's migrations, so a
+- PostgreSQL: the table files are `COPY` text and the schema is built by Quader's migrations, so a
   backup taken on one supported major version restores onto any other supported one
   ([ha-and-helm.md](ha-and-helm.md) R-HA-013).
 
@@ -1609,14 +1609,14 @@ Acceptance criteria:
   step.
 
 ### R-BAK-024 · Revocation journal replay after a restore
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 A restore undoes every access removal made after `snapshotAt`, as a PITR restore does (H-37). The
 revocation journal of [ha-and-helm.md](ha-and-helm.md) R-HA-054 is MVP, and R-HA-054 states that a
-restore of a trove backup replays it, so every restore replays it at MVP; a backup restore must not
+restore of a Quader backup replays it, so every restore replays it at MVP; a backup restore must not
 be weaker than a PITR restore.
 
-- In R-BAK-021 step 8, before the verification, `trove backup restore` replays the journal
+- In R-BAK-021 step 8, before the verification, `quader backup restore` replays the journal
   entries that are newer than `manifest.snapshotAt − backup.revocation_journal.replay_margin`,
   with R-HA-054's replay rules and output, and writes `system.restore.journal_replayed` with the
   counts.
@@ -1656,7 +1656,7 @@ Acceptance criteria:
 ### R-BAK-025 · Restore onto an existing blob store
 Priority: **P1** · Covers: OPS-039
 
-`trove backup restore <id> --existing-blobs reuse` accepts a non-empty blob prefix, typically the
+`quader backup restore <id> --existing-blobs reuse` accepts a non-empty blob prefix, typically the
 old installation's bucket after its database was lost. The database must still be empty.
 
 - For each listed digest, an object of the right size at its key is kept (with `--deep`, also
@@ -1684,12 +1684,12 @@ Priority: **MVP** · Covers: OPS-033
 - **At rest.** Every `PutObject`, `CreateMultipartUpload` and `CopyObject` to the target carries the
   configured server-side encryption: `s3` (SSE-S3), or `kms` with `kms_key_id` and S3 Bucket Keys
   ([SSE-KMS](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html)). A
-  copy request without encryption headers would take the destination bucket's default, so trove
+  copy request without encryption headers would take the destination bucket's default, so Quader
   always sends them ([CopyObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)).
   The preflight writes the marker (or a probe object) and checks the `ServerSideEncryption` that
   `HeadObject` reports; a mismatch exits `2`.
 - `mode: none` is allowed for stores without server-side encryption. The run then logs a warning,
-  and the result records `encryption.sse: none`; `trove backup list` shows it.
+  and the result records `encryption.sse: none`; `quader backup list` shows it.
 - The default is `s3`, unlike the blob store's `none` ([storage.md](storage.md) R-STOR-032): a
   backup is a complete copy of the database, usually kept in a second location, and SSE-S3 costs
   nothing on AWS S3. Stores that reject SSE-S3 headers fail the preflight with a message naming
@@ -1704,7 +1704,7 @@ Acceptance criteria:
   explicitly.
 
 ### R-BAK-027 · Client-side encryption of the database files
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - With `backup.encryption.recipients_file` set, every table file and the blob list are encrypted
   to the listed [age](https://age-encryption.org/v1) X25519 recipients before upload, after
@@ -1733,18 +1733,18 @@ Priority: **MVP** · Covers: OPS-033
   cluster and outside the target's credential domain: a password manager or secret vault, or an
   offline copy. Storing it next to the backups would hand both halves to whoever reads the
   target.
-- **Every key a retained backup needs.** The manifest lists `secrets.keyIds`; `trove backup list
+- **Every key a retained backup needs.** The manifest lists `secrets.keyIds`; `quader backup list
   --json | jq -r '.[].keyIds[]' | sort -u` prints every key ID that retained backups need.
   After a rotation (R-HA-027) a retired key stays in escrow until no retained backup lists it.
 - The same rule covers the age identity of R-BAK-027 (P1) and the database and S3 credentials the
   restore needs; the restore itself needs no secret that the release does not already have.
-- `trove backup create` warns once per run when a retained backup lists a key ID that its own
+- `quader backup create` warns once per run when a retained backup lists a key ID that its own
   snapshot no longer uses: a reminder that escrow must still hold that retired key. The check
   compares key IDs only; the backup pod holds no key material (R-BAK-012).
 
 Acceptance criteria:
 
-- After a key rotation and one more backup, `trove backup list --json` shows the old key ID for
+- After a key rotation and one more backup, `quader backup list --json` shows the old key ID for
   the older backup and the new one for the newer; restoring the older backup with a ring that
   holds only the new key exits `6` naming the old key ID.
 
@@ -1756,16 +1756,16 @@ Priority: **MVP** · Covers: OPS-032, OPS-035
 Go integration tests against PostgreSQL and the per-change S3 store of
 [ha-and-helm.md](ha-and-helm.md) R-HA-051, plus an end-to-end drill in kind. The suite runs on
 every change; the drill runs nightly and on dispatch as the leg `e2e-backup` of HA and Performance (nightly), a dispatch on the commit that closes the phase
-([ha-and-helm.md](ha-and-helm.md) Q-HA-154, the owner's rule for long legs), as the "Restore drill, trove backup" row of [ha-and-helm.md](ha-and-helm.md) R-HA-052.
+([ha-and-helm.md](ha-and-helm.md) Q-HA-154, the owner's rule for long legs), as the "Restore drill, Quader backup" row of [ha-and-helm.md](ha-and-helm.md) R-HA-052.
 Scenarios 1, 2, 5, 7 and 10 also run per change as integration tests without a cluster (Q-BAK-47). The point-in-time
 drill has no run in the pipeline.
 
 1. **Consistency under load.** A loop publishes npm and NuGet packages, deletes some, empties the
    trash and runs garbage collection with `storage.gc.grace_period: 0s` every 10 s, while
-   `trove backup create` runs. The backup is restored into a fresh database and bucket. Then, for
+   `quader backup create` runs. The backup is restored into a fresh database and bucket. Then, for
    every untrashed and trashed file item in the restored database, `GET /files/<projectKey>/<repoKey>/<path>`
    (or the trash API) returns bytes whose SHA-256 equals the item's digest; `npm view` lists
-   exactly the versions in the restored database; and `trove backup verify --deep` exits `0`.
+   exactly the versions in the restored database; and `quader backup verify --deep` exits `0`.
 2. **Source blobs garbage-collected after the backup.** After backup B, every package is deleted
    and `gc-full` runs with grace `0s`, so the source bucket holds none of B's blobs. Restoring B
    succeeds and scenario 1's download check passes.
@@ -1795,11 +1795,11 @@ Acceptance criteria:
 | OPS-036, OPS-037 | P2 | Repository export and import (a partial, per-repository copy); a backup restores whole installations only |
 | OPS-038 | P2 | Identity-service configuration export; login providers are file configuration (INV-15) |
 | OPS-032 (excluded repositories) | P2 | Excluding individual repositories from a backup; a virtual repository or permission that names an excluded one would restore dangling |
-| trove-only | P1 | Scheduled `verify`, deep or sampled, as a second CronJob with its own alert |
-| trove-only | P1 | Manifest signatures (H-46) |
-| trove-only | P2 | Targets other than S3 (file system, Azure Blob, Google Cloud Storage native APIs) |
-| trove-only | P2 | Restoring one repository or one package from a backup into a running installation |
-| trove-only | P2 | Sharding one run's blob copy over several pods (an Indexed Job by digest range); one pod copies today (R-BAK-006 "Throughput") |
+| quader-only | P1 | Scheduled `verify`, deep or sampled, as a second CronJob with its own alert |
+| quader-only | P1 | Manifest signatures (H-46) |
+| quader-only | P2 | Targets other than S3 (file system, Azure Blob, Google Cloud Storage native APIs) |
+| quader-only | P2 | Restoring one repository or one package from a backup into a running installation |
+| quader-only | P2 | Sharding one run's blob copy over several pods (an Indexed Job by digest range); one pod copies today (R-BAK-006 "Throughput") |
 
 ## Security notes
 
@@ -1835,19 +1835,19 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `pg_dump` with trove's exported snapshot | Ship `pg_dump`/`pg_restore` in the image; dump with `--snapshot=<id>` so the GC hold and the dump share one snapshot; restore with `pg_restore` | Proven tool, parallel dump and restore, schema included | `pg_dump` refuses servers newer than its own major version ([pg_dump](https://www.postgresql.org/docs/current/app-pgdump.html)), so the image needs the newest client binary and its libpq next to the static Go binary (R-ARCH-001); the dumped schema bypasses trove's migrations; row filters (only referenced blob rows, transient tables) and per-table checksums need extra passes |
-| (b) trove-native `COPY` export in one `REPEATABLE READ READ ONLY` snapshot | Every table via `COPY (SELECT …) TO STDOUT` from one exported snapshot; restore builds the schema with trove's migrations and loads with `COPY FROM` | No extra binary; version-independent text format; the schema is always trove's own; filters, checksums, GC hold and table locks sit in one code path; parallel with imported snapshots | trove maintains the export and load code and the table registry; a migration test must keep the registry complete |
+| (a) `pg_dump` with Quader's exported snapshot | Ship `pg_dump`/`pg_restore` in the image; dump with `--snapshot=<id>` so the GC hold and the dump share one snapshot; restore with `pg_restore` | Proven tool, parallel dump and restore, schema included | `pg_dump` refuses servers newer than its own major version ([pg_dump](https://www.postgresql.org/docs/current/app-pgdump.html)), so the image needs the newest client binary and its libpq next to the static Go binary (R-ARCH-001); the dumped schema bypasses Quader's migrations; row filters (only referenced blob rows, transient tables) and per-table checksums need extra passes |
+| (b) Quader-native `COPY` export in one `REPEATABLE READ READ ONLY` snapshot | Every table via `COPY (SELECT …) TO STDOUT` from one exported snapshot; restore builds the schema with Quader's migrations and loads with `COPY FROM` | No extra binary; version-independent text format; the schema is always Quader's own; filters, checksums, GC hold and table locks sit in one code path; parallel with imported snapshots | Quader maintains the export and load code and the table registry; a migration test must keep the registry complete |
 | (c) Platform PITR referenced by a manifest | The backup records a PITR timestamp of the platform (CloudNativePG, managed service) and copies only blobs | Smallest backup job; fast database restore on the same platform | Not portable across platforms or providers; the database part is not in the target, so the backup is not self-contained, which INV-19 requires; consistency with the blob copy depends on the platform's archive lag |
-| (d) As (b), but `SERIALIZABLE READ ONLY DEFERRABLE` | The snapshot waits for a point free of serialization anomalies | Snapshot consistent with every later serial order | trove's writers run at `READ COMMITTED` (R-ARCH-019), so there are no serializable transactions whose anomalies it would avoid; it can delay the start indefinitely; PostgreSQL's own documentation calls it "not beneficial for a dump which is intended only for disaster recovery" ([pg_dump](https://www.postgresql.org/docs/current/app-pgdump.html)) |
+| (d) As (b), but `SERIALIZABLE READ ONLY DEFERRABLE` | The snapshot waits for a point free of serialization anomalies | Snapshot consistent with every later serial order | Quader's writers run at `READ COMMITTED` (R-ARCH-019), so there are no serializable transactions whose anomalies it would avoid; it can delay the start indefinitely; PostgreSQL's own documentation calls it "not beneficial for a dump which is intended only for disaster recovery" ([pg_dump](https://www.postgresql.org/docs/current/app-pgdump.html)) |
 
-**Choice:** (b) — a trove-native `COPY` export of every table from one `REPEATABLE READ READ ONLY`
-snapshot, with the tables locked `ACCESS SHARE` before the snapshot, restored through trove's own
+**Choice:** (b) — a Quader-native `COPY` export of every table from one `REPEATABLE READ READ ONLY`
+snapshot, with the tables locked `ACCESS SHARE` before the snapshot, restored through Quader's own
 migrations.
 
 **Rationale:** The consistency of (a) and (b) is the same, one MVCC snapshot. What decides is
 everything around it: the GC hold must be committed before the snapshot and the pins derived from
 it, the blob rows must be filtered to the referenced set, transient tables must be left out, and
-every file needs a checksum. All of that is trove code under (a) as well, plus a second binary
+every file needs a checksum. All of that is Quader code under (a) as well, plus a second binary
 whose major version must track the newest server. (b) also makes the restore independent of the
 PostgreSQL major version and runs the schema through the same migrations as every installation,
 which is the path the rest of the spec tests. (c) fails INV-19's "backup in S3" on its own and ties
@@ -1886,8 +1886,8 @@ full backup of the reference data set take longer than five minutes, which would
 in key ranges.
 
 **Applied in the spec:** R-BAK-007 (protocol, proof, lease), R-BAK-009 (`hold`,
-`backup_blob_pin`), R-BAK-014 (`trove_backup_gc_hold`, `trove_gc_candidates_held_total`,
-`TroveBackupGlobalHoldLong`); cross-page: storage.md R-STOR-024 gains the hold check.
+`backup_blob_pin`), R-BAK-014 (`quader_backup_gc_hold`, `quader_gc_candidates_held_total`,
+`QuaderBackupGlobalHoldLong`); cross-page: storage.md R-STOR-024 gains the hold check.
 
 ### Q-BAK-3 · Blob layout in the target and incremental backups
 
@@ -1903,7 +1903,7 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (b) — a shared content-addressed pool in the target, one sorted blob list per backup,
 incremental by digest, mark-and-sweep retention.
 
-**Rationale:** trove already identifies blobs by SHA-256 (INV-4), so the pool reuses the source's
+**Rationale:** Quader already identifies blobs by SHA-256 (INV-4), so the pool reuses the source's
 layout and its immutability, and an incremental run is a sorted merge instead of a change log. A
 restore still needs nothing but the target. (a) and (d) make daily backups of large installations
 impractical, and (c) is not a separate copy. The cost of (b), a shared pool where one damaged
@@ -1947,14 +1947,14 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Nothing | Rely on TTLs and self-validating keys | No work | Keys and `ETag`s built from `rev_seq` repeat with different content after a restore; a shared Valkey serves entries of the old installation; clients get wrong `304`s |
-| (b) Flush Valkey during the restore | The restore deletes trove's keys | Valkey starts clean | Needs Valkey access and credentials in the restore Job; a still-running old installation refills it; does nothing for client-side `ETag`s |
+| (b) Flush Valkey during the restore | The restore deletes Quader's keys | Valkey starts clean | Needs Valkey access and credentials in the restore Job; a still-running old installation refills it; does nothing for client-side `ETag`s |
 | (c) New Valkey keyspace plus a revision offset | Every Valkey key carries `system_state.keyspace_id`, which a restore replaces; every registered revision column grows by 2^32 | Stale Valkey entries become unreachable without touching Valkey; client `ETag`s and `If-Match` values from the old installation can never match again | Every Valkey key carries one more segment; a registry of revision columns to keep complete |
 | (d) An incarnation in every key and every `ETag` | Mix the incarnation into all derived identifiers | Covers future counters automatically | Changes every format page's `ETag` rules; every client revalidates everything after each restore, even unchanged documents |
 
 **Choice:** (c) — a new Valkey keyspace ID and an offset of 2^32 on every registered revision column.
 
 **Rationale:** The restore moves counters backwards, and two different consumers remember them:
-Valkey (inside trove) and clients (outside). A keyspace ID handles the first without any Valkey
+Valkey (inside Quader) and clients (outside). A keyspace ID handles the first without any Valkey
 access from the restore Job, and it also isolates a restored installation from an old one that
 still runs on the same Valkey. The offset handles the second with a fixed rule in one place, while
 `ETag`s keep their format. (d) would reach the same result with edits on every format page. The
@@ -1974,7 +1974,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Server-side encryption only | SSE-S3 or SSE-KMS on the target, default `s3` | No key for trove to manage; works with server-side copy | Anyone with read access to the target reads the database files |
+| (a) Server-side encryption only | SSE-S3 or SSE-KMS on the target, default `s3` | No key for Quader to manage; works with server-side copy | Anyone with read access to the target reads the database files |
 | (b) (a) plus optional client-side encryption of the database files | age encryption of table files and the blob list to configured recipients (P1); pool objects stay server-side encrypted | The sensitive part (personal data, token hashes, permissions) is unreadable without an escrowed identity; the backup role needs only public keys; blobs stay deduplicated | One more secret to escrow; P1 |
 | (c) Client-side encryption of everything | Pool objects encrypted too | Nothing readable in the target | No server-side copy; deduplication only with convergent encryption, which leaks equality; every restore decrypts terabytes |
 
@@ -2010,7 +2010,7 @@ reference data set exceeds the recovery time an installation commits to.
 
 **Applied in the spec:** R-BAK-020 checks 4 and 5, R-BAK-021, R-BAK-025.
 
-### Q-BAK-8 · Restore with a newer trove release
+### Q-BAK-8 · Restore with a newer Quader release
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -2058,7 +2058,7 @@ drill runs there and in every end-to-end set layered on it.
 then). [ha-and-helm.md](ha-and-helm.md) R-HA-060, R-HA-029 and R-HA-031 render the CronJob only with
 `backup.enabled`, fail without `config.backup.target.bucket` only then and leave the bucket out of
 the minimal install; R-HA-045 renders the alerts of the backup runs only with the backup (R-BAK-014),
-and R-HA-051 still creates the second bucket `trove-backups`. The chart side of this choice is
+and R-HA-051 still creates the second bucket `quader-backups`. The chart side of this choice is
 [Q-HA-17](ha-and-helm.md#q-ha-17--the-backup-cronjob-is-off-by-default), decided the same way.
 
 ### Q-BAK-10 · Resuming an interrupted restore
@@ -2100,7 +2100,7 @@ pins, the one-active slot of R-BAK-010 and the CronJob's `Forbid`, so no further
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Job `activeDeadlineSeconds` | Kubernetes kills the Job after a fixed time ([ha-and-helm.md](ha-and-helm.md) R-HA-060 proposed 21600 s) | Built in | Kills a healthy first backup of a large installation every time, because that takes longer than any fixed limit that still catches hangs quickly (Q-BAK-2's premise) |
-| (b) Alert only | No limit; `TroveBackupRunningLong` and `TroveBackupStale` fire | Never kills a healthy run | A human must find and delete the pod; until then no backup runs |
+| (b) Alert only | No limit; `QuaderBackupRunningLong` and `QuaderBackupStale` fire | Never kills a healthy run | A human must find and delete the pod; until then no backup runs |
 | (c) Progress-based self-cancel | The heartbeat renews the lease only while the run makes progress; after `backup.stall_timeout` without progress the run fails as `stalled` and the Job retries | Catches hangs within minutes, whatever the run's total length; releases pins and the slot by itself | The progress signal must cover every phase, including bounded lock waits; one more setting |
 
 **Choice:** (c) — the run cancels itself after `backup.stall_timeout` (30 minutes) without
@@ -2110,7 +2110,7 @@ progress; the Job has no `activeDeadlineSeconds` by default.
 be short and broken. Progress distinguishes them. The lease already expires when a process dies;
 tying its renewal to progress extends the same mechanism to a process that lives but does
 nothing, and the fencing of R-BAK-010 already handles a process that wakes up after its lease
-ended. `TroveBackupRunningLong` stays as the alert for a run that progresses too slowly. The
+ended. `QuaderBackupRunningLong` stays as the alert for a run that progresses too slowly. The
 development agent would revisit this if a phase is found whose work cannot report progress
 within `stall_timeout`, for example a single server-side copy that takes longer.
 
@@ -2124,9 +2124,9 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Implement `trove backup` in M0 | The create and restore paths are built with the foundation | The command works from the first release | The backup needs the table export classes and the revision registry of later milestones (M5); building it now would freeze formats that are not designed yet |
-| (b) Leave the command out until M5 | `trove backup` is an unknown command | Nothing half-built | Scripts and the chart cannot reference the name until M5 |
-| (c) Reserve the name; every `trove backup` subcommand returns "not implemented yet" and exits non-zero (chosen) | `cmd/trove/main.go` dispatches `backup` to `errNotImplemented` | The name and the exit code are fixed now; the chart and documentation can refer to it | A command that exists and does nothing |
+| (a) Implement `quader backup` in M0 | The create and restore paths are built with the foundation | The command works from the first release | The backup needs the table export classes and the revision registry of later milestones (M5); building it now would freeze formats that are not designed yet |
+| (b) Leave the command out until M5 | `quader backup` is an unknown command | Nothing half-built | Scripts and the chart cannot reference the name until M5 |
+| (c) Reserve the name; every `quader backup` subcommand returns "not implemented yet" and exits non-zero (chosen) | `cmd/quader/main.go` dispatches `backup` to `errNotImplemented` | The name and the exit code are fixed now; the chart and documentation can refer to it | A command that exists and does nothing |
 
 **Choice:** (c).
 
@@ -2159,7 +2159,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) One package `internal/backup` | Format, ports, runner, registries and commands in one package | No import questions | Eight work packages edit one directory; the format, which the sweep, verify, restore and the create pipeline all read, has no seam of its own |
-| (b) `format`, `target`, `fixup` and the runner as packages, the journal as `internal/journal` (chosen) | `internal/backup/format` (ID, layout, marker, manifest, blob list and its merge), `internal/backup/target` (the port of the S3 target and an in-memory fake in `targettest`), `internal/backup/fixup` (the restore's registry), `internal/backup` (exit codes, run states, run store, lease handle, ports, operation interfaces, metrics) and `internal/journal` | Each work package owns files in directories no other package edits; the shared shapes are fixed once and have tests; the journal is used by `trove admin post-restore` without the backup | More packages than one |
+| (b) `format`, `target`, `fixup` and the runner as packages, the journal as `internal/journal` (chosen) | `internal/backup/format` (ID, layout, marker, manifest, blob list and its merge), `internal/backup/target` (the port of the S3 target and an in-memory fake in `targettest`), `internal/backup/fixup` (the restore's registry), `internal/backup` (exit codes, run states, run store, lease handle, ports, operation interfaces, metrics) and `internal/journal` | Each work package owns files in directories no other package edits; the shared shapes are fixed once and have tests; the journal is used by `quader admin post-restore` without the backup | More packages than one |
 
 **Choice:** (b).
 
@@ -2174,7 +2174,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `internal/backup/target` imports the AWS SDK | The adapter sits with the port | One place | R-ARCH-002 allows the SDK in `internal/blob/s3` only, and the architecture test would fail |
-| (b) The port `target.Store` is a leaf package; the adapter is a file of `internal/blob/s3` that implements it (chosen) | `internal/backup/target` imports only the standard library, so `internal/blob/s3` (infrastructure) may import it; the adapter is a client for a second bucket with its own credentials, SSE and part sizes; `cmd/trove` joins it with the backup code | R-ARCH-002 holds; the target client is built by the package that already knows the SDK, its retry settings and its credential chain (R-STOR-031, R-STOR-033) | The adapter's work package edits a package of the storage layer; the port may not import a domain package |
+| (b) The port `target.Store` is a leaf package; the adapter is a file of `internal/blob/s3` that implements it (chosen) | `internal/backup/target` imports only the standard library, so `internal/blob/s3` (infrastructure) may import it; the adapter is a client for a second bucket with its own credentials, SSE and part sizes; `cmd/quader` joins it with the backup code | R-ARCH-002 holds; the target client is built by the package that already knows the SDK, its retry settings and its credential chain (R-STOR-031, R-STOR-033) | The adapter's work package edits a package of the storage layer; the port may not import a domain package |
 
 **Choice:** (b).
 
@@ -2189,7 +2189,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A function in the restore that runs every fix-up | One file lists jobs, keyspace, revisions, usage counters, mirror state | Simple | Every later page that adds derived state edits the restore; the npm and NuGet remote-cache purge, the mirror state and the storage recount belong to other pages' owners |
-| (b) A registry with an order and a name, filled by the owner of the state (chosen) | `fixup.Register` for step 6 (one transaction), `fixup.RegisterPurger` for the remote caches of step 7; the restore runs what is registered in order | The same pattern as the table registry (R-BAK-004) and the revision registry (R-ARCH-009); `trove admin post-restore` runs the same fix-ups; a format adds its purger in a file of its own | A registry is package-level state that is frozen at start-up (R-ARCH-032) |
+| (b) A registry with an order and a name, filled by the owner of the state (chosen) | `fixup.Register` for step 6 (one transaction), `fixup.RegisterPurger` for the remote caches of step 7; the restore runs what is registered in order | The same pattern as the table registry (R-BAK-004) and the revision registry (R-ARCH-009); `quader admin post-restore` runs the same fix-ups; a format adds its purger in a file of its own | A registry is package-level state that is frozen at start-up (R-ARCH-032) |
 
 **Choice:** (b).
 
@@ -2221,11 +2221,11 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) Load as `CommandAdmin` | The admin command set | No new command | The bucket of the target would be optional, so a misconfigured Job would fail later and with exit 1, which the pod failure policy retries |
 | (b) A command of its own, `config.CommandBackup`; `backup.target.bucket` is required for it; any configuration error exits 2 naming every key (chosen) | Needs the database, the blob store and the `backup` keys; no role, no Valkey, no key ring check except where the restore opens it | R-BAK-011's "a violation exits 2 and names the key" and R-BAK-012's `FailJob` on 2 hold from the first line of every command | One more command value |
 
-**Choice:** (b). `internal/backup/exit.go` maps every error of the lane to one of the exit codes of R-BAK-013 (`ExitCode`) and one failure code (`ErrorCode`) for `backup_run.error` and `system.backup.failed`; a command returns the error and `cmd/trove` exits with the code.
+**Choice:** (b). `internal/backup/exit.go` maps every error of the lane to one of the exit codes of R-BAK-013 (`ExitCode`) and one failure code (`ErrorCode`) for `backup_run.error` and `system.backup.failed`; a command returns the error and `cmd/quader` exits with the code.
 
 **Rationale:** A mapping in one place is the only way eight work packages agree on what "temporary" means. The development agent would revisit this when a code needs a distinction the table of R-BAK-013 does not make.
 
-**Applied:** R-BAK-011, R-BAK-013; `internal/config/backup.go` (`ValidateFor`, `validateBackupCoupling`), `cmd/trove/backup.go`.
+**Applied:** R-BAK-011, R-BAK-013; `internal/config/backup.go` (`ValidateFor`, `validateBackupCoupling`), `cmd/quader/backup.go`.
 
 ### Q-BAK-19 · The run store, the lease handle and the slot rule are shared contracts, built once
 
@@ -2260,7 +2260,7 @@ A conditional create sends `If-None-Match: *` (PutObject, CompleteMultipartUploa
 **Applied:** R-BAK-002, R-BAK-015, R-BAK-026; `internal/blob/s3/target*.go`, `internal/backup/target/targettest/conformance.go`, `test/integration/backup/target_adapter_test.go`, `docs/developer/backup.md`, `docs/security/backup-and-restore.md`.
 
 ### Q-BAK-31 · The restore uses one database connection
-### Q-BAK-28 · `trove backup list --json` is flat: `schemaStep` and `keyIds` stand at the top of each entry
+### Q-BAK-28 · `quader backup list --json` is flat: `schemaStep` and `keyIds` stand at the top of each entry
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -2298,7 +2298,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 ### Q-BAK-33 · A restore writes nothing to the target; a missing schema fails check 4
 | (a) Give verify phases | Map checking onto `copying` and `finalizing` | The UI shows movement | The states are the phases of a create run (R-BAK-009); a verify showing `copying` would make a reader think blobs move |
-| (b) One state, progress by lease renewal (chosen) | The row is `operation = 'verify'`, state `starting` until it ends `completed` (also with findings) or `failed`; its `result` is the report (`verified`, `findings`), so `trove_backup_last_verify_findings` is the number of findings | No new states; the index ignores verify | A long deep verify reads "starting" in the run list |
+| (b) One state, progress by lease renewal (chosen) | The row is `operation = 'verify'`, state `starting` until it ends `completed` (also with findings) or `failed`; its `result` is the report (`verified`, `findings`), so `quader_backup_last_verify_findings` is the number of findings | No new states; the index ignores verify | A long deep verify reads "starting" in the run list |
 
 **Choice:** (b), and for the cases the requirement text leaves open:
 
@@ -2327,7 +2327,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) Trust the lists | Merge the lists as they are and delete what they lack | One download per list | A list that is truncated at a line boundary or replaced would delete live pool objects of a retained backup; the damage is found by the next restore |
 | (b) Prove the lists first (chosen) | Before the first delete request every retained backup's list is downloaded and hashed against `blobs.sha256`, and the entry count at the end of the merge must equal `blobs.referenced` | Silent truncation cannot reach the delete request; the cost is a second read of lists that are about 40 bytes per blob compressed | Two reads of every list per sweep |
 
-**Choice:** (b). A list that fails the proof skips the sweep with a warning naming the backup, and the run ends `completed_with_warnings`: the backup the run wrote is complete and valid, and `trove backup verify` names the damaged list. A sweep that a foreign or out-of-order pool key stopped is also a warning, drops the batch not yet sent, and leaves `poolSweptAt` unset so that the next run sweeps again. A completed sweep records `poolSweptAt` in the result; "at least every `sweep_interval`" counts from the newest value among the last 50 successful create and delete runs (`retention.RunSweepClock`), and a pool that was never swept is swept. The sweep runs on an empty keep set (after `delete --allow-last`), which empties the pool: that is what the operator asked for.
+**Choice:** (b). A list that fails the proof skips the sweep with a warning naming the backup, and the run ends `completed_with_warnings`: the backup the run wrote is complete and valid, and `quader backup verify` names the damaged list. A sweep that a foreign or out-of-order pool key stopped is also a warning, drops the batch not yet sent, and leaves `poolSweptAt` unset so that the next run sweeps again. A completed sweep records `poolSweptAt` in the result; "at least every `sweep_interval`" counts from the newest value among the last 50 successful create and delete runs (`retention.RunSweepClock`), and a pool that was never swept is swept. The sweep runs on an empty keep set (after `delete --allow-last`), which empties the pool: that is what the operator asked for.
 
 **Rationale:** Retention deletes only what a verified manifest-and-list pair proves unreferenced, which is the property R-BAK-017 states. The development agent would revisit this if the lists grow so large that the second read matters; the manifest could then carry a per-list digest of the sorted entries to check in the same pass.
 
@@ -2340,11 +2340,11 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Concrete clients in the restore package | The restore imports the journal reader and the S3 client | Fewer types | The AWS SDK may be imported in `internal/blob/s3` only (R-ARCH-002), and the replay work package would have to edit the restore |
-| (b) `Session`, `BlobStore` and a `Journal` factory in `internal/backup/restore`; the verification of step 8 merges the live blob rows (digest order) with the blob list without the damaged digests (chosen) | cmd/trove joins the implementations; tests use fakes | Every phase is unit-tested without a database; the journal work package fills one function; the verification needs no temporary table and memory stays bounded | A port per collaborator |
+| (b) `Session`, `BlobStore` and a `Journal` factory in `internal/backup/restore`; the verification of step 8 merges the live blob rows (digest order) with the blob list without the damaged digests (chosen) | cmd/quader joins the implementations; tests use fakes | Every phase is unit-tested without a database; the journal work package fills one function; the verification needs no temporary table and memory stays bounded | A port per collaborator |
 
-**Choice:** (b). `restoreJournal` in `cmd/trove/backup_restore.go` is the one place the journal work package replaces.
+**Choice:** (b). `restoreJournal` in `cmd/quader/backup_restore.go` is the one place the journal work package replaces.
 **Rationale:** The checks and the resumption rules are the part of a restore that must not regress, and they are testable only against fakes. Revisit when a second implementation of a port appears.
-**Applied:** R-BAK-020 check 8, R-BAK-021 step 8, R-BAK-024; `internal/backup/restore`, `cmd/trove/backup_restore.go`.
+**Applied:** R-BAK-020 check 8, R-BAK-021 step 8, R-BAK-024; `internal/backup/restore`, `cmd/quader/backup_restore.go`.
 | (a) The screen's own faster interval while a run is active | 2 to 5 s polling of the summary and the active run | The blob count moves visibly | A second interval and pause rule beside the status screen's (R-UI-038); a running create changes its progress at the heartbeat, which is seconds apart anyway |
 | (b) The status screen's interval and pause control; the summary and the active run are fetched together, and the first page of the list is reloaded unless the user has loaded further pages (chosen) | One `load` returns the summary and, when `active` is set, `GET /system/backups/{runId}` for its `progress`; "Refresh now" does the same | One rule for every status screen (R-UI-048 names it); the status and the progress of the active run never disagree; a list the user has paged into is not thrown away | A run is up to one interval behind; a user who wants it faster presses "Refresh now" |
 | (c) Server-sent events | The API pushes progress | No polling | A streaming endpoint for a screen an administrator opens rarely; every replica would need the run's progress (R-API-050 reads PostgreSQL only) |
@@ -2364,7 +2364,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) One badge per state with the state's colour: green completed, red every ended state that is not completed | `interrupted` red | Two colours | A drain would look like a failure, against R-BAK-012 and R-UI-048 |
 | (b) `completed` green; `completed_with_warnings` and a run whose lease has passed in the warning colour; `failed` and `abandoned` red; the five active states blue; `interrupted` neutral, with its sentence (chosen) | Icon and word on every badge; a lease-expired active run reads "Stopped" with "stopped without finishing; the next run marks it abandoned" | Follows the rule "green only for positive status" and the summary's failure rule (`interrupted` never counts; an expired lease does); the colour only reinforces the word | Seven distinct looks |
 
-**Choice:** (b). The status uses the standard badge of the design language; the failure badge of "Last failure" repeats the summary's rule, so the screen shows a failure only where `TroveBackupFailed` would fire. The text of a stored `error.code` comes from the table of `web/src/app/core/http/problem-messages-backup.ts`, which holds one sentence for every failure code of `internal/backup/exit.go` (R-UI-042); a code the table does not know is shown as the code alone.
+**Choice:** (b). The status uses the standard badge of the design language; the failure badge of "Last failure" repeats the summary's rule, so the screen shows a failure only where `QuaderBackupFailed` would fire. The text of a stored `error.code` comes from the table of `web/src/app/core/http/problem-messages-backup.ts`, which holds one sentence for every failure code of `internal/backup/exit.go` (R-UI-042); a code the table does not know is shown as the code alone.
 
 **Rationale:** The state of a run is the one fact an administrator reads first, and a false red trains people to ignore the colour. The development agent would revisit this when a state is added to R-BAK-009.
 
@@ -2391,14 +2391,14 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Reuse `storage.s3.credentials` and let the chart mount different files at the same paths | The backup pod gets other bytes under the paths of the runtime credential | No new key | The shared `trove.yaml` would lie about which credential a pod holds; the path names the runtime Secret in every pod |
-| (b) `backup.source.separate_credentials` and `backup.source.credentials` (the keys of `storage.s3.credentials`), used by `trove backup create` for the blob client (chosen) | The chart sets both when the blob credentials are static, with files of `secrets.backupSource` | The config says what the pod reads with; no change for a workload identity, where `separate_credentials` stays `false` | A key pair more; `separate_credentials` with `static` and a missing file exits 2 naming the key |
+| (a) Reuse `storage.s3.credentials` and let the chart mount different files at the same paths | The backup pod gets other bytes under the paths of the runtime credential | No new key | The shared `quader.yaml` would lie about which credential a pod holds; the path names the runtime Secret in every pod |
+| (b) `backup.source.separate_credentials` and `backup.source.credentials` (the keys of `storage.s3.credentials`), used by `quader backup create` for the blob client (chosen) | The chart sets both when the blob credentials are static, with files of `secrets.backupSource` | The config says what the pod reads with; no change for a workload identity, where `separate_credentials` stays `false` | A key pair more; `separate_credentials` with `static` and a missing file exits 2 naming the key |
 
 **Choice:** (b). Only `create` reads the source blobs; the restore writes the bucket and keeps `storage.s3.credentials`.
 
 **Rationale:** R-BAK-015 gives the backup no right to write or delete in the blob bucket. The development agent would revisit this if `verify` or `delete` need to read the source bucket.
 
-**Applied:** R-BAK-011, R-BAK-015; `internal/config/backup.go`, `cmd/trove/backup_create.go`.
+**Applied:** R-BAK-011, R-BAK-015; `internal/config/backup.go`, `cmd/quader/backup_create.go`.
 
 ### Q-BAK-41 · The summary finds the run that last listed the target among the newest runs of each operation
 
@@ -2429,7 +2429,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Rationale:** `backup.VerifyReport` is the object the verify package stores, and its `findings` array is the count the alert needs. The development agent would revisit this when the verify package records an explicit findings count or distinguishes an aborted verify from a clean one.
 
-**Applied:** R-BAK-014 (`trove_backup_last_verify_*`); `internal/backup/gauges/collector.go`.
+**Applied:** R-BAK-014 (`quader_backup_last_verify_*`); `internal/backup/gauges/collector.go`.
 
 ### Q-BAK-43 · The restore's item store publishes nothing, refuses blob and job calls, and leaves the vulnerability hook out
 
@@ -2453,7 +2453,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) The `Snapshotter` implemented in `internal/meta/postgres` as the cut said | The pgx file implements the port of `internal/backup` | One file | `internal/meta/postgres` is infrastructure and cannot import the domain package that defines the port, its exit codes and `format.BlobIterator` |
 | (b) `postgres.BackupSnapshot` with plain types in `internal/meta/postgres/backup_snapshot.go`; `backup.PGSnapshotter` adapts it and maps its errors to the exit codes (chosen) | The pgx half knows connections, locks, `COPY` and the catalog; the adapter in `internal/backup` (like `PGStore`) gives it the port's shapes | Layering holds; the snapshot protocol is in one file | Two files for one port |
 
-**Choice:** (b). The session settings of R-BAK-005 step 2 are not issued as `SET` statements: the architecture test reserves session-level `SET` for the migration runner (R-ARCH-019), so `statement_timeout = 0`, `idle_in_transaction_session_timeout = 0` and `lock_timeout = backup.database.lock_timeout` are startup parameters of the snapshot and export connections, and the wait for the migration lock polls `pg_try_advisory_lock_shared(3, 0)` for at most `backup.database.migration_wait` instead of one `pg_advisory_lock_shared` under a 15-minute `lock_timeout` (the same effect, and the wait can name the holder). For the role `backup`, `postgres.Open` opens one pooled connection of class `backup` on the session host (it serves the run row, the heartbeat and the pins) instead of the request and control pools, so a run holds `2 + backup.database.parallel` connections, all named `trove:<pod>:backup`; export connections open on first use. A server in recovery is refused before the pool opens, by a probe with any target session attribute (exit `2`, `pg_is_in_recovery`).
+**Choice:** (b). The session settings of R-BAK-005 step 2 are not issued as `SET` statements: the architecture test reserves session-level `SET` for the migration runner (R-ARCH-019), so `statement_timeout = 0`, `idle_in_transaction_session_timeout = 0` and `lock_timeout = backup.database.lock_timeout` are startup parameters of the snapshot and export connections, and the wait for the migration lock polls `pg_try_advisory_lock_shared(3, 0)` for at most `backup.database.migration_wait` instead of one `pg_advisory_lock_shared` under a 15-minute `lock_timeout` (the same effect, and the wait can name the holder). For the role `backup`, `postgres.Open` opens one pooled connection of class `backup` on the session host (it serves the run row, the heartbeat and the pins) instead of the request and control pools, so a run holds `2 + backup.database.parallel` connections, all named `quader:<pod>:backup`; export connections open on first use. A server in recovery is refused before the pool opens, by a probe with any target session attribute (exit `2`, `pg_is_in_recovery`).
 
 **Rationale:** The criterion "never more than 4 connections of the class `backup`" holds only if the pod's own pool is one of them. The development agent would revisit this if a run needs a second control connection, for example to let the heartbeat bypass a long pin insert.
 
@@ -2514,13 +2514,13 @@ R-BAK-010 let a starting pod treat a run with a heartbeat younger than 3 × `hea
 |---|---|---|---|
 | (a) A shorter stale threshold | 3 × heartbeat becomes 1 × or a fixed few seconds | No new input | A run that is merely slow to heartbeat (a database stall, a GC pause) is declared dead and a second Job overlaps it; the fence still protects the manifest, but the overlap is the case exit `3` exists for |
 | (b) The pod failure policy retries exit `3` | `3` leaves the `FailJob` list | No new input | Kubernetes' backoff starts at 10 s and is not configurable per Job, so the retry still meets a young heartbeat; and an independent overlapping Job would retry as well instead of failing at once |
-| (c) The run row records its Kubernetes Job; the same Job waits, any other pod gets exit `3` (chosen) | `backup_run.job_name`, from `TROVE_JOB_NAME` (the pod's `job-name` label through the downward API) | A Job runs one pod at a time, so a run of the same Job whose pod is not the starting one is dead by construction; an overlapping independent Job or a manual run has another or no identity and still gets exit `3` | A column and an environment variable of the chart; a Job with parallelism above 1 would break the premise (the chart renders 1) |
+| (c) The run row records its Kubernetes Job; the same Job waits, any other pod gets exit `3` (chosen) | `backup_run.job_name`, from `QUADER_JOB_NAME` (the pod's `job-name` label through the downward API) | A Job runs one pod at a time, so a run of the same Job whose pod is not the starting one is dead by construction; an overlapping independent Job or a manual run has another or no identity and still gets exit `3` | A column and an environment variable of the chart; a Job with parallelism above 1 would break the premise (the chart renders 1) |
 
 **Choice:** (c). The starting pod of the same Job polls every `heartbeat_interval` until the dead run's lease has passed, for at most `lease_duration` + `heartbeat_interval`, then inserts its row, which abandons the old run and deletes its pins. If the lease does not pass in that time (a run that keeps heartbeating, which a single pod of the Job cannot do), the command exits `3`. The fencing of R-BAK-010 stays the safety net should the old process still run.
 
 **Rationale:** The Job identity is the one fact that tells a retry from an overlap, and Kubernetes guarantees the premise. The wait for the lease is kept (instead of an immediate takeover) so that nothing changes for the fencing proof: the old run's hold ends by its lease as before. The development agent would revisit this if the Job is ever rendered with parallelism above 1.
 
-**Applied:** R-BAK-010 (text and acceptance criterion); migration `00049_backup_run_job.sql`, `queries/backup.sql`, `internal/backup/slot.go`, `internal/backup/create`, `cmd/trove/backup_create.go`; chart `templates/_backup.tpl` (`TROVE_JOB_NAME`), `test/chart/backup_test.go`.
+**Applied:** R-BAK-010 (text and acceptance criterion); migration `00049_backup_run_job.sql`, `queries/backup.sql`, `internal/backup/slot.go`, `internal/backup/create`, `cmd/quader/backup_create.go`; chart `templates/_backup.tpl` (`QUADER_JOB_NAME`), `test/chart/backup_test.go`.
 
 ### Q-BAK-50 · The backup login writes its audit events through a function, not through INSERT on the audit trail
 
@@ -2630,7 +2630,7 @@ R-BAK-021 and R-HA-060 name the drill: "restore the newest backup of the local p
 |---|---|---|---|
 | (a) A second kind cluster | A cluster of its own for the restored installation | Nothing is shared with the source | Two clusters on one runner; the target and the blob store would have to be reachable across the Docker network; the operators, the PKI and the images are installed twice |
 | (b) A second namespace of the dev cluster, with a database, a Valkey and a bucket of its own (chosen) | `deploy/dev/restore-ns.sh`: CloudNativePG cluster, Valkey with Sentinels, an empty bucket in the dev SeaweedFS, a copy of the dev CA, of the S3 login and of the key ring | The operators and the PKI exist once; the restore Job, the migration Job and the roles are the chart's, installed with the sequence of R-BAK-021; about 25 s to set up | The S3 login and the key ring are copies of the source's (the key ring has to be: R-BAK-020 check 3); the object store is shared, so credential separation is not exercised (H-566) |
-| (c) The same namespace with a second release | `helm install trove2` beside `trove` | Least setup | Names collide (`trove-db`, `trove-tls`), the NetworkPolicies of the source admit the new pods, and "empty database" would be a second database of the same cluster |
+| (c) The same namespace with a second release | `helm install quader2` beside `quader` | Least setup | Names collide (`quader-db`, `quader-tls`), the NetworkPolicies of the source admit the new pods, and "empty database" would be a second database of the same cluster |
 
 **Choice:** (b). The restored installation has one replica of each role, no edge and no identity provider; the test reaches it through port-forwards to its Services and a client pod runs `npm view` against its Service name.
 
@@ -2701,20 +2701,20 @@ answers `subject_token_predates_restore` (R-CI-018, R-CI-029). The integration t
 cluster they need the issuer double of `deploy/dev/oidcstub.yaml`, which the sets `full`, `access`, `access-long`, `ci` and `ci-ha`
 start and `backup` does not. The second installation is configured by `values-restore.yaml`, whose base URL is
 `https://localhost:8080` whatever port the source's edge has (8102 in the nightly leg `e2e-backup`), and which has no copy of the dev
-CA at the path the source mounted it then (`/var/run/secrets/trove-dev/keycloak-ca.crt`, named by the issuer's `caBundleRef`; since R-HA-043 both
-installations mount the dev CA at `/etc/trove/ca/ca.crt` through `trustedCA`): a restored
+CA at the path the source mounted it then (`/var/run/secrets/quader-dev/keycloak-ca.crt`, named by the issuer's `caBundleRef`; since R-HA-043 both
+installations mount the dev CA at `/etc/quader/ca/ca.crt` through `trustedCA`): a restored
 issuer could neither accept the source's audience nor fetch its keys.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Stay at the integration tier | As today | Nothing to build | The restore Job's replay and the restored installation's exchange never run together |
 | (b) A test of its own in the set `backup` | Its own backup and restore | Isolated | One more cycle of about 4 minutes |
-| (c) In the cycle of `TestBackupJournal` (chosen) | The set starts the double (`TROVE_E2E_OIDCSTUB=1`). Before the snapshot: an issuer of the double with single use and a clock skew of 5 s, a read policy on `bak-npm`, four mappings of the system tier: M0 (priority 5, project R), M1 (10) and M2 (20, read and deploy) for project P, M3 (30, project Q); an exchange for P at the source matches M1. After the snapshot: M1 disabled, a token for R minted. After the restore: the replay lists M1 applied and M2 and M3 suspended, M0 stays enabled; the token minted before the restore finished answers `400 subject_token_predates_restore`; a token minted after `restored_at` plus the skew exchanges through M0, and its second use answers `subject_token_replayed`; a fresh token for P answers `no_matching_mapping` | One cycle; the setup is a few requests | `TestBackupJournal` grows by about a minute |
+| (c) In the cycle of `TestBackupJournal` (chosen) | The set starts the double (`QUADER_E2E_OIDCSTUB=1`). Before the snapshot: an issuer of the double with single use and a clock skew of 5 s, a read policy on `bak-npm`, four mappings of the system tier: M0 (priority 5, project R), M1 (10) and M2 (20, read and deploy) for project P, M3 (30, project Q); an exchange for P at the source matches M1. After the snapshot: M1 disabled, a token for R minted. After the restore: the replay lists M1 applied and M2 and M3 suspended, M0 stays enabled; the token minted before the restore finished answers `400 subject_token_predates_restore`; a token minted after `restored_at` plus the skew exchanges through M0, and its second use answers `subject_token_replayed`; a fresh token for P answers `no_matching_mapping` | One cycle; the setup is a few requests | `TestBackupJournal` grows by about a minute |
 | (d) In the set `ci-ha` | The CI fixture is there | The double and the reference setup exist | The set has no backup harness and runs the scatter profile on a hosted runner; the second installation would join it |
 
 **Choice:** (c). The second installation is configured like its source, as R-BAK-021 assumes: `restore-ns.sh` sets
 `config.server.base_url` from the edge port of the cluster, as `up.sh` does, and `values-restore.yaml` mounts the dev CA from the
-namespace's `trove-tls` at the source's path and lists it in `proxy.outbound.tls.ca_files`. The Jobs check the configured CA files at start, so
+namespace's `quader-tls` at the source's path and lists it in `proxy.outbound.tls.ca_files`. The Jobs check the configured CA files at start, so
 `values-restore.yaml` (and `values-dev.yaml`, where the backup runs) sets `backup.extraVolumes` and `restore.extraVolumes` with the mounts;
 the global `extraVolumes` stay the Deployments' (Q-HA-149 holds). The vulnerability drill needs the same
 trust for its first sync ([vulnerability-scanning.md](vulnerability-scanning.md) Q-VULN-127).
@@ -2729,7 +2729,7 @@ would revisit it if `TestBackupJournal` passes 15 minutes on the dev cluster: th
 
 ### H-46 · Backup integrity is not authenticated
 
-Component: the target and `trove backup restore` (R-BAK-003, R-BAK-021). Subject: every principal
+Component: the target and `quader backup restore` (R-BAK-003, R-BAK-021). Subject: every principal
 the restored database knows. A principal with write access to the target can replace a manifest,
 table files and blob lists with a consistent forgery; the checksums are inside the manifest and
 prove nothing about who wrote it. A restore of such a backup loads, for example, an extra `admin`
@@ -2765,12 +2765,12 @@ only those identities.
 
 ### H-558 · A server-side copy into the blob store is checked by size, not by content
 
-Component: `trove backup restore` step 3 (R-BAK-021, Q-STOR-164). Subject: the content of every restored blob. A pool object that was
+Component: `quader backup restore` step 3 (R-BAK-021, Q-STOR-164). Subject: the content of every restored blob. A pool object that was
 altered in place keeps its key, and when the blob store copies it server-side the restore confirms only that an object of the listed
 size exists at the new key; the SHA-256 of the bytes is compared when the restore streams, not when the store copies. The tampered
-bytes would be served until the blob is checked (R-STOR-027) or `trove backup verify --deep` hashes the pool. Live in the MVP for
+bytes would be served until the blob is checked (R-STOR-027) or `quader backup verify --deep` hashes the pool. Live in the MVP for
 every restore that finds the server-side copy available, whenever someone can write to the pool (H-46); the clients' own digest checks
-(npm integrity, NuGet package hash) catch most of it. Mitigation: Object Lock on the target, and `trove backup verify --deep` before
+(npm integrity, NuGet package hash) catch most of it. Mitigation: Object Lock on the target, and `quader backup verify --deep` before
 a restore whose source is not trusted.
 
 ### H-556 · Adopting a target and writing its marker are not atomic on a store without conditional writes
@@ -2784,15 +2784,15 @@ Component: the revocation journal in the blob bucket (R-HA-054, R-BAK-024). Subj
 
 ### H-554 · A compromised backup pod can hold garbage collection
 
-Component: `backup_run` and the hold of R-BAK-007. Subject: storage reclamation. The backup role may update its own run row, so a process that keeps heartbeating with progress keeps a valid lease and, with `hold = 'all'`, keeps the collector from moving any blob to `deleting`. Live in the MVP whenever the backup credential is compromised; `TroveBackupGlobalHoldLong` fires after 30 minutes and `TroveBackupRunningLong` after half an expected interval. Storage grows until the run is deleted by hand. Mitigation: the alerts, and the stall detection of R-BAK-013, which ends a run that makes no progress but not one that fakes it.
+Component: `backup_run` and the hold of R-BAK-007. Subject: storage reclamation. The backup role may update its own run row, so a process that keeps heartbeating with progress keeps a valid lease and, with `hold = 'all'`, keeps the collector from moving any blob to `deleting`. Live in the MVP whenever the backup credential is compromised; `QuaderBackupGlobalHoldLong` fires after 30 minutes and `QuaderBackupRunningLong` after half an expected interval. Storage grows until the run is deleted by hand. Mitigation: the alerts, and the stall detection of R-BAK-013, which ends a run that makes no progress but not one that fakes it.
 
 ### H-555 · The run history is only as trustworthy as the backup role
 
-Component: `backup_run`, the API of R-API-050 and the alerts of R-BAK-014. Subject: the statement "the last backup succeeded". The summary, the overdue mark and `TroveBackupStale` are computed from rows that the backup role writes, so a compromised role or a process with write access to the table can record a success for a backup that was never written. Live in the MVP. The check that does not depend on the table is `trove backup list` and `trove backup verify --latest`, which read the target. Mitigation: restrict the grant to the two tables (R-BAK-015), and run `verify` regularly (scheduled verification is P1, Deferred).
+Component: `backup_run`, the API of R-API-050 and the alerts of R-BAK-014. Subject: the statement "the last backup succeeded". The summary, the overdue mark and `QuaderBackupStale` are computed from rows that the backup role writes, so a compromised role or a process with write access to the table can record a success for a backup that was never written. Live in the MVP. The check that does not depend on the table is `quader backup list` and `quader backup verify --latest`, which read the target. Mitigation: restrict the grant to the two tables (R-BAK-015), and run `verify` regularly (scheduled verification is P1, Deferred).
 
 ### H-557 · A replay writes no audit event per changed object
 
-Component: `trove admin post-restore` and the journal replay (R-HA-025 step 4, R-HA-054). Subject: the restored installation after a platform restore. Post-restore runs `trove admin storage verify` over every live blob and prints the count of referenced blobs whose objects are missing (Q-HA-213); a check that could not run is a line of the output, and the operator then runs the command before resuming deletions. A replay records its changes in its output lines and in one `system.restore.journal_replayed` event, not in one audit event per object (Q-AUTHZ-232), so the audit trail of a restored installation does not say which policy a replay suspended; the output of the run does. Entries naming `ownershipDomain` and the other settings that live in the configuration file are not replayed (R-AUTHZ-031). Live in the MVP in every platform restore. Mitigation: keep the output of the post-restore run, and read the suspended lines.
+Component: `quader admin post-restore` and the journal replay (R-HA-025 step 4, R-HA-054). Subject: the restored installation after a platform restore. Post-restore runs `quader admin storage verify` over every live blob and prints the count of referenced blobs whose objects are missing (Q-HA-213); a check that could not run is a line of the output, and the operator then runs the command before resuming deletions. A replay records its changes in its output lines and in one `system.restore.journal_replayed` event, not in one audit event per object (Q-AUTHZ-232), so the audit trail of a restored installation does not say which policy a replay suspended; the output of the run does. Entries naming `ownershipDomain` and the other settings that live in the configuration file are not replayed (R-AUTHZ-031). Live in the MVP in every platform restore. Mitigation: keep the output of the post-restore run, and read the suspended lines.
 
 ### H-566 · The drill uses one S3 login for the blob store, the backup target and the restore
 

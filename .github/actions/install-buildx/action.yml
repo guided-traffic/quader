@@ -69,7 +69,7 @@ runs:
         DIGEST: ${{ steps.probe.outputs.digest }}
         # Read by tools/github-download.sh, which sends it to github.com only.
         GITHUB_TOKEN: ${{ github.token }}
-        TROVE_DOWNLOAD_BUDGET: ${{ inputs.download-budget }}
+        QUADER_DOWNLOAD_BUDGET: ${{ inputs.download-budget }}
       run: |
         set -euo pipefail
         dir=".bin/buildx-${WANT}"

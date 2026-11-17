@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // bastionBaseURLs reads the base URL a Bastion registration reported at its most recent

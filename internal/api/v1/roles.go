@@ -3,10 +3,10 @@ package v1
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
 )
 
-// The role vocabulary of the contract (Q-ARCH-341, which supersedes Q-API-194): the registry, trove_build_info{role},
+// The role vocabulary of the contract (Q-ARCH-341, which supersedes Q-API-194): the registry, quader_build_info{role},
 // the logs and the API name the role a replica runs in with the same values: api, packages, worker, web, all
 // (Q-OPS-161). The role enums of the contract list them as they are; no class stands in for a role.
 

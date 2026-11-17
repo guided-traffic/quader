@@ -1,12 +1,12 @@
 //go:build compat
 
-// Package compat_test checks trove's compatibility promises against the latest release: the OpenAPI
+// Package compat_test checks quader's compatibility promises against the latest release: the OpenAPI
 // document with the pinned oasdiff (R-ARCH-025) and the migration files (R-ARCH-026). Both read the git
 // history and the release tags, so the checkout needs them: the compat job of release.yml uses
 // fetch-depth 0 and fetch-tags.
 //
 // Run it with `make compat-check`, or with `go test -tags compat ./test/compat/...` when oasdiff at the
-// pin of tools/versions.env is on PATH or named by TROVE_OASDIFF.
+// pin of tools/versions.env is on PATH or named by QUADER_OASDIFF.
 package compat_test
 
 import (
@@ -81,16 +81,16 @@ func baselineTag(t *testing.T, root string) string {
 	return ""
 }
 
-// oasdiffBinary returns the checker: TROVE_OASDIFF (set by make compat-check), or oasdiff on PATH. It checks
+// oasdiffBinary returns the checker: QUADER_OASDIFF (set by make compat-check), or oasdiff on PATH. It checks
 // the module version of the binary that runs, not the pin alone: a module install reports "main" from
 // `oasdiff --version`, so the version comes from `go version -m`.
 func oasdiffBinary(t *testing.T, root string) string {
 	t.Helper()
-	bin := os.Getenv("TROVE_OASDIFF")
+	bin := os.Getenv("QUADER_OASDIFF")
 	if bin == "" {
 		found, err := exec.LookPath("oasdiff")
 		if err != nil {
-			t.Fatal("oasdiff is neither in TROVE_OASDIFF nor on PATH: run make compat-check")
+			t.Fatal("oasdiff is neither in QUADER_OASDIFF nor on PATH: run make compat-check")
 		}
 		bin = found
 	}

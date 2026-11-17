@@ -2,7 +2,7 @@
 
 Status: specification — not implemented
 
-This page specifies trove's repository model and the management API around it: the configuration
+This page specifies Quader's repository model and the management API around it: the configuration
 document of a repository, keys and addresses, validation, create, read, update, list and delete. It
 specifies how virtual repositories resolve requests, including protection against dependency
 confusion through pin rules, namespace claims and a shadowing check on first publishes. And it
@@ -54,7 +54,7 @@ pulled forward by the mirror mode, Q-REPO-143), BEYOND-028 of
 | Effective member list | A virtual repository's members after nested virtual repositories are expanded and duplicates removed (R-REPO-018). |
 | Cache entry | What a remote repository stored for one canonical path and variant: an artifact, which is also an item of the repository ([storage.md](storage.md)), or a metadata document. |
 | Fresh, expired, stale | A metadata entry is fresh until its expiry, expired afterwards; an expired entry served because the upstream was not or could not be asked is stale. Artifacts never expire. |
-| Negative entry | A remembered upstream 404 or 410 for one canonical path and variant of a remote repository: a key in Valkey with a bounded copy in each replica's memory (R-REPO-028). It can make trove answer 404 and nothing else. |
+| Negative entry | A remembered upstream 404 or 410 for one canonical path and variant of a remote repository: a key in Valkey with a bounded copy in each replica's memory (R-REPO-028). It can make Quader answer 404 and nothing else. |
 | Flight | The fetch of one cache entry from the upstream. Concurrent requests for the same (repository, canonical path, variant) share one flight, within a replica and across replicas (R-REPO-026). The replica that fetches is the flight's holder; requests that wait for it are followers (same replica) or waiters (other replicas). |
 | Cache-fill check | The check that guards contacting the upstream: `read` plus the action named by the remote repository's `cacheFillAction` ([R-AUTHZ-008](authorization.md)). |
 | Upstream origin | Scheme, host and port of the remote repository's upstream URL ([RFC 6454](https://www.rfc-editor.org/rfc/rfc6454)). |
@@ -63,8 +63,8 @@ pulled forward by the mirror mode, Q-REPO-143), BEYOND-028 of
 Error codes on this page (`invalid_key`, `upstream_unavailable`, …) are carried in the error
 envelope of [api-and-ui.md](api-and-ui.md) on `/api/v1` endpoints and in the error body the format
 page prescribes on package-protocol endpoints. Denials (401, 403, 404 for hidden resources) follow
-[R-AUTHZ-016](authorization.md). Examples use `https://trove.example.com` as the public base URL
-and `$TROVE_TOKEN` as a trove token (INV-8).
+[R-AUTHZ-016](authorization.md). Examples use `https://quader.example.com` as the public base URL
+and `$QUADER_TOKEN` as a Quader token (INV-8).
 
 ## Repository model
 
@@ -121,8 +121,8 @@ Acceptance criteria:
 - `POST /api/v1/projects/web/repositories` with `{"key":"npm-local","class":"local","format":"npm"}` returns
   201; a following `PATCH` with `{"format":"nuget"}` returns 422 `validation_failed` with `immutable` in `errors[]` at `/format`.
 - A create with `"class":"federated"` returns 422 `validation_failed` with `unsupported_class` in `errors[]`.
-- `curl -X PUT --data-binary @notes.txt -H "Authorization: Bearer $TROVE_TOKEN"
-  https://trove.example.com/files/web/npm-local/notes.txt` returns 422 `not_a_package`.
+- `curl -X PUT --data-binary @notes.txt -H "Authorization: Bearer $QUADER_TOKEN"
+  https://quader.example.com/files/web/npm-local/notes.txt` returns 422 `not_a_package`.
 
 ### R-REPO-002 · Repository keys and client addresses
 Priority: **MVP** · Covers: REPO-004, REPO-005
@@ -146,7 +146,7 @@ Priority: **MVP** · Covers: REPO-004, REPO-005
 - Reserved names: `batch-create`, `batch-update`, `batch-get`, `batch-delete` and `quick-setup`
   are literal sub-paths of `/api/v1/projects/<projectKey>/repositories` (R-REPO-014, R-REPO-015) and MUST be rejected
   as keys in every project with 422 `reserved_name` ([api-and-ui.md](api-and-ui.md) R-API-004, Q-API-7). The
-  OpenAPI key schema lists them as `x-trove-reserved-names`.
+  OpenAPI key schema lists them as `x-quader-reserved-names`.
 - Outside its project a repository is named by its qualified name `<projectKey>/<repoKey>` (`web/npm-internal`): in
   instance-wide lists, in the selectors of instance contexts ([authorization.md](authorization.md) R-AUTHZ-004), in audit
   events, log fields, metric labels and job targets. Inside its project (virtual members, deploy targets, project
@@ -253,7 +253,7 @@ API:
 
 Acceptance criteria:
 
-- `curl -s https://trove.example.com/api/v1/formats` lists `npm` and `nuget`, each with the
+- `curl -s https://quader.example.com/api/v1/formats` lists `npm` and `nuget`, each with the
   classes `local`, `remote` and `virtual`.
 - Creating a repository with `"format":"cobol"` returns 422 `validation_failed` with `unknown_format` in `errors[]`.
 
@@ -305,10 +305,10 @@ read (R-REPO-010) and the object body of configuration as code
 Acceptance criteria:
 
 - With `disabled: true` on `npm-local`, `npm view @acme/util --registry
-  https://trove.example.com/api/npm/web/npm-local/` fails with `E404`, while the same command against
+  https://quader.example.com/api/npm/web/npm-local/` fails with `E404`, while the same command against
   the virtual repository `npm-all` still succeeds when another member holds the package.
 - With the artifacts of `npm-local` `internal`, an unauthenticated
-  `curl -i https://trove.example.com/api/npm/web/npm-local/@acme%2futil` returns 401 with a `Basic`
+  `curl -i https://quader.example.com/api/npm/web/npm-local/@acme%2futil` returns 401 with a `Basic`
   challenge; with them `public` (and project `web` `public`) it returns 200.
 - `GET /api/v1/projects/web/repositories/npm-local` by a caller without `repositories:read-config` contains no
   `adminNotes`.
@@ -361,7 +361,7 @@ Priority: **MVP** · Covers: REPO-011, RMT-034
 Acceptance criteria:
 
 - Remote `npm-remote` with `excludePatterns: ["@acme/*"]`: `npm view @acme/util --registry
-  https://trove.example.com/api/npm/web/npm-remote/` fails with `E404`, and a counting stub upstream
+  https://quader.example.com/api/npm/web/npm-remote/` fails with `E404`, and a counting stub upstream
   records no request.
 - Local `npm-local` with `includePatterns: ["@acme/*"]`: `npm publish` of `left-pad` fails with 403
   `not_admitted`; publishing `@acme/left-pad` succeeds.
@@ -555,8 +555,8 @@ Priority: **MVP** · Covers: REPO-053, RMT-002, API-052
 
 Acceptance criteria:
 
-- `curl -sS -X POST -H "Authorization: Bearer $TROVE_TOKEN" -H 'Content-Type: application/json'
-  --data @npm-remote.json https://trove.example.com/api/v1/projects/web/repositories` returns 201, and a `GET`
+- `curl -sS -X POST -H "Authorization: Bearer $QUADER_TOKEN" -H 'Content-Type: application/json'
+  --data @npm-remote.json https://quader.example.com/api/v1/projects/web/repositories` returns 201, and a `GET`
   of the `Location` shows `metadataTtlSeconds: 7200` and `notFoundTtlSeconds: 1800` from the npm
   format defaults.
 - Repeating the call returns 409 `already_exists`; the same call against `/api/v1/projects/mobile/repositories` returns
@@ -655,7 +655,7 @@ Acceptance criteria:
   next `GET` shows it and a new `ETag`.
 - Two `PATCH` calls with the same `If-Match` value: the first returns 200, the second 412 with
   `currentEtag` set to the first call's new `ETag`.
-- `curl -X PATCH -H "Authorization: Bearer $TROVE_TOKEN" -H 'Content-Type: application/merge-patch+json' -d '{"description":"npm proxy"}' https://trove.example.com/api/v1/projects/web/repositories/npm-remote`
+- `curl -X PATCH -H "Authorization: Bearer $QUADER_TOKEN" -H 'Content-Type: application/merge-patch+json' -d '{"description":"npm proxy"}' https://quader.example.com/api/v1/projects/web/repositories/npm-remote`
   without `If-Match` returns 428 `precondition_required` and the next `GET` shows the old
   `ETag`; the same call with `-H 'If-Match: *'` returns 200.
 - After a change of `remote.url`, the next `npm view lodash` through the repository causes an
@@ -697,8 +697,8 @@ Priority: **MVP** · Covers: REPO-007, REPO-057, REPO-058, API-060, API-061
 
 Acceptance criteria:
 
-- `curl -s -H "Authorization: Bearer $TROVE_TOKEN"
-  'https://trove.example.com/api/v1/repositories?class=remote&format=npm'` returns only npm remote
+- `curl -s -H "Authorization: Bearer $QUADER_TOKEN"
+  'https://quader.example.com/api/v1/repositories?class=remote&format=npm'` returns only npm remote
   repositories, each with an availability state.
 - An anonymous caller, with the artifacts of `web/npm-all` the only `public` ones, sees exactly `web/npm-all`.
 - `GET /api/v1/projects/web/repositories` lists the repositories of `web` only; with `npm-remote` in `web` and in
@@ -753,7 +753,7 @@ Acceptance criteria:
   replica resumes it.
 
 ### R-REPO-060 · Move a repository to another project
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Every repository belongs to exactly one project, and a move to another project stays possible and changes the repository's
 address ([Q-AUTHZ-206](authorization.md#q-authz-206--every-repository-belongs-to-exactly-one-project),
@@ -763,7 +763,7 @@ operation of its own ([Q-REPO-217](#q-repo-217--a-repository-moves-to-another-pr
 | | |
 |---|---|
 | Request | `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/move`, body `{"project": "<target project key>"}`; no `If-Match`: the path names the source |
-| Success | 200, `Location: /api/v1/projects/<target>/repositories/<repoKey>`, the new `ETag`, `Trove-Authz-Epoch`; body: the document as R-REPO-010 returns it at the new address |
+| Success | 200, `Location: /api/v1/projects/<target>/repositories/<repoKey>`, the new `ETag`, `Quader-Authz-Epoch`; body: the document as R-REPO-010 returns it at the new address |
 | Errors | 400 `malformed_request`; 401; 403; 404 for a source repository or a target project the caller cannot see; 409 `repository_in_use` naming the objects of the source project that name the repository in the problem member `references`, `[{"kind": "virtual_member", "name": "npm-all"}]`; 409 `already_exists` when the target project has the key, also for a repository being deleted there; 409 managed by configuration as code ([R-OPS-029](operations-and-observability.md)) |
 | Permission | `repositories:write-config`, or the role `owner` in both the source and the target project ([authorization.md](authorization.md) R-AUTHZ-026); recent authentication ([api-and-ui.md](api-and-ui.md) R-API-007) |
 
@@ -782,7 +782,7 @@ operation of its own ([Q-REPO-217](#q-repo-217--a-repository-moves-to-another-pr
 - **A global grant does not ride along with an Owner's move.** A caller without `repositories:write-config`, an Owner of both
   projects, is refused with 409 `repository_in_use` as well while a key selector of a global policy names the repository: the
   reference has the kind `global_policy` and the name of the global policy. That grant is held by the repository's ID and would
-  follow it into the target project, whose other Owners can neither see nor remove it; an administrator of trove moves the
+  follow it into the target project, whose other Owners can neither see nor remove it; an administrator of Quader moves the
   repository, or removes the selector, and the Owner moves it then
   ([Q-REPO-232](#q-repo-232--an-owners-move-is-refused-while-a-global-policy-names-the-repository-by-key)). A pattern or class
   selector of a global policy matches by address and refuses no move.
@@ -829,8 +829,8 @@ Acceptance criteria:
   "libs-global"}]`, the same move by the administrator answers 200, and with the selector replaced by `web/npm-*` the Owner's
   move answers 200.
 - An Owner of `web` and of `mobile` moves `web/npm-libs` to `mobile` (200). `npm view @acme/util --registry
-  https://trove.example.com/api/npm/web/npm-libs/` then fails with `E404` on every replica, the same command against
-  `https://trove.example.com/api/npm/mobile/npm-libs/` shows the versions published before the move, and no blob is
+  https://quader.example.com/api/npm/web/npm-libs/` then fails with `E404` on every replica, the same command against
+  `https://quader.example.com/api/npm/mobile/npm-libs/` shows the versions published before the move, and no blob is
   written. A member of `web` with the role `developer` and no role in `mobile` gets `E404` at the new address.
 - While the virtual repository `npm-all` of `web` lists `npm-libs`, the move answers 409 `repository_in_use` naming
   `npm-all` and changes nothing; after the member is removed it succeeds.
@@ -839,7 +839,7 @@ Acceptance criteria:
 - A global policy with the key selector `web/npm-libs` reads back `mobile/npm-libs` after the move and keeps granting.
 
 ### R-REPO-061 · Narrowings of a repository in the revocation journal
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 A restore to a point in time *t* returns every repository to its configuration and its claims at *t* ([backup-and-restore.md](backup-and-restore.md)
 R-BAK-024, [ha-and-helm.md](ha-and-helm.md) R-HA-025). The changes of this page that narrow what a repository serves after *t*
@@ -930,7 +930,7 @@ and the change area `claims` is told. The outcome is `suspended` when the reposi
 created or widened, and `already in effect` otherwise.
 
 Acceptance criteria (project `web`: `npm-internal` local with `local.autoClaim: true`, `npmjs` remote of the public registry,
-`npm-all` virtual over both with `npm-internal` first; a trove backup is taken at *t*, and each criterion restores it):
+`npm-all` virtual over both with `npm-internal` first; a Quader backup is taken at *t*, and each criterion restores it):
 
 - After *t*, `excludePatterns: ["@evil/*"]` is set on `npmjs`. After the restore, `npm view @evil/pkg` through `npm-all` fails
   with `E404` without an upstream request, and the replay output lists `repository.narrowed web/npmjs … applied`.
@@ -1003,7 +1003,7 @@ Acceptance criteria:
 
 - Quick setup in project `web` with prefix `billing` and format `npm` creates `billing-npm-local`,
   `billing-npm-remote` and `billing-npm`; `npm install lodash --registry
-  https://trove.example.com/api/npm/web/billing-npm/` succeeds, and `npm publish` to the same registry
+  https://quader.example.com/api/npm/web/billing-npm/` succeeds, and `npm publish` to the same registry
   lands in `billing-npm-local`.
 
 ### R-REPO-016 · Recalculate a repository's index
@@ -1057,7 +1057,7 @@ Acceptance criteria:
 - With Valkey stopped, the merged document of `lodash` is cached on replica B, and a reindex of
   `npm-all` is requested on replica A: after the job completes, the next `npm view lodash` through
   `npm-all` on B, sent `cluster.epoch_poll_interval` plus 1 s later, is merged again
-  (`trove_cache_requests_total{cache="merged_metadata",result="miss"}` increments on B).
+  (`quader_cache_requests_total{cache="merged_metadata",result="miss"}` increments on B).
 
 ## Virtual repositories
 
@@ -1120,7 +1120,7 @@ repositories:
 Acceptance criteria:
 
 - A virtual `npm-all` with members `npm-local`, `npm-remote` serves `npm install lodash --registry
-  https://trove.example.com/api/npm/web/npm-all/`.
+  https://quader.example.com/api/npm/web/npm-all/`.
 - With two replicas, a `PATCH` that reverses the member order is visible in the resolution
   explanation (R-REPO-019) of both replicas within 2 seconds, also with Valkey stopped.
 
@@ -1201,7 +1201,7 @@ For a request to virtual repository V with descriptor d (R-REPO-003) by caller c
    its object lost has failed transiently with `503 content_unavailable`, whether or not the caller
    may populate it: the walk goes on, and that is the answer when nothing serves the item (Q-REPO-205).
 
-- Artifact responses MUST carry `Trove-Resolved-From: <member key>`; the member is one the caller
+- Artifact responses MUST carry `Quader-Resolved-From: <member key>`; the member is one the caller
   can read, so the header discloses nothing new. On an endpoint with exposure rules the header is
   never sent, because members are not exposed there ([endpoints.md](endpoints.md) R-EP-018).
 - **Resolution explanation.** `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/resolution?path=<client path>`
@@ -1237,7 +1237,7 @@ Acceptance criteria:
 
 - `left-pad@1.0.0` exists in `npm-local` and in the stub upstream of `npm-remote`; members are
   ordered remote first: `npm install left-pad@1.0.0 --registry …/api/npm/web/npm-all/` downloads the
-  local tarball (`Trove-Resolved-From: npm-local`), because local members form the first tier.
+  local tarball (`Quader-Resolved-From: npm-local`), because local members form the first tier.
 - A caller with `read` on `npm-all` and `npm-remote` only receives the upstream package and no error
   from `npm-local`.
 - On `npm-remote` with `cacheFillAction: deploy`, a caller with `read` but without `deploy` gets 404
@@ -1295,7 +1295,7 @@ Priority: **MVP** · Covers: REPO-037
   nothing, so no partial merge is served.
 - A remote member that fails transiently (502, 503 or 504 of the remote request path) and has no
   stored copy is left out of the merge; the result MUST NOT be cached, and the response carries
-  `Cache-Status: trove; detail=partial` (R-REPO-047). A member that answers "not found", or that
+  `Cache-Status: quader; detail=partial` (R-REPO-047). A member that answers "not found", or that
   the caller may not populate and that has nothing stored, is a miss and does not make the merge
   partial. If no member contributes, the answer is 404 when every consulted member said "not found"
   and the failure of the first member that failed otherwise (R-REPO-019 step 7). Pin rules and claims keep internal names independent of remote members, so a partial
@@ -1337,9 +1337,9 @@ Priority: **MVP** · Covers: REPO-038
 
 Acceptance criteria:
 
-- `npm publish --registry https://trove.example.com/api/npm/web/npm-all/` stores the package in
+- `npm publish --registry https://quader.example.com/api/npm/web/npm-all/` stores the package in
   `npm-local`; `dotnet nuget push Acme.Widgets.1.0.0.nupkg --source
-  https://trove.example.com/api/nuget/web/nuget-all/v3/index.json --api-key "$TROVE_TOKEN"` stores it
+  https://quader.example.com/api/nuget/web/nuget-all/v3/index.json --api-key "$QUADER_TOKEN"` stores it
   in `nuget-local`.
 - Without a target, `npm publish` to `npm-all` fails with `E405`.
 
@@ -1358,7 +1358,7 @@ Priority: **P1** · Covers: REPO-018, RMT-037
 - A protocol added to a supporting format later (NuGet v2, P2) MUST apply priority members exactly
   as the format's existing protocols do; a repository never honours priority on one of its
   protocols and ignores it on another.
-- Formats not in trove yet (the catalog's exclusion lists name Chef, Debian, CocoaPods, Cargo and
+- Formats not in Quader yet (the catalog's exclusion lists name Chef, Debian, CocoaPods, Cargo and
   others) do not support priority members until their format page declares the capability. A
   container format page MUST define how priority interacts with tag resolution before it declares
   the capability.
@@ -1384,7 +1384,7 @@ Priority: **MVP** · Covers: BEYOND-028
 Dependency confusion ([Birsan 2021](https://medium.com/@alex.birsan/dependency-confusion-4a5d60fec610))
 lets a public package with an internal package's name, usually with a higher version, win
 resolution. Tier order alone protects only names that currently exist internally; a name that is
-not published yet, was deleted or is misspelt falls through to the remote members. trove closes
+not published yet, was deleted or is misspelt falls through to the remote members. Quader closes
 this on the server with two mechanisms, both using name patterns (see Terms; most specific wins).
 Claim and pin-rule patterns are matched by the R-AUTHZ-005 matcher like every name pattern, but
 are limited to an exact name or a literal (possibly empty) followed by one trailing `*` or `**`,
@@ -1618,7 +1618,7 @@ R-NUGET-015):
 1. A stored metadata entry for that path (any variant), fresh or expired and not marked upstream
    gone (R-REPO-029): served.
 2. A stored entry marked upstream gone: not served. Negative entries (R-REPO-028) are not
-   consulted. They live in Valkey, and a value read from Valkey may make trove refuse, never admit
+   consulted. They live in Valkey, and a value read from Valkey may make Quader refuse, never admit
    a write ([architecture.md](architecture.md) R-ARCH-030); "not served" admits a `deploy` holder's
    publish. A path for which R holds only a negative entry goes on to step 3.
 3. R offline (R-REPO-030, R-REPO-031) and nothing stored: not served; no upstream request.
@@ -1774,7 +1774,7 @@ within the remote's patterns and bounds, before a client asks (R-REPO-050 to R-R
   - A replica without such an address answers the repository's fetches with 502
     `source_network_unavailable`. The failure does not count toward the circuit, which all replicas
     share (R-REPO-029); it is logged at most once per minute and repository and counted in
-    `trove_remote_source_network_unavailable_total{repo}` (R-REPO-047). There is no fallback to the
+    `quader_remote_source_network_unavailable_total{repo}` (R-REPO-047). There is no fallback to the
     kernel's choice, which could leave through an interface the upstream's firewall rejects.
   - A value that is not a CIDR prefix answers 422 `invalid_source_network`. A prefix that holds a
     single address (`/32`, `/128`) is stored with the warning `source_network_single_address`,
@@ -1909,7 +1909,7 @@ service index and Galaxy's `/api/` answer 200; `dists/trixie/InRelease`, `debian
 `dists/noble/InRelease` of Ubuntu's archive and ports and `dists/noble-security/InRelease` of its security archive, over `https`,
 answer 200.
 
-By hand on 2026-11-12, through a trove remote of each new preset created from its URL alone, on the UI development profile of a
+By hand on 2026-11-12, through a Quader remote of each new preset created from its URL alone, on the UI development profile of a
 workstation with internet access: a pull of an image by the registry protocol (the challenge, an anonymous token, the index, a
 platform manifest and one layer) through Quay (`prometheus/busybox:latest`), ghcr.io (`linuxcontainers/alpine:latest`) and GitLab
 (`gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-latest`), the GitLab remote storing `gitlab.com` as its credential host; and
@@ -1971,7 +1971,7 @@ execute these steps in order:
 4. Look up the cache entry (R, path, variant). An entry marked upstream gone, and every entry of a
    package that is gone from R, counts as absent here and in every later step (R-REPO-029; gone
    packages below). An artifact entry, or a metadata entry that is fresh and not invalidated
-   (R-REPO-045), is served: `Cache-Status: trove; hit; ttl=<seconds>`. A format MAY require a
+   (R-REPO-045), is served: `Cache-Status: quader; hit; ttl=<seconds>`. A format MAY require a
    current package document before it serves a cached artifact. npm does: a cached tarball is
    served only while its package document's entry is unexpired and validated after
    `system_state.restored_at`; otherwise the request first revalidates the document under these
@@ -1984,7 +1984,7 @@ execute these steps in order:
 7. R's circuit open (R-REPO-029) → serve an existing entry as stale, otherwise 503
    `upstream_assumed_offline` with `Retry-After`.
 8. A valid negative entry (R-REPO-028; the replica's L1 first, then Valkey) → 404,
-   `Cache-Status: trove; hit; detail=negative`. While Valkey is unavailable, only the L1 answers.
+   `Cache-Status: quader; hit; detail=negative`. While Valkey is unavailable, only the L1 answers.
 9. c fails the cache-fill check ([R-AUTHZ-008](authorization.md)), which every caller fails on an
    endpoint with `cache_fill: false` ([endpoints.md](endpoints.md) R-EP-019) → serve an existing
    expired entry as stale without contacting the upstream, otherwise 403 `populate_not_permitted`
@@ -2015,7 +2015,7 @@ execute these steps in order:
   every path segment again ([RFC 3986, section 3.3](https://www.rfc-editor.org/rfc/rfc3986#section-3.3):
   `%` becomes `%25`; separators inside a name, such as npm's scoped-name `/`, follow the format
   page). A canonical path is never concatenated into an upstream URL as it is. It has been decoded
-  once (Terms), so a client that sent `%252e%252e` would otherwise make trove request `..` from
+  once (Terms), so a client that sent `%252e%252e` would otherwise make Quader request `..` from
   the upstream, with the upstream credentials of R-REPO-033.
 - Fetched content is committed through the upload pipeline of [storage.md](storage.md) (spool,
   hashing, deduplication, R-STOR-004 and R-STOR-005). Artifacts become items of R (with the item's
@@ -2095,7 +2095,7 @@ CREATE INDEX remote_cache_entries_gone ON remote_cache_entries (repo_id)
 Acceptance criteria:
 
 - First `npm install lodash@4.17.21 --registry …/api/npm/web/npm-remote/`: the stub upstream records one
-  document and one tarball request; the response carries `Cache-Status: trove; fwd=uri-miss;
+  document and one tarball request; the response carries `Cache-Status: quader; fwd=uri-miss;
   fwd-status=200; stored`. A second install records no upstream request and carries `hit`.
 - With `cacheFillAction: deploy`, a user with `read` only installs `lodash@4.17.21` (cached) and
   gets `E403` (`populate_not_permitted`) for `lodash@4.17.20` (not cached); the stub records no
@@ -2108,7 +2108,7 @@ Acceptance criteria:
   and `a b` into `a%20b`; no input produces an upstream path that decodes to a `..` segment.
 
 ### R-REPO-026 · Collapsing concurrent misses (single-flight and Valkey flight lock)
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Concurrent requests for the same uncached or expired entry MUST cause one upstream fetch per
 cluster, not one per request (INV-11). Since 2026-10-28 the cross-replica part is a lock in Valkey
@@ -2117,14 +2117,14 @@ PostgreSQL advisory lock. The protocol:
 
 1. **Flight key.** (repository id, canonical path, variant). `<f>`, the lowercase hex SHA-256 of
    `repository id 0x00 path 0x00 variant` (the id in decimal digits), names the flight in Valkey: the lock
-   `trove:<ks>:lock:fetch:v1:<f>` and the outcome channel `trove:<ks>:fill:v1:<f>`
+   `quader:<ks>:lock:fetch:v1:<f>` and the outcome channel `quader:<ks>:fill:v1:<f>`
    ([architecture.md](architecture.md) R-ARCH-030). The full hash leaves no collision case
    (Q-ARCH-7).
 2. **In-process.** Requests on one replica join one flight
    ([singleflight](https://pkg.go.dev/golang.org/x/sync/singleflight)). The leader runs steps 3 to 6;
    followers wait for its result and then read the stored entry, or receive its error.
 3. **Cross-replica lock.** The leader calls `FlightLock.Acquire` and never talks to Valkey itself.
-   `Acquire` tries once: `SET trove:<ks>:lock:fetch:v1:<f> <token> NX PX 30000`, with the TTL
+   `Acquire` tries once: `SET quader:<ks>:lock:fetch:v1:<f> <token> NX PX 30000`, with the TTL
    `cluster.flight_lock_ttl` (30 s by default) and a token unique to this acquisition
    ([architecture.md](architecture.md) R-ARCH-033).
    If it acquires the flight, it repeats the checks of R-REPO-025 steps 4 to 8, because another
@@ -2145,7 +2145,7 @@ PostgreSQL advisory lock. The protocol:
    missing. With `notFoundTtlSeconds: 0` nothing records the miss, and that is what happens.
    - Waiting is bounded by `proxy.fetch_wait_timeout_seconds`. When the bound ends without a valid
      entry, the leader fetches without the cross-replica lock instead of failing, counted in
-     `trove_flight_lock_bypass_total{reason="wait_timeout"}`.
+     `quader_flight_lock_bypass_total{reason="wait_timeout"}`.
    - For expired metadata, the refresh timeout of R-REPO-027 ends the client's wait earlier: the
      client is served the stale entry. The flight keeps waiting, detached like a fetch, until
      `proxy.fetch_wait_timeout_seconds`, and then refreshes without the lock (`wait_timeout`). A
@@ -2227,7 +2227,7 @@ Acceptance criteria (two replicas, counting stub upstream that delays every resp
   one `GET`; all 100 responses are 200 with identical bytes; at least 99 carry `collapsed` or `hit`;
   exactly one allowed populate event exists for the tarball's path. Meanwhile `pg_locks` shows no
   advisory lock of category 2 (`fetch`, retired, [architecture.md](architecture.md) R-ARCH-017) and
-  none held by a connection of class `main` (R-ARCH-019), and `pg_stat_activity` shows no trove
+  none held by a connection of class `main` (R-ARCH-019), and `pg_stat_activity` shows no Quader
   connection `idle in transaction`.
 - The stub streams a 200 MiB artifact slowly, and the leader's pod is killed with `SIGKILL`
   mid-transfer. A waiter on the other replica acquires the flight within `cluster.flight_lock_ttl`
@@ -2237,8 +2237,8 @@ Acceptance criteria (two replicas, counting stub upstream that delays every resp
   the waiter acquires within `proxy.lock_poll_interval_ms` of the leader's `failed`, and the
   leader's own client, retrying through the Service, is served by the other replica.
 - A request reaches a replica during its drain delay for a path that no flight holds: no lock key
-  of that replica appears in Valkey (`valkey-cli GET trove:<ks>:lock:fetch:v1:<f>`), the request is
-  served, and `trove_flight_lock_bypass_total{reason="draining"}` increments.
+  of that replica appears in Valkey (`valkey-cli GET quader:<ks>:lock:fetch:v1:<f>`), the request is
+  served, and `quader_flight_lock_bypass_total{reason="draining"}` increments.
 - With Valkey stopped, all 100 requests of the first criterion succeed, and the stub records at
   most one `GET` per replica.
 - With every message on the outcome channels dropped by a fault proxy, the first criterion still
@@ -2248,7 +2248,7 @@ Acceptance criteria (two replicas, counting stub upstream that delays every resp
   exactly one `GET`, and all 100 responses are 404.
 - A lock key written by hand with a foreign token, and `proxy.fetch_wait_timeout_seconds: 5`: a
   request for that path is served after about 5 s, and
-  `trove_flight_lock_bypass_total{reason="wait_timeout"}` increments.
+  `quader_flight_lock_bypass_total{reason="wait_timeout"}` increments.
 - The same foreign lock key, written without expiry, on an expired metadata document, with
   `metadataRefreshTimeoutSeconds: 2` and `proxy.fetch_wait_timeout_seconds: 5`: the request is
   served the stale document after about 2 s, the stub records one conditional request about 5 s
@@ -2279,7 +2279,7 @@ Priority: **MVP** · Covers: RMT-018, RMT-019
   the flight they waited for; without this rule a period of `0` would make every waiter fetch
   again after the holder released the lock.
 - If a refresh has not completed within `metadataRefreshTimeoutSeconds`, the stale entry MUST be
-  served (`Cache-Status: trove; fwd=stale; detail=served-stale`); the refresh continues in the
+  served (`Cache-Status: quader; fwd=stale; detail=served-stale`); the refresh continues in the
   background, bounded by the read timeout, and updates the entry when it completes. This is the
   stale-if-error behavior of [RFC 5861](https://www.rfc-editor.org/rfc/rfc5861) applied to slow
   upstreams. The background refresh is the flight's fetch and keeps its lock (R-REPO-026). No later
@@ -2294,7 +2294,7 @@ Priority: **MVP** · Covers: RMT-018, RMT-019
 Acceptance criteria (`metadataTtlSeconds: 60`):
 
 - Two `npm view lodash` within 60 s: one upstream request. After 61 s: one conditional request with
-  `If-None-Match`; the stub answers 304; the response carries `Cache-Status: trove; fwd=stale;
+  `If-None-Match`; the stub answers 304; the response carries `Cache-Status: quader; fwd=stale;
   fwd-status=304`.
 - The stub delays the document by 90 s: the client receives the stale document after about 60 s;
   once the stub has answered, the next request is a fresh hit with the new content.
@@ -2311,7 +2311,7 @@ Priority: **MVP** · Covers: RMT-020
   reach the upstream, so only they create entries.
 - **Where entries live** ([architecture.md](architecture.md) Q-ARCH-16). A negative entry is shared
   ephemeral state, not a record (INV-3).
-  - It is the Valkey key `trove:<ks>:neg:v1:<repo id>:<f>`, with `<f>` as in R-REPO-026, and the
+  - It is the Valkey key `quader:<ks>:neg:v1:<repo id>:<f>`, with `<f>` as in R-REPO-026, and the
     value `{"s": <404 or 410>, "c": <time the upstream request was sent, Unix ms>}`
     ([architecture.md](architecture.md) R-ARCH-030).
   - It is written with `SET … PX <notFoundTtlSeconds × 1000>` after the upstream has answered,
@@ -2334,7 +2334,7 @@ Priority: **MVP** · Covers: RMT-020
   never survives it as long as replica and database clocks differ by less than 5 s. Because `c` is
   the time the request was sent, an upstream answer that crossed an invalidation does not survive
   it either.
-- **Refusal only.** A negative entry can make trove answer 404 and nothing else. Nothing on this page
+- **Refusal only.** A negative entry can make Quader answer 404 and nothing else. Nothing on this page
   admits a write, grants access or serves content because of one (R-ARCH-030). In particular, the
   shadowing check does not read negative entries (R-REPO-048).
 - **Valkey unavailable**: negative caching continues per replica in the L1 alone, so each replica
@@ -2359,7 +2359,7 @@ proxy:
 Acceptance criteria:
 
 - `npm view does-not-exist-4711` twice through `npm-remote`: one upstream request; the second
-  response carries `Cache-Status: trove; hit; detail=negative`. With two replicas, the second request
+  response carries `Cache-Status: quader; hit; detail=negative`. With two replicas, the second request
   on the other replica causes no upstream request either.
 - The stub then publishes the package; within the period it stays invisible; after an invalidation
   with scope `negative` (R-REPO-045), the next request on either replica reaches the stub and
@@ -2474,7 +2474,7 @@ Acceptance criteria (`failureThreshold: 5`, `circuitOpenSeconds: 300`):
 
 - The stub answers 503 five times in a row; the sixth request for an expired, stored document is
   served stale without an upstream request, on both replicas; a request for an uncached path
-  returns 503 `upstream_assumed_offline` with `Retry-After`; `trove_remote_upstream_up` is 0 on
+  returns 503 `upstream_assumed_offline` with `Retry-After`; `quader_remote_upstream_up` is 0 on
   both replicas within 2 s.
 - After 300 s the next request probes; the stub answers 200; later requests reach the upstream
   normally.
@@ -2493,7 +2493,7 @@ Acceptance criteria (`failureThreshold: 5`, `circuitOpenSeconds: 300`):
 Priority: **MVP** · Covers: RMT-030
 
 - `availability.mode: offline` MUST stop all upstream traffic of the repository. Stored entries are
-  served regardless of expiry, expired metadata with `Cache-Status: trove; hit;
+  served regardless of expiry, expired metadata with `Cache-Status: quader; hit;
   detail=served-stale`; uncached requests answer 404 `not_cached_offline`. A 404 rather than a 5xx
   is deliberate: the operator decided the item is not available here, and clients should not retry.
 - In virtual resolution an offline member contributes its cache tier and stored metadata only.
@@ -2554,7 +2554,7 @@ proxy:
 
 Acceptance criteria:
 
-- `curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' -H 'If-Match: *' -d '{"enabled":true,"reason":"upstream incident 2026-10-28"}' https://trove.example.com/api/v1/system/proxy-offline`:
+- `curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' -H 'If-Match: *' -d '{"enabled":true,"reason":"upstream incident 2026-10-28"}' https://quader.example.com/api/v1/system/proxy-offline`:
   within 2 s no replica sends upstream requests, also with Valkey stopped; cached installs still
   succeed, and `GET` reports `enabled: true` with the reason and a new `ETag`.
 - A `PUT` with `enabled: false` and the `ETag` read before that change answers 412 and the switch
@@ -2638,7 +2638,7 @@ Priority: **MVP** · Covers: RMT-005, RMT-006, IAM-045
     or `403`, `upstream_rate_limited` (503) for `429`, `upstream_error` for `500`, `502`, `503` and `504`,
     `upstream_unexpected_status` for any other status, `egress_denied`, `tls_untrusted`, `upstream_timeout` or `upstream_unreachable`
     for a failure of the transfer. An egress or TLS refusal writes the security event of R-REPO-038 and counts
-    `trove_remote_egress_denied_total` with the token service's host. For a mirror's request a rate-limit answer of the token service
+    `quader_remote_egress_denied_total` with the token service's host. For a mirror's request a rate-limit answer of the token service
     is the rate-limit answer of R-REPO-054;
   - runs no handshake for `authMode: bearer`: the stored secret is the token.
 - Credentials go only to the upstream origin and to `extraHosts` entries with `sendCredentials:
@@ -2651,9 +2651,9 @@ Priority: **MVP** · Covers: RMT-005, RMT-006, IAM-045
   proxy passwords) take one of:
   - `{"value": "…"}`: accepted through the API only, never in startup files
     ([R-OPS-029](operations-and-observability.md)); sealed at once;
-  - `{"secretRef": {"file": "<name>"}}` or `{"secretRef": {"env": "TROVE_CAC_<NAME>"}}`: resolved
+  - `{"secretRef": {"file": "<name>"}}` or `{"secretRef": {"env": "QUADER_CAC_<NAME>"}}`: resolved
     on every replica at use time under the rules of R-OPS-029 (a file directly under
-    `config_as_code.secrets_dir`, only variables with the `TROVE_CAC_` prefix), so trove's own
+    `config_as_code.secrets_dir`, only variables with the `QUADER_CAC_` prefix), so Quader's own
     secrets can never be routed to an upstream. A changed file takes effect on each replica within
     10 s of the change, which keeps R-REPO-033's bound of 60 s (Q-REPO-89). The file content has its
     trailing line break removed and holds at most 8 KiB.
@@ -2712,13 +2712,13 @@ Acceptance criteria:
 - A `pg_dump` of the database contains no plaintext of the configured token.
 - Copying the `sealed` value of `npm-partner`'s `/remote/password` row into the row of another
   repository makes that repository's fetches fail with 502 `upstream_secret_unavailable`.
-- `{"secretRef": {"env": "TROVE_DATABASE_PASSWORD"}}` is refused with 422 `invalid_secret`.
+- `{"secretRef": {"env": "QUADER_DATABASE_PASSWORD"}}` is refused with 422 `invalid_secret`.
 - With `authMode: bearer`, the stub records `Authorization: Bearer <token>` and no Basic header.
 - `PATCH` with `{"remote": {"password": {"value": "new"}}}` moves `config_version` and the next
   request, on every replica, carries the new token; `{"remote": {"password": null}}` removes the
   row; sending back a document that was read changes nothing.
 - An Owner of project `web` without `repositories:write-config` patching the `url` of `partner`, whose sealed token an
-  administrator of trove stored, gets 422 `secret_value_required` at `/remote/password` and the new
+  administrator of Quader stored, gets 422 `secret_value_required` at `/remote/password` and the new
   host receives nothing; the same patch with `{"password": {"value": "own"}}` succeeds and the saved
   upstream test sends `own`. Its unsaved test with `{"secretRef": {"file": "partner-token"}}` answers
   422 `secret_value_required` and sends nothing.
@@ -2737,7 +2737,7 @@ Priority: **P1** · Covers: RMT-007
   repository to its upstream origin and its `extraHosts`.
 - The private key is a secret field (R-REPO-033) and never returned.
 - Deleting a certificate in use answers 409 `certificate_in_use` naming the repositories.
-- Expiry is exported as `trove_client_certificate_expiry_timestamp_seconds{name}` so alerts can
+- Expiry is exported as `quader_client_certificate_expiry_timestamp_seconds{name}` so alerts can
   fire before upstream access breaks.
 
 Data model:
@@ -2798,7 +2798,7 @@ proxy:
     tls:
       use_system_roots: true                        # default (proposed)
       ca_files: []                                  # default (proposed)
-      # ca_files: [/etc/trove/ca/corp-root.pem]   # example
+      # ca_files: [/etc/quader/ca/corp-root.pem]   # example
       min_version: "1.2"                            # default (proposed)
 ```
 
@@ -2880,7 +2880,7 @@ API:
 {
   "name": "corp-egress",
   "proxyUrl": "http://egress.corp.example:3128",
-  "username": "trove",
+  "username": "quader",
   "password": { "secretRef": { "file": "corp-egress-password" } },
   "bypassHosts": ["*.corp.example"],
   "defaultScopes": ["repositories", "system"]
@@ -2903,7 +2903,7 @@ Acceptance criteria:
   change to them.
 
 ### R-REPO-038 · Egress address rules for remote repositories
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - Every connection made for a remote repository (upstream, extra hosts, redirect targets, URLs taken
   from upstream metadata, outbound proxies, the advisory provider of an npm audit forward,
@@ -2932,7 +2932,7 @@ Priority: **MVP** · Covers: trove-only
   [H-516](../security/egress.md#h-516--the-chart-restricts-no-egress-of-its-pods)).
 - A refused connection answers 502 `egress_denied`, is logged as a security event and does not count
   toward the circuit.
-- Through an outbound proxy, trove resolves and checks the target name itself before sending, but
+- Through an outbound proxy, Quader resolves and checks the target name itself before sending, but
   the proxy connects on its own (H-6).
 
 Configuration:
@@ -3004,7 +3004,7 @@ Acceptance criteria:
   `insecure_redirect`.
 
 ### R-REPO-040 · Size and concurrency limits
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - An artifact larger than the effective `maxArtifactBytes`, or a metadata document larger than
   `maxMetadataBytes`, MUST be refused: at once when `Content-Length` announces it, otherwise by
@@ -3017,7 +3017,7 @@ Priority: **MVP** · Covers: trove-only
     it takes its slot until it ends, its verification, the format's inspection and its commit included: that is the work
     the replica does for it.
   - `limits.maxConcurrentFetches` protects the upstream. A fetch counts from the moment it takes its slot until its
-    upstream exchange ends (below), not while trove stores what it received. It is a budget for the whole installation
+    upstream exchange ends (below), not while Quader stores what it received. It is a budget for the whole installation
     (Q-REPO-8), divided among the replicas without coordination between them. Each replica allows
     `ceil(maxConcurrentFetches ÷ n)` fetches of the repository at a time. n is the number of live
     replicas that fill client misses in the replica registry
@@ -3129,7 +3129,7 @@ Priority: **MVP** · Covers: RMT-022
 Acceptance criteria:
 
 - The stub serves a tarball whose bytes do not match the document's `integrity` value: `npm install`
-  fails, no item exists afterwards, and `trove_remote_integrity_failures_total` increments.
+  fails, no item exists afterwards, and `quader_remote_integrity_failures_total` increments.
 - With `require`, an artifact whose metadata announces only SHA-1 is refused with 502
   `upstream_digest_missing`.
 - The stub changes the `integrity` of an already cached version: the cached tarball keeps being served
@@ -3161,7 +3161,7 @@ Acceptance criteria:
   `upstream_content_type_blocked`, no item is stored, and the failure counter increments.
 
 ### R-REPO-043 · Metadata URL rewriting
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - In every metadata document served, the format plug-in MUST rewrite the URLs of resources clients
   fetch next (npm tarball URLs; NuGet resource, registration and package content URLs) so they point
@@ -3176,7 +3176,7 @@ Priority: **MVP** · Covers: trove-only
 - A rewritten path maps back to its upstream URL as follows: if the upstream URL equals the one the
   format derives from `url` and the canonical path, nothing is recorded; otherwise the mapping is
   recorded in `remote_url_map` when the document is parsed. The server MUST NOT derive an upstream
-  host from a client request path: no client can choose the host trove fetches from.
+  host from a client request path: no client can choose the host Quader fetches from.
   The engine reads the map for a metadata path as it does for an artifact (a page of a listing that the index does
   not inline: the registration pages of NuGet), and applies the host rule below to the recorded URL. A format whose
   addressing follows a discovery document gets that document resolved first (R-NUGET-014, Q-ARCH-268).
@@ -3210,13 +3210,13 @@ CREATE TABLE remote_url_map (
 
 Acceptance criteria:
 
-- `npm view lodash dist.tarball --registry https://trove.example.com/api/npm/web/npm-all/` prints
-  `https://trove.example.com/api/npm/web/npm-all/lodash/-/lodash-4.17.21.tgz`.
+- `npm view lodash dist.tarball --registry https://quader.example.com/api/npm/web/npm-all/` prints
+  `https://quader.example.com/api/npm/web/npm-all/lodash/-/lodash-4.17.21.tgz`.
 - A request with `Host: evil.example` returns a document whose tarball URLs still name
-  `trove.example.com`, and the next client sees the same.
+  `quader.example.com`, and the next client sees the same.
 - A stub document whose tarball lives on `cdn.partner.example` fails with 502 `foreign_host_denied`
   until `extraHosts` contains `cdn.partner.example`; afterwards the tarball is fetched from there and
-  served under the trove path.
+  served under the Quader path.
 - A stub document for package `evil` whose version entry names a tarball URL of `lodash` records a
   mapping only for `evil`'s own canonical path; `remote_url_map` holds no row for any `lodash`
   path afterwards.
@@ -3231,7 +3231,7 @@ Priority: **P1** · Covers: RMT-017
 - Artifact requests are not collapsed across clients (nothing is shared afterwards), and no items are
   created, so browsing, properties, copy and cleanup do not apply to them.
 - A format whose plug-in requires stored artifacts refuses the setting with 422 `validation_failed` with `not_applicable` in `errors[]`.
-- Use case: a replica group next to another trove instance that already caches the upstream.
+- Use case: a replica group next to another Quader instance that already caches the upstream.
 
 Acceptance criteria:
 
@@ -3267,7 +3267,7 @@ because RMT-026 is. This requirement specifies its semantics and mechanism.
     The change carries the whole row, so a replica applies it without a query, and a request
     asks the in-memory set only: the cost of a lookup is the number of segments of the path,
     whatever the number of rows (Q-REPO-102; the payload: Q-OPS-154).
-    Until 2026-10-28 this was `NOTIFY trove_cache_invalidation`; trove issues no `NOTIFY` any
+    Until 2026-10-28 this was `NOTIFY quader_cache_invalidation`; Quader issues no `NOTIFY` any
     more ([architecture.md](architecture.md) Q-ARCH-15).
   - A background job on the `worker` role later folds each invalidation into the metadata entries
     validated before it, in batches, setting `expires_at` to the invalidation time and, when the
@@ -3444,7 +3444,7 @@ Acceptance criteria:
   no client asks, over two dispatch intervals.
 
 ### R-REPO-051 · What a mirror discovers, and what bounds it
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **Discovery** yields package names; for each name the format's **plan** yields the documents a client of that package
   needs and the artifacts of its versions, newest first by the format's version order ([architecture.md](architecture.md)
@@ -3467,7 +3467,7 @@ Priority: **MVP** · Covers: trove-only
   names, Q-REPO-158), so that a package that clients
   pulled is kept current and a name a feed missed is caught. `auto` takes the first method the upstream offers; a method
   set explicitly that the upstream does not offer ends the pass with `discovery_unavailable`. What each upstream offers, and
-  what of it trove uses, is on the format pages.
+  what of it Quader uses, is on the format pages.
 - **A pass is full** when the repository has no cursor of a complete feed pass; when the method differs from the one of
   that cursor; when `fullPassIntervalSeconds` is not `0` and the last full pass is older; when the include or exclude
   patterns changed since the last complete pass (the state keeps a fingerprint of both lists); and when it is requested
@@ -3504,7 +3504,7 @@ Acceptance criteria (integration, counting stub upstreams of R-REPO-059):
   refreshed by the next full pass.
 
 ### R-REPO-052 · Storage bounds of a mirror
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 A mirror of a public registry would be terabytes. The bounds below keep it to what the operator chose; client pull-through is
 never bounded by them.
@@ -3545,7 +3545,7 @@ Acceptance criteria:
   it did not store succeeds through the same remote; after `maxBytes` is raised to 64 MiB, the next pass stores the rest.
 
 ### R-REPO-053 · Mirror passes as jobs on the queue `mirror`
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **Where passes run.** The dispatch and the passes are jobs of the job framework ([architecture.md](architecture.md)
   R-ARCH-016) on their own queue `mirror`. Whatever process claims that queue runs them: every process that claims jobs, or
@@ -3686,7 +3686,7 @@ Acceptance criteria (integration):
   names; switching the mode to `pullThrough` clears it.
 
 ### R-REPO-054 · Upstream throttling of a mirror
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **Rate-limit answers** (Q-REPO-137). The mirror treats as a rate-limit answer to any of its requests, discovery or fill:
   - `429 Too Many Requests` ([RFC 6585, section 4](https://www.rfc-editor.org/rfc/rfc6585#section-4));
@@ -3733,7 +3733,7 @@ Priority: **MVP** · Covers: trove-only
 Acceptance criteria (integration, stub modes of R-REPO-059):
 
 - The stub answers the eleventh tarball request with `429` and `Retry-After: 7`: it records no request of the pass for 7 s,
-  then the pass continues and completes; `trove_mirror_concurrency{repo}` is at most half of its value before the answer.
+  then the pass continues and completes; `quader_mirror_concurrency{repo}` is at most half of its value before the answer.
 - `Retry-After` as an HTTP date 5 s ahead pauses the pass for 5 s (±1 s).
 - `503` with the body `<Error><Code>SlowDown</Code><Message>Please reduce your request rate.</Message></Error>` and no
   `Retry-After`, three times in a row: the pauses lie within [0.5 s, 1 s], [1 s, 2 s] and [2 s, 4 s]; the pass then
@@ -3742,11 +3742,11 @@ Acceptance criteria (integration, stub modes of R-REPO-059):
 - `Retry-After: 3600`: the job ends with the result `deferred`, the status shows `rateLimit.until` an hour ahead, and the stub
   records no request of the mirror in the next 60 s. A unit test with a fake clock shows the next job continuing the pass at
   that time.
-- While the stub throttles the pass, `trove_remote_upstream_up{repo}` stays 1 on every replica and a client
+- While the stub throttles the pass, `quader_remote_upstream_up{repo}` stays 1 on every replica and a client
   `npm install` of a stored version through the remote succeeds without an upstream request.
 
 ### R-REPO-055 · Client requests first
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 A request from a client is served before the background sync. The mirror uses a lower-priority share of the remote's fetch
 budget (`limits.maxConcurrentFetches`, R-REPO-040, Q-REPO-8, Q-REPO-97), and client fetches pre-empt it (Q-REPO-140).
@@ -3788,7 +3788,7 @@ budget (`limits.maxConcurrentFetches`, R-REPO-040, Q-REPO-8, Q-REPO-97), and cli
 - **What happens to a pre-empted fetch.** Its upstream request is cancelled and its partial body discarded: no blob, no cache
   entry, no negative entry; its flight is released with `failed`, so that a waiter fetches for itself at once (R-REPO-026);
   the item stays in the pass and is fetched again later. A pre-emption is neither a failure of the item nor a rate-limit
-  answer, moves no circuit and is counted in `trove_mirror_preempted_total{repo}`.
+  answer, moves no circuit and is counted in `quader_mirror_preempted_total{repo}`.
 - A background fetch that a follower of its own replica has joined is not pre-empted.
 
 Acceptance criteria:
@@ -3807,7 +3807,7 @@ Acceptance criteria:
   than `maxConcurrentFetches + n − 1 + B` connections open. The time ratio is enforced by the nightly run, the bound in every run
   (Q-REPO-197). Pre-emption is proved by a second part with the contention forced (Q-REPO-253): a pass runs while the stub holds a tarball
   1.5 s, 24 clients ask the three client-serving replicas for distinct tarballs the pass has not stored (their slots hold 9), all are served
-  with 200, and `trove_mirror_preempted_total` grew.
+  with 200, and `quader_mirror_preempted_total` grew.
 
 ### R-REPO-056 · Mirror status and operations
 Priority: **MVP** · Covers: API-084, API-085
@@ -3875,31 +3875,31 @@ Acceptance criteria:
   package.
 
 ### R-REPO-057 · Mirror observability
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **Metrics** ([operations-and-observability.md](operations-and-observability.md) R-OPS-008, Q-OPS-158; the label `repo` has
   one value per mirrored repository):
 
 | Metric | Type | Labels | Meaning |
 |---|---|---|---|
-| `trove_mirror_passes_total` | counter | `repo`, `kind` (`full`, `incremental`), `outcome` (`complete`, `partial`, `bound_reached`, `offline`, `stopped`, `failed`, `deferred`) | Pass attempts by how they ended |
-| `trove_mirror_items_total` | counter | `repo`, `result` (`stored`, `present`, `bounded`, `failed`, `preempted`, `refused`) | Artifacts of plans: fetched and stored, already stored, left by a bound, failed, pre-empted, refused by the host (Q-REPO-185) |
-| `trove_mirror_bytes_total` | counter | `repo` | Bytes the passes stored |
-| `trove_mirror_rate_limited_total` | counter | `repo`, `reason` (`too_many_requests`, `slow_down`, `retry_after`, `quota_header`) | Rate-limit answers to the mirror (R-REPO-054) |
-| `trove_mirror_rate_limit_wait_seconds_total` | counter | `repo` | Seconds the passes waited for rate limits |
-| `trove_mirror_concurrency` | gauge | `repo` | The running pass's window in the process that runs it |
-| `trove_mirror_preempted_total` | counter | `repo` | Background fetches pre-empted by clients (R-REPO-055) |
-| `trove_mirror_pending_packages` | gauge | `repo` | Pending names of the pass in progress that a pass still takes, 0 without a pass (from PostgreSQL) |
-| `trove_mirror_last_complete_pass_timestamp_seconds` | gauge | `repo` | End of the last pass that ended `complete`, `partial` or `bound_reached` (`mirror_state.last_complete_pass_at`, Q-OPS-172); no series before the first |
-| `trove_mirror_interval_seconds` | gauge | `repo` | The configured `intervalSeconds` |
-| `trove_mirror_consecutive_failures` | gauge | `repo` | Failed pass attempts in a row (from PostgreSQL); only for a mirror that is not paused |
-| `trove_mirror_next_pass_timestamp_seconds` | gauge | `repo` | When the mirror next acts: the time a due pass is due, or for a pass in progress the later of that and its last write (from PostgreSQL); only for a mirror that is not paused |
+| `quader_mirror_passes_total` | counter | `repo`, `kind` (`full`, `incremental`), `outcome` (`complete`, `partial`, `bound_reached`, `offline`, `stopped`, `failed`, `deferred`) | Pass attempts by how they ended |
+| `quader_mirror_items_total` | counter | `repo`, `result` (`stored`, `present`, `bounded`, `failed`, `preempted`, `refused`) | Artifacts of plans: fetched and stored, already stored, left by a bound, failed, pre-empted, refused by the host (Q-REPO-185) |
+| `quader_mirror_bytes_total` | counter | `repo` | Bytes the passes stored |
+| `quader_mirror_rate_limited_total` | counter | `repo`, `reason` (`too_many_requests`, `slow_down`, `retry_after`, `quota_header`) | Rate-limit answers to the mirror (R-REPO-054) |
+| `quader_mirror_rate_limit_wait_seconds_total` | counter | `repo` | Seconds the passes waited for rate limits |
+| `quader_mirror_concurrency` | gauge | `repo` | The running pass's window in the process that runs it |
+| `quader_mirror_preempted_total` | counter | `repo` | Background fetches pre-empted by clients (R-REPO-055) |
+| `quader_mirror_pending_packages` | gauge | `repo` | Pending names of the pass in progress that a pass still takes, 0 without a pass (from PostgreSQL) |
+| `quader_mirror_last_complete_pass_timestamp_seconds` | gauge | `repo` | End of the last pass that ended `complete`, `partial` or `bound_reached` (`mirror_state.last_complete_pass_at`, Q-OPS-172); no series before the first |
+| `quader_mirror_interval_seconds` | gauge | `repo` | The configured `intervalSeconds` |
+| `quader_mirror_consecutive_failures` | gauge | `repo` | Failed pass attempts in a row (from PostgreSQL); only for a mirror that is not paused |
+| `quader_mirror_next_pass_timestamp_seconds` | gauge | `repo` | When the mirror next acts: the time a due pass is due, or for a pass in progress the later of that and its last write (from PostgreSQL); only for a mirror that is not paused |
 
   The five gauges that are not counters are exported by every process, whatever its role (the area `mirror` is on every role),
   from `mirror_state` and the repository snapshot through the database gauge source, read at most once per 30 s, so every
   process reports the same values and an installation without a process that claims the queue `mirror` still shows a mirror
-  that nobody runs (Q-OPS-171). Only a remote repository in mode `mirror` has series. The alerts `TroveMirrorFailing` and
-  `TroveMirrorStale` read the last two gauges ([operations-and-observability.md](operations-and-observability.md) R-OPS-046,
+  that nobody runs (Q-OPS-171). Only a remote repository in mode `mirror` has series. The alerts `QuaderMirrorFailing` and
+  `QuaderMirrorStale` read the last two gauges ([operations-and-observability.md](operations-and-observability.md) R-OPS-046,
   Q-OPS-160, Q-OPS-171).
 - **Upstream log** ([operations-and-observability.md](operations-and-observability.md) R-OPS-011): every background request
   writes a record with `flight_role: mirror` and `on_behalf_of` empty (`system` in the log, as for every job); the record names
@@ -3913,13 +3913,13 @@ Priority: **MVP** · Covers: trove-only
 
 Acceptance criteria:
 
-- After a pass of a stub with 20 tarballs, `trove_mirror_items_total{result="stored"}` grew by 20 and the audit store holds
+- After a pass of a stub with 20 tarballs, `quader_mirror_items_total{result="stored"}` grew by 20 and the audit store holds
   20 `authz.write.allowed` events of tarballs with the actor `system` and `reason: mirror` for the repository (and one more per
   stored document, Q-REPO-169), and one `mirror.pass_completed`.
 - During a throttled pass the upstream log records carry `flight_role: mirror`.
 
 ### R-REPO-058 · The mirror on n replicas, without Valkey and during a drain
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The rows below extend the table of R-REPO-049 and of [architecture.md](architecture.md) R-ARCH-032 for the mirror.
 
@@ -3957,7 +3957,7 @@ Acceptance criteria (the e2e mirror tests of R-REPO-059):
   unfinished `mirror-pass` jobs for one repository.
 
 ### R-REPO-059 · The mirror's test suites
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **Counting stub upstreams** (`test/integration/mirror`), one per format, which count every request by path and can be told
   to throttle: npm with a package document per name, tarballs, a replication feed (`registry/_changes` with `since` and
@@ -4003,7 +4003,7 @@ Acceptance criteria:
 ## Behavior across replicas
 
 ### R-REPO-049 · Repository and proxy state on n replicas, without Valkey and during a drain
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The Kubernetes Service hands every request to a random `web` replica, without session affinity
 (INV-12; kube-proxy "select[s] a backend Pod at random" by default,
@@ -4071,7 +4071,7 @@ Rules:
   a transaction-mode pooler ([architecture.md](architecture.md) R-ARCH-019).
 
 Acceptance criteria (e2e profile `scatter` of [architecture.md](architecture.md) R-ARCH-032: three
-`web` replicas, every request balanced round robin, the edge's keep-alive to trove off; counting
+`web` replicas, every request balanced round robin, the edge's keep-alive to Quader off; counting
 stub upstream):
 
 - `npm view does-not-exist-4711` three times through `npm-remote`: the stub records one request.
@@ -4091,50 +4091,50 @@ stub upstream):
 ## Observability
 
 ### R-REPO-047 · Proxy and resolution observability
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - Every response of a remote or virtual repository MUST carry a `Cache-Status` header
-  ([RFC 9211](https://www.rfc-editor.org/rfc/rfc9211)) with the cache name `trove`, except on an
+  ([RFC 9211](https://www.rfc-editor.org/rfc/rfc9211)) with the cache name `quader`, except on an
   endpoint with exposure rules, where no answer carries it ([endpoints.md](endpoints.md) R-EP-018,
   Q-EP-60):
 
 | Situation | Header value |
 |---|---|
-| Fresh hit | `trove; hit; ttl=<seconds left>` |
-| Miss, fetched and stored | `trove; fwd=uri-miss; fwd-status=200; stored` |
-| Expired, revalidated | `trove; fwd=stale; fwd-status=304` (or `fwd-status=200; stored`) |
-| Stale served after a failed or slow refresh | `trove; fwd=stale; fwd-status=<status, if any>; detail=served-stale` |
-| Stale served without asking (offline, circuit open, no cache-fill right) | `trove; hit; detail=served-stale` |
-| Negative entry | `trove; hit; detail=negative` |
+| Fresh hit | `quader; hit; ttl=<seconds left>` |
+| Miss, fetched and stored | `quader; fwd=uri-miss; fwd-status=200; stored` |
+| Expired, revalidated | `quader; fwd=stale; fwd-status=304` (or `fwd-status=200; stored`) |
+| Stale served after a failed or slow refresh | `quader; fwd=stale; fwd-status=<status, if any>; detail=served-stale` |
+| Stale served without asking (offline, circuit open, no cache-fill right) | `quader; hit; detail=served-stale` |
+| Negative entry | `quader; hit; detail=negative` |
 | Collapsed onto another request's fetch | additional parameter `collapsed` |
-| Partial merge (R-REPO-020) | `trove; detail=partial` |
-| Merged document served from the merged-metadata cache | `trove; hit; ttl=<seconds left>` |
-| Merged document built for this request | `trove; fwd=miss` |
+| Partial merge (R-REPO-020) | `quader; detail=partial` |
+| Merged document served from the merged-metadata cache | `quader; hit; ttl=<seconds left>` |
+| Merged document built for this request | `quader; fwd=miss` |
 
-`trove_virtual_resolutions_total` counts one resolution per artifact request and per metadata
+`quader_virtual_resolutions_total` counts one resolution per artifact request and per metadata
 request of a virtual repository, by the tier that served it: `local`, `cache` (a merged document
 served from the merged-metadata cache or built from stored remote documents only, an artifact from
 a remote member's cache), `upstream` (an artifact fetched from, or a merge that refreshed a
-document from, an upstream) and `none` (404 or a failure). `trove_shadow_checks_total` counts the
+document from, an upstream) and `none` (404 or a failure). `quader_shadow_checks_total` counts the
 checks that ran: a write that the check does not apply to (L already holds a version, or a claim of
 L covers the name) is not counted (Q-REPO-115).
 
 - Metrics: the remote-repository metrics of [operations-and-observability.md](operations-and-observability.md)
-  apply as defined there (`trove_remote_cache_lookups_total`, `trove_remote_upstream_requests_total`,
-  `trove_remote_upstream_request_duration_seconds`, `trove_remote_upstream_up`, which is 0 while
-  the circuit of R-REPO-029 is open, and `trove_remote_collapsed_requests_total`). This page adds,
+  apply as defined there (`quader_remote_cache_lookups_total`, `quader_remote_upstream_requests_total`,
+  `quader_remote_upstream_request_duration_seconds`, `quader_remote_upstream_up`, which is 0 while
+  the circuit of R-REPO-029 is open, and `quader_remote_collapsed_requests_total`). This page adds,
   with the same label conventions:
 
 | Metric | Type | Labels |
 |---|---|---|
-| `trove_flight_lock_bypass_total` | counter | `reason`: `valkey_unavailable` ([architecture.md](architecture.md) R-ARCH-033, which defines the metric), `wait_timeout` and `draining` (R-REPO-026). Until 2026-10-28 this row was `trove_remote_lock_fallbacks_total`, for the exhausted lock pool. |
-| `trove_remote_source_network_unavailable_total` | counter | `repo` (R-REPO-024: the replica has no address in `sourceNetwork`) |
-| `trove_remote_fetch_queue_wait_seconds` | histogram | `repo` |
-| `trove_remote_integrity_failures_total` | counter | `repo`, `reason` (`mismatch`, `missing`, `digest_changed`) |
-| `trove_remote_egress_denied_total` | counter | `repo` |
-| `trove_virtual_resolutions_total` | counter | `repo`, `source` (`local`, `cache`, `upstream`, `none`) |
-| `trove_client_certificate_expiry_timestamp_seconds` | gauge | `name` |
-| `trove_shadow_checks_total` | counter | `repo` (the local repository), `outcome` (`no-exposure`, `clear`, `shadowing-approved`, `refused`, `undetermined-approved`, `unavailable`; R-REPO-048) |
+| `quader_flight_lock_bypass_total` | counter | `reason`: `valkey_unavailable` ([architecture.md](architecture.md) R-ARCH-033, which defines the metric), `wait_timeout` and `draining` (R-REPO-026). Until 2026-10-28 this row was `quader_remote_lock_fallbacks_total`, for the exhausted lock pool. |
+| `quader_remote_source_network_unavailable_total` | counter | `repo` (R-REPO-024: the replica has no address in `sourceNetwork`) |
+| `quader_remote_fetch_queue_wait_seconds` | histogram | `repo` |
+| `quader_remote_integrity_failures_total` | counter | `repo`, `reason` (`mismatch`, `missing`, `digest_changed`) |
+| `quader_remote_egress_denied_total` | counter | `repo` |
+| `quader_virtual_resolutions_total` | counter | `repo`, `source` (`local`, `cache`, `upstream`, `none`) |
+| `quader_client_certificate_expiry_timestamp_seconds` | gauge | `name` |
+| `quader_shadow_checks_total` | counter | `repo` (the local repository), `outcome` (`no-exposure`, `clear`, `shadowing-approved`, `refused`, `undetermined-approved`, `unavailable`; R-REPO-048) |
 
 - Every upstream request writes one record of the `upstream` log
   ([R-OPS-011](operations-and-observability.md)); this page adds the fields `flight_role`
@@ -4162,7 +4162,7 @@ Acceptance criteria:
 
 - `curl -sI …/api/npm/web/npm-remote/lodash` shows a `Cache-Status` header of the documented form on the
   first and on the second request.
-- After a stub outage opens the circuit, `trove_remote_upstream_up{repo="npm-remote"}` is 0 on
+- After a stub outage opens the circuit, `quader_remote_upstream_up{repo="npm-remote"}` is 0 on
   every replica within 2 s.
 
 ## Deferred
@@ -4202,7 +4202,7 @@ Acceptance criteria:
 | RMT-035 | P2 | A cache layout that differs from the upstream layout. |
 | RMT-038 | P2 | Listing upstream folders that are not cached. |
 | RMT-039 | P2 | Sharing a remote configuration with all authenticated users. |
-| RMT-040 | P2 | Chained remote repositories pointing at another trove instance, with extra exchanges. |
+| RMT-040 | P2 | Chained remote repositories pointing at another Quader instance, with extra exchanges. |
 | RMT-041 | P2 | Reporting downloads back to a chained source. |
 | RMT-042 | P2 | Synchronizing properties from a chained source. |
 | RMT-043 | P2 | Detecting deletion at a chained source. |
@@ -4213,7 +4213,7 @@ Acceptance criteria:
 | ART-044 | P2 | Browsing uncached remote content (with RMT-038). |
 | API-086 | P2 | Multi-target push replication from a local repository; the mirror mode pulls only (Q-REPO-143). |
 | API-087 | P2 | Enabling and disabling replications in bulk by target URL; a mirror is paused through its own document, and few repositories are mirrors (Q-REPO-143). |
-| API-088 | P2 | Event channels between instances for event-based pull; a feed is polled by the passes, and peer channels need trove-to-trove chaining (RMT-040) first (Q-REPO-143). |
+| API-088 | P2 | Event channels between instances for event-based pull; a feed is polled by the passes, and peer channels need Quader-to-Quader chaining (RMT-040) first (Q-REPO-143). |
 | API-089 | P2 | A global block of pull replication; the global offline switch (R-REPO-031) stops every mirror with all upstream traffic, `paused` stops one (Q-REPO-143). |
 | API-090 | P2 | Checksum-only replication for stores linked by storage-level replication; the mirror always transfers the bytes it stores (Q-REPO-143). |
 
@@ -4239,7 +4239,7 @@ MVP and P1 entries of the covered catalog pages that this page does not specify:
 
 ## Deliberate deviations from the catalog
 
-| Catalog behavior | trove | Why |
+| Catalog behavior | Quader | Why |
 |---|---|---|
 | Create and update answer plain text; duplicates and validation errors answer 400 | JSON; 409 for an existing key; 422 listing every violation (R-REPO-008, R-REPO-009) | Machine-readable, one round trip to fix a document |
 | Configuration reads return every setting the system knows | Only members of the class and format (R-REPO-010) | No dead fields to misread |
@@ -4285,7 +4285,7 @@ MVP and P1 entries of the covered catalog pages that this page does not specify:
   before it reaches an upstream, and documents map only their own package's paths (R-REPO-025,
   R-REPO-043).
 - **Cache fills** follow [R-AUTHZ-008](authorization.md). With the default `cacheFillAction: read`
-  and anonymous read on a remote repository, anyone can make trove download arbitrary upstream
+  and anonymous read on a remote repository, anyone can make Quader download arbitrary upstream
   packages; the concurrency limits (R-REPO-040) bound the rate, not the volume.
 - **Merged metadata never crosses permission boundaries:** its cache key contains the fingerprint of
   the members the caller can read (R-REPO-020).
@@ -4293,7 +4293,7 @@ MVP and P1 entries of the covered catalog pages that this page does not specify:
   metadata, never from request paths (R-REPO-043); every connection passes the egress rules at dial
   time (R-REPO-038); redirects cannot downgrade to plain HTTP and carry no credentials to other
   origins by default (R-REPO-039).
-- **Secrets** are write-only and either sealed or referenced; references cannot reach trove's own
+- **Secrets** are write-only and either sealed or referenced; references cannot reach Quader's own
   secrets (R-REPO-033). Logs carry redacted URLs.
 - **Integrity:** announced digests are verified before a client can receive a complete response, and
   a changed digest for a cached version raises a security event instead of replacing content
@@ -4337,8 +4337,8 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) This page | R-REPO-033 specifies key handling, the sealed format and rotation for repository secrets | Everything about upstream credentials in one place | Client-certificate keys, outbound-proxy passwords and webhook secrets (R-OPS-042) need the same mechanism; a second specification means a second key, a second rotation procedure and a second backup item |
 | (b) [architecture.md](architecture.md) for every stored secret | R-ARCH-021 owns the key ring, the sealed format `v1:<key id>:…`, rotation and the start-up canary; this page states what repository secrets rely on and uses it | One key ring, one rotation job, one backup item; R-ARCH-021 and the chart side (R-HA-027) already specify it | Every replica holds the key (H-8) |
 | (c) References only | Secret fields accept only `secretRef`; nothing is sealed in PostgreSQL | No key to manage | Credentials cannot be entered through the API or UI at all; every new upstream token needs a Secret change and a file on every replica |
-| (d) trove writes Kubernetes Secrets | Values entered through the API are written by trove into Kubernetes Secrets and read back at use time | No key ring of trove's own; the cluster's encryption at rest applies | trove needs RBAC to create and read Secrets in its namespace, so a compromised replica reads every Secret there, the database password included; the Kubernetes API becomes a stateful dependency, which INV-3 rules out |
-| (e) External key management service | Values are sealed and opened by an external service (a cloud KMS or a secrets engine's transit API); trove holds no key | The key never sits on a replica, which closes H-8 | Every unseal becomes a call to a further stateful dependency beside PostgreSQL and S3, which INV-3 rules out for the baseline; an outage of that service stops every authenticated upstream fetch; many installations have no such service |
+| (d) Quader writes Kubernetes Secrets | Values entered through the API are written by Quader into Kubernetes Secrets and read back at use time | No key ring of Quader's own; the cluster's encryption at rest applies | Quader needs RBAC to create and read Secrets in its namespace, so a compromised replica reads every Secret there, the database password included; the Kubernetes API becomes a stateful dependency, which INV-3 rules out |
+| (e) External key management service | Values are sealed and opened by an external service (a cloud KMS or a secrets engine's transit API); Quader holds no key | The key never sits on a replica, which closes H-8 | Every unseal becomes a call to a further stateful dependency beside PostgreSQL and S3, which INV-3 rules out for the baseline; an outage of that service stops every authenticated upstream fetch; many installations have no such service |
 
 **Choice:** (b) — R-ARCH-021 is the one stored-secret mechanism for every stored secret, and
 R-REPO-033 only uses it.
@@ -4347,7 +4347,7 @@ R-REPO-033 only uses it.
 while still allowing credentials to be typed into the API and UI. (a) would duplicate a
 security-critical primitive, and two implementations of sealing drift apart. (c) gives up entering
 credentials through the API, and with it through the UI, which uses only the API (INV-17). (d)
-widens trove's privilege footprint to reading Secrets, which is worse than H-8. (e) is the only
+widens Quader's privilege footprint to reading Secrets, which is worse than H-8. (e) is the only
 option that removes H-8, but it makes a further service a hard dependency of every authenticated
 fetch, and it does not need a mechanism of its own: a key ring whose keys an external service
 unwraps fits into R-ARCH-021 as an additional key source. The development agent would revisit this
@@ -4382,7 +4382,7 @@ per-replica fetch limit (R-REPO-040) and the circuit (R-REPO-029) bound the load
 validators (checked on 2026-10-28: the npm registry's package documents and nuget.org's version
 lists answer with `ETag` and `Last-Modified`), so (c) would add a branch for upstreams nobody uses
 by default. A floor therefore protects nothing and only takes freshness away from the operator. The
-development agent would revisit this if upstreams answer 429 to trove because of repositories set
+development agent would revisit this if upstreams answer 429 to Quader because of repositories set
 to `0`; a floor or a save-time warning would then be added.
 
 **Applied in the spec:** R-REPO-027 says that a period of `0` MUST be accepted, with the reasons
@@ -4440,7 +4440,7 @@ mark only on metadata entries and adds a partial index for loading. R-REPO-029: 
 split into the document rule and a "Gone packages" rule; replicas hold the gone packages in memory,
 reloaded through `cluster.Notify("upstream_state", …)`, the change area of
 [architecture.md](architecture.md) R-ARCH-018, which needs neither `NOTIFY` nor Valkey (until
-2026-10-28 the `NOTIFY` channel `trove_upstream_state`); npm's replacement is restated, and since
+2026-10-28 the `NOTIFY` channel `quader_upstream_state`); npm's replacement is restated, and since
 2026-10-28 it says that npm reads `upstream_gone_at` per request and serves a cached artifact only
 after its package document is current ([formats/npm.md](formats/npm.md) Q-NPM-13). The NuGet acceptance
 criterion now expects 404 for the cached `.nupkg` on every address and a self-healing request for
@@ -4510,7 +4510,7 @@ through the cross-page consequences.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice stays (b). Negative entries moved to Valkey (R-REPO-028), and a value read from Valkey may only make trove refuse, never admit a write ([architecture.md](architecture.md) R-ARCH-030). The serve decision of R-REPO-048 therefore no longer reads negative entries: a name for which a remote holds only a negative entry is probed. "Stored state" in option (e) now means PostgreSQL entries only.
+Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice stays (b). Negative entries moved to Valkey (R-REPO-028), and a value read from Valkey may only make Quader refuse, never admit a write ([architecture.md](architecture.md) R-ARCH-030). The serve decision of R-REPO-048 therefore no longer reads negative entries: a name for which a remote holds only a negative entry is probed. "Stored state" in option (e) now means PostgreSQL entries only.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4553,7 +4553,7 @@ to after R-ARCH-014 steps 4 and 5 and before step 6, because the outcome depends
 auto claim is not created when another repository's claim in effect in a containing virtual
 repository covers the name (new bullet and acceptance criterion); R-REPO-022 and R-REPO-023
 acceptance criteria that publish a name the stub already serves now publish as a `manage` holder.
-R-REPO-047: metric `trove_shadow_checks_total`, security event
+R-REPO-047: metric `quader_shadow_checks_total`, security event
 `repository.remote_package_shadowed`, and probe log records. Security notes: new bullet. H-10:
 rewritten to the remaining gap, with configuration changes and the disclosure of new names to
 upstreams added in this review. On 2026-10-28: R-REPO-048 step 2 consults stored gone marks only,
@@ -4601,7 +4601,7 @@ flight.
   A waiter whose holder was cut acquires the flight within one poll interval and fetches again, well
   inside both.
 - Revisit when container-image layers or large generic files (P1) show flights cut at shutdown in
-  `trove_http_transfers_cut_total` and the `draining` bypass count. (d) for those formats, or a
+  `quader_http_transfers_cut_total` and the `draining` bypass count. (d) for those formats, or a
   dedicated Deployment with a longer grace period ([architecture.md](architecture.md) Q-ARCH-18),
   is then the next step.
 
@@ -4624,7 +4624,7 @@ registry does not.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Per replica | The earlier rule | No coordination; upstream capacity grows with trove's | The limit an operator sets is multiplied by a replica count that autoscaling changes; 20 replicas send 640 concurrent fetches to one upstream at the old default |
+| (a) Per replica | The earlier rule | No coordination; upstream capacity grows with Quader's | The limit an operator sets is multiplied by a replica count that autoscaling changes; 20 replicas send 640 concurrent fetches to one upstream at the old default |
 | (b) A cluster budget shared out per replica | Each replica allows `ceil(budget ÷ n)` fetches, with n the live client-serving replicas in the replica registry | One meaning whatever the replica count; no shared state, no Valkey round trip, no slot that a killed replica leaks; reuses the count that the rate-limit fallback already keeps (R-ARCH-034) | Rounding up admits up to n − 1 extra fetches, and a budget below n admits one per replica; after a scale event the shares lag by one heartbeat; one busy replica may queue while another has free slots |
 | (c) A cluster-wide semaphore in Valkey | Slots held as Valkey keys with a TTL; (b) as the fallback | Exact bound while Valkey is up | Needs a slot set without scripts, on the command set R-ARCH-031 grants (`GET`, `SET`, `DELIFEQ`, `INCR`, `EXPIRE`, `MULTI`, `EXEC`): one round trip per slot tried, slots of killed holders blocked until their TTL, and one more Valkey dependency on every fetch, to protect a bound that (b) already keeps approximately |
 | (d) A cluster-wide rate limit | The R-ARCH-034 limiter on fetch starts per second | Reuses the limiter | Limits starts, not connections: a slow upstream piles up open fetches anyway; the per-replica slots would still be needed |
@@ -4645,7 +4645,7 @@ registry does not.
   queued fetch of up to `proxy.queue_timeout_seconds`, and collapsed requests take no slot.
 - The default of 64 for the cluster is a proposal, not a measurement. It is below the earlier
   per-replica default times three replicas (96), but it does not grow to 640 at 20 replicas.
-- Revisit if upstreams answer 429 to trove under the reference load (the budget is then too high,
+- Revisit if upstreams answer 429 to Quader under the reference load (the budget is then too high,
   or (d) is added), if cold-cache builds queue on fetch slots (the default is then too low), or if
   budgets below the replica count become common ((c) is then the exact form).
 
@@ -4695,7 +4695,7 @@ circuit.
 **Applied in the spec:** R-REPO-024: the member is `sourceNetwork`, its bullet, the upstream-test
 field `sourceAddress` and two acceptance criteria. R-REPO-008: `invalid_source_network`, and the
 warning `source_network_single_address`. R-REPO-047: the metric
-`trove_remote_source_network_unavailable_total`. Deliberate deviations: new row. Cross-page:
+`quader_remote_source_network_unavailable_total`. Deliberate deviations: new row. Cross-page:
 [operations-and-observability.md](operations-and-observability.md) metrics catalog (the new
 counter). No other spec page names `sourceAddress` (checked on 2026-10-28).
 
@@ -5224,7 +5224,7 @@ Context: R-REPO-040 divides `limits.maxConcurrentFetches` by the number of live 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-REPO-029 says the first request on each replica after `open_until` probes and the others answer as open, that healthy traffic causes no writes, and that `trove_remote_upstream_up` is 0 on every replica within 2 s.
+Context: R-REPO-029 says the first request on each replica after `open_until` probes and the others answer as open, that healthy traffic causes no writes, and that `quader_remote_upstream_up` is 0 on every replica within 2 s.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -5542,7 +5542,7 @@ Context: R-REPO-048 fixes the outcomes. It leaves open how several virtual repos
 
 **Choice:** (a). The probe is made on behalf of the publisher without the cache-fill check and stores nothing. `formats.ShadowOutcome` gains `Refusal` (the 403 or 503 to answer, naming the package and the virtual repositories the caller can read, never a remote member) and `Shadowed` (the pairs for `repository.remote_package_shadowed`). The codes `shadows_remote_package` and `shadow_check_unavailable` are registered in the problem catalog.
 
-**Rationale:** the spec says an unreachable upstream must not be a way around the check and that a value read from outside may only make trove refuse; (a) extends that to the engine's own failures. The development agent would revisit the approach to read errors if the database fault window of a publish turns out to be a support cost.
+**Rationale:** the spec says an unreachable upstream must not be a way around the check and that a value read from outside may only make Quader refuse; (a) extends that to the engine's own failures. The development agent would revisit the approach to read errors if the database fault window of a publish turns out to be a support cost.
 
 **Applied in the spec:** R-REPO-048 (the fail-closed bullet), R-REPO-047 (the metric).
 
@@ -5722,7 +5722,7 @@ Context: Q-AUTHZ-176 and Q-AUTHZ-178 fix the prefix and the virtual rule. Open: 
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Field errors of the validation pass, the code of the rule at the top as well; the prefix binds a project administrator only (chosen) | `project_prefix_required` at `/key`, `unknown_project` at `/project`, `repository_outside_project` at the member or the deploy target, all with `errors[]`; the top-level `code` is `project_prefix_required` or `repository_outside_project` when one of them is among the violations; a caller that is only a project administrator and sends no `project` gets 403 `forbidden`; an administrator of trove assigns any project with any key | Every violation of a document in one answer (R-REPO-008); the acceptance of R-AUTHZ-026 reads its code at the top | A second top-level code beside `reserved_name` |
+| (a) Field errors of the validation pass, the code of the rule at the top as well; the prefix binds a project administrator only (chosen) | `project_prefix_required` at `/key`, `unknown_project` at `/project`, `repository_outside_project` at the member or the deploy target, all with `errors[]`; the top-level `code` is `project_prefix_required` or `repository_outside_project` when one of them is among the violations; a caller that is only a project administrator and sends no `project` gets 403 `forbidden`; an administrator of Quader assigns any project with any key | Every violation of a document in one answer (R-REPO-008); the acceptance of R-AUTHZ-026 reads its code at the top | A second top-level code beside `reserved_name` |
 | (b) Separate errors before validation | The first violation answers | Simple | A client fixes one problem per request |
 
 **Choice:** (a).
@@ -5738,9 +5738,9 @@ Status: **Decided by the development agent** — selected from the options below
 Context: a project administrator with `manageRepositories` creates and changes the project's remote repositories and tests
 their upstream, saved and unsaved (Q-AUTHZ-173, Q-AUTHZ-184). The security audit of phase 5a found two ways to send a secret
 that is not the project administrator's to a host it chooses: (1) a `secretRef` names any file of `config_as_code.secrets_dir`
-or any `TROVE_CAC_` variable, and the references are visible in the full documents of its repositories, so an unsaved test or
+or any `QUADER_CAC_` variable, and the references are visible in the full documents of its repositories, so an unsaved test or
 a write with its own url sends a partner's token there; (2) a write that changes `url` of a repository an administrator of
-trove assigned to the project keeps the sealed password (`{"set": true}`), and the next fetch or the saved test sends it to the
+Quader assigned to the project keeps the sealed password (`{"set": true}`), and the next fetch or the saved test sends it to the
 new origin, as an `extraHosts` entry with `sendCredentials` or `forwardAuthOnRedirect` does.
 
 | Option | What it means | For | Against |
@@ -5796,7 +5796,7 @@ own to choose.
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. **Superseded by [Q-AUTHZ-206](authorization.md#q-authz-206--every-repository-belongs-to-exactly-one-project) and [Q-REPO-212](#q-repo-212--a-repository-is-addressed-inside-its-project-and-no-repository-is-shared)**: only virtual repositories of the same project can list a repository, so a delete's `detach` never meets one outside the project.
 
 Context: R-REPO-013's `detach=true` removes the repository from every virtual repository that lists it, and the 409 without it
-names them. For a project administrator that edits virtual repositories outside its project (an administrator of trove may list
+names them. For a project administrator that edits virtual repositories outside its project (an administrator of Quader may list
 a project repository in a shared virtual repository) and names their keys, which R-AUTHZ-026 keeps from it.
 
 | Option | What it means | For | Against |
@@ -6066,7 +6066,7 @@ project (R-AUTHZ-026); Q-REPO-127 and Q-REPO-128 keep installation-level paths f
 **Choice:** (b). The comparison is with the canonical stored section under the row lock, as in Q-REPO-127: a document read and
 sent back saves.
 
-**Rationale:** the populate right decides who may make trove fetch one package; a mirror decides on all of them, so it takes
+**Rationale:** the populate right decides who may make Quader fetch one package; a mirror decides on all of them, so it takes
 the installation's configuration right. The development agent would revisit (c) when projects get quotas.
 
 **Applied in the spec:** R-REPO-050, the security notes; [authorization.md](authorization.md) R-AUTHZ-026 (a bullet). Code:
@@ -6081,15 +6081,15 @@ event channels, global blocks and checksum-only transfer, all P2.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) None: the mirror is trove-only | Nothing changes in the catalog | No commitment | The mirror does what API-082 to API-085 describe for pull, so it would be specified twice later |
+| (a) None: the mirror is quader-only | Nothing changes in the catalog | No commitment | The mirror does what API-082 to API-085 describe for pull, so it would be specified twice later |
 | (b) Pull forward what a pull mirror is: the configuration document (API-082), its read and change (API-083), the status (API-084) and the run (API-085); leave push, bulk switches, peer channels, the global block and checksum replication (chosen) | Four entries become MVP | The beta's mirror covers the catalog's pull shape; the rest keeps its own design | API-082 and API-083 are covered in the repository document's form, a deliberate deviation |
-| (c) All nine | Replication complete | One topic closed | Push, peer channels and checksum replication need trove-to-trove chaining (RMT-040) and storage-level replication, which the beta does not have |
+| (c) All nine | Replication complete | One topic closed | Push, peer channels and checksum replication need Quader-to-Quader chaining (RMT-040) and storage-level replication, which the beta does not have |
 
 **Choice:** (b). API-086 (multi-push), API-087 (bulk switches by target URL), API-088 (peer event channels), API-089 (global
 block; the global offline switch stops every mirror, `paused` one) and API-090 (checksum-only) stay P2, in the page's
 Deferred table with their reasons.
 
-**Rationale:** the beta needs pull; everything left needs a second trove instance as a peer. The development agent would
+**Rationale:** the beta needs pull; everything left needs a second Quader instance as a peer. The development agent would
 revisit API-089 if installations run so many mirrors that pausing them one by one is a burden.
 
 **Applied in the spec:** R-REPO-050 and R-REPO-056 (`Covers:`), Deferred, Deliberate deviations; the catalog priorities of
@@ -6418,7 +6418,7 @@ R-REPO-054 defines the waits, the halving once per wait and the long wait. Three
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A wait is at least one second; a late answer is counted in `trove_mirror_rate_limited_total` and changes neither the wait nor the window; a wait over 300 s is written (`rate_limited_until`, `next_pass_at`) at once and stops new requests, the requests in flight finish, and the job ends with `deferred` (chosen) | No hot loop; one halving and one state write per wait; the next job is due even if this process dies at once | The in-flight requests of a deferred pass may still store content | A late answer cannot lengthen a wait |
+| (a) A wait is at least one second; a late answer is counted in `quader_mirror_rate_limited_total` and changes neither the wait nor the window; a wait over 300 s is written (`rate_limited_until`, `next_pass_at`) at once and stops new requests, the requests in flight finish, and the job ends with `deferred` (chosen) | No hot loop; one halving and one state write per wait; the next job is due even if this process dies at once | The in-flight requests of a deferred pass may still store content | A late answer cannot lengthen a wait |
 | (b) Wait exactly what the upstream says | Literal | No floor | An upstream that keeps answering `429` with `Retry-After: 0` is asked in a tight loop |
 | (c) Write the long wait when the job ends | One write at the end | Fewer writes | A process that dies between the answer and its end forgets the wait |
 
@@ -6576,7 +6576,7 @@ per package and attempt, which is what R-REPO-051 already says a pass does for a
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-REPO-054 halves the window once per wait and its criterion says `trove_mirror_concurrency` is at most half of its value before
+Context: R-REPO-054 halves the window once per wait and its criterion says `quader_mirror_concurrency` is at most half of its value before
 the answer. The successes of the requests that were in flight when the wait began (up to `window − 1` of them) arrived after the
 halving, counted towards "w successes in a row" and grew the halved window by one while the pass waited (4 to 2 to 3).
 
@@ -6794,7 +6794,7 @@ R-REPO-055 lets a client fetch pre-empt a background request. The items of a fil
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `callDiscovery` waits `PreemptRetry` (5 s) and sends the same request again, counts `trove_mirror_preempted_total`, and ends only with the pass (chosen) | A client that presses cannot fail a mirror; the pass yields as R-REPO-055 says | One loop for every discovery request | A pass can wait as long as clients press |
+| (a) `callDiscovery` waits `PreemptRetry` (5 s) and sends the same request again, counts `quader_mirror_preempted_total`, and ends only with the pass (chosen) | A client that presses cannot fail a mirror; the pass yields as R-REPO-055 says | One loop for every discovery request | A pass can wait as long as clients press |
 | (b) A failure of the attempt | The merged behaviour | No code | Every busy hour of a repository would back the mirror off for minutes to hours |
 | (c) Never pre-empt discovery | No rule in the host | Simple for the engine | A discovery request would hold a slot clients need; the contract of the seam says every background request may be pre-empted |
 
@@ -6812,7 +6812,7 @@ The seam names `*RefusedError` for an artifact that a background fill cannot sto
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `refused` is a new value of the label `result` of `trove_mirror_items_total`; the item is skipped and the package goes on and is done; a transient failure of an item is counted `failed`, the remaining items are tried, and the package records one failed attempt after them (chosen) | A refused version never blocks the others; a flaky item costs one attempt of the package per round, not one per item | The attempts and the retry are the package's, as R-REPO-053 step 3 says | A package with a refused item is done and is not retried by this pass |
+| (a) `refused` is a new value of the label `result` of `quader_mirror_items_total`; the item is skipped and the package goes on and is done; a transient failure of an item is counted `failed`, the remaining items are tried, and the package records one failed attempt after them (chosen) | A refused version never blocks the others; a flaky item costs one attempt of the package per round, not one per item | The attempts and the retry are the package's, as R-REPO-053 step 3 says | A package with a refused item is done and is not retried by this pass |
 | (b) Every error fails the package at once | The merged behaviour | Simple | A removed or blocked version keeps every later version of the package out of the mirror |
 | (c) A refused artifact is a failure with no retry | Counts as failed | Visible in `failed` | The status shows packages failed for a decision the operator or the upstream made |
 
@@ -7027,11 +7027,11 @@ upstream's fetch slots; the CPU a pass spends on hashing, storing and verifying 
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Per change: the open-request bound, the pre-emptions and the installs are enforced, the time ratio is logged; the nightly run enforces the ratio with `TROVE_PERF_GATE=1` (chosen) | The rule of Q-ARCH-220 for timing bounds on the CI runners (the owner's option B of 2026-10-30) | The per-change leg tests what the mechanism controls; a time miss is still seen every night and becomes a finding | A regression of the ratio shows a day later |
-| (b) Enforce the ratio per change | As specified | Immediate | Fails on the runner's CPU, not on trove: the slots held |
+| (a) Per change: the open-request bound, the pre-emptions and the installs are enforced, the time ratio is logged; the nightly run enforces the ratio with `QUADER_PERF_GATE=1` (chosen) | The rule of Q-ARCH-220 for timing bounds on the CI runners (the owner's option B of 2026-10-30) | The per-change leg tests what the mechanism controls; a time miss is still seen every night and becomes a finding | A regression of the ratio shows a day later |
+| (b) Enforce the ratio per change | As specified | Immediate | Fails on the runner's CPU, not on Quader: the slots held |
 | (c) Raise the bound to 150 % | One number | Green on the runner | Hides a real regression on a fast host; the number is the runner's, not the requirement's |
 
-**Choice:** (a). The nightly job `e2e-mirror` sets `TROVE_PERF_GATE=1` for the set `mirror`.
+**Choice:** (a). The nightly job `e2e-mirror` sets `QUADER_PERF_GATE=1` for the set `mirror`.
 
 **Rationale:** the bound on the upstream's open requests is what R-REPO-055 controls and what a defect would break (the stall of a
 client behind a background flight, Q-REPO-179, broke the ratio and is caught by it on any host). The development agent would
@@ -7057,7 +7057,7 @@ Context: R-REPO-059 asks for three client-serving replicas and two processes tha
 
 **Rationale:** the set has to prove the topology the specification fixes. The development agent would revisit (a) if the chart gives a pool a way to claim a queue in addition to the main worker's.
 
-**Applied in the spec:** R-REPO-059 (the e2e set). Code: `deploy/dev/values-mirror.yaml`, `up.sh` (`TROVE_PROFILE=mirror`), `test/e2e/mirror_env_test.go`.
+**Applied in the spec:** R-REPO-059 (the e2e set). Code: `deploy/dev/values-mirror.yaml`, `up.sh` (`QUADER_PROFILE=mirror`), `test/e2e/mirror_env_test.go`.
 
 ### Q-REPO-174 · The npm mirrors of the e2e set are remotes of the name `registry.npmjs.org`, which a CoreDNS rewrite makes the npm test upstream
 
@@ -7067,9 +7067,9 @@ Context: the method `feed` is offered only for the well-known upstream (`https:/
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A CoreDNS `rewrite` of both names to the Service `npmstub`, made and undone by the tests; the stub's certificate carries both names (chosen) | The remote's URL is the real one and the feed runs as against the public registry | The method of the product's main path is exercised end to end; no product change | The cluster's DNS is edited for the run; a run that is killed leaves the rewrite until the next run removes it (marker `# trove-e2e-mirror`) |
+| (a) A CoreDNS `rewrite` of both names to the Service `npmstub`, made and undone by the tests; the stub's certificate carries both names (chosen) | The remote's URL is the real one and the feed runs as against the public registry | The method of the product's main path is exercised end to end; no product change | The cluster's DNS is edited for the run; a run that is killed leaves the rewrite until the next run removes it (marker `# quader-e2e-mirror`) |
 | (b) `names` against the private URL | Up to 100 exact patterns | No DNS change | Not the feed; at most 100 packages, so not the pass of 300 |
-| (c) `hostAliases` on the trove pods | The names resolve in the pod | No cluster DNS edit | The chart has no such value; a value added for a test |
+| (c) `hostAliases` on the Quader pods | The names resolve in the pod | No cluster DNS edit | The chart has no such value; a value added for a test |
 
 **Choice:** (a) for the load and the drain; (b) for the Valkey and the two-claimant tests, whose passes are small (40 and 3 names). The feed's incremental pass and the replication host's credential rule are the integration tier's.
 
@@ -7161,7 +7161,7 @@ but not when: a pass that sends nothing during a wait is a statement about times
 |---|---|---|---|
 | (a) One remote per scenario over its own hundred of the extras (the include pattern `e2e-mirror-<run>-<digit>*`), the upstream's request log with arrival times, statuses and `Retry-After`, the process lost by a force-delete, a stop and a freeze of its node (chosen) | Every scenario starts from an empty store for its names, so "no tarball fetched twice beyond the fetches in flight" is exact; the waits are checked on the upstream's clock alone | No clock of the test host enters the assertions; a scenario that fails leaves the others unaffected; the freeze lets the lost process come back and write under an old fence | Seven scenarios of 3 to 7 minutes make the long set about 40 minutes |
 | (b) One remote over the 300 extras for all scenarios, one after the other | Fewer remotes | Fewer API calls | The second scenario finds the first one's tarballs stored and asks the upstream for nothing: the counters prove nothing |
-| (c) The waits read from the status (`rateLimit.until`) and the test host's clock | No new stub endpoint | Smaller stub | The status is trove's view, the test host's clock is not the cluster's: an assertion about what the upstream received would rest on the thing under test |
+| (c) The waits read from the status (`rateLimit.until`) and the test host's clock | No new stub endpoint | Smaller stub | The status is Quader's view, the test host's clock is not the cluster's: an assertion about what the upstream received would rest on the thing under test |
 
 **Choice:** (a). The stub's `GET /-/stub/requests` returns the registry host's requests with their arrival and completion times, status and
 `Retry-After`; a wait is held against the pass from 500 ms after the answer that named it (fetches already on their way) to its end less one
@@ -7286,9 +7286,9 @@ item as a cache miss and fetches it again; nothing implemented it, and no read m
   view, offline, the circuit, the upstream's answer, the populate check, other content upstream). Never the `404` of an uncached
   item (the item exists, R-HA-024) and never `500`. A mirror's pass keeps the outcomes of a miss, which it reads (an open circuit is
   a wait, R-REPO-054). An object store that is unavailable during the fill keeps its own `503 object_store_unavailable`.
-- **Observability.** The blob store counts `trove_storage_blobs_damaged_total{status="missing"}` once per blob and logs the
+- **Observability.** The blob store counts `quader_storage_blobs_damaged_total{status="missing"}` once per blob and logs the
   digest; the engine logs the repository, the path, the digest and the status at most once a minute per item and replica; the
-  chart's `TroveBlobMissing` reads the counter ([storage.md](storage.md) Q-STOR-152).
+  chart's `QuaderBlobMissing` reads the counter ([storage.md](storage.md) Q-STOR-152).
 - **Concurrency.** The fill is R-REPO-026's: one flight per replica and the flight lock across replicas.
 
 **Rationale:** the specification had decided the behaviour (R-STOR-027: "a remote repository treats an item with damaged content
@@ -7388,7 +7388,7 @@ format's `404`. Such a pair exists: a negative entry is never removed by a fill,
   lost before and finds it lost still, answers the same and starts its own replica's backoff. 5 minutes: neither cause changes within
   seconds, and each fetch is a whole transfer; the read's recheck of Q-STOR-153 still serves an object that comes back meanwhile.
 - `proxy.upstream_digest_changed` is written once an hour per item and pair of digests on a replica, as the check of announced digests is
-  (`trove_remote_integrity_failures_total{reason="digest_changed"}` counts every fetch).
+  (`quader_remote_integrity_failures_total{reason="digest_changed"}` counts every fetch).
 - A pass that joined a client's flight reads the item again when it found it lost: still lost is a failure of the item, never Present.
 - A lost document beside a negative entry answers the `503` (step 8), as an artifact does.
 
@@ -7432,7 +7432,7 @@ Status: **Decided by the development agent** — selected from the options below
 Context: the scheduled nightly run 42194413882 failed `TestMirror_R_REPO_055_ClientsFirst/npm` on its ratio (F-63): the median install with a pass took
 161 % of the best install without one (pairs of 14.2/12.2 s, 14.0/22.6 s, 14.0/23.4 s), on the GitHub-hosted runner (4 vCPUs) that Q-REPO-197's gate runs on.
 The open requests stayed at 9 of 12 and the pre-emptions grew. The pod logs of the run (cluster-state artifact) split each client tarball request into its
-phases: the upstream fetch took 122 ms at the median in every pair, with and without a pass; what grew in the two slow pairs was trove's own work around it,
+phases: the upstream fetch took 122 ms at the median in every pair, with and without a pass; what grew in the two slow pairs was Quader's own work around it,
 the wait before the document fetch (p90 97 to 118 ms without a pass, 265 ms with), between the document and the tarball fetch (p90 168 to 211 ms, 451 to
 530 ms) and after the fetch, storing and answering (p90 35 to 93 ms, 326 to 380 ms; 12 to 26 s against 82 s summed over the 707 tarballs). That is the work
 the pass does itself, hashing, storing and verifying (CPU and the one object-store pod), taken from the installs on a machine that runs the cluster, both
@@ -7442,15 +7442,15 @@ The suspicion of F-63 that the miss came from another workflow running at the sa
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Run the set `mirror` of the nightly job on `large` (limit 16 CPUs) (chosen) | `runs-on: large` for that matrix row; the gate stays as it is | The ratio then measures what clients first controls, the upstream's slots, as on the 17-CPU host; the disk reason for the hosted runner is gone | `large` pods share their nodes with other legs (F-37); a miss there needs the same phase split before it is called trove's |
+| (a) Run the set `mirror` of the nightly job on `large` (limit 16 CPUs) (chosen) | `runs-on: large` for that matrix row; the gate stays as it is | The ratio then measures what clients first controls, the upstream's slots, as on the 17-CPU host; the disk reason for the hosted runner is gone | `large` pods share their nodes with other legs (F-37); a miss there needs the same phase split before it is called Quader's |
 | (b) Keep the hosted runner and raise the bound | One number | Green | Hides a real regression; the number is the runner's (Q-REPO-197 (c)) |
-| (c) Keep the hosted runner and give the pass a lower CPU share in the product | A CPU priority between processes | Would help a small single node | trove's pass runs in its own pool of `worker` processes, normally on other nodes; R-REPO-055 is about the upstream's fetch budget, and CPU between pods is the platform's (requests and limits) |
+| (c) Keep the hosted runner and give the pass a lower CPU share in the product | A CPU priority between processes | Would help a small single node | Quader's pass runs in its own pool of `worker` processes, normally on other nodes; R-REPO-055 is about the upstream's fetch budget, and CPU between pods is the platform's (requests and limits) |
 
 **Choice:** (a).
 
 **Rationale:** the requirement's ratio is a statement about the fetch budget, and its failure must point at the fetch budget: the phase split showed the
 upstream fetches unchanged and the local work slowed, which on 4 vCPUs is the pass's CPU. The bound and its estimator (the median with a pass against the best
-without) are unchanged. The development agent would revisit this if the ratio misses on `large`, where the phase split would then point at trove.
+without) are unchanged. The development agent would revisit this if the ratio misses on `large`, where the phase split would then point at Quader.
 Revisited by [Q-REPO-235](#q-repo-235--the-repositorys-share-of-a-fetch-slot-ends-with-the-upstream-exchange-the-replicas-slot-with-the-fetch)
 and [Q-REPO-236](#q-repo-236--the-next-reading-of-clients-first-records-the-databases-waits-the-standbys-lag-the-runners-pressure-the-tests-events-and-the-slot-wait):
 the ratio missed on `large` (131 % in nightly run 42258656348), and the phase split pointed at the fetch slot held through a commit that stalls.
@@ -7539,7 +7539,7 @@ Context: a key selector of a global policy is stored by the repository's ID and 
 ([Q-AUTHZ-216](authorization.md#q-authz-216--repository-selectors-name-the-project-in-instance-contexts-and-a-bare-key-inside-a-project)),
 and [Q-REPO-217](#q-repo-217--a-repository-moves-to-another-project-through-an-operation-of-its-own-and-only-while-nothing-of-its-project-names-it)
 checks only what the source project names. An Owner of two projects who moves a repository so carries a grant an administrator
-of trove wrote for one project into the other, where its other Owners neither see the global policy nor can remove it.
+of Quader wrote for one project into the other, where its other Owners neither see the global policy nor can remove it.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -7554,7 +7554,7 @@ with a key selector on the repository's ID as `{"kind": "global_policy", "name":
 stored without the ID and refuses nothing. An exposure rule, which also holds the repository by ID
 ([endpoints.md](endpoints.md) R-EP-012), refuses nothing either: it is a ceiling and grants no one anything.
 
-**Rationale:** whoever moves a grant into a project should be someone who may change that grant; an administrator of trove is,
+**Rationale:** whoever moves a grant into a project should be someone who may change that grant; an administrator of Quader is,
 an Owner is not. The policy's name is what the Owner gives the administrator, and it tells no more than that a global policy
 names its own repository. The development agent would revisit this if Owners get a read of the global policies that touch their
 projects, or if exposure rules start to grant.
@@ -7660,14 +7660,14 @@ lowers the whole install's throughput (50 down to 21 to 26 requests per second i
 - The flight still ends after the commit: followers and waiters (R-REPO-026) are answered from the committed entry, and the leader's own client
   still gets the withheld tail only after the commit (R-REPO-041).
 
-**Rationale:** the upstream is done with a fetch once its body has been read; holding the upstream's share through trove's own commit makes the
+**Rationale:** the upstream is done with a fetch once its body has been read; holding the upstream's share through Quader's own commit makes the
 upstream's budget a function of the database's latency, which is the coupling the split of F-63 measured, and it makes a pre-emption cancel a
 transfer that had already completed. The replica's limit protects work that goes on until the commit ends, so it stays with the fetch. (d) does
 not make a stalled commit faster: a request in a stall window still waits for its own commit. In such a window the install is then bounded by
 npm's requests in flight over each request's own time, not by the 9 slots over a slot time that includes the commit; how much of the 131 % that
 recovers is what the next nightly reading measures, with the records of Q-REPO-236. The development agent would revisit (d) if that reading
 names contention between the commits of one repository as the stall (more of them at once would deepen it), or if fetches that are storing exhaust
-the replica's limit (`trove_remote_fetch_queue_wait_seconds` grows with the replica's limit the exhausted one).
+the replica's limit (`quader_remote_fetch_queue_wait_seconds` grows with the replica's limit the exhausted one).
 
 **Applied in the spec:** R-REPO-025 (step 10), R-REPO-040 (the two parts of a slot, two acceptance criteria), R-REPO-055 (the end of the exchange,
 the unit criterion). Code: [internal/proxy/slots.go](../../internal/proxy/slots.go), [fetch.go](../../internal/proxy/fetch.go),
@@ -7688,7 +7688,7 @@ without a pass too, less. The artifacts of the readings hold no database, disk o
 fails and after `TestMain` switched the profile back, which removes the pool's processes and with them the pass's logs; and the test logs a pair
 only at its end, so a stall cannot be placed against what the test was doing. Open, in order:
 
-1. Is the time spent in PostgreSQL (a statement, the commit) or between the statements, in trove or on the way?
+1. Is the time spent in PostgreSQL (a statement, the commit) or between the statements, in Quader or on the way?
 2. If in PostgreSQL, what does it wait for? The dev cluster replicates synchronously (`synchronous: {method: any, number: 1}` in
    [postgres.yaml](../../deploy/dev/postgres.yaml)), so every committing write waits for the standby's flush; the primary's own WAL flush, a lock
    between commits and CPU are the other candidates. A read-only transaction waits for neither flush, which fits the split.
@@ -7704,9 +7704,9 @@ only at its end, so a stall cannot be placed against what the test was doing. Op
 
 | What is recorded | Where | The question it answers | Built |
 |---|---|---|---|
-| `log_min_duration_statement: 50ms` with `log_parameter_max_length: 0` | [postgres.yaml](../../deploy/dev/postgres.yaml), every profile | 1. A statement or `COMMIT` of the role `trove` above 50 ms in the primary's log means the server saw the stall; none rules out one slow statement only: the time is then between statements (`idle in transaction` in the sampler) or spread over several (`active` backends). The setting is made on the role `trove` (`ALTER ROLE`, in the bootstrap's `postInitApplicationSQL`), which survives the `DROP DATABASE` of the upgrade set, and the operator's own statements run as `postgres`, so they never land in the log; `log_parameter_max_length` stays cluster-wide. 50 ms lies between the transaction's median idle (10 ms) and in a window (90 ms). No bound value is logged: the log goes into a CI artifact, and a value can be a token's hash | yes |
+| `log_min_duration_statement: 50ms` with `log_parameter_max_length: 0` | [postgres.yaml](../../deploy/dev/postgres.yaml), every profile | 1. A statement or `COMMIT` of the role `quader` above 50 ms in the primary's log means the server saw the stall; none rules out one slow statement only: the time is then between statements (`idle in transaction` in the sampler) or spread over several (`active` backends). The setting is made on the role `quader` (`ALTER ROLE`, in the bootstrap's `postInitApplicationSQL`), which survives the `DROP DATABASE` of the upgrade set, and the operator's own statements run as `postgres`, so they never land in the log; `log_parameter_max_length` stays cluster-wide. 50 ms lies between the transaction's median idle (10 ms) and in a window (90 ms). No bound value is logged: the log goes into a CI artifact, and a value can be a token's hash | yes |
 | `track_wal_io_timing: on` | postgres.yaml | 2. The WAL write and fsync times, which PostgreSQL 18 keeps in `pg_stat_io` and only with this switch | yes |
-| A sampler on the primary every 250 ms, one `psql` session for the clients-first npm subtest, one JSON line per sample: `pg_stat_activity` (the sessions that are not idle and not waiting for work, wait event type `Activity`) counted by backend type, state, wait event type and wait event and the first 48 characters of the query; `pg_stat_replication` (sync state, write, flush and replay lag, bytes behind); `pg_stat_wal`; the rows of `pg_stat_io` that wrote, evicted or synced (the WAL rows among them); `pg_stat_checkpointer` | `test/e2e`, `.out/e2e/clients-first-npm-pg.jsonl` | 1 and 2. `SyncRep` waits with a flush lag point at the standby, `WALWrite` or `WALSync` with a growing fsync time at the primary's disk, `Lock` waits at commits that contend, active backends without a wait at CPU, `idle in transaction` at trove between statements; an autovacuum worker or a checkpoint in the window shows too | yes |
+| A sampler on the primary every 250 ms, one `psql` session for the clients-first npm subtest, one JSON line per sample: `pg_stat_activity` (the sessions that are not idle and not waiting for work, wait event type `Activity`) counted by backend type, state, wait event type and wait event and the first 48 characters of the query; `pg_stat_replication` (sync state, write, flush and replay lag, bytes behind); `pg_stat_wal`; the rows of `pg_stat_io` that wrote, evicted or synced (the WAL rows among them); `pg_stat_checkpointer` | `test/e2e`, `.out/e2e/clients-first-npm-pg.jsonl` | 1 and 2. `SyncRep` waits with a flush lag point at the standby, `WALWrite` or `WALSync` with a growing fsync time at the primary's disk, `Lock` waits at commits that contend, active backends without a wait at CPU, `idle in transaction` at Quader between statements; an autovacuum worker or a checkpoint in the window shows too | yes |
 | The runner's pressure every second: `/proc/pressure/cpu`, `io` and `memory` (`some` and `full`, their totals) and the test process's cgroup `cpu.stat` and `cpu.pressure` | `test/e2e`, `.out/e2e/clients-first-npm-pressure.jsonl` (what the test process sees: the machine's `/proc/pressure`, the job's cgroup) | 3 | yes |
 | The cgroup that holds the kind nodes every second: a helper container of the pinned tools image through the job's Docker daemon (`--cgroupns=host`), `cpu.stat` (use, throttling), `cpu.pressure` and `io.pressure`; with a fixed name per cluster that the next start removes first and that is removed when the readings stop; a run that is killed leaves it, and its loop ends after an hour. On the `large` runner the nodes run inside the job's Docker-in-Docker container, so the test process's cgroup above is not theirs | `test/e2e`, `.out/e2e/clients-first-npm-nodes.jsonl` | 3 | yes |
 | The test's events with their wall time: each pair's creates, the installs' start and end, the pass's request and start, the drop and the end of the pass's halt | `test/e2e`, the test log and `.out/e2e/clients-first-npm-events.jsonl` | 4, and the time axis every other record is read against | yes |
@@ -7714,14 +7714,14 @@ only at its end, so a stall cannot be placed against what the test was doing. Op
 | `slot_wait_ms` on the upstream record of a remote fetch (R-REPO-047) | the engine | 5, and for an operator: queued for the budget, or a slow upstream | yes |
 | `log_lock_waits` | | a lock wait's holder | no: see (b); the sampler shows `Lock` waits, and their holder is the next question only if it does |
 | `log_autovacuum_min_duration` | | an autovacuum run's statistics | no: the sampler shows an autovacuum worker and its table in a window; its statistics are not the question |
-| A log field or histogram of the commit transaction's duration | | its duration | no: it is measurable already. The audit event of a client fill takes the transaction's `now()` as `occurred_at` and its log line is written after the commit, so their difference is the transaction's duration as trove saw it, which the split used; its cause is what is missing |
+| A log field or histogram of the commit transaction's duration | | its duration | no: it is measurable already. The audit event of a client fill takes the transaction's `now()` as `occurred_at` and its log line is written after the commit, so their difference is the transaction's duration as Quader saw it, which the split used; its cause is what is missing |
 
 **Choice:** (a). The two cluster-wide PostgreSQL settings and the role's slow-statement setting apply in every profile: the dev cluster has one PostgreSQL, made by `make dev-up` before any profile,
 and a slow-statement log helps the cluster state of every set. The samplers, the events and the kept logs belong to the clients-first npm subtest
 alone. R-REPO-055's bound and its estimator (the median install with a pass against the best without) are unchanged.
 
 **Rationale:** each record answers one of the open questions, and together they tell the candidates apart: the standby, the primary's disk, a
-lock, CPU in the database, the machine, or trove between statements. The development agent would revisit (a) when a reading names the cause
+lock, CPU in the database, the machine, or Quader between statements. The development agent would revisit (a) when a reading names the cause
 (the records that did not contribute are then removed with the fix), or when a miss leaves the question open with these records: then
 `log_lock_waits` with a lower `deadlock_timeout` in the profile `mirror`, or a sampler on the standby.
 
@@ -7737,7 +7737,7 @@ lock, CPU in the database, the machine, or trove between statements. The develop
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: since the repository's share of a slot ends with the upstream exchange (Q-REPO-235), the clients of `npm ci` rarely find the slots full,
-so they rarely pre-empt: Test and Release run 42445876912 measured the ratio at 99 % (82 %, 97 %, 97 %) with `trove_mirror_preempted_total` at 0 over
+so they rarely pre-empt: Test and Release run 42445876912 measured the ratio at 99 % (82 %, 97 %, 97 %) with `quader_mirror_preempted_total` at 0 over
 the three pairs, and the criterion "grew" of R-REPO-055 failed although the rule it checks is intact. A client that finds no slot still
 pre-empts a background fetch that is in its upstream exchange (Q-REPO-235 only exempts one that is storing), which the unit and integration
 tests of R-REPO-055 prove with contention they force. The pairs of the ratio cannot force any: their stub delays, the number of requests in
@@ -7747,15 +7747,15 @@ flight and the settings are the estimator's, and a change there changes what is 
 |---|---|---|---|
 | (a) Keep "grew over the three pairs" | As built | No change | Fails whenever the install is fast enough that no client waits: it asserts the opposite of what the split achieves |
 | (b) Slow the pass's upstream requests in the pairs, or lower the pairs' slot budget | Contention by configuration | The assertion stays where it is | The stub cannot tell the pass from the clients, so the clients' fetches slow too and the ratio is inflated; a lower budget changes the bound |
-| (c) A second part of the e2e test forces the contention on its own remote; the pairs log the counter (chosen) | `TestMirror_R_REPO_055_ClientsFirst/preemption`: a pass over 84 names runs while the stub holds a tarball 1.5 s (a delay keyed by the kind of request for the whole stub, held while the subtest runs; the pass's two background fetches sit in their exchange), then 24 clients ask the three replicas for 24 other tarballs of the remote at once (the replicas' slots hold 9) | Deterministic: the clients wait, raise `mirror_yield`, and the pool's processes pre-empt; the estimator, the bound and the pair structure are untouched; the criterion "`trove_mirror_preempted_total` grew" is asserted as specified | A second remote and about a minute of the set |
+| (c) A second part of the e2e test forces the contention on its own remote; the pairs log the counter (chosen) | `TestMirror_R_REPO_055_ClientsFirst/preemption`: a pass over 84 names runs while the stub holds a tarball 1.5 s (a delay keyed by the kind of request for the whole stub, held while the subtest runs; the pass's two background fetches sit in their exchange), then 24 clients ask the three replicas for 24 other tarballs of the remote at once (the replicas' slots hold 9) | Deterministic: the clients wait, raise `mirror_yield`, and the pool's processes pre-empt; the estimator, the bound and the pair structure are untouched; the criterion "`quader_mirror_preempted_total` grew" is asserted as specified | A second remote and about a minute of the set |
 | (d) Drop the criterion | Pre-emption is proved by the unit and integration tests | Simplest | The e2e would no longer show the rule across processes and replicas, which only kind has |
 
-**Choice:** (c). The pairs log `trove_mirror_preempted_total` and assert nothing about it; the subtest `preemption` asserts that it grew and that every
+**Choice:** (c). The pairs log `quader_mirror_preempted_total` and assert nothing about it; the subtest `preemption` asserts that it grew and that every
 client fetch was answered 200.
 
 **Rationale:** the criterion was written when a slot was held through the commit, so that contention was common; it checks that the client-first
 rule works across processes, which contention alone shows. The development agent would revisit (c) if the pairs show a client waiting behind a
-background fetch's exchange (`trove_remote_fetch_queue_wait_seconds` of the repository above the pass-free pairs'), which would be a regression of
+background fetch's exchange (`quader_remote_fetch_queue_wait_seconds` of the repository above the pass-free pairs'), which would be a regression of
 the rule that this subtest does not see.
 
 **Applied in the spec:** R-REPO-055 (the e2e criterion). Code: [test/e2e/npm_mirror_test.go](../../test/e2e/npm_mirror_test.go)
@@ -7800,7 +7800,7 @@ bears access and what withdraws a version.
 | `disabled`, `visibility`, `hideExistence`, `local.packageOwnership`, `remote.cacheFillAction` | by R-AUTHZ-031 | Their own events |
 | `virtual.deployTarget` | no | A write through the virtual address runs with the target's permissions (R-REPO-021): the target routes, it grants nothing |
 | `priorityMember`, `virtual.mergedMetadataTtlSeconds`, `description`, `adminNotes`, `local.caps` | no | Order, freshness, text and retention: none changes what a caller may reach |
-| `remote` (URL, extra hosts, credentials, integrity, availability, mirror) and `storage` | no, H-569 | They decide how trove talks to an upstream and what it accepts from it and from clients, not what a caller may reach; re-applying them cannot be checked against the restored upstream state |
+| `remote` (URL, extra hosts, credentials, integrity, availability, mirror) and `storage` | no, H-569 | They decide how Quader talks to an upstream and what it accepts from it and from clients, not what a caller may reach; re-applying them cannot be checked against the restored upstream state |
 | format members (`npm`, `nuget`) | no, H-569 | The format pages own them (R-REPO-004); a format page that withholds versions through a member flags its own event |
 
 | Option | What it means | For | Against |
@@ -7809,7 +7809,7 @@ bears access and what withdraws a version.
 | (b) Every member that can be ordered | Upstream hardening too (`forwardAuthOnRedirect` off, an extra host removed, `checksumPolicy: require`) | Fewer reverts | Orders for settings that bear no access, each with its own replay rule; an extra host removed while the URL changed has no meaningful replay |
 
 **Choice:** (a).
-**Rationale:** the journal re-applies decisions about access and content; how trove reaches an upstream is configuration that
+**Rationale:** the journal re-applies decisions about access and content; how Quader reaches an upstream is configuration that
 an operator re-checks after a restore, and H-569 names each case. The development agent would revisit this when an upstream
 setting starts deciding who may read what, or when a format page asks for its member.
 **Applied:** R-REPO-061 (the not-journaled list); [backup-and-restore.md](../security/backup-and-restore.md) H-569.
@@ -8060,7 +8060,7 @@ repository's index is one signed snapshot for every caller (Q-DEB-19), tens of m
 | (c) Make the `rev_seq` check a property of the stored item | The job records the revisions and a request compares them | Immediate visibility | A query per request of an index file, to hide a delay the job bounds |
 
 **Choice:** (a). The exemptions from R-REPO-020 and R-ARCH-015 are: the merged-metadata cache and its key, the `rev_seq` check, the early eviction
-signal and the partial result with `Cache-Status: trove; detail=partial`. A build that cannot merge a member publishes nothing (R-DEB-025), so no partial
+signal and the partial result with `Cache-Status: quader; detail=partial`. A build that cannot merge a member publishes nothing (R-DEB-025), so no partial
 merge is ever served; the gate of R-AUTHZ-009 is applied to the generated files by the format (R-DEB-027) because the index is one for every caller.
 
 **Rationale:** the requirements protect a merge that depends on the caller and on the moment; this merge does neither. The development agent would
@@ -8101,9 +8101,9 @@ pool of two processes that claim the queue `mirror` alone (R-HA-062), which only
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Dissolve the sets: format behaviour into the format's own set, the engine under failure into the existing nightly HA sets; the tests add the worker pool themselves (`TROVE_HELM_EXTRA`, a Helm value naming the pools `vuln` and `mirror`) (chosen) | `mirrorFx` runs `up.sh` once more for the set's scatter profile with the pool; the profile `mirror` and `values-mirror.yaml` are gone | Each test runs where its format is, by its set's regular expression; only the sets that run mirror tests pay for two more worker pods | One more `up.sh` in the sets with mirror tests (about a minute); the value names the pool `vuln` again |
+| (a) Dissolve the sets: format behaviour into the format's own set, the engine under failure into the existing nightly HA sets; the tests add the worker pool themselves (`QUADER_HELM_EXTRA`, a Helm value naming the pools `vuln` and `mirror`) (chosen) | `mirrorFx` runs `up.sh` once more for the set's scatter profile with the pool; the profile `mirror` and `values-mirror.yaml` are gone | Each test runs where its format is, by its set's regular expression; only the sets that run mirror tests pay for two more worker pods | One more `up.sh` in the sets with mirror tests (about a minute); the value names the pool `vuln` again |
 | (b) Merge the pool into `values-scatter.yaml` | Every scatter set carries the pool | One values file | The pod counts of `push`, `drain-roles`, `ha-suite`, `ha-faults`, `ha-pooler` and `npm-ha` (three api, three packages, four workers) change for every set; two more pods in every scatter leg, the GitHub-hosted ones among them; the main worker no longer claims `mirror` anywhere |
-| (c) Keep a renamed profile (`pool`) selected by `TROVE_E2E_SCATTER_PROFILE` | A profile of its own for the sets with mirror tests | No extra `up.sh` | A set of its own in spirit, one more values file; the format sets carry a switch for a feature of theirs |
+| (c) Keep a renamed profile (`pool`) selected by `QUADER_E2E_SCATTER_PROFILE` | A profile of its own for the sets with mirror tests | No extra `up.sh` | A set of its own in spirit, one more values file; the format sets carry a switch for a feature of theirs |
 
 **Choice:** (a), the owner's cut; the pool is the development agent's choice of how.
 
@@ -8111,7 +8111,7 @@ pool of two processes that claim the queue `mirror` alone (R-HA-062), which only
 
 | Before | Now | Set |
 |---|---|---|
-| `TestMirror_R_REPO_055_ClientsFirst`, subtests `npm`, `preemption` | `TestNPMMirror_R_REPO_055_ClientsFirst` | `npm`, and `npm-ha-soak` (the install-time ratio enforced, `TROVE_PERF_GATE=1`, Q-REPO-197, Q-REPO-211) |
+| `TestMirror_R_REPO_055_ClientsFirst`, subtests `npm`, `preemption` | `TestNPMMirror_R_REPO_055_ClientsFirst` | `npm`, and `npm-ha-soak` (the install-time ratio enforced, `QUADER_PERF_GATE=1`, Q-REPO-197, Q-REPO-211) |
 | `TestMirror_R_REPO_055_ClientsFirst/nuget` | `TestNuGetMirror_R_REPO_055_ClientsFirst` | `nuget` |
 | `TestMirror_R_REPO_059_RestoreWithTheUpstreamStopped` | `TestNPMMirror_R_REPO_059_RestoreWithTheUpstreamStopped`, `TestNuGetMirror_R_REPO_059_RestoreWithTheUpstreamStopped` | `npm`, `nuget` |
 | `TestMirror_R_REPO_055_AnOCIPassRunsWhileClientsPull` | `TestOCIMirror_R_REPO_055_APassRunsWhileClientsPull` | `oci` |
@@ -8147,7 +8147,7 @@ during a wait. A job has no pass state to store a wait in, no job result to defe
 **Rationale:** the rules of R-REPO-054 are about not provoking an upstream, whoever sends the requests; the engine's slot cap alone does not slow a
 run down after an answer. The wait is not stored: the next run of the job starts with a window of 1, which is cautious, and the upstream answers
 again if it still limits. The development agent would revisit it if a repository with several runs at once were rate limited in practice, which
-points to the shared wait of (c). Not built: the metrics of R-REPO-057 (`trove_mirror_rate_limited_total`, the wait seconds) count the answers of
+points to the shared wait of (c). Not built: the metrics of R-REPO-057 (`quader_mirror_rate_limited_total`, the wait seconds) count the answers of
 a pass only; a run's answers appear in the upstream log with the job's id.
 
 **Applied in the spec:** R-REPO-055 (the bullet "Runs outside a pass"). Code: [window.go](../../internal/mirror/window.go),
@@ -8442,7 +8442,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) As built (Q-REPO-280 (a)): a Bearer challenge is reachable, `authenticated: null` | No second request | — | A wrong password and a token service the repository cannot reach both pass the test (D12) |
-| (b) Check the realm's host always; with a typed credential, ask the token service once without scope, as a client's login does (chosen) | Q-REPO-280's option (b), without an anonymous request | The test judges what the owner asked to check before the save | A second request to a second host; a credential oracle from trove's address (H-971) |
+| (b) Check the realm's host always; with a typed credential, ask the token service once without scope, as a client's login does (chosen) | Q-REPO-280's option (b), without an anonymous request | The test judges what the owner asked to check before the save | A second request to a second host; a credential oracle from Quader's address (H-971) |
 | (c) Ask the token service also without a credential | One more verdict | — | Anonymous scope-less requests answer 200, 401 or 403 by registry (verified), so the answer means nothing |
 
 **Choice:** (b). The owner's demand to check the connection settings before the save is the revisit condition of Q-REPO-280.
@@ -8458,8 +8458,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) URL only; `deb.upstreamKeys` stays the operator's (chosen) | Q-DEB-14 (a) stands | trove does not follow two archives' key changes; Q-DEB-14 rejected built-in keys | A Debian remote from a preset is unverified until keys are given |
-| (b) Each preset brings its archive keyring | Built-in keys | A verified remote in one click | Q-DEB-14 (d), rejected: every key change of two archives becomes a trove release |
+| (a) URL only; `deb.upstreamKeys` stays the operator's (chosen) | Q-DEB-14 (a) stands | Quader does not follow two archives' key changes; Q-DEB-14 rejected built-in keys | A Debian remote from a preset is unverified until keys are given |
+| (b) Each preset brings its archive keyring | Built-in keys | A verified remote in one click | Q-DEB-14 (d), rejected: every key change of two archives becomes a Quader release |
 
 **Choice:** (a). The keys stay a detail in the Debian settings; the help of `upstreamKeys` names the keyring file a Debian or Ubuntu
 host already has.
@@ -8491,8 +8491,8 @@ Verification proves only that the bytes match what the upstream announced. A mal
 published to a public registry is fetched, cached and served like any other until an advisory names it:
 the vulnerability scanning of M4b ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-015) blocks
 a version only once its advisory has arrived, it matches identities and not content (H-310 and H-315 there), and
-trove applies no vetting of new packages and no minimum-age rule of its own (an npm client's release-age
-policy reads the publish times trove serves, [formats/npm.md](formats/npm.md) R-NPM-012). Claims and pin rules
+Quader applies no vetting of new packages and no minimum-age rule of its own (an npm client's release-age
+policy reads the publish times Quader serves, [formats/npm.md](formats/npm.md) R-NPM-012). Claims and pin rules
 stop name confusion, not malicious public packages. `cacheFillAction: deploy` narrows who can bring new packages in.
 
 ### H-5 · Version removals reach cached artifacts only where the format tracks versions
@@ -8515,7 +8515,7 @@ by hand. Copies that clients downloaded earlier are never recalled.
 
 The egress rules permit private ranges by default, because internal registries are common. A holder
 of `repositories:write-config` can point a remote repository or the upstream test at an internal
-HTTP service and read its responses through the cache. With an outbound proxy, trove checks the
+HTTP service and read its responses through the cache. With an outbound proxy, Quader checks the
 target name's resolution, but the proxy connects on its own. The mitigations are the egress
 `NetworkPolicy` and narrowed `deny_cidrs`; there is no per-repository egress scope.
 
@@ -8529,7 +8529,7 @@ public package of the same name. Names leak; contents do not.
 
 Every replica holds the key that unseals upstream credentials, client-certificate keys and proxy
 passwords: `packages` replicas (and the bridge's `web`) make upstream requests, `worker` replicas run the
-mirror passes, and every replica opens the key ring's start-up canary ([architecture.md](architecture.md) R-ARCH-021). Exec access to a trove pod, or read access
+mirror passes, and every replica opens the key ring's start-up canary ([architecture.md](architecture.md) R-ARCH-021). Exec access to a Quader pod, or read access
 to the key's Secret, yields all of them. Adding `web` replicas for load adds copies of the key, not
 new holders of a different kind. Valkey never holds a secret or a value derived from one
 ([architecture.md](architecture.md) R-ARCH-030). Integration with an external key management service
@@ -8580,7 +8580,7 @@ remains, live with the MVP:
   private partner registry, for example). Names leak; contents and remote keys do not, as in H-7.
 - **Probes disclose new names upstream.** A first publish of a name outside every claim in effect
   sends one request for that name to the upstream of each exposed remote member, public
-  registries included. The name of an internal package that was never resolved through trove
+  registries included. The name of an internal package that was never resolved through Quader
   before thereby reaches the upstream operator once. Claiming the internal prefix beforehand
   (`@acme/*`, `Acme.*`) removes the probe: with a claim of the publishing repository the check does
   not run, and with a claim in effect in the virtual repository nothing there is exposed.

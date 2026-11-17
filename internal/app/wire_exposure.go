@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The wiring of the endpoints area (WP1.9): the exposure ceiling the decision
@@ -122,7 +122,7 @@ func (a *App) endpointStage(rt *endpointRuntime) func(http.Handler) http.Handler
 }
 
 // credentialRefused counts a request the endpoint's credential rules refused
-// (trove_endpoint_credentials_refused_total) and records a refused token as
+// (quader_endpoint_credentials_refused_total) and records a refused token as
 // token.rejected with reason endpoint_not_accepted (R-EP-009, R-EP-010). The
 // audit writer deduplicates token.rejected per token, or per client address for
 // a token refused by its type before any lookup (R-OPS-015).

@@ -48,8 +48,8 @@ What to have in mind first:
 | [config/login.go](../../internal/config/login.go) | The keys `auth.oidc`, `auth.login_page`, `auth.sessions`, `auth.break_glass`, their defaults and rules |
 | [audit/events_login.go](../../internal/audit/events_login.go) | The `auth.*` event types |
 | [app/wire_login.go](../../internal/app/wire_login.go) | The wiring at step 8 in two steps (`wireSessions` before the identity area, `wireLogin` after it) and `registerLogin`, which builds the `login.Handler` and puts its routes on an endpoint's router in `startClient` (login markers of [app.go](../../internal/app/app.go)) |
-| [cmd/trove/admin_login.go](../../cmd/trove/admin_login.go) | `trove admin break-glass status\|unlock\|end-sessions`, `trove admin sessions end`; the command environment (database, change log, audit writer, session store) |
-| [cmd/trove/admin_identity.go](../../cmd/trove/admin_identity.go) | `trove admin service-account create`, `token create\|revoke`, `user disable` (R-AUTH-015): the identity area's manager and token service over the command's own connection; `--admin` binds the role through `authz.Service.BindAdmin` |
+| [cmd/quader/admin_login.go](../../cmd/quader/admin_login.go) | `quader admin break-glass status\|unlock\|end-sessions`, `quader admin sessions end`; the command environment (database, change log, audit writer, session store) |
+| [cmd/quader/admin_identity.go](../../cmd/quader/admin_identity.go) | `quader admin service-account create`, `token create\|revoke`, `user disable` (R-AUTH-015): the identity area's manager and token service over the command's own connection; `--admin` binds the role through `authz.Service.BindAdmin` |
 
 ## The flows, one fact each
 
@@ -69,13 +69,13 @@ What to have in mind first:
 
 | Seam | Direction | What the other side provides or calls |
 |---|---|---|
-| `principal.Provisioner.SignIn(ctx, LoginClaims)` | login calls identity | `a.m1.provisioner` is the identity area's `PGProvisioner`. It creates or updates the user, links (`Issuer`, `Subject`), syncs `Groups` (already mapped trove group names) as `GroupSync`, `ClaimState`, `KeepOnMissing` and `CreateGroups` say, and writes `user.*` events in its own transaction. A refusal is `principal.ErrUsernameTaken`, `ErrNotProvisioned`, `ErrUserDisabled` or `ErrUsernameInvalid`; `refusalReason` in [oidc/flow.go](../../internal/auth/oidc/flow.go) maps it to the failure reason. The fields are those of Q-AUTH-21 ([principal.go](../../internal/auth/principal/principal.go)). |
+| `principal.Provisioner.SignIn(ctx, LoginClaims)` | login calls identity | `a.m1.provisioner` is the identity area's `PGProvisioner`. It creates or updates the user, links (`Issuer`, `Subject`), syncs `Groups` (already mapped Quader group names) as `GroupSync`, `ClaimState`, `KeepOnMissing` and `CreateGroups` say, and writes `user.*` events in its own transaction. A refusal is `principal.ErrUsernameTaken`, `ErrNotProvisioned`, `ErrUserDisabled` or `ErrUsernameInvalid`; `refusalReason` in [oidc/flow.go](../../internal/auth/oidc/flow.go) maps it to the failure reason. The fields are those of Q-AUTH-21 ([principal.go](../../internal/auth/principal/principal.go)). |
 | `session.Validator` | identity's stage calls login | `Validate(ctx, cookie)` then `CheckCSRF(r, info)`; map errors with `session.Problem`. `a.m1.sessions` holds the `*session.Store` (nil on a worker); `wireSessions` sets it before `wireIdentity` hands it to the stage. |
 | `Store.EndForPrincipal(ctx, tx, id, reason)` | identity calls login | Ends a user's sessions in the transaction of a disable or delete (R-AUTH-016). |
 | Change area `auth` | identity registers it | The payload is `principal.Change` (Q-AUTH-22): `{"t":"session","s":[{"i":<session id>,"h":<hex SHA-256 of the secret>}]}` per ended session, or without the list for more than eight. The session cache evicts the named hashes, ignores `token`, `membership`, `group` and `settings`, and flushes on every other payload, since it holds the principal's status. The identity caches ignore `session`. |
 | `oidc.Limiter` | login takes it from the cluster limiter set | `auth.flow_starts` in the take form (R-AUTH-038, `starts_per_address` per minute), registered in `wireFailureLimiter` ([wire_api.go](../../internal/app/wire_api.go)) and adapted by `takeLimiter`; it guards the start route and the local login. `Service.allow` passes `auth.AddressBucket` of the client address, an IPv6 address as its `/64` (Q-AUTH-90). The pending-flow cap is `auth.rate_limit.max_pending_flows`. |
-| `audit.Recorder` | audit provides | `a.m1.recorder` (`trove admin` commands build an `audit.Writer` of their own on their connection). |
-| `principal.Metrics` | identity provides | One instance per replica (`App.authMetrics`) owns `trove_auth_attempts_total`, `trove_auth_ratelimited_total` and `trove_auth_cache_bypassed_total`; the session store and the login count into it. |
+| `audit.Recorder` | audit provides | `a.m1.recorder` (`quader admin` commands build an `audit.Writer` of their own on their connection). |
+| `principal.Metrics` | identity provides | One instance per replica (`App.authMetrics`) owns `quader_auth_attempts_total`, `quader_auth_ratelimited_total` and `quader_auth_cache_bypassed_total`; the session store and the login count into it. |
 | `auth.revocation_bound`, `auth.tokens.cache_ttl`, `auth.break_glass.username` | identity's keys | The session store reads the first two; the break-glass username is the reserved name of the provisioner and the manager. |
 
 ## Management API
@@ -84,17 +84,17 @@ The operations that belong to the login are in [sessions_api.go](../../internal/
 [users_api.go](../../internal/api/v1/users_api.go) (`UnlockBreakGlass`); the document holds them between the `login` markers. The other
 operations of [identity.md](identity.md#management-api) apply to the signed-in user too.
 
-| operationId | Method and path | `x-trove-permission` |
+| operationId | Method and path | `x-quader-permission` |
 |---|---|---|
 | `getLoginOptions` | `GET /api/v1/auth/login-options` | public, the session cookie ignored (Q-AUTH-177); `oidc.Service.LoginOptions` plus `publicContent` from the grant index (`App.publicContent`) |
 | `getWhoami` | `GET /api/v1/auth/whoami` | authenticated; the principal, its groups and the credential (a token's scope and expiry come from its row, a session shows `type: session`) |
-| `listOwnSessions` | `GET /api/v1/users/me/sessions` | authenticated (a user or the break-glass account), `x-trove-owner-rights` (a session or an inheriting token); `current` is the session of the request |
-| `endOwnSession` | `DELETE /api/v1/users/me/sessions/{id}` | authenticated, `x-trove-owner-rights`; `404` for a session of another user |
-| `endOwnSessions` | `DELETE /api/v1/users/me/sessions?keepCurrent=` | authenticated, `x-trove-owner-rights` |
+| `listOwnSessions` | `GET /api/v1/users/me/sessions` | authenticated (a user or the break-glass account), `x-quader-owner-rights` (a session or an inheriting token); `current` is the session of the request |
+| `endOwnSession` | `DELETE /api/v1/users/me/sessions/{id}` | authenticated, `x-quader-owner-rights`; `404` for a session of another user |
+| `endOwnSessions` | `DELETE /api/v1/users/me/sessions?keepCurrent=` | authenticated, `x-quader-owner-rights` |
 | `listUserSessions` | `GET /api/v1/users/{username}/sessions` | `identities:read` |
 | `endUserSessions` | `DELETE /api/v1/users/{username}/sessions` | `identities:write` (`Store.EndPrincipalSessions`) |
-| `unlockBreakGlass` | `POST /api/v1/users/{username}/unlock` | role `admin` (`oidc.Unlock`, shared with `trove admin break-glass unlock`) |
-| `getPreferences`, `updatePreferences` | `GET`, `PATCH /api/v1/users/me/preferences` | authenticated (a user), the `PATCH` with `x-trove-owner-rights` (a session or an inheriting token); `ETag` is `user_preferences.revision`, a user without a row has revision 1 |
+| `unlockBreakGlass` | `POST /api/v1/users/{username}/unlock` | role `admin` (`oidc.Unlock`, shared with `quader admin break-glass unlock`) |
+| `getPreferences`, `updatePreferences` | `GET`, `PATCH /api/v1/users/me/preferences` | authenticated (a user), the `PATCH` with `x-quader-owner-rights` (a session or an inheriting token); `ETag` is `user_preferences.revision`, a user without a row has revision 1 |
 
 `session.Store` gained `EndOne` and `EndExcept` (queries `EndSessionOfPrincipal` and `EndSessionsOfPrincipalExcept` in
 [login.sql](../../internal/meta/postgres/queries/login.sql)); each ends in one transaction with the change message of the area `auth`
@@ -107,7 +107,7 @@ with one change: `auth.oidc.providers` is a map keyed by the provider ID, and `o
 
 ```yaml
 server:
-  base_url: https://trove.example.com            # example; required with a provider (R-AUTH-003)
+  base_url: https://quader.example.com            # example; required with a provider (R-AUTH-003)
 auth:
   oidc:
     providers:
@@ -115,25 +115,25 @@ auth:
         order: 0                                 # default
         display_name: Corporate SSO              # example
         issuer: https://login.example.com/realms/acme   # example
-        client_id: trove                         # example
-        client_secret_file: /var/run/secrets/trove/oidc-corp/client-secret  # example; or client_secret_env
+        client_id: quader                         # example
+        client_secret_file: /var/run/secrets/quader/oidc-corp/client-secret  # example; or client_secret_env
         client_auth_method: client_secret_basic  # default
   sessions:
     idle_timeout: 1h                             # default
   break_glass:
     enabled: true                                # default
-    password_file: /var/run/secrets/trove/break-glass/password  # example
+    password_file: /var/run/secrets/quader/break-glass/password  # example
 ```
 
 `server.base_url` is checked against the providers where the login is built (`oidc.CheckBaseURL`): the rule spans two sections,
-so `trove admin config validate` does not report it.
+so `quader admin config validate` does not report it.
 
 ## Tests
 
 | Tier | Where | What |
 |---|---|---|
 | Unit | `internal/auth/oidc`, `internal/auth/jws`, `internal/api/login`, `internal/auth/session`, `internal/config/login_test.go`, `internal/app/wire_login_test.go` | JWS and key confusion, the ID-token table, claim mapping and group rules, `return_to`, Argon2id and the plaintext rule, slots, the domain calls (`StartFlow`, `Callback`, `Logout`, `AdmitLocalLogin`); the edge without a database (unknown provider, the origin and admission order of the local login, the error page and its status); cookies, CSRF, change payloads; configuration rules; the route table |
-| Integration | [test/integration/login](../../test/integration/login) | A fake OpenID Provider over TLS ([fakeidp_test.go](../../test/integration/login/fakeidp_test.go)) with switches for every failure of R-AUTH-006, and two or three in-process replicas (each mounts the real `login.Handler` over its `oidc.Service`, with the test's own client-address, source and origin functions) behind a dispatcher that sends every request to the next one, without Valkey; a fake provisioner writes the principal rows (the real one is covered by [test/integration/identity](../../test/integration/identity)); the break-glass and identity-command tests ([admin_test.go](../../test/integration/login/admin_test.go)) run `trove admin` as a binary |
+| Integration | [test/integration/login](../../test/integration/login) | A fake OpenID Provider over TLS ([fakeidp_test.go](../../test/integration/login/fakeidp_test.go)) with switches for every failure of R-AUTH-006, and two or three in-process replicas (each mounts the real `login.Handler` over its `oidc.Service`, with the test's own client-address, source and origin functions) behind a dispatcher that sends every request to the next one, without Valkey; a fake provisioner writes the principal rows (the real one is covered by [test/integration/identity](../../test/integration/identity)); the break-glass and identity-command tests ([admin_test.go](../../test/integration/login/admin_test.go)) run `quader admin` as a binary |
 | Integration, HTTP | [api_test.go](../../test/integration/login/api_test.go), [api_env_test.go](../../test/integration/login/api_env_test.go) | with `env.realAPI` the replicas mount the real management API (the production chain, the real stage with the session validator, the real decision point; [test/integration/idapi](../../test/integration/idapi)) instead of the two stand-in routes: the login journey over HTTP on alternating replicas with no Valkey (login options, sign in, `whoami`, a write with and without the CSRF header, the session list and its ends, recent authentication, logout) and the break-glass unlock through the API; every answer is validated against the document |
 | Integration, E1.5 | [e1_5_test.go](../../test/integration/login/e1_5_test.go) | every event type that exit criterion E1.5 names through the real routes on the `realAPI` harness with the fake provider and a real audit writer behind the spy (`spy.next`): a login, a failed login (wrong nonce), a token creation (twice) and revocation, a policy change and a denied deploy (`PUT /files/…` with a token; the files handler gets a blob store that is never reached); each is found through `GET /api/v1/audit/events?action=…` and in the log stream, and the denied deploy names the repository, the action and the caller. The extra services come in through `env.extend` (`idapi.Components.Options` and `Routes`) |
 

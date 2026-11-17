@@ -1,13 +1,13 @@
-<trove-page-header heading="Users" i18n-heading="@@users.heading">
+<quader-page-header heading="Users" i18n-heading="@@users.heading">
   <button actions class="btn btn-confirm" type="button" [disabled]="!session.has('identities:write')" aria-describedby="needs-users" (click)="add()" i18n="@@users.add">Add user</button>
-</trove-page-header>
-<trove-needs id="needs-users" capability="identities:write" />
+</quader-page-header>
+<quader-needs id="needs-users" capability="identities:write" />
 
 <div class="list-layout" [class.panel-open]="panelOpen()">
   <div class="list-toolbar">
-    <trove-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
+    <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
   </div>
-  <trove-filter-panel
+  <quader-filter-panel
     #panel
     class="list-side"
     [(open)]="panelOpen"
@@ -15,28 +15,28 @@
     (apply)="apply()"
     (clearAll)="clear()"
   >
-    <trove-filter-category i18n-label="@@users.q" label="Name or email" [active]="!!q().trim()" [expanded]="!!q().trim()">
-      <trove-text-field width="name" i18n-label="@@users.q" label="Name or email" name="q" [(value)]="q" />
-    </trove-filter-category>
-    <trove-filter-category i18n-label="@@users.status" label="Status" [active]="!!status()" [expanded]="!!status()">
-      <trove-select-field i18n-label="@@users.status" label="Status" name="status" [options]="statusOptions" [(value)]="status" />
-    </trove-filter-category>
-    <trove-filter-category i18n-label="@@users.origin" label="Origin" [active]="!!origin()" [expanded]="!!origin()">
-      <trove-select-field i18n-label="@@users.origin" label="Origin" name="origin" [options]="originOptions" [(value)]="origin" />
-    </trove-filter-category>
-    <trove-filter-category i18n-label="@@users.group" label="Group" [active]="!!group().trim()" [expanded]="!!group().trim()">
-      <trove-text-field width="name" i18n-label="@@users.group" label="Group" name="group" [(value)]="group" />
-    </trove-filter-category>
-    <trove-filter-category i18n-label="@@users.admin" label="Administrator" [active]="!!admin()" [expanded]="!!admin()">
-      <trove-select-field i18n-label="@@users.admin" label="Administrator" name="admin" [options]="adminOptions" [(value)]="admin" />
-    </trove-filter-category>
-    <trove-filter-category i18n-label="@@users.external" label="External" [active]="!!external()" [expanded]="!!external()">
-      <trove-select-field i18n-label="@@users.external" label="External" name="external" [options]="externalOptions" [(value)]="external" />
-    </trove-filter-category>
-  </trove-filter-panel>
+    <quader-filter-category i18n-label="@@users.q" label="Name or email" [active]="!!q().trim()" [expanded]="!!q().trim()">
+      <quader-text-field width="name" i18n-label="@@users.q" label="Name or email" name="q" [(value)]="q" />
+    </quader-filter-category>
+    <quader-filter-category i18n-label="@@users.status" label="Status" [active]="!!status()" [expanded]="!!status()">
+      <quader-select-field i18n-label="@@users.status" label="Status" name="status" [options]="statusOptions" [(value)]="status" />
+    </quader-filter-category>
+    <quader-filter-category i18n-label="@@users.origin" label="Origin" [active]="!!origin()" [expanded]="!!origin()">
+      <quader-select-field i18n-label="@@users.origin" label="Origin" name="origin" [options]="originOptions" [(value)]="origin" />
+    </quader-filter-category>
+    <quader-filter-category i18n-label="@@users.group" label="Group" [active]="!!group().trim()" [expanded]="!!group().trim()">
+      <quader-text-field width="name" i18n-label="@@users.group" label="Group" name="group" [(value)]="group" />
+    </quader-filter-category>
+    <quader-filter-category i18n-label="@@users.admin" label="Administrator" [active]="!!admin()" [expanded]="!!admin()">
+      <quader-select-field i18n-label="@@users.admin" label="Administrator" name="admin" [options]="adminOptions" [(value)]="admin" />
+    </quader-filter-category>
+    <quader-filter-category i18n-label="@@users.external" label="External" [active]="!!external()" [expanded]="!!external()">
+      <quader-select-field i18n-label="@@users.external" label="External" name="external" [options]="externalOptions" [(value)]="external" />
+    </quader-filter-category>
+  </quader-filter-panel>
 
   <div class="list-main">
-    <trove-data-table
+    <quader-data-table
       [caption]="caption"
       [columns]="columns"
       [sort]="sort()"
@@ -54,7 +54,7 @@
       @for (u of list.items(); track u.id) {
         <tr>
           <th scope="row" class="person">
-            <trove-avatar class="avatar" aria-hidden="true" [seed]="u.id" [imageUrl]="u.avatarUrl" />
+            <quader-avatar class="avatar" aria-hidden="true" [seed]="u.id" [imageUrl]="u.avatarUrl" />
             <span class="who">
               <a [routerLink]="['/admin/users', u.username]" translate="no">{{ u.displayName || u.username }}</a>
               <span class="secondary" translate="no">&#64;{{ u.username }}</span>
@@ -75,6 +75,6 @@
           <td>{{ u.lastLoginAt | date: 'medium' }}</td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   </div>
 </div>

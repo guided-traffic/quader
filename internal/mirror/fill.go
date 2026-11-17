@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The fill of a pass (R-REPO-053 step 3): the pending names in name order, each package filled through the host under the

@@ -18,7 +18,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // valkeyMethods is the exported method set of *Valkey. Nothing on it reads or
@@ -89,7 +89,7 @@ func TestValkeySurface(t *testing.T) {
 	})
 
 	t.Run("R-ARCH-030 a zero family forms neither a key nor a channel", func(t *testing.T) {
-		v := bareValkey("trove:", "0123456789ab")
+		v := bareValkey("quader:", "0123456789ab")
 		if _, err := v.formKey(&KeyFamily{}, "x"); err == nil {
 			t.Error("key of a zero family")
 		}

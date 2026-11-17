@@ -13,7 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 func TestMigrateEmptyDatabase(t *testing.T) {
@@ -44,16 +44,16 @@ func TestMigrateEmptyDatabase(t *testing.T) {
 		if res.CompatFloor != wantFloor {
 			t.Fatalf("compat floor = %q, want %q", res.CompatFloor, wantFloor)
 		}
-		if n := scalar[int](t, admin, "SELECT count(*) FROM trove.schema_migration"); n != len(embedded) {
+		if n := scalar[int](t, admin, "SELECT count(*) FROM quader.schema_migration"); n != len(embedded) {
 			t.Fatalf("schema_migration rows = %d", n)
 		}
-		if got := scalar[string](t, admin, "SELECT release FROM trove.schema_migration WHERE version = 1"); got != testVersion {
+		if got := scalar[string](t, admin, "SELECT release FROM quader.schema_migration WHERE version = 1"); got != testVersion {
 			t.Fatalf("release = %q", got)
 		}
-		if a := scalar[int](t, admin, "SELECT applied FROM trove.schema_state"); a != postgres.RequiredSchema() {
+		if a := scalar[int](t, admin, "SELECT applied FROM quader.schema_state"); a != postgres.RequiredSchema() {
 			t.Fatalf("schema_state.applied = %d", a)
 		}
-		if scalar[bool](t, admin, "SELECT transactional IS NOT TRUE FROM trove.schema_migration WHERE version = 1") {
+		if scalar[bool](t, admin, "SELECT transactional IS NOT TRUE FROM quader.schema_migration WHERE version = 1") {
 			t.Fatal("step 1 must be recorded as transactional")
 		}
 	})
@@ -68,7 +68,7 @@ func TestMigrateEmptyDatabase(t *testing.T) {
 
 	t.Run("R-BAK-004 system_state holds installation_id, keyspace_id and incarnation after the first migration", func(t *testing.T) {
 		_, _, admin := migrated(t, st)
-		rows, err := admin.Query(context.Background(), "SELECT key, value #>> '{}' FROM trove.system_state ORDER BY key")
+		rows, err := admin.Query(context.Background(), "SELECT key, value #>> '{}' FROM quader.system_state ORDER BY key")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -183,7 +183,7 @@ func TestMigrateConcurrentRunners(t *testing.T) {
 			t.Fatalf("second runner must wait on the lock and apply nothing: %+v", res2)
 		}
 		embedded, _ := postgres.EmbeddedSteps()
-		if n := scalar[int](t, admin, "SELECT count(*) FROM trove.schema_migration"); n != len(embedded) {
+		if n := scalar[int](t, admin, "SELECT count(*) FROM quader.schema_migration"); n != len(embedded) {
 			t.Fatalf("schema_migration rows = %d", n)
 		}
 	})
@@ -200,7 +200,7 @@ func TestMigrateConcurrentRunners(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer func() { _ = holder.Close(context.Background()) }()
-		if _, err := holder.Exec(context.Background(), "SET application_name = 'trove:backup-pod:backup'"); err != nil {
+		if _, err := holder.Exec(context.Background(), "SET application_name = 'quader:backup-pod:backup'"); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := holder.Exec(context.Background(), "SELECT pg_advisory_lock_shared(3, 0)"); err != nil {
@@ -209,7 +209,7 @@ func TestMigrateConcurrentRunners(t *testing.T) {
 		o := opts(nil)
 		o.Migrate.AdvisoryLockWait = 1 * time.Second
 		_, err = postgres.Migrate(ctxT(t, 30*time.Second), cfg, o)
-		if err == nil || !strings.Contains(err.Error(), "trove:backup-pod:backup") || !strings.Contains(err.Error(), "migrate.advisory_lock_wait") {
+		if err == nil || !strings.Contains(err.Error(), "quader:backup-pod:backup") || !strings.Contains(err.Error(), "migrate.advisory_lock_wait") {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -219,9 +219,9 @@ func TestMigrateFailure(t *testing.T) {
 	st := getStack(t)
 	t.Run("R-HA-019 a migration that fails on purpose rolls back and leaves the schema at the previous step", func(t *testing.T) {
 		cfg, _, admin := migrated(t, st)
-		before := scalar[int](t, admin, "SELECT applied FROM trove.schema_state")
+		before := scalar[int](t, admin, "SELECT applied FROM quader.schema_state")
 		bad := stepsWith(t, map[string]string{
-			nextStep(1, "fails_on_purpose"): "-- trove:phase expand\nCREATE TABLE trove.left_behind (id int);\nSELECT 1 / 0;\n",
+			nextStep(1, "fails_on_purpose"): "-- quader:phase expand\nCREATE TABLE quader.left_behind (id int);\nSELECT 1 / 0;\n",
 		})
 		res, err := postgres.Migrate(ctxT(t, 30*time.Second), cfg, opts(bad))
 		if err == nil || !strings.Contains(err.Error(), strings.TrimSuffix(nextStep(1, "fails_on_purpose"), ".sql")) || !strings.Contains(err.Error(), "division by zero") {
@@ -234,13 +234,13 @@ func TestMigrateFailure(t *testing.T) {
 		if len(res.Applied) != 0 {
 			t.Fatalf("result = %+v", res)
 		}
-		if scalar[bool](t, admin, "SELECT to_regclass('trove.left_behind') IS NOT NULL") {
+		if scalar[bool](t, admin, "SELECT to_regclass('quader.left_behind') IS NOT NULL") {
 			t.Fatal("the failed step's table survived")
 		}
-		if n := scalar[int](t, admin, fmt.Sprintf("SELECT count(*) FROM trove.schema_migration WHERE version = %d", postgres.RequiredSchema()+1)); n != 0 {
+		if n := scalar[int](t, admin, fmt.Sprintf("SELECT count(*) FROM quader.schema_migration WHERE version = %d", postgres.RequiredSchema()+1)); n != 0 {
 			t.Fatal("the failed step left a schema_migration row")
 		}
-		if after := scalar[int](t, admin, "SELECT applied FROM trove.schema_state"); after != before {
+		if after := scalar[int](t, admin, "SELECT applied FROM quader.schema_state"); after != before {
 			t.Fatalf("schema_state.applied moved from %d to %d", before, after)
 		}
 		// The migration lock is released: the next run proceeds.
@@ -256,7 +256,7 @@ func TestMigrateFailure(t *testing.T) {
 			t.Fatal(err)
 		}
 		slow := stepsWith(t, map[string]string{
-			nextStep(1, "slow"): "-- trove:phase expand\nCREATE TABLE trove.killed_step (id int);\nSELECT pg_sleep(30);\n",
+			nextStep(1, "slow"): "-- quader:phase expand\nCREATE TABLE quader.killed_step (id int);\nSELECT pg_sleep(30);\n",
 		})
 		errc := make(chan error, 1)
 		go func() {
@@ -265,7 +265,7 @@ func TestMigrateFailure(t *testing.T) {
 		}()
 		deadline := time.Now().Add(20 * time.Second)
 		for {
-			n := scalar[int](t, admin, "SELECT count(*) FROM pg_stat_activity WHERE application_name = 'trove:it-migrate:migrate' AND query LIKE '%pg_sleep(30)%' AND state = 'active'")
+			n := scalar[int](t, admin, "SELECT count(*) FROM pg_stat_activity WHERE application_name = 'quader:it-migrate:migrate' AND query LIKE '%pg_sleep(30)%' AND state = 'active'")
 			if n > 0 {
 				break
 			}
@@ -274,17 +274,17 @@ func TestMigrateFailure(t *testing.T) {
 			}
 			time.Sleep(50 * time.Millisecond)
 		}
-		scalar[bool](t, admin, "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'trove:it-migrate:migrate' AND query LIKE '%pg_sleep(30)%'")
+		scalar[bool](t, admin, "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'quader:it-migrate:migrate' AND query LIKE '%pg_sleep(30)%'")
 		if err := <-errc; err == nil {
 			t.Fatal("a killed runner must report an error")
 		}
-		if scalar[bool](t, admin, "SELECT to_regclass('trove.killed_step') IS NOT NULL") ||
-			scalar[int](t, admin, fmt.Sprintf("SELECT count(*) FROM trove.schema_migration WHERE version = %d", postgres.RequiredSchema()+1)) != 0 {
+		if scalar[bool](t, admin, "SELECT to_regclass('quader.killed_step') IS NOT NULL") ||
+			scalar[int](t, admin, fmt.Sprintf("SELECT count(*) FROM quader.schema_migration WHERE version = %d", postgres.RequiredSchema()+1)) != 0 {
 			t.Fatal("the killed step left traces")
 		}
 		// The next run applies the step.
 		fixed := stepsWith(t, map[string]string{
-			nextStep(1, "slow"): "-- trove:phase expand\nCREATE TABLE trove.killed_step (id int);\n",
+			nextStep(1, "slow"): "-- quader:phase expand\nCREATE TABLE quader.killed_step (id int);\n",
 		})
 		res, err := postgres.Migrate(ctxT(t, 30*time.Second), cfg, opts(fixed))
 		if err != nil || len(res.Applied) != 1 {
@@ -297,20 +297,20 @@ func TestMigrateFailure(t *testing.T) {
 		steps, _ := postgres.EmbeddedSteps()
 		edited := stepsWith(t, map[string]string{
 			steps[1].Name + ".sql": steps[1].SQL + "\n-- edited after it was applied\n",
-			nextStep(1, "new"):     "-- trove:phase expand\nCREATE TABLE trove.would_apply (id int);\n",
+			nextStep(1, "new"):     "-- quader:phase expand\nCREATE TABLE quader.would_apply (id int);\n",
 		})
 		_, err := postgres.Migrate(ctxT(t, 30*time.Second), cfg, opts(edited))
 		if err == nil || !strings.Contains(err.Error(), steps[1].Name+".sql") || !strings.Contains(err.Error(), "checksum") {
 			t.Fatalf("err = %v", err)
 		}
-		if scalar[bool](t, admin, "SELECT to_regclass('trove.would_apply') IS NOT NULL") {
+		if scalar[bool](t, admin, "SELECT to_regclass('quader.would_apply') IS NOT NULL") {
 			t.Fatal("a step was applied after the checksum mismatch")
 		}
 	})
 
 	t.Run("R-ARCH-026 a step that is not applied while a later one is stops the run", func(t *testing.T) {
 		cfg, _, admin := migrated(t, st)
-		scalar[int](t, admin, "WITH d AS (DELETE FROM trove.schema_migration WHERE version = 2 RETURNING 1) SELECT count(*) FROM d")
+		scalar[int](t, admin, "WITH d AS (DELETE FROM quader.schema_migration WHERE version = 2 RETURNING 1) SELECT count(*) FROM d")
 		_, err := postgres.Migrate(ctxT(t, 30*time.Second), cfg, opts(nil))
 		if err == nil || !strings.Contains(err.Error(), "in order") {
 			t.Fatalf("err = %v", err)
@@ -323,17 +323,17 @@ func TestMigrateNoTransactionStep(t *testing.T) {
 	t.Run("R-HA-018 a no-transaction step builds an index concurrently and an invalid leftover is dropped first", func(t *testing.T) {
 		cfg, _, admin := migrated(t, st)
 		// A failed CONCURRENTLY build leaves an INVALID index of the same name.
-		if _, err := admin.Exec(context.Background(), `INSERT INTO trove.repositories (key, format, class, project_id) VALUES ('r1', 'raw', 'local', (SELECT id FROM trove.project WHERE key = 'it')), ('r1b', 'raw', 'local', (SELECT id FROM trove.project WHERE key = 'it'))`); err != nil {
+		if _, err := admin.Exec(context.Background(), `INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('r1', 'raw', 'local', (SELECT id FROM quader.project WHERE key = 'it')), ('r1b', 'raw', 'local', (SELECT id FROM quader.project WHERE key = 'it'))`); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := admin.Exec(context.Background(), `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS repositories_format_idx ON trove.repositories (format)`); err == nil {
+		if _, err := admin.Exec(context.Background(), `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS repositories_format_idx ON quader.repositories (format)`); err == nil {
 			t.Fatal("the unique build over duplicate values must fail, leaving an invalid index")
 		}
 		if n := scalar[int](t, admin, "SELECT count(*) FROM pg_index WHERE NOT indisvalid"); n != 1 {
 			t.Fatalf("invalid indexes = %d", n)
 		}
 		steps := stepsWith(t, map[string]string{
-			nextStep(1, "index"): "-- trove:phase expand\n-- trove:no-transaction\nCREATE INDEX CONCURRENTLY repositories_format_idx ON trove.repositories (format);\n",
+			nextStep(1, "index"): "-- quader:phase expand\n-- quader:no-transaction\nCREATE INDEX CONCURRENTLY repositories_format_idx ON quader.repositories (format);\n",
 		})
 		res, err := postgres.Migrate(ctxT(t, 30*time.Second), cfg, opts(steps))
 		if err != nil || len(res.Applied) != 1 {
@@ -342,7 +342,7 @@ func TestMigrateNoTransactionStep(t *testing.T) {
 		if n := scalar[int](t, admin, "SELECT count(*) FROM pg_index WHERE NOT indisvalid"); n != 0 {
 			t.Fatalf("invalid indexes after the step = %d", n)
 		}
-		if scalar[bool](t, admin, fmt.Sprintf("SELECT transactional FROM trove.schema_migration WHERE version = %d", postgres.RequiredSchema()+1)) {
+		if scalar[bool](t, admin, fmt.Sprintf("SELECT transactional FROM quader.schema_migration WHERE version = %d", postgres.RequiredSchema()+1)) {
 			t.Fatal("the step must be recorded as non-transactional")
 		}
 	})
@@ -361,12 +361,12 @@ func TestMigrateDDLLockRetry(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := tx.Exec(context.Background(), "LOCK TABLE trove.repositories IN ACCESS SHARE MODE"); err != nil {
+		if _, err := tx.Exec(context.Background(), "LOCK TABLE quader.repositories IN ACCESS SHARE MODE"); err != nil {
 			t.Fatal(err)
 		}
 		_ = name
 		steps := stepsWith(t, map[string]string{
-			nextStep(1, "alter"): "-- trove:phase expand\nALTER TABLE trove.repositories ADD COLUMN note text;\n",
+			nextStep(1, "alter"): "-- quader:phase expand\nALTER TABLE quader.repositories ADD COLUMN note text;\n",
 		})
 		// Release the table after the second attempt timed out.
 		released := make(chan struct{})
@@ -394,13 +394,13 @@ func TestContractGuard(t *testing.T) {
 	st := getStack(t)
 	contract := func(t *testing.T) map[string]string {
 		return map[string]string{
-			nextStep(1, "scratch"):      "-- trove:phase expand\nCREATE TABLE trove.scratch (id int);\n",
-			nextStep(2, "drop_scratch"): "-- trove:phase contract\n-- trove:requires-app >= 0.4.0\nDROP TABLE trove.scratch;\n",
+			nextStep(1, "scratch"):      "-- quader:phase expand\nCREATE TABLE quader.scratch (id int);\n",
+			nextStep(2, "drop_scratch"): "-- quader:phase contract\n-- quader:requires-app >= 0.4.0\nDROP TABLE quader.scratch;\n",
 		}
 	}
 	addReplica := func(t *testing.T, admin *pgx.Conn, name, version string, age time.Duration) {
 		t.Helper()
-		_, err := admin.Exec(context.Background(), `INSERT INTO trove.replica
+		_, err := admin.Exec(context.Background(), `INSERT INTO quader.replica
 			(instance_uid, name, version, revision, roles, state, secret_key_ids, active_secret_key_id, started_at, heartbeat_at)
 			VALUES (gen_random_uuid(), $1, $2, 'abc', '{web}', 'ready', '{}', 'k1', now() - interval '1 hour', now() - $3::interval)`,
 			name, version, age.String())
@@ -411,13 +411,13 @@ func TestContractGuard(t *testing.T) {
 
 	t.Run("R-ARCH-026 a contract step above a live replica's version exits 3, names the replica and applies nothing", func(t *testing.T) {
 		cfg, _, admin := migrated(t, st)
-		addReplica(t, admin, "trove-web-0.3-abc", "0.3.1", 2*time.Second)
+		addReplica(t, admin, "quader-web-0.3-abc", "0.3.1", 2*time.Second)
 		_, err := postgres.Migrate(ctxT(t, 30*time.Second), cfg, opts(stepsWith(t, contract(t))))
 		var ref *postgres.Refusal
 		if !errors.As(err, &ref) || ref.ExitCode() != 3 {
 			t.Fatalf("err = %v, want a refusal with status 3", err)
 		}
-		if !strings.Contains(err.Error(), "trove-web-0.3-abc") || !strings.Contains(err.Error(), "0.3.1") ||
+		if !strings.Contains(err.Error(), "quader-web-0.3-abc") || !strings.Contains(err.Error(), "0.3.1") ||
 			!strings.Contains(err.Error(), "one minor release at a time") || !strings.Contains(err.Error(), "downtime") {
 			t.Fatalf("the refusal must name the replica and both ways forward: %v", err)
 		}
@@ -425,8 +425,8 @@ func TestContractGuard(t *testing.T) {
 			t.Fatalf("refusal = %+v", ref)
 		}
 		// Nothing was applied, not even the expand step before the contract step.
-		if scalar[bool](t, admin, "SELECT to_regclass('trove.scratch') IS NOT NULL") ||
-			scalar[int](t, admin, "SELECT applied FROM trove.schema_state") != postgres.RequiredSchema() {
+		if scalar[bool](t, admin, "SELECT to_regclass('quader.scratch') IS NOT NULL") ||
+			scalar[int](t, admin, "SELECT applied FROM quader.schema_state") != postgres.RequiredSchema() {
 			t.Fatal("the guard must refuse before applying anything")
 		}
 	})
@@ -442,10 +442,10 @@ func TestContractGuard(t *testing.T) {
 		if len(res.Applied) != 2 || res.CompatFloor != "0.4.0" {
 			t.Fatalf("res = %+v", res)
 		}
-		if got := scalar[string](t, admin, "SELECT compat_floor FROM trove.schema_state"); got != "0.4.0" {
+		if got := scalar[string](t, admin, "SELECT compat_floor FROM quader.schema_state"); got != "0.4.0" {
 			t.Fatalf("compat_floor = %q", got)
 		}
-		if got := scalar[string](t, admin, fmt.Sprintf("SELECT requires_app FROM trove.schema_migration WHERE version = %d", postgres.RequiredSchema()+2)); got != "0.4.0" {
+		if got := scalar[string](t, admin, fmt.Sprintf("SELECT requires_app FROM quader.schema_migration WHERE version = %d", postgres.RequiredSchema()+2)); got != "0.4.0" {
 			t.Fatalf("requires_app = %q", got)
 		}
 		steps, _ := postgres.ParseSteps(stepsWith(t, contract(t)))
@@ -456,7 +456,7 @@ func TestContractGuard(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if rep.Servable || !strings.Contains(rep.Verdict, "schema requires trove >= 0.4.0") {
+		if rep.Servable || !strings.Contains(rep.Verdict, "schema requires Quader >= 0.4.0") {
 			t.Fatalf("an N-2 binary must be refused: %+v", rep)
 		}
 		// The binary with these files needs the scratch expand step; with the phase rules on it does not need the contract
@@ -483,16 +483,16 @@ func TestHalfRestored(t *testing.T) {
 	st := getStack(t)
 	t.Run("R-ARCH-026 restore_in_progress in system_state: exit 3, the backup ID named, nothing applied", func(t *testing.T) {
 		cfg, _, admin := migrated(t, st)
-		if _, err := admin.Exec(context.Background(), `INSERT INTO trove.system_state (key, value) VALUES ('restore_in_progress', '"20261028T020000Z-7f3a"')`); err != nil {
+		if _, err := admin.Exec(context.Background(), `INSERT INTO quader.system_state (key, value) VALUES ('restore_in_progress', '"20261028T020000Z-7f3a"')`); err != nil {
 			t.Fatal(err)
 		}
-		extra := stepsWith(t, map[string]string{nextStep(1, "new"): "-- trove:phase expand\nCREATE TABLE trove.must_not_exist (id int);\n"})
+		extra := stepsWith(t, map[string]string{nextStep(1, "new"): "-- quader:phase expand\nCREATE TABLE quader.must_not_exist (id int);\n"})
 		_, err := postgres.Migrate(ctxT(t, 30*time.Second), cfg, opts(extra))
 		var ref *postgres.Refusal
 		if !errors.As(err, &ref) || ref.ExitCode() != 3 || ref.BackupID != "20261028T020000Z-7f3a" || !strings.Contains(err.Error(), "20261028T020000Z-7f3a") {
 			t.Fatalf("err = %v", err)
 		}
-		if scalar[bool](t, admin, "SELECT to_regclass('trove.must_not_exist') IS NOT NULL") {
+		if scalar[bool](t, admin, "SELECT to_regclass('quader.must_not_exist') IS NOT NULL") {
 			t.Fatal("a step ran against a half-restored database")
 		}
 	})
@@ -500,7 +500,7 @@ func TestHalfRestored(t *testing.T) {
 	t.Run("R-ARCH-026 the restore anchor on the schema: exit 3, the backup ID named", func(t *testing.T) {
 		name, admin := st.newDatabase(t)
 		cfg := st.config(t, name)
-		if _, err := admin.Exec(context.Background(), `CREATE SCHEMA trove; COMMENT ON SCHEMA trove IS 'trove-restore 20261028T020000Z-7f3a'`); err != nil {
+		if _, err := admin.Exec(context.Background(), `CREATE SCHEMA quader; COMMENT ON SCHEMA quader IS 'quader-restore 20261028T020000Z-7f3a'`); err != nil {
 			t.Fatal(err)
 		}
 		_, err := postgres.Migrate(ctxT(t, 30*time.Second), cfg, opts(nil))
@@ -538,7 +538,7 @@ func TestPreflight(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), "needs "+itoa(want)) || !strings.Contains(err.Error(), "allows "+itoa(max)) {
 			t.Fatalf("err = %v, want it to name %d and %d", err, want, max)
 		}
-		if scalar[bool](t, admin, "SELECT to_regnamespace('trove') IS NOT NULL") {
+		if scalar[bool](t, admin, "SELECT to_regnamespace('quader') IS NOT NULL") {
 			t.Fatal("preflight must fail before the schema is touched")
 		}
 		cfg.Preflight.ConnectionBudget = "warn"
@@ -547,7 +547,7 @@ func TestPreflight(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-017 trove migrate behind a transaction-mode pooler exits with the session-state message", func(t *testing.T) {
+	t.Run("R-ARCH-017 quader migrate behind a transaction-mode pooler exits with the session-state message", func(t *testing.T) {
 		name, _ := st.newDatabase(t)
 		cfg := st.config(t, name)
 		cfg.Port = st.bouncerPort // the "session host" is the pooler

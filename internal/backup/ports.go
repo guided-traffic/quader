@@ -6,13 +6,13 @@ import (
 	"io"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // The ports below are the seams of the create pipeline: the pipeline is written against them and tested with fakes, and
-// cmd/trove joins the implementations (PostgreSQL in internal/meta/postgres, S3 clients built by internal/blob/s3).
+// cmd/quader joins the implementations (PostgreSQL in internal/meta/postgres, S3 clients built by internal/blob/s3).
 
 // SnapshotOptions are the parameters of the database phase (R-BAK-005).
 type SnapshotOptions struct {

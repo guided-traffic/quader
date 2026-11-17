@@ -16,7 +16,7 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 )
 
-// The test keys. The stub signs with the OpenPGP module directly and not through trove's internal/openpgp, so that trove's
+// The test keys. The stub signs with the OpenPGP module directly and not through quader's internal/openpgp, so that quader's
 // verifier is tested against an independent signer. Every key is EdDSALegacy (algorithm 22) over Ed25519, version 4, made from a
 // fixed seed, so its fingerprint is the same in every process and a test can pin it:
 //
@@ -83,7 +83,7 @@ func (r *seedReader) Read(p []byte) (int, error) {
 func makeKey(name string, created time.Time, lifetime time.Duration) (*testKey, error) {
 	off := false
 	cfg := &packet.Config{
-		Rand:        &seedReader{seed: "trove debstub test key " + name},
+		Rand:        &seedReader{seed: "quader debstub test key " + name},
 		Algorithm:   packet.PubKeyAlgoEdDSA,
 		Curve:       packet.Curve25519,
 		DefaultHash: crypto.SHA512,
@@ -92,7 +92,7 @@ func makeKey(name string, created time.Time, lifetime time.Duration) (*testKey, 
 		NonDeterministicSignaturesViaNotation: &off,
 		KeyLifetimeSecs:                       uint32(lifetime / time.Second), //nolint:gosec // the lifetimes are a year at most
 	}
-	e, err := pgp.NewEntity("trove debstub key "+name, "", "", cfg)
+	e, err := pgp.NewEntity("quader debstub key "+name, "", "", cfg)
 	if err != nil {
 		return nil, err
 	}

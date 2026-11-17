@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // R-VULN-006 (S10 of the fix wave): the bidirectional controls, the zero-width characters, the byte order mark and the line and

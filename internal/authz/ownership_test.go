@@ -4,8 +4,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // ownershipFixture is the publishing side of the team example: npm-internal

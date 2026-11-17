@@ -5,7 +5,7 @@ package e2e
 // Drain and failover under npm load (WP2.8, roadmap M2 E2.11): variant A of R-HA-059's drain test and the pod-crash,
 // PostgreSQL-switchover and Valkey-failover scenarios of R-HA-052, each under the npm part of R-HA-059's load
 // (npm_load_test.go), in the scatter profile with three api, three packages and four worker replicas. The pod crash is TestNPMHACrash, a set
-// of its own: three force-deletes when run by hand, the full ten with TROVE_E2E_NPM_CRASH_SOAK=1 (nightly and closing run).
+// of its own: three force-deletes when run by hand, the full ten with QUADER_E2E_NPM_CRASH_SOAK=1 (nightly and closing run).
 // The Valkey outage of R-HA-052 belongs to the full suite and runs in the closing run (TestNPMHAClosing). Q-HA-65 and
 // Q-HA-67 to Q-HA-69 record the choices.
 
@@ -38,7 +38,7 @@ func TestNPMHA(t *testing.T) {
 	})
 
 	t.Run("R-HA-051 R-HA-052 R-HA-057 E2.11 dev-valkey-failover during the npm ci loops: no failed iteration, k6 only 2xx and 304, /readyz 200 throughout, every replica follows the new primary once", func(t *testing.T) {
-		const changes = "trove_valkey_primary_changes_total"
+		const changes = "quader_valkey_primary_changes_total"
 		var before map[string]float64
 		r := runNPMFault(t, h, "valkey-failover", haFullLoad(), time.Minute, time.Minute, func() {
 			before = replicaMetric(t, changes)
@@ -63,13 +63,13 @@ func TestNPMHA(t *testing.T) {
 }
 
 // TestNPMHACrash is R-HA-052's pod crash under the npm load: three force-deletes on every change, ten (20 minutes) with
-// TROVE_E2E_NPM_CRASH_SOAK=1, which the nightly Performance workflow and the closing run set (Q-HA-67).
+// QUADER_E2E_NPM_CRASH_SOAK=1, which the nightly Performance workflow and the closing run set (Q-HA-67).
 func TestNPMHACrash(t *testing.T) {
 	h := npmHAFx(t)
 
-	t.Run("R-HA-052 R-NPM-046 pod crash: a random api, packages or worker replica force-deleted every 2 min under the npm ci and publish loops, 3 times per change and 10 times over 20 min in the soak: no failed iteration, trove admin storage verify finds every object", func(t *testing.T) {
+	t.Run("R-HA-052 R-NPM-046 pod crash: a random api, packages or worker replica force-deleted every 2 min under the npm ci and publish loops, 3 times per change and 10 times over 20 min in the soak: no failed iteration, quader admin storage verify finds every object", func(t *testing.T) {
 		kills, every := 3, 2*time.Minute
-		if os.Getenv("TROVE_E2E_NPM_CRASH_SOAK") == "1" {
+		if os.Getenv("QUADER_E2E_NPM_CRASH_SOAK") == "1" {
 			kills = 10
 		}
 		seed := uint64(time.Now().UnixNano())
@@ -77,7 +77,7 @@ func TestNPMHACrash(t *testing.T) {
 		var victims []string
 		r := runNPMFault(t, h, "pod-crash", npmLoadOpts{ciLoops: haCILoops, publish: true}, time.Minute, time.Minute, func() {
 			for i := 0; i < kills; i++ {
-				ps := livePods(t, selTrove)
+				ps := livePods(t, selQuader)
 				v := ps[rng.IntN(len(ps))]
 				t.Logf("kill %d of %d: %s on %s", i+1, kills, v.Name, v.Node)
 				forceDelete(t, v)
@@ -91,7 +91,7 @@ func TestNPMHACrash(t *testing.T) {
 		r.res.loopsSpan(t, r.faultAt, r.faultEnd)
 		requireStorageVerified(t)
 		r.res.installPublished(t, h)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 	})
 }
 
@@ -113,7 +113,7 @@ func TestNPMHAClosing(t *testing.T) {
 		var back time.Duration
 		startedAt := map[string]bool{}
 		r := runNPMFault(t, h, "valkey-outage", haFullLoad(), time.Minute, time.Minute, func() {
-			for _, p := range livePods(t, selTrove) {
+			for _, p := range livePods(t, selQuader) {
 				startedAt[p.Name] = true
 			}
 			script(t, "valkey-stop.sh")
@@ -171,7 +171,7 @@ func TestNPMHAClosing(t *testing.T) {
 type loadFaultRun[R any] struct {
 	res      R
 	mon      *monitor
-	initial  map[string]bool // the trove pods when the monitor started
+	initial  map[string]bool // the quader pods when the monitor started
 	restarts map[string]int
 	faultAt  time.Time
 	faultEnd time.Time
@@ -185,11 +185,11 @@ type npmFaultRun = loadFaultRun[npmLoadResult]
 // returns its result; note adds the load's numbers to the JSON record next to the fault's.
 func runLoadFault[R any](t *testing.T, record, name string, before, after time.Duration, start func() func(*testing.T) R, fault func(), note func(R) map[string]any) loadFaultRun[R] {
 	t.Helper()
-	troveSettled(t, 3, 3, 4)
+	quaderSettled(t, 3, 3, 4)
 	stop := start()
 	time.Sleep(before)
 	r := loadFaultRun[R]{initial: map[string]bool{}}
-	for _, p := range livePods(t, selTrove) {
+	for _, p := range livePods(t, selQuader) {
 		r.initial[p.Name] = true
 	}
 	r.mon = startMonitor(t)
@@ -364,9 +364,9 @@ func valkeyPrimaryBySentinel(t testing.TB) string {
 
 // sentinelPrimary asks the Sentinels in turn; it never fails the test, so a goroutine may call it.
 func sentinelPrimary() (string, bool) {
-	for _, s := range []string{"trove-valkey-sentinel-0", "trove-valkey-sentinel-1", "trove-valkey-sentinel-2"} {
+	for _, s := range []string{"quader-valkey-sentinel-0", "quader-valkey-sentinel-1", "quader-valkey-sentinel-2"} {
 		out, err := kubectl("-n", cfg.namespace, "exec", s, "-c", "sentinel", "--", "sh", "-c",
-			`exec valkey-cli --tls --cacert /tls/ca.crt -h 127.0.0.1 -p 36379 --no-auth-warning -a "$VALKEY_PASSWORD" sentinel get-master-addr-by-name trove-valkey`)
+			`exec valkey-cli --tls --cacert /tls/ca.crt -h 127.0.0.1 -p 36379 --no-auth-warning -a "$VALKEY_PASSWORD" sentinel get-master-addr-by-name quader-valkey`)
 		host := strings.TrimSpace(strings.SplitN(out, "\n", 2)[0])
 		if err == nil && host != "" && host != "(nil)" && !strings.Contains(host, "ERR") {
 			return strings.SplitN(host, ".", 2)[0], true
@@ -376,7 +376,7 @@ func sentinelPrimary() (string, bool) {
 }
 
 // valkeyClearWatch measures R-HA-057's "after the return, degraded clears": from the first moment a Sentinel names a
-// primary again until no trove pod lists valkey among its degraded checks. It polls while valkey-start.sh runs,
+// primary again until no quader pod lists valkey among its degraded checks. It polls while valkey-start.sh runs,
 // because that script waits for both StatefulSets and the operator, and the replicas may have cleared before it ends.
 type valkeyClearWatch struct {
 	stop      chan struct{}
@@ -402,7 +402,7 @@ func startValkeyClearWatch() *valkeyClearWatch {
 				}
 				continue
 			}
-			raw, err := kubectl("-n", cfg.namespace, "get", "pods", "-l", selTrove, "-o", "json")
+			raw, err := kubectl("-n", cfg.namespace, "get", "pods", "-l", selQuader, "-o", "json")
 			var l struct {
 				Items []struct {
 					Metadata struct {

@@ -7,12 +7,12 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The general rate-limit classes of /api/v1/, /files/ and the package protocols
@@ -56,7 +56,7 @@ type RateLimitOptions struct {
 	// api.rate_limits.exempt_admins it bypasses the limits. Nil means nobody is
 	// exempt.
 	IsAdmin func(r *http.Request) bool
-	// Registry receives trove_api_rate_limited_total{class}; nil registers nothing.
+	// Registry receives quader_api_rate_limited_total{class}; nil registers nothing.
 	Registry prometheus.Registerer
 	// Challenged reports a package request without a credential that the decision point answers with the challenge whatever
 	// its route, at no more cost than a decision in memory: [ChallengedByLevels]. The class package_anonymous does not charge
@@ -105,7 +105,7 @@ func NewRateLimit(o RateLimitOptions) (func(http.Handler) http.Handler, error) {
 		return func(next http.Handler) http.Handler { return next }, nil
 	}
 	rejected := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "trove_api_rate_limited_total",
+		Name: "quader_api_rate_limited_total",
 		Help: "Requests refused with 429 by the general rate limits, by class.",
 	}, []string{"class"})
 	if o.Registry != nil {

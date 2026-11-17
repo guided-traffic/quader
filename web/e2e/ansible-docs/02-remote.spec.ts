@@ -10,7 +10,7 @@ function env(name: string): string {
   return v;
 }
 
-const remote = { name: env('TROVE_E2E_ANSIBLE_DOCS_REMOTE_PACKAGE'), version: env('TROVE_E2E_ANSIBLE_DOCS_REMOTE_VERSION') };
+const remote = { name: env('QUADER_E2E_ANSIBLE_DOCS_REMOTE_PACKAGE'), version: env('QUADER_E2E_ANSIBLE_DOCS_REMOTE_VERSION') };
 
 function pageUrl(p: { name: string; version: string }): string {
   return `/ui/en/projects/${e2eProject}/packages/ansible/${p.name}?version=${p.version}`;
@@ -78,7 +78,7 @@ test('R-UI-060 R-UI-061 R-UI-064 R-ANS-046 a collection a remote repository took
     await expect(facts).toContainText('Requires Ansible');
     await expect(facts).toContainText('>=2.15.0');
     await expect(facts).toContainText('GPL-3.0-or-later');
-    await expect(page.locator('.pkg-tabs')).toContainText('trove test');
+    await expect(page.locator('.pkg-tabs')).toContainText('quader test');
     await expect(page.getByRole('link', { name: `https://example.invalid/acme/tools/docs` })).toBeVisible();
     await expect(page.locator('.pkg-tabs dt', { hasText: 'Docs site' })).toBeVisible();
     // the dependency is a collection this installation holds (the install pulled it), so it links to its page

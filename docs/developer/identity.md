@@ -29,7 +29,7 @@ the decisions of this area are Q-AUTH-18 to Q-AUTH-22 and Q-AUTH-41 to Q-AUTH-48
 | [internal/avatar](../../internal/avatar) | The user avatar (R-API-055): `Processor.Process` turns an upload into a 256 x 256 PNG, `Store` keeps it in the blob store and `user_avatars` |
 | [internal/audit/events_identity.go](../../internal/audit/events_identity.go) | The identity event types with their data schemas and journal flags |
 | [internal/audit/events_bastion.go](../../internal/audit/events_bastion.go) | `bastion.created`, `bastion.updated`, `bastion.disabled`, `bastion.enabled`, `bastion.deleted`; the disable and the deletion carry the journal entry (Q-BAS-145) |
-| [internal/bastionmain](../../internal/bastionmain) | The Bastion registrations (`registrations.go`: `Registrations`, the service behind `/api/v1/bastions` and `trove admin bastion`) and the `TokenAuthenticator` over the token service (`authenticator.go`); see [bastion.md](bastion.md) |
+| [internal/bastionmain](../../internal/bastionmain) | The Bastion registrations (`registrations.go`: `Registrations`, the service behind `/api/v1/bastions` and `quader admin bastion`) and the `TokenAuthenticator` over the token service (`authenticator.go`); see [bastion.md](bastion.md) |
 | [internal/cluster/valkey_tokseen.go](../../internal/cluster/valkey_tokseen.go) | `TokenSeen`: the throttle-exemption marker (key family `tokseen`) |
 | [internal/meta/postgres/queries/identity.sql](../../internal/meta/postgres/queries/identity.sql) | Every identity query; parameters are plain Go types because the packages above import no driver |
 | [internal/app/wire_identity.go](../../internal/app/wire_identity.go) | The composition: `wireIdentity`, `registerIdentityJobs`, `publicRoute`, `apiKeyRoute` (the dispatcher's answer to "is this an API-key route", Q-AUTH-186) |
@@ -39,7 +39,7 @@ the decisions of this area are Q-AUTH-18 to Q-AUTH-22 and Q-AUTH-41 to Q-AUTH-48
 | File | Responsibility |
 |---|---|
 | `auth.go` | The contract: `Authenticator`, `Result`, `Credential` (with `Registry`, the grant of a registry token), `EndpointRules` (with `PublicRoute` and `APIKeyRoute`), `HeaderAPIKey` |
-| `stage.go` | `Stage.Authenticate`: credential selection and precedence (the API key first on the routes that declare it), endpoint rules, anonymous, challenges (the registry's below `/v2/`), error mapping; `byRegistryToken` (a `Bearer trv_rgt_` below `/v2/`, R-OCI-005); `AuthenticateTokenRequest` with `Presented`, `PresentedFrom`, `PresentedForm` for the OCI token service, whose route `/v2/_token` the chain does not authenticate (Q-OCI-51) |
+| `stage.go` | `Stage.Authenticate`: credential selection and precedence (the API key first on the routes that declare it), endpoint rules, anonymous, challenges (the registry's below `/v2/`), error mapping; `byRegistryToken` (a `Bearer qdr_rgt_` below `/v2/`, R-OCI-005); `AuthenticateTokenRequest` with `Presented`, `PresentedFrom`, `PresentedForm` for the OCI token service, whose route `/v2/_token` the chain does not authenticate (Q-OCI-51) |
 | `limiter.go` | `FailureLimiter` (the narrow limiter interface), `LocalLimiter`, the per-request throttle |
 | `standing.go` | `JobStanding`: what the subject a job carries (`authz.JobSubject`) holds now, for every batch of the delete job (Q-AUTHZ-260): the principal's status, kind, name and groups from `principal.Store` (a changed kind is refused), the token by ID (`TokenStanding`, `token.Service.Standing`) or the session by ID (`SessionStanding`, `session.Standing`); a principal that is not active and a withdrawn credential are the 401 a request would get (Q-AUTHZ-261, Q-AUTHZ-262), a purged token or session has a reason of its own (Q-STOR-194) |
 
@@ -99,8 +99,8 @@ request ─► chain stage 6 ─► app.authenticate ─► auth.Stage.Authentic
 - Errors: `invalid_token` for malformed, unknown, revoked, expired and wrongly bound tokens (the response does not say
   which), `principal_disabled` for a disabled owner, `credentials_required` without a credential, `session_expired`,
   `rate_limited` (429 with `Retry-After`) when the address is throttled, 503 when PostgreSQL does not answer.
-- The challenge is `Bearer realm="trove"` (plus `error="invalid_token"` after a rejected token) under `/api/v1/`,
-  `Basic realm="trove"` for a package client on `/files/` and `/api/<format>/`, and `Bearer realm="trove"` everywhere else
+- The challenge is `Bearer realm="quader"` (plus `error="invalid_token"` after a rejected token) under `/api/v1/`,
+  `Basic realm="quader"` for a package client on `/files/` and `/api/<format>/`, and `Bearer realm="quader"` everywhere else
   and for a browser (Q-AUTH-173). The decision point's 401 to a caller without a credential takes the same challenge where it is
   written: `httpserver.PackageChallenge`, in `Problem` and in the format dispatcher (Q-AUTH-235).
 - The session cookie is accepted on `/api/v1/` for every method, on `/files/` for GET, HEAD, PUT and DELETE, on
@@ -131,7 +131,7 @@ request ─► chain stage 6 ─► app.authenticate ─► auth.Stage.Authentic
   ([lastused.go](../../internal/auth/token/lastused.go)). The buffer is a map from token ID to the latest time and address, under
   a mutex; `FlushLastUsed` takes it and writes one statement (`IdentityTouchTokensLastUsed`, rows locked in ID order, a row changes
   only when it is `auth.tokens.last_used_granularity` behind). A failed batch is dropped and counted
-  (`trove_auth_lastused_flush_failures_total`). `lastUsedComponent` in [wire_identity.go](../../internal/app/wire_identity.go) runs
+  (`quader_auth_lastused_flush_failures_total`). `lastUsedComponent` in [wire_identity.go](../../internal/app/wire_identity.go) runs
   the 60 s loop (`RunLastUsed`, whose flush runs under `context.WithoutCancel`) and is a `Flusher`: its `Flush` ends the loop, waits for the batch in
   flight and then writes what is left, before the pools close. The statement caps the time at `now()` (Q-AUTH-180). The integration test
   is `TestR_AUTH_031_LastUsedIsRecordedInBatches` in [test/integration/identity/lastused_test.go](../../test/integration/identity/lastused_test.go).
@@ -165,7 +165,7 @@ lookup key and does not allow authentication.
 **The freshness gate** (`principal.Gate`, wired to `cluster.Changes.FreshWithin(auth.revocation_bound)`): while the last
 completed poll started more than the bound ago, `Open()` is false, every lookup reads PostgreSQL and nothing is cached;
 concurrent lookups of one key share a query only if it started less than the bound before (`Flights`; the query runs on its own and each
-caller waits under its own context, Q-AUTH-208). A lookup that PostgreSQL does not answer is 503. `trove_auth_cache_bypassed_total{reason="changes_stale"}` counts them.
+caller waits under its own context, Q-AUTH-208). A lookup that PostgreSQL does not answer is 503. `quader_auth_cache_bypassed_total{reason="changes_stale"}` counts them.
 
 **The fill rule** is the cache package's (`Load` reads the applied epoch before the query and caches only if it is
 unchanged), so a fill that raced a revocation serves one request and is not cached.
@@ -192,7 +192,7 @@ unchanged), so a fill that raced a revocation serves one request and is not cach
 
 ## The Bastion's token in the stage (R-BAS-008)
 
-The stage never sees a Bastion token: `token.Service.Check` answers a `trv_bst_` value as an unknown token, and a Bastion request is recognized
+The stage never sees a Bastion token: `token.Service.Check` answers a `qdr_bst_` value as an unknown token, and a Bastion request is recognized
 before the stage runs ([bastion.md](bastion.md#package-2-the-main-installations-interface)). Three things there touch the stage: `auth.Credential.ExpiresAt`
 (and `httpserver.Credential.ExpiresAt`) carry the validated token's expiry for the marking and the check; `auth.NewAddressThrottle(limiter, addr, exempt, scope)`
 builds the throttle of one address, with a bucket prefix for a kind of credential that counts apart (the Bastion token, `bastionmain.ThrottleScope`);
@@ -212,7 +212,7 @@ and the check of the Bastion interface calls the same stage function as a direct
 | Integration, HTTP | `test/integration/identity/api_*_test.go` | the same replicas serving the real handlers ([test/integration/idapi](../../test/integration/idapi): the production chain, the real stage and decision point), every answer validated against the document: `TestAPIOperations` reaches every identity operation and asserts `Uncovered` is empty; E1.2 over HTTP with Valkey running and stopped; concurrent idempotent creates on three replicas; E1.8 for Bearer and Basic across three replicas (cluster limiter, and the per-replica share without Valkey); the flow-start budget of the revocation by value; `audit_event` rows for token creation and revocation (E1.5) |
 
 Run the integration area from the checkout root with the stack up (see [build-and-test.md](build-and-test.md)):
-`set -a; . /Users/hfi/repos/trove/.dev/integration/env; set +a; go test -count=1 -tags integration ./test/integration/identity/...`
+`set -a; . /Users/hfi/repos/quader/.dev/integration/env; set +a; go test -count=1 -tags integration ./test/integration/identity/...`
 
 ## Journaled narrowings (F-72)
 
@@ -251,7 +251,7 @@ Tests: `TestR_AUTH_041_UserUpdatedEntriesAreReadStrictly`, `TestR_AUTH_041_Group
 | `BreakGlassName` | `wire_identity.go` | `auth.break_glass.username`, the reserved username of the provisioner and the manager |
 | `Provisioner` | `a.m1.provisioner` | login: `wireLogin` hands it to the OIDC service, whose callback calls `SignIn` |
 | `principal.Metrics` | `wire_identity.go` `authMetrics` | one instance per replica; the session store and the login count into the same families |
-| `principal.AdminBinder` | `authz.Service.BindAdmin` | only `trove admin service-account create --admin` ([admin_identity.go](../../cmd/trove/admin_identity.go)); the running manager has none, no API operation binds a role on creation (Q-AUTH-47) |
+| `principal.AdminBinder` | `authz.Service.BindAdmin` | only `quader admin service-account create --admin` ([admin_identity.go](../../cmd/quader/admin_identity.go)); the running manager has none, no API operation binds a role on creation (Q-AUTH-47) |
 | `v1.AuthServices` | `App.authServices` ([wire_identity.go](../../internal/app/wire_identity.go)) | the manager, the token service, the settings store, the session store, the login and the limiter `auth.flow_starts` that `startClient` passes to every endpoint's `v1.Options.Auth`; a component the replica lacks stays nil and its operations answer 503 |
 
 ## Management API
@@ -261,7 +261,7 @@ The handlers are in [internal/api/v1](../../internal/api/v1): `users_api.go`, `g
 need are `v1.AuthServices` ([auth_services.go](../../internal/api/v1/auth_services.go)) and the helpers of merge patches
 ([auth_patch.go](../../internal/api/v1/auth_patch.go)). The document is `api/openapi.yaml` between the `identity` and `login` markers.
 
-| operationId | Method and path | `x-trove-permission` |
+| operationId | Method and path | `x-quader-permission` |
 |---|---|---|
 | `listUsers` | `GET /api/v1/users` | `identities:read` |
 | `createUser` | `POST /api/v1/users` | `identities:write`, idempotent |
@@ -305,7 +305,7 @@ The handlers pass `qname.Object{Project, Name}` to the `…Project…` methods o
 | `revokeToken` | `DELETE /api/v1/tokens/{id}` | authenticated (owner, through a narrowed token only its line, 404 otherwise; `tokens:revoke`; an Owner of the account's project) |
 | `rotateToken` | `POST /api/v1/tokens/{id}/rotate` | authenticated (owner of a PAT; administrator or the account itself for a SAT; a narrowed token only its line, 404 for a token it does not see and 403 for one it sees through `tokens:read`), idempotent |
 | `revokeTokenByValue` | `POST /api/v1/tokens/revoke` | public, counted in `auth.flow_starts` |
-| `revokeOwnTokens` | `DELETE /api/v1/users/me/tokens` | authenticated (a user), `x-trove-owner-rights` (a session or an inheriting token) |
+| `revokeOwnTokens` | `DELETE /api/v1/users/me/tokens` | authenticated (a user), `x-quader-owner-rights` (a session or an inheriting token) |
 | `revokeUserTokens`, `revokeServiceAccountTokens` | `DELETE /api/v1/users/{username}/tokens`, `/service-accounts/{name}/tokens` | `tokens:revoke` |
 | `createServiceAccountToken` | `POST /api/v1/service-accounts/{name}/tokens` | authenticated (an administrator, or a token of the account), idempotent |
 | `getAuthSettings`, `updateAuthSettings` | `GET`, `PATCH /api/v1/settings/auth` | `settings:read`, `settings:write` |
@@ -323,8 +323,8 @@ How the pieces fit:
   handlers add the rules of the specification that need the record: the owner of a token, the derivation rule (`presenting` builds the
   parent `token.Info` from the token row), no impersonation, and `404` for what the caller may not see. A capability check is never
   repeated here, and neither is the recent sign-in of a session: the operations that mint a credential declare
-  `x-trove-recent-auth: true` and the shared step enforces it (R-AUTH-011, [http-api.md](http-api.md), Q-API-40). Nor is the scope of the
-  presenting token on the operations of the caller's own account: they declare `x-trove-owner-rights: required` and the shared step refuses
+  `x-quader-recent-auth: true` and the shared step enforces it (R-AUTH-011, [http-api.md](http-api.md), Q-API-40). Nor is the scope of the
+  presenting token on the operations of the caller's own account: they declare `x-quader-owner-rights: required` and the shared step refuses
   a token whose scope does not inherit (Q-API-214). The token operations keep one rule of that kind in the handler, because it needs the
   record: a narrowed token sees, revokes and rotates by ownership only itself and the tokens derived from it (`inLine` in `visible`, so
   any other token of the owner is a 404; `ListFilter.Line` for the list; `token.Service.DescendsFrom`; a rotation outside the line of a
@@ -352,7 +352,7 @@ How the pieces fit:
   composition root fills with the predicate of the scope check.
 
 Extension checklist, **a new identity operation**: add the path and schemas between the markers of `api/openapi.yaml` (the permission, the
-`429`, the problem responses, `x-trove-reserved-names` for a literal next to a key), run `make generate`, write the handler on `*Server`
+`429`, the problem responses, `x-quader-reserved-names` for a literal next to a key), run `make generate`, write the handler on `*Server`
 with `s.identityReady`, call the domain function, answer with `failIdentity`, add it to `identityOperations` in
 [api_test.go](../../test/integration/identity/api_test.go) so that `Uncovered` fails until a test reaches it.
 
@@ -364,7 +364,7 @@ A user uploads a picture for their own record; the server keeps a new image made
 | File | Responsibility |
 |---|---|
 | [internal/avatar/process.go](../../internal/avatar/process.go) | The constants (`MaxUpload`, `OutputSide`, `MinSide`, `MaxPixels`, `MaxDecodeBytes`, `MaxScans`, `MaxBlockVisits`, `DecodeTimeout`, `MaxConcurrent`, `BusyWait`), the refusals (`ErrTooLarge`, `ErrUnsupportedType`, `ErrTypeMismatch`, `ErrAnimated`, `ErrDimensions`, `ErrCorrupt`, `ErrBusy`) and `Processor.Process`: sniff, header size, JPEG marker walk (`walkJPEG`, the scans and `scanVisits`) and memory estimate (`decodeCost`), slot, decode under a deadline (`ctxReader`), crop, scale, encode |
-| [internal/avatar/worstcase_test.go](../../internal/avatar/worstcase_test.go), [worstcase_bench_unix_test.go](../../internal/avatar/worstcase_bench_unix_test.go) | The slowest images the checks accept, built in code (Paeth-filtered Adam7 16-bit PNG, progressive JPEGs with dense scans and with scans of end-of-band runs that spend `MaxBlockVisits`, a baseline JPEG of noise, a lossless WebP), each inside `MaxUpload`; the test that they are accepted and the timing test (both skipped under `-race`; `TROVE_PERF_GATE=1` decodes each input seven times and holds the least CPU time to one second; the wall time is only logged) and `BenchmarkProcessWorstCase` (wall and CPU time per op); [cpu_unix_test.go](../../internal/avatar/cpu_unix_test.go) reads the process's CPU time. [budget_test.go](../../internal/avatar/budget_test.go) holds the refusals by visit count and the deadline test of a file of few bytes |
+| [internal/avatar/worstcase_test.go](../../internal/avatar/worstcase_test.go), [worstcase_bench_unix_test.go](../../internal/avatar/worstcase_bench_unix_test.go) | The slowest images the checks accept, built in code (Paeth-filtered Adam7 16-bit PNG, progressive JPEGs with dense scans and with scans of end-of-band runs that spend `MaxBlockVisits`, a baseline JPEG of noise, a lossless WebP), each inside `MaxUpload`; the test that they are accepted and the timing test (both skipped under `-race`; `QUADER_PERF_GATE=1` decodes each input seven times and holds the least CPU time to one second; the wall time is only logged) and `BenchmarkProcessWorstCase` (wall and CPU time per op); [cpu_unix_test.go](../../internal/avatar/cpu_unix_test.go) reads the process's CPU time. [budget_test.go](../../internal/avatar/budget_test.go) holds the refusals by visit count and the deadline test of a file of few bytes |
 | [internal/avatar/orient.go](../../internal/avatar/orient.go) | The EXIF orientation reader and `orient`, applied to the scaled square |
 | [internal/avatar/store.go](../../internal/avatar/store.go) | `Store`: `Put` (process, spool, `Commit` with a link that upserts `user_avatars` and records the event), `Remove`, `Open` (lookup by digest, verified read) |
 | [internal/api/v1/avatar_api.go](../../internal/api/v1/avatar_api.go) | The four handlers, `readImage`, `avatarErr` (the mapping of refusals to problems), the image headers; `AvatarService` is the seam the handlers take |
@@ -387,7 +387,7 @@ A user uploads a picture for their own record; the server keeps a new image made
 - **Tests.** Unit: `go test ./internal/avatar/` (fixtures in `testdata/`, made with a WebP encoder outside the repository; the
   animated ones are two-frame files). Integration, against the stack with the role `api`:
   [test/integration/api/avatar_test.go](../../test/integration/api/avatar_test.go). The refusal of a token limited to part of its
-  owner's rights is the shared step's (`x-trove-owner-rights`, Q-API-214), not `avatarOwner`'s; its unit tests are in
+  owner's rights is the shared step's (`x-quader-owner-rights`, Q-API-214), not `avatarOwner`'s; its unit tests are in
   [owner_rights_test.go](../../internal/api/v1/owner_rights_test.go).
 
 ## Bastion registrations and tokens (R-BAS-004, R-BAS-005)
@@ -395,7 +395,7 @@ A user uploads a picture for their own record; the server keeps a new image made
 A Bastion registration is a principal of the kind `bastion` plus a row of the table `bastion`; its tokens are `api_token` rows of the type
 `bst`. The API is `listBastions`, `createBastion`, `getBastion`, `updateBastion`, `deleteBastion`, `createBastionToken` and
 `revokeBastionToken` in [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go); the rules are
-`bastionmain.Registrations`, which the handlers and `trove admin bastion` call. What differs from a service account:
+`bastionmain.Registrations`, which the handlers and `quader admin bastion` call. What differs from a service account:
 
 - **The token API does not see a `bst` token** (`IdentityListTokens` and `IdentityTokenRow` exclude it): it is issued, listed and
   revoked through its registration. `token.Service.Check` refuses the type as unknown before the cache and the table.
@@ -415,8 +415,8 @@ A Bastion registration is a principal of the kind `bastion` plus a row of the ta
 
 ## Bootstrap commands
 
-`trove admin service-account create`, `token create|revoke` and `user disable` (R-AUTH-015) are
-[cmd/trove/admin_identity.go](../../cmd/trove/admin_identity.go). They build the manager and the token service over the
+`quader admin service-account create`, `token create|revoke` and `user disable` (R-AUTH-015) are
+[cmd/quader/admin_identity.go](../../cmd/quader/admin_identity.go). They build the manager and the token service over the
 command's own connection, with empty caches and an `audit.Writer` of their own, and call the same domain functions as the API
 with the actor `admin-cli`. `service-account create --admin` binds the role in the creating transaction through
 `authz.Service.BindAdmin`, which notifies the area `authz` and records `role.bound`. `token create` prints only the secret on
@@ -424,8 +424,8 @@ standard output (default lifetime 15 minutes, the SAT maximum applies; `--scope-
 `app.TokenScopeOptions`); `token revoke --value-stdin` reads the value from standard input and revokes with reason `leaked`.
 The integration test is [admin_test.go](../../test/integration/login/admin_test.go).
 
-`trove admin bastion create <name>`, `bastion token create <name> [--ttl <duration>]` and `bastion token revoke <name> <id>`
-([admin_bastion.go](../../cmd/trove/admin_bastion.go), R-BAS-004) use the same `identityParts`, with `bastionmain.Registrations` on top;
+`quader admin bastion create <name>`, `bastion token create <name> [--ttl <duration>]` and `bastion token revoke <name> <id>`
+([admin_bastion.go](../../cmd/quader/admin_bastion.go), R-BAS-004) use the same `identityParts`, with `bastionmain.Registrations` on top;
 `token create` prints only the secret. The integration test is [cli_test.go](../../test/integration/bastionreg/cli_test.go).
 
 ## Extension checklists

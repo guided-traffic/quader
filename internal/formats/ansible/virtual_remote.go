@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/galaxydoc"
-	"github.com/guided-traffic/trove/internal/formats/ansible/merge"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
+	"github.com/guided-traffic/quader/internal/formats/ansible/merge"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The documents a member of a virtual repository hands to the merge (R-ANS-022, Q-ANS-12). A local member's document is the list of its

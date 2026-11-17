@@ -150,12 +150,12 @@ column), `make generate-check`, `make lint`.
 ## 3 · Work packages after WP0
 
 Every package lists: owner subagent type, requirement IDs, owned files (disjoint unless noted), contracts it consumes, tests, and
-whether it needs the integration stack (shared `trove-it-*`, never `integration-down/up`) or the kind cluster (one agent at a time).
+whether it needs the integration stack (shared `quader-it-*`, never `integration-down/up`) or the kind cluster (one agent at a time).
 
 | WP | Subject | Agent | Requirements | Owned files | Depends on | Stack | kind |
 |---|---|---|---|---|---|---|---|
 | WP1 | Upload sessions | `voltagent-lang:golang-pro` + `voltagent-data-ai:postgres-pro` | R-STOR-011, R-OCI-011 (storage side), R-OCI-032 | `internal/uploads/` (new), `internal/formathost/uploads.go`, `internal/blob/gc*.go` (session expiry in the collection run), `internal/blob/` orphan sweep for `_uploads/`, `internal/meta/postgres/queries/uploads.sql` | WP0 | yes | no |
-| WP2 | Registry tokens and the token service | `voltagent-infra:security-engineer` + `voltagent-lang:golang-pro` | R-OCI-004, R-OCI-005, R-OCI-006 (grant), R-OCI-034 (token metrics/event) | `internal/auth/registrytoken/` (new: form, HKDF from the key ring, scope grammar, grant via the decision point's coarse check), `internal/auth/stage.go` (accept `trv_rgt_` on `/v2/`, no cookie there), `internal/api/registry/token.go` | WP0 | yes | no |
+| WP2 | Registry tokens and the token service | `voltagent-infra:security-engineer` + `voltagent-lang:golang-pro` | R-OCI-004, R-OCI-005, R-OCI-006 (grant), R-OCI-034 (token metrics/event) | `internal/auth/registrytoken/` (new: form, HKDF from the key ring, scope grammar, grant via the decision point's coarse check), `internal/auth/stage.go` (accept `qdr_rgt_` on `/v2/`, no cookie there), `internal/api/registry/token.go` | WP0 | yes | no |
 | WP3 | Registry root and dispatch | `voltagent-core-dev:backend-developer` | R-OCI-001 (mount), R-OCI-003, R-OCI-017, R-OCI-029 | `internal/api/dispatch/` (mount by `ProtocolBasePath`, bound-host dispatch with the repository fixed), `internal/api/registry/{register,ping,catalog,challenge}.go`, `internal/httpserver/routetable*.go`, `internal/app/wire_api.go` (registration) | WP0; WP2 for the challenge text (shared constant in `registrytoken`) | yes | no |
 | WP4 | OCI format, local class: manifests, pulls, tags, referrers, deletion, sweep, view, setup | `voltagent-infra:docker-expert` + `voltagent-lang:golang-pro` | R-OCI-006 to R-OCI-010, R-OCI-013 to R-OCI-020, R-OCI-030, R-OCI-031, R-OCI-033 | `internal/formats/oci/` except `handlers_upload.go`, `remote*.go`, `virtual*.go`, `mirror*.go`; `internal/formats/oci/manifest/` (parser), `internal/formats/oci/tagorder/` (Q-OCI-17), `internal/formatdata/oci/` (the store, the job `oci-sweep` in `sweep.go` using the item store and the job queue directly as NuGet's symbol-index job does, and `journal_replay.go`: the replay handler of `oci.manifest.deleted` over `oci_tombstones`, R-OCI-033, Q-OCI-30; WP0 registered the event and built the table), `internal/meta/postgres/queries/oci.sql` | WP0 | yes | no |
 | WP5 | OCI uploads and mount | `voltagent-infra:docker-expert` | R-OCI-011, R-OCI-012 | `internal/formats/oci/handlers_upload.go`, `handlers_mount.go` | WP0, WP1 (port), WP4 (routes file is WP4's: WP5 adds its handlers through a registration function WP0 declares) | yes | no |
@@ -164,10 +164,10 @@ whether it needs the integration stack (shared `trove-it-*`, never `integration-
 | WP8 | OCI remote adapter | `voltagent-infra:docker-expert` | R-OCI-021 to R-OCI-025 | `internal/formats/oci/remote*.go` (`UpstreamRequest` with the namespace prefix and `library/`, `Accept`, `AcceptResponse`, `PrepareFill` digest checks, `FillInspector`/`OnFill` rows, `BeforeArtifact`, `Authenticator`, `Revalidator`, tags list document, referrers pass-through), registers class `remote`; its `TokenRequest` takes the scope from `orig` and `p` and only the realm and the service from the challenge (Q-OCI-82); the upstream test of an OCI remote (R-REPO-024) runs no handshake: WP8 sets the probe path (`v2/`) and decides what it reports, recommended: a `401` with a Bearer challenge is "reachable, token handshake required" and does not read as `authenticated: false` | WP4, WP6, WP7 | yes | no |
 | WP9 | OCI virtual adapter | `voltagent-infra:docker-expert` | R-OCI-027, R-OCI-028 | `internal/formats/oci/virtual*.go` (tag order by member, digest tiers, union lists, the link step via `Ingestor.Link`, writes to the deploy target), registers class `virtual` | WP4, WP5, WP8 | yes | no |
 | WP10 | Mirror | `voltagent-lang:golang-pro` + `voltagent-infra:docker-expert` | R-OCI-026, Mirror discovery, R-REPO-050/051 edits | `internal/formats/oci/mirror*.go` (lister: `listing`, `names`, plan with tags/platforms/attestations), `internal/mirror/policy.go` (`SelectItems` counts versions), `internal/formathost/mirror_host.go` (`Artifact`), `internal/repository/validate_mirror.go` (`<format>.mirror` restricted), `test/integration/mirror/oci_test.go` | WP6, WP7, WP8 | yes | no |
-| WP11 | e2e harness and CI | `voltagent-qa-sec:test-automator` + `voltagent-infra:kubernetes-specialist` + `voltagent-infra:devops-engineer` | R-OCI-035 (e2e), R-OCI-032 (scatter, Valkey stopped), R-OCI-011 drain, R-REPO-058/059 for OCI | `test/e2e/oci_*_test.go`, `test/e2e/ociclients/` (Dockerfile or pinned images: `docker:<v>-dind` with Buildx, `quay.io/podman/stable:<v>`; Makefile pins and `check-pins`), `deploy/dev/oci-clients.yaml` (namespace `trove-e2e-clients` with Pod Security `privileged`, dev CA in `certs.d`), `deploy/dev/values-*.yaml` additions (a bound host for the Docker Engine mirror), `deploy/dev/kind.yaml` only if the node's containerd needs `config_path` for the Kubernetes pull row, `test/e2e/mirror_*` additions, `.github/workflows/release.yml` (set `oci` per change; closing-run legs), `.github/workflows/performance.yml` (`oci-long` nightly) | WP3, WP4, WP5, WP7, WP8, WP9, WP10 (rows join as their packages land) | — | **yes** |
+| WP11 | e2e harness and CI | `voltagent-qa-sec:test-automator` + `voltagent-infra:kubernetes-specialist` + `voltagent-infra:devops-engineer` | R-OCI-035 (e2e), R-OCI-032 (scatter, Valkey stopped), R-OCI-011 drain, R-REPO-058/059 for OCI | `test/e2e/oci_*_test.go`, `test/e2e/ociclients/` (Dockerfile or pinned images: `docker:<v>-dind` with Buildx, `quay.io/podman/stable:<v>`; Makefile pins and `check-pins`), `deploy/dev/oci-clients.yaml` (namespace `quader-e2e-clients` with Pod Security `privileged`, dev CA in `certs.d`), `deploy/dev/values-*.yaml` additions (a bound host for the Docker Engine mirror), `deploy/dev/kind.yaml` only if the node's containerd needs `config_path` for the Kubernetes pull row, `test/e2e/mirror_*` additions, `.github/workflows/release.yml` (set `oci` per change; closing-run legs), `.github/workflows/performance.yml` (`oci-long` nightly) | WP3, WP4, WP5, WP7, WP8, WP9, WP10 (rows join as their packages land) | — | **yes** |
 | WP12 | UI | `voltagent-lang:angular-architect` | R-OCI-030 (snippets UI), R-OCI-031 | `web/src/app/features/setup/clients.ts` (`oci`: docker, podman; snippet explanations), `web/src/app/shared/format-icon.ts`, the package detail's platform table, i18n units, specs; a browser journey step for the package screen | WP4 (view API), WP0 (OpenAPI) | no | for the journey only (WP11's turn) |
 | WP13 | Conformance suite and integration tests | `voltagent-qa-sec:test-automator` | R-OCI-035 (integration, conformance) | `Makefile` (`oci-conformance`, pin `OCI_CONFORMANCE_TAG := v1.1.1`), `test/integration/oci/` (new: protocol criteria across replicas, `TestR_AUTHZ_007_OCIActionMap`, crafted inputs, Valkey stopped, conformance runner through local and virtual addresses), CI integration leg | WP2, WP3, WP4, WP5 (local), WP8, WP9 (remote/virtual rows) | yes | no |
-| WP14 | Documentation | `voltagent-dev-exp:documentation-engineer` | all (docs) | README (naming tables: image reference, `/v2/` routes, `trv_rgt_`, `oci.*` keys; TL;DR row for Docker), `docs/developer/oci.md` (new subsystem page), `docs/developer/{README,formats,e2e,build-and-test}.md` rows, `docs/security/oci-registry.md` (token service, scopes, key ring, H-579) and `docs/security/oci-remote.md` (handshake hosts, credential hosts), `docs/manual/user|admin` pages for Docker/Podman and Docker Hub remotes and mirrors, FULL.md F4 status (closing change), coverage regenerated | WP4 to WP11 as they land | no | no |
+| WP14 | Documentation | `voltagent-dev-exp:documentation-engineer` | all (docs) | README (naming tables: image reference, `/v2/` routes, `qdr_rgt_`, `oci.*` keys; TL;DR row for Docker), `docs/developer/oci.md` (new subsystem page), `docs/developer/{README,formats,e2e,build-and-test}.md` rows, `docs/security/oci-registry.md` (token service, scopes, key ring, H-579) and `docs/security/oci-remote.md` (handshake hosts, credential hosts), `docs/manual/user|admin` pages for Docker/Podman and Docker Hub remotes and mirrors, FULL.md F4 status (closing change), coverage regenerated | WP4 to WP11 as they land | no | no |
 
 Notes per package:
 
@@ -187,13 +187,13 @@ Notes per package:
   tokens per replica). Tests against a generic test upstream in `internal/proxy/proxytest` (no OCI knowledge needed).
 - **WP7** stub: deterministic set generated in code (no recorded Docker Hub responses); hosts: registry, realm, blob CDN; switches
   as R-OCI-035 lists; a control API like `test/nugetstub`'s.
-  Built (see `docs/developer/oci.md`, "The counting stub registry"). Hand-offs: `deploy/dev/e2e.sh` wiring (marker, `TROVE_E2E_OCISTUB`,
+  Built (see `docs/developer/oci.md`, "The counting stub registry"). Hand-offs: `deploy/dev/e2e.sh` wiring (marker, `QUADER_E2E_OCISTUB`,
   loading the image, exporting the three host names) is WP11's; the in-process hosts are `registry.localhost`, `auth.localhost` and
   `cdn.localhost` (valid in `extraHosts`, whose grammar cannot name an IPv6 literal). They are not resolvable: WP8's tests feed
 `run.DialOverride()` into `app.Options.DialOverride` (and allow the listener's loopback address in the egress policy) and list
 `auth.localhost` and `cdn.localhost` in `extraHosts`; `run.DialContext` serves a Go client; the mirror criterion `linux/arm64` is `linux/arm64/v8` in the stub's `acme/b` (WP10 decides whether the platform
   filter matches variants); the fixtures `app:1`, `library/app:1` and `acme/tool:1` are in the stub (WP9 for R-OCI-027).
-- **WP8** confirms Docker Hub's current blob redirect hosts with one anonymous request against Docker Hub (curl, no trove) and
+- **WP8** confirms Docker Hub's current blob redirect hosts with one anonymous request against Docker Hub (curl, no Quader) and
   writes them into R-OCI-021 and the Descriptor; records the check in the commit message.
 - **WP10** spec edits: R-REPO-050 (OCI can mirror; `<format>.mirror` restricted), R-REPO-051 (versions counted per version). The
   `SelectItems` change keeps every npm/NuGet mirror test green unchanged (one item per version there).
@@ -274,16 +274,16 @@ WP0 ──┬─ WP1 ─────────────┐
 
 - Second review round: `Ingestor.Link(from SourceRef)` resolves the source by repository name (WP5 uses it for the mount, WP9 for the link
   step); the serve-facts kind `oci_local` and `Format.ServeCheck` are built (WP4 fills the store); WP4 builds the replay handler (it
-  WITHHOLDS: writes the mark, deletes nothing), `trove admin oci reinstate <p>/<r> <name>@<digest>` (event `oci.reinstate`, not journaled)
+  WITHHOLDS: writes the mark, deletes nothing), `quader admin oci reinstate <p>/<r> <name>@<digest>` (event `oci.reinstate`, not journaled)
   and the 409 `DENIED` of a push of a withheld digest; a remote's manifest rows are removed by the hook with the alias item
   `<name>/_manifests/<digest>` (WP8); a hook's cascade follows the event's reason once the trash can exists.
 
 ## WP2 as built
 
-- Registry tokens (`internal/auth/registrytoken`): the form with the key ID before the claims (Q-OCI-54), the binding to the trove token
+- Registry tokens (`internal/auth/registrytoken`): the form with the key ID before the claims (Q-OCI-54), the binding to the Quader token
   by ID, type and the SHA-256 of its secret, verified through the token cache (Q-OCI-50, ADR-163), HKDF keys from the key ring
   (`secrets.KeyRing.Derive`), the configured lifetime and the issue time checked at verification, the scope grammar (a cache view under
-  its base repository), the challenge text, the metric. The stage accepts `Bearer trv_rgt_` below `/v2/` only (escaped and unescaped
+  its base repository), the challenge text, the metric. The stage accepts `Bearer qdr_rgt_` below `/v2/` only (escaped and unescaped
   path) and never the session cookie there; both token paths share `Stage.accept`; `/v2/_token` is not authenticated by the chain, the
   token service presents its credential through `Stage.AuthenticateTokenRequest` (Q-OCI-51); the form follows the Basic switch
   (Q-OCI-57). `internal/api/registry`: the token service (400 in both shapes, Q-OCI-52; `auth.registry_token.denied` deduplicated per
@@ -324,7 +324,7 @@ WP0 ──┬─ WP1 ─────────────┐
 
 - Built: the tags list, the referrers API, `DELETE` of tags, manifests and blobs, the hook `OnItemsRemoved` with the cascade, the refusals and
   `oci.manifest.deleted` (journal entry `{repository, name, digest, actorId}`), the job `oci-sweep` (hourly, `maintenance.tasks`,
-  `trove_oci_sweep_blobs_removed_total`), the replay handler (withholds), `trove admin oci reinstate` with `oci.reinstate`, the clients
+  `quader_oci_sweep_blobs_removed_total`), the replay handler (withholds), `quader admin oci reinstate` with `oci.reinstate`, the clients
   `docker` and `podman` with their setup snippets and the guide, `Store.CatalogNames` (the page of one repository
   for the catalog of the registry root, WP3). ADR-168, Q-OCI-70, Q-OCI-71, Q-OCI-73 to Q-OCI-75, H-606, H-607, H-643, H-644 (`docs/security/oci-content.md`).
 - Aligned with WP4a (merged): the tag order is WP4a's `tagorder` (Q-OCI-64, the package view); the tags list is in byte order and does not use it.
@@ -346,7 +346,7 @@ WP0 ──┬─ WP1 ─────────────┐
   shape for the chain's refusals below `/v2/`.
 - `registrytest.Walk` runs against the real app handler of the default endpoint and of a bound-host endpoint
   (`test/integration/registry`), with registry tokens from the token service, its own expectation (the format's `Match`) and the served
-  route read from the replica's `trove_http_requests_total{handler}`.
+  route read from the replica's `quader_http_requests_total{handler}`.
 - Gaps H-648 (the catalog reads names it does not list), H-649 (the catalog grant is not narrowed by the other entries), H-650 (token
   requests count in the bucket of the client address). Round 2 (after WP1 and WP4): the catalog is bound to the data port
   (`var _ registry.CatalogStore = (*ocidata.Store)(nil)`), a request is matched once (a memo in the request's context), `Mount` takes
@@ -414,7 +414,7 @@ WP0 ──┬─ WP1 ─────────────┐
   integrity event).
 - Not proven by the `/v2/` harness, with the reason, and handed to the packages named: the criteria that run `docker pull`, `crane` or six concurrent pulls on
   three replicas (R-OCI-022 to R-OCI-024) are WP11's e2e rows; the harness drives the same requests over HTTP but is no client.
-- Handed to WP10: the remote half of R-OCI-025's second criterion (`quota_header` in `trove_mirror_rate_limited_total`) and the mirror's use of `UpstreamQuery`'s path shapes.
+- Handed to WP10: the remote half of R-OCI-025's second criterion (`quota_header` in `quader_mirror_rate_limited_total`) and the mirror's use of `UpstreamQuery`'s path shapes.
 - Handed to WP4/WP12: the remote half of R-OCI-031 (the package screens of a remote's cache: image names and manifests through the format's tables; a tag of a
   remote has no version row, Q-OCI-121, so the tag list of the screen is empty).
 - Phase B (round 2b, on the `/v2/` mount): the harness goes through `/v2/` with registry tokens; `DispatchFormats` and the wrapper are gone; the remote gates follow the
@@ -434,7 +434,7 @@ WP0 ──┬─ WP1 ─────────────┐
 - The mirror builds its requests with the shared `registryURL` of `remote.go` (the namespace prefix, the name), not with `UpstreamQuery`, whose shapes are the client's pass-through
   queries; the token handshake is the engine's (`passUpstream.Get` hands the format's `Authenticator`), the scope of a catalog or tags list request is taken from the request (`scopeOf`).
 - The remote half of R-OCI-025's second criterion is proven: `TestR_OCI_025_ADockerHubQuotaAnswerIsAQuotaHeaderRateLimitOfThePass` (the stub under Docker Hub's names answers the first
-  manifest `GET` with `429-hub`; `trove_mirror_rate_limited_total{reason="quota_header"}` counts it and the pass completes).
+  manifest `GET` with `429-hub`; `quader_mirror_rate_limited_total{reason="quota_header"}` counts it and the pass completes).
 - Tests: [mirror_test.go](../../internal/formats/oci/mirror_test.go), [versions_test.go](../../internal/mirror/versions_test.go), [mirror_format_test.go](../../internal/repository/mirror_format_test.go),
   `test/integration/mirror/oci_test.go` (two worker processes claiming the queue `mirror`, a client-serving process, the counting stub: catalog pass with the tag bound and a pull with the stub stopped,
   exact names, platforms, a second pass and a moved tag, the byte bound, a Docker Hub mirror with the quota answer).
@@ -496,7 +496,7 @@ WP0 ──┬─ WP1 ─────────────┐
 
 - Built: `test/e2e/oci_*_test.go` (the harness, the rows, the closing and long tests), `test/e2e/ociclients/` (the two client images: the pinned dind image with the forwarder and the pinned Podman image;
   the pins `E2E_OCICLIENTS_DOCKER_IMAGE` and `E2E_OCICLIENTS_PODMAN_IMAGE` in `tools/versions.env`, `check-pins.mjs` in `make versions-check`, `make oci-clients-image`), `deploy/dev/oci-clients.yaml` (the
-  namespace `trove-e2e-clients` with Pod Security `privileged`, the pod), the wiring in `deploy/dev/e2e.sh` (markers `T16 oci-stub`, `T16 oci-clients`: the counting stub of WP7, the client pods, the node setup of the
+  namespace `quader-e2e-clients` with Pod Security `privileged`, the pod), the wiring in `deploy/dev/e2e.sh` (markers `T16 oci-stub`, `T16 oci-clients`: the counting stub of WP7, the client pods, the node setup of the
   Kubernetes pull row; the sets `oci`, `oci-closing`, `oci-long`, `oci-clients`, and the OCI additions to `mirror` and `mirror-long`), `deploy/dev/values-dev.yaml` and `pki.yaml` (the endpoint `ocimirror`, the bound host of the Docker Engine
   mirror), `deploy/dev/kind.yaml` (`config_path` of the nodes' containerd), `test/e2e/mirror_oci_test.go` and `mirror_long_oci_test.go`, the jobs `e2e-oci` of `release.yml` (leg `oci` per change that touches the registry,
   `oci-closing` on a closing dispatch; `runs-on: large`) and `performance.yml` (leg `oci-long`, nightly), and the OCI additions of the scope of `e2e-mirror`. ADR-188, Q-OCI-200 to Q-OCI-203, H-750.
@@ -511,10 +511,10 @@ WP0 ──┬─ WP1 ─────────────┐
 
 - README: the status line, the key features of the local, remote, virtual and mirror classes and of the registry tokens, the `/v2/` routes
   in the URL table, a naming table of image references and registry names (`<host>/<projectKey>/<repoKey>/<name>:<tag>`, the bound host,
-  the cache view, the grammars, the storage layout, `trv_rgt_`, the realm, the scopes, the upload session, the client IDs and snippet IDs),
-  the registry headers, the credential prefix, the metrics (`trove_oci_sweep_blobs_removed_total`, `trove_storage_upload_sessions_total`,
-  and `trove_oci_upstream_token_requests_total` marked planned: the spec names it, no code counts it), the audit events (`oci.reinstate`,
-  `auth.registry_token.denied`), the error code `oci_referenced`, the job `oci-sweep`, the command `trove admin oci reinstate`, the
+  the cache view, the grammars, the storage layout, `qdr_rgt_`, the realm, the scopes, the upload session, the client IDs and snippet IDs),
+  the registry headers, the credential prefix, the metrics (`quader_oci_sweep_blobs_removed_total`, `quader_storage_upload_sessions_total`,
+  and `quader_oci_upstream_token_requests_total` marked planned: the spec names it, no code counts it), the audit events (`oci.reinstate`,
+  `auth.registry_token.denied`), the error code `oci_referenced`, the job `oci-sweep`, the command `quader admin oci reinstate`, the
   `oci` configuration block and `host_roots` (no longer "reserved"), a TL;DR step for Docker (local, Docker Hub remote, virtual; login,
   push, pull) and a full-reference block of the repository document of an OCI repository, the token service and the registry errors.
 - Manual: the user page [container-images.md](../manual/user/container-images.md) (references, login with a token, permissions, push,

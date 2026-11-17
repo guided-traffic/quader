@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // challenge is the WWW-Authenticate value of every 401 on a Galaxy endpoint (R-ANS-006): a client that retries on a challenge sends
 // Basic, which takes the token as the password.
-const challenge = `Basic realm="trove"`
+const challenge = `Basic realm="quader"`
 
 // maxRetryAfter bounds the Retry-After of a Galaxy endpoint whatever value the owning page computes: a client counts the wait against
 // its own timeout.

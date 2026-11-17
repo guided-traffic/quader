@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/gauges/gaugestest"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/gauges/gaugestest"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Tests of the backup operations (R-API-050, R-BAK-014) and of the backup block of the system information (R-OPS-004) over an
@@ -40,8 +40,8 @@ func bakID(n int) string {
 func bakFinished(n int, op backup.Operation, st backup.State, ago, took time.Duration, result, runErr string) backup.Run {
 	end := bakNow.Add(-ago)
 	r := backup.Run{
-		ID: bakID(n), Operation: op, State: st, Hold: backup.HoldNone, Trigger: backup.TriggerSchedule, Target: "s3://trove-backups/trove",
-		Pod: "trove-backup-" + bakID(n)[30:], TroveVersion: "0.4.0", StartedAt: end.Add(-took), HeartbeatAt: end, LeaseExpiresAt: end, FinishedAt: &end,
+		ID: bakID(n), Operation: op, State: st, Hold: backup.HoldNone, Trigger: backup.TriggerSchedule, Target: "s3://quader-backups/quader",
+		Pod: "quader-backup-" + bakID(n)[30:], QuaderVersion: "0.4.0", StartedAt: end.Add(-took), HeartbeatAt: end, LeaseExpiresAt: end, FinishedAt: &end,
 	}
 	if result != "" {
 		r.Result = json.RawMessage(result)
@@ -54,8 +54,8 @@ func bakFinished(n int, op backup.Operation, st backup.State, ago, took time.Dur
 
 func bakActive(n int, st backup.State, started, lease time.Duration) backup.Run {
 	return backup.Run{
-		ID: bakID(n), Operation: backup.OpCreate, State: st, Hold: backup.HoldPinned, Trigger: backup.TriggerManual, Target: "s3://trove-backups/trove",
-		Pod: "by-hand", TroveVersion: "0.4.0", StartedAt: bakNow.Add(-started), HeartbeatAt: bakNow.Add(-time.Minute), LeaseExpiresAt: bakNow.Add(lease),
+		ID: bakID(n), Operation: backup.OpCreate, State: st, Hold: backup.HoldPinned, Trigger: backup.TriggerManual, Target: "s3://quader-backups/quader",
+		Pod: "by-hand", QuaderVersion: "0.4.0", StartedAt: bakNow.Add(-started), HeartbeatAt: bakNow.Add(-time.Minute), LeaseExpiresAt: bakNow.Add(lease),
 		SnapshotAt: ptr(bakNow.Add(-started + time.Second)),
 		Progress:   backup.Progress{Phase: "copying", TablesDone: 41, TablesTotal: 58, BlobsToCopy: 1204, BlobsCopied: 830, BytesCopied: 9123456789},
 	}
@@ -77,11 +77,11 @@ func newBakEnv(t *testing.T, val *apitest.Validator, access Access, restored *ge
 		o.API.Config = apiConfigForTest()
 		o.Facts = fakeFacts{Facts{
 			InstallationID: ptr("0b7c3f5e"), Incarnation: ptr("5d10e2a4"),
-			Valkey:      gen.ValkeyFacts{Mode: gen.Sentinel, PrimaryName: "trove", Sentinels: 3, Tls: "verify-full", KeyPrefix: "trove:"},
-			ObjectStore: gen.ObjectStoreFacts{Endpoint: "https://s3.example.com", Bucket: "trove", Prefix: "blobs", CredentialSource: "static"},
+			Valkey:      gen.ValkeyFacts{Mode: gen.Sentinel, PrimaryName: "quader", Sentinels: 3, Tls: "verify-full", KeyPrefix: "quader:"},
+			ObjectStore: gen.ObjectStoreFacts{Endpoint: "https://s3.example.com", Bucket: "quader", Prefix: "blobs", CredentialSource: "static"},
 		}}
 		o.Backup = BackupServices{
-			Runs: mem, ExpectedInterval: 24 * time.Hour, Namespace: "trove", CronJob: "trove-backup",
+			Runs: mem, ExpectedInterval: 24 * time.Hour, Namespace: "quader", CronJob: "quader-backup",
 			RestoredFrom: func(context.Context) (*gen.BackupRestoredFrom, error) { return restored, nil },
 		}
 	}, authed)
@@ -101,7 +101,7 @@ func (e bakEnv) json(t *testing.T, path string, into any) *httptest.ResponseReco
 }
 
 const retained = `{"retention":{"keepLast":7,"keepWithinSeconds":0},"retained":[
- {"backupId":"20261027T020000Z-1c9e","snapshotAt":"2026-10-27T02:00:08.913Z","troveVersion":"0.4.0","schemaStep":42,"databaseBytes":183500800,"blobCount":51234,"blobBytes":412316860416,"damaged":false}]}`
+ {"backupId":"20261027T020000Z-1c9e","snapshotAt":"2026-10-27T02:00:08.913Z","quaderVersion":"0.4.0","schemaStep":42,"databaseBytes":183500800,"blobCount":51234,"blobBytes":412316860416,"damaged":false}]}`
 
 func TestR_API_050_BackupRuns(t *testing.T) {
 	val := apitest.New(t, EmbeddedYAML())
@@ -160,7 +160,7 @@ func TestR_API_050_BackupRuns(t *testing.T) {
 		if gotDone.Result == nil || (*gotDone.Result)["backupId"] != "20261026T100000Z-aaaa" || gotDone.FinishedAt == nil || gotDone.Error != nil {
 			t.Errorf("finished run = %+v", gotDone)
 		}
-		if gotDone.Target != "s3://trove-backups/trove" || gotLive.Trigger != "manual" || gotLive.Pod != "by-hand" {
+		if gotDone.Target != "s3://quader-backups/quader" || gotLive.Trigger != "manual" || gotLive.Pod != "by-hand" {
 			t.Errorf("columns: %+v", gotLive)
 		}
 	})
@@ -330,7 +330,7 @@ func TestR_API_050_BackupSummary(t *testing.T) {
 			}
 		}
 		s := summary(t, e)
-		if s.ExpectedIntervalSeconds != 86400 || s.ManualRun.Namespace == nil || *s.ManualRun.Namespace != "trove" || *s.ManualRun.CronJob != "trove-backup" {
+		if s.ExpectedIntervalSeconds != 86400 || s.ManualRun.Namespace == nil || *s.ManualRun.Namespace != "quader" || *s.ManualRun.CronJob != "quader-backup" {
 			t.Errorf("summary = %+v", s)
 		}
 	})
@@ -395,7 +395,7 @@ func TestR_API_050_BackupSummary(t *testing.T) {
 	t.Run("R-API-050 a live run is active with a valid lease", func(t *testing.T) {
 		live := bakActive(2, backup.StateSnapshot, time.Hour, 5*time.Minute)
 		s := summary(t, newBakEnv(t, val, nil, nil, live))
-		if s.Active == nil || s.Active.LeaseExpired || s.Active.Operation != "create" || s.Target == nil || *s.Target != "s3://trove-backups/trove" {
+		if s.Active == nil || s.Active.LeaseExpired || s.Active.Operation != "create" || s.Target == nil || *s.Target != "s3://quader-backups/quader" {
 			t.Errorf("summary = %+v", s)
 		}
 		if s.LastFailure != nil || s.Overdue != nil || s.LastSuccessAt != nil {

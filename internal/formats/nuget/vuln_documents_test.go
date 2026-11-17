@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // scanning is the advisory data of a test: the formats.VulnerabilityData of a host that has wired the scanning, with a page
@@ -185,7 +185,7 @@ func TestR_VULN_018_TheIndexHasOneEntry(t *testing.T) {
 	if r.Code != 200 {
 		t.Fatalf("%d %s", r.Code, r.Body)
 	}
-	want := `[{"@name":"trove","@id":"` + feedOfMain + `vulnerabilities/trove.json","@updated":"2026-11-03T12:00:00Z","comment":"Advisory data mirrored by trove"}]`
+	want := `[{"@name":"quader","@id":"` + feedOfMain + `vulnerabilities/quader.json","@updated":"2026-11-03T12:00:00Z","comment":"Advisory data mirrored by Quader"}]`
 	if r.Body.String() != want {
 		t.Errorf("body %s", r.Body)
 	}
@@ -223,7 +223,7 @@ func TestR_VULN_018_ThePage(t *testing.T) {
 	data := newScanning(json1, mal, util, all, low, crit)
 	data.internal["Contoso.Util"] = true
 	h := vulnHost(t, formats.Local, `{}`, data)
-	r := get(t, h, http.MethodGet, "v3/vulnerabilities/trove.json")
+	r := get(t, h, http.MethodGet, "v3/vulnerabilities/quader.json")
 	if r.Code != 200 {
 		t.Fatalf("%d %s", r.Code, r.Body)
 	}
@@ -274,22 +274,22 @@ func TestR_VULN_018_ThePageIsCachedAndValidated(t *testing.T) {
 	adv := nugetAdvisory("GHSA-aaaa-aaaa-0101", advisory.SeverityHigh, advisory.KindVulnerability, advisory.Affected{Name: "Pkg", EveryVersion: true})
 	data := newScanning(adv)
 	h := vulnHost(t, formats.Remote, `{}`, data)
-	first := get(t, h, http.MethodGet, "v3/vulnerabilities/trove.json")
-	second := get(t, h, http.MethodGet, "v3/vulnerabilities/trove.json")
+	first := get(t, h, http.MethodGet, "v3/vulnerabilities/quader.json")
+	second := get(t, h, http.MethodGet, "v3/vulnerabilities/quader.json")
 	if data.renders != 1 || first.Body.String() != second.Body.String() {
 		t.Errorf("rendered %d times", data.renders)
 	}
 	etag := first.Header().Get("ETag")
-	cond := get(t, h, http.MethodGet, "v3/vulnerabilities/trove.json", func(r *http.Request) { r.Header.Set("If-None-Match", etag) })
+	cond := get(t, h, http.MethodGet, "v3/vulnerabilities/quader.json", func(r *http.Request) { r.Header.Set("If-None-Match", etag) })
 	if cond.Code != http.StatusNotModified || cond.Body.Len() != 0 || cond.Header().Get("ETag") != etag || cond.Header().Get("Cache-Control") != "private, max-age=1800" {
 		t.Errorf("conditional: %d %v", cond.Code, cond.Header())
 	}
-	if head := get(t, h, http.MethodHead, "v3/vulnerabilities/trove.json"); head.Code != 200 || head.Body.Len() != 0 || head.Header().Get("Content-Length") == "" {
+	if head := get(t, h, http.MethodHead, "v3/vulnerabilities/quader.json"); head.Code != 200 || head.Body.Len() != 0 || head.Header().Get("Content-Length") == "" {
 		t.Errorf("HEAD: %d", head.Code)
 	}
 
 	// The page is one per installation: another repository of another class has the same validator.
-	other := get(t, vulnHost(t, formats.Local, `{}`, data), http.MethodGet, "v3/vulnerabilities/trove.json")
+	other := get(t, vulnHost(t, formats.Local, `{}`, data), http.MethodGet, "v3/vulnerabilities/quader.json")
 	if other.Header().Get("ETag") != etag {
 		t.Error("two repositories have two validators for one page")
 	}
@@ -301,13 +301,13 @@ func TestR_VULN_018_ThePageIsCachedAndValidated(t *testing.T) {
 		{"a data epoch", func() { data.state.Epoch++ }},
 		{"a claims or repo_config epoch", func() { data.pageKey = "2.1" }},
 	} {
-		prev := get(t, h, http.MethodGet, "v3/vulnerabilities/trove.json").Header().Get("ETag")
+		prev := get(t, h, http.MethodGet, "v3/vulnerabilities/quader.json").Header().Get("ETag")
 		change.do()
-		r := get(t, h, http.MethodGet, "v3/vulnerabilities/trove.json")
+		r := get(t, h, http.MethodGet, "v3/vulnerabilities/quader.json")
 		if r.Header().Get("ETag") == prev {
 			t.Errorf("%s keeps the ETag", change.name)
 		}
-		if again := get(t, h, http.MethodGet, "v3/vulnerabilities/trove.json", func(q *http.Request) { q.Header.Set("If-None-Match", prev) }); again.Code != 200 {
+		if again := get(t, h, http.MethodGet, "v3/vulnerabilities/quader.json", func(q *http.Request) { q.Header.Set("If-None-Match", prev) }); again.Code != 200 {
 			t.Errorf("%s: the old validator got %d", change.name, again.Code)
 		}
 	}
@@ -316,10 +316,10 @@ func TestR_VULN_018_ThePageIsCachedAndValidated(t *testing.T) {
 	}
 }
 
-// TestR_VULN_018_WhereTheDocumentsAreNotServed: 404 where the repository does not serve trove's data, 503 before the NuGet
+// TestR_VULN_018_WhereTheDocumentsAreNotServed: 404 where the repository does not serve quader's data, 503 before the NuGet
 // data is complete.
 func TestR_VULN_018_WhereTheDocumentsAreNotServed(t *testing.T) {
-	for _, path := range []string{"v3/vulnerabilities/index.json", "v3/vulnerabilities/trove.json"} {
+	for _, path := range []string{"v3/vulnerabilities/index.json", "v3/vulnerabilities/quader.json"} {
 		off := vulnHost(t, formats.Remote, `{"nuget":{"vulnerabilityInfo":"off"}}`, newScanning())
 		if r := get(t, off, http.MethodGet, path); r.Code != http.StatusNotFound {
 			t.Errorf("%s in mode off: %d", path, r.Code)
@@ -337,15 +337,15 @@ func TestR_VULN_018_WhereTheDocumentsAreNotServed(t *testing.T) {
 }
 
 // TestR_VULN_024_ThePageRequestsAreCounted: a request of the page, the data of NuGet's audit, is counted in
-// trove_vuln_audit_requests_total with format nuget and mode local, by outcome; the index is discovery and not counted.
+// quader_vuln_audit_requests_total with format nuget and mode local, by outcome; the index is discovery and not counted.
 func TestR_VULN_024_ThePageRequestsAreCounted(t *testing.T) {
 	data := newScanning()
 	h := vulnHost(t, formats.Remote, `{}`, data)
 	get(t, h, http.MethodGet, "v3/vulnerabilities/index.json")
-	get(t, h, http.MethodGet, "v3/vulnerabilities/trove.json")
+	get(t, h, http.MethodGet, "v3/vulnerabilities/quader.json")
 	data.state = advisory.DataState{}
-	get(t, h, http.MethodGet, "v3/vulnerabilities/trove.json")
-	get(t, vulnHost(t, formats.Remote, `{"nuget":{"vulnerabilityInfo":"off"}}`, data), http.MethodGet, "v3/vulnerabilities/trove.json")
+	get(t, h, http.MethodGet, "v3/vulnerabilities/quader.json")
+	get(t, vulnHost(t, formats.Remote, `{"nuget":{"vulnerabilityInfo":"off"}}`, data), http.MethodGet, "v3/vulnerabilities/quader.json")
 	want := []string{"nuget/local/ok", "nuget/local/unavailable", "nuget/local/refused"}
 	if strings.Join(data.counted, ",") != strings.Join(want, ",") {
 		t.Errorf("counted %v, want %v", data.counted, want)

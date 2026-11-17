@@ -43,7 +43,7 @@ async function render(url = '/', setup?: (api: FakeSessionApi) => void, pinned?:
 describe('App shell', () => {
   it('R-UI-002 renders header, navigation, main region and the first content screen', async () => {
     const { root } = await render();
-    expect(root.querySelector('header.topbar')?.textContent).toContain('trove');
+    expect(root.querySelector('header.topbar')?.textContent).toContain('Quader');
     expect(root.querySelector('nav[aria-label]')).toBeTruthy();
     expect(root.querySelector('main#main')).toBeTruthy();
     // The caller has exactly one project: the start page sends the caller into it (Q-UI-129).
@@ -63,12 +63,12 @@ describe('App shell', () => {
 
   it('R-UI-002 shows the banner area only while an enabled banner is stored', async () => {
     const { fixture, root } = await render();
-    expect(root.querySelector('trove-banner [role="region"]')).toBeNull();
+    expect(root.querySelector('quader-banner [role="region"]')).toBeNull();
     const api = TestBed.inject(SystemApi) as FakeSystemApi;
     api.bannerResult = { enabled: true, severity: 'warning', message: 'Maintenance tonight' };
     await TestBed.inject(BannerStore).refresh();
     fixture.detectChanges();
-    const banner = root.querySelector('trove-banner [role="region"]');
+    const banner = root.querySelector('quader-banner [role="region"]');
     expect(banner?.getAttribute('aria-label')).toBeTruthy();
     expect(banner?.textContent).toContain('Maintenance tonight');
   });
@@ -185,10 +185,10 @@ describe('App shell', () => {
     first.root.querySelector<HTMLButtonElement>('nav button.group-toggle')!.click();
     await first.fixture.whenStable();
     const storage = new BrowserStorage();
-    const key = storage.entries('local').find(([k]) => k.startsWith('trove.nav.'))![0];
+    const key = storage.entries('local').find(([k]) => k.startsWith('quader.nav.'))![0];
     expect(JSON.parse(storage.get('local', key)!)).toEqual({ collapsed: false, closed: ['identity'] });
     // Nothing of the layout is a secret (R-UI-043): the key carries the principal's name only.
-    expect(key).toMatch(/^trove\.nav\.[^\s]+$/);
+    expect(key).toMatch(/^quader\.nav\.[^\s]+$/);
 
     TestBed.resetTestingModule();
     const second = await render('/admin/users', undefined, undefined, true);
@@ -251,7 +251,7 @@ describe('App shell', () => {
     const { fixture, root } = await render('/', (api) => (api.meResult = { capabilities: [] }));
     const input = root.querySelector<HTMLInputElement>('header [role="search"] input[role="combobox"]')!;
     expect(input.placeholder).toBe('Search or go to… (/)');
-    // No suggestion list of the browser's own: trove's list is the combobox's.
+    // No suggestion list of the browser's own: Quader's list is the combobox's.
     expect(input.getAttribute('autocomplete')).toBe('off');
     expect(input.getAttribute('list')).toBeNull();
     input.dispatchEvent(new Event('focus'));

@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 func readAll(t *testing.T, r io.ReadCloser) []byte {

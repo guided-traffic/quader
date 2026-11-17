@@ -35,7 +35,7 @@ ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
  WHERE system_state.value = 'null'::jsonb
 `
 
-// Sets the deletion pause by hand (R-HA-025, trove admin maintenance pause-deletions). A pause that is already set keeps its time
+// Sets the deletion pause by hand (R-HA-025, quader admin maintenance pause-deletions). A pause that is already set keeps its time
 // and its reason; the count is 0 then.
 func (q *Queries) MaintenancePauseDeletions(ctx context.Context, reason string) (int64, error) {
 	result, err := q.db.Exec(ctx, maintenancePauseDeletions, reason)
@@ -50,7 +50,7 @@ UPDATE system_state SET value = 'null'::jsonb, updated_at = now()
  WHERE key IN ('deletions_paused_at', 'deletions_paused_reason') AND value <> 'null'::jsonb
 `
 
-// Clears the deletion pause (R-HA-025 step 7, trove admin maintenance resume-deletions); the count is 0 when it was not set.
+// Clears the deletion pause (R-HA-025 step 7, quader admin maintenance resume-deletions); the count is 0 when it was not set.
 func (q *Queries) MaintenanceResumeDeletions(ctx context.Context) (int64, error) {
 	result, err := q.db.Exec(ctx, maintenanceResumeDeletions)
 	if err != nil {

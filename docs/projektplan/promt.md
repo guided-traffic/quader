@@ -1,10 +1,10 @@
-# trove · Phase run
+# Quader · Phase run
 
 Usage: open a session in this repository and say **"Run docs/projektplan/promt.md"**. Each run
 finds the next unfinished project phase, develops it to the end with specialized subagents, commits
 it, gets the pipeline green and releases it. Run it again for the next phase.
 
-You are the development agent of trove. Follow every step below in order.
+You are the development agent of Quader. Follow every step below in order.
 
 ## 0 · Authority and hard rules
 
@@ -33,10 +33,10 @@ Hard rules, also for every subagent (put them into every subagent prompt):
    from the memory entry `whitelabel-no-source-references` over the whole repository (excluding
    `.git`); it must print nothing. Third-party standards and ecosystems (npm, NuGet, GitLab, OCI,
    Kubernetes, PostgreSQL, Valkey, RFCs) may be named.
-3. **Versions.** trove stays on major version 0 until the owner explicitly says otherwise
+3. **Versions.** Quader stays on major version 0 until the owner explicitly says otherwise
    ([ADR-124](../decisions.md#adr-124--releases-stay-on-major-version-0)). Semantic Release on `main`
    sets every version from the conventional commits: `feat` is a minor release, `fix` a patch release,
-   a breaking change a minor release while trove is on major version 0
+   a breaking change a minor release while Quader is on major version 0
    ([release flow](../developer/releasing.md#release-flow)). Never create `v1` or higher.
 4. **Spec first.** [docs/spec/](../spec/README.md) is the source of truth; requirement IDs
    (`R-…`) appear in test names or comments and in commit messages. A deviation from the spec is
@@ -56,7 +56,7 @@ Hard rules, also for every subagent (put them into every subagent prompt):
    the checklist in [releasing.md](../developer/releasing.md)); they stay off, and no other check joins them.
 8. **No force push, no history rewrite.**
 9. **No backward compatibility until the first stable release** (owner, 2026-11-06; `CLAUDE.md` at the repository root).
-   trove has no users and no installations: change APIs, URLs, configuration, schema and stored formats the way that
+   Quader has no users and no installations: change APIs, URLs, configuration, schema and stored formats the way that
    is technically best, with no deprecations, aliases, fallbacks or migration paths; a changed migration needs a fresh
    database, which is acceptable until then.
 10. **ALPHA working mode: features first, no review rounds, findings only when they block (owner, 2026-11-08 evening).**
@@ -164,7 +164,7 @@ Rules while building:
 
 - **Tests for every registry.** Each registry needs integration tests (protocol over HTTP against
   PostgreSQL, Valkey with Sentinel and the S3 store in containers, plus the conformance kit) and
-  e2e tests (its real clients against trove deployed by the Helm chart with several `web`
+  e2e tests (its real clients against Quader deployed by the Helm chart with several `web`
   replicas and random distribution, through local, remote and virtual repositories). Other code
   gets unit tests and, where it crosses PostgreSQL, Valkey or S3, integration tests.
 - **Integrate continuously.** A builder returns one commit on top of the current `main`, with a
@@ -193,7 +193,7 @@ The phase is done only when all of the following hold:
   exit criteria are long legs dispatches that workflow on its closing commit
   (`gh workflow run "HA and Performance (nightly)" --ref main`) and notes the run as evidence; any other red
   long leg becomes an open finding in [section 8](#8--open-findings) and does not hold the release.
-- Documentation is current: README (naming tables; the TL;DR once trove is installable),
+- Documentation is current: README (naming tables; the TL;DR once Quader is installable),
   docs/developer, docs/security (a page per mechanism that now exists, open gaps as `H-…` items),
   spec deviations recorded, coverage numbers regenerated.
 - The white-label scan prints nothing, and `git log <previous tag>..HEAD --format=%B` contains no
@@ -204,7 +204,7 @@ The phase is done only when all of the following hold:
 ## 5 · Push and get the pipeline green
 
 1. `git push origin main`.
-2. Watch every workflow run the push triggered in the background, job by job (`gh api repos/guided-traffic/trove/actions/runs/<id>/jobs`
+2. Watch every workflow run the push triggered in the background, job by job (`gh api repos/guided-traffic/quader/actions/runs/<id>/jobs`
    every 60 s), and keep building meanwhile; never sit idle on a run (rule 10).
 3. On failure: `gh run view <run-id> --log-failed` (or the job's log while the run goes on). A failure the change caused is
    fixed at once: find the cause, fix it, commit, push, and watch again. A failure the change did not cause (an outage, a row
@@ -215,7 +215,7 @@ The phase is done only when all of the following hold:
 
 The pipeline releases; the run does not tag, create releases or write notes by hand. Semantic Release
 cuts the release from the commits on `main` ([release flow](../developer/releasing.md#release-flow)),
-and `Release Docker & Helm` publishes the image `guidedtraffic/trove` and the chart.
+and `Release Docker & Helm` publishes the image `guidedtraffic/quader` and the chart.
 
 1. Commit the phase's work with conventional commit messages: `feat:` for what the phase adds, `fix:`
    for fixes, `docs:` or `chore:` for the plan and the rest. Commit the final plan update (phase row 🟢)
@@ -233,8 +233,8 @@ and `Release Docker & Helm` publishes the image `guidedtraffic/trove` and the ch
 3. `git pull --rebase origin main` (the release commit moves `main` with the coverage badge). The release
    number goes into no plan: BETA.md and FULL.md track features only (owner, 2026-11-02).
 4. Check the published artifacts of the release: `gh release view vX.Y.Z`, the image
-   `guidedtraffic/trove:X.Y.Z` on Docker Hub, and the chart index
-   `https://guided-traffic.github.io/trove/index.yaml`. The release notes are generated from the commit
+   `guidedtraffic/quader:X.Y.Z` on Docker Hub, and the chart index
+   `https://guided-traffic.github.io/quader/index.yaml`. The release notes are generated from the commit
    subjects (item 1); the IDs stay in the commit bodies.
 
 ## 7 · Report to the owner
@@ -320,7 +320,7 @@ Found on 2026-11-08 during the run of T-16, by the penetration test of the F-82 
   (42563355283: 10 of 3,245 through the scatter edge with a slowest request of 15 s). Looked at on 2026-11-09 in the recurrence
   42618038153 (job `e2e on kind (push)`, 13 of 9,476): **the reload is not the cause.** The 502s are GETs of `/system/ping` and
   `/system/replicas` that the edge logged with flag `SH` and connect time 1.4 to 2.8 s, at 12:54:37; the first pod reload is at
-  12:55:12 (`TLS material reloaded`, trove_tls_reloads_total 0 to 2 per pod), 35 s later, and the test's own log dates the 502s
+  12:55:12 (`TLS material reloaded`, quader_tls_reloads_total 0 to 2 per pod), 35 s later, and the test's own log dates the 502s
   at 12:54:20 to 12:54:23, the first seconds of its open-loop load of 100 requests a second (`startK6`, `load.js`), which piled up to about 1,000 connections at the edge (k6: p99 13 s, slowest request 19.4 s, avg 1 s for a ping).
   The pods logged `http: TLS handshake error ... i/o timeout` for 8 connections from the two edge pods at 12:54:34 to 12:54:36,
   which is the 10 s `read_header_timeout` expiring on a handshake that did not finish: the pod was starved of CPU by the ramp
@@ -417,14 +417,14 @@ by `version: "*"`. Red pipelines are worked on even though they no longer hold a
 - **`ha-faults`** (run 42774548669): `TestHAFaults_PostgresOutage` is green since 732572ba. `ValkeyFlushAll`: 503 from 07:53:20, 70 s before the FLUSHALL, while the run shared the runners with Test and Release; pod logs of the window are not kept. `ValkeyCredentialMismatch`: the `/readyz` 503s were the draining pod and its replacement, as R-HA-007 requires, so readiness is no defect (read on 2026-11-11); 53 tarball requests of the `blob` package hit k6's 45 s timeout, started within 6 s of the pod deletion, pod logs not kept: same shape as F-124.
 - **F-124 · Tarballs of 1 to 5 MB stall at the edge for about 40 s in one window** (nightly 42994478570 `drain-roles`, and `ha-faults` `ValkeyCredentialMismatch` of 42774548669): 53 to 72 requests for the `blob` package's tarballs hit k6's 45 s timeout within about 5 s; HAProxy logs them `CD` with 3.2 to 4.9 MB streamed in 36 to 38 s and about 1,800 connections open. Not the drain (in `drain-roles` it was the warm-up, 3 minutes before the first eviction). Probably a load near the VM's capacity, not verified. Next step: record the edge's connection count, bytes per second and the VM's CPU pressure in the e2e artifacts, and keep the logs of evicted packages pods. The evidence is now recorded in `.out/e2e/evidence/` of every e2e artifact, green or red ([e2e.md](../developer/e2e.md#reading-a-stall)); read it at the next occurrence.
 - F-126 · `TestConcurrentWritersOnOnePath` R-STOR-003 refused one of the PUTs or DELETEs of six writers on one folder once (Test and Release 43013671879, shard b); the status was not logged. The check now names the first refused request; passed locally. Next step: read it in a recurrence.
-- F-127 · Test and Release 43022311289 (9220e777), green on its first re-run: `e2e (push)` failed from its first test on, about four minutes after `up.sh`'s ping check had passed, with `x509: ECDSA verification failure` against the job's own `trove dev CA` on every request through the edge and `password authentication failed for user "trove"` in the migration Job of `TestE04MigrationFailure`; both are secrets the in-cluster generator writes. Hypothesis, not verified: the secrets operator (see the crash-looping operator below) wrote the CA and the database secret again during the run. Next step: keep the operator's log and the secrets' resource versions in the e2e artifacts. In the same run `integration (shard c)` failed `TestR_DEB_015_ImportRules` (the control pool held one connection at the close deadline, readiness timeouts of the database at 12:55, H-822) and `TestR_DEB_023_TheShadowingCheck…` (a name the stub does not list: known false right after the scope settled for another name; `debremote` passed locally on the same tree), both in the stall window of 12:55 to 13:01. The evidence is now recorded in `.out/e2e/evidence/` of every e2e artifact, green or red ([e2e.md](../developer/e2e.md#reading-a-stall)); read it at the next occurrence. **Cause found on 2026-11-12:** on the local kind cluster the internal-secrets-operator was OOM-killed at every start for 42 hours (467 restarts, limit 128 MiB). It caches every Secret of the cluster, which held 78 helm release Secrets (23 MB) after many runs of dev-up, and it runs under amd64 emulation on the arm64 host. It made its Secrets only in the seconds it ran, so a Bastion setup waited 300 s for `bastion-valkey-auth`. The dev profile now gives it 512 MiB and keeps two helm revisions per release. Whether the CI legs of F-127 had the same cause is not verified: CI runs a fresh cluster on amd64.
+- F-127 · Test and Release 43022311289 (9220e777), green on its first re-run: `e2e (push)` failed from its first test on, about four minutes after `up.sh`'s ping check had passed, with `x509: ECDSA verification failure` against the job's own `quader dev CA` on every request through the edge and `password authentication failed for user "quader"` in the migration Job of `TestE04MigrationFailure`; both are secrets the in-cluster generator writes. Hypothesis, not verified: the secrets operator (see the crash-looping operator below) wrote the CA and the database secret again during the run. Next step: keep the operator's log and the secrets' resource versions in the e2e artifacts. In the same run `integration (shard c)` failed `TestR_DEB_015_ImportRules` (the control pool held one connection at the close deadline, readiness timeouts of the database at 12:55, H-822) and `TestR_DEB_023_TheShadowingCheck…` (a name the stub does not list: known false right after the scope settled for another name; `debremote` passed locally on the same tree), both in the stall window of 12:55 to 13:01. The evidence is now recorded in `.out/e2e/evidence/` of every e2e artifact, green or red ([e2e.md](../developer/e2e.md#reading-a-stall)); read it at the next occurrence. **Cause found on 2026-11-12:** on the local kind cluster the internal-secrets-operator was OOM-killed at every start for 42 hours (467 restarts, limit 128 MiB). It caches every Secret of the cluster, which held 78 helm release Secrets (23 MB) after many runs of dev-up, and it runs under amd64 emulation on the arm64 host. It made its Secrets only in the seconds it ran, so a Bastion setup waited 300 s for `bastion-valkey-auth`. The dev profile now gives it 512 MiB and keeps two helm revisions per release. Whether the CI legs of F-127 had the same cause is not verified: CI runs a fresh cluster on amd64.
 - **502 bursts at the edge (H-795)**: `npm-ha`, `drain-load-e`, `TestE14Drain` (runs 42885398204 and 42902356913: PUTs of the upload loop answered 502 after 17.5 to 18 s; not the drain, which had ended 1.5 minutes before with no request cut, but a stall of the whole CI cluster of about 17 s: HAProxy `SH--` 502s on the API pings as well, TLS handshake timeouts on every packages pod, `valkey degraded`; the test passes on kind on the same tree), node loss. HAProxy `SH--`, 40 of 41 with a connect time over 1 s on three backends within 2 s; k6 measures 12 to 14 s where HAProxy measures 2 to 3 s, so the time may be lost before the accept. No reload in the window. Cause open. On kind on 2026-11-10 one 502 `SH--` of `TestE15TLS` had a connect time of 3,301 ms, 3.4 s after the certificate trigger and 12 s before the pods reloaded; dropped SYNs are ruled out: during bursts of 1 to 2.7 s on kind no ListenOverflows, ListenDrops, ReqQFull, backlog drop, SYN retransmit or conntrack drop moved on any pod, edge pod or node. The slow requests pause and resume together, at a CPU pressure of the shared VM of 450 ms/s on average (load 50 to 79 on 20 cores); at load 13 to 23 the slowest request took 22 to 25 ms. The E0.15 probe itself used more CPU than the installation and is cut 12 to 25 times (Q-HA-292). Open: the `SH--` itself (seen once, not reproduced under the counters), and a CPU pressure reading in the CI e2e artifacts that would settle the runner's share. The npm, NuGet and drain loads were not measured against the same yardstick. Again in nightly 42994478570 (2026-11-11), `e2e (npm-ha)` drain variant A: the edge fell from about 400 to about 10 requests a second at 09:33:56 for 12 s, TLS handshake `i/o timeout` on every packages pod, 502/503 with 10 to 13 s latency; the drain had ended 16 s before, no pod event. The evidence is now recorded in `.out/e2e/evidence/` of every e2e artifact, green or red ([e2e.md](../developer/e2e.md#reading-a-stall)); read it at the next occurrence.
 - **A stall of the whole cluster in the set `push`** (`TestE15TLS`, run 42839263211, 15:15:46 to 15:15:56): the edge answered 1 to 15 requests a second instead of about 55, the api pods 3 to 6 instead of 45 to 60, PostgreSQL statements took 60 to 290 ms, Valkey went `circuit_open`. The 353 of 9602 answers with status 0 were requests this stall held for up to 10 s and the test's stop cancelled (Q-HA-288); the certificate is not involved. The rotation row now runs a closed loop and no longer piles up on a stall; its request count, a bound of the open loop that failed run 42870155749 with every answer 200, is replaced by "every client ran through the window and every api pod answered in it" (Q-HA-291). Open: what stalls the cluster (the e2e artifacts do not record the runner's load), and the 7 of about 10,000 answers 502 of run 42818570044, whose evidence was not re-read. Again in run 42907942036 (24cf0250): `TestE06Lease` got 11 of the 15 samples it wants with a p99 of 6.4 s for P-14, and `TestE15TLS` saw one ops listener serve the new certificate 4.6 s after its file changed against a bound of 3 s, every answer 200. Both are wall-clock bounds in a stalled run; a CPU pressure reading in the e2e artifacts is the next step before either bound or the product is touched. The evidence is now recorded in `.out/e2e/evidence/` of every e2e artifact, green or red ([e2e.md](../developer/e2e.md#reading-a-stall)); read it at the next occurrence.
 - The step `Install the Docker Compose plugin` took 20 minutes on one runner (Test and Release 42861234699, `integration (shard c)`, 17:06:53 to 17:26:51 on 2026-11-10; 13 s in the run before) and pushed the shard past its 45-minute limit: the job was cancelled while `vulnsync` ran, no test failed. Where the step lost the time is not known. Same family as F-117: the jobs download their tools during setup.
 - `e2e (access-long)`, journey `01-sign-in` "R-AUTH-014 the local sign-in waits out the break-glass rotation hold" timed out once at the login answer (run 42894886354). Read, not reproduced: no click can silently send nothing; the real third request had the 15 s of a UI action while the cluster stalled. The wait is now a 60 s hang bound and a timeout says whether the request was sent (Q-ARCH-469); the next recurrence names the cause.
 - `drain-load-e`: the replacement of the evicted backup pod still ran after 15 minutes (`Job var-e-281d-1`); its log is not in the artifacts.
 - `vuln-pooler`: 12 of 4683 answers were the ingress's 503 in drain variant D.
-- `alerts`, `MaintenanceStaysQuiet` in nightly 42793416589: `valkey-failover.sh` reported "the primary did not move within 60 s" right after drain variant B; not found, possibly the Sentinel that variant B restarted had not rebuilt its view (9.6 s locally). (`TroveDatabaseUnreachable` during maintenance was the rule's five-minute rates, fixed by Q-HA-290.)
+- `alerts`, `MaintenanceStaysQuiet` in nightly 42793416589: `valkey-failover.sh` reported "the primary did not move within 60 s" right after drain variant B; not found, possibly the Sentinel that variant B restarted had not rebuilt its view (9.6 s locally). (`QuaderDatabaseUnreachable` during maintenance was the rule's five-minute rates, fixed by Q-HA-290.)
 - `bastion`, `TestBastion_R_BAS_049_RoutingByPath`: 0 hits on both replicas, once in twelve runs.
 - `TestE14Drain` (a packages pod unready for 5 s at the end, Valkey `circuit_open`), R-ARCH-034 (26 held against 24, once), `TestR_DEB_010_DelayBound` (503 `database_unavailable`, once in nightly 42677190569; the suspicion on the retry budget of Q-HA-259 is unverified).
 - A job can stay queued for hours when the ARC listener loses its assignment (P-13, 2026-11-10, `assigned job=0` after a broker retry); the cause was not established, and a stuck run holds the nightly group until it is cancelled.
@@ -432,7 +432,7 @@ by `version: "*"`. Red pipelines are worked on even though they no longer hold a
 **Product work still to do**
 
 - H-829: the listing of a remote OCI repository (view `oci_remote_tags`, Q-OCI-215) matches a regular expression on the path of every tag entry, without an index, and was not measured on a cache with very many tags. Next step: measure it; a derived table or an expression index if it is slow.
-- Image scanning: no scan seen yet on the owner's installation; push an image and read the page. Not run: a push through the whole app with the real binary, a drain or worker loss in a cluster, and the release image and chart in a cluster. Gaps H-810 to H-818 and H-871 to H-873 are on [image-scanning.md](../security/image-scanning.md); H-819 is closed: a scan takes its working space from the spool budget (Q-VULN-145 to 148). Not checked: the thresholds of `TroveSpoolNearlyFull` against the larger worker spool of 8 GiB.
+- Image scanning: no scan seen yet on the owner's installation; push an image and read the page. Not run: a push through the whole app with the real binary, a drain or worker loss in a cluster, and the release image and chart in a cluster. Gaps H-810 to H-818 and H-871 to H-873 are on [image-scanning.md](../security/image-scanning.md); H-819 is closed: a scan takes its working space from the spool budget (Q-VULN-145 to 148). Not checked: the thresholds of `QuaderSpoolNearlyFull` against the larger worker spool of 8 GiB.
 - Format logos (owner, 2026-11-11, Q-UI-225 to 227): Debian, NuGet and OCI show their owners' logos. npm, Ansible Galaxy and the Docker
   whale may be shown only with the owner's permission (npm's logo policy, Red Hat's trademark guidelines, Docker's trademark guidelines,
   read 2026-11-11), so npm and Ansible Galaxy keep the neutral glyph. To show them, the owner asks npm, Inc. and Red Hat for permission.
@@ -468,7 +468,7 @@ by `version: "*"`. Red pipelines are worked on even though they no longer hold a
 - A repository search for readers across projects needs an API that readers can read; until then the start page searches packages
   only (Q-UI-311).
 - A Details section does not remember whether it was open (Q-UI-319).
-- `trove.recent-repositories` is one browser key for every user of a browser (`recent-repositories.ts`), while recent projects are
+- `quader.recent-repositories` is one browser key for every user of a browser (`recent-repositories.ts`), while recent projects are
   kept per user; T-22 fixes it (Q-UI-405).
 - Q-UI-311's note that a cross-project repository search needs a list readers can read is wrong: `GET /api/v1/repositories` is open to
   every caller and filtered by read. T-22's WP0 corrects the note.
@@ -484,7 +484,7 @@ by `version: "*"`. Red pipelines are worked on even though they no longer hold a
 - The 429s of the renders came from the `read` class (50/s, 200 per 4 s, per user): `make ui-renders` opens three pages of one user at once
   and reached 197 reads in 4 s. The UI development profile now admits 800 (deploy/ui-dev/up.sh). One person in one browser stays far
   below the default, so it is not a product defect. Not verified: restoring many tabs at once may reach the limit.
-- T-18's e2e set `nuget` refused cold restores locally with 429 from trove's own limiter. The classes were `package_read` (per token,
+- T-18's e2e set `nuget` refused cold restores locally with 429 from Quader's own limiter. The classes were `package_read` (per token,
   200/s, burst 1000: about 430 refusals on each of two pods) and `package_anonymous` (per address, 20/s, burst 100: about 500 per pod).
   T-18 does not change the limiter, and on CI the set is green. To decide with the owner: do these budgets fit a cold restore of a
   real NuGet client, or many CI jobs that share one token?
@@ -594,14 +594,14 @@ the changes left uncommitted on 2026-11-08: `worktree-agent-a135bce1ea0ac051f` (
 ## 9 · Owner review of 2026-11-06: tasks and open questions
 
 The owner reviewed the UI, the documentation and the domain model with the development agent on 2026-11-06, on the branch
-`ui-review` (worktree `/Users/hfi/repos/trove-ui-review`). What was decided is recorded in the spec; what is left is below. The
+`ui-review` (worktree `/Users/hfi/repos/quader-ui-review`). What was decided is recorded in the spec; what is left is below. The
 tasks come before the phase's own work packages (step 2, item 5), in this order; remove a task in the commit that finishes it.
 
 ### Build what the owner decided (spec first, then code)
 
-- **T-12 · The logo's open point** ([design-language.md](../developer/design-language.md#logo)): `web/public/brand/drafts/` and
-  the preview on the sign-in page removed once the owner calls the logo final. The reduced form for the favicon and the
-  wordmark as paths are built ([Q-UI-145](../spec/api-and-ui.md#q-ui-145--the-logos-wordmark-as-paths-from-inter-bold-and-a-reduced-mark-as-the-favicon)).
+No task is open. T-12, the logo's open point, ended on 2026-11-17 with the owner's new mark
+([ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark)):
+`web/public/brand/drafts/` and the preview on the sign-in page are gone.
 
 The owner answered every open question of the review on 2026-11-06; a new question during the run is asked one at a time, with
 options and a recommendation, and what depends on it is not built before the answer.
@@ -684,7 +684,7 @@ and admins." A confirmed feature, not a parked idea; it runs beside T-18 and is 
       - one closed **Advanced settings** section;
       - the settings page as one column of sections.
       T-18 changes the same flow, so two builders build it after T-18 lands.
-  - **Vulnerabilities shown as cogpit shows them** (owner, 2026-11-12). The owner showed cogpit's grade card and, beside it, trove's
+  - **Vulnerabilities shown as cogpit shows them** (owner, 2026-11-12). The owner showed cogpit's grade card and, beside it, Quader's
     column "! High 24", "really bad". The reference is the Trivy integration of the owner's cogpit (`internal/model/imagerating.go`,
     `internal/ui/fyneui/gradebadge.go`, `drawergrade.go`):
     - **A grade as a shield:** S, A, B, C, D, E or N/A, with the grade and the count that decides it ("E · 13 Critical");
@@ -801,7 +801,7 @@ What a run did, in short, so the next run starts where it stopped. The plan item
 - Findings closed: F-106, F-108, F-109, F-110, F-111, F-112 (decided, Q-NPM-86), F-113, F-114, F-115. Recorded: F-116 to F-120.
 - Release: v0.31.0 (2026-11-09) carries both registries. Test and Release 42565678133 green; Release Docker & Helm 42569132981 green on
   its third attempt after two re-runs under the changed rule 7 (GitHub answered 504 for the syft download, F-120); checked: the GitHub
-  release with plain-language notes, the image `guidedtraffic/trove:0.31.0` on Docker Hub, the chart 0.31.0 in the index, the smoke
+  release with plain-language notes, the image `guidedtraffic/quader:0.31.0` on Docker Hub, the chart 0.31.0 in the index, the smoke
   test of the published release. Before it, main was red six runs in a row for causes outside the product: the Ubuntu archive's outage
   (F-117), shard b past its 45 minutes (now three shards), the apt client containers on the Linux runner (host networking, the key
   through the environment), test preconditions written for one timing, and the set `push` on a starved runner cluster (F-119).
@@ -824,11 +824,11 @@ What a run did, in short, so the next run starts where it stopped. The plan item
   integration shards had a product side: a stopping replica spent its whole budget in the drain step on a stalled control connection, and a
   readiness check cut that connection (Q-ARCH-460, Q-HA-283, Q-HA-284); why the pool stalls on the runners is still open (H-822). `e2e (push)`:
   the rotation row runs a closed loop judged by whether its clients ran through the window (Q-HA-288, Q-HA-291), and its certificate probe
-  used more CPU than the installation (Q-HA-292). The alert `TroveDatabaseUnreachable` no longer fires during maintenance (Q-HA-290). E5.1's
+  used more CPU than the installation (Q-HA-292). The alert `QuaderDatabaseUnreachable` no longer fires during maintenance (Q-HA-290). E5.1's
   drill ran on kind with the new commands, 13 of 13.
 - Product: the content page of an OCI remote lists its cached images through a view (Q-OCI-215); administrator tokens for service accounts and
   a registry refusal that names the missing scope without telling whether a repository exists (Q-OCI-220); the settings pages in one column
-  but the repository's; `trove admin import` for npm and NuGet (FULL.md block A); the manual's backup and restore page and runbook (block A);
+  but the repository's; `quader admin import` for npm and NuGet (FULL.md block A); the manual's backup and restore page and runbook (block A);
   the image scan inside the spool's budget (H-819, Q-VULN-145 to 148).
 - F0, Ansible Galaxy: planned by one agent (R-ANS-001 to 032), built by four in stages (core and local; stub, remote, mirror and hub exchange;
   virtual and import; setup, UI and e2e). The real clients found three defects every integration test had missed: ansible-core sends the

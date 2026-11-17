@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/document"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/document"
 )
 
 // The flat container (R-NUGET-008): the version list of an ID and the files of a version.

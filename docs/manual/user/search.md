@@ -22,20 +22,20 @@ The opened field lists, in this order:
 3. **View all my projects**.
 4. **Frequently visited projects**: up to five.
 
-trove keeps what you visited in your browser, for your sign-in only: another person signing in on the same browser sees none of
+Quader keeps what you visited in your browser, for your sign-in only: another person signing in on the same browser sees none of
 your entries, and a second browser starts empty. Only what you may still read is shown; an entry you lost access to is left out.
 
 ## While you type
 
-From two characters on, the field asks trove for the best matches of what you may read, a moment after you stop typing, and shows
-them in groups: **Repositories**, **Packages**, **Projects**, then **Pages** of trove itself. Each entry shows where it lives, for
+From two characters on, the field asks Quader for the best matches of what you may read, a moment after you stop typing, and shows
+them in groups: **Repositories**, **Packages**, **Projects**, then **Pages** of Quader itself. Each entry shows where it lives, for
 example `npm-vendor · web-frontend`, and the text you typed is bold. A group with more matches ends with **All repositories for
 "…"** (packages, projects), which opens the results page on that tab.
 
 Use the arrow keys to move through the entries and Enter to open one, or click it. Escape closes the list; a second Escape empties
 the field.
 
-If you search very quickly, trove may ask you to wait: the list says **Too many searches** and when suggestions return.
+If you search very quickly, Quader may ask you to wait: the list says **Too many searches** and when suggestions return.
 
 ## Narrowing to one kind
 

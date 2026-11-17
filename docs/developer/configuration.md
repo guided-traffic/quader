@@ -41,8 +41,8 @@ until their owner adds the section. The chart must render only keys the tree kno
 
 Supported types: `string`, `bool`, `int`, `int32`, `int64`, `float64`, `time.Duration`, `config.ByteSize`,
 `[]string`, lists of flat structs (`server.tls.certificates`), `map[string]T`, nested structs, and `config.Secret`.
-Lists and maps are one key; their environment value is JSON (a YAML flow list works too; a bare or comma-separated text is refused naming the variable, so `TROVE_JOBS_QUEUES='["index"]'` is the form of the worker pools' queue list, Q-ARCH-304):
-`TROVE_SERVER_TLS_CERTIFICATES='[{"cert_file":"/tls/tls.crt","key_file":"/tls/tls.key"}]'` # example. A list
+Lists and maps are one key; their environment value is JSON (a YAML flow list works too; a bare or comma-separated text is refused naming the variable, so `QUADER_JOBS_QUEUES='["index"]'` is the form of the worker pools' queue list, Q-ARCH-304):
+`QUADER_SERVER_TLS_CERTIFICATES='[{"cert_file":"/tls/tls.crt","key_file":"/tls/tls.key"}]'` # example. A list
 element has scalar fields with snake_case `yaml` names only (`Describe` refuses anything else), is decoded strictly
 (an unknown field is an error), and appears in the JSON Schema as `items` with its properties; `validate:"required"`
 on an element field marks it required there, and the section's `Validate` enforces it, because elements are not keys.
@@ -54,14 +54,14 @@ ring; `migrate` requires none of them.
 
 ## Environment variables
 
-`TROVE_` plus the key path, upper-cased, segments joined by `_`: `log.request.enabled` is
-`TROVE_LOG_REQUEST_ENABLED`. The names are generated and matched exactly, never split. `Describe` fails
+`QUADER_` plus the key path, upper-cased, segments joined by `_`: `log.request.enabled` is
+`QUADER_LOG_REQUEST_ENABLED`. The names are generated and matched exactly, never split. `Describe` fails
 when two keys derive the same name (for example `a.b_c` and `a_b.c`) or a field has no yaml tag; both are
 unit tests (R-ARCH-020).
 
-Reserved, not keys: `TROVE_CONFIG_FILE`, `TROVE_POD_NAME`, `TROVE_POD_NAMESPACE`, `TROVE_NODE_NAME`,
-`TROVE_POOL_NAME`, `TROVE_CAC_*`, and `TROVE_TEST_*` (the integration environment, see
-[build-and-test.md](build-and-test.md)). Any other `TROVE_` variable that is not a key stops the load and
+Reserved, not keys: `QUADER_CONFIG_FILE`, `QUADER_POD_NAME`, `QUADER_POD_NAMESPACE`, `QUADER_NODE_NAME`,
+`QUADER_POOL_NAME`, `QUADER_CAC_*`, and `QUADER_TEST_*` (the integration environment, see
+[build-and-test.md](build-and-test.md)). Any other `QUADER_` variable that is not a key stops the load and
 names the closest valid one.
 
 ## Secrets
@@ -71,10 +71,10 @@ Two shapes:
 - **File-only.** A string field `…_file` tagged `secret:"file"`: `database.password_file`,
   `valkey.password_file`, `storage.s3.credentials.secret_access_key_file`, `metrics.bearer_token_file`,
   TLS private keys (`database.ssl_key_file`, `valkey.tls.key_file`, `key_file` of each `server.tls.certificates`
-  entry, which the JSON Schema marks `x-trove-secret: file-only`). The consumer reads the file on every use, so a rotated Secret applies without a
+  entry, which the JSON Schema marks `x-quader-secret: file-only`). The consumer reads the file on every use, so a rotated Secret applies without a
   restart. The effective view shows the path, which is not a secret.
 - **Value and file.** A field of type `config.Secret` expands to two keys, `<name>` and `<name>_file`.
-  The value may come from the environment (`TROVE_<NAME>`); written inline into the YAML file it stops
+  The value may come from the environment (`QUADER_<NAME>`); written inline into the YAML file it stops
   the load with an error that names `<name>_file` and the variable. Both set is an error. The loader reads
   the file once; the effective view shows `[REDACTED]` with the source `file:<path>`. No section uses this
   shape yet (the specification's example is `mail.password`); the mechanism is covered by unit tests with
@@ -83,12 +83,12 @@ Two shapes:
 ## Precedence and sources
 
 Defaults, then the file, then the environment, then flags (`--role` is `process.role`, `--log-level` is
-`log.level`). The file is `--config`, else `TROVE_CONFIG_FILE`, else `/etc/trove/trove.yaml`. A file named
+`log.level`). The file is `--config`, else `QUADER_CONFIG_FILE`, else `/etc/quader/quader.yaml`. A file named
 explicitly must exist; a missing default file is not an error, so a replica can run from defaults and
 environment.
 
 Every key has a source: `default`, `file`, `env`, `flag:<name>` or `file:<path>` (a value read from a
-secret file). `trove admin config validate [--config <file>] [--format table|json]` prints every key with
+secret file). `quader admin config validate [--config <file>] [--format table|json]` prints every key with
 its value, source and environment variable; `--format json` has the shape of
 `GET /api/v1/system/config`. All problems are reported in one pass; a type error, a range error, an unknown
 key (with its line and the closest key) and an unknown variable are all listed together.
@@ -111,17 +111,17 @@ A new section is a new file next to the others and a field on `Config`.
 
 `go generate ./internal/config` writes [schema.json](../../internal/config/schema.json) (draft 2020-12):
 `additionalProperties: false` at every level, `required` for keys tagged `required`, `enum` for `oneof`,
-`default`, `minimum`/`maximum` for numbers, and the extensions `x-trove-env` (the variable),
-`x-trove-secret` (`env-only`, `file` or `file-only`) and `x-trove-type` (`duration`, `bytes`). Durations
+`default`, `minimum`/`maximum` for numbers, and the extensions `x-quader-env` (the variable),
+`x-quader-secret` (`env-only`, `file` or `file-only`) and `x-quader-type` (`duration`, `bytes`). Durations
 are strings, sizes are strings or integers. The chart may reference or copy the file to validate
 `config:` values; the loader does not read it.
 
 ## Declared role bindings
 
 `authz.role_bindings` ([authz.go](../../internal/config/authz.go), `AuthzRoleBinding`) is a list of structs: `role` and
-exactly one of `group`, `user`, `service_account`, in the environment as JSON (`TROVE_AUTHZ_ROLE_BINDINGS`). `Authz.Validate`
+exactly one of `group`, `user`, `service_account`, in the environment as JSON (`QUADER_AUTHZ_ROLE_BINDINGS`). `Authz.Validate`
 checks what can be checked without a database (R-AUTHZ-010): a role of `SystemRoles()`, one principal, a valid name, never
-`anonymous` or `authenticated`, no entry twice. Only `trove migrate` reads the list ([authorization.md](authorization.md#role-bindings-from-the-configuration)).
+`anonymous` or `authenticated`, no entry twice. Only `quader migrate` reads the list ([authorization.md](authorization.md#role-bindings-from-the-configuration)).
 
 ## CI keys
 
@@ -132,7 +132,7 @@ specification. `Config.validateCI` refuses `ci.token.max_ttl` above `auth.tokens
 (R-CI-022) and bad declared issuers (name, https URL, algorithms, skew, a `max_ttl_seconds` outside `ci.token.min_ttl` to `ci.token.max_ttl`); the
 schema bounds `ci.replay.retention_after_expiry` at `1m` at least (Q-CI-51); the retired key `ci.exchange.rate_limit.per_issuer_per_second` is refused in the
 file and in the environment with the names of its replacements (`retiredKeys`, [load.go](../../internal/config/load.go), R-CI-021). A list element may hold
-scalars, pointers to scalars (a key left out is nil and takes the default of R-CI-001) and lists of strings. Only `trove migrate` applies `ci.issuers`.
+scalars, pointers to scalars (a key left out is nil and takes the default of R-CI-001) and lists of strings. Only `quader migrate` applies `ci.issuers`.
 
 ## Vulnerability keys
 
@@ -152,7 +152,7 @@ The `backup` section ([backup.go](../../internal/config/backup.go), [backup.md](
 (`keep_last`, `keep_within`, `sweep_interval`), `expected_interval`, `manual_run.*`, `lease_duration`, `heartbeat_interval`, `stall_timeout`, `finalize_timeout`, `verify_sample`, `run_history` and
 `revocation_journal.*` (`enabled`, `ship_interval`, `replay_margin`), each with the default of R-BAK-011 and R-HA-054. `Backup.Validate` refuses the combinations R-BAK-011 names (the lease
 against the heartbeat and the finalize timeout, `migration_wait` against `stall_timeout`, the target prefix and endpoint, the credential and SSE modes), and `Config.validateBackupCoupling`
-refuses a target on the blob store's endpoint and bucket unless `allow_same_bucket` is set (R-BAK-002). The command `trove backup` loads the configuration as `CommandBackup`, which requires
+refuses a target on the blob store's endpoint and bucket unless `allow_same_bucket` is set (R-BAK-002). The command `quader backup` loads the configuration as `CommandBackup`, which requires
 `backup.target.bucket`; a configuration error exits 2. The platform keys `recovery_window` and `object_versioning` of R-HA-023 are not in the section yet.
 
 ## Bastion keys
@@ -179,9 +179,9 @@ only flag is `--log-level`. `http` in `bastion.main.url` is refused naming the k
 (`TestR_BAS_001_TheRoleLoadsWithTheMinimalKeysAndTheSpecDefaults`, `TestR_BAS_046_TheRangesOfTheSpecificationAreEnforced`).
 
 Keys the chart renders carry the tag `chart:"managed"` (on a field or a whole struct); `Key.ChartManaged` and the schema node
-`x-trove-chart-managed: true` carry it to the chart, which refuses a value under `config` for them (R-BAS-046). The role's JSON
+`x-quader-chart-managed: true` carry it to the chart, which refuses a value under `config` for them (R-BAS-046). The role's JSON
 Schema is [bastion.schema.json](../../internal/config/bastion.schema.json), written by the same `go generate ./internal/config` as
-`schema.json` (`schemagen -bastion-out`), committed and checked by `make generate-check`; the chart `trove-bastion` includes it as the
+`schema.json` (`schemagen -bastion-out`), committed and checked by `make generate-check`; the chart `quader-bastion` includes it as the
 schema of its `config` value (R-HA-029's mechanism). The sections the role does not have (`health`, `metrics`) are used at their
 defaults through `BastionConfig.HealthSection` and `MetricsSection`; `ServerSection` returns the server section in the form the
 listeners read.
@@ -189,12 +189,12 @@ listeners read.
 ## Endpoint keys
 
 `server.endpoints` (a map of endpoint name to entry) and `server.endpoint_rate_limits` are one key each, so their environment
-value is JSON (`TROVE_SERVER_ENDPOINTS='{"customers":{"listen":":8443","base_url":"https://packages.example.com"}}'`
+value is JSON (`QUADER_SERVER_ENDPOINTS='{"customers":{"listen":":8443","base_url":"https://packages.example.com"}}'`
 # example). A map of structs is decoded strictly like a list of structs, but its elements may be nested (`tls`, `auth`);
 `Describe` accepts any `map[string]T`, and the JSON Schema shows the key as an object. The keys, their defaults and
 the validation rules are on [endpoints.md](endpoints.md#configuration). Defaults that differ between the default and a
 further endpoint are not `default` tags: `Endpoint` uses pointers and nil lists for "unset", `Server.ResolveEndpoints`
-applies the defaults of the kind, and the root's `Finalize` writes them into the entries so that `trove admin config validate`
+applies the defaults of the kind, and the root's `Finalize` writes them into the entries so that `quader admin config validate`
 prints every key with its value.
 
 ## TLS keys of the listeners
@@ -207,8 +207,8 @@ server:
   tls:
     certificates: []                    # default: plain HTTP; one or more pairs, SNI picks, the first is the default
     # certificates:                     # example
-    #   - cert_file: /var/run/secrets/trove/tls/tls.crt
-    #     key_file: /var/run/secrets/trove/tls/tls.key
+    #   - cert_file: /var/run/secrets/quader/tls/tls.crt
+    #     key_file: /var/run/secrets/quader/tls/tls.key
     client_ca_file: ""                  # default: no client certificates
     client_auth: none                   # default; none | verify_if_given | require (needs client_ca_file)
     min_version: "1.2"                  # default; "1.2" | "1.3"
@@ -326,10 +326,10 @@ ui:
     external_image_origins: []       # default; exact https origins whose README images are shown, the img-src of the UI's CSP; an origin of this installation is refused
     # external_image_origins: ["https://img.shields.io"]   # example
   client_setup:
-    token_env_var: TROVE_TOKEN       # default; the variable the credentials=env snippets read the token from (R-API-030)
+    token_env_var: QUADER_TOKEN       # default; the variable the credentials=env snippets read the token from (R-API-030)
     token_ttl: 720h                  # default; the lifetime the setup dialog asks for, at most auth.tokens.pat.max_ttl
 config_as_code:
-  secrets_dir: /etc/trove/cac-secrets  # default; where a secretRef {"file": name} is read (R-REPO-033, R-OPS-029)
+  secrets_dir: /etc/quader/cac-secrets  # default; where a secretRef {"file": name} is read (R-REPO-033, R-OPS-029)
 ```
 
 The three keys that carry a unit in their name (`lock_poll_interval_ms`, `fetch_wait_timeout_seconds`,

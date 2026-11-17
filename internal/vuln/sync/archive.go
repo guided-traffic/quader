@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/match"
-	"github.com/guided-traffic/trove/internal/vuln/osv"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/match"
+	"github.com/guided-traffic/quader/internal/vuln/osv"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // The archive limits of R-VULN-004 step 3: the archive is far larger than a package, so this page declares its own finite

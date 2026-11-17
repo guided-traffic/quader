@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func versionsOf(items []map[string]any) []string {
@@ -157,11 +157,11 @@ func TestR_API_029_VersionDetails(t *testing.T) {
 		t.Fatalf("files %v", files)
 	}
 	f := files[0].(map[string]any)
-	if f["path"] != "rich/-/rich-3.2.1.tgz" || f["downloadUrl"] != "http://trove.test/api/npm/it/npm-local/rich/-/rich-3.2.1.tgz" {
+	if f["path"] != "rich/-/rich-3.2.1.tgz" || f["downloadUrl"] != "http://quader.test/api/npm/it/npm-local/rich/-/rich-3.2.1.tgz" {
 		t.Fatalf("file %v", f)
 	}
 	// The address works, and what it serves is what the digest says.
-	dl := e.get(e.tokE, strings.TrimPrefix(f["downloadUrl"].(string), "http://trove.test"))
+	dl := e.get(e.tokE, strings.TrimPrefix(f["downloadUrl"].(string), "http://quader.test"))
 	sum := sha256.Sum256(dl.Body)
 	if dl.Status != 200 || hex.EncodeToString(sum[:]) != f["sha256"] || int64(len(dl.Body)) != num(f["sizeBytes"]) {
 		t.Fatalf("download %d, sha256 %s, size %d; the file says %v", dl.Status, hex.EncodeToString(sum[:]), len(dl.Body), f)
@@ -170,7 +170,7 @@ func TestR_API_029_VersionDetails(t *testing.T) {
 	t.Run("a scoped name, escaped once in the address", func(t *testing.T) {
 		ui := e.get(e.tokE, "/api/v1/packages/"+e.idOf(e.tokE, "@team-a/ui")+"/versions/1.5.0").JSON(t)
 		f := ui["files"].([]any)[0].(map[string]any)
-		if f["downloadUrl"] != "http://trove.test/api/npm/it/npm-team/@team-a/ui/-/ui-1.5.0.tgz" {
+		if f["downloadUrl"] != "http://quader.test/api/npm/it/npm-team/@team-a/ui/-/ui-1.5.0.tgz" {
 			t.Fatalf("%v", f["downloadUrl"])
 		}
 	})

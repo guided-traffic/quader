@@ -4,9 +4,9 @@ Status: built in the backend (owner task T-19; requirements [R-ANS-033 to R-ANS-
 [galaxy-docs-work-packages.md](../projektplan/galaxy-docs-work-packages.md)). The screens are not part of this page's mechanism yet; the wiki check is
 the one of R-AUTHZ-034 (`Host.WikiReadable`, `authz.ReadScope.MayReadWiki`; see [visibility.md](visibility.md)).
 
-This page describes what the text of a collection's documentation can make trove do and show, and who may read it. Two parties write that text and
+This page describes what the text of a collection's documentation can make Quader do and show, and who may read it. Two parties write that text and
 neither is trusted: a **publisher** (the plugin sources, the README and the `docs/` files of an archive, read at publish) and an **upstream Galaxy** (the
-`docs-blob/` document of a remote repository). The reader is any caller who may read the repository, and a browser on trove's own origin. The archive
+`docs-blob/` document of a remote repository). The reader is any caller who may read the repository, and a browser on Quader's own origin. The archive
 reader's bounds are on [ansible.md](ansible.md); the remote engine's checks on [remote-repositories.md](remote-repositories.md) and
 [ansible-remote.md](ansible-remote.md); the README renderer's policy is the one of [R-UI-008](../spec/api-and-ui.md); who may read the wiki part is
 decided by [permissions.md](permissions.md) (R-AUTHZ-034). The code is `internal/formats/ansible/docgen` (the generator and the
@@ -36,14 +36,14 @@ markup converter), [internal/formats/ansible](../../internal/formats/ansible) (`
 The format cannot sanitize on its own (R-ARCH-008 refuses it the renderer): the Host hands it the one implementation ([Q-ANS-66](../spec/formats/ansible.md#q-ans-66--the-host-gains-a-markup-capability-because-a-format-may-import-neither-the-renderer-nor-bluemonday)),
 so there is one policy, and a policy change applies to stored upstream documents at once because nothing sanitized is stored.
 
-## What an upstream can make trove do
+## What an upstream can make Quader do
 
 | Step | What is decided | Where | Answer |
 |---|---|---|---|
 | 1 | The address of the document is the version document's `href` plus `docs-blob/`, recorded as a URL-map row when the version document is filled and never taken from a request; its host is the upstream's or an `extraHosts` entry and its path ends in `/versions/<version>/docs-blob/` ([Q-ANS-73](../spec/formats/ansible.md)) | `PrepareFill` of the version document | Otherwise no row is recorded, the fetch row says `none` and the route and the job send no request |
 | 2 | The document is at most `MaxDocumentBytes` (16 MiB) and its shape is checked before anything is stored: at most 5,000 items, valid names and types, 1 MiB kept per entry | `PrepareFill` | 502, the previous entry stays |
 | 3 | The credential, egress rules, the rate limit, the circuit and the one-flight rule are the engine's | the engine | As for every document |
-| 4 | A screen never contacts the upstream; only a client's request for the route and the job `ansible-docs-fill` do | the operations read rows | A viewer cannot make trove fetch |
+| 4 | A screen never contacts the upstream; only a client's request for the route and the job `ansible-docs-fill` do | the operations read rows | A viewer cannot make Quader fetch |
 
 ## Who may read it
 
@@ -68,7 +68,7 @@ The route walks the members by tier and position and serves the first that has d
 
 ### H-903 · The operations' metrics and the job's failures are not counted
 
-`trove_ansible_docs_read_total` counts the route and `trove_ansible_docs_fill_total` the fills of the request path; the three management operations and the failures of the job `ansible-docs-fill` are not counted (R-ANS-045 names them). Live today for every installation; it hides a failing fetch job from the dashboards until the fetch row is read.
+`quader_ansible_docs_read_total` counts the route and `quader_ansible_docs_fill_total` the fills of the request path; the three management operations and the failures of the job `ansible-docs-fill` are not counted (R-ANS-045 names them). Live today for every installation; it hides a failing fetch job from the dashboards until the fetch row is read.
 
 - [H-890](../spec/formats/ansible.md#h-890--the-size-of-the-documentation-of-a-full-mirror-and-of-many-local-versions-is-not-measured): the size of a full mirror's documentation is not measured.
 - [H-891](../spec/formats/ansible.md#h-891--documentation-fragments-are-not-merged-into-the-documentation-of-a-generated-entry): fragments are not merged into a generated entry.
@@ -76,7 +76,7 @@ The route walks the members by tier and position and serves the first that has d
 - [H-893](../spec/formats/ansible.md#h-893--an-upstreams-html-and-the-sanitizer-policy-can-differ-in-what-they-keep): an upstream's HTML and the policy differ in what they keep.
 - [H-894](../spec/formats/ansible.md#h-894--the-wiki-gate-registry-proves-the-surfaces-it-lists-not-that-it-lists-every-surface): the registry proves the surfaces it lists.
 
-### H-895 · A request for `docs-blob/` of a public remote makes trove fetch up to 6.5 MB per version
+### H-895 · A request for `docs-blob/` of a public remote makes Quader fetch up to 6.5 MB per version
 
 Stage: the route on a remote repository (R-ANS-035). A caller who may read the repository, and an anonymous caller where the repository is public, can
 request the document of any version the remote's version document names; the engine fetches it from the upstream and stores it. The engine's
@@ -94,9 +94,9 @@ bounded by the mirror's own retention rule for a mirror.
 ### H-897 · The displayed documentation is what the publisher's literal says, not what Ansible would load
 
 Stage: the generator (R-ANS-034). The scan reads module-level string literals and, where there are several assignments, the last one, as Python does for a
-straight-line module. A module that assigns `DOCUMENTATION` under a condition, or replaces it at import, shows trove's reading and not ansible-doc's. The
+straight-line module. A module that assigns `DOCUMENTATION` under a condition, or replaces it at import, shows Quader's reading and not ansible-doc's. The
 publisher can already ship code that runs on the controller, so the text carries no new capability, but a reader who trusts the page more than the source is misled.
-Live for every generated entry whose source is not straight-line; the page states the source of the documentation (generated by trove, not by ansible-doc).
+Live for every generated entry whose source is not straight-line; the page states the source of the documentation (generated by Quader, not by ansible-doc).
 
 ### H-898 · The kit's Markup is a stand-in and proves wiring, not the policy
 

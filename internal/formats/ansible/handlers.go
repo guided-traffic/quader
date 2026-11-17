@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The handlers of the routes live in the files of the classes that serve them (handlers_local.go, handlers_remote.go,
@@ -53,5 +53,5 @@ func (f *Format) op(route string) formats.HandlerFunc {
 // missing package.
 func notImplemented(route string, class formats.Class) error {
 	return errs.E(errs.NotImplemented, errs.CodeAnsibleNotImplemented,
-		"The operation "+route+" of the Ansible Galaxy API is not served by this build of trove for "+string(class)+" repositories yet.")
+		"The operation "+route+" of the Ansible Galaxy API is not served by this build of Quader for "+string(class)+" repositories yet.")
 }

@@ -11,17 +11,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/listing"
-	"github.com/guided-traffic/trove/internal/backup/listing/fixture"
-	"github.com/guided-traffic/trove/internal/backup/retention"
-	"github.com/guided-traffic/trove/internal/backup/runstoretest"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/backup/target/targettest"
-	"github.com/guided-traffic/trove/internal/backup/verify"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/listing"
+	"github.com/guided-traffic/quader/internal/backup/listing/fixture"
+	"github.com/guided-traffic/quader/internal/backup/retention"
+	"github.com/guided-traffic/quader/internal/backup/runstoretest"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/target/targettest"
+	"github.com/guided-traffic/quader/internal/backup/verify"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The target operations against the stack's S3 store through the real adapter. The stack's SeaweedFS rejects SSE-S3 writes, so
@@ -56,7 +56,7 @@ type opsEnv struct {
 
 func newOpsEnv(t *testing.T, keepLast int) *opsEnv {
 	t.Helper()
-	cfg := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), "none")
+	cfg := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), "none")
 	store := newTarget(t, cfg)
 	layout := format.Layout{Prefix: cfg.Target.Prefix}
 	cleanup(t, store, layout.Prefix+"/")
@@ -77,7 +77,7 @@ func newOpsEnv(t *testing.T, keepLast int) *opsEnv {
 	}
 	return &opsEnv{store: store, layout: layout, mem: targettest.New(), audit: audit, runs: runs, runner: &retention.Runner{
 		Stage: stage, Runs: runs, Timing: backup.Timing{Lease: time.Minute, Heartbeat: time.Second, Stall: time.Hour, Finalize: time.Second},
-		Target: "s3://it/" + layout.Prefix, Pod: "it", TroveVersion: "test",
+		Target: "s3://it/" + layout.Prefix, Pod: "it", QuaderVersion: "test",
 		NewRunID: func() string { n++; return fmt.Sprintf("00000000-0000-7000-8000-%012d", n) },
 	}}
 }

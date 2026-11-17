@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/openpgp"
 )
 
 // fixture is a running stub with a client that trusts its CA.
@@ -108,7 +108,7 @@ func (f *fixture) control(method, path, body string) resp {
 	return resp{status: res.StatusCode, header: res.Header, body: b}
 }
 
-// certs are the trove-side certificates of the named stub keys, parsed by trove's own library.
+// certs are the quader-side certificates of the named stub keys, parsed by quader's own library.
 func (f *fixture) certs(names ...string) []openpgp.Certificate {
 	f.t.Helper()
 	ring, err := f.stub.Keyring(names...)
@@ -117,7 +117,7 @@ func (f *fixture) certs(names ...string) []openpgp.Certificate {
 	}
 	certs, err := openpgp.ParseCertificates(ring, time.Now(), openpgp.Limits{})
 	if err != nil {
-		f.t.Fatalf("trove does not accept the stub's keys: %v", err)
+		f.t.Fatalf("quader does not accept the stub's keys: %v", err)
 	}
 	return certs
 }

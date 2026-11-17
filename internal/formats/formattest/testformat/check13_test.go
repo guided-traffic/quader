@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/formattest/testformat"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/formattest/testformat"
 )
 
 // TestR_ARCH_010_Check13HoldsARefusingFixtureToItsDecisions: a format whose fixture lists every route in NoContent and

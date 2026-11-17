@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // Mem is a target.Store in memory. The zero value is not usable; use New.

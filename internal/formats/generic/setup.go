@@ -1,25 +1,25 @@
 package generic
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // ClientCurl is the one client of the format (Q-GENERIC-8).
 const ClientCurl = "curl"
 
 // CurlFunction is the name of the shell function the configure snippet defines and
 // the other snippets and the guide call.
-const CurlFunction = "trove_curl"
+const CurlFunction = "quader_curl"
 
 // SetupTemplates are the client setup snippets of R-GENERIC-016 for curl in a POSIX
-// shell. The configure snippet defines the function trove_curl, which hands curl the
+// shell. The configure snippet defines the function quader_curl, which hands curl the
 // credential as configuration on standard input (--config - with a here-document),
 // so that the token never becomes an argument of curl, visible in the process list
 // and in a shell trace (Q-GENERIC-9). The header is the one line that holds
-// ${TROVE_TOKEN}, so credentials=none drops it and leaves a function that sends no
+// ${QUADER_TOKEN}, so credentials=none drops it and leaves a function that sends no
 // credential. Deleting has no tab of its own (Q-API-160); the guide names it.
 func (Format) SetupTemplates() []formats.SetupTemplate {
 	const function = CurlFunction + `() {
   curl --silent --show-error --config - "$@" <<EOF
-header = "Authorization: Bearer ${TROVE_TOKEN}"
+header = "Authorization: Bearer ${QUADER_TOKEN}"
 EOF
 }
 `

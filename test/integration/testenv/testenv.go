@@ -13,7 +13,7 @@ import (
 
 const hint = "run `make integration-up`, then `make test-integration` (it sources .dev/integration/env)"
 
-// Get returns the value of a TROVE_TEST_* variable, failing the test if it is unset.
+// Get returns the value of a QUADER_TEST_* variable, failing the test if it is unset.
 func Get(tb testing.TB, name string) string {
 	tb.Helper()
 	v := os.Getenv(name)
@@ -27,35 +27,35 @@ func Get(tb testing.TB, name string) string {
 func PostgresDSN(tb testing.TB) string {
 	tb.Helper()
 	RequireTLS(tb)
-	return Get(tb, "TROVE_TEST_PG_DSN")
+	return Get(tb, "QUADER_TEST_PG_DSN")
 }
 
 // PgBouncerDSN is the DSN through PgBouncer in transaction mode.
 func PgBouncerDSN(tb testing.TB) string {
 	tb.Helper()
 	RequireTLS(tb)
-	return Get(tb, "TROVE_TEST_PG_PGBOUNCER_DSN")
+	return Get(tb, "QUADER_TEST_PG_PGBOUNCER_DSN")
 }
 
 // PgPooled reports whether the suites that support it should open their main
 // PostgreSQL pool through PgBouncer in transaction mode instead of direct
-// (TROVE_TEST_PG_POOLED=1). The stores must work in both: a transaction-mode
+// (QUADER_TEST_PG_POOLED=1). The stores must work in both: a transaction-mode
 // pooler is a supported deployment (R-ARCH-019, R-HA-058), so CI runs the blob
 // and coordination suites once each way.
 func PgPooled(tb testing.TB) bool {
 	tb.Helper()
-	switch strings.ToLower(os.Getenv("TROVE_TEST_PG_POOLED")) {
+	switch strings.ToLower(os.Getenv("QUADER_TEST_PG_POOLED")) {
 	case "", "0", "false", "no":
 		return false
 	case "1", "true", "yes":
 		return true
 	}
-	tb.Fatalf("TROVE_TEST_PG_POOLED must be 1 or 0, got %q", os.Getenv("TROVE_TEST_PG_POOLED"))
+	tb.Fatalf("QUADER_TEST_PG_POOLED must be 1 or 0, got %q", os.Getenv("QUADER_TEST_PG_POOLED"))
 	return false
 }
 
 // ValkeyLine is the Valkey line under test, "9.0" or "9.1".
-func ValkeyLine(tb testing.TB) string { return Get(tb, "TROVE_TEST_VALKEY_LINE") }
+func ValkeyLine(tb testing.TB) string { return Get(tb, "QUADER_TEST_VALKEY_LINE") }
 
 // Valkey describes how to reach Valkey through its Sentinels.
 type Valkey struct {
@@ -77,17 +77,17 @@ func ValkeyConfig(tb testing.TB) Valkey {
 	tb.Helper()
 	RequireTLS(tb)
 	return Valkey{
-		Sentinels:        split(Get(tb, "TROVE_TEST_VALKEY_SENTINELS")),
-		Nodes:            split(Get(tb, "TROVE_TEST_VALKEY_NODES")),
-		PrimaryName:      Get(tb, "TROVE_TEST_VALKEY_PRIMARY_NAME"),
-		Username:         Get(tb, "TROVE_TEST_VALKEY_USERNAME"),
-		Password:         Get(tb, "TROVE_TEST_VALKEY_PASSWORD"),
-		SentinelPassword: Get(tb, "TROVE_TEST_VALKEY_SENTINEL_PASSWORD"),
-		AdminUsername:    Get(tb, "TROVE_TEST_VALKEY_ADMIN_USERNAME"),
-		AdminPassword:    Get(tb, "TROVE_TEST_VALKEY_ADMIN_PASSWORD"),
-		CAFile:           Get(tb, "TROVE_TEST_VALKEY_CA_FILE"),
-		KeyPrefix:        Get(tb, "TROVE_TEST_VALKEY_KEY_PREFIX"),
-		Containers:       split(Get(tb, "TROVE_TEST_VALKEY_CONTAINERS")),
+		Sentinels:        split(Get(tb, "QUADER_TEST_VALKEY_SENTINELS")),
+		Nodes:            split(Get(tb, "QUADER_TEST_VALKEY_NODES")),
+		PrimaryName:      Get(tb, "QUADER_TEST_VALKEY_PRIMARY_NAME"),
+		Username:         Get(tb, "QUADER_TEST_VALKEY_USERNAME"),
+		Password:         Get(tb, "QUADER_TEST_VALKEY_PASSWORD"),
+		SentinelPassword: Get(tb, "QUADER_TEST_VALKEY_SENTINEL_PASSWORD"),
+		AdminUsername:    Get(tb, "QUADER_TEST_VALKEY_ADMIN_USERNAME"),
+		AdminPassword:    Get(tb, "QUADER_TEST_VALKEY_ADMIN_PASSWORD"),
+		CAFile:           Get(tb, "QUADER_TEST_VALKEY_CA_FILE"),
+		KeyPrefix:        Get(tb, "QUADER_TEST_VALKEY_KEY_PREFIX"),
+		Containers:       split(Get(tb, "QUADER_TEST_VALKEY_CONTAINERS")),
 	}
 }
 
@@ -107,13 +107,13 @@ func S3Config(tb testing.TB) S3 {
 	tb.Helper()
 	RequireTLS(tb)
 	return S3{
-		Endpoint:       Get(tb, "TROVE_TEST_S3_ENDPOINT"),
-		Region:         Get(tb, "TROVE_TEST_S3_REGION"),
-		AccessKey:      Get(tb, "TROVE_TEST_S3_ACCESS_KEY"),
-		SecretKey:      Get(tb, "TROVE_TEST_S3_SECRET_KEY"),
-		BlobsBucket:    Get(tb, "TROVE_TEST_S3_BUCKET_BLOBS"),
-		BackupsBucket:  Get(tb, "TROVE_TEST_S3_BUCKET_BACKUPS"),
-		ForcePathStyle: Get(tb, "TROVE_TEST_S3_FORCE_PATH_STYLE") == "true",
+		Endpoint:       Get(tb, "QUADER_TEST_S3_ENDPOINT"),
+		Region:         Get(tb, "QUADER_TEST_S3_REGION"),
+		AccessKey:      Get(tb, "QUADER_TEST_S3_ACCESS_KEY"),
+		SecretKey:      Get(tb, "QUADER_TEST_S3_SECRET_KEY"),
+		BlobsBucket:    Get(tb, "QUADER_TEST_S3_BUCKET_BLOBS"),
+		BackupsBucket:  Get(tb, "QUADER_TEST_S3_BUCKET_BACKUPS"),
+		ForcePathStyle: Get(tb, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true",
 	}
 }
 

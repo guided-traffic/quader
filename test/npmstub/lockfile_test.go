@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // lockfileDir is the reference project, committed by `make npm-reference`.

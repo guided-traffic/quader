@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/galaxydoc"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
 
 // The route ansible.version.docs, GET v3/collections/{ns}/{name}/versions/{version}/docs-blob/ (R-ANS-035): the documentation of a version
@@ -22,7 +22,7 @@ func init() {
 	registerHandler(formats.Virtual, routeDocs, func(f *Format) formats.HandlerFunc { return f.counted(f.virtualDocs) })
 }
 
-// counted counts the outcome of a handler of the route in trove_ansible_docs_read_total (R-ANS-045).
+// counted counts the outcome of a handler of the route in quader_ansible_docs_read_total (R-ANS-045).
 func (f *Format) counted(h formats.HandlerFunc) formats.HandlerFunc {
 	return func(ctx context.Context, rq *formats.Request, w http.ResponseWriter) error {
 		err := h(ctx, rq, w)

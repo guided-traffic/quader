@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestOCIConformance runs the OCI distribution conformance suite (R-OCI-035) in its four categories - pull, push, content
@@ -34,9 +34,9 @@ func TestOCIConformance(t *testing.T) {
 		// The suite's client holds every action the suite exercises on the three repositories.
 		u := p.st.User("conformance")
 		p.st.Policy("p-conformance", []string{"read", "deploy", "overwrite", "delete"}, []string{repoLocal, repoOther, repoVirt}, u)
-		p.troveToken["conformance"] = p.st.Token(u, scope.Default())
+		p.quaderToken["conformance"] = p.st.Token(u, scope.Default())
 	}})
-	secret := p.troveToken["conformance"]
+	secret := p.quaderToken["conformance"]
 	// Content management is not run through the virtual address: a delete through a virtual repository answers 405 by design
 	// (R-OCI-028, ADR-180); the suite's four categories run through the local repository, the virtual one's delete target.
 	for _, run := range []struct {
@@ -91,7 +91,7 @@ func TestOCIConformance(t *testing.T) {
 // (OCI_TAG_NAME with OCI_MANIFEST_DIGEST and OCI_BLOB_DIGEST, OCI_TAG_LIST) replace the suite's own pushes and run only when
 // those variables are set, which the runner never does. The spec for automatic cross-mounting enabled runs only with
 // OCI_AUTOMATIC_CROSSMOUNT=1; the runner sets 0 (R-OCI-035), so its twin for disabled runs. The spec for a cross-mount of a
-// nonexistent blob runs only after a mount answered 202; trove answers the mount of a blob the source holds with 201, so the spec
+// nonexistent blob runs only after a mount answered 202; quader answers the mount of a blob the source holds with 201, so the spec
 // of that branch ("GET request to test digest within cross-mount namespace") runs instead. With OCI_TEST_CONTENT_MANAGEMENT=0 the
 // specs of that category are skipped. Nothing else is skipped.
 func documentedSkip(name string, management bool) bool {

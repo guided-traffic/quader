@@ -10,12 +10,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // ContractVersion changes whenever a method of the contract changes meaning or
@@ -81,7 +81,7 @@ const (
 	KindSearch = catalog.KindSearch
 	// KindWrite changes state: a deploy or a delete.
 	KindWrite = catalog.KindWrite
-	// KindOther is everything else, such as a directory index that trove renders.
+	// KindOther is everything else, such as a directory index that quader renders.
 	KindOther = catalog.KindOther
 )
 
@@ -506,7 +506,7 @@ func checkRoutes(f Format, d Descriptor) error {
 			if _, err := repository.CleanPath(ex); err != nil {
 				return fmt.Errorf("%q: example %q of route %q is no clean path", d.ID, ex, r.Name)
 			}
-			// Clients never upload derived metadata (R-ARCH-012): what trove renders is
+			// Clients never upload derived metadata (R-ARCH-012): what quader renders is
 			// changed by a write to the rows it renders from, which is an Admin route.
 			if r.Kind == Upload && f.Classify(Path{Path: ex}).Kind == PathComputed {
 				return fmt.Errorf("%q: upload route %q accepts a write to %q, which Classify marks computed", d.ID, r.Name, ex)

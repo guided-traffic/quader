@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The error of a rate-limit answer is what the mirror's contract finds (discover.AsRateLimited).
 var _ discover.RateLimited = (*RateLimitError)(nil)
 
 // The reasons of a rate-limit answer (repositories-and-proxy.md R-REPO-054, Q-REPO-137): the label `reason` of
-// trove_mirror_rate_limited_total.
+// quader_mirror_rate_limited_total.
 const (
 	// ReasonTooManyRequests is a 429.
 	ReasonTooManyRequests = "too_many_requests"
@@ -179,7 +179,7 @@ type RateLimitError struct {
 }
 
 func (e *RateLimitError) Error() string {
-	msg := "the upstream of " + e.Repo + " is rate limiting trove (" + strconv.Itoa(e.Status) + ", " + e.Reason + ")"
+	msg := "the upstream of " + e.Repo + " is rate limiting Quader (" + strconv.Itoa(e.Status) + ", " + e.Reason + ")"
 	if e.Hinted {
 		msg += "; it asked for a wait of " + e.Wait.String()
 	}

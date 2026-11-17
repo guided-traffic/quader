@@ -1,6 +1,6 @@
 # UI style guide
 
-How to build and style a screen of trove. [design-language.md](design-language.md) says what the look is made of and which
+How to build and style a screen of Quader. [design-language.md](design-language.md) says what the look is made of and which
 values carry it; this page says what to do with them. Read it before you add a screen or change one, and check a screen
 against the [checklist](#checklist) before it is committed.
 
@@ -14,16 +14,16 @@ When two rules meet, the higher one wins:
 1. Accessibility: focus, contrast, labels, keyboard ([R-UI-044](../spec/api-and-ui.md)).
 2. The owner's explicit decisions, listed under [Deliberate differences](#deliberate-differences).
 3. The reference's screen for the same job.
-4. An existing screen of trove that follows this page.
+4. An existing screen of Quader that follows this page.
 
-Where a screen needs data trove does not have, leave the element out. A column that would stay empty, or a value made up to
+Where a screen needs data Quader does not have, leave the element out. A column that would stay empty, or a value made up to
 fill it, is worse than a list that is shorter than the reference's ([Q-UI-214](../spec/api-and-ui.md#q-ui-214--the-members-screen-takes-the-references-member-list)).
 
 ## Simple by default, details on demand
 
 The owner's product rules of 2026-11-12 ([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details-on-demand), T-21 in
 [promt.md](../projektplan/promt.md#owner-task-of-2026-11-12)) come before every other rule of this page that is about what a
-screen shows. trove is for people who keep and fetch their artifacts, not for people who configure a repository manager; the
+screen shows. Quader is for people who keep and fetch their artifacts, not for people who configure a repository manager; the
 three kinds of user they serve are [R-UI-067](../spec/api-and-ui.md#r-ui-067--three-kinds-of-user-the-plain-user-the-power-user-and-the-administrator).
 
 - **The plain path first.** The standard flow of a screen asks and shows only what the thing needs to work, for every format and
@@ -44,13 +44,13 @@ three kinds of user they serve are [R-UI-067](../spec/api-and-ui.md#r-ui-067--th
 
 Take the first of these that fits, in this order:
 
-1. A shared control: `<trove-text-field>`, `<trove-select-field>`, `<trove-checkbox>`, `<trove-tab-group>`, `<trove-data-table>`,
-   `<trove-avatar>`, `TroveDialog`, the `[troveTooltip]` directive ([web/src/app/shared/](../../web/src/app/shared/)).
+1. A shared control: `<quader-text-field>`, `<quader-select-field>`, `<quader-checkbox>`, `<quader-tab-group>`, `<quader-data-table>`,
+   `<quader-avatar>`, `QuaderDialog`, the `[quaderTooltip]` directive ([web/src/app/shared/](../../web/src/app/shared/)).
 2. A class of [_controls.scss](../../web/src/styles/_controls.scss): `btn`, `text-input`, `select-input`, `badge`, `tab-nav`,
    `menu`. The table in [design-language.md](design-language.md#controls) lists each with its markup.
-3. A component style that uses only the `--trove-*` tokens of [_tokens.scss](../../web/src/styles/_tokens.scss).
+3. A component style that uses only the `--quader-*` tokens of [_tokens.scss](../../web/src/styles/_tokens.scss).
 
-Never write a colour, a font size, a shadow or a radius as a literal in a component. Spacing comes from `--trove-space-1` to
+Never write a colour, a font size, a shadow or a radius as a literal in a component. Spacing comes from `--quader-space-1` to
 `-8` (4, 8, 12, 16, 20, 24 and 32 px). A value the tokens do not have is a new token, added with its light and dark value, and a
 new text and background pair goes into [palette.spec.ts](../../web/src/styles/palette.spec.ts). No new font, shadow or gradient.
 
@@ -61,12 +61,12 @@ Every page inside the shell has this order:
 | Part | How |
 |---|---|
 | Breadcrumb | Set by the route; a page does not draw its own |
-| Header | `<trove-page-header heading description>` ([page-header.ts](../../web/src/app/shared/ui/page-header.ts), [Q-UI-307](../spec/api-and-ui.md#q-ui-307--a-pages-own-actions-are-buttons-at-the-right-end-of-its-header-views-of-the-same-thing-are-tabs)): the `<h1 tabindex="-1">` names the object on its page (`[name]="true"` for a key or a package name) or the list's noun; one muted sentence under it; the facts that name the object projected with `meta`; its client address where it has one (`[addresses]`). A detail page names its object in the `<h1>` and its kind as a badge projected with `meta` (the user `alice` with the badge **User**), and has no link up to its list: that is the breadcrumb. The vulnerability pages still have `<header class="page-header">` |
+| Header | `<quader-page-header heading description>` ([page-header.ts](../../web/src/app/shared/ui/page-header.ts), [Q-UI-307](../spec/api-and-ui.md#q-ui-307--a-pages-own-actions-are-buttons-at-the-right-end-of-its-header-views-of-the-same-thing-are-tabs)): the `<h1 tabindex="-1">` names the object on its page (`[name]="true"` for a key or a package name) or the list's noun; one muted sentence under it; the facts that name the object projected with `meta`; its client address where it has one (`[addresses]`). A detail page names its object in the `<h1>` and its kind as a badge projected with `meta` (the user `alice` with the badge **User**), and has no link up to its list: that is the breadcrumb. The vulnerability pages still have `<header class="page-header">` |
 | Primary action | At the right end of the header (projected with `actions`), one `btn btn-confirm` (**Add member**, **Create token**). A second action of the page is a `btn btn-default` to its left; more go into a `more_vert` menu |
 | Tabs | Directly under the header, `tab-nav`, the count of a list as a neutral `badge` in the tab. Another view of the same object (its files, its vulnerabilities) is a tab or an entry of the header's menu, never a quiet link in the header. A job has one way to it: the client setup is the header's **Set up client**, which opens the setup page for the object, not also a tab ([Q-UI-321](../spec/api-and-ui.md#q-ui-321--a-repositorys-client-setup-is-reached-one-way-the-headers-set-up-client-opens-the-setup-for-the-repository)) |
 | Toolbar of a list | Under the tabs: the filter on the full width, then sort and direction |
 | Content | A table, a form or sections, as below |
-| Details | What only a power user or an administrator needs, last, in one closed `<trove-disclosure>` **Details** (see [Opening and closing](#opening-and-closing)) |
+| Details | What only a power user or an administrator needs, last, in one closed `<quader-disclosure>` **Details** (see [Opening and closing](#opening-and-closing)) |
 
 One `<h1>` per page. Page titles are nouns (**Members**, **Settings**), in sentence case. The description is one sentence;
 what would need a second one belongs in the [manual](manual.md).
@@ -75,11 +75,11 @@ what would need a second one belongs in the [manual](manual.md).
 
 [`project-members.ts`](../../web/src/app/features/projects/project-members.ts) is the worked example.
 
-- A table without a frame, hairlines between rows, the head at weight 600. `<trove-data-table>` where the list is paged.
+- A table without a frame, hairlines between rows, the head at weight 600. `<quader-data-table>` where the list is paged.
 - **The first column names the thing.** It is a `<th scope="row">`. A person or group is an avatar of 48 px, the name at weight
   600 on the first line and the `@username` or its kind muted on the second.
 - **A status is a badge** with an icon and a word, never colour alone. `ok` is green and means a positive status only.
-- **A package format is its icon and its name**, never the icon alone: `<trove-format-icon [format]>` beside the display name,
+- **A package format is its icon and its name**, never the icon alone: `<quader-format-icon [format]>` beside the display name,
   sized by the place's `font-size` (20 px in a list, 16 px in a badge, 32 px on a tile). The icon is the format owner's logo
   where the owner's terms allow it, else the neutral `inventory_2`
   ([Q-UI-225](../spec/api-and-ui.md#q-ui-225--a-format-shows-its-owners-logo-where-the-owners-terms-allow-it-else-the-neutral-glyph)).
@@ -97,7 +97,7 @@ what would need a second one belongs in the [manual](manual.md).
   packed under the name but its description. The repository lists are the example: in a project (find and copy) repository,
   format, class, client address; in the admin area (manage) repository, project, format, class, last activity, and the address
   as a copy button. Judge a render by that first, and only then by widths and scrolling.
-- **The list's budget is its columns' widths** ([Q-UI-308](../spec/api-and-ui.md#q-ui-308--every-list-takes-its-layout-from-the-data-table-a-column-budget-a-least-width-for-its-name-one-alignment-stacked-rows)). A column of `<trove-data-table>` declares its least width
+- **The list's budget is its columns' widths** ([Q-UI-308](../spec/api-and-ui.md#q-ui-308--every-list-takes-its-layout-from-the-data-table-a-column-budget-a-least-width-for-its-name-one-alignment-stacked-rows)). A column of `<quader-data-table>` declares its least width
   (`width`, which must hold its header and its longest value on one line: a format with its icon 8 rem, a class 5 rem); the name
   column takes 12 to 16 rem and what the others leave. A list with a client address marks that column `fill`: it is the
   longest address up to its share (Q-UI-300). Where the address is the list's main value (a project's repository list) the
@@ -121,7 +121,7 @@ what would need a second one belongs in the [manual](manual.md).
   The head of a stacked list is one row of its sort buttons above the blocks; a header that sorts nothing is for assistive
   technology only ([Q-UI-391](../spec/api-and-ui.md#q-ui-391--a-stacked-list-keeps-its-sort-buttons-in-a-row-above-its-blocks)).
   `[stack]="false"` keeps the table for a list that cannot be read as blocks.
-- **An empty list** is `<trove-empty-state text>` with the action that fills it as its content; the data table shows it with its
+- **An empty list** is `<quader-empty-state text>` with the action that fills it as its content; the data table shows it with its
   `emptyText` and the content marked `emptyAction` ([Q-UI-309](../spec/api-and-ui.md#q-ui-309--an-empty-list-or-region-is-a-sentence-and-the-action-that-fills-it-without-a-frame)).
 - **A line of facts** (a source line; never the properties of a list's row, which are columns) separates them with one middle dot, the same space
   on both sides, in the muted colour: `.dot-separated` around its parts, `.dot-before` on one part ([_controls.scss](../../web/src/styles/_controls.scss)).
@@ -138,9 +138,9 @@ what would need a second one belongs in the [manual](manual.md).
 The reference's settings page is one column of fields, not a card of key and value. New settings pages follow it, and the
 existing ones are moved over ([What does not follow this page yet](#what-does-not-follow-this-page-yet)).
 
-- **One column**, at most `--trove-settings-measure` (56 rem) wide, on the page and without a card around it.
+- **One column**, at most `--quader-settings-measure` (56 rem) wide, on the page and without a card around it.
 - **The most used settings are open at the top**, without a section title: the name, the description, the avatar.
-- **Further groups are collapsible sections** (`<trove-disclosure>`, the one collapsible section of every screen), closed by
+- **Further groups are collapsible sections** (`<quader-disclosure>`, the one collapsible section of every screen), closed by
   default: a chevron on the left, the title at the text's size, weight 600, one muted sentence under it, a hairline between
   sections. The title names the group (**Permissions**, **Advanced**).
 - **Everything is edited in place.** A settings page has no read-only view with an **Edit** button that opens a dialog, and no
@@ -154,13 +154,13 @@ existing ones are moved over ([What does not follow this page yet](#what-does-no
 
 ## Opening and closing
 
-**Everything that folds, folds with an animation** ([Q-UI-215](../spec/api-and-ui.md#q-ui-215--settings-are-fields-in-one-column-and-everything-that-folds-is-animated)), with one duration and easing (`--trove-motion-duration`, 200 ms, and `--trove-motion-easing`). Never write another one, and never hide a region with `[hidden]` or `@if` alone. Pick by the kind of element; the classes are in [_controls.scss](../../web/src/styles/_controls.scss#L1):
+**Everything that folds, folds with an animation** ([Q-UI-215](../spec/api-and-ui.md#q-ui-215--settings-are-fields-in-one-column-and-everything-that-folds-is-animated)), with one duration and easing (`--quader-motion-duration`, 200 ms, and `--quader-motion-easing`). Never write another one, and never hide a region with `[hidden]` or `@if` alone. Pick by the kind of element; the classes are in [_controls.scss](../../web/src/styles/_controls.scss#L1):
 
 | Element | How |
 |---|---|
 | A region that stays in the page | `<div class="collapse-region" [class.open]="open()"><div>…</div></div>`; the second element is required |
 | A list that drops below its field: the search's suggestions ([search-field.html](../../web/src/app/features/search/search-field.html)) and its sheet below 36 rem | `animate.enter="dropdown-in"` on the list; it closes at once, because the focus stays in the field and the next key must not wait for an animation |
-| A collapsible section of any screen: the details of a content page, the groups of a settings page or an editor | `<trove-disclosure heading hint note>` (`note`: a short state after the heading, such as **Unsaved changes** of a closed section that holds one) ([disclosure.ts](../../web/src/app/shared/ui/disclosure.ts), [Q-UI-322](../spec/api-and-ui.md#q-ui-322--a-closed-section-of-details-is-one-quiet-disclosure-a-small-heading-with-a-chevron-and-one-hint-line)): the heading at the text's size, weight 600, a chevron before it, one muted hint line, closed at first; `[(expanded)]` binds its state. Never a settings section below a list or a README |
+| A collapsible section of any screen: the details of a content page, the groups of a settings page or an editor | `<quader-disclosure heading hint note>` (`note`: a short state after the heading, such as **Unsaved changes** of a closed section that holds one) ([disclosure.ts](../../web/src/app/shared/ui/disclosure.ts), [Q-UI-322](../spec/api-and-ui.md#q-ui-322--a-closed-section-of-details-is-one-quiet-disclosure-a-small-heading-with-a-chevron-and-one-hint-line)): the heading at the text's size, weight 600, a chevron before it, one muted hint line, closed at first; `[(expanded)]` binds its state. Never a settings section below a list or a README |
 | Something added and removed with `@if` | A wrapper with `class="collapse-animated" animate.enter="collapse-in" animate.leave="collapse-out"` around one child |
 | A side panel, a drop-down panel, the sidebar | `panel-in`, `panel-out`; `dropdown-in`, `dropdown-out`; `sidebar-in`, `sidebar-out` |
 | A native `<details>` | Nothing: it animates by itself where the browser can |
@@ -175,21 +175,21 @@ The button has `aria-expanded` and `aria-controls`. A closed region is `visibili
 - Help text is one muted line under the field. An error replaces nothing: it appears below the field, in the error colour, tied
   to it by `aria-describedby`, and the field has `aria-invalid`.
 - An error appears only after the field was touched and left, or after a submit of its form was attempted (the form's `submit`,
-  or a click on its submit or confirm button). `<trove-text-field>` and `<trove-select-field>` hold this rule
+  or a click on its submit or confirm button). `<quader-text-field>` and `<quader-select-field>` hold this rule
   (`revealRule` in [fields.ts](../../web/src/app/shared/access/fields.ts)), so a form passes its errors in and keeps no state of
   its own; a field outside a form shows its error at once. An error says in words what to type, never the pattern (UI-A-42).
 - A field is as wide as its kind of input, by one of five widths, so the fields of one column line up whatever their content says
   ([Q-UI-334](../spec/api-and-ui.md#q-ui-334--a-picker-is-one-control-from-the-start-held-while-its-list-loads-and-a-field-is-as-wide-as-its-kind-of-input)).
   The tokens are in [_tokens.scss](../../web/src/styles/_tokens.scss), the classes in [_controls.scss](../../web/src/styles/_controls.scss).
-  `<trove-text-field>` must name its `width` ([Q-UI-335](../spec/api-and-ui.md#q-ui-335--every-text-field-names-the-width-of-its-expected-input-and-a-number-field-is-never-the-column)); `<trove-select-field>` takes `width`
+  `<quader-text-field>` must name its `width` ([Q-UI-335](../spec/api-and-ui.md#q-ui-335--every-text-field-names-the-width-of-its-expected-input-and-a-number-field-is-never-the-column)); `<quader-select-field>` takes `width`
   (`name` unless its place fills a line); a raw input of a form carries the class:
 
   | Class | Token | Width | For |
   |---|---|---|---|
-  | `field-w-number` | `--trove-field-width-number` | 6 rem | a count of up to six digits: a priority, a port, a limit |
-  | `field-w-duration` | `--trove-field-width-duration` | 8 rem | a period, up to eight digits: seconds, a TTL, days |
-  | `field-w-bytes` | `--trove-field-width-bytes` | 13 rem | a byte count or an ID of up to nineteen digits, a date |
-  | `field-w-name` | `--trove-field-width-name` | 28 rem, half the column | a key, a name, a login, a host, every select and every picker |
+  | `field-w-number` | `--quader-field-width-number` | 6 rem | a count of up to six digits: a priority, a port, a limit |
+  | `field-w-duration` | `--quader-field-width-duration` | 8 rem | a period, up to eight digits: seconds, a TTL, days |
+  | `field-w-bytes` | `--quader-field-width-bytes` | 13 rem | a byte count or an ID of up to nineteen digits, a date |
+  | `field-w-name` | `--quader-field-width-name` | 28 rem, half the column | a key, a name, a login, a host, every select and every picker |
   | `field-w-full` | — | the column | a URL, a description, a path, a pattern, a list, a key block; every text area |
 
   A field is never wider than its column; a narrower column shrinks it. A filter panel's fields and a search row's fields take
@@ -206,7 +206,7 @@ The button has `aria-expanded` and `aria-controls`. A closed region is `visibili
 - A choice among the values of a list (the version of a package) is a select, so it looks like the choice it is.
 - A choice among three or fewer exclusive things, where the reader should see them all, is a radio group, each option with a
   muted sentence under its label. Four or more is a select. A disabled option stays visible, muted, and says why.
-- A visibility level is chosen with `<trove-visibility-level>` ([visibility-level.ts](../../web/src/app/shared/ui/visibility-level.ts), [Q-UI-228](../spec/api-and-ui.md#q-ui-228--a-level-is-chosen-in-a-radio-group-of-three-each-with-its-icon-and-a-sentence)): a native radio group of Private, Internal and Public, each with its icon (`lock`, `shield`, `public`, as the owner's GitLab has them) and one muted sentence that names what the level admits for the `subject` (new projects, a project, artifacts, wiki). An option that cannot be chosen is disabled, stays visible and shows its reason under the sentence (`reasons`), which is also part of the option's description. The same level shown before a name in a list or a header is `<trove-visibility-icon>`: the icon with the level's name as its accessible label and tooltip ([Q-UI-230](../spec/api-and-ui.md#q-ui-230--a-level-is-shown-as-an-icon-before-a-name-as-gitlab-shows-it)). The icon is not a status colour.
+- A visibility level is chosen with `<quader-visibility-level>` ([visibility-level.ts](../../web/src/app/shared/ui/visibility-level.ts), [Q-UI-228](../spec/api-and-ui.md#q-ui-228--a-level-is-chosen-in-a-radio-group-of-three-each-with-its-icon-and-a-sentence)): a native radio group of Private, Internal and Public, each with its icon (`lock`, `shield`, `public`, as the owner's GitLab has them) and one muted sentence that names what the level admits for the `subject` (new projects, a project, artifacts, wiki). An option that cannot be chosen is disabled, stays visible and shows its reason under the sentence (`reasons`), which is also part of the option's description. The same level shown before a name in a list or a header is `<quader-visibility-icon>`: the icon with the level's name as its accessible label and tooltip ([Q-UI-230](../spec/api-and-ui.md#q-ui-230--a-level-is-shown-as-an-icon-before-a-name-as-gitlab-shows-it)). The icon is not a status colour.
 - Only valid combinations can be chosen: a control that can reach a state that means nothing is the wrong control
   ([Q-UI-213](../spec/api-and-ui.md#q-ui-213--the-token-form-names-what-a-token-can-be-in-three-choices-and-only-an-administrator-is-offered-the-first)).
 
@@ -224,17 +224,17 @@ Labels are a verb and its object in sentence case (**Add member**, **Save change
 for general use. In a dialog, the buttons are at the end, **Cancel** first and the action last.
 
 Use a dialog for a short, self-contained step that leaves the page behind it in place (adding a member, confirming a deletion). A
-long or repeated form is a page. Open it with `TroveDialog`: focus, Escape and the return of focus come with it.
+long or repeated form is a page. Open it with `QuaderDialog`: focus, Escape and the return of focus come with it.
 
 ## Address field
 
-`<trove-address-field>` (`web/src/app/shared/address-field.ts`, [R-UI-065](../spec/api-and-ui.md#r-ui-065--one-read-only-address-field-with-a-joined-copy-button-for-every-client-address)) shows
+`<quader-address-field>` (`web/src/app/shared/address-field.ts`, [R-UI-065](../spec/api-and-ui.md#r-ui-065--one-read-only-address-field-with-a-joined-copy-button-for-every-client-address)) shows
 one line to copy the way the reference shows **Clone with SSH**: a read-only input group. It is the one pattern for a value to
 copy of one line, an address or a command
 ([Q-UI-320](../spec/api-and-ui.md#q-ui-320--every-value-to-copy-of-one-line-is-a-field-with-its-joined-copy-button-a-page-shows-one-client-address-and-a-panels-selects-share-one-width)).
 
 ```html
-<trove-address-field [value]="address" label="Client address" copyLabel="Copy client address" />
+<quader-address-field [value]="address" label="Client address" copyLabel="Copy client address" />
 ```
 
 | Input | Meaning |
@@ -244,8 +244,8 @@ copy of one line, an address or a command
 | `copyLabel` | The accessible name and title of the copy button (**Copy client address of npm-internal**) |
 
 In a list the cell is `<td class="address-cell">` of the column marked `fill`; the list sets on the data table the length of its
-longest address, `[style.--trove-address-chars]="addressChars()"`, and the data table sums the room of the other columns from
-their `width`s into `--trove-list-others` ([repository-list.html](../../web/src/app/features/repositories/repository-list.html)
+longest address, `[style.--quader-address-chars]="addressChars()"`, and the data table sums the room of the other columns from
+their `width`s into `--quader-list-others` ([repository-list.html](../../web/src/app/features/repositories/repository-list.html)
 is the worked example).
 
 - **When.** The address a client puts into its configuration: a repository's base URL or registry host with a path, a Bastion's
@@ -256,29 +256,29 @@ is the worked example).
 - **One address in the header.** A page header and a line of the start page show the object's client address, the first of its
   addresses. Its further addresses are in **Details**, each with a visible label that says what it is for (**Address for downloads
   by path (curl, wget)**); two fields without a label make the user guess (Q-UI-320).
-- **Measures.** Height `--trove-control-height` (32 px); text `--trove-font-mono` at 0.875rem; padding `--trove-space-1`
-  `--trove-space-3`; border 1 px `--trove-control-border` (hover `--trove-control-border-hover`, focus the ring of the other
-  controls); fill `--trove-control-bg`, not the grey of `.text-input[readonly]`
+- **Measures.** Height `--quader-control-height` (32 px); text `--quader-font-mono` at 0.875rem; padding `--quader-space-1`
+  `--quader-space-3`; border 1 px `--quader-control-border` (hover `--quader-control-border-hover`, focus the ring of the other
+  controls); fill `--quader-control-bg`, not the grey of `.text-input[readonly]`
   ([Q-UI-274](../spec/api-and-ui.md#q-ui-274--the-field-keeps-the-fill-and-border-of-an-editable-control-not-the-grey-of-a-read-only-value)).
   The button is the 32 px `btn btn-icon` copy button, attached to the input's right edge without a gap, its left border shared
-  with the input's, inner corners square, outer corners `--trove-control-radius`.
+  with the input's, inner corners square, outer corners `--quader-control-radius`.
 - **Width: one per place, never per address, never more than its share.** The field fills its line and never takes its
   address's width.
   - In a list every field has one width: the column `td.address-cell` is as wide as the list's longest address in the field's
-    face, but at most its share (`--trove-address-share`, 46 characters unless the list sets it) and at most what the other
-    columns leave (`--trove-list-others`, with a column's `prefer`red width where it has one), never under 10 rem. A project's
+    face, but at most its share (`--quader-address-share`, 46 characters unless the list sets it) and at most what the other
+    columns leave (`--quader-list-others`, with a column's `prefer`red width where it has one), never under 10 rem. A project's
     repository list sets the share to its longest address and lets the repository prefer 20 rem: the address takes the rest up
     to its whole length, and room left over goes back to the repository. The field fills the cell and shows the address from its start, never its tail; a longer address scrolls
     inside it ([Q-UI-300](../spec/api-and-ui.md#q-ui-300--in-a-list-every-address-field-has-one-width-the-lists-longest-address-up-to-what-the-other-columns-leave), [Q-UI-330](../spec/api-and-ui.md#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)).
   - A list whose user does not copy addresses as its job has no field: the admin area's repository list and the search results
-    have a quiet `<trove-copy-button [quiet]="true">` at the end of the row (beside the menu where the row has one), its `label`
+    have a quiet `<quader-copy-button [quiet]="true">` at the end of the row (beside the menu where the row has one), its `label`
     **Copy client address** with the address, which is also the button's tooltip; the admin area's menu offers
     **Copy client address** too ([Q-UI-330](../spec/api-and-ui.md#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)).
-  - A field alone on its line, or a stack of the addresses of one thing, fills the line up to `--trove-address-measure`
+  - A field alone on its line, or a stack of the addresses of one thing, fills the line up to `--quader-address-measure`
     (40 rem, 70 characters), so a stack is one width ([Q-UI-301](../spec/api-and-ui.md#q-ui-301--a-field-alone-on-its-line-fills-the-line-up-to-a-measure-of-70-characters)).
   - Where the field is shorter than its address, the address scrolls inside it (the input at least 8 rem), the button stays
     attached. Never an ellipsis.
-- **Behaviour.** Focus or click selects the whole address; copy uses `trove-copy-button` (clipboard, polite status, alert on failure).
+- **Behaviour.** Focus or click selects the whole address; copy uses `quader-copy-button` (clipboard, polite status, alert on failure).
   The address is the input's value, so a test reads `.value`, not the text content.
 
 ## Vulnerability grade
@@ -291,28 +291,28 @@ line of facts. Four shared pieces in [web/src/app/shared/vulnerability/](../../w
 screen draws its own, and no screen shows a version's highest severity instead.
 
 ```html
-<trove-grade [grade]="item.vulnerabilityGrade" />                       <!-- a list cell, a header, a tab -->
-<trove-grade-card [grade]="g" [packageName]="name" [findingVersions]="[version]" [image]="false" />
-<trove-severity-bar [counts]="summary.bySeverity" [queries]="filterPerSeverity" />
-<trove-grade-shield grade="E" size="card" label="Grade E" />           <!-- alone only; beside its text it is decorative -->
+<quader-grade [grade]="item.vulnerabilityGrade" />                       <!-- a list cell, a header, a tab -->
+<quader-grade-card [grade]="g" [packageName]="name" [findingVersions]="[version]" [image]="false" />
+<quader-severity-bar [counts]="summary.bySeverity" [queries]="filterPerSeverity" />
+<quader-grade-shield grade="E" size="card" label="Grade E" />           <!-- alone only; beside its text it is decorative -->
 ```
 
 | Piece | What it is | Inputs |
 |---|---|---|
-| `<trove-grade>` | The shield of 20 px (a format icon's size in a list) and "E · 13 Critical"; its tooltip names every count | `grade` (`VulnerabilityGrade` of the API) |
-| `<trove-grade-card>` | The shield of 32 px, the text, the rule, the bar and the facts: an image's OS, its end of life (warning colour) and "Scanned 1 h ago (…)", a package's "Checked 3 min ago (…)", and **Findings in** the repository, a link to the report filtered by repository, package and version | `grade`, `packageName`, `findingVersions` (the version, or an image's manifest digests), `image`; `barQueries` and `activeSeverity` make the bar the filter of the page's findings (the package page) |
-| `<trove-severity-bar>` | Critical, High, Medium, Low (with None) and Unknown as five segments, each as wide as its share (at least 7 %) plus the room of its count; Unknown hatched; a severity without findings faint, its 0 readable | `counts`; `queries` turns the segments into filter links (the report's header replaces the query with them, `merge` keeps the page's other parameters); `active` marks the segment of the filter in force |
-| `<trove-grade-shield>` | The crest as inline SVG with its letter | `grade`, `size` (`list` 20 px, `card` 32 px), `label` |
-| `<trove-time-ago>` ([time-ago.ts](../../web/src/app/shared/ui/time-ago.ts)) | One relative time and the absolute time in brackets: "3 min ago (Nov 12, 2026, 2:22:37 PM)" ([Q-UI-378](../spec/api-and-ui.md#q-ui-378--a-time-on-the-grade-card-is-one-relative-time-with-the-absolute-time-in-brackets-from-one-component)) | `at` (RFC 3339) |
+| `<quader-grade>` | The shield of 20 px (a format icon's size in a list) and "E · 13 Critical"; its tooltip names every count | `grade` (`VulnerabilityGrade` of the API) |
+| `<quader-grade-card>` | The shield of 32 px, the text, the rule, the bar and the facts: an image's OS, its end of life (warning colour) and "Scanned 1 h ago (…)", a package's "Checked 3 min ago (…)", and **Findings in** the repository, a link to the report filtered by repository, package and version | `grade`, `packageName`, `findingVersions` (the version, or an image's manifest digests), `image`; `barQueries` and `activeSeverity` make the bar the filter of the page's findings (the package page) |
+| `<quader-severity-bar>` | Critical, High, Medium, Low (with None) and Unknown as five segments, each as wide as its share (at least 7 %) plus the room of its count; Unknown hatched; a severity without findings faint, its 0 readable | `counts`; `queries` turns the segments into filter links (the report's header replaces the query with them, `merge` keeps the page's other parameters); `active` marks the segment of the filter in force |
+| `<quader-grade-shield>` | The crest as inline SVG with its letter | `grade`, `size` (`list` 20 px, `card` 32 px), `label` |
+| `<quader-time-ago>` ([time-ago.ts](../../web/src/app/shared/ui/time-ago.ts)) | One relative time and the absolute time in brackets: "3 min ago (Nov 12, 2026, 2:22:37 PM)" ([Q-UI-378](../spec/api-and-ui.md#q-ui-378--a-time-on-the-grade-card-is-one-relative-time-with-the-absolute-time-in-brackets-from-one-component)) | `at` (RFC 3339) |
 
-- **When.** A list shows `<trove-grade>`; the bar and the facts are the card's, on the detail page (simple by default, details
+- **When.** A list shows `<quader-grade>`; the bar and the facts are the card's, on the detail page (simple by default, details
   on demand, [Q-UI-374](../spec/api-and-ui.md#q-ui-374--a-list-shows-the-shield-and-the-text-the-bar-and-the-facts-are-the-cards)).
-  A finding keeps its severity badge (`<trove-severity>`): a grade belongs to a version, a severity to a finding.
+  A finding keeps its severity badge (`<quader-severity>`): a grade belongs to a version, a severity to a finding.
 - **The grade is the server's.** The API answers `VulnerabilityGrade` ([R-VULN-039](../spec/vulnerability-scanning.md#r-vuln-039--the-grade-in-the-api));
   [grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts) words it (text, rule, tooltip) and orders it
   (`gradeRank`, `worstGrade`) and never decides it again. A caller who gets no grade sees no grade column and no card, not N/A
   ([Q-UI-377](../spec/api-and-ui.md#q-ui-377--a-list-without-grades-has-no-grade-column)).
-- **Colours.** `--trove-grade-s` to `--trove-grade-e` and `--trove-grade-na`, the inks of the letters, `--trove-sev-*` for the
+- **Colours.** `--quader-grade-s` to `--quader-grade-e` and `--quader-grade-na`, the inks of the letters, `--quader-sev-*` for the
   bar ([design-language.md](design-language.md#vulnerability-grades)). S, A and B are the only greens beside the positive
   status ([Q-UI-370](../spec/api-and-ui.md#q-ui-370--the-grades-take-cogpits-colours-and-s-a-and-b-are-the-greens-of-a-good-grade)).
   The letter and the text carry the grade; the colour never does alone.
@@ -322,7 +322,7 @@ screen draws its own, and no screen shows a version's highest severity instead.
 ## Text
 
 - Sentence case everywhere; upper-case is not used for labels.
-- 14 px on 21 px for text and controls, 12 px for small text. Headings use `--trove-heading-1` to `-3`.
+- 14 px on 21 px for text and controls, 12 px for small text. Headings use `--quader-heading-1` to `-3`.
 - Say what happens, in plain words: **Filter members**, not **Search criteria**. Do not name internal terms where the reader
   needs none: **All repository permissions of the owner, without administration**, not `inherit`.
 - A label promises exactly what the thing does. If it does less than it says, the label is a bug.
@@ -346,7 +346,7 @@ Before a screen is committed:
       sideways at any width and no region that does at 1024 px and wider, that the change brought, and no list whose address fields differ in width.
 - [ ] Compared side by side with the reference's screen for the same job, in a real browser, not only in a unit test.
 - [ ] Seen in the dark and the light scheme, and at a narrow window.
-- [ ] Only shared controls, classes of `_controls.scss` and `--trove-*` tokens; no colour literal.
+- [ ] Only shared controls, classes of `_controls.scss` and `--quader-*` tokens; no colour literal.
 - [ ] One `<h1>`, one primary action per view, one way to each job (no button and tab for the same thing).
 - [ ] Every value to copy of one line is an address field; a page shows one client address, further ones labelled in Details.
 - [ ] Every control named; the keyboard reaches everything; a spec of the screen calls `seriousViolations` and it passes.
@@ -357,7 +357,7 @@ Before a screen is committed:
 
 These differ from the reference on the owner's decision. Everything else that differs is a defect.
 
-| What | trove | Why |
+| What | Quader | Why |
 |---|---|---|
 | Green | A positive status only, so the badge **It's you** is blue | [Q-UI-96](../spec/api-and-ui.md#q-ui-96--cogpit-blue-as-the-primary-colour-green-only-for-positive-status) |
 | Content width | The panel's full width, the reference centres 1280 px | Owner, 2026-11-06 ([design-language.md](design-language.md#what-this-does-not-cover)) |

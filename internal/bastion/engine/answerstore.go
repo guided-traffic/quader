@@ -9,15 +9,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/answers"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
 )
 
 // refusal is a response of the main installation that is kept and replayed: the stored refusal of a URL answer
 // (R-BAS-020), a probe answer (R-BAS-014) or a negative entry (R-BAS-024). The headers are the filtered replay
-// headers of the response, never a Trove-Bastion-* header.
+// headers of the response, never a Quader-Bastion-* header.
 type refusal struct {
 	Status int         `json:"status"`
 	Header http.Header `json:"header,omitempty"`

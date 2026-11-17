@@ -1,4 +1,4 @@
-<trove-page-header heading="Backups" i18n-heading="@@backups.heading">
+<quader-page-header heading="Backups" i18n-heading="@@backups.heading">
   <button actions class="btn btn-default" type="button" [attr.aria-pressed]="paused()" (click)="paused.set(!paused())">
     @if (paused()) {
       <ng-container i18n="@@system.resume">Resume automatic refresh</ng-container>
@@ -7,10 +7,10 @@
     }
   </button>
   <button actions class="btn btn-default" type="button" (click)="refresh()" i18n="@@system.refresh">Refresh now</button>
-</trove-page-header>
+</quader-page-header>
 
 @if (statusFailure(); as f) {
-  <trove-error-notice [error]="f" (retry)="refresh()" />
+  <quader-error-notice [error]="f" (retry)="refresh()" />
 }
 
 @if (summary(); as s) {
@@ -78,7 +78,7 @@
         <h2 id="bk-active" i18n="@@backups.active.heading">Run in progress</h2>
         <dl>
           <dt i18n="@@backups.col.state">State</dt>
-          <dd><trove-backup-state [state]="running.state" [leaseExpired]="running.leaseExpired" [showHint]="true" /></dd>
+          <dd><quader-backup-state [state]="running.state" [leaseExpired]="running.leaseExpired" [showHint]="true" /></dd>
           <dt i18n="@@backups.col.operation">Operation</dt>
           <dd>{{ operationText(running.operation) }}</dd>
           @if (activeRun(); as run) {
@@ -151,7 +151,7 @@
     </form>
 
     @if (runs.error(); as f) {
-      <trove-error-notice [error]="f" (retry)="refresh()" />
+      <quader-error-notice [error]="f" (retry)="refresh()" />
     }
     @if (runs.loaded()) {
       @if (runs.items().length === 0) {
@@ -185,7 +185,7 @@
                   </th>
                   <td>{{ operationText(r.operation) }}</td>
                   <td translate="no">{{ r.pod }}</td>
-                  <td><trove-backup-state [state]="r.state" [leaseExpired]="r.leaseExpired" [showHint]="true" /></td>
+                  <td><quader-backup-state [state]="r.state" [leaseExpired]="r.leaseExpired" [showHint]="true" /></td>
                   <td translate="no">{{ r.backupId ?? '–' }}</td>
                   <td>
                     @if (r.snapshotAt) {
@@ -240,22 +240,22 @@
         <button class="btn btn-tertiary" type="button" (click)="close()" i18n="@@backups.detail.close">Close</button>
       </div>
       @if (detailFailure(); as f) {
-        <trove-error-notice [error]="f" (retry)="detail.reload()" />
+        <quader-error-notice [error]="f" (retry)="detail.reload()" />
       }
       @if (detailRun(); as run) {
         <dl>
           <dt i18n="@@backups.detail.id">Run ID</dt>
           <dd translate="no">{{ run.id }}</dd>
           <dt i18n="@@backups.col.state">State</dt>
-          <dd><trove-backup-state [state]="run.state" [leaseExpired]="run.leaseExpired" [showHint]="true" /></dd>
+          <dd><quader-backup-state [state]="run.state" [leaseExpired]="run.leaseExpired" [showHint]="true" /></dd>
           <dt i18n="@@backups.col.operation">Operation</dt>
           <dd>{{ operationText(run.operation) }}</dd>
           <dt i18n="@@backups.detail.trigger">Trigger</dt>
           <dd translate="no">{{ run.trigger }}</dd>
           <dt i18n="@@backups.col.pod">Pod</dt>
           <dd translate="no">{{ run.pod }}</dd>
-          <dt i18n="@@backups.detail.version">trove version</dt>
-          <dd translate="no">{{ run.troveVersion }}</dd>
+          <dt i18n="@@backups.detail.version">Quader version</dt>
+          <dd translate="no">{{ run.quaderVersion }}</dd>
           <dt i18n="@@backups.detail.target">Target</dt>
           <dd translate="no">{{ run.target }}</dd>
           <dt i18n="@@backups.detail.heartbeat">Last heartbeat</dt>
@@ -302,7 +302,7 @@
           <time [attr.datetime]="stored.asOf">{{ stored.asOf | date: 'medium' }}</time>.</ng-container
         >
         <ng-container i18n="@@backups.stored.note"
-          >Backups written or removed outside trove appear after the next run; <code translate="no">trove backup list</code> reads
+          >Backups written or removed outside Quader appear after the next run; <code translate="no">quader backup list</code> reads
           the target itself.</ng-container
         >
       </p>
@@ -318,7 +318,7 @@
               <tr>
                 <th scope="col" i18n="@@backups.col.backup-id">Backup ID</th>
                 <th scope="col" i18n="@@backups.col.snapshot">Snapshot</th>
-                <th scope="col" i18n="@@backups.stored.version">trove version</th>
+                <th scope="col" i18n="@@backups.stored.version">Quader version</th>
                 <th scope="col" i18n="@@backups.stored.schema">Schema step</th>
                 <th scope="col" i18n="@@backups.col.database">Database</th>
                 <th scope="col" i18n="@@backups.stored.blobs">Blobs</th>
@@ -331,7 +331,7 @@
                 <tr>
                   <th scope="row" translate="no">{{ b.backupId }}</th>
                   <td><time [attr.datetime]="b.snapshotAt">{{ b.snapshotAt | date: 'medium' }}</time></td>
-                  <td translate="no">{{ b.troveVersion }}</td>
+                  <td translate="no">{{ b.quaderVersion }}</td>
                   <td translate="no">{{ b.schemaStep }}</td>
                   <td translate="no">{{ formatSize(b.databaseBytes) }}</td>
                   <td translate="no">{{ b.blobCount }}</td>
@@ -375,5 +375,5 @@
     </dl>
   </section>
 
-  <trove-manual-run-panel [manualRun]="s.manualRun" />
+  <quader-manual-run-panel [manualRun]="s.manualRun" />
 }

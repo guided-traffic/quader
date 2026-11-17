@@ -11,8 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/vuln/store"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/vuln/store"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // groupRowsDB is a migrated database without replicas and a connection to it that reads the tables of the schema.
@@ -24,7 +24,7 @@ func groupRowsDB(t *testing.T) (*testenv.Stack, *pgx.Conn) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = conn.Close(context.Background()) })
-	if _, err := conn.Exec(t.Context(), `SET search_path = trove`); err != nil {
+	if _, err := conn.Exec(t.Context(), `SET search_path = quader`); err != nil {
 		t.Fatal(err)
 	}
 	return st, conn
@@ -94,7 +94,7 @@ func TestR_VULN_028_TheGroupRowsRoundReadsTheIndexesOnly(t *testing.T) {
 			       'high', 'cvss', '\x00'
 			  FROM generate_series($1::int, $2::int) g`, b*500, b*500+499)
 	}
-	if n := st.Number(`SELECT pending_tuples FROM pgstatginindex('trove.vuln_advisory_aliases')`); n != 0 {
+	if n := st.Number(`SELECT pending_tuples FROM pgstatginindex('quader.vuln_advisory_aliases')`); n != 0 {
 		t.Fatalf("the index of the aliases holds %d tuples in its pending list; a lookup reads all of them for every name", n)
 	}
 

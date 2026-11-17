@@ -11,7 +11,7 @@ func TestValkeyRules(t *testing.T) {
 		return err
 	}
 	t.Run("R-ARCH-030 key_prefix must end in a colon", func(t *testing.T) {
-		err := load("valkey:\n  key_prefix: \"trove\"\n")
+		err := load("valkey:\n  key_prefix: \"quader\"\n")
 		if err == nil || !strings.Contains(err.Error(), "valkey.key_prefix") {
 			t.Fatalf("want an error naming valkey.key_prefix, got %v", err)
 		}
@@ -29,7 +29,7 @@ func TestValkeyRules(t *testing.T) {
 		}
 	})
 	t.Run("R-HA-056 sentinel mode requires addresses and primary_name", func(t *testing.T) {
-		_, err := Load(Options{ReadFile: fakeFS(nil), Environ: minimalEnv("TROVE_PROCESS_ROLE=web"), Command: CommandServe})
+		_, err := Load(Options{ReadFile: fakeFS(nil), Environ: minimalEnv("QUADER_PROCESS_ROLE=web"), Command: CommandServe})
 		if err == nil || !strings.Contains(err.Error(), "valkey.sentinel.addresses") || !strings.Contains(err.Error(), "valkey.sentinel.primary_name") {
 			t.Fatalf("got %v", err)
 		}

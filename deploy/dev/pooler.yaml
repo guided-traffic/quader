@@ -1,13 +1,13 @@
-# Pooler overlay (`TROVE_POOLER=1 deploy/dev/up.sh`, R-HA-051, R-HA-058, R-HA-059 rule 5): two CloudNativePG
+# Pooler overlay (`QUADER_POOLER=1 deploy/dev/up.sh`, R-HA-051, R-HA-058, R-HA-059 rule 5): two CloudNativePG
 # Pooler resources in transaction mode with two instances each, one for the request pool and one for the control
 # connection. values-pooler.yaml points the chart at them.
 #
 # What the drain of a pooler instance (variant D of R-HA-059) needs, per Pooler: the instances on different nodes
 # (a hostname spread with DoNotSchedule; nodeTaintsPolicy Honor keeps the tainted control-plane node out of the
-# skew), a PodDisruptionBudget (the operator adds none), and a stop that waits until trove has moved its connections
+# skew), a PodDisruptionBudget (the operator adds none), and a stop that waits until quader has moved its connections
 # to the other instance. The wait is a preStop sleep of 90 s, not PgBouncer's SIGTERM: the CloudNativePG pooler
 # manager turns SIGTERM into SIGINT ("waiting for all servers connections to be released"), which drops every idle
-# client connection at once. During the sleep the pod is out of the Service, so trove's new connections reach the
+# client connection at once. During the sleep the pod is out of the Service, so quader's new connections reach the
 # other instance, and its own connections age out within lifetime + jitter + health check period
 # (values-pooler.yaml: 60s + 15s + 5s = 80 s). The grace period of 120 s covers the sleep and the shutdown.
 #
@@ -15,10 +15,10 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
-  name: trove-db-pooler-rw
+  name: quader-db-pooler-rw
 spec:
   cluster:
-    name: trove-db
+    name: quader-db
   instances: 2
   type: rw
   pgbouncer:
@@ -29,7 +29,7 @@ spec:
   template:
     metadata:
       labels:
-        trove/pooler: trove-db-pooler-rw
+        quader/pooler: quader-db-pooler-rw
     spec:
       containers:
         - name: pgbouncer
@@ -45,15 +45,15 @@ spec:
           nodeTaintsPolicy: Honor
           labelSelector:
             matchLabels:
-              trove/pooler: trove-db-pooler-rw
+              quader/pooler: quader-db-pooler-rw
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
-  name: trove-db-pooler-control
+  name: quader-db-pooler-control
 spec:
   cluster:
-    name: trove-db
+    name: quader-db
   instances: 2
   type: rw
   pgbouncer:
@@ -64,7 +64,7 @@ spec:
   template:
     metadata:
       labels:
-        trove/pooler: trove-db-pooler-control
+        quader/pooler: quader-db-pooler-control
     spec:
       containers:
         - name: pgbouncer
@@ -80,24 +80,24 @@ spec:
           nodeTaintsPolicy: Honor
           labelSelector:
             matchLabels:
-              trove/pooler: trove-db-pooler-control
+              quader/pooler: quader-db-pooler-control
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: trove-db-pooler-rw
+  name: quader-db-pooler-rw
 spec:
   maxUnavailable: 1
   selector:
     matchLabels:
-      trove/pooler: trove-db-pooler-rw
+      quader/pooler: quader-db-pooler-rw
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: trove-db-pooler-control
+  name: quader-db-pooler-control
 spec:
   maxUnavailable: 1
   selector:
     matchLabels:
-      trove/pooler: trove-db-pooler-control
+      quader/pooler: quader-db-pooler-control

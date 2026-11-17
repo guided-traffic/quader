@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 func TestParseEscaped(t *testing.T) {

@@ -16,11 +16,11 @@ import {
 let nextPanelId = 1;
 
 /**
- * The button above a list that opens and closes its `<trove-filter-panel>`. It carries
+ * The button above a list that opens and closes its `<quader-filter-panel>`. It carries
  * `aria-expanded` and the number of active filters, as text as well as a badge.
  */
 @Component({
-  selector: 'trove-filter-toggle',
+  selector: 'quader-filter-toggle',
   imports: [],
   template: `
     <button
@@ -37,7 +37,7 @@ let nextPanelId = 1;
       }
     </button>
   `,
-  host: { class: 'trove-filter-toggle' },
+  host: { class: 'quader-filter-toggle' },
 })
 export class FilterToggle {
   readonly open = model(false);
@@ -56,7 +56,7 @@ export class FilterToggle {
  * is hidden.
  */
 @Component({
-  selector: 'trove-filter-category',
+  selector: 'quader-filter-category',
   template: `
     <section class="category" [class.open]="expanded()">
       <h3 class="category-heading">
@@ -82,7 +82,7 @@ export class FilterToggle {
       </div>
     </section>
   `,
-  host: { class: 'trove-filter-category' },
+  host: { class: 'quader-filter-category' },
 })
 export class FilterCategory {
   readonly label = input.required<string>();
@@ -90,7 +90,7 @@ export class FilterCategory {
   readonly active = input(false);
   readonly expanded = model(false);
 
-  protected readonly bodyId = `trove-filter-body-${nextPanelId++}`;
+  protected readonly bodyId = `quader-filter-body-${nextPanelId++}`;
 }
 
 /**
@@ -104,7 +104,7 @@ export class FilterCategory {
  * backend behind it; the panel adds no filter of its own.
  */
 @Component({
-  selector: 'trove-filter-panel',
+  selector: 'quader-filter-panel',
   imports: [],
   template: `
     @if (open()) {
@@ -134,7 +134,7 @@ export class FilterCategory {
       </form>
     }
   `,
-  host: { class: 'trove-filter-panel' },
+  host: { class: 'quader-filter-panel' },
 })
 export class FilterPanel {
   private readonly document = inject(DOCUMENT);
@@ -147,8 +147,8 @@ export class FilterPanel {
   readonly apply = output<void>();
   readonly clearAll = output<void>();
 
-  /** The id of the form; `<trove-filter-toggle [controls]>` points at it. */
-  readonly panelId = `trove-filter-panel-${nextPanelId++}`;
+  /** The id of the form; `<quader-filter-toggle [controls]>` points at it. */
+  readonly panelId = `quader-filter-panel-${nextPanelId++}`;
 
   private opener: HTMLElement | null = null;
   private previous: boolean | null = null;

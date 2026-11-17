@@ -297,7 +297,7 @@ export function curlOf(
   const quoted = JSON.stringify(body, null, 2).replace(/'/g, `'\\''`);
   return [
     `curl -X ${method} '${url}'`,
-    `  -H 'Authorization: Bearer $TROVE_TOKEN'`,
+    `  -H 'Authorization: Bearer $QUADER_TOKEN'`,
     ...headers.map((h) => `  -H '${h}'`),
     `  --data '${quoted}'`,
   ].join(' \\\n');

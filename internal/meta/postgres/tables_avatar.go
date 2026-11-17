@@ -1,6 +1,6 @@
 package postgres
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // Registration of the table of 00047_user_avatars (R-API-055, R-BAK-004, Q-STOR-167):
 //

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // CodeInvalidRange is the error code of every version range this package refuses.

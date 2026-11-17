@@ -15,9 +15,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func mode(valkey bool) string {
@@ -67,7 +67,7 @@ func TestE1_14_CustomerEndpoint(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if _, err := tx.Exec(ctx, "LOCK TABLE trove.api_token IN ACCESS EXCLUSIVE MODE"); err != nil {
+				if _, err := tx.Exec(ctx, "LOCK TABLE quader.api_token IN ACCESS EXCLUSIVE MODE"); err != nil {
 					t.Fatal(err)
 				}
 				for _, r := range e.reps {
@@ -97,7 +97,7 @@ func TestE1_14_CustomerEndpoint(t *testing.T) {
 					if a := e.onCustomers(r, file, e.acmeSAT); a.Status != 404 {
 						t.Fatalf("%s customers: %d %s", r.name, a.Status, a.Body)
 					}
-					a := e.send(r.def, "trove.test", "GET", file, e.acmeSAT, nil)
+					a := e.send(r.def, "quader.test", "GET", file, e.acmeSAT, nil)
 					if a.Status != 401 || a.JSON(t)["code"] != errs.CodeInvalidToken {
 						t.Fatalf("%s default: %d %s", r.name, a.Status, a.Body)
 					}
@@ -110,11 +110,11 @@ func TestE1_14_CustomerEndpoint(t *testing.T) {
 				}
 				m := metrics(t, e.reps[0])
 				for _, reason := range []string{"token_type", "token_binding", "anonymous"} {
-					if v := metricValue(m, `trove_endpoint_credentials_refused_total{endpoint="customers",reason="`+reason+`"}`); v < 1 {
-						t.Errorf("trove_endpoint_credentials_refused_total{reason=%q} = %v", reason, v)
+					if v := metricValue(m, `quader_endpoint_credentials_refused_total{endpoint="customers",reason="`+reason+`"}`); v < 1 {
+						t.Errorf("quader_endpoint_credentials_refused_total{reason=%q} = %v", reason, v)
 					}
 				}
-				if v := metricValue(m, `trove_endpoint_credentials_refused_total{endpoint="default",reason="token_binding"}`); v < 1 {
+				if v := metricValue(m, `quader_endpoint_credentials_refused_total{endpoint="default",reason="token_binding"}`); v < 1 {
 					t.Errorf("the bound token on default is not counted: %v", v)
 				}
 				waitFor(t, "token.rejected with reason endpoint_not_accepted", 10*time.Second, func() bool {
@@ -144,19 +144,19 @@ func TestE1_14_CustomerEndpoint(t *testing.T) {
 			var epoch string
 			t.Run("R-EP-012 R-EP-016 a rule created through the API takes effect on every replica within the bound, at once with the epoch", func(t *testing.T) {
 				a := e.api("POST", "/api/v1/endpoints/customers/exposure-rules", []byte(releasesRule), "Idempotency-Key", "releases-rule-create")
-				if a.Status != 201 || a.Header.Get("ETag") != `"1"` || a.Header.Get("Location") != "http://trove.test/api/v1/endpoints/customers/exposure-rules/releases" {
+				if a.Status != 201 || a.Header.Get("ETag") != `"1"` || a.Header.Get("Location") != "http://quader.test/api/v1/endpoints/customers/exposure-rules/releases" {
 					t.Fatalf("%d %v %s", a.Status, a.Header, a.Body)
 				}
-				if epoch = a.Header.Get("Trove-Authz-Epoch"); epoch == "" {
-					t.Fatal("no Trove-Authz-Epoch")
+				if epoch = a.Header.Get("Quader-Authz-Epoch"); epoch == "" {
+					t.Fatal("no Quader-Authz-Epoch")
 				}
 				// R-API-014, Q-API-28: a replay carries the epoch of the first answer (Outcome.Finish).
 				if again := e.api("POST", "/api/v1/endpoints/customers/exposure-rules", []byte(releasesRule), "Idempotency-Key", "releases-rule-create"); again.Status != 201 ||
-					again.Header.Get("Idempotency-Replayed") != "true" || again.Header.Get("Trove-Authz-Epoch") != epoch {
-					t.Fatalf("replay: %d replayed=%q epoch=%q, want epoch %q", again.Status, again.Header.Get("Idempotency-Replayed"), again.Header.Get("Trove-Authz-Epoch"), epoch)
+					again.Header.Get("Idempotency-Replayed") != "true" || again.Header.Get("Quader-Authz-Epoch") != epoch {
+					t.Fatalf("replay: %d replayed=%q epoch=%q, want epoch %q", again.Status, again.Header.Get("Idempotency-Replayed"), again.Header.Get("Quader-Authz-Epoch"), epoch)
 				}
 				for _, r := range e.reps {
-					if a := e.onCustomers(r, file, e.acmeSAT, "Trove-Authz-Min-Epoch", epoch); a.Status != 200 || string(a.Body) != "app 1.0" {
+					if a := e.onCustomers(r, file, e.acmeSAT, "Quader-Authz-Min-Epoch", epoch); a.Status != 200 || string(a.Body) != "app 1.0" {
 						t.Fatalf("%s with the epoch: %d %s", r.name, a.Status, a.Body)
 					}
 				}
@@ -183,7 +183,7 @@ func TestE1_14_CustomerEndpoint(t *testing.T) {
 				})
 				// Through the default endpoint the same token is refused; an unbound
 				// token of the same account reads the internal file there.
-				if a := e.send(r.def, "trove.test", "GET", "/files/it/generic-local/internal/x.bin", e.acmeUnbound, nil); a.Status != 200 {
+				if a := e.send(r.def, "quader.test", "GET", "/files/it/generic-local/internal/x.bin", e.acmeUnbound, nil); a.Status != 200 {
 					t.Fatalf("default: %d %s", a.Status, a.Body)
 				}
 			})
@@ -219,11 +219,11 @@ func TestE1_14_CustomerEndpoint(t *testing.T) {
 						t.Fatalf("%s hidden listing: %d %s", r.name, a.Status, a.Body)
 					}
 				}
-				if a := e.send(e.pick().def, "trove.test", "GET", "/files/it/generic-local/releases/", e.botAdminSAT, nil); a.Status != 401 {
+				if a := e.send(e.pick().def, "quader.test", "GET", "/files/it/generic-local/releases/", e.botAdminSAT, nil); a.Status != 401 {
 					t.Fatalf("the bound administrator token on default: %d", a.Status)
 				}
-				if v := metricValue(metrics(t, e.reps[0]), `trove_exposure_hidden_total{endpoint="customers",kind="request"}`); v < 1 {
-					t.Errorf("trove_exposure_hidden_total = %v", v)
+				if v := metricValue(metrics(t, e.reps[0]), `quader_exposure_hidden_total{endpoint="customers",kind="request"}`); v < 1 {
+					t.Errorf("quader_exposure_hidden_total = %v", v)
 				}
 			})
 
@@ -232,7 +232,7 @@ func TestE1_14_CustomerEndpoint(t *testing.T) {
 				doc := g.JSON(t)
 				doc["paths"] = map[string]any{"include": []string{"releases/1.0/**"}, "exclude": []string{}}
 				a := e.api("PUT", "/api/v1/endpoints/customers/exposure-rules/releases", doc, "If-Match", g.Header.Get("ETag"))
-				if a.Status != 200 || a.Header.Get("ETag") != `"2"` || a.Header.Get("Trove-Authz-Epoch") == "" {
+				if a.Status != 200 || a.Header.Get("ETag") != `"2"` || a.Header.Get("Quader-Authz-Epoch") == "" {
 					t.Fatalf("%d %v %s", a.Status, a.Header, a.Body)
 				}
 				for _, r := range e.reps {
@@ -248,7 +248,7 @@ func TestE1_14_CustomerEndpoint(t *testing.T) {
 			t.Run("R-EP-016 a deleted rule exposes nothing on every replica within the bound", func(t *testing.T) {
 				g := e.api("GET", "/api/v1/endpoints/customers/exposure-rules/releases", nil)
 				a := e.api("DELETE", "/api/v1/endpoints/customers/exposure-rules/releases", nil, "If-Match", g.Header.Get("ETag"))
-				if a.Status != 204 || a.Header.Get("Trove-Authz-Epoch") == "" {
+				if a.Status != 204 || a.Header.Get("Quader-Authz-Epoch") == "" {
 					t.Fatalf("%d %v %s", a.Status, a.Header, a.Body)
 				}
 				for _, r := range e.reps {
@@ -319,8 +319,8 @@ func TestE1_14_CustomerEndpoint(t *testing.T) {
 					if !valkey {
 						want = 1
 					}
-					if v := metricValue(metrics(t, r), `trove_ratelimit_fallback{limiter="endpoint_external"}`); v != want {
-						t.Errorf("%s: trove_ratelimit_fallback{limiter=\"endpoint_external\"} = %v, want %v", r.name, v, want)
+					if v := metricValue(metrics(t, r), `quader_ratelimit_fallback{limiter="endpoint_external"}`); v != want {
+						t.Errorf("%s: quader_ratelimit_fallback{limiter=\"endpoint_external\"} = %v, want %v", r.name, v, want)
 					}
 				}
 			})
@@ -500,13 +500,13 @@ func TestR_EP_016_EndpointAndExposureAPI(t *testing.T) {
 
 	t.Run("R-EP-016 an auditor reads and gets 403 on writes; an inert endpoint's rules are read and deleted", func(t *testing.T) {
 		r := e.pick()
-		if a := e.send(r.def, "trove.test", "GET", "/api/v1/endpoints/customers/exposure-rules", auditorPAT, nil); a.Status != 200 {
+		if a := e.send(r.def, "quader.test", "GET", "/api/v1/endpoints/customers/exposure-rules", auditorPAT, nil); a.Status != 200 {
 			t.Fatalf("auditor read: %d %s", a.Status, a.Body)
 		}
-		if a := e.send(r.def, "trove.test", "POST", "/api/v1/endpoints/customers/exposure-rules", auditorPAT, []byte(`{"name":"x","repository":"it/generic-local"}`)); a.Status != 403 {
+		if a := e.send(r.def, "quader.test", "POST", "/api/v1/endpoints/customers/exposure-rules", auditorPAT, []byte(`{"name":"x","repository":"it/generic-local"}`)); a.Status != 403 {
 			t.Fatalf("auditor write: %d %s", a.Status, a.Body)
 		}
-		if a := e.send(r.def, "trove.test", "GET", "/api/v1/endpoints", e.alicePAT, nil); a.Status != 403 {
+		if a := e.send(r.def, "quader.test", "GET", "/api/v1/endpoints", e.alicePAT, nil); a.Status != 403 {
 			t.Fatalf("a user without endpoints:read: %d", a.Status)
 		}
 		if a := e.api("GET", "/api/v1/endpoints/retired/exposure-rules/old", nil); a.Status != 200 || a.JSON(t)["inert"] != true {

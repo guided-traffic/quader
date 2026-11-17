@@ -10,7 +10,7 @@ T-18's plan is [visibility-work-packages.md](visibility-work-packages.md)). **Th
 The owner's words, both of 2026-11-12:
 
 - Showing his GitLab's search dropdown: "A sensible search, with suggestions and everything. This is how I picture it for us later."
-- After typing "test" into trove's top bar and landing on the admin area's repository list with Enter: "Absolutely wrong. A search
+- After typing "test" into Quader's top bar and landing on the admin area's repository list with Enter: "Absolutely wrong. A search
   on the main page must NEVER end in the admin area, unless the user is shown live suggestions while searching, some of them are
   pages explicitly marked as pages of the admin area, and the user is an instance admin. Then and only then may a search result
   lead into the admin area at all." Then he showed the dropdown again, with live results.
@@ -44,7 +44,7 @@ Seams with parallel work:
 
 Every caller gets one field in the top bar: a signed-in user always, an anonymous visitor while something is public. `/` (on by
 default, off in the profile) and Ctrl+K focus it; a filter at its right end narrows it to repositories, packages or projects, and for
-an instance administrator to users or groups. Opened empty, it offers the reference's parts with trove's objects: places, the
+an instance administrator to users or groups. Opened empty, it offers the reference's parts with Quader's objects: places, the
 frequently visited repositories, **View all my projects**, the frequently visited projects, and for an instance administrator an
 **Admin area** group last. While typing, one request per settled text asks a new operation, `GET /api/v1/search/suggestions`, for the
 best five matches of each kind the caller may read, under T-18's levels, the external flag, path-scoped grants and hidden existence;
@@ -71,10 +71,10 @@ over the request's grant index, without a statement.
 - [projects-home.ts](../../web/src/app/features/projects/projects-home.ts), **Find a package**: `GET /api/v1/packages?q=` from two
   characters, 300 ms after the last key, ten results, a list of links (no combobox).
 - **Recently opened** reads `recent-repositories.ts` (deleted by WP7): one
-  `localStorage` key, `trove.recent-repositories`, for every user of the browser, 20 entries by recency. The start page reads each of
+  `localStorage` key, `quader.recent-repositories`, for every user of the browser, 20 entries by recency. The start page reads each of
   the five it shows with its own `GET` of the repository (five requests per visit).
 - [project-context.ts](../../web/src/app/core/project-context.ts) keeps the recent projects per principal name
-  (`trove.recent-projects.<name>`) and reads every project the caller may see once (`collectAll` of `GET /api/v1/projects`); the
+  (`quader.recent-projects.<name>`) and reads every project the caller may see once (`collectAll` of `GET /api/v1/projects`); the
   switcher filters that list in the browser.
 - [Q-UI-311](../spec/api-and-ui.md#q-ui-311--the-start-page-leads-the-plain-user-to-a-repository-and-its-address-in-two-steps) says
   a repository search across projects "needs a list the plain user may read across projects". That list exists (1.3); what is
@@ -130,7 +130,7 @@ written for the page they go to.
 
 ````markdown
 ### R-API-060 · One operation answers the suggestions of the search field
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's task T-22 (2026-11-12): one search field with live suggestions for every caller (R-UI-095 to R-UI-099).
 `GET /api/v1/search/suggestions` answers, in one request, the best matches of a text for each kind the field shows
@@ -155,7 +155,7 @@ The owner's task T-22 (2026-11-12): one search field with live suggestions for e
   "description"}`; a package's `name` is its display name and `id` the identifier of `GET /api/v1/packages/{packageId}`
   ([Q-API-271](#q-api-271--the-answer-holds-one-typed-member-per-kind-and-no-cursor)).
 - Not a list of R-API-010: no `cursor`, `nextCursor` or `Link`. The results page reads the lists (R-UI-098).
-- Permission: any caller (`x-trove-permission: public: true`), decided in the handler by R-API-061. Without a credential `401`
+- Permission: any caller (`x-quader-permission: public: true`), decided in the handler by R-API-061. Without a credential `401`
   while no repository's artifacts are `public`, as the lists answer. `kind` `user` or `group` needs `identities:read`; without it
   the answer is `403`, before any lookup and the same for every `q`
   ([Q-API-272](#q-api-272--users-and-groups-need-identitiesread-checked-before-any-lookup)).
@@ -163,7 +163,7 @@ The owner's task T-22 (2026-11-12): one search field with live suggestions for e
   ([Q-API-281](#q-api-281--the-suggestions-use-the-read-and-anonymous-classes-and-q-is-2-to-100-characters)).
 - Freshness: the repositories are matched over the grant index of the request (R-AUTHZ-028), on which they are decided anyway, so a
   repository created through another replica is suggested within the propagation bound of R-API-052; projects, packages, users and
-  groups are read from PostgreSQL. `Trove-Authz-Min-Epoch` (R-AUTHZ-032) applies as on every operation.
+  groups are read from PostgreSQL. `Quader-Authz-Min-Epoch` (R-AUTHZ-032) applies as on every operation.
 - `Cache-Control: no-store` (R-API-017).
 
 Acceptance criteria:
@@ -174,7 +174,7 @@ Acceptance criteria:
 - The answer carries `RateLimit-Policy: "read";q=200;w=4` with the defaults.
 
 ### R-API-061 · A suggestion names only what the caller may read
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The suggestions are a listing in the sense of [authorization.md](authorization.md) R-AUTHZ-016: they hold only what the caller may
 read, and nothing in the answer depends on an object it may not read. Per kind the rule is the one of that kind's list, on the same
@@ -215,7 +215,7 @@ external with `read` on `npm-private`; Frank internal without grants):
 - Twenty packages `button-<n>` added to `npm-private` change neither Frank's answer to `q=button` nor its `more`.
 
 ### R-API-062 · How a suggestion matches and is ranked
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 `q` is trimmed and lower-cased (Unicode simple case folding); its **terms** are its parts between white space.
 
@@ -241,7 +241,7 @@ Acceptance criteria:
 - `GET /api/v1/repositories?q=web/npm` lists `web/npm-local`.
 
 ### R-API-063 · The repository list answers named repositories
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 `GET /api/v1/repositories` takes `name`, a qualified name `<project>/<key>`, repeated or comma-separated, at most 50
 ([Q-API-278](#q-api-278--the-repository-list-takes-name)). The answer holds the named repositories the caller may see, in the list's
@@ -256,7 +256,7 @@ Acceptance criteria:
 - 51 names answer `400`.
 
 ### R-API-064 · The indexes and the bounds of the suggestions
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Data model ([Q-API-274](#q-api-274--package-names-a-whole-name-prefix-on-a-c-collation-b-tree-and-word-prefixes-on-a-gin-tsvector-without-pg_trgm)),
 in the migration of T-22:
@@ -281,7 +281,7 @@ How each kind is read ([Q-API-273](#q-api-273--repositories-are-matched-over-the
 - The words of a tsquery are runs of `a` to `z` and `0` to `9` taken from `q`, so no operator of the tsquery syntax reaches the
   database; `%`, `_` and `\` of `q` are escaped in the `LIKE` pattern.
 - A request costs a fixed number of statements, independent of the number of matches and of the rows read.
-- trove does not create `pg_trgm` (migration 00017), so an infix inside a word of a name (`it` in `ui-kit`) is not suggested; the
+- Quader does not create `pg_trgm` (migration 00017), so an infix inside a word of a name (`it` in `ui-kit`) is not suggested; the
   results page's `GET /api/v1/packages?q=` finds it.
 
 Acceptance criteria:
@@ -295,7 +295,7 @@ Acceptance criteria:
 
 ````markdown
 ### R-UI-095 · One search field in the top bar for every caller
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's task T-22 (2026-11-12): "A sensible search, with suggestions and everything." The top bar's field (R-UI-002) is the one
 search of the UI.
@@ -331,7 +331,7 @@ Acceptance criteria:
 - At 390 px the button opens the sheet with the focus in its field; Escape closes it and the focus is on the button again.
 
 ### R-UI-096 · What the opened field offers before anything is typed
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 When the field gets the focus without a text, a list opens under it, in this order
 ([Q-UI-404](#q-ui-404--the-empty-field-offers-the-references-parts-in-its-order-and-the-admin-pages-last)):
@@ -350,12 +350,12 @@ Groups 2 to 4 are not shown to an anonymous caller.
 
 - **Where "frequently visited" is kept**
   ([Q-UI-405](#q-ui-405--frequently-visited-is-kept-in-the-browser-per-principal-by-visits-and-recency)). In browser storage
-  (non-secret, R-UI-043), one key per signed-in principal ID, `trove.frequent.<principal ID>`: per repository its qualified name,
+  (non-secret, R-UI-043), one key per signed-in principal ID, `quader.frequent.<principal ID>`: per repository its qualified name,
   per project its key, each with the number of visits and the time of the last one, at most 20 per kind. A visit is the opening of a
   repository's page or content page, or of a project's screen, and counts once per entry in 15 minutes. The order is the number of
   visits, halved for every 14 days since the last visit, then the last visit. The same store, ordered by the last visit, is the start
-  page's **Recently opened** and the project switcher's recent list; it replaces `trove.recent-repositories` and
-  `trove.recent-projects.<name>`, which are removed when first read. A route under `/admin` is never recorded. With storage blocked,
+  page's **Recently opened** and the project switcher's recent list; it replaces `quader.recent-repositories` and
+  `quader.recent-projects.<name>`, which are removed when first read. A route under `/admin` is never recorded. With storage blocked,
   groups 2 and 4 are left out.
 - **Only what the caller may still read**
   ([Q-UI-406](#q-ui-406--a-stored-entry-is-shown-after-the-server-confirms-that-the-caller-still-reads-it)). The stored repositories
@@ -375,7 +375,7 @@ Acceptance criteria:
 - Opening the empty list sends at most the one request of the repositories.
 
 ### R-UI-097 · Live suggestions while typing
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **When** ([Q-UI-408](#q-ui-408--one-request-per-settled-text-250-ms-after-the-last-key-an-anonymous-caller-waits-longer)). A
   signed-in caller's text of two or more characters is sent 250 ms after the last key; an anonymous caller's of three or more after
@@ -421,7 +421,7 @@ Acceptance criteria:
 - axe reports no serious or critical violation with the list open, in both schemes.
 
 ### R-UI-098 · Enter opens the results page of the main area
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Enter in the field with no active entry opens `/search?q=<text>&kind=<kind>`
 ([Q-UI-411](#q-ui-411--enter-without-a-picked-suggestion-opens-search-whose-tabs-read-the-three-lists)), a page of the main area with
@@ -450,7 +450,7 @@ Acceptance criteria:
   `sam` holds nothing is not listed.
 
 ### R-UI-099 · The search leads into the admin area only by an administrator's choice of a marked suggestion
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner (2026-11-12, after typing "test" in the top bar and landing on the admin area's repository list with Enter): a search on
 the main page must never end in the admin area, unless live suggestions are shown, some of them are explicitly marked as pages of the
@@ -514,7 +514,7 @@ the walkthrough." The blocks here leave it out to stay short; the builder adds i
 | (c) Only callers that can read something | A probe before the field shows | No empty answers | A request on every screen; an empty answer is a valid answer |
 
 **Choice:** (a). **Rationale:** the field is how a reader finds content, and the anonymous visitor of public content is a reader.
-The development agent revisits it if the field shows up in `trove_api_rate_limited_total{class="anonymous"}`.
+The development agent revisits it if the field shows up in `quader_api_rate_limited_total{class="anonymous"}`.
 
 **Applied in the spec:** R-UI-095.
 
@@ -562,7 +562,7 @@ something the search needs.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Places, frequently visited repositories, **View all my projects**, frequently visited projects; for an instance administrator an **Admin area** group last (chosen) | The reference's order with trove's objects: a repository where the reference has a project, a project where it has a group | Familiar; the user's own places first; the admin entries apart | Five groups in a small list |
+| (a) Places, frequently visited repositories, **View all my projects**, frequently visited projects; for an instance administrator an **Admin area** group last (chosen) | The reference's order with Quader's objects: a repository where the reference has a project, a project where it has a group | Familiar; the user's own places first; the admin entries apart | Five groups in a small list |
 | (b) Only the frequently visited | Short | Less to read | No way to the places by keyboard |
 | (c) The admin area as one of the Places, as the reference lists it | Mixed | One group fewer | The plain group then holds an admin entry, which R-UI-099 keeps apart |
 
@@ -579,8 +579,8 @@ after the walkthrough shows what is used.
 | (b) A server table of visits per user | Across devices | Follows the user | A navigation history of every user on the server; a write per page view; filtered by read on every use anyway |
 | (c) The browser, by recency only (today's recent lists) | Last opened | Nothing new | "Frequently" means more than "last" |
 
-**Choice:** (a). The store replaces `trove.recent-repositories`, which is one key for every user of a browser, and
-`trove.recent-projects.<name>`. **Rationale:** the list is a convenience, and a convenience does not justify a record of what people
+**Choice:** (a). The store replaces `quader.recent-repositories`, which is one key for every user of a browser, and
+`quader.recent-projects.<name>`. **Rationale:** the list is a convenience, and a convenience does not justify a record of what people
 open. As the owner's brief describes the reference, it keeps the list in the browser too (not checked against its current version).
 The development agent revisits it if the owner wants the list on every device.
 
@@ -605,7 +605,7 @@ development agent revisits it if the round trip is visible in the renders.
 |---|---|---|---|
 | (a) Repositories, Packages, Projects, Pages; then Admin pages, Users, Groups for an instance administrator; five each, three pages, ten under a kind (chosen) | Grouped by kind | The plain user's job is a repository or a package (R-UI-067); the admin kinds apart (R-UI-099) | Up to 25 entries for an administrator |
 | (b) One list ranked across kinds | Mixed | Short | Ranks of different kinds do not compare; the owner showed groups |
-| (c) Projects first, in the reference's order | Containers first | Like the reference | In trove a project is the container and rarely the target |
+| (c) Projects first, in the reference's order | Containers first | Like the reference | In Quader a project is the container and rarely the target |
 
 **Choice:** (a). **Rationale:** the order follows what a reader looks for most. The development agent revisits it if the
 walkthrough shows projects are looked for more.
@@ -621,7 +621,7 @@ walkthrough shows projects are looked for more.
 | (c) One request per kind | Three to five lists per text | No new operation | Three to five times the budget; answers that arrive apart |
 
 **Choice:** (a). **Rationale:** the field must never starve the screens of their budget, and the anonymous budget is shared by a
-client address. The development agent revisits the numbers if the field shows up in `trove_api_rate_limited_total`.
+client address. The development agent revisits the numbers if the field shows up in `quader_api_rate_limited_total`.
 
 **Applied in the spec:** R-UI-097.
 
@@ -643,7 +643,7 @@ match is shown that the server did not make.
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `@angular/aria`'s combobox with a listbox popup, groups as `role="group"` (chosen) | The library R-UI-044 names | Roles, active descendant and keys from the library | Its listbox has no group directive (types of 22.2.5): if it does not find options inside group elements, (b) is used |
-| (b) A combobox written on the CDK's `ActiveDescendantKeyManager` | Hand-made | Groups under full control | Keys and roles written and tested by trove |
+| (b) A combobox written on the CDK's `ActiveDescendantKeyManager` | Hand-made | Groups under full control | Keys and roles written and tested by Quader |
 | (c) A menu | `role="menu"` | Simple | A menu has no text field; screen readers announce it as a menu of commands |
 
 **Choice:** (a), with (b) when a spec test shows that the arrow keys do not cross groups. **Rationale:** the APG's combobox is the
@@ -779,8 +779,8 @@ The development agent revisits it if an installation holds far more than the 10,
 | (b) A trigram GIN index (`pg_trgm`) | Any infix | Finds everything | The extension may be refused on a managed PostgreSQL (migration 00017) |
 | (c) The name prefix only | One B-tree | Smallest | Misses every scoped npm name and every dotted NuGet ID by its last part |
 
-**Choice:** (a). **Rationale:** it follows NuGet's search (Q-NUGET-12) and trove's rule against the extension. The development agent
-revisits (b) if trove ever requires `pg_trgm` for another reason.
+**Choice:** (a). **Rationale:** it follows NuGet's search (Q-NUGET-12) and Quader's rule against the extension. The development agent
+revisits (b) if Quader ever requires `pg_trgm` for another reason.
 
 **Applied in the spec:** R-API-062, R-API-064.
 
@@ -915,7 +915,7 @@ the admin area's screens are decided by the API as before, and the operation ans
 
 ## What the browser keeps
 
-The frequently visited repositories and projects are kept in `localStorage` under `trove.frequent.<principal ID>`: qualified names,
+The frequently visited repositories and projects are kept in `localStorage` under `quader.frequent.<principal ID>`: qualified names,
 keys, visit counts and times, no secret (R-UI-043). A stored repository is shown only after the repository list has confirmed that the
 caller still sees it.
 
@@ -944,11 +944,11 @@ product.
 
 ### H-987 · The frequently visited names stay in the browser profile
 
-Component: the store `trove.frequent.<principal ID>` of R-UI-096.
+Component: the store `quader.frequent.<principal ID>` of R-UI-096.
 
 Subject: a user on a shared operating-system account or browser profile. Sign-out does not clear the store, so whoever can read the
 profile's storage reads the qualified names of the repositories and the keys of the projects the user opened, and how often. Live
-once T-22 is built; today's `trove.recent-repositories` holds the same kind of names under one key for every user of a browser. What
+once T-22 is built; today's `quader.recent-repositories` holds the same kind of names under one key for every user of a browser. What
 makes it real: a shared workstation.
 ````
 
@@ -1063,7 +1063,7 @@ At 390 px no list, tab or sheet scrolls sideways, and a long key is cut with an 
 
 - Every acceptance criterion of R-API-060 to R-API-064 and R-UI-095 to R-UI-099 is a test whose name carries its ID, in the tier of
   3.2 and 3.3.
-- `grep -rn "canSearch\|submitSearch\|recent-repositories\|trove.recent-projects" web/src` prints nothing.
+- `grep -rn "canSearch\|submitSearch\|recent-repositories\|quader.recent-projects" web/src` prints nothing.
 - The renders of 3.5 exist and were judged; the reports list them.
 - The set `access-long` passes once on kind with journey 23; the integration areas of 3.2 pass once each.
 - `make coverage` regenerated; the development agent refreshes the evidence record from CI.
@@ -1080,7 +1080,7 @@ Proposals of the development agent, reviewed by the owner at the walkthrough.
   owner asked for the reference's key.
 - **Q-UI-402**: the filter is a menu button at the field's end with a chip for the chosen kind, as the reference's filter icon.
 - **Q-UI-403**: below 36 rem a button opens the search as a sheet, so that a phone has a search too.
-- **Q-UI-404**: the empty list takes the reference's parts in its order with trove's objects, and the admin pages come last and apart.
+- **Q-UI-404**: the empty list takes the reference's parts in its order with Quader's objects, and the admin pages come last and apart.
 - **Q-UI-405**: "frequently visited" stays in the browser per principal, so that the server keeps no record of what people open and no
   page view costs a write.
 - **Q-UI-406**: a stored repository is shown only after one request confirms it, so that no entry names what the caller lost.
@@ -1102,7 +1102,7 @@ Proposals of the development agent, reviewed by the owner at the walkthrough.
 - **Q-API-272**: users and groups need `identities:read`, refused before any lookup, because they are administration objects.
 - **Q-API-273**: repositories are matched over the request's grant index, because a repository the index does not know cannot be
   decided readable anyway.
-- **Q-API-274**: package names by a C-collation B-tree prefix and GIN word prefixes, because `pg_trgm` stays out of trove.
+- **Q-API-274**: package names by a C-collation B-tree prefix and GIN word prefixes, because `pg_trgm` stays out of Quader.
 - **Q-API-275**: a package in a repository read in part is decided on its document, which bounds the work to one decision per
   candidate.
 - **Q-API-276**: `more` counts only readable matches, so that it is never an oracle.
@@ -1116,7 +1116,7 @@ Proposals of the development agent, reviewed by the owner at the walkthrough.
 
 One at a time; each changes what is built.
 
-**1. Who is an "instance admin" for the admin suggestions?** trove has five system roles; each opens the admin area with its own
+**1. Who is an "instance admin" for the admin suggestions?** Quader has five system roles; each opens the admin area with its own
 screens.
 
 - (a) Only the role `admin`. The others reach their screens through the Admin button.

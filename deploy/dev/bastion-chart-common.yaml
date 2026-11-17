@@ -1,10 +1,10 @@
-# Chart values shared by the two e2e Bastions (R-BAS-049, deploy/dev/bastion.sh): the chart trove-bastion in front of the
+# Chart values shared by the two e2e Bastions (R-BAS-049, deploy/dev/bastion.sh): the chart quader-bastion in front of the
 # main installation of the dev profile, over TLS on every connection. The per-release values (host, token Secret, cache
 # backend) are in bastion-chart-volume.yaml and bastion-chart-bucket.yaml; bastion.sh adds the Docker network ranges as
 # networkPolicy.ingress.probeCIDRs and the image ID as a pod annotation.
 image:
   registry: docker.io
-  repository: guidedtraffic/trove
+  repository: guidedtraffic/quader
   tag: dev                       # built by `make image`, loaded by up.sh; the interface-mismatch scenario installs another tag
   pullPolicy: IfNotPresent
 
@@ -24,7 +24,7 @@ tls:
   certManager:
     issuerRef:
       kind: Issuer
-      name: trove-dev-ca         # bastion.yaml: the dev CA in this namespace
+      name: quader-dev-ca        # bastion.yaml: the dev CA in this namespace
 
 trustedCA:
   existingSecret: bastion-ca-bundle   # bastion.sh: ca.crt of the dev CA as ca-bundle.crt; trust for the main installation and the bucket
@@ -36,8 +36,8 @@ config:
     trusted_proxies: ["10.244.0.0/24"]
   bastion:
     main:
-      url: https://trove-api.trove.svc:8080            # the Service of the main installation's api pods; certificate trove-tls names it
-      packages_url: https://trove-packages.trove.svc:8080   # the forwarded package and raw-file requests and the probes go to the packages pods
+      url: https://quader-api.quader.svc:8080          # the Service of the main installation's api pods; certificate quader-tls names it
+      packages_url: https://quader-packages.quader.svc:8080 # the forwarded package and raw-file requests and the probes go to the packages pods
       unreachable_after: 10s
       token_reload_interval: 5s
     # Short periods so that the unreachable scenario ends in minutes (R-BAS-027): an answer lives 30 s and the grace

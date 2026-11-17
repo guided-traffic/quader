@@ -9,9 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/proxy/upstream"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/proxy/upstream"
 )
 
 // DiscoveryDocumentMaxBytes bounds the body of a discovery request that names no bound of its own (Q-REPO-152): the largest page

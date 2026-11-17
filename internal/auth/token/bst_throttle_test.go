@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/principal"
 )
 
 // askingThrottle records every question; exceeded is its answer.

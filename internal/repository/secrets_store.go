@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // The stored secret fields of a repository (R-REPO-033). A field is a JSON pointer

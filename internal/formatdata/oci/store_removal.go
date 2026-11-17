@@ -3,8 +3,8 @@ package oci
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The removal side of the manifest rows (R-OCI-018): the row goes with the manifest's item, and the deletion of a manifest or a blob asks

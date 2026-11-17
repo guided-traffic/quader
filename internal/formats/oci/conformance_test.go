@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 const digestZero = "sha256:0000000000000000000000000000000000000000000000000000000000000000"

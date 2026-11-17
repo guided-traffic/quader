@@ -7,7 +7,7 @@ import { Notifier } from '../core/notifier';
  * together with its text is not announced reliably.
  */
 @Component({
-  selector: 'trove-notices',
+  selector: 'quader-notices',
   imports: [],
   template: `
     <div class="notices">
@@ -46,26 +46,26 @@ import { Notifier } from '../core/notifier';
   styles: `
     .notices {
       position: fixed;
-      inset-block-end: var(--trove-space-4);
-      inset-inline-start: var(--trove-space-4);
+      inset-block-end: var(--quader-space-4);
+      inset-inline-start: var(--quader-space-4);
       z-index: 900;
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-2);
-      max-inline-size: min(40rem, calc(100vw - 2 * var(--trove-space-4)));
+      gap: var(--quader-space-2);
+      max-inline-size: min(40rem, calc(100vw - 2 * var(--quader-space-4)));
     }
     .notice {
       display: flex;
       align-items: center;
-      gap: var(--trove-space-2);
-      padding: var(--trove-space-2) var(--trove-space-4);
-      border-radius: var(--trove-radius-m);
-      background: var(--trove-inverse-surface);
-      color: var(--trove-on-inverse-surface);
+      gap: var(--quader-space-2);
+      padding: var(--quader-space-2) var(--quader-space-4);
+      border-radius: var(--quader-radius-m);
+      background: var(--quader-inverse-surface);
+      color: var(--quader-on-inverse-surface);
     }
     .notice.alert {
-      background: var(--trove-error-container);
-      color: var(--trove-on-error-container);
+      background: var(--quader-error-container);
+      color: var(--quader-on-error-container);
     }
     .notice button {
       color: inherit;

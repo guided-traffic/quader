@@ -3,7 +3,7 @@ package npm
 import (
 	"maps"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
 )
 
 // The dist-tag rules of R-NPM-016 are decisions on the SemVer order, so they live

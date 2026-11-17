@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
+	"github.com/guided-traffic/quader/internal/audit"
 )
 
 // The token exchange of work package W4 (R-CI-007, R-CI-008, R-CI-016, R-CI-018, R-CI-020, R-CI-021). The
@@ -28,7 +28,7 @@ const (
 	TokenTypeAccessToken   = "urn:ietf:params:oauth:token-type:access_token"   //nolint:gosec // G101: an OAuth URN, not a credential
 	// TokenTypeGitLabJobToken is the subject token type of the P2 fallback (R-CI-022); the MVP answers
 	// it with unsupported_subject_token_type.
-	TokenTypeGitLabJobToken = "urn:trove:token-type:gitlab-job-token" //nolint:gosec // G101: an OAuth URN, not a credential
+	TokenTypeGitLabJobToken = "urn:quader:token-type:gitlab-job-token" //nolint:gosec // G101: an OAuth URN, not a credential
 )
 
 // ExchangeRequest is a parsed exchange request (R-CI-007): the handler decodes the form or JSON body
@@ -47,7 +47,7 @@ type ExchangeRequest struct {
 	// ActorToken and ActorTokenType are carried only to be refused (actor_token_not_supported).
 	ActorToken, ActorTokenType string
 	CIIssuer                   string
-	// TTLSeconds is the trove extension `ttl`; nil when the request sent none.
+	// TTLSeconds is the quader extension `ttl`; nil when the request sent none.
 	TTLSeconds *int64
 
 	// Source is the client address (trusted-proxy handling, R-ARCH-006), the user agent and the

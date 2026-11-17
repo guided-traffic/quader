@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 func TestR_NPM_001_RouteTable(t *testing.T) {
@@ -181,7 +181,7 @@ func TestR_NPM_043_UnimplementedEndpointsAnswerPredictably(t *testing.T) {
 func TestR_NPM_005_ErrorShapeOverAllRoutes(t *testing.T) {
 	f := New()
 	denied := &fakeHost{authorize: func(*formats.Request, formats.Target) error {
-		return errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "credentials are required", errs.WithChallenge(`Bearer realm="trove"`))
+		return errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "credentials are required", errs.WithChallenge(`Bearer realm="quader"`))
 	}}
 	for _, r := range f.Routes() {
 		for _, ex := range r.Examples {
@@ -263,13 +263,13 @@ func TestR_NPM_005_EveryStatusOfTheErrorTable(t *testing.T) {
 func TestR_NPM_004_NoOneTimePasswordChallenge(t *testing.T) {
 	f := New()
 	for _, c := range []struct{ in, want string }{
-		{"", `Basic realm="trove"`},
-		{`Bearer realm="trove"`, `Bearer realm="trove"`},
-		{`Basic realm="trove"`, `Basic realm="trove"`},
-		{`Bearer realm="trove", error="invalid_token"`, `Bearer realm="trove", error="invalid_token"`},
-		{`OTP realm="trove"`, `Basic realm="trove"`},
-		{`Bearer ipaddress="1.2.3.4"`, `Basic realm="trove"`},
-		{`Basic realm="trove", otp`, `Basic realm="trove"`},
+		{"", `Basic realm="quader"`},
+		{`Bearer realm="quader"`, `Bearer realm="quader"`},
+		{`Basic realm="quader"`, `Basic realm="quader"`},
+		{`Bearer realm="quader", error="invalid_token"`, `Bearer realm="quader", error="invalid_token"`},
+		{`OTP realm="quader"`, `Basic realm="quader"`},
+		{`Bearer ipaddress="1.2.3.4"`, `Basic realm="quader"`},
+		{`Basic realm="quader", otp`, `Basic realm="quader"`},
 	} {
 		rq := request(t, f, &fakeHost{}, "GET", "-/ping", "")
 		w := httpRecorder()

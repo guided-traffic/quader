@@ -26,7 +26,7 @@ type clientSnippet struct {
 
 // setupSnippets asks the main installation for the configure snippets of a client: for the Bastion (R-BAS-007) when the
 // registration is named, for the main installation itself otherwise. The credential is the reference of the client's syntax
-// (${TROVE_TOKEN}, %TROVE_TOKEN%), which the client expands from its environment.
+// (${QUADER_TOKEN}, %QUADER_TOKEN%), which the client expands from its environment.
 func (e *basEnv) setupSnippets(t testing.TB, repo, client, bastion string) []clientSnippet {
 	t.Helper()
 	q := url.Values{"client": {client}, "credentials": {"env"}}

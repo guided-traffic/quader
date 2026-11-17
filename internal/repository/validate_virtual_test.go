@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 func virtualDoc(section string) string {

@@ -12,7 +12,7 @@ type Valkey struct {
 	Sentinel             ValkeySentinel  `yaml:"sentinel"`
 	Address              string          `yaml:"address" default:"" doc:"Standalone mode only."`
 	Database             int             `yaml:"database" default:"0" validate:"min=0"`
-	KeyPrefix            string          `yaml:"key_prefix" default:"trove:" validate:"required"`
+	KeyPrefix            string          `yaml:"key_prefix" default:"quader:" validate:"required"`
 	UsernameFile         string          `yaml:"username_file" default:"" doc:"Empty means the default user."`
 	PasswordFile         string          `yaml:"password_file" default:"" secret:"file"`
 	TLS                  ValkeyTLS       `yaml:"tls"`

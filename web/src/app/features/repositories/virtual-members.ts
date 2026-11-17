@@ -51,7 +51,7 @@ export function decisionText(decision: string): string {
 }
 
 /**
- * The member editor of a virtual repository (R-UI-022, Q-UI-210): the member picker (`trove-member-picker`, the two listboxes and
+ * The member editor of a virtual repository (R-UI-022, Q-UI-210): the member picker (`quader-member-picker`, the two listboxes and
  * their buttons, shared with the creation form), the default deployment target among the members that are local, and a save of its
  * own. A server refusal (422 with a pointer such as `/virtual/members/1`) is shown on the member it names. The effective resolution
  * order is the saved list, and a sample path is explained member by member by `GET …/resolution`.
@@ -60,7 +60,7 @@ export function decisionText(decision: string): string {
  * are offered (R-REPO-017, Q-REPO-212); virtual members arrive with R-REPO-018.
  */
 @Component({
-  selector: 'trove-virtual-members',
+  selector: 'quader-virtual-members',
   imports: [ErrorNotice, MemberPicker, SelectField, TextField],
   templateUrl: './virtual-members.html',
   styleUrl: './virtual-members.scss',

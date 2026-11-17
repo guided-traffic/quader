@@ -24,8 +24,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // Route is how the upstream answers one path.
@@ -92,7 +92,7 @@ func certificate(t testing.TB) tls.Certificate {
 		t.Fatal(err)
 	}
 	tpl := &x509.Certificate{
-		SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "trove proxytest upstream"},
+		SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "quader proxytest upstream"},
 		NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(24 * time.Hour),
 		KeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true, IsCA: true,

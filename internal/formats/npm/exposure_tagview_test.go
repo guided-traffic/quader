@@ -3,7 +3,7 @@ package npm
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // bareView answers the shared half of an exposure view only.

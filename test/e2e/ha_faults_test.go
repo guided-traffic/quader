@@ -5,7 +5,7 @@ package e2e
 // The failure scenarios of R-HA-052 and the rows of R-HA-007 that E5.10 adds to those of npm_ha_test.go and ha_suite_test.go, under
 // the same load (npm_load_test.go: eight npm ci loops, a publish loop, k6 at 120 requests/s): the database at 0 instances for
 // 2 minutes, and R-HA-057's Sentinel quorum loss, FLUSHALL and slow Valkey, with a Valkey credential mismatch and an object store
-// that rejects trove's credential. The set is ha-faults (deploy/dev/e2e.sh); docs/developer/e2e.md#the-failure-suite-ha-faults
+// that rejects quader's credential. The set is ha-faults (deploy/dev/e2e.sh); docs/developer/e2e.md#the-failure-suite-ha-faults
 // describes the whole. Q-HA-250 to Q-HA-259 record the choices.
 
 import (
@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -126,10 +126,10 @@ func (s *seriesPeaks) end() map[string]float64 {
 	return out
 }
 
-// allReady is whether every live trove pod answers /readyz with 200 and the edge answers the ping.
+// allReady is whether every live quader pod answers /readyz with 200 and the edge answers the ping.
 func allReady(t testing.TB) bool {
 	t.Helper()
-	for _, p := range livePods(t, selTrove) {
+	for _, p := range livePods(t, selQuader) {
 		if code, _ := ops(p.Name, "/readyz"); code != 200 {
 			return false
 		}
@@ -179,7 +179,7 @@ func TestHAFaults_PostgresOutage(t *testing.T) {
 		r := runNPMFault(t, h, "pg-outage", haFullLoad(), time.Minute, 90*time.Second, func() {
 			script(t, "pg-stop.sh", "2m")
 			backAt = time.Now() // the cluster reports two ready instances again
-			back = waitFor(t, "every trove pod ready and the edge answering again", 5*time.Minute, 500*time.Millisecond, func() bool { return allReady(t) })
+			back = waitFor(t, "every quader pod ready and the edge answering again", 5*time.Minute, 500*time.Millisecond, func() bool { return allReady(t) })
 		})
 		r.steady(t)
 		turned := 0
@@ -203,7 +203,7 @@ func TestHAFaults_PostgresOutage(t *testing.T) {
 		t.Logf("%d of %d k6 requests failed, all 503 inside the outage and the recovery bound", failed, r.res.K6.Total)
 		r.res.outageCommands(t, w)
 		r.res.installPublished(t, h)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 	})
 }
 
@@ -213,8 +213,8 @@ func TestHAFaults_ValkeySentinelQuorumLoss(t *testing.T) {
 	h := npmHAFx(t)
 
 	t.Run("R-HA-052 R-HA-057 R-HA-007 E5.10 Sentinel quorum loss under the npm load (3, then 1, then 0 Sentinels, the primary healthy): every npm command exits 0, k6 only 2xx and 304, /readyz 200 and no valkey degraded on any replica, the gauge follows within valkey.sentinel.refresh_interval + 1 s, no failover", func(t *testing.T) {
-		const gauge = "trove_valkey_sentinels_reachable"
-		const changes = "trove_valkey_primary_changes_total"
+		const gauge = "quader_valkey_sentinels_reachable"
+		const changes = "quader_valkey_primary_changes_total"
 		info := readHAInfo(t)
 		bound := time.Duration(info.RefreshMS)*time.Millisecond + time.Second
 		serving := servingNames(t)
@@ -263,7 +263,7 @@ func TestHAFaults_ValkeySentinelQuorumLoss(t *testing.T) {
 			}
 		}
 		r.res.installPublished(t, h)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 	})
 }
 
@@ -321,7 +321,7 @@ func TestHAFaults_ValkeyFlushAll(t *testing.T) {
 			}
 		}
 		r.res.installPublished(t, h)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 	})
 }
 
@@ -337,7 +337,7 @@ func TestHAFaults_ValkeySlow(t *testing.T) {
 		var peaks *seriesPeaks
 		var cleared time.Duration
 		r := runNPMFault(t, h, "valkey-slow", haFullLoad(), time.Minute, time.Minute, func() {
-			peaks = startSeriesPeaks(packages, "trove_valkey_circuit_open")
+			peaks = startSeriesPeaks(packages, "quader_valkey_circuit_open")
 			script(t, "valkey-slow.sh", "3m", "2000")
 			end := time.Now()
 			cleared = waitFor(t, "valkey no longer degraded on any replica", 3*time.Minute, 250*time.Millisecond, func() bool {
@@ -377,7 +377,7 @@ func TestHAFaults_ValkeySlow(t *testing.T) {
 			t.Errorf("R-HA-057: degraded cleared %s after the slowness ended, bound open_duration + health_check_interval + 5 s = %s", cleared.Round(100*time.Millisecond), clearBound)
 		}
 		r.res.installPublished(t, h)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 	})
 }
 
@@ -386,14 +386,14 @@ func TestHAFaults_ValkeySlow(t *testing.T) {
 func TestHAFaults_ValkeyCredentialMismatch(t *testing.T) {
 	h := npmHAFx(t)
 
-	t.Run("R-HA-007 R-HA-052 R-HA-056 E5.10 Valkey rejects trove's password under the npm load: running replicas stay ready with valkey degraded and no client fails, a replacement pod is not ready until the password matches again, and everything clears after the fix", func(t *testing.T) {
+	t.Run("R-HA-007 R-HA-052 R-HA-056 E5.10 Valkey rejects quader's password under the npm load: running replicas stay ready with valkey degraded and no client fails, a replacement pod is not ready until the password matches again, and everything clears after the fix", func(t *testing.T) {
 		serving := servingNames(t)
 		var deleted, replacement string
 		var degradedAfter, replacementReady, clearedAfter time.Duration
 		samples := 0
 		started := map[string]bool{}
 		r := runNPMFault(t, h, "valkey-credential-mismatch", haFullLoad(), time.Minute, time.Minute, func() {
-			for _, p := range livePods(t, selTrove) {
+			for _, p := range livePods(t, selQuader) {
 				started[p.Name] = true
 			}
 			fixed := false
@@ -457,6 +457,6 @@ func TestHAFaults_ValkeyCredentialMismatch(t *testing.T) {
 			t.Errorf("the replacement was sampled %d times, want at least 10", samples)
 		}
 		r.res.installPublished(t, h)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 	})
 }

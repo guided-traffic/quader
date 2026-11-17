@@ -23,7 +23,7 @@ type Opened = Awaited<ReturnType<typeof open>>;
 
 /** A syntactically valid token (prefix, 43 base62 digits, CRC-32) that the server never issued. */
 function validToken(fill = 'x'): string {
-  const body = 'trv_pat_' + fill.repeat(43);
+  const body = 'qdr_pat_' + fill.repeat(43);
   return body + base62(crc32(body), 6);
 }
 
@@ -111,13 +111,13 @@ describe('Client setup', () => {
     expect(r.root.querySelector('.chosen')?.textContent).toContain('web/generic-local');
     expect(r.setup.calls.at(-1)).toMatchObject({ repository: 'web/generic-local', query: { client: 'curl', credentials: 'env' } });
     const [configure] = snippets(r);
-    expect(configure).toContain('trove_curl() {');
-    expect(configure).toContain('header = "Authorization: Bearer ${TROVE_TOKEN}"');
+    expect(configure).toContain('quader_curl() {');
+    expect(configure).toContain('header = "Authorization: Bearer ${QUADER_TOKEN}"');
     expect(text(r.root)).toContain('hands curl the credential on standard input');
     await tab(r, 'Install');
-    expect(snippets(r)).toContain('trove_curl --fail --remote-name "https://trove.example.net/files/web/generic-local/<path>"\n');
+    expect(snippets(r)).toContain('quader_curl --fail --remote-name "https://quader.example.net/files/web/generic-local/<path>"\n');
     await tab(r, 'Publish');
-    expect(snippets(r)).toContain('trove_curl --fail --upload-file <file> "https://trove.example.net/files/web/generic-local/<path>"\n');
+    expect(snippets(r)).toContain('quader_curl --fail --upload-file <file> "https://quader.example.net/files/web/generic-local/<path>"\n');
     expect(text(r.root)).toContain('also needs the overwrite permission');
     await expectAccessible(r.root);
 
@@ -146,12 +146,12 @@ describe('Client setup', () => {
     expect(r.setup.calls).toEqual([]);
   });
 
-  it('R-UI-016 acceptance: the default choice produces a .npmrc with the literal ${TROVE_TOKEN} and shows no secret', async () => {
+  it('R-UI-016 acceptance: the default choice produces a .npmrc with the literal ${QUADER_TOKEN} and shows no secret', async () => {
     const r = await open();
     expect(r.setup.calls.at(-1)?.query.credentials).toBe('env');
     const npmrc = snippets(r)[0]!;
-    expect(npmrc).toContain('//trove.example.net/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}');
-    expect(text(r.root)).not.toMatch(/trv_(pat|sat|cit)_/);
+    expect(npmrc).toContain('//quader.example.net/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}');
+    expect(text(r.root)).not.toMatch(/qdr_(pat|sat|cit)_/);
     expect(radio(r, 'credentials', 'env').checked).toBe(true);
     const link = [...r.root.querySelectorAll('a')].find((a) => text(a).includes('Create a token to put into the variable'));
     expect(link?.getAttribute('href')).toBe('/profile/tokens');
@@ -159,30 +159,30 @@ describe('Client setup', () => {
 
   it('R-UI-016 R-UI-017 the npm client shows the registry and credential key with the trailing slash and the install and publish commands', async () => {
     const r = await open();
-    expect(snippets(r).some((s) => s.startsWith('registry=https://trove.example.net/api/npm/web/npm-all/\n'))).toBe(true);
+    expect(snippets(r).some((s) => s.startsWith('registry=https://quader.example.net/api/npm/web/npm-all/\n'))).toBe(true);
     await tab(r, 'Install');
     expect(snippets(r)).toContain('npm install <package>');
     await tab(r, 'Publish');
-    expect(snippets(r)).toContain('npm publish --registry https://trove.example.net/api/npm/web/npm-all/\n');
+    expect(snippets(r)).toContain('npm publish --registry https://quader.example.net/api/npm/web/npm-all/\n');
   });
 
   it('R-UI-017 Yarn Berry gets a .yarnrc.yml with npmRegistryServer, npmAlwaysAuth and npmAuthToken, and its publish registry', async () => {
     const r = await open({ repository: 'web/npm-all', client: 'yarn' });
     const yml = snippets(r)[0]!;
-    expect(yml).toContain('npmRegistryServer: "https://trove.example.net/api/npm/web/npm-all/"');
+    expect(yml).toContain('npmRegistryServer: "https://quader.example.net/api/npm/web/npm-all/"');
     expect(yml).toContain('npmAlwaysAuth: true');
-    expect(yml).toContain('npmAuthToken: "${TROVE_TOKEN}"');
+    expect(yml).toContain('npmAuthToken: "${QUADER_TOKEN}"');
     await tab(r, 'Publish');
-    expect(snippets(r).some((s) => s.includes('npmPublishRegistry: "https://trove.example.net/api/npm/web/npm-all/"'))).toBe(true);
+    expect(snippets(r).some((s) => s.includes('npmPublishRegistry: "https://quader.example.net/api/npm/web/npm-all/"'))).toBe(true);
   });
 
   it('R-UI-017 Yarn Classic and pnpm use the .npmrc and their own add and publish commands', async () => {
     const classic = await open({ repository: 'web/npm-all', client: 'yarn-classic' });
-    expect(snippets(classic)[0]).toContain('registry=https://trove.example.net/api/npm/web/npm-all/');
+    expect(snippets(classic)[0]).toContain('registry=https://quader.example.net/api/npm/web/npm-all/');
     await tab(classic, 'Install');
     expect(snippets(classic)).toContain('yarn add <package>');
     await tab(classic, 'Publish');
-    expect(snippets(classic)).toContain('yarn publish --registry https://trove.example.net/api/npm/web/npm-all/\n');
+    expect(snippets(classic)).toContain('yarn publish --registry https://quader.example.net/api/npm/web/npm-all/\n');
 
     const pnpm = await open({ repository: 'web/npm-all', client: 'pnpm' });
     await tab(pnpm, 'Install');
@@ -193,7 +193,7 @@ describe('Client setup', () => {
     const r = await open();
     const first = r.root.querySelector('.snippet')!;
     expect(text(first.querySelector('.target')!)).toBe('File: .npmrc');
-    expect(first.querySelector('trove-copy-button button')?.getAttribute('aria-label')).toBe('Copy snippet');
+    expect(first.querySelector('quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy snippet');
     expect(text(first)).toContain('Download');
     const cli = [...r.root.querySelectorAll('.snippet')].find((s) => text(s).includes('npm config set'))!;
     expect(cli.querySelector('.target')).toBeNull();
@@ -205,7 +205,7 @@ describe('Client setup', () => {
     const revoked: string[] = [];
     URL.createObjectURL = (blob: Blob | MediaSource) => {
       created.push(blob as Blob);
-      return 'blob:trove/test';
+      return 'blob:quader/test';
     };
     URL.revokeObjectURL = (url: string) => void revoked.push(url);
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
@@ -213,9 +213,9 @@ describe('Client setup', () => {
       const r = await open();
       button(r.root.querySelector('.snippet')!, 'Download').click();
       expect(created).toHaveLength(1);
-      expect(await created[0]!.text()).toContain('${TROVE_TOKEN}');
+      expect(await created[0]!.text()).toContain('${QUADER_TOKEN}');
       expect(click).toHaveBeenCalledOnce();
-      expect(revoked).toEqual(['blob:trove/test']);
+      expect(revoked).toEqual(['blob:quader/test']);
     } finally {
       click.mockRestore();
     }
@@ -237,7 +237,7 @@ describe('Client setup', () => {
       expect(request.ttlSeconds).toBe(2_592_000);
       expect(request.scope).toEqual({ repositories: [{ repositories: ['web/npm-all'], actions: ['read'] }] });
       const shown = r.root.querySelector('.token-value')?.textContent ?? '';
-      expect(shown).toMatch(/^trv_pat_/);
+      expect(shown).toMatch(/^qdr_pat_/);
       expect(snippets(r)[0]).toContain(`:_authToken=${shown}`);
       expect(snippets(r).join('')).not.toContain('{{token}}');
       expect(text(r.root)).toContain('This token is shown once.');
@@ -272,9 +272,9 @@ describe('Client setup', () => {
       button(r.root, 'Create token').click();
       await settle(r.fixture);
       const token = r.root.querySelector('.token-value')!.textContent!;
-      expect(token).toMatch(/^trv_/);
-      expect(storedText()).not.toContain('trv_');
-      expect(location.href).not.toContain('trv_');
+      expect(token).toMatch(/^qdr_/);
+      expect(storedText()).not.toContain('qdr_');
+      expect(location.href).not.toContain('qdr_');
 
       // The router binds the query parameter; the spec sets the input the router would set.
       r.fixture.componentRef.setInput('repository', 'web/npm-local');
@@ -376,7 +376,7 @@ describe('Client setup', () => {
       const callsBefore = r.setup.calls.length;
       await paste(r, token);
       expect(snippets(r)[0]).toContain(`:_authToken=${token}`);
-      expect(text(r.root)).toContain('looks like a trove token');
+      expect(text(r.root)).toContain('looks like a Quader token');
       expect(r.tokens.calls).toEqual([]);
       expect(r.tokens.keys).toEqual([]);
       // The setup answer was asked once more for the other credential mode, never with the value.
@@ -401,10 +401,10 @@ describe('Client setup', () => {
     it('R-UI-016 names what is wrong with a pasted value: prefix, length, characters', async () => {
       const r = await open();
       await paste(r, 'ghp_' + 'a'.repeat(36));
-      expect(text(r.root)).toContain('starts with trv_pat_, trv_sat_ or trv_cit_');
+      expect(text(r.root)).toContain('starts with qdr_pat_, qdr_sat_ or qdr_cit_');
       await paste(r, validToken().slice(0, 40));
       expect(text(r.root)).toContain('57 characters');
-      await paste(r, 'trv_pat_' + '-'.repeat(49));
+      await paste(r, 'qdr_pat_' + '-'.repeat(49));
       expect(text(r.root)).toContain('only letters and digits');
     });
 
@@ -413,7 +413,7 @@ describe('Client setup', () => {
       const token = validToken('q');
       await paste(r, token);
       expect(storedText()).not.toContain(token);
-      expect(storedText()).not.toContain('trv_');
+      expect(storedText()).not.toContain('qdr_');
       await paste(r, token.slice(0, -1));
       expect(snippets(r).join('')).not.toContain(token.slice(0, -1));
     });
@@ -457,8 +457,8 @@ describe('Client setup', () => {
 
   it('R-UI-016 the credential is one line with Create a token beside it; the other ways are More options, closed until opened', async () => {
     const r = await open({ repository: 'web/npm-local' });
-    expect(text(r.root.querySelector('.credential-line')!)).toContain('The snippets read your token from the variable TROVE_TOKEN.');
-    const more = r.root.querySelector('trove-disclosure.more-options')!;
+    expect(text(r.root.querySelector('.credential-line')!)).toContain('The snippets read your token from the variable QUADER_TOKEN.');
+    const more = r.root.querySelector('quader-disclosure.more-options')!;
     const toggle = more.querySelector<HTMLButtonElement>('button[aria-expanded]')!;
     expect(text(toggle)).toContain('More options');
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
@@ -513,15 +513,15 @@ describe('Client setup', () => {
       const r = await open({ repository: 'web/nuget-all', client: 'dotnet' });
       expect(r.setup.calls.at(-1)).toMatchObject({ repository: 'web/nuget-all', query: { client: 'dotnet', credentials: 'env' } });
       const [shell, powershell, config] = snippets(r);
-      expect(shell).toContain('dotnet nuget add source https://trove.example.net/api/nuget/web/nuget-all/v3/index.json --name trove');
-      expect(shell).toContain('--password "${TROVE_TOKEN}" --store-password-in-clear-text');
-      expect(powershell).toContain('--password "$env:TROVE_TOKEN"');
+      expect(shell).toContain('dotnet nuget add source https://quader.example.net/api/nuget/web/nuget-all/v3/index.json --name quader');
+      expect(shell).toContain('--password "${QUADER_TOKEN}" --store-password-in-clear-text');
+      expect(powershell).toContain('--password "$env:QUADER_TOKEN"');
       expect(config).toContain('<clear />');
       expect(config).toContain('protocolVersion="3"');
-      expect(config).toContain('<add key="ClearTextPassword" value="%TROVE_TOKEN%" />');
+      expect(config).toContain('<add key="ClearTextPassword" value="%QUADER_TOKEN%" />');
       expect(text(r.root)).toContain('stored in clear text');
       expect(text(r.root)).toContain('removes all other package sources');
-      expect(text(r.root)).not.toMatch(/trv_(pat|sat|cit)_/);
+      expect(text(r.root)).not.toMatch(/qdr_(pat|sat|cit)_/);
       await expectAccessible(r.root);
     });
 
@@ -531,19 +531,19 @@ describe('Client setup', () => {
       expect(snippets(r)[0]).toContain('dotnet add package <package>');
       await tab(r, 'Publish');
       expect(snippets(r)[0]).toContain(
-        'dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source https://trove.example.net/api/nuget/web/nuget-all/v3/index.json --api-key "${TROVE_TOKEN}"',
+        'dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source https://quader.example.net/api/nuget/web/nuget-all/v3/index.json --api-key "${QUADER_TOKEN}"',
       );
       expect(text(r.root)).toContain('The token travels as the API key.');
     });
 
     it('R-UI-018 nuget.exe and Visual Studio each get their own source instructions', async () => {
       const exe = await open({ repository: 'web/nuget-local', client: 'nuget' });
-      expect(snippets(exe)[0]).toContain('nuget sources add -Name trove -Source https://trove.example.net/api/nuget/web/nuget-local/v3/index.json');
+      expect(snippets(exe)[0]).toContain('nuget sources add -Name quader -Source https://quader.example.net/api/nuget/web/nuget-local/v3/index.json');
       await tab(exe, 'Publish');
       expect(snippets(exe)[0]).toContain('nuget push Acme.Widgets.1.2.3.nupkg -Source');
 
       const vs = await open({ repository: 'web/nuget-local', client: 'visual-studio' });
-      expect(snippets(vs)[0]).toContain('<add key="trove" value="https://trove.example.net/api/nuget/web/nuget-local/v3/index.json" protocolVersion="3" />');
+      expect(snippets(vs)[0]).toContain('<add key="quader" value="https://quader.example.net/api/nuget/web/nuget-local/v3/index.json" protocolVersion="3" />');
       await tab(vs, 'Install');
       expect(snippets(vs)[0]).toContain('<PackageReference Include="<package>" />');
       await expectAccessible(vs.root);
@@ -578,25 +578,25 @@ describe('Client setup', () => {
       const r = await oci({ repository: 'web/oci-local', client: 'docker' });
       expect(r.setup.calls.at(-1)).toMatchObject({ repository: 'web/oci-local', query: { client: 'docker', credentials: 'env' } });
       const [login, secret] = snippets(r);
-      expect(login).toContain(`printf '%s' "\${TROVE_TOKEN}" | docker login trove.example.net/web/oci-local --username trove --password-stdin`);
+      expect(login).toContain(`printf '%s' "\${QUADER_TOKEN}" | docker login quader.example.net/web/oci-local --username quader --password-stdin`);
       expect(login).not.toContain('/v2');
-      expect(secret).toContain('kubectl create secret generic trove-registry --type=kubernetes.io/dockerconfigjson');
+      expect(secret).toContain('kubectl create secret generic quader-registry --type=kubernetes.io/dockerconfigjson');
       const t = text(r.root);
       expect(t).toContain('A token is read from standard input');
       expect(t).toContain('creates an image pull secret that holds the token');
-      expect(t).not.toMatch(/trv_(pat|sat|cit)_/);
+      expect(t).not.toMatch(/qdr_(pat|sat|cit)_/);
       await expectAccessible(r.root);
     });
 
     it('R-UI-016 R-OCI-030 install pulls by tag, publish tags and pushes, and Buildx pushes a multi-platform image', async () => {
       const r = await oci({ repository: 'web/oci-local', client: 'docker' });
       await tab(r, 'Install');
-      expect(snippets(r)[0]).toContain('docker pull trove.example.net/web/oci-local/<package>');
+      expect(snippets(r)[0]).toContain('docker pull quader.example.net/web/oci-local/<package>');
       expect(text(r.root)).toContain('Replace <package> with the image name.');
       await tab(r, 'Publish');
       const [push, buildx] = snippets(r);
-      expect(push).toContain('docker tag myapp:1.0 trove.example.net/web/oci-local/myapp:1.0');
-      expect(push).toContain('docker push trove.example.net/web/oci-local/myapp:1.0');
+      expect(push).toContain('docker tag myapp:1.0 quader.example.net/web/oci-local/myapp:1.0');
+      expect(push).toContain('docker push quader.example.net/web/oci-local/myapp:1.0');
       expect(buildx).toContain('docker buildx build --platform linux/amd64,linux/arm64');
       expect(text(r.root)).toContain('Names a local image below this repository');
       expect(text(r.root)).toContain('one multi-platform image');
@@ -605,17 +605,17 @@ describe('Client setup', () => {
     it('R-UI-016 R-OCI-030 Podman has its own login and push and no Buildx or Kubernetes snippet', async () => {
       const r = await oci({ repository: 'web/oci-local', client: 'podman' });
       expect(snippets(r)).toHaveLength(1);
-      expect(snippets(r)[0]).toContain('podman login trove.example.net/web/oci-local --username trove --password-stdin');
+      expect(snippets(r)[0]).toContain('podman login quader.example.net/web/oci-local --username quader --password-stdin');
       await tab(r, 'Publish');
       expect(snippets(r)).toHaveLength(1);
-      expect(snippets(r)[0]).toContain('podman push trove.example.net/web/oci-local/myapp:1.0');
+      expect(snippets(r)[0]).toContain('podman push quader.example.net/web/oci-local/myapp:1.0');
     });
 
     it('R-UI-016 R-OCI-030 an anonymous viewer gets the interactive login and a comment in place of the pull secret, and no token line', async () => {
       const r = await oci({ repository: 'web/oci-local', client: 'docker' }, { anonymous: true });
       expect(r.setup.calls.at(-1)?.query.credentials).toBe('none');
       const [login, secret] = snippets(r);
-      expect(login).toBe('docker login trove.example.net/web/oci-local --username trove\n');
+      expect(login).toBe('docker login quader.example.net/web/oci-local --username quader\n');
       expect(secret).toBe('# An image pull secret holds a credential: ask for the snippet with one.\n');
       expect(text(r.root)).toContain('without a token the client asks for the password');
       expect(text(r.root)).toContain('A snippet without a token is only a comment');

@@ -6,15 +6,15 @@ import (
 	"testing"
 )
 
-var scannerPattern = regexp.MustCompile(`\btrv_(?:pat|sat|cit)_[0-9A-Za-z]{49}\b`)
+var scannerPattern = regexp.MustCompile(`\bqdr_(?:pat|sat|cit)_[0-9A-Za-z]{49}\b`)
 
 func TestR_AUTH_022_TestVector(t *testing.T) {
 	var zero [32]byte
 	got := FromRandom(TypePAT, zero)
-	if want := "trv_pat_000000000000000000000000000000000000000000010kJbh"; got != want {
+	if want := "qdr_pat_00000000000000000000000000000000000000000003INAaE"; got != want {
 		t.Fatalf("test vector: got %s, want %s", got, want)
 	}
-	if h := Hash(got); hex.EncodeToString(h[:]) != "e1ba47eddf817cc30ede3aa6f55391378f03840da097aa8c387dca45fb10c703" {
+	if h := Hash(got); hex.EncodeToString(h[:]) != "82637bd67e995888ff39b1321d6c947df93e78ef76198102b341083b046ddb37" {
 		t.Fatalf("SHA-256 of the test vector: %x", h)
 	}
 	if typ, err := Check(got); err != nil || typ != TypePAT {
@@ -59,8 +59,8 @@ func TestR_AUTH_022_FlippedCharacterFailsChecksum(t *testing.T) {
 
 func TestR_AUTH_022_CheckRejectsForeignValues(t *testing.T) {
 	for _, v := range []string{
-		"", "trv_pat_", "eyJhbGciOiJSUzI1NiJ9.e30.sig", "trv_xyz_000000000000000000000000000000000000000000010kJbh",
-		"trv_pat_000000000000000000000000000000000000000000010kJbh0", "hunter2",
+		"", "qdr_pat_", "eyJhbGciOiJSUzI1NiJ9.e30.sig", "qdr_xyz_00000000000000000000000000000000000000000003INAaE",
+		"qdr_pat_00000000000000000000000000000000000000000003INAaE0", "hunter2",
 	} {
 		if _, err := Check(v); err == nil {
 			t.Errorf("Check(%q) accepted", v)
@@ -69,8 +69,8 @@ func TestR_AUTH_022_CheckRejectsForeignValues(t *testing.T) {
 }
 
 func TestR_AUTH_022_Hint(t *testing.T) {
-	s := "trv_pat_3kQ9" + "000000000000000000000000000000000000000000"
-	if got := Hint(s); got != "trv_pat_3kQ9" {
+	s := "qdr_pat_3kQ9" + "000000000000000000000000000000000000000000"
+	if got := Hint(s); got != "qdr_pat_3kQ9" {
 		t.Fatalf("Hint = %q", got)
 	}
 }

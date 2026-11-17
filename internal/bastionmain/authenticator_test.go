@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 type fakeValidator struct {
@@ -51,12 +51,12 @@ func TestR_BAS_004_TheAuthenticatorMapsEveryVerdictToOneError(t *testing.T) {
 // registration, and the use is recorded for lastUsedAt with the request's address (R-AUTH-031).
 func TestR_BAS_004_TheAuthenticatorReturnsTheRegistrationAndNotesTheUse(t *testing.T) {
 	exp := time.Date(2027, 11, 2, 10, 0, 0, 0, time.UTC)
-	v := &fakeValidator{info: token.BastionInfo{TokenID: "t1", Hint: "trv_bst_3kQ9", BastionID: "b1", Name: "partners", ExpiresAt: exp}}
+	v := &fakeValidator{info: token.BastionInfo{TokenID: "t1", Hint: "qdr_bst_3kQ9", BastionID: "b1", Name: "partners", ExpiresAt: exp}}
 	got, err := NewAuthenticator(v).Authenticate(context.Background(), "x", AuthRequest{ClientAddr: "198.51.100.20"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := BastionToken{TokenID: "t1", Hint: "trv_bst_3kQ9", BastionID: "b1", Name: "partners", ExpiresAt: exp}
+	want := BastionToken{TokenID: "t1", Hint: "qdr_bst_3kQ9", BastionID: "b1", Name: "partners", ExpiresAt: exp}
 	if got != want {
 		t.Fatalf("token = %+v, want %+v", got, want)
 	}
@@ -72,12 +72,12 @@ func TestR_BAS_004_TheAuthenticatorReturnsTheRegistrationAndNotesTheUse(t *testi
 // refusal for it is ErrThrottled, no verdict on the token.
 func TestR_BAS_005_ARejectedBastionTokenNamesTheRequestsSourceAndTheUseIsTheBastions(t *testing.T) {
 	th := &countingThrottle{}
-	src := AuthRequest{Throttle: th, ClientAddr: "198.51.100.20", UserAgent: "trove-bastion/0.15.0"}
+	src := AuthRequest{Throttle: th, ClientAddr: "198.51.100.20", UserAgent: "quader-bastion/0.15.0"}
 	v := &fakeValidator{err: token.ErrRevoked}
 	if _, err := NewAuthenticator(v).Authenticate(context.Background(), "x", src); !errors.Is(err, ErrTokenInvalid) {
 		t.Fatalf("err = %v", err)
 	}
-	if got := v.reqs[0]; got.Source.ClientAddr != "198.51.100.20" || got.Source.UserAgent != "trove-bastion/0.15.0" || got.Throttle == nil || got.RetryAfter != time.Minute {
+	if got := v.reqs[0]; got.Source.ClientAddr != "198.51.100.20" || got.Source.UserAgent != "quader-bastion/0.15.0" || got.Throttle == nil || got.RetryAfter != time.Minute {
 		t.Fatalf("the token service was given %+v", got)
 	}
 	v = &fakeValidator{info: token.BastionInfo{TokenID: "t1", Name: "partners"}}

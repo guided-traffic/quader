@@ -34,7 +34,7 @@ func TestShutdownQuiesceTimer(t *testing.T) {
 	startWorker := func(t *testing.T) *harness {
 		// grace 9 s, drain 1 s -> derived timeout 3 s; the scaled budget quiesces at 2.4 s.
 		h := start(t, "worker", map[string]string{
-			"TROVE_RUNTIME_TERMINATION_GRACE_PERIOD": "9s", "TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": "1s", "TROVE_SERVER_SHUTDOWN_TIMEOUT": "0s",
+			"QUADER_RUNTIME_TERMINATION_GRACE_PERIOD": "9s", "QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "1s", "QUADER_SERVER_SHUTDOWN_TIMEOUT": "0s",
 		})
 		h.app.budget = scaledBudget()
 		return h

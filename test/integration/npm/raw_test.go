@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // rawPut sends a PUT whose body the test streams: no length unless contentLength is

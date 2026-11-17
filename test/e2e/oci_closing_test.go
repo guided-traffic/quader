@@ -4,7 +4,7 @@ package e2e
 
 // The additions of the full run of Test and Release on the commit that closes the phase (R-OCI-032, R-OCI-035): the registry with Valkey
 // stopped, and a read-only subset against Docker Hub. The workflow starts them only when it is dispatched with closing=true; a run of them
-// without TROVE_E2E_OCI_CLOSING=1 is a failure, never a skip, so they cannot go missing from the closing run (deploy/dev/e2e.sh oci-closing).
+// without QUADER_E2E_OCI_CLOSING=1 is a failure, never a skip, so they cannot go missing from the closing run (deploy/dev/e2e.sh oci-closing).
 
 import (
 	"fmt"
@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 func requireOCIClosingRun(t testing.TB) {
 	t.Helper()
-	if os.Getenv("TROVE_E2E_OCI_CLOSING") != "1" {
+	if os.Getenv("QUADER_E2E_OCI_CLOSING") != "1" {
 		t.Fatal("this test belongs to the closing run: start it with deploy/dev/e2e.sh oci-closing (the closing=true dispatch of the workflow)")
 	}
 }

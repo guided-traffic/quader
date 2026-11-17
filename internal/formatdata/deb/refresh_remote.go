@@ -3,8 +3,8 @@ package deb
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // Refresh is the remote part of the periodic task deb-index-refresh (R-DEB-021, Q-DEB-33): it enqueues the deb-index job of every

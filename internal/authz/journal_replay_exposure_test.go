@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 // The comparator of R-EP-020 and the reading of journaled exposure states. The handler's writes run against

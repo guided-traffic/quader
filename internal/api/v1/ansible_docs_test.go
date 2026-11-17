@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
-	"github.com/guided-traffic/trove/internal/packages/readme"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/packages/readme"
 )
 
 func str(s string) *string { return &s }

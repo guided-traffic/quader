@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Coordination tables: the job queue (R-ARCH-016), the change log with per-area
 -- epochs (R-ARCH-018) and the replica registry (R-OPS-003). Leases are session
@@ -7,7 +7,7 @@
 -- Created inside a DO block so that sqlc, which reads these files as its schema,
 -- sees job_state as an unknown type and maps it to a Go string (sqlc.yaml
 -- override): its generated enum helpers would import database/sql/driver, which
--- no trove package may (R-ARCH-026).
+-- no quader package may (R-ARCH-026).
 DO $$
 BEGIN
     CREATE TYPE job_state AS ENUM ('queued', 'running', 'succeeded', 'failed', 'cancelling', 'cancelled');

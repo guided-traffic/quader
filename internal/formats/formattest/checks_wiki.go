@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // hasWiki reports whether the format has wiki content (R-AUTHZ-034): its catalog facts say so, or its fixture seeds wiki samples.

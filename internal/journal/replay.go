@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // Outcome is what a replay did with one entry (R-HA-054 "Replay run").
@@ -218,7 +218,7 @@ type ReplayOptions struct {
 	Out io.Writer
 }
 
-// Replayer reads the journal and applies the handlers in order. The restore (R-BAK-024) and `trove admin post-restore`
+// Replayer reads the journal and applies the handlers in order. The restore (R-BAK-024) and `quader admin post-restore`
 // (R-HA-025) both run it; the implementation is internal/journal/replay's work package.
 type Replayer interface {
 	Replay(ctx context.Context, opts ReplayOptions) (*Summary, error)

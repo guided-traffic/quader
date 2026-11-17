@@ -13,18 +13,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/vuln/match"
-	vsync "github.com/guided-traffic/trove/internal/vuln/sync"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/vuln/match"
+	vsync "github.com/guided-traffic/quader/internal/vuln/sync"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // workerWith starts a further worker replica whose configuration differs, and returns its sync service.
 func (e *env) workerWith(name string, env ...string) *vsync.Service {
 	e.t.Helper()
 	// It runs no jobs: the test calls its service directly, and a job of the stack must run on the first worker.
-	env = append([]string{"TROVE_JOBS_WORKERS_VULN=0"}, env...)
+	env = append([]string{"QUADER_JOBS_WORKERS_VULN=0"}, env...)
 	r := e.st.Start(e.t, testenv.ReplicaOptions{Name: name, Role: "worker", Env: env})
 	return r.App.VulnSync()
 }
@@ -74,7 +74,7 @@ func TestR_VULN_004_ACheckpointIsNotResumedUnderAnotherRecordSize(t *testing.T) 
 func TestR_VULN_004_ARaisedRecordSizeAppliesTheRejectedRecordWithoutANewArchive(t *testing.T) {
 	e := newEnv(t, options{Filler: 200, Env: []string{recordSizeEnv}})
 	low := e.worker.App.VulnSync() // 1 MiB
-	high := e.workerWith("worker-wide", "TROVE_VULNERABILITIES_SOURCES_OSV_MAX_RECORD_SIZE=8MiB")
+	high := e.workerWith("worker-wide", "QUADER_VULNERABILITIES_SOURCES_OSV_MAX_RECORD_SIZE=8MiB")
 	e.mustSucceed(taskOSVFull, nil)
 	before := e.sha(osvstub.IDMal)
 	if _, err := e.stub.Pad("npm", osvstub.IDMal, malSize, osvstub.PadHex); err != nil {
@@ -190,7 +190,7 @@ func TestR_VULN_004_AKeptRowOfAnOlderAdapterIsNamedInTheLogAndWrittenWhenItPasse
 
 // R-VULN-004, Q-VULN-121: an archive above max_archive_size fails the run with the limit, its key and the size the source declared.
 func TestR_VULN_004_AnArchiveAboveTheArchiveSizeNamesTheLimitTheKeyAndTheSize(t *testing.T) {
-	e := newEnv(t, options{Filler: 300, Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_MAX_ARCHIVE_SIZE=1MiB"}})
+	e := newEnv(t, options{Filler: 300, Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_MAX_ARCHIVE_SIZE=1MiB"}})
 	if _, err := e.stub.Pad("npm", osvstub.IDMal, 2_600_000, osvstub.PadHex); err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func TestR_VULN_004_AnArchiveAboveTheArchiveSizeNamesTheLimitTheKeyAndTheSize(t 
 // R-OPS-019, Q-OPS-186: the URL of a request that fails reaches neither the last error of the source nor the error of the job
 // beyond scheme and host: not the userinfo, not a token in the path.
 func TestR_OPS_019_AFailedRequestNamesNeitherTheUserinfoNorThePathOfTheSource(t *testing.T) {
-	e := newEnv(t, options{Filler: 10, Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_BASE_URL=https://ci-user:hunter2@127.0.0.1:1/tok-secret-99/"}})
+	e := newEnv(t, options{Filler: 10, Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_BASE_URL=https://ci-user:hunter2@127.0.0.1:1/tok-secret-99/"}})
 	if got := e.mustFail(taskOSVFull, "osv", "npm", nil); got == "" {
 		t.Fatal("no last error")
 	}

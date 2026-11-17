@@ -11,12 +11,12 @@ import (
 
 // TestE99Scatter is E0.11 and runs last, because it switches the cluster to the scatter profile:
 // three api and three packages replicas and an edge that keeps no connection to a pod, so every request is balanced
-// round robin on its own (deploy/dev/values-scatter.yaml, HAProxy Ingress balance-algorithm roundrobin and option http-server-close on trove's Ingress).
+// round robin on its own (deploy/dev/values-scatter.yaml, HAProxy Ingress balance-algorithm roundrobin and option http-server-close on quader's Ingress).
 // M0's end-to-end checks must pass in it: the E0.3 checks, a load of 100 requests/s that
 // records only 200, and the proof that requests really scatter. It returns the cluster to the default
-// profile afterwards (TROVE_E2E_SCATTER_RETURN=0 keeps the profile).
+// profile afterwards (QUADER_E2E_SCATTER_RETURN=0 keeps the profile).
 func TestE99Scatter(t *testing.T) {
-	if os.Getenv("TROVE_E2E_SCATTER_RETURN") != "0" {
+	if os.Getenv("QUADER_E2E_SCATTER_RETURN") != "0" {
 		t.Cleanup(func() { switchProfile(t, "default") })
 	}
 	switchProfile(t, "scatter")
@@ -38,7 +38,7 @@ func TestE99Scatter(t *testing.T) {
 			if err != nil || code != 200 {
 				t.Fatalf("request %d: %d %v", i, code, err)
 			}
-			seen[h.Get("X-Trove-Replica")]++
+			seen[h.Get("X-Quader-Replica")]++
 		}
 		t.Logf("%d requests, each on a new connection: %v", n, seen)
 		if len(seen) != 3 {

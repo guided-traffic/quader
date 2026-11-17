@@ -7,25 +7,25 @@
 
 .help-lead {
   max-inline-size: 48rem;
-  margin-block: 0 var(--trove-space-6);
-  color: var(--trove-text-muted);
+  margin-block: 0 var(--quader-space-6);
+  color: var(--quader-text-muted);
 }
 
 .help-sections {
   display: grid;
-  gap: var(--trove-space-6);
+  gap: var(--quader-space-6);
 }
 
 .help-section h2 {
-  margin-block: 0 var(--trove-space-3);
-  font: var(--trove-type-title-medium);
+  margin-block: 0 var(--quader-space-3);
+  font: var(--quader-type-title-medium);
   font-weight: 600;
 }
 
 .help-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -34,29 +34,29 @@
 .help-card {
   display: flex;
   flex-direction: column;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
   block-size: 100%;
   box-sizing: border-box;
-  padding: var(--trove-space-3) var(--trove-space-4);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-s);
-  background: var(--trove-surface-raised);
-  box-shadow: var(--trove-elevation-1);
-  color: var(--trove-on-surface);
+  padding: var(--quader-space-3) var(--quader-space-4);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-s);
+  background: var(--quader-surface-raised);
+  box-shadow: var(--quader-elevation-1);
+  color: var(--quader-on-surface);
   text-decoration: none;
 
   &:hover {
-    border-color: var(--trove-accent);
+    border-color: var(--quader-accent);
   }
 
   &:focus-visible {
-    outline: var(--trove-focus-ring);
+    outline: var(--quader-focus-ring);
     outline-offset: 2px;
   }
 }
 
 .help-card-title {
-  color: var(--trove-link);
+  color: var(--quader-link);
   font-weight: 600;
 }
 
@@ -67,12 +67,12 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
   line-clamp: 4;
-  color: var(--trove-text-muted);
-  font-size: var(--trove-text-muted-size);
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
 }
 
 .help-more {
-  margin-block-start: var(--trove-space-6);
+  margin-block-start: var(--quader-space-6);
 }
 
 // ---- A page --------------------------------------------------------------------------------------
@@ -80,23 +80,23 @@
 .help-layout {
   display: grid;
   grid-template-columns: 15rem minmax(0, 1fr);
-  gap: var(--trove-space-8);
+  gap: var(--quader-space-8);
   align-items: start;
 }
 
 .help-contents {
   position: sticky;
   inset-block-start: 0;
-  max-block-size: calc(100vh - var(--trove-topbar-height) - var(--trove-space-8));
+  max-block-size: calc(100vh - var(--quader-topbar-height) - var(--quader-space-8));
   overflow-y: auto;
-  padding: var(--trove-space-3);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-s);
-  background: var(--trove-surface-raised);
-  font-size: var(--trove-text-muted-size);
+  padding: var(--quader-space-3);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-s);
+  background: var(--quader-surface-raised);
+  font-size: var(--quader-text-muted-size);
 
   ul {
-    margin: 0 0 var(--trove-space-3);
+    margin: 0 0 var(--quader-space-3);
     padding: 0;
     list-style: none;
   }
@@ -105,32 +105,32 @@
   // page takes the accent.
   ul a {
     display: block;
-    padding: var(--trove-space-1) var(--trove-space-2);
+    padding: var(--quader-space-1) var(--quader-space-2);
     border-inline-start: 3px solid transparent;
-    color: var(--trove-on-surface);
+    color: var(--quader-on-surface);
     text-decoration: none;
 
     &:hover {
-      background: var(--trove-row-hover);
+      background: var(--quader-row-hover);
     }
 
     &:focus-visible {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: -2px;
     }
 
     // The current page: the accent bar and bold text, so the state is not carried by colour alone.
     &.active {
-      border-inline-start-color: var(--trove-accent);
-      color: var(--trove-accent);
+      border-inline-start-color: var(--quader-accent);
+      color: var(--quader-accent);
       font-weight: 600;
     }
   }
 }
 
 .help-contents-title {
-  margin: 0 0 var(--trove-space-2);
-  color: var(--trove-text-muted);
+  margin: 0 0 var(--quader-space-2);
+  color: var(--quader-text-muted);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -138,13 +138,13 @@
 }
 
 .help-contents-section {
-  margin: var(--trove-space-3) 0 var(--trove-space-1);
-  font-size: var(--trove-text-muted-size);
+  margin: var(--quader-space-3) 0 var(--quader-space-1);
+  font-size: var(--quader-text-muted-size);
   font-weight: 600;
 }
 
 .help-contents .help-overview-link {
-  padding-inline: var(--trove-space-2);
+  padding-inline: var(--quader-space-2);
 }
 
 .help-back {
@@ -159,58 +159,58 @@
 }
 
 .help-toc {
-  margin-block: 0 var(--trove-space-6);
-  padding: var(--trove-space-3) var(--trove-space-4);
-  border-inline-start: 3px solid var(--trove-accent);
-  background: var(--trove-table-head-bg);
+  margin-block: 0 var(--quader-space-6);
+  padding: var(--quader-space-3) var(--quader-space-4);
+  border-inline-start: 3px solid var(--quader-accent);
+  background: var(--quader-table-head-bg);
   max-inline-size: 48rem;
 
   // One flat list; a third-level heading is indented under its section.
   ul {
     display: grid;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
   li.sub {
-    padding-inline-start: var(--trove-space-4);
-    font-size: var(--trove-text-muted-size);
+    padding-inline-start: var(--quader-space-4);
+    font-size: var(--quader-text-muted-size);
   }
 
   a:focus-visible {
-    outline: var(--trove-focus-ring);
+    outline: var(--quader-focus-ring);
     outline-offset: 2px;
   }
 }
 
 .help-toc-title {
-  margin: 0 0 var(--trove-space-2);
-  font: var(--trove-type-title-small);
+  margin: 0 0 var(--quader-space-2);
+  font: var(--quader-type-title-small);
   font-weight: 600;
 }
 
 .help-pager {
   display: flex;
   justify-content: space-between;
-  gap: var(--trove-space-3);
-  margin-block-start: var(--trove-space-8);
-  padding-block-start: var(--trove-space-4);
-  border-block-start: 1px solid var(--trove-border);
+  gap: var(--quader-space-3);
+  margin-block-start: var(--quader-space-8);
+  padding-block-start: var(--quader-space-4);
+  border-block-start: 1px solid var(--quader-border);
 
   a {
     display: flex;
     flex-direction: column;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
     max-inline-size: 48%;
-    padding: var(--trove-space-2) var(--trove-space-3);
-    border: 1px solid var(--trove-border);
-    border-radius: var(--trove-radius-s);
+    padding: var(--quader-space-2) var(--quader-space-3);
+    border: 1px solid var(--quader-border);
+    border-radius: var(--quader-radius-s);
     text-decoration: none;
 
     &:hover {
-      border-color: var(--trove-accent);
+      border-color: var(--quader-accent);
     }
   }
 
@@ -221,8 +221,8 @@
 }
 
 .help-pager-label {
-  color: var(--trove-text-muted);
-  font-size: var(--trove-text-muted-size);
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
 }
 
 .help-pager-title {
@@ -241,6 +241,6 @@
 
   .help-back {
     display: inline-block;
-    margin-block-end: var(--trove-space-3);
+    margin-block-end: var(--quader-space-3);
   }
 }

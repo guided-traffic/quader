@@ -15,10 +15,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // The remote and virtual classes (R-NPM-024 to R-NPM-033) against the integration stack,
@@ -97,13 +97,13 @@ func newRemoteEnv(t *testing.T, o remoteOptions) *renv {
 		t.Fatal(err)
 	}
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "npmr", Valkey: o.Valkey, Env: append([]string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
 		// The default of npm.audit is local (npm.audit.mode local) while the installation scans and its OSV source is not off, and the mode of R-NPM-038
 		// (forward on a remote and a virtual repository) otherwise (R-VULN-017, Q-VULN-44). The tests of this package that audit
 		// are R-NPM-038's, the forwarding; the local mode is tested in test/integration/vulnaudit.
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
 	}, o.Env...)})
 	e := &env{t: t, st: st}
 	e.alice, e.bob, e.carol = st.User("alice"), st.User("bob"), st.User("carol")
@@ -269,7 +269,7 @@ func tagsOf(t testing.TB, a testenv.Answer) map[string]string {
 // pathOf is the path of a tarball address below the replica's address.
 func pathOf(t testing.TB, address string) string {
 	t.Helper()
-	const base = "http://trove.test"
+	const base = "http://quader.test"
 	if !strings.HasPrefix(address, base) {
 		t.Fatalf("%q is not on the base URL %s", address, base)
 	}

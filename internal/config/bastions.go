@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Bastions configures the main installation's side of the trove Bastion (R-BAS-004, R-BAS-011, R-BAS-015,
+// Bastions configures the main installation's side of the quader Bastion (R-BAS-004, R-BAS-011, R-BAS-015,
 // R-BAS-016, R-BAS-017): how many registrations exist, whose forwarded headers count for a Bastion request, what
 // one check may ask, how the revocation feed reads the audit trail and how download events are accepted. The
 // Bastion's own configuration is BastionConfig; a Bastion reads nothing of this section.

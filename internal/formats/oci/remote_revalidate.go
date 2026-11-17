@@ -5,7 +5,7 @@ import (
 	"mime"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // RevalidationRequest is the revalidation of an expired tag document (R-OCI-022): a HEAD on the same URL with the same Accept, whose

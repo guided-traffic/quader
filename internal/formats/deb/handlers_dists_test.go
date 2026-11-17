@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // R-DEB-003, R-DEB-004: a path below dists/ that no generation published is 404; the read is decided on a path that belongs to no

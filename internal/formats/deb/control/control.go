@@ -1,7 +1,7 @@
 // Package control reads and writes deb822 paragraphs, the text format of Debian control files, Packages and Sources indexes and Release
 // documents (Debian Policy, chapter 5; R-DEB-007, R-DEB-034). It is a leaf.
 //
-// trove copies uploaded paragraphs into the indexes it signs, so the syntax is strict (R-DEB-007): a field name matches
+// quader copies uploaded paragraphs into the indexes it signs, so the syntax is strict (R-DEB-007): a field name matches
 // ^[A-Za-z][A-Za-z0-9-]{0,63}$ and appears once, compared without case; a value is UTF-8 without control characters other than a tab;
 // a continuation line starts with a space or a tab and is not blank after it (" ." stands for an empty line); a paragraph has at most 512
 // fields of at most 1 MiB. Whatever the writer emits is built from parsed fields, never from bytes copied unparsed, so a value cannot
@@ -15,7 +15,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The bounds of R-DEB-034.
@@ -54,7 +54,7 @@ func (p Paragraph) Value(name string) string {
 	return v
 }
 
-// Without returns the paragraph without the named fields (compared without case): the fields trove computes for an index are taken out
+// Without returns the paragraph without the named fields (compared without case): the fields quader computes for an index are taken out
 // of an uploaded paragraph this way.
 func (p Paragraph) Without(names ...string) Paragraph {
 	out := Paragraph{Fields: make([]Field, 0, len(p.Fields))}

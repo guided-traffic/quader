@@ -3,7 +3,7 @@ package generic
 import (
 	"embed"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // guideFiles are the Markdown templates of the guide, one file per section.
@@ -15,7 +15,7 @@ var guideFiles embed.FS
 // a generic local repository is, and how curl signs in, downloads, checks and
 // resumes downloads, lists folders, uploads with a digest or only once, replaces
 // and deletes files through /files/, what an endpoint with exposure rules changes,
-// and what each answer of /files/ means. Every statement describes trove as built;
+// and what each answer of /files/ means. Every statement describes quader as built;
 // the tests in guide_test.go pin the facts the text names to the code.
 func (Format) Guide() []formats.GuideSection {
 	local := []formats.Class{formats.Local}

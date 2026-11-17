@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // A restore whose target is on another endpoint than the blob store cannot copy server-side and streams every blob through the

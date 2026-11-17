@@ -28,7 +28,7 @@ func TestDebLocal(t *testing.T) {
 			aptWrite(t, img, "/tmp/"+p.file, p.data)
 
 			// the upload of the spec (R-DEB-006), with curl in the pod of the image
-			out := c.must(fmt.Sprintf(`curl -fsS -u "trove:$TROVE_TOKEN" --upload-file /tmp/%s %s`, p.file,
+			out := c.must(fmt.Sprintf(`curl -fsS -u "quader:$QUADER_TOKEN" --upload-file /tmp/%s %s`, p.file,
 				shellQuoteWord(fmt.Sprintf("%supload/%s?distribution=%s&component=main", debRepoURL(t, repo), p.file, debSuite))))
 			seq := uploadSeq(t, []byte(out), debSuite)
 			state := fx.awaitPublished(t, repo, debSuite, seq)

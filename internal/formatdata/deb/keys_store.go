@@ -5,13 +5,13 @@ import (
 	"crypto/sha256"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/openpgp"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // keysStore is the group of the data port that holds the signing keys of the local and virtual repositories (R-DEB-015 to R-DEB-018,
@@ -24,7 +24,7 @@ import (
 type keysStore struct{ *group }
 
 // CreateFirstKey generates the primary key of a new repository in the transaction that creates it (R-DEB-015, Q-REPO-273). The key's
-// creation time is the transaction's time minus one hour (Q-DEB-30), its user ID "trove <projectKey>/<repoKey>".
+// creation time is the transaction's time minus one hour (Q-DEB-30), its user ID "quader <projectKey>/<repoKey>".
 func (s keysStore) CreateFirstKey(ctx context.Context, tx meta.Tx, repoID int64, repoKey string) error {
 	qs, err := queries(tx)
 	if err != nil {
@@ -62,7 +62,7 @@ func (s keysStore) generate(ctx context.Context, qs *q.Queries, ref string) (*op
 	if err != nil {
 		return nil, err
 	}
-	secret, _, _, err := openpgp.Generate("trove "+ref, now.Add(-keyLead))
+	secret, _, _, err := openpgp.Generate("quader "+ref, now.Add(-keyLead))
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (s keysStore) CreateNext(ctx context.Context, in rows.NewKey) (rows.Key, er
 			return err
 		}
 		if known {
-			return errs.E(errs.Conflict, errs.CodeDebKeyInUse, "This key is known to trove already, in this or another repository.")
+			return errs.E(errs.Conflict, errs.CodeDebKeyInUse, "This key is known to Quader already, in this or another repository.")
 		}
 		if _, err := s.insertKey(ctx, qs, in.RepoID, newKeyRecord{key: key, state: rows.KeyNext, origin: origin, by: in.Actor}); err != nil {
 			if uniqueViolation(err) {

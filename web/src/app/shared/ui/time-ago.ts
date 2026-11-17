@@ -19,7 +19,7 @@ export function timeAgo(iso: string, now: number = Date.now()): string {
  * of the grade card's facts (R-UI-093), and of any place that shows a time with both.
  */
 @Component({
-  selector: 'trove-time-ago',
+  selector: 'quader-time-ago',
   imports: [DatePipe],
   template: `{{ relative() }} (<time [attr.datetime]="at()">{{ at() | date: 'medium' }}</time>)`,
 })

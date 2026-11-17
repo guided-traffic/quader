@@ -1,6 +1,6 @@
 ### Delete a package file
 
-`DELETE` of the pool path of a file removes it: the next index no longer lists it and `apt-get install hello=2.10-3` reports that the version was not found. The deletion is recorded for the audit trail and for a restore: a file deleted after a backup stays withheld when that backup is restored, until an administrator puts it back with `trove admin deb reinstate <project>/<repository> <path>`.
+`DELETE` of the pool path of a file removes it: the next index no longer lists it and `apt-get install hello=2.10-3` reports that the version was not found. The deletion is recorded for the audit trail and for a restore: a file deleted after a backup stays withheld when that backup is restored, until an administrator puts it back with `quader admin deb reinstate <project>/<repository> <path>`.
 
 ### Move a package between suites
 

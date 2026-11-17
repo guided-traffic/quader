@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 const gid = "0192f1c4-0000-7000-8000-0000000000c1"

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/docgen"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/ansible/docgen"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
 
 // build feeds the members to a generator the way the archive reader's tap does (Wants first, the capped body after) and builds the set.
@@ -334,7 +334,7 @@ func TestR_ANS_034_TheSameArchiveGivesTheSameRows(t *testing.T) {
 
 // TestR_ANS_034_TheGeneratorImportsNoProcessPackage: go list -deps of the package names no os/exec, so nothing can be executed.
 func TestR_ANS_034_TheGeneratorImportsNoProcessPackage(t *testing.T) {
-	out, err := exec.Command("go", "list", "-deps", "github.com/guided-traffic/trove/internal/formats/ansible/docgen").Output()
+	out, err := exec.Command("go", "list", "-deps", "github.com/guided-traffic/quader/internal/formats/ansible/docgen").Output()
 	if err != nil {
 		t.Skipf("go list: %v", err)
 	}

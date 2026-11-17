@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/ansiblestub"
+	"github.com/guided-traffic/quader/test/ansiblestub"
 )
 
 // The hub behind single sign-on against the stub's realm (R-ANS-019): the service itself is not reachable from the tests (H-842).

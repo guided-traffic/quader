@@ -1,6 +1,6 @@
 package cluster
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // cluster_epoch is data, so the area rows that migrations created survive a
 // restore; cluster_change is transient and empty after a restore (R-ARCH-018,

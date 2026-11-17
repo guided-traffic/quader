@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestR_REPO_062_TheOCIPresetsBringTheirHosts: on a real database and with the registered OCI format, a remote whose url is a

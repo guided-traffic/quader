@@ -4,14 +4,14 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // MigrationSource reads the migration report of GET /api/v1/system/migrations: postgres.Report on the replica's pool, the
-// code `trove migrate status` runs on its session connection, for the replica's binary and the background data migrations
+// code `quader migrate status` runs on its session connection, for the replica's binary and the background data migrations
 // it declares (R-HA-018, R-HA-022, Q-HA-114).
 type MigrationSource interface {
 	MigrationReport(ctx context.Context) (postgres.StatusReport, error)

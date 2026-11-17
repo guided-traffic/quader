@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // The back-off of a pass that fails (R-REPO-053 errors) against the stub that is down, through the real discovery and the real

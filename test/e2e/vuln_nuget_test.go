@@ -3,7 +3,7 @@
 package e2e
 
 // The NuGet tests of the vulnerability scanning (R-VULN-029, E4b.4, E4b.5): `dotnet restore` of the .NET 8, 9 and 10 SDKs of
-// the clients image reports the audit warnings NU1903 and NU1904 from trove's own data, `NuGetAuditSuppress` removes the warning,
+// the clients image reports the audit warnings NU1903 and NU1904 from quader's own data, `NuGetAuditSuppress` removes the warning,
 // and a restore of a version blocked in triage fails and succeeds again after the lift.
 
 import (
@@ -34,7 +34,7 @@ func (c *nugetClient) vulnConfig(sources ...[2]string) {
 	var src, creds strings.Builder
 	for _, s := range sources {
 		fmt.Fprintf(&src, "    <add key=%q value=%q protocolVersion=\"3\" />\n", s[0], s[1])
-		fmt.Fprintf(&creds, "    <%s>\n      <add key=\"Username\" value=\"token\" />\n      <add key=\"ClearTextPassword\" value=\"%%TROVE_TOKEN%%\" />\n    </%s>\n", s[0], s[0])
+		fmt.Fprintf(&creds, "    <%s>\n      <add key=\"Username\" value=\"token\" />\n      <add key=\"ClearTextPassword\" value=\"%%QUADER_TOKEN%%\" />\n    </%s>\n", s[0], s[0])
 	}
 	c.write("nuget.config", []byte("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<configuration>\n  <packageSources>\n    <clear />\n"+src.String()+
 		"  </packageSources>\n  <packageSourceCredentials>\n"+creds.String()+"  </packageSourceCredentials>\n</configuration>\n"))
@@ -74,15 +74,15 @@ func (e *vulnEnv) clientFor(t testing.TB, sdkIndex int, name string) *nugetClien
 
 func nugetClientCount(t testing.TB) int {
 	t.Helper()
-	n, err := strconv.Atoi(os.Getenv("TROVE_E2E_NUGET_CLIENTS_PODS"))
+	n, err := strconv.Atoi(os.Getenv("QUADER_E2E_NUGET_CLIENTS_PODS"))
 	if err != nil || n < 1 {
-		t.Fatal("TROVE_E2E_NUGET_CLIENTS_PODS is not set; run the vulnerability sets of deploy/dev/e2e.sh")
+		t.Fatal("QUADER_E2E_NUGET_CLIENTS_PODS is not set; run the vulnerability sets of deploy/dev/e2e.sh")
 	}
 	return n
 }
 
 // TestVuln_R_VULN_018_NuGetRestoreAudit is E4b.5 for NuGet: with every SDK, the restore of a public test version with a high
-// advisory reports NU1903 with trove's url through nuget-all, and through nuget-remote with nuget-local as a second source while
+// advisory reports NU1903 with quader's url through nuget-all, and through nuget-remote with nuget-local as a second source while
 // nuget-remote answers no vulnerability information itself; a malicious version reports NU1904; the suppression removes the
 // warning.
 func TestVuln_R_VULN_018_NuGetRestoreAudit(t *testing.T) {
@@ -198,7 +198,7 @@ func TestVuln_R_VULN_015_NuGetBlockedRestoreInTriage(t *testing.T) {
 			t.Errorf("Content-Type of the refusal = %q, want text/plain", ct)
 		}
 		body := strings.TrimSpace(string(r.Body))
-		if !strings.HasPrefix(body, "vulnerability_blocked: trove blocked "+strings.ToLower(id)+"@1.0.0 in "+qn(vulnNuGetRemote)+": blocked in triage ("+e.advisoryOf[id]+")") || strings.Contains(body, "\n") {
+		if !strings.HasPrefix(body, "vulnerability_blocked: Quader blocked "+strings.ToLower(id)+"@1.0.0 in "+qn(vulnNuGetRemote)+": blocked in triage ("+e.advisoryOf[id]+")") || strings.Contains(body, "\n") {
 			t.Errorf("the refusal body = %q, want the one line of R-VULN-016", body)
 		}
 		e.lift(t, e.adm, f.ID)
@@ -207,7 +207,7 @@ func TestVuln_R_VULN_015_NuGetBlockedRestoreInTriage(t *testing.T) {
 }
 
 // TestVuln_R_VULN_018_NuGetVulnerabilityInfoOnTheWire reads the resource off the wire: nuget-remote (off) answers 404 and does not
-// list it, nuget-local and nuget-all list VulnerabilityInfo/6.7.0 with the one entry `trove`, the page is keyed by lowercased
+// list it, nuget-local and nuget-all list VulnerabilityInfo/6.7.0 with the one entry `quader`, the page is keyed by lowercased
 // IDs, carries the severity and url of the rule, is the same on every replica (ETag) and answers 304.
 func TestVuln_R_VULN_018_NuGetVulnerabilityInfoOnTheWire(t *testing.T) {
 	e := vulnFx(t)
@@ -230,8 +230,8 @@ func TestVuln_R_VULN_018_NuGetVulnerabilityInfoOnTheWire(t *testing.T) {
 				ID   string `json:"@id"`
 			}
 			ix.JSON(t, &entries)
-			if len(entries) != 1 || entries[0].Name != "trove" {
-				t.Fatalf("the vulnerability index of %s = %s, want one entry named trove", key, ix.Body)
+			if len(entries) != 1 || entries[0].Name != "quader" {
+				t.Fatalf("the vulnerability index of %s = %s, want one entry named quader", key, ix.Body)
 			}
 		}
 		pagePath := vulnPagePath(t, a, vulnNuGetAll)

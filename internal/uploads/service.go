@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // maxBinding is the longest binding the table takes (the CHECK of migration 00054).
@@ -59,7 +59,7 @@ type Options struct {
 	Spool *blob.Spool
 	// Storage is the storage section: the prefix, the payload checksum, the maximum upload size and storage.uploads.
 	Storage config.Storage
-	// Metrics counts the sessions by how they ended (trove_storage_upload_sessions_total); nil counts nothing.
+	// Metrics counts the sessions by how they ended (quader_storage_upload_sessions_total); nil counts nothing.
 	Metrics *blob.Metrics
 	Log     *slog.Logger
 }

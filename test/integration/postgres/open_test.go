@@ -20,11 +20,11 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func open(t *testing.T, cfg config.Database, instance, role string) *postgres.DB {
@@ -37,13 +37,13 @@ func open(t *testing.T, cfg config.Database, instance, role string) *postgres.DB
 	return db
 }
 
-// classesOf lists the trove application_name classes of one instance in the
+// classesOf lists the quader application_name classes of one instance in the
 // database, from the server's point of view.
 func classesOf(t *testing.T, admin *pgx.Conn, instance string) map[string]int {
 	t.Helper()
 	rows, err := admin.Query(context.Background(),
 		`SELECT application_name, count(*) FROM pg_stat_activity
-		  WHERE datname = current_database() AND application_name LIKE $1 GROUP BY 1`, "trove:"+instance+":%")
+		  WHERE datname = current_database() AND application_name LIKE $1 GROUP BY 1`, "quader:"+instance+":%")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func classesOf(t *testing.T, admin *pgx.Conn, instance string) map[string]int {
 		if err := rows.Scan(&name, &n); err != nil {
 			t.Fatal(err)
 		}
-		out[strings.TrimPrefix(name, "trove:"+instance+":")] = n
+		out[strings.TrimPrefix(name, "quader:"+instance+":")] = n
 	}
 	return out
 }
@@ -83,7 +83,7 @@ func TestOpenConnectionClasses(t *testing.T) {
 	st := getStack(t)
 	cfg, _, admin := migrated(t, st)
 
-	t.Run("R-ARCH-019 connection names are trove:<instance>:<class> in pg_stat_activity", func(t *testing.T) {
+	t.Run("R-ARCH-019 connection names are quader:<instance>:<class> in pg_stat_activity", func(t *testing.T) {
 		db := open(t, cfg, "pod-worker-1", meta.RoleWorker)
 		warm(t, db)
 		got := classesOf(t, admin, "pod-worker-1")
@@ -107,7 +107,7 @@ func TestOpenConnectionClasses(t *testing.T) {
 		if _, hasLease := got["lease"]; hasLease || got["main"] < 2 {
 			t.Fatalf("classes = %v", got)
 		}
-		if n := scalar[int](t, admin, `SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'trove:pod-web-%:lease'`); n != 0 {
+		if n := scalar[int](t, admin, `SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:pod-web-%:lease'`); n != 0 {
 			t.Fatalf("lease connections of web replicas: %d", n)
 		}
 	})
@@ -178,7 +178,7 @@ func TestOpenConnectionClasses(t *testing.T) {
 			t.Helper()
 			for setting, want := range map[string]string{
 				"statement_timeout": "30s", "lock_timeout": "5s", "idle_in_transaction_session_timeout": "1min",
-				"search_path": "trove", "TimeZone": "UTC", "tcp_keepalives_idle": "60",
+				"search_path": "quader", "TimeZone": "UTC", "tcp_keepalives_idle": "60",
 				"tcp_keepalives_interval": "10", "tcp_keepalives_count": "6",
 			} {
 				var got string
@@ -228,14 +228,14 @@ func TestOpenConnectionClasses(t *testing.T) {
 		if err := db.CheckSchema(ctxT(t, 5*time.Second), "0.1.0"); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := admin.Exec(context.Background(), "UPDATE trove.schema_state SET compat_floor = '0.9.0'"); err != nil {
+		if _, err := admin.Exec(context.Background(), "UPDATE quader.schema_state SET compat_floor = '0.9.0'"); err != nil {
 			t.Fatal(err)
 		}
 		var fe *postgres.FloorError
-		if err := db.CheckSchema(ctxT(t, 5*time.Second), "0.1.0"); !errors.As(err, &fe) || err.Error() != "schema requires trove >= 0.9.0" {
+		if err := db.CheckSchema(ctxT(t, 5*time.Second), "0.1.0"); !errors.As(err, &fe) || err.Error() != "schema requires Quader >= 0.9.0" {
 			t.Fatalf("err = %v", err)
 		}
-		if _, err := admin.Exec(context.Background(), "UPDATE trove.schema_state SET compat_floor = '0.0.0', applied = applied - 1"); err != nil {
+		if _, err := admin.Exec(context.Background(), "UPDATE quader.schema_state SET compat_floor = '0.0.0', applied = applied - 1"); err != nil {
 			t.Fatal(err)
 		}
 		if err := db.CheckSchema(ctxT(t, 5*time.Second), "0.1.0"); !errors.Is(err, postgres.ErrSchemaBehind) {
@@ -338,7 +338,7 @@ func TestInTx(t *testing.T) {
 		attempts := 0
 		err := db.InPgxTx(ctx, func(tx pgx.Tx) error {
 			attempts++
-			if _, err := tx.Exec(ctx, `INSERT INTO trove.system_state (key, value) VALUES ('t_retry', to_jsonb($1::int))`, attempts); err != nil {
+			if _, err := tx.Exec(ctx, `INSERT INTO quader.system_state (key, value) VALUES ('t_retry', to_jsonb($1::int))`, attempts); err != nil {
 				return err
 			}
 			if attempts < 3 {
@@ -349,7 +349,7 @@ func TestInTx(t *testing.T) {
 		if err != nil || attempts != 3 {
 			t.Fatalf("attempts = %d, err = %v", attempts, err)
 		}
-		if got := scalar[int](t, admin, `SELECT (value #>> '{}')::int FROM trove.system_state WHERE key = 't_retry'`); got != 3 {
+		if got := scalar[int](t, admin, `SELECT (value #>> '{}')::int FROM quader.system_state WHERE key = 't_retry'`); got != 3 {
 			t.Fatalf("committed value = %d: earlier attempts must have rolled back", got)
 		}
 	})
@@ -367,7 +367,7 @@ func TestInTx(t *testing.T) {
 		attempts := 0
 		err := db.InPgxTx(ctx, func(tx pgx.Tx) error {
 			attempts++
-			_, err := tx.Exec(ctx, `INSERT INTO trove.repositories (key, format, class, project_id) VALUES ('Bad Key', 'raw', 'local', (SELECT id FROM trove.project WHERE key = 'it'))`)
+			_, err := tx.Exec(ctx, `INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('Bad Key', 'raw', 'local', (SELECT id FROM quader.project WHERE key = 'it'))`)
 			return err
 		})
 		var pe *pgconn.PgError
@@ -393,20 +393,20 @@ func TestInTx(t *testing.T) {
 				order = append(order, "before")
 				// The hook sees the transaction's own uncommitted write.
 				var n int
-				if err := unwrapTx(t, tx).QueryRow(ctx, `SELECT count(*) FROM trove.repositories WHERE key = 'hooked'`).Scan(&n); err != nil || n != 1 {
+				if err := unwrapTx(t, tx).QueryRow(ctx, `SELECT count(*) FROM quader.repositories WHERE key = 'hooked'`).Scan(&n); err != nil || n != 1 {
 					return fmt.Errorf("before hook: n = %d: %w", n, err)
 				}
-				_, err := unwrapTx(t, tx).Exec(ctx, `UPDATE trove.cluster_epoch SET epoch = epoch + 1, changed_at = now() WHERE area = 'cache'`)
+				_, err := unwrapTx(t, tx).Exec(ctx, `UPDATE quader.cluster_epoch SET epoch = epoch + 1, changed_at = now() WHERE area = 'cache'`)
 				return err
 			})
 			order = append(order, "body")
-			_, err := unwrapTx(t, tx).Exec(ctx, `INSERT INTO trove.repositories (key, format, class, project_id) VALUES ('hooked', 'raw', 'local', (SELECT id FROM trove.project WHERE key = 'it'))`)
+			_, err := unwrapTx(t, tx).Exec(ctx, `INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('hooked', 'raw', 'local', (SELECT id FROM quader.project WHERE key = 'it'))`)
 			return err
 		})
 		if err != nil || strings.Join(order, ",") != "body,before,after" {
 			t.Fatalf("order = %v, err = %v", order, err)
 		}
-		if scalar[int64](t, admin, `SELECT epoch FROM trove.cluster_epoch WHERE area = 'cache'`) != 1 {
+		if scalar[int64](t, admin, `SELECT epoch FROM quader.cluster_epoch WHERE area = 'cache'`) != 1 {
 			t.Fatal("the Before hook's write must have committed with the transaction")
 		}
 	})
@@ -417,13 +417,13 @@ func TestInTx(t *testing.T) {
 		err := db.InTx(ctx, func(tx meta.Tx) error {
 			tx.After(func() { after = true })
 			tx.Before(func(context.Context, meta.Tx) error { return boom })
-			_, err := unwrapTx(t, tx).Exec(ctx, `INSERT INTO trove.repositories (key, format, class, project_id) VALUES ('rolled-back', 'raw', 'local', (SELECT id FROM trove.project WHERE key = 'it'))`)
+			_, err := unwrapTx(t, tx).Exec(ctx, `INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('rolled-back', 'raw', 'local', (SELECT id FROM quader.project WHERE key = 'it'))`)
 			return err
 		})
 		if !errors.Is(err, boom) || after {
 			t.Fatalf("err = %v, after = %v", err, after)
 		}
-		if scalar[int](t, admin, `SELECT count(*) FROM trove.repositories WHERE key = 'rolled-back'`) != 0 {
+		if scalar[int](t, admin, `SELECT count(*) FROM quader.repositories WHERE key = 'rolled-back'`) != 0 {
 			t.Fatal("the body's write survived the failing hook")
 		}
 	})
@@ -630,7 +630,7 @@ func TestSessionGuard(t *testing.T) {
 	cfg, name, admin := migrated(t, st)
 
 	t.Run("R-ARCH-017 a web replica pointed at the same pooler starts and becomes ready", func(t *testing.T) {
-		for _, stmt := range []string{"statement_timeout = '30s'", "lock_timeout = '5s'", "idle_in_transaction_session_timeout = '60s'", "search_path = trove"} {
+		for _, stmt := range []string{"statement_timeout = '30s'", "lock_timeout = '5s'", "idle_in_transaction_session_timeout = '60s'", "search_path = quader"} {
 			if _, err := admin.Exec(context.Background(), fmt.Sprintf("ALTER ROLE %s IN DATABASE %s SET %s", st.user, name, stmt)); err != nil {
 				t.Fatal(err)
 			}
@@ -659,7 +659,7 @@ func TestTransactionPooler(t *testing.T) {
 	pooled := st.pooled(cfg)
 
 	for _, stmt := range []string{
-		"statement_timeout = '30s'", "lock_timeout = '5s'", "idle_in_transaction_session_timeout = '60s'", "search_path = trove",
+		"statement_timeout = '30s'", "lock_timeout = '5s'", "idle_in_transaction_session_timeout = '60s'", "search_path = quader",
 	} {
 		if _, err := admin.Exec(context.Background(), fmt.Sprintf("ALTER ROLE %s IN DATABASE %s SET %s", st.user, name, stmt)); err != nil {
 			t.Fatal(err)
@@ -692,7 +692,7 @@ func TestTransactionPooler(t *testing.T) {
 				return err
 			}
 			return tx.QueryRow(context.Background(), "SELECT current_setting('application_name')").Scan(&name)
-		}); err != nil || path != "trove" || name != "trove:pod-pooled:main" {
+		}); err != nil || path != "quader" || name != "quader:pod-pooled:main" {
 			t.Fatalf("search_path %q, application_name %q, err %v", path, name, err)
 		}
 	})
@@ -728,7 +728,7 @@ func TestTransactionPooler(t *testing.T) {
 						if n != g+i {
 							return fmt.Errorf("got %d, want %d", n, g+i)
 						}
-						_, err := tx.Exec(ctx, `INSERT INTO trove.system_state (key, value) VALUES ($1, to_jsonb($2::int))
+						_, err := tx.Exec(ctx, `INSERT INTO quader.system_state (key, value) VALUES ($1, to_jsonb($2::int))
 							ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, "t_mixed_"+strconv.Itoa(g), i)
 						return err
 					})
@@ -770,7 +770,7 @@ func TestTransactionPooler(t *testing.T) {
 		}); err != nil {
 			t.Fatal(err)
 		}
-		if n := scalar[int](t, admin, "SELECT count(*)::int FROM trove.vuln_advisory WHERE id = 'T-1' AND \"references\" = '[{\"type\":\"WEB\",\"url\":\"https://x\"}]'::jsonb"); n != 1 {
+		if n := scalar[int](t, admin, "SELECT count(*)::int FROM quader.vuln_advisory WHERE id = 'T-1' AND \"references\" = '[{\"type\":\"WEB\",\"url\":\"https://x\"}]'::jsonb"); n != 1 {
 			t.Fatalf("%d advisories with the references of the document, want 1", n)
 		}
 	})
@@ -785,7 +785,7 @@ func TestTransactionPooler(t *testing.T) {
 		// The lease connection bypasses the pooler: the session host is PostgreSQL itself.
 		var port int
 		if err := admin.QueryRow(context.Background(),
-			`SELECT count(*) FROM pg_stat_activity WHERE application_name = 'trove:pod-named:lease' AND client_port > 0`).Scan(&port); err != nil || port != 1 {
+			`SELECT count(*) FROM pg_stat_activity WHERE application_name = 'quader:pod-named:lease' AND client_port > 0`).Scan(&port); err != nil || port != 1 {
 			t.Fatalf("lease connections: %d, %v", port, err)
 		}
 	})

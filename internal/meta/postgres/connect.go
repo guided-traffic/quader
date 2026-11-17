@@ -17,8 +17,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // The connection classes of R-ARCH-019. The class is the last part of the
@@ -34,12 +34,12 @@ const (
 // (NAMEDATALEN - 1).
 const maxApplicationName = 63
 
-// ApplicationName is trove:<instance>:<class>, the name every connection sets so
+// ApplicationName is quader:<instance>:<class>, the name every connection sets so
 // pg_stat_activity attributes it (R-ARCH-019, R-HA-015). An instance name too
 // long for PostgreSQL is cut, never the class: the class is what the lock
 // diagnostics read.
 func ApplicationName(instance, class string) string {
-	const prefix = "trove:"
+	const prefix = "quader:"
 	room := maxApplicationName - len(prefix) - 1 - len(class)
 	if len(instance) > room {
 		instance = instance[:room]

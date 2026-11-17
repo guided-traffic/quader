@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // LockoutKey is the auth_lockout row of the break-glass account (R-AUTH-038).
@@ -26,7 +26,7 @@ const LockoutKey = "break-glass"
 // Unlock clears a lockout of the break-glass account at once on every replica
 // (R-AUTH-014, R-AUTH-015: every login attempt reads the row) and records
 // auth.breakglass.unlocked with severity high in the same transaction (Q-AUTH-37).
-// It reports whether a lock was in force. `trove admin break-glass unlock` and
+// It reports whether a lock was in force. `quader admin break-glass unlock` and
 // `POST /api/v1/users/{breakGlassName}/unlock` both call it.
 func Unlock(ctx context.Context, db meta.Runner, rec audit.Recorder, actor audit.Actor, src audit.Source) (bool, error) {
 	var was bool

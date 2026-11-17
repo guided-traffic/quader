@@ -4,7 +4,7 @@ import (
 	"context"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // junkVersion is a string that is no version of any format the kit knows; the contract of

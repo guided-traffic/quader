@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/principal"
 )
 
 // Auth methods of a session row (ui_session.auth_method).

@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	ocidata "github.com/guided-traffic/trove/internal/formatdata/oci"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const actor = "5b2a0c0e-0000-4000-8000-000000000001"

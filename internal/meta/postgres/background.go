@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The background data migrations of R-HA-022 as far as they exist before its table `background_migration`: each is
 // declared by the package that runs it, with the release that introduced it and the system_state key that records its
 // completion, and its state is read from that record and from the newest job of its kind (Q-HA-114). The report of GET
-// /api/v1/system/migrations and `trove migrate status` and the contract guard read the same states, so a contract step that
+// /api/v1/system/migrations and `quader migrate status` and the contract guard read the same states, so a contract step that
 // depends on a migration is refused for exactly the state the report shows (Q-HA-115).
 
 // BackgroundKindPrefix is the prefix of a background data migration's job kind: data_migration_<name> (R-HA-022).

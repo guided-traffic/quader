@@ -6,16 +6,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/formats/deb/release"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
-	"github.com/guided-traffic/trove/internal/openpgp"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/formats/deb/release"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // systemHousekeeping is the actor of the removals the housekeeping makes: a removal that no request asked for.

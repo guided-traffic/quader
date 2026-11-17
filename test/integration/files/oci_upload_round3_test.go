@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
+	"github.com/guided-traffic/quader/internal/authz"
 )
 
 // ociPush pushes an image of one layer to the name as the user through the real routes: the config and the layer by monolithic uploads,

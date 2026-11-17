@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// semver is a version of Semantic Versioning 2.0.0. The stub compares versions by itself, independently of trove's own
+// semver is a version of Semantic Versioning 2.0.0. The stub compares versions by itself, independently of quader's own
 // implementation, so that a defect there does not hide in the order of the stub's lists.
 type semver struct {
 	major, minor, patch uint64

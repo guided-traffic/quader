@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { AuthSettingsApi } from '../../api/auth-settings-api';
 import { IdentityApi } from '../../api/identity-api';
 import { FakeAuthSettingsApi, FakeIdentityApi, sampleUser } from '../../api/testing/access-fakes';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { seriousViolations } from '../../testing/axe';
 import { button, buttonByText, openFilters, renderScreen, settle, text, typeInto } from '../../testing/screen';
 import { UserCreateDialog } from './user-create-dialog';
@@ -12,7 +12,7 @@ import { UserList } from './user-list';
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
 
 const externalBox = (root: ParentNode): HTMLInputElement =>
-  [...root.querySelectorAll<HTMLInputElement>('trove-checkbox input')].find((i) => i.labels?.[0]?.textContent?.includes('External user'))!;
+  [...root.querySelectorAll<HTMLInputElement>('quader-checkbox input')].find((i) => i.labels?.[0]?.textContent?.includes('External user'))!;
 
 describe('The external flag of a user (R-UI-056)', () => {
   it('R-UI-056 the user page has the checkbox External user with its sentence and its own save, and passes axe', async () => {
@@ -80,9 +80,9 @@ describe('The external flag of a user (R-UI-056)', () => {
         api.stored = { ...api.stored, settings: { ...api.stored.settings, newUsersExternal: true } };
       },
     });
-    TestBed.inject(TroveDialog).open(UserCreateDialog, { maxWidth: '36rem' });
+    TestBed.inject(QuaderDialog).open(UserCreateDialog, { maxWidth: '36rem' });
     await settle(r.fixture);
-    const dialog = overlay().querySelector('trove-user-create-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-user-create-dialog') as HTMLElement;
     expect(externalBox(dialog).checked).toBe(true);
     typeInto(dialog, 'User name', 'erin');
     await settle(r.fixture);

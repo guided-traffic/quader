@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestBurstBesideEmptyCaches is the burst that Q-ARCH-240 shed (Q-ARCH-328): a
@@ -20,27 +20,27 @@ import (
 // that a real exhaustion is still shed.
 func TestBurstBesideEmptyCaches(t *testing.T) {
 	in := newInstall(t)
-	r := in.start(t, "burst", fmt.Sprintf("TROVE_RUNTIME_MEMORY_LIMIT_BYTES=%d", 1<<30))
+	r := in.start(t, "burst", fmt.Sprintf("QUADER_RUNTIME_MEMORY_LIMIT_BYTES=%d", 1<<30))
 	big := in.deploy(t, r, "big.bin", 1<<20)
 	const path = filesRoot + "big.bin"
 	const n = 300
 
 	t.Run("R-ARCH-005 Q-ARCH-328 the slots are not reduced by the caches' budgets while the caches are empty", func(t *testing.T) {
 		// 0.8 × 0.85 × 1 GiB over 640 KiB is 1,114; the budgets of the default caches would leave 77.
-		if slots := r.metric(t, "trove_http_memory_slots"); slots < 1000 {
-			t.Fatalf("trove_http_memory_slots = %.0f, want about 1,114 (77 when the budgets were reserved)", slots)
+		if slots := r.metric(t, "quader_http_memory_slots"); slots < 1000 {
+			t.Fatalf("quader_http_memory_slots = %.0f, want about 1,114 (77 when the budgets were reserved)", slots)
 		}
 	})
 
 	t.Run("R-ARCH-005 Q-ARCH-328 300 downloads held at once are all served: nothing is shed although the budgets of the caches would have left 77 slots", func(t *testing.T) {
-		const shedSeries = `trove_http_requests_shed_total{endpoint="default",reason="memory_slots"}`
+		const shedSeries = `quader_http_requests_shed_total{endpoint="default",reason="memory_slots"}`
 		base := r.completed(t)
 		downloads := make([]*slow, n)
 		for i := range downloads {
 			downloads[i] = slowGet(t, r.client, path, in.token)
 		}
 		testenv.WaitFor(t, "every download reached the replica", 60*time.Second, func() bool {
-			return r.completed(t)-base+r.metric(t, `trove_http_requests_in_flight{endpoint="default",listener="client"}`) >= n
+			return r.completed(t)-base+r.metric(t, `quader_http_requests_in_flight{endpoint="default",listener="client"}`) >= n
 		})
 		time.Sleep(time.Second)
 		results := make([]result, n)

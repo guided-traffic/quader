@@ -155,7 +155,7 @@ describe('The claim input of the tester (R-UI-036)', () => {
   });
 
   it('R-UI-036 the sample has the claims of a GitLab ID token and starts out matching the mapping it is opened from', () => {
-    const base = sampleClaims('https://gitlab.example.com', 'https://trove.example.com', now);
+    const base = sampleClaims('https://gitlab.example.com', 'https://quader.example.com', now);
     for (const claim of ['iss', 'aud', 'sub', 'namespace_id', 'namespace_path', 'project_id', 'project_path', 'ref', 'ref_type', 'ref_protected', 'pipeline_source', 'environment', 'user_login', 'job_id', 'iat', 'nbf', 'exp']) {
       expect(base, claim).toHaveProperty(claim);
     }

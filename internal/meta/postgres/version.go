@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// version is a trove release number: major.minor.patch with an optional
+// version is a quader release number: major.minor.patch with an optional
 // pre-release. The build "dev" (go run, tests) is newer than every release, so
 // a development binary passes the compatibility gate.
 type version struct {

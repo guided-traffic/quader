@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/merge"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/remote"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/merge"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/remote"
 )
 
 // The README of a package is wiki content (R-AUTHZ-034, R-NPM-010, Q-NPM-87): `readme` and `readmeFilename` of the full document are

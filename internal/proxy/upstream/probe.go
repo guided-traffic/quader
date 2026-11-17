@@ -16,9 +16,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The codes of UpstreamTestError and of Classify, stable like the other codes of
@@ -115,7 +115,7 @@ func probeError(err error, target *url.URL) *repository.UpstreamTestError {
 	case CodeTooManyRedirects:
 		msg = "The upstream redirected more often than proxy.max_redirects allows."
 	case CodeInsecureRedirect:
-		msg = "The upstream redirected from https to http, which trove refuses."
+		msg = "The upstream redirected from https to http, which Quader refuses."
 	case CodeSecretUnavailable:
 		msg = "The credential of the repository cannot be unsealed or resolved on this replica."
 	default:
@@ -289,7 +289,7 @@ func (c *Clients) tokenCheck(ctx context.Context, cl *Client, res *repository.Up
 		if e, ok := errs.As(err); ok && e.Code == CodeInsecureRedirect {
 			code = CodeInsecureRedirect
 		}
-		msg := "The registry's token service is on " + host + ", which is neither the upstream nor one of the repository's further hosts; trove did not ask it."
+		msg := "The registry's token service is on " + host + ", which is neither the upstream nor one of the repository's further hosts; Quader did not ask it."
 		if code == CodeInsecureRedirect {
 			msg = "The registry's token service on " + host + " is reached over plain http, which an https upstream never is."
 		}

@@ -60,7 +60,7 @@ func TestAnsibleLocal(t *testing.T) {
 
 		t.Run("R-ANS-004 R-ANS-032 "+img.name+" installs a requirements.yml with a pinned version and a range", func(t *testing.T) {
 			c := fx.client(t, img)
-			req := fmt.Sprintf("collections:\n  - name: %s\n    version: '1.0.0'\n    source: trove\n  - name: %s\n    version: '>=1.0.0'\n", base.full(), tools.full())
+			req := fmt.Sprintf("collections:\n  - name: %s\n    version: '1.0.0'\n    source: quader\n  - name: %s\n    version: '>=1.0.0'\n", base.full(), tools.full())
 			script := withCfg(cfg, "printf %s "+shellQuoteWord(req)+" >requirements.yml\nansible-galaxy collection install -r requirements.yml -p coll\n"+
 				fmt.Sprintf("for f in %s %s; do test -s coll/ansible_collections/$(echo $f | tr . /)/MANIFEST.json || exit 3; done", base.full(), tools.full()))
 			c.must(script, env)

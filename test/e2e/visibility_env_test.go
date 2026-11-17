@@ -163,7 +163,7 @@ func awaitStatusOnEveryReplica(t testing.TB, what string, mk func() *api, path s
 func userToken(t *testing.T, user string) string {
 	t.Helper()
 	b := newBrowser(t)
-	b.oidcLogin(user, secretValue(t, "trove-keycloak", user+"-password"))
+	b.oidcLogin(user, secretValue(t, "quader-keycloak", user+"-password"))
 	r := b.do(http.MethodPost, "/api/v1/tokens", map[string]any{"description": "e2e visibility", "ttlSeconds": 3600, "scope": map[string]any{"inherit": true}}).
 		want(t, user+"'s personal access token", 201)
 	var c createdToken

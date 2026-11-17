@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func roleEndpoint(t *testing.T, surface []string, role string) *Endpoint {

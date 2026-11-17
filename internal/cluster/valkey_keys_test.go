@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // bareValkey is a client that never connects: enough to form keys.
@@ -33,16 +33,16 @@ func TestKeyRegistry(t *testing.T) {
 	ch := registerChannelFamily("testkeys:chan", 1)
 
 	t.Run("R-ARCH-030 key = prefix + keyspace + mechanism + version + parts", func(t *testing.T) {
-		v := bareValkey("trove:", "0123456789ABCDEF0123")
+		v := bareValkey("quader:", "0123456789ABCDEF0123")
 		k, err := v.formKey(fam, "abc", "d-e_f")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want := "trove:0123456789ab:testkeys:unit:v1:abc:d-e_f"; k.String() != want {
+		if want := "quader:0123456789ab:testkeys:unit:v1:abc:d-e_f"; k.String() != want {
 			t.Fatalf("key = %q, want %q", k, want)
 		}
 		c, err := v.channel(ch)
-		if err != nil || c.String() != "trove:0123456789ab:testkeys:chan:v1" {
+		if err != nil || c.String() != "quader:0123456789ab:testkeys:chan:v1" {
 			t.Fatalf("channel = %q, %v", c, err)
 		}
 	})
@@ -53,7 +53,7 @@ func TestKeyRegistry(t *testing.T) {
 		}
 	})
 	t.Run("R-ARCH-030 every key carries an expiry, capped by its family", func(t *testing.T) {
-		v := bareValkey("trove:", "0123456789ab")
+		v := bareValkey("quader:", "0123456789ab")
 		k, _ := v.formKey(fam, "x")
 		if k.TTL() != 2*time.Minute {
 			t.Fatalf("default ttl = %s", k.TTL())
@@ -73,19 +73,19 @@ func TestKeyRegistry(t *testing.T) {
 		mustPanic(t, func() { registerKeyFamily("testkeys:negttl", 1, -time.Second) })
 	})
 	t.Run("R-ARCH-030 the zero Key cannot be written", func(t *testing.T) {
-		v := bareValkey("trove:", "0123456789ab")
+		v := bareValkey("quader:", "0123456789ab")
 		if err := v.set(t.Context(), Key{}, "x"); err == nil || !strings.Contains(err.Error(), "invalid key") {
 			t.Fatalf("Set(zero Key) = %v", err)
 		}
 		if _, err := v.incr(t.Context(), Key{}); err == nil {
 			t.Fatal("Incr(zero Key) accepted")
 		}
-		if _, err := v.setNX(t.Context(), Key{name: "trove:x"}, "x"); err == nil {
+		if _, err := v.setNX(t.Context(), Key{name: "quader:x"}, "x"); err == nil {
 			t.Fatal("SetNX(key without expiry) accepted")
 		}
 	})
 	t.Run("R-ARCH-030 parts are identifiers or hashes, never raw names", func(t *testing.T) {
-		v := bareValkey("trove:", "0123456789ab")
+		v := bareValkey("quader:", "0123456789ab")
 		for _, bad := range []string{"", "a:b", "left-pad/1.0", "a b", "*", "pkg@1", strings.Repeat("a", 129), "näme"} {
 			if _, err := v.formKey(fam, bad); err == nil {
 				t.Errorf("part %q accepted", bad)
@@ -93,12 +93,12 @@ func TestKeyRegistry(t *testing.T) {
 		}
 	})
 	t.Run("R-ARCH-030 no key before the keyspace is known", func(t *testing.T) {
-		if _, err := bareValkey("trove:", "").formKey(fam, "x"); !errors.Is(err, ErrNoKeyspace) {
+		if _, err := bareValkey("quader:", "").formKey(fam, "x"); !errors.Is(err, ErrNoKeyspace) {
 			t.Fatalf("err = %v, want ErrNoKeyspace", err)
 		}
 	})
 	t.Run("R-ARCH-030 the keyspace is 12 hex digits and set once", func(t *testing.T) {
-		v := bareValkey("trove:", "")
+		v := bareValkey("quader:", "")
 		if err := v.SetKeyspaceID("short"); err == nil {
 			t.Fatal("short keyspace accepted")
 		}
@@ -131,7 +131,7 @@ func TestKeyRegistry(t *testing.T) {
 		}
 	})
 	t.Run("R-ARCH-030 values above 1 KiB are refused", func(t *testing.T) {
-		v := bareValkey("trove:", "0123456789ab")
+		v := bareValkey("quader:", "0123456789ab")
 		k, _ := v.formKey(fam, "x")
 		big := strings.Repeat("x", MaxValueSize+1)
 		if err := v.set(t.Context(), k, big); err == nil || !strings.Contains(err.Error(), "1 KiB") {

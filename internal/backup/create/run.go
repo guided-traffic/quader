@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // runState is one run of the pipeline: what the phases share.

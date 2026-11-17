@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 func (e *env) member(a map[string]any, path ...string) any {

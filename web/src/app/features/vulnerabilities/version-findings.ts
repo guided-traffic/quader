@@ -32,7 +32,7 @@ export function severitiesOf(s: BarSeverity): VulnerabilitySeverity[] {
  * on a narrow screen.
  */
 @Component({
-  selector: 'trove-version-findings',
+  selector: 'quader-version-findings',
   preserveWhitespaces: true,
   imports: [DecimalPipe, RouterLink, DataTable, FindingStatus, SeverityBadge],
   template: `
@@ -44,7 +44,7 @@ export function severitiesOf(s: BarSeverity): VulnerabilitySeverity[] {
         <span i18n="@@pkg.vuln.findings-total">{{ total() | number }} open findings, the worst first.</span>
       }
     </p>
-    <trove-data-table
+    <quader-data-table
       [caption]="caption()"
       [columns]="columns"
       [loaded]="list.loaded()"
@@ -58,16 +58,16 @@ export function severitiesOf(s: BarSeverity): VulnerabilitySeverity[] {
     >
       @for (f of list.items(); track f.id) {
         <tr>
-          <td><trove-severity [severity]="f.severity" [score]="f.cvss?.score ?? null" /></td>
+          <td><quader-severity [severity]="f.severity" [score]="f.cvss?.score ?? null" /></td>
           <th scope="row">
             <a [routerLink]="['/projects', f.project, 'vulnerabilities', 'findings', f.id]" translate="no">{{ f.advisory }}</a>
             <span class="secondary">{{ f.summary }}</span>
           </th>
-          <td><trove-finding-status [finding]="f" /></td>
+          <td><quader-finding-status [finding]="f" /></td>
           <td translate="no" class="wrap">{{ f.fixedVersions.length > 0 ? f.fixedVersions.join(', ') : '–' }}</td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   `,
 })
 export class VersionFindings {

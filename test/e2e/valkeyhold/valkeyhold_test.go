@@ -16,7 +16,7 @@ func TestBenignPatchError(t *testing.T) {
 		{errors.New(`pods "x" not found`), true},
 		{errors.New("Precondition failed: UID in precondition: a, UID in object meta: b"), true},
 		// "guided-traffic" contains "uid"; only the answers above are final
-		{errors.New("the finalizer e2e.trove.guided-traffic.com/hold-valkey-primary could not be patched"), false},
+		{errors.New("the finalizer e2e.quader.guided-traffic.com/hold-valkey-primary could not be patched"), false},
 		{errors.New("Unable to connect to the server: context deadline exceeded"), false},
 	} {
 		if got := BenignPatchError(c.err); got != c.want {
@@ -30,13 +30,13 @@ func TestParseFlags(t *testing.T) {
 		name, out     string
 		inProgress, f bool
 	}{
-		{"running", "name\ntrove-valkey\nip\nx\nflags\nmaster\nnum-slaves\n1\n", false, true},
+		{"running", "name\nquader-valkey\nip\nx\nflags\nmaster\nnum-slaves\n1\n", false, true},
 		{"down", "flags\ns_down,o_down,master\n", false, true},
-		{"failing over", "name\ntrove-valkey\nflags\no_down,failover_in_progress,master\nnum-slaves\n1\n", true, true},
+		{"failing over", "name\nquader-valkey\nflags\no_down,failover_in_progress,master\nnum-slaves\n1\n", true, true},
 		{"padded", "  flags  \n  master,failover_in_progress \n", true, true},
 		{"flags last line", "name\nx\nflags", false, false},
 		{"flags value empty", "flags\n\nnum-slaves\n1\n", false, false},
-		{"no flags key", "name\ntrove-valkey\nnum-slaves\n1\n", false, false},
+		{"no flags key", "name\nquader-valkey\nnum-slaves\n1\n", false, false},
 		{"error", "ERR No such master with that name\n", false, false},
 		{"empty", "", false, false},
 	} {

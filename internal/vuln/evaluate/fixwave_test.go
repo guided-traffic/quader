@@ -3,9 +3,9 @@ package evaluate
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // R-VULN-012, Q-VULN-65: the kind of a match is that of the records whose entry affects the version: a malicious record of the

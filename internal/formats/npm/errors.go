@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // The request headers an npm client sends to say what it is doing (R-NPM-005):
@@ -53,7 +53,7 @@ type errorBody struct {
 
 // defaultChallenge is the challenge of a 401 that names none: a token as the Basic
 // password with any user name, or as a Bearer token (R-NPM-004).
-const defaultChallenge = `Basic realm="trove"`
+const defaultChallenge = `Basic realm="quader"`
 
 // WriteError renders an error in the native shape of npm (R-NPM-005): status,
 // Content-Type application/json and the three members error, message and code.
@@ -145,13 +145,13 @@ func unauthenticated() *errs.Error {
 	return errs.E(errs.Unauthenticated, errs.CodeUnauthenticated, "This endpoint requires an authenticated caller.")
 }
 
-// notImplemented is the answer to an npm operation trove does not implement: 404
+// notImplemented is the answer to an npm operation quader does not implement: 404
 // for a GET, PUT or DELETE and 501 for a POST (R-NPM-001, R-NPM-043), so npm's
 // fetch layer, which retries a GET and a PUT on any 5xx but never a POST, fails
 // at once.
 func notImplemented(method string) error {
 	if method == http.MethodPost {
-		return errs.E(errs.NotImplemented, errs.CodeNPMNotImplemented, "This npm operation is not implemented by trove.")
+		return errs.E(errs.NotImplemented, errs.CodeNPMNotImplemented, "This npm operation is not implemented by Quader.")
 	}
-	return errs.E(errs.NotFound, errs.CodeNotFound, "This npm operation is not implemented by trove.")
+	return errs.E(errs.NotFound, errs.CodeNotFound, "This npm operation is not implemented by Quader.")
 }

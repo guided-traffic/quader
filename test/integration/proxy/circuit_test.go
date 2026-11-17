@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestCircuit is R-REPO-029: the classification of upstream failures, the stale copy,
@@ -38,19 +38,19 @@ func TestCircuit(t *testing.T) {
 		up.Set("/pkg/cached", proxytest.Route{Status: http.StatusServiceUnavailable})
 		for i := range 5 {
 			s := a.metadata(rem, "pkg/cached")
-			if s.status != 200 || !bytes.Equal(s.body, doc) || s.cacheStatus() != "trove; fwd=stale; fwd-status=503; detail=served-stale" {
+			if s.status != 200 || !bytes.Equal(s.body, doc) || s.cacheStatus() != "quader; fwd=stale; fwd-status=503; detail=served-stale" {
 				t.Fatalf("failure %d: %d %q", i+1, s.status, s.cacheStatus())
 			}
 		}
 		asked := up.Total()
 		for _, r := range []*replica{a, b} {
 			waitFor(t, r.name+" to hold the circuit open", 2*time.Second, func() bool {
-				return r.metric("trove_remote_upstream_up", "repo", "circuit") == 0
+				return r.metric("quader_remote_upstream_up", "repo", "circuit") == 0
 			})
 		}
 		for _, r := range []*replica{a, b} {
 			s := r.metadata(rem, "pkg/cached")
-			if s.status != 200 || !bytes.Equal(s.body, doc) || s.cacheStatus() != "trove; hit; detail=served-stale" {
+			if s.status != 200 || !bytes.Equal(s.body, doc) || s.cacheStatus() != "quader; hit; detail=served-stale" {
 				t.Fatalf("%s: %d %q", r.name, s.status, s.cacheStatus())
 			}
 			u := r.artifact(rem, "pkg/cached/-/cached-1.tgz")
@@ -61,19 +61,19 @@ func TestCircuit(t *testing.T) {
 		if up.Total() != asked {
 			t.Fatalf("an open circuit sent %d requests", up.Total()-asked)
 		}
-		if g := b.metric("trove_remote_upstream_up", "repo", "circuit"); g != 0 {
-			t.Fatalf("trove_remote_upstream_up on b = %v", g)
+		if g := b.metric("quader_remote_upstream_up", "repo", "circuit"); g != 0 {
+			t.Fatalf("quader_remote_upstream_up on b = %v", g)
 		}
 
 		t.Run("R-REPO-029 after the open period the first request probes, and a 200 closes the circuit for both", func(t *testing.T) {
 			up.Set("/pkg/cached", proxytest.Route{Body: []byte(`{"name":"cached","v":2}`), Type: "application/json", ETag: `"c2"`})
 			waitFor(t, "the open period to pass", 5*time.Second, func() bool {
-				return a.metadata(rem, "pkg/cached").cacheStatus() != "trove; hit; detail=served-stale"
+				return a.metadata(rem, "pkg/cached").cacheStatus() != "quader; hit; detail=served-stale"
 			})
 			if s := a.metadata(rem, "pkg/cached"); s.status != 200 || !strings.Contains(string(s.body), `"v":2`) {
 				t.Fatalf("%d %s", s.status, s.body)
 			}
-			waitFor(t, "b to see the circuit closed", 2*time.Second, func() bool { return b.metric("trove_remote_upstream_up", "repo", "circuit") == 1 })
+			waitFor(t, "b to see the circuit closed", 2*time.Second, func() bool { return b.metric("quader_remote_upstream_up", "repo", "circuit") == 1 })
 			if n := e.number("SELECT consecutive_failures FROM remote_upstream_state"); n != 0 {
 				t.Fatalf("consecutive_failures = %d after a success", n)
 			}
@@ -98,7 +98,7 @@ func TestCircuit(t *testing.T) {
 		if n := e.number("SELECT count(*) FROM remote_upstream_state WHERE consecutive_failures > 0 OR open_until IS NOT NULL"); n != 0 {
 			t.Fatalf("a 401 was counted toward the circuit")
 		}
-		if g := a.metric("trove_remote_upstream_up", "repo", "circuit-401"); g == 0 {
+		if g := a.metric("quader_remote_upstream_up", "repo", "circuit-401"); g == 0 {
 			t.Fatal("the circuit opened")
 		}
 	})
@@ -113,7 +113,7 @@ func TestCircuit(t *testing.T) {
 		if s.status != 503 || s.header.Get("Retry-After") == "" {
 			t.Fatalf("%d %v", s.status, s.header)
 		}
-		waitFor(t, "the circuit to open", 2*time.Second, func() bool { return a.metric("trove_remote_upstream_up", "repo", "circuit-429") == 0 })
+		waitFor(t, "the circuit to open", 2*time.Second, func() bool { return a.metric("quader_remote_upstream_up", "repo", "circuit-429") == 0 })
 		before := up.Total()
 		if s := a.metadata(rem, "pkg/other"); s.status != 503 || up.Total() != before {
 			t.Fatalf("%d, %d requests", s.status, up.Total()-before)

@@ -152,7 +152,7 @@ type EndAllSessionsRow struct {
 	SecretSha256Hex string
 }
 
-// trove admin sessions end --all (R-AUTH-015), in batches; WithdrawEndedSessions then marks the sessions that had ended already.
+// quader admin sessions end --all (R-AUTH-015), in batches; WithdrawEndedSessions then marks the sessions that had ended already.
 func (q *Queries) EndAllSessions(ctx context.Context) ([]EndAllSessionsRow, error) {
 	rows, err := q.db.Query(ctx, endAllSessions)
 	if err != nil {
@@ -184,7 +184,7 @@ type EndBreakGlassSessionsRow struct {
 	SecretSha256Hex string
 }
 
-// Every open break-glass session (R-AUTH-014: rotation, disabled account, trove admin break-glass end-sessions) ends with a reason
+// Every open break-glass session (R-AUTH-014: rotation, disabled account, quader admin break-glass end-sessions) ends with a reason
 // that withdraws it; WithdrawEndedBreakGlassSessions then marks the ones that had ended already (Q-AUTHZ-262).
 func (q *Queries) EndBreakGlassSessions(ctx context.Context, reason string) ([]EndBreakGlassSessionsRow, error) {
 	rows, err := q.db.Query(ctx, endBreakGlassSessions, reason)
@@ -697,7 +697,7 @@ type ListLiveSessionsOfPrincipalRow struct {
 	ProviderID  string
 }
 
-// The session list of R-AUTH-010 (wave 2 API) and of trove admin.
+// The session list of R-AUTH-010 (wave 2 API) and of quader admin.
 func (q *Queries) ListLiveSessionsOfPrincipal(ctx context.Context, principalID string) ([]ListLiveSessionsOfPrincipalRow, error) {
 	rows, err := q.db.Query(ctx, listLiveSessionsOfPrincipal, principalID)
 	if err != nil {
@@ -1301,7 +1301,7 @@ UPDATE auth_lockout l SET locked_until = NULL, failures = 0, window_started_at =
 RETURNING coalesce(old.was_locked, false)::bool AS was_locked
 `
 
-// trove admin break-glass unlock (R-AUTH-015); was_locked is the state before.
+// quader admin break-glass unlock (R-AUTH-015); was_locked is the state before.
 func (q *Queries) Unlock(ctx context.Context, accountKey string) ([]bool, error) {
 	rows, err := q.db.Query(ctx, unlock, accountKey)
 	if err != nil {

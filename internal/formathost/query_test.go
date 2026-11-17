@@ -3,8 +3,8 @@ package formathost
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The wrapper that turns a formats.Query into the engine's request needs a repository with

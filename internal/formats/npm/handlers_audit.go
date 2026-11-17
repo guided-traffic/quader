@@ -15,11 +15,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The security audit (R-NPM-038). A remote repository forwards the bulk advisory request
@@ -29,7 +29,7 @@ import (
 // remote member (Q-NPM-62). The forwarded set is decided by one query before the provider
 // is asked, so no connection is held while it answers (R-NPM-046).
 
-// auditBulkPath is the bulk advisory endpoint below a registry URL, of trove and of the
+// auditBulkPath is the bulk advisory endpoint below a registry URL, of quader and of the
 // provider.
 const auditBulkPath = "-/npm/v1/security/advisories/bulk"
 
@@ -58,7 +58,7 @@ func withheldReasons() []string {
 // The texts of R-NPM-038; the guide quotes them (guide_test.go).
 const (
 	auditUnavailableText = "security audit is not available on repository %s; it is disabled or no upstream provides advisories"
-	auditPartialNotice   = "trove audited %d of %d packages; %d internal or not yet proxied names were not sent to the advisory provider"
+	auditPartialNotice   = "Quader audited %d of %d packages; %d internal or not yet proxied names were not sent to the advisory provider"
 )
 
 // auditUnavailable is the 501 of R-NPM-038.
@@ -116,7 +116,7 @@ func (f *Format) forwarder(ctx context.Context, rq *formats.Request) (*auditForw
 	return nil, auditUnavailable(rq.Repo.Name.String())
 }
 
-// handleAudit answers POST -/npm/v1/security/advisories/bulk (R-NPM-038, R-VULN-017): from trove's own advisory
+// handleAudit answers POST -/npm/v1/security/advisories/bulk (R-NPM-038, R-VULN-017): from quader's own advisory
 // data in mode local, else through the forwarding remote. Every answer is counted by mode and outcome.
 func (f *Format) handleAudit(ctx context.Context, rq *formats.Request, w http.ResponseWriter) error {
 	mode := auditModeOf(rq.Host, rq.Repo.Class, settingsOf(rq.Repo.Config).Audit)
@@ -130,7 +130,7 @@ func (f *Format) handleAudit(ctx context.Context, rq *formats.Request, w http.Re
 	return err
 }
 
-// auditOutcome is the outcome label of trove_vuln_audit_requests_total.
+// auditOutcome is the outcome label of quader_vuln_audit_requests_total.
 func auditOutcome(err error) string {
 	if err == nil {
 		return "ok"
@@ -403,6 +403,6 @@ func (f *Format) handleAuditLegacy(ctx context.Context, rq *formats.Request, _ h
 		return err
 	}
 	return errs.E(errs.NotImplemented, errs.CodeNPMAuditUnavailable,
-		"trove answers security audits on the bulk advisory endpoint only, which npm 7 and later, pnpm 11 and later and yarn npm audit use; "+
+		"Quader answers security audits on the bulk advisory endpoint only, which npm 7 and later, pnpm 11 and later and yarn npm audit use; "+
 			"npm asks this endpoint after its bulk request failed, and npm audit --loglevel=verbose shows why")
 }

@@ -25,7 +25,7 @@
 }
 
 // The two variants of a format logo (Q-UI-226, shared/format-icon.ts): the owner's mark in the light scheme, the owner's
-// variant for a dark ground in the dark one. The scheme is trove's: an explicit choice (data-theme), else the system's,
+// variant for a dark ground in the dark one. The scheme is Quader's: an explicit choice (data-theme), else the system's,
 // the same pair of conditions as the tokens' color-scheme. The component sets no display on its images, so these rules
 // alone decide which one shows.
 .logo-on-dark {

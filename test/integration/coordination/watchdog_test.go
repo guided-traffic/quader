@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/observability/health"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/observability/health"
 )
 
 // recordingWatchdog hands out the real health loops and remembers them by name.
@@ -68,8 +68,8 @@ func TestClaimLoopWatchdog(t *testing.T) {
 	defer func() { _ = w.Stop(context.Background()) }()
 
 	// Every update of a job now takes 4 s, twice the watchdog bound.
-	e.exec(`CREATE FUNCTION trove.slow_claim() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_sleep(4); RETURN NEW; END $$`)
-	e.exec(`CREATE TRIGGER slow_claim BEFORE UPDATE ON trove.job FOR EACH ROW EXECUTE FUNCTION trove.slow_claim()`)
+	e.exec(`CREATE FUNCTION quader.slow_claim() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_sleep(4); RETURN NEW; END $$`)
+	e.exec(`CREATE TRIGGER slow_claim BEFORE UPDATE ON quader.job FOR EACH ROW EXECUTE FUNCTION quader.slow_claim()`)
 	e.exec(`INSERT INTO job (id, kind) VALUES ('00000000-0000-7000-8000-00000000c1a1', 'it.wd')`)
 
 	t.Run("R-ARCH-016 a claim held past the watchdog bound ends with a deadline error and the loop keeps recording progress", func(t *testing.T) {
@@ -103,7 +103,7 @@ func TestClaimLoopWatchdog(t *testing.T) {
 	})
 
 	t.Run("R-ARCH-016 once the statement is fast again the job is claimed", func(t *testing.T) {
-		e.exec(`DROP TRIGGER slow_claim ON trove.job`)
+		e.exec(`DROP TRIGGER slow_claim ON quader.job`)
 		waitFor(t, "the job to succeed", 15*time.Second, func() bool {
 			return e.scalar(`SELECT count(*) FROM job WHERE id = '00000000-0000-7000-8000-00000000c1a1' AND state = 'succeeded'`) == 1
 		})

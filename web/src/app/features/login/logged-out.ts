@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { QuaderMark } from '../../shared/brand/quader-mark';
 
 /**
  * Landing page of the post-logout redirect `<baseURL>/ui/logged-out` (R-UI-004). It needs no
@@ -9,11 +10,11 @@ import { RouterLink } from '@angular/router';
  * stands alone, without the shell (Q-UI-125).
  */
 @Component({
-  selector: 'trove-logged-out',
-  imports: [RouterLink],
+  selector: 'quader-logged-out',
+  imports: [RouterLink, QuaderMark],
   template: `
     <div class="bare-panel">
-      <img class="bare-logo" src="brand/trove-horizontal.svg" alt="trove" width="190" height="64" />
+      <quader-mark class="bare-logo" [wordmark]="true" />
       <h1 tabindex="-1" i18n="@@loggedout.heading">Signed out</h1>
       <p class="text" i18n="@@loggedout.text">You have been signed out.</p>
       <a class="btn btn-confirm btn-block" routerLink="/login" i18n="@@loggedout.again"

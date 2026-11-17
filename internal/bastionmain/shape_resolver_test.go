@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 type fakeReacher struct {

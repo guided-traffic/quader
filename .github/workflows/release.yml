@@ -333,14 +333,14 @@ jobs:
           done
           go version
           make build
-          desc="$(file bin/trove)"
+          desc="$(file bin/quader)"
           echo "$desc"
           case "$desc" in
             *"statically linked"*) ;;
-            *) echo "::error::bin/trove is not statically linked"; exit 1 ;;
+            *) echo "::error::bin/quader is not statically linked"; exit 1 ;;
           esac
-          if ! go version -m bin/trove | grep -q 'CGO_ENABLED=0'; then
-            echo "::error::bin/trove was not built with CGO_ENABLED=0"
+          if ! go version -m bin/quader | grep -q 'CGO_ENABLED=0'; then
+            echo "::error::bin/quader was not built with CGO_ENABLED=0"
             exit 1
           fi
 
@@ -444,7 +444,7 @@ jobs:
       # The notices of the bundled software in the embedded build (R-UI-001, Q-UI-144). Only this job holds a built UI;
       # the unit job runs the same test on the placeholder, where it is skipped.
       - name: go test of the embedded notices
-        run: TROVE_UI_BUILT=1 go test -count=1 -run 'TestR_UI_001_ThirdPartyNotices' ./internal/webui/
+        run: QUADER_UI_BUILT=1 go test -count=1 -run 'TestR_UI_001_ThirdPartyNotices' ./internal/webui/
 
   malware-scan:
     name: Malware Scan (source code)
@@ -527,7 +527,7 @@ jobs:
         timeout-minutes: 16
         env:
           # The chart job is 20 minutes long: the download gets 10 of them, and the named error comes first.
-          TROVE_DOWNLOAD_BUDGET: "600"
+          QUADER_DOWNLOAD_BUDGET: "600"
           # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
           GITHUB_TOKEN: ${{ github.token }}
         run: make promtool
@@ -585,12 +585,12 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PAT }}
 
       - name: make image
-        run: make image IMAGE=trove:ci
+        run: make image IMAGE=quader:ci
 
       - name: The image runs as a non-root user
         run: |
           set -euo pipefail
-          user="$(docker image inspect trove:ci --format '{{.Config.User}}')"
+          user="$(docker image inspect quader:ci --format '{{.Config.User}}')"
           echo "user: $user"
           test "$user" = "65532:65532"
 
@@ -672,7 +672,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PAT }}
 
       - name: make image (for the scan)
-        run: make image IMAGE=trove:scan
+        run: make image IMAGE=quader:scan
 
       # Trivy at its pin from tools/versions.env, checked against its digest; trivy-action then installs nothing
       # (skip-setup-trivy), so the scan does not depend on setup-trivy's cache or its silent download.
@@ -689,7 +689,7 @@ jobs:
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: trove:scan
+          image-ref: quader:scan
           format: table
           exit-code: '1'
           ignore-unfixed: true
@@ -704,7 +704,7 @@ jobs:
         if: always() && steps.trivy_install.outcome == 'success'
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: trove:scan
+          image-ref: quader:scan
           format: sarif
           output: trivy-results.sarif
           scanners: vuln,secret,misconfig
@@ -720,7 +720,7 @@ jobs:
           retention-days: 30
 
   integration:
-    # Valkey 9.1 only: trove is in development and guarantees no older line (owner, 2026-10-29). The packages run in three
+    # Valkey 9.1 only: quader is in development and guarantees no older line (owner, 2026-10-29). The packages run in three
     # shards with a stack each (make test-integration SHARD=a|b|c, the lists in the Makefile).
     name: integration (shard ${{ matrix.shard }})
     runs-on: self-hosted
@@ -804,7 +804,7 @@ jobs:
         if: failure()
         run: |
           docker compose -f test/integration/compose.yaml ps -a || true
-          for c in $(docker ps -a --filter "name=trove-it-" --format '{{.Names}}'); do
+          for c in $(docker ps -a --filter "name=quader-it-" --format '{{.Names}}'); do
             echo "::group::logs of $c"
             docker logs --timestamps "$c" 2>&1 | tail -n 300 || true
             echo "::endgroup::"
@@ -885,9 +885,9 @@ jobs:
     env:
       # The image is built with an explicit VERSION=dev: the binary refuses a version that is not
       # major.minor.patch or "dev" (see docs/developer/e2e.md). make image builds it into the local Docker.
-      TROVE_IMAGE: guidedtraffic/trove:dev
-      TROVE_DEV_CLUSTER: trove-${{ matrix.set }}-${{ github.run_id }}
-      TROVE_DEV_HTTP_PORT: ${{ matrix.port }}
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -992,7 +992,7 @@ jobs:
           done
 
       - name: make image
-        run: make image IMAGE="$TROVE_IMAGE" VERSION=dev
+        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -1040,17 +1040,17 @@ jobs:
         if: failure()
         run: |
           set -u
-          ctx="kind-${TROVE_DEV_CLUSTER}"
+          ctx="kind-${QUADER_DEV_CLUSTER}"
           mkdir -p .out/cluster-state
           kubectl config get-contexts || true
-          for ns in trove ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
             kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
           done
           deploy/dev/cluster-logs.sh .out/cluster-state
           kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
-          helm --kube-context "$ctx" -n trove status trove > .out/cluster-state/helm-status.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
           docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
@@ -1086,9 +1086,9 @@ jobs:
       matrix:
         include: ${{ fromJSON(inputs.closing && '[{"set":"npm","port":"8082"},{"set":"npm-closing","port":"8083"},{"set":"npm-ha-closing","port":"8084"}]' || '[{"set":"npm","port":"8082"}]') }}
     env:
-      TROVE_IMAGE: guidedtraffic/trove:dev
-      TROVE_DEV_CLUSTER: trove-${{ matrix.set }}-${{ github.run_id }}
-      TROVE_DEV_HTTP_PORT: ${{ matrix.port }}
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -1158,7 +1158,7 @@ jobs:
           done
 
       - name: make image
-        run: make image IMAGE="$TROVE_IMAGE" VERSION=dev
+        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -1197,16 +1197,16 @@ jobs:
         if: failure()
         run: |
           set -u
-          ctx="kind-${TROVE_DEV_CLUSTER}"
+          ctx="kind-${QUADER_DEV_CLUSTER}"
           mkdir -p .out/cluster-state
-          for ns in trove ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
             kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
           done
           deploy/dev/cluster-logs.sh .out/cluster-state
           kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
-          helm --kube-context "$ctx" -n trove status trove > .out/cluster-state/helm-status.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
           docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
@@ -1237,11 +1237,11 @@ jobs:
       matrix:
         include: ${{ fromJSON(inputs.closing && '[{"set":"nuget","port":"8088"},{"set":"nuget-closing","port":"8089"}]' || '[{"set":"nuget","port":"8088"}]') }}
     env:
-      TROVE_IMAGE: guidedtraffic/trove:dev
-      TROVE_DEV_CLUSTER: trove-${{ matrix.set }}-${{ github.run_id }}
-      TROVE_DEV_HTTP_PORT: ${{ matrix.port }}
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
       # The clients image is built once by the step make nuget-clients-image; deploy/dev/e2e.sh loads it and does not build it again.
-      TROVE_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -1318,7 +1318,7 @@ jobs:
           done
 
       - name: make image
-        run: make image IMAGE="$TROVE_IMAGE" VERSION=dev
+        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -1357,16 +1357,16 @@ jobs:
         if: failure()
         run: |
           set -u
-          ctx="kind-${TROVE_DEV_CLUSTER}"
+          ctx="kind-${QUADER_DEV_CLUSTER}"
           mkdir -p .out/cluster-state
-          for ns in trove ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
             kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
           done
           deploy/dev/cluster-logs.sh .out/cluster-state
           kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
-          helm --kube-context "$ctx" -n trove status trove > .out/cluster-state/helm-status.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
           docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
@@ -1385,7 +1385,7 @@ jobs:
 
   # >>> T16 e2e-oci
   # The OCI acceptance suite (R-OCI-035, T-16 WP11) on a kind cluster: the Docker Engine with Buildx and Podman in privileged client pods of the
-  # namespace trove-e2e-clients (Q-OCI-21), against the scatter profile and the counting OCI test upstream (docs/developer/e2e.md#the-oci-tests).
+  # namespace quader-e2e-clients (Q-OCI-21), against the scatter profile and the counting OCI test upstream (docs/developer/e2e.md#the-oci-tests).
   # Per change that touches the registry it runs the leg oci: every TestOCI... except the closing and long names. A dispatch with closing=true adds
   # the leg oci-closing (TestOCIClosing...: Valkey stopped, the read-only subset against Docker Hub). The nightly leg oci-long is job e2e-oci in
   # performance.yml. The clients images are small (the Docker and Podman images, not the 2.3 GB of the NuGet clients), so the job runs on the large
@@ -1399,11 +1399,11 @@ jobs:
       matrix:
         include: ${{ fromJSON(inputs.closing && '[{"set":"oci","port":"8104"},{"set":"oci-closing","port":"8105"}]' || '[{"set":"oci","port":"8104"}]') }}
     env:
-      TROVE_IMAGE: guidedtraffic/trove:dev
-      TROVE_DEV_CLUSTER: trove-${{ matrix.set }}-${{ github.run_id }}
-      TROVE_DEV_HTTP_PORT: ${{ matrix.port }}
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
       # The clients images are built once by the step make oci-clients-image; deploy/dev/e2e.sh loads them and does not build them again.
-      TROVE_E2E_OCI_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_OCI_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -1428,7 +1428,7 @@ jobs:
             pull_request) base="$PR_BASE" ;;
             push) base="$PUSH_BEFORE" ;;
           esac
-          paths='^(internal/formats/oci/|internal/formats/(setup|serve|remote|virtual)\.go$|internal/formathost/|internal/formatdata/oci/|internal/api/(registry|dispatch)/|internal/auth/registrytoken/|internal/uploads/|internal/proxy/|internal/virtual/|internal/mirror/|internal/jobs/|internal/app/wire_mirror|internal/api/v1/mirror|internal/meta/postgres/(queries/mirror|migrations/[0-9]+_mirror)|internal/httpserver/|test/ocistub/|test/e2e/(oci|ociclients|mirror_)|test/e2e/clients/fwd/|deploy/dev/(ocistub|oci-clients|values-dev|values-scatter|pki|kind)\.yaml$|deploy/dev/(up|e2e|lib)\.sh$|deploy/helm/trove/|tools/versions\.env$|docs/spec/formats/oci\.md$)'
+          paths='^(internal/formats/oci/|internal/formats/(setup|serve|remote|virtual)\.go$|internal/formathost/|internal/formatdata/oci/|internal/api/(registry|dispatch)/|internal/auth/registrytoken/|internal/uploads/|internal/proxy/|internal/virtual/|internal/mirror/|internal/jobs/|internal/app/wire_mirror|internal/api/v1/mirror|internal/meta/postgres/(queries/mirror|migrations/[0-9]+_mirror)|internal/httpserver/|test/ocistub/|test/e2e/(oci|ociclients|mirror_)|test/e2e/clients/fwd/|deploy/dev/(ocistub|oci-clients|values-dev|values-scatter|pki|kind)\.yaml$|deploy/dev/(up|e2e|lib)\.sh$|deploy/helm/quader/|tools/versions\.env$|docs/spec/formats/oci\.md$)'
           if [ "$CLOSING" = "true" ] || [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
             echo "no base to compare with ($EVENT), or a closing run: the OCI suite runs"
             echo "run=true" >> "$GITHUB_OUTPUT"
@@ -1515,7 +1515,7 @@ jobs:
 
       - name: make image
         if: steps.scope.outputs.run == 'true'
-        run: make image IMAGE="$TROVE_IMAGE" VERSION=dev
+        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
 
       - name: Fetch the dev charts that are GitHub release assets
         if: steps.scope.outputs.run == 'true'
@@ -1557,16 +1557,16 @@ jobs:
         if: failure() && steps.scope.outputs.run == 'true'
         run: |
           set -u
-          ctx="kind-${TROVE_DEV_CLUSTER}"
+          ctx="kind-${QUADER_DEV_CLUSTER}"
           mkdir -p .out/cluster-state
-          for ns in trove ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
             kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
           done
           deploy/dev/cluster-logs.sh .out/cluster-state
           kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
-          helm --kube-context "$ctx" -n trove status trove > .out/cluster-state/helm-status.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
           docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
@@ -1586,7 +1586,7 @@ jobs:
 
   # >>> T17 e2e-deb
   # The Debian (APT) acceptance suite (R-DEB-035, T-17 WP10) on a kind cluster: a real APT of Debian 13, Debian 12, Ubuntu 24.04 and Ubuntu 22.04 in
-  # client pods of the namespace trove-e2e-apt (Q-DEB-27), against the scatter profile and the counting Debian archive test upstream
+  # client pods of the namespace quader-e2e-apt (Q-DEB-27), against the scatter profile and the counting Debian archive test upstream
   # (docs/developer/e2e.md#the-debian-tests). Per change that touches the format it runs the leg deb: every TestDeb... and TestAPTClients (local,
   # remote, mirror and virtual repositories, an anonymous read, a wrong keyring, the rotation table, the flat root). The client images are the four
   # official images with curl and a forwarder, so the job runs on the large class like the other kind legs. A dispatch with closing=true adds the leg
@@ -1600,11 +1600,11 @@ jobs:
       matrix:
         include: ${{ fromJSON(inputs.closing && '[{"set":"deb","port":"8107"},{"set":"deb-closing","port":"8108"}]' || '[{"set":"deb","port":"8107"}]') }}
     env:
-      TROVE_IMAGE: guidedtraffic/trove:dev
-      TROVE_DEV_CLUSTER: trove-${{ matrix.set }}-${{ github.run_id }}
-      TROVE_DEV_HTTP_PORT: ${{ matrix.port }}
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
       # The clients images are built once by the step make apt-clients-image; deploy/dev/e2e.sh loads them and does not build them again.
-      TROVE_E2E_APT_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_APT_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -1628,7 +1628,7 @@ jobs:
             pull_request) base="$PR_BASE" ;;
             push) base="$PUSH_BEFORE" ;;
           esac
-          paths='^(internal/formats/deb/|internal/formats/(setup|serve|remote|virtual)\.go$|internal/formathost/|internal/formatdata/deb/|internal/openpgp/|internal/api/dispatch/|internal/items/|internal/uploads/|internal/proxy/|internal/virtual/|internal/mirror/|internal/httpserver/|test/debstub/|test/e2e/(deb_|aptclients)|test/e2e/clients/fwd/|deploy/dev/(debstub|apt-clients|values-dev|values-scatter|pki|kind)\.yaml$|deploy/dev/(up|e2e|lib)\.sh$|deploy/helm/trove/|tools/versions\.env$|docs/spec/formats/debian\.md$)'
+          paths='^(internal/formats/deb/|internal/formats/(setup|serve|remote|virtual)\.go$|internal/formathost/|internal/formatdata/deb/|internal/openpgp/|internal/api/dispatch/|internal/items/|internal/uploads/|internal/proxy/|internal/virtual/|internal/mirror/|internal/httpserver/|test/debstub/|test/e2e/(deb_|aptclients)|test/e2e/clients/fwd/|deploy/dev/(debstub|apt-clients|values-dev|values-scatter|pki|kind)\.yaml$|deploy/dev/(up|e2e|lib)\.sh$|deploy/helm/quader/|tools/versions\.env$|docs/spec/formats/debian\.md$)'
           if [ "$CLOSING" = "true" ] || [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
             echo "no base to compare with ($EVENT), or a closing run: the Debian suite runs"
             echo "run=true" >> "$GITHUB_OUTPUT"
@@ -1715,7 +1715,7 @@ jobs:
 
       - name: make image
         if: steps.scope.outputs.run == 'true'
-        run: make image IMAGE="$TROVE_IMAGE" VERSION=dev
+        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
 
       - name: Fetch the dev charts that are GitHub release assets
         if: steps.scope.outputs.run == 'true'
@@ -1757,16 +1757,16 @@ jobs:
         if: failure() && steps.scope.outputs.run == 'true'
         run: |
           set -u
-          ctx="kind-${TROVE_DEV_CLUSTER}"
+          ctx="kind-${QUADER_DEV_CLUSTER}"
           mkdir -p .out/cluster-state
-          for ns in trove ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
             kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
           done
           deploy/dev/cluster-logs.sh .out/cluster-state
           kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
-          helm --kube-context "$ctx" -n trove status trove > .out/cluster-state/helm-status.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
           docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
@@ -1786,7 +1786,7 @@ jobs:
 
   # >>> F0 e2e-ansible
   # The Ansible Galaxy acceptance suite (R-ANS-032) on a kind cluster: a real ansible-galaxy of ansible-core 2.17 and 2.21 in client pods of the
-  # namespace trove-e2e-ansible (Q-ANS-49, Q-ANS-50), against the scatter profile and the counting Galaxy test upstream
+  # namespace quader-e2e-ansible (Q-ANS-49, Q-ANS-50), against the scatter profile and the counting Galaxy test upstream
   # (docs/developer/e2e.md#the-ansible-tests). Per change that touches the format it runs the leg ansible: every TestAnsible... (local, remote
   # and the credentials, a changed digest, the pasted setup snippets; the virtual and mirror rows are listed and wait for their classes). A
   # dispatch with closing=true adds the leg ansible-closing (TestAnsibleClosing: Valkey stopped). The job does not hold Semantic Release back
@@ -1800,11 +1800,11 @@ jobs:
       matrix:
         include: ${{ fromJSON(inputs.closing && '[{"set":"ansible","port":"8117"},{"set":"ansible-closing","port":"8118"}]' || '[{"set":"ansible","port":"8117"}]') }}
     env:
-      TROVE_IMAGE: guidedtraffic/trove:dev
-      TROVE_DEV_CLUSTER: trove-${{ matrix.set }}-${{ github.run_id }}
-      TROVE_DEV_HTTP_PORT: ${{ matrix.port }}
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
       # The clients images are built once by the step make ansible-clients-image; deploy/dev/e2e.sh loads them and does not build them again.
-      TROVE_E2E_ANSIBLE_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_ANSIBLE_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -1828,7 +1828,7 @@ jobs:
             pull_request) base="$PR_BASE" ;;
             push) base="$PUSH_BEFORE" ;;
           esac
-          paths='^(internal/formats/ansible/|internal/formats/(setup|serve|remote|virtual)\.go$|internal/formathost/|internal/formatdata/ansible/|internal/importer/ansible|internal/api/dispatch/|internal/items/|internal/uploads/|internal/proxy/|internal/virtual/|internal/mirror/|internal/httpserver/|test/ansiblestub/|test/e2e/(ansible_|ansibleclients)|web/e2e/(ansible-docs/|playwright\.ansible-docs)|test/e2e/clients/fwd/|deploy/dev/(ansiblestub|ansible-clients|values-dev|values-scatter|pki|kind)\.yaml$|deploy/dev/(up|e2e|lib)\.sh$|deploy/helm/trove/|tools/versions\.env$|docs/spec/formats/ansible\.md$)'
+          paths='^(internal/formats/ansible/|internal/formats/(setup|serve|remote|virtual)\.go$|internal/formathost/|internal/formatdata/ansible/|internal/importer/ansible|internal/api/dispatch/|internal/items/|internal/uploads/|internal/proxy/|internal/virtual/|internal/mirror/|internal/httpserver/|test/ansiblestub/|test/e2e/(ansible_|ansibleclients)|web/e2e/(ansible-docs/|playwright\.ansible-docs)|test/e2e/clients/fwd/|deploy/dev/(ansiblestub|ansible-clients|values-dev|values-scatter|pki|kind)\.yaml$|deploy/dev/(up|e2e|lib)\.sh$|deploy/helm/quader/|tools/versions\.env$|docs/spec/formats/ansible\.md$)'
           if [ "$CLOSING" = "true" ] || [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
             echo "no base to compare with ($EVENT), or a closing run: the Ansible suite runs"
             echo "run=true" >> "$GITHUB_OUTPUT"
@@ -1930,7 +1930,7 @@ jobs:
 
       - name: make image
         if: steps.scope.outputs.run == 'true'
-        run: make image IMAGE="$TROVE_IMAGE" VERSION=dev
+        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
 
       - name: Fetch the dev charts that are GitHub release assets
         if: steps.scope.outputs.run == 'true'
@@ -1972,16 +1972,16 @@ jobs:
         if: failure() && steps.scope.outputs.run == 'true'
         run: |
           set -u
-          ctx="kind-${TROVE_DEV_CLUSTER}"
+          ctx="kind-${QUADER_DEV_CLUSTER}"
           mkdir -p .out/cluster-state
-          for ns in trove ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
             kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
           done
           deploy/dev/cluster-logs.sh .out/cluster-state
           kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
-          helm --kube-context "$ctx" -n trove status trove > .out/cluster-state/helm-status.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
           docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
@@ -2014,13 +2014,13 @@ jobs:
           - set: ci
             port: "8091"
     env:
-      TROVE_IMAGE: guidedtraffic/trove:dev
-      TROVE_DEV_CLUSTER: trove-${{ matrix.set }}-${{ github.run_id }}
-      TROVE_DEV_HTTP_PORT: ${{ matrix.port }}
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
       # Both clients images are built once by the steps make npm-clients-image and make nuget-clients-image; deploy/dev/e2e.sh loads them
       # and does not build them again.
-      TROVE_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
-      TROVE_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -2100,7 +2100,7 @@ jobs:
           done
 
       - name: make image
-        run: make image IMAGE="$TROVE_IMAGE" VERSION=dev
+        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -2139,16 +2139,16 @@ jobs:
         if: failure()
         run: |
           set -u
-          ctx="kind-${TROVE_DEV_CLUSTER}"
+          ctx="kind-${QUADER_DEV_CLUSTER}"
           mkdir -p .out/cluster-state
-          for ns in trove ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
             kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
           done
           deploy/dev/cluster-logs.sh .out/cluster-state
           kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
-          helm --kube-context "$ctx" -n trove status trove > .out/cluster-state/helm-status.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
           docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
@@ -2166,9 +2166,9 @@ jobs:
         run: make dev-down
 
   # The Bastion suite (R-BAS-049, docs/developer/e2e.md#the-bastion-tests) on a kind cluster: the main installation in the `bastion`
-  # profile and the chart trove-bastion twice (volume backend; SeaweedFS bucket with Valkey) behind the local profile's HAProxy
+  # profile and the chart quader-bastion twice (volume backend; SeaweedFS bucket with Valkey) behind the local profile's HAProxy
   # Ingress, with the real npm, pnpm, Yarn 4 and .NET clients of the client pods and the browser journey of the Bastions screen. The
-  # short set `bastion` runs when the change touches internal/bastion, internal/bastionmain, deploy/helm/trove-bastion or
+  # short set `bastion` runs when the change touches internal/bastion, internal/bastionmain, deploy/helm/quader-bastion or
   # docs/spec/bastion.md (and the suite's own files); for any other change the job is green after its scope step. The long legs (the
   # drain, the flood and the anonymous flood) are the set bastion-long of job e2e-bastion in performance.yml, outside the release path
   # (owner, 2026-11-01). Edge port 8093 is the first free one of both workflows.
@@ -2183,13 +2183,13 @@ jobs:
           - set: bastion
             port: "8093"
     env:
-      TROVE_IMAGE: guidedtraffic/trove:dev
-      TROVE_DEV_CLUSTER: trove-${{ matrix.set }}-${{ github.run_id }}
-      TROVE_DEV_HTTP_PORT: ${{ matrix.port }}
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
       # Both clients images are built once by the steps make npm-clients-image and make nuget-clients-image; deploy/dev/e2e.sh loads them
       # and does not build them again.
-      TROVE_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
-      TROVE_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -2219,7 +2219,7 @@ jobs:
             pull_request) base="$PR_BASE" ;;
             push) base="$PUSH_BEFORE" ;;
           esac
-          paths='^(internal/bastion/|internal/bastionmain/|deploy/helm/trove-bastion/|docs/spec/bastion\.md$|deploy/dev/bastion|deploy/dev/values-bastion|test/e2e/bastion|web/e2e/bastion|web/e2e/playwright\.bastion)'
+          paths='^(internal/bastion/|internal/bastionmain/|deploy/helm/quader-bastion/|docs/spec/bastion\.md$|deploy/dev/bastion|deploy/dev/values-bastion|test/e2e/bastion|web/e2e/bastion|web/e2e/playwright\.bastion)'
           if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
             echo "no base to compare with ($EVENT): the Bastion suite runs"
             echo "run=true" >> "$GITHUB_OUTPUT"
@@ -2324,7 +2324,7 @@ jobs:
 
       - name: make image
         if: steps.scope.outputs.run == 'true'
-        run: make image IMAGE="$TROVE_IMAGE" VERSION=dev
+        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -2375,16 +2375,16 @@ jobs:
         if: failure() && steps.scope.outputs.run == 'true'
         run: |
           set -u
-          ctx="kind-${TROVE_DEV_CLUSTER}"
+          ctx="kind-${QUADER_DEV_CLUSTER}"
           mkdir -p .out/cluster-state
-          for ns in trove trove-bastion ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+          for ns in quader quader-bastion ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
             kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
           done
           deploy/dev/cluster-logs.sh .out/cluster-state
           kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
-          helm --kube-context "$ctx" -n trove status trove > .out/cluster-state/helm-status.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
           docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
@@ -2402,9 +2402,9 @@ jobs:
         run: make dev-down
 
   # The Bastion suite (R-BAS-049, docs/developer/e2e.md#the-bastion-tests) on a kind cluster: the main installation in the `bastion`
-  # profile and the chart trove-bastion twice (volume backend; SeaweedFS bucket with Valkey) behind the local profile's HAProxy
+  # profile and the chart quader-bastion twice (volume backend; SeaweedFS bucket with Valkey) behind the local profile's HAProxy
   # Ingress, with the real npm, pnpm, Yarn 4 and .NET clients of the client pods and the browser journey of the Bastions screen. The
-  # short set `bastion` runs when the change touches internal/bastion, internal/bastionmain, deploy/helm/trove-bastion or
+  # short set `bastion` runs when the change touches internal/bastion, internal/bastionmain, deploy/helm/quader-bastion or
   # docs/spec/bastion.md (and the suite's own files); for any other change the job is green after its scope step. The long legs (the
   # drain, the flood and the anonymous flood) are the set bastion-long of job e2e-vuln in performance.yml, outside the release path
   # (owner, 2026-11-01). Edge port 8093 is the first free one of both workflows.
@@ -2419,13 +2419,13 @@ jobs:
           - set: vuln
             port: "8095"
     env:
-      TROVE_IMAGE: guidedtraffic/trove:dev
-      TROVE_DEV_CLUSTER: trove-${{ matrix.set }}-${{ github.run_id }}
-      TROVE_DEV_HTTP_PORT: ${{ matrix.port }}
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
       # Both clients images are built once by the steps make npm-clients-image and make nuget-clients-image; deploy/dev/e2e.sh loads them
       # and does not build them again.
-      TROVE_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
-      TROVE_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -2560,7 +2560,7 @@ jobs:
 
       - name: make image
         if: steps.scope.outputs.run == 'true'
-        run: make image IMAGE="$TROVE_IMAGE" VERSION=dev
+        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -2611,16 +2611,16 @@ jobs:
         if: failure() && steps.scope.outputs.run == 'true'
         run: |
           set -u
-          ctx="kind-${TROVE_DEV_CLUSTER}"
+          ctx="kind-${QUADER_DEV_CLUSTER}"
           mkdir -p .out/cluster-state
-          for ns in trove ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
             kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
             kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
           done
           deploy/dev/cluster-logs.sh .out/cluster-state
           kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
-          helm --kube-context "$ctx" -n trove status trove > .out/cluster-state/helm-status.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
           docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 

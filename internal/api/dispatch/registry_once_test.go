@@ -4,7 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/registry/route"
+	"github.com/guided-traffic/quader/internal/api/registry/route"
 )
 
 // A request is matched once (W3-2): with a memo in its context the second read, by the handler behind the enforcement point,

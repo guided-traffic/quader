@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // with returns a copy of the installation with more settings.
@@ -77,16 +77,16 @@ func TestEndpoints(t *testing.T) {
 
 	ca := tlstest.NewCA(t, "endpoint integration ca")
 	dir := t.TempDir()
-	exact, exactKey := ca.Issue(t, tlstest.Options{DNSNames: []string{"packages.trove.localhost", "pkgs.example.org"}, Serial: big.NewInt(5001)}).Files(t, dir, "exact")
+	exact, exactKey := ca.Issue(t, tlstest.Options{DNSNames: []string{"packages.quader.localhost", "pkgs.example.org"}, Serial: big.NewInt(5001)}).Files(t, dir, "exact")
 	wild, wildKey := ca.Issue(t, tlstest.Options{DNSNames: []string{"*.registry.example.com"}, Serial: big.NewInt(5002)}).Files(t, dir, "wild")
 	// The install enables the bootstrap anonymous read, whose guard accepts only loopback
 	// origins; a name below .localhost (RFC 6761) is one.
 	custAddr := freeAddr(t)
-	endpoints := fmt.Sprintf(`{"customers":{"listen":%q,"base_url":"https://packages.trove.localhost","hosts":["pkgs.example.org"],`+
+	endpoints := fmt.Sprintf(`{"customers":{"listen":%q,"base_url":"https://packages.quader.localhost","hosts":["pkgs.example.org"],`+
 		`"wildcard_host":"*.registry.example.com","host_roots":{"pkgs.example.org":"it/docker-hub"},`+
 		`"tls":{"certificates":[{"cert_file":%q,"key_file":%q},{"cert_file":%q,"key_file":%q}]}}}`,
 		custAddr, exact, exactKey, wild, wildKey)
-	web := in.start(t, "web", "trove-ep-it", "TROVE_SERVER_ENDPOINTS="+endpoints, "TROVE_SERVER_TLS_RELOAD_INTERVAL=1s")
+	web := in.start(t, "web", "quader-ep-it", "QUADER_SERVER_ENDPOINTS="+endpoints, "QUADER_SERVER_TLS_RELOAD_INTERVAL=1s")
 
 	requestRecord := func(match func(map[string]any) bool) map[string]any {
 		var rec map[string]any
@@ -114,11 +114,11 @@ func TestEndpoints(t *testing.T) {
 		if code, _, body := web.get(t, "/api/v1/system/ping"); code != 200 || body != "OK" {
 			t.Fatalf("default ping: %d %q", code, body)
 		}
-		if code, body := endpointGet(t, ca, custAddr, "packages.trove.localhost", "packages.trove.localhost", "/does-not-exist"); code != refused {
+		if code, body := endpointGet(t, ca, custAddr, "packages.quader.localhost", "packages.quader.localhost", "/does-not-exist"); code != refused {
 			t.Fatalf("customers unknown path: %d %s", code, body)
 		}
 		_, metrics := opsGet(web.ops, "/metrics")
-		for _, want := range []string{`trove_endpoint_listener_up{endpoint="default"} 1`, `trove_endpoint_listener_up{endpoint="customers"} 1`} {
+		for _, want := range []string{`quader_endpoint_listener_up{endpoint="default"} 1`, `quader_endpoint_listener_up{endpoint="customers"} 1`} {
 			if !strings.Contains(metrics, want) {
 				t.Errorf("metrics lack %s", want)
 			}
@@ -126,37 +126,37 @@ func TestEndpoints(t *testing.T) {
 	})
 
 	t.Run("R-EP-003 a request on the second listener with the host of the default endpoint answers 421 and is counted", func(t *testing.T) {
-		code, body := endpointGet(t, ca, custAddr, "packages.trove.localhost", "trove.test", "/api/npm/it/npm-all/")
+		code, body := endpointGet(t, ca, custAddr, "packages.quader.localhost", "quader.test", "/api/npm/it/npm-all/")
 		var p map[string]any
 		_ = json.Unmarshal([]byte(body), &p)
 		if code != 421 || p["code"] != "misdirected_request" {
 			t.Fatalf("%d %s", code, body)
 		}
 		for _, host := range []string{"10.0.0.5", "registry.example.com", "a.b.registry.example.com"} {
-			if code, _ := endpointGet(t, ca, custAddr, "packages.trove.localhost", host, "/api/npm/it/npm-all/"); code != 421 {
+			if code, _ := endpointGet(t, ca, custAddr, "packages.quader.localhost", host, "/api/npm/it/npm-all/"); code != 421 {
 				t.Errorf("Host %s: %d", host, code)
 			}
 		}
 		// 127.0.0.0/8 is a trusted proxy here: a forwarded host within the set is honoured, one outside it is ignored.
-		if code, _ := endpointGet(t, ca, custAddr, "packages.trove.localhost", "evil.example", "/does-not-exist", "X-Forwarded-Host", "packages.trove.localhost"); code != refused {
+		if code, _ := endpointGet(t, ca, custAddr, "packages.quader.localhost", "evil.example", "/does-not-exist", "X-Forwarded-Host", "packages.quader.localhost"); code != refused {
 			t.Errorf("trusted proxy, forwarded host in the set: %d (401 means the host check passed)", code)
 		}
-		if code, _ := endpointGet(t, ca, custAddr, "packages.trove.localhost", "packages.trove.localhost", "/does-not-exist", "X-Forwarded-Host", "evil.example"); code != refused {
+		if code, _ := endpointGet(t, ca, custAddr, "packages.quader.localhost", "packages.quader.localhost", "/does-not-exist", "X-Forwarded-Host", "evil.example"); code != refused {
 			t.Errorf("trusted proxy, forwarded host outside the set: %d", code)
 		}
-		if code, _ := endpointGet(t, ca, custAddr, "packages.trove.localhost", "docker-all.registry.example.com", "/does-not-exist"); code != refused {
+		if code, _ := endpointGet(t, ca, custAddr, "packages.quader.localhost", "docker-all.registry.example.com", "/does-not-exist"); code != refused {
 			t.Errorf("wildcard host: %d", code)
 		}
 		_, metrics := opsGet(web.ops, "/metrics")
-		if !strings.Contains(metrics, `trove_endpoint_misdirected_total{endpoint="customers"} 4`) ||
-			!strings.Contains(metrics, `trove_endpoint_forwarded_host_ignored_total{endpoint="customers"} 1`) {
-			t.Errorf("host-check counters:\n%s", grepLines(metrics, "trove_endpoint_"))
+		if !strings.Contains(metrics, `quader_endpoint_misdirected_total{endpoint="customers"} 4`) ||
+			!strings.Contains(metrics, `quader_endpoint_forwarded_host_ignored_total{endpoint="customers"} 1`) {
+			t.Errorf("host-check counters:\n%s", grepLines(metrics, "quader_endpoint_"))
 		}
 	})
 
 	t.Run("R-EP-002 R-EP-009 the endpoint of the log and the metrics is the listener's, whatever Host and forwarded host claim", func(t *testing.T) {
 		const tid = "2af7651916cd43dd8448eb211c80319e"
-		code, _, _ := web.get(t, "/api/v1/system/ping", "traceparent", "00-"+tid+"-b7ad6b7169203331-01", "X-Forwarded-Host", "packages.trove.localhost")
+		code, _, _ := web.get(t, "/api/v1/system/ping", "traceparent", "00-"+tid+"-b7ad6b7169203331-01", "X-Forwarded-Host", "packages.quader.localhost")
 		if code != 200 {
 			t.Fatalf("ping: %d", code)
 		}
@@ -165,7 +165,7 @@ func TestEndpoints(t *testing.T) {
 			t.Errorf("default record = %v", rec)
 		}
 		mis := requestRecord(func(m map[string]any) bool {
-			return m["endpoint"] == "customers" && m["status"] == float64(421) && m["host"] == "trove.test"
+			return m["endpoint"] == "customers" && m["status"] == float64(421) && m["host"] == "quader.test"
 		})
 		if mis["listener"] != "client" {
 			t.Errorf("421 record = %v", mis)
@@ -178,12 +178,12 @@ func TestEndpoints(t *testing.T) {
 		}
 		_, metrics := opsGet(web.ops, "/metrics")
 		for _, want := range []string{
-			`trove_http_requests_total{code="200",endpoint="default",handler="GET /api/v1/system/ping",listener="client",method="GET"}`,
+			`quader_http_requests_total{code="200",endpoint="default",handler="GET /api/v1/system/ping",listener="client",method="GET"}`,
 			// the 421s of R-EP-003 asked for /api/npm/it/npm-all/, which the npm format's prefix routes on every endpoint
-			`trove_http_requests_total{code="421",endpoint="customers",handler="/api/npm/{projectKey}/{repoKey}/{rest...}",listener="client",method="GET"}`,
+			`quader_http_requests_total{code="421",endpoint="customers",handler="/api/npm/{projectKey}/{repoKey}/{rest...}",listener="client",method="GET"}`,
 		} {
 			if !strings.Contains(metrics, want) {
-				t.Errorf("metrics lack %s\n%s", want, grepLines(metrics, "trove_http_requests_total"))
+				t.Errorf("metrics lack %s\n%s", want, grepLines(metrics, "quader_http_requests_total"))
 			}
 		}
 		if strings.Contains(metrics, `listener="ops",endpoint="`) || strings.Contains(metrics, `endpoint="customers",handler="GET /readyz"`) {
@@ -194,7 +194,7 @@ func TestEndpoints(t *testing.T) {
 	t.Run("R-EP-005 R-EP-010 the customers endpoint answers a request without a credential with the same 401 on every path, the UI, the API, the management API and the reserved /v2/ and /.well-known/ included", func(t *testing.T) {
 		var want, wantDetail, wantOCI string
 		for _, p := range []string{"/does-not-exist", "/ui/", "/", "/auth/oidc/corp/start", "/api/v1/system/ping", "/api/v1/system/info", "/api/v1/system/replicas", "/api/v1/openapi.json", "/files/generic-local/x", "/v2/", "/v2/docker-all/manifests/latest", "/.well-known/terraform.json"} {
-			code, body := endpointGet(t, ca, custAddr, "packages.trove.localhost", "packages.trove.localhost", p)
+			code, body := endpointGet(t, ca, custAddr, "packages.quader.localhost", "packages.quader.localhost", p)
 			if strings.HasPrefix(p, "/v2/") {
 				// Below /v2/ the refusal of the chain is in the registry's shape (R-OCI-003): the same refusal, in the body
 				// of the distribution specification, the same for every path below it.
@@ -248,7 +248,7 @@ func TestEndpoints(t *testing.T) {
 			}
 		}
 		// A binding to a host outside the endpoint stops startup and names the key.
-		bad := in.with(`TROVE_SERVER_ENDPOINTS={"customers":{"listen":":0","base_url":"https://packages.trove.localhost","host_roots":{"other.example.com":"it/docker-hub"}}}`)
+		bad := in.with(`QUADER_SERVER_ENDPOINTS={"customers":{"listen":":0","base_url":"https://packages.quader.localhost","host_roots":{"other.example.com":"it/docker-hub"}}}`)
 		code, _, stderr := bad.run(t, "admin", "config", "validate")
 		if code == 0 || !strings.Contains(stderr+"", "server.endpoints.customers.host_roots") {
 			t.Errorf("exit %d, stderr %s", code, stderr)
@@ -257,7 +257,7 @@ func TestEndpoints(t *testing.T) {
 
 	t.Run("R-EP-004 SNI picks the endpoint's certificate incl. the wildcard, the default listener never serves it", func(t *testing.T) {
 		for sni, want := range map[string]int64{
-			"packages.trove.localhost": 5001, "docker-all.registry.example.com": 5002, "other.example": 5001, "": 5001,
+			"packages.quader.localhost": 5001, "docker-all.registry.example.com": 5002, "other.example": 5001, "": 5001,
 		} {
 			if got := served(t, ca, custAddr, sni); got != want {
 				t.Errorf("SNI %q: serial %d, want %d", sni, got, want)
@@ -276,9 +276,9 @@ func TestEndpoints(t *testing.T) {
 			t.Fatalf("after a broken rotation the listener serves %d", got)
 		}
 		_, metrics := opsGet(web.ops, "/metrics")
-		want := fmt.Sprintf(`trove_tls_reload_errors_total{kind="listener",listener="client:customers",name=%q} 1`, wild)
+		want := fmt.Sprintf(`quader_tls_reload_errors_total{kind="listener",listener="client:customers",name=%q} 1`, wild)
 		if !strings.Contains(metrics, want) {
-			t.Errorf("the refused rotation is not counted\n%s", grepLines(metrics, "trove_tls_reload"))
+			t.Errorf("the refused rotation is not counted\n%s", grepLines(metrics, "quader_tls_reload"))
 		}
 		started := time.Now()
 		ca.Issue(t, tlstest.Options{DNSNames: []string{"*.registry.example.com"}, Serial: big.NewInt(5003)}).Write(t, wild, wildKey)
@@ -291,7 +291,7 @@ func TestEndpoints(t *testing.T) {
 		if code, _ := endpointGet(t, ca, custAddr, "docker-all.registry.example.com", "docker-all.registry.example.com", "/does-not-exist"); code != refused {
 			t.Errorf("request after the rotation: %d", code)
 		}
-		if got := served(t, ca, custAddr, "packages.trove.localhost"); got != 5001 {
+		if got := served(t, ca, custAddr, "packages.quader.localhost"); got != 5001 {
 			t.Errorf("the other pair changed: %d", got)
 		}
 		if web.cmd.ProcessState != nil {
@@ -301,8 +301,8 @@ func TestEndpoints(t *testing.T) {
 
 	t.Run("R-EP-002 a worker opens no endpoint listener", func(t *testing.T) {
 		wAddr := freeAddr(t)
-		ep := fmt.Sprintf(`{"customers":{"listen":%q,"base_url":"https://packages.trove.localhost"}}`, wAddr)
-		in.start(t, "worker", "trove-ep-worker-it", "TROVE_SERVER_ENDPOINTS="+ep)
+		ep := fmt.Sprintf(`{"customers":{"listen":%q,"base_url":"https://packages.quader.localhost"}}`, wAddr)
+		in.start(t, "worker", "quader-ep-worker-it", "QUADER_SERVER_ENDPOINTS="+ep)
 		if c, err := net.DialTimeout("tcp", wAddr, 300*time.Millisecond); err == nil {
 			c.Close()
 			t.Fatal("a worker listens on an endpoint address")

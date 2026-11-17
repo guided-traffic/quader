@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	pitrCluster   = "trove-db-pitr"
-	pitrBlobsRoot = "trove"
+	pitrCluster   = "quader-db-pitr"
+	pitrBlobsRoot = "quader"
 )
 
 // pitrState is what the steps of the drill hand on.
@@ -56,7 +56,7 @@ func newPITRFile(path string) pitrFile {
 	return pitrFile{path: path, body: body, digest: hex.EncodeToString(sum[:])}
 }
 
-// key is the object key of the blob in the blob bucket (storage.s3.prefix "trove", the layout of the blob store).
+// key is the object key of the blob in the blob bucket (storage.s3.prefix "quader", the layout of the blob store).
 func (f pitrFile) key() string {
 	return fmt.Sprintf("%s/sha256/%s/%s/%s", pitrBlobsRoot, f.digest[:2], f.digest[2:4], f.digest)
 }
@@ -64,7 +64,7 @@ func (f pitrFile) key() string {
 // pitrSQL runs a statement as the superuser on the database of the new cluster.
 func pitrSQL(t testing.TB, query string) string {
 	t.Helper()
-	out, err := kubectl("-n", cfg.namespace, "exec", pitrCluster+"-1", "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "trove", "-At", "-F", "|", "-c", query)
+	out, err := kubectl("-n", cfg.namespace, "exec", pitrCluster+"-1", "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-F", "|", "-c", query)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func pitrReleaseValues(t testing.TB) []string {
 	t.Helper()
 	cmd := exec.Command(filepath.Join(cfg.repo, "deploy", "dev", "release-values.sh"), "backup")
 	cmd.Dir = cfg.repo
-	cmd.Env = append(cmd.Environ(), "TROVE_IMAGE="+upImage())
+	cmd.Env = append(cmd.Environ(), "QUADER_IMAGE="+upImage())
 	out, err := cmd.Output()
 	if err != nil {
 		t.Fatalf("release-values.sh backup: %v", err)
@@ -104,11 +104,11 @@ func pitrNewDatabase() []string {
 
 // pitrHelm upgrades the release with the values of the dev profile and the extra arguments. --force-conflicts: helm applies
 // server-side, and a cluster that earlier tests used has their `kubectl scale` as the field manager of spec.replicas of a
-// Deployment (the alerts and mirror tests scale trove-worker); without it the upgrade stops with "conflict with kubectl with
+// Deployment (the alerts and mirror tests scale quader-worker); without it the upgrade stops with "conflict with kubectl with
 // subresource scale", and the drill, which sets every role to zero, has to own the replica count.
 func pitrHelm(t testing.TB, label string, extra ...string) {
 	t.Helper()
-	args := append([]string{"upgrade", "trove", upChart(), "-n", cfg.namespace, "--force-conflicts"}, pitrReleaseValues(t)...)
+	args := append([]string{"upgrade", "quader", upChart(), "-n", cfg.namespace, "--force-conflicts"}, pitrReleaseValues(t)...)
 	args = append(append(args, extra...), "--wait", "--timeout", "12m")
 	if out, err := upHelm(t, label, 14*time.Minute, args...); err != nil {
 		t.Fatalf("helm upgrade (%s): %v\n%s", label, err, tail(out, 3000))
@@ -127,10 +127,10 @@ func pitrS3Job(t testing.TB, name, script string) string {
 "securityContext":{"allowPrivilegeEscalation":false,"readOnlyRootFilesystem":true,"capabilities":{"drop":["ALL"]}},
 "command":["sh","-c",%q],
 "volumeMounts":[{"name":"tmp","mountPath":"/tmp"},{"name":"s3","mountPath":"/secrets"},{"name":"tls","mountPath":"/tls"}]}],
-"volumes":[{"name":"tmp","emptyDir":{}},{"name":"s3","secret":{"secretName":"trove-s3"}},{"name":"tls","secret":{"secretName":"trove-s3-tls"}}]}}}}`,
+"volumes":[{"name":"tmp","emptyDir":{}},{"name":"s3","secret":{"secretName":"quader-s3"}},{"name":"tls","secret":{"secretName":"quader-s3-tls"}}]}}}}`,
 		name, image, `set -eu
 export AWS_ACCESS_KEY_ID="$(cat /secrets/access-key-id)" AWS_SECRET_ACCESS_KEY="$(cat /secrets/secret-access-key)" AWS_DEFAULT_REGION=us-east-1 AWS_CA_BUNDLE=/tls/ca.crt
-s3api() { aws --endpoint-url https://trove-s3.`+cfg.namespace+`.svc:9000 s3api "$@"; }
+s3api() { aws --endpoint-url https://quader-s3.`+cfg.namespace+`.svc:9000 s3api "$@"; }
 `+script)
 	kn(t, "delete", "job", name, "--ignore-not-found")
 	create := exec.Command("kubectl", "--context", cfg.kubeContext, "-n", cfg.namespace, "create", "-f", "-")
@@ -147,7 +147,7 @@ s3api() { aws --endpoint-url https://trove-s3.`+cfg.namespace+`.svc:9000 s3api "
 	return logs
 }
 
-// pitrAdminJob runs a trove command as a one-off Job whose pod is the pod template of the post-restore Job of step 4, so that it has
+// pitrAdminJob runs a quader command as a one-off Job whose pod is the pod template of the post-restore Job of step 4, so that it has
 // the release's configuration, the owner login and the credential that lists and deletes object versions: the Job an operator makes
 // with `kubectl run` while the roles are at zero (R-HA-025). It fails the test when the Job does not complete and returns its log.
 func pitrAdminJob(t testing.TB, name string, args ...string) string {
@@ -197,13 +197,13 @@ func pitrGet(a *api, path string) reply {
 func TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLayer(t *testing.T) {
 	useBackupProfile(t)
 	if got := sql(t, "SHOW archive_mode"); got != "on" {
-		t.Fatalf("archive_mode of trove-db is %q: the drill needs the platform layer of R-HA-023, so start the cluster with TROVE_PITR=1 (make dev-up) or run the set backup-pitr", got)
+		t.Fatalf("archive_mode of quader-db is %q: the drill needs the platform layer of R-HA-023, so start the cluster with QUADER_PITR=1 (make dev-up) or run the set backup-pitr", got)
 	}
 	st := &pitrState{run: bakRun(), adm: bakAdmin(t)}
 	adm := st.adm
 	_ = adminToken(t)
 
-	// Whatever the drill leaves, the main installation goes back to the cluster trove-db.
+	// Whatever the drill leaves, the main installation goes back to the cluster quader-db.
 	t.Cleanup(func() {
 		pitrHelm(t, "pitr-cleanup")
 		script(t, "pitr.sh", "down")
@@ -222,7 +222,7 @@ func TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLa
 			t.Fatalf("the archiver of the primary has not shipped a segment, or its last attempt failed: %s", sql(t, "SELECT row_to_json(a) FROM pg_stat_archiver a"))
 		}
 		t.Logf("base backup %s", strings.TrimSpace(script(t, "pitr.sh", "backup")))
-		st.keyspace = sql(t, "SELECT value #>> '{}' FROM trove.system_state WHERE key = 'keyspace_id'")
+		st.keyspace = sql(t, "SELECT value #>> '{}' FROM quader.system_state WHERE key = 'keyspace_id'")
 		if st.keyspace == "" {
 			t.Fatal("system_state has no keyspace_id")
 		}
@@ -267,11 +267,11 @@ func TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLa
 		// The grace period of the profile is 0s: the collector deletes the blob, and the versioned bucket answers with a delete marker.
 		waitFor(t, "garbage collection to delete the object of "+st.gone.path, 3*time.Minute, 10*time.Second, func() bool {
 			_, _ = adm.send(http.MethodPost, "/api/v1/system/tasks/gc/run", nil)
-			return sql(t, fmt.Sprintf("SELECT count(*) FROM trove.blobs WHERE sha256 = decode('%s', 'hex') AND object_deleted_at IS NULL", st.gone.digest)) == "0"
+			return sql(t, fmt.Sprintf("SELECT count(*) FROM quader.blobs WHERE sha256 = decode('%s', 'hex') AND object_deleted_at IS NULL", st.gone.digest)) == "0"
 		})
 		// The revocation reaches the journal in the blob bucket, which the platform restore does not touch.
 		waitFor(t, "the revocation journal to be shipped", 2*time.Minute, 3*time.Second, func() bool {
-			return sql(t, "SELECT count(*) FROM trove.revocation_outbox") == "0"
+			return sql(t, "SELECT count(*) FROM quader.revocation_outbox") == "0"
 		})
 		// A later segment with a commit after t ends the archive, so that the recovery finds its target inside it (R-HA-023 recovery point).
 		t.Logf("archived up to %s", strings.TrimSpace(script(t, "pitr.sh", "archive-wal")))
@@ -280,20 +280,20 @@ func TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLa
 	step("R-HA-025 step 1: the roles and the backups are stopped", func(t *testing.T) {
 		pitrHelm(t, "pitr-step1", pitrNoRoles()...)
 		kn(t, "delete", "job", "-l", "app.kubernetes.io/component=backup", "--ignore-not-found")
-		waitFor(t, "every replica to be gone", 5*time.Minute, 3*time.Second, func() bool { return len(livePods(t, selTrove)) == 0 })
+		waitFor(t, "every replica to be gone", 5*time.Minute, 3*time.Second, func() bool { return len(livePods(t, selQuader)) == 0 })
 	})
 
 	step("R-HA-025 step 2: PostgreSQL is recovered from the archive into a new cluster up to t", func(t *testing.T) {
 		script(t, "pitr.sh", "restore", st.tPG)
 		// The new database is the one at t: the file and the package of before t are in it, what came after t is not, and the revocation of the token
 		// is not either (the journal brings it back in step 4).
-		if got := pitrSQL(t, fmt.Sprintf("SELECT count(*) FROM trove.blobs WHERE sha256 IN (decode('%s', 'hex'), decode('%s', 'hex'))", st.keep.digest, st.gone.digest)); got != "2" {
+		if got := pitrSQL(t, fmt.Sprintf("SELECT count(*) FROM quader.blobs WHERE sha256 IN (decode('%s', 'hex'), decode('%s', 'hex'))", st.keep.digest, st.gone.digest)); got != "2" {
 			t.Errorf("the recovered database holds %s of the two blobs written before t, want 2", got)
 		}
-		if got := pitrSQL(t, fmt.Sprintf("SELECT count(*) FROM trove.blobs WHERE sha256 = decode('%s', 'hex')", st.post.digest)); got != "0" {
+		if got := pitrSQL(t, fmt.Sprintf("SELECT count(*) FROM quader.blobs WHERE sha256 = decode('%s', 'hex')", st.post.digest)); got != "0" {
 			t.Errorf("the recovered database knows the blob written after t")
 		}
-		if got := pitrSQL(t, fmt.Sprintf("SELECT revoked_at IS NULL FROM trove.api_token WHERE id = '%s'", st.victim.ID)); got != "t" {
+		if got := pitrSQL(t, fmt.Sprintf("SELECT revoked_at IS NULL FROM quader.api_token WHERE id = '%s'", st.victim.ID)); got != "t" {
 			t.Errorf("in the recovered database the token revoked after t has revoked_at set to %q before the post-restore", got)
 		}
 	})
@@ -302,7 +302,7 @@ func TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLa
 		extra := append(pitrNoRoles(), pitrNewDatabase()...)
 		extra = append(extra,
 			"--set", "postRestore.enabled=true", "--set-string", "postRestore.restoredTo="+st.tRFC,
-			"--set", "postRestore.journalCredentials.source=static", "--set", "secrets.journalReader.existingSecret=trove-s3")
+			"--set", "postRestore.journalCredentials.source=static", "--set", "secrets.journalReader.existingSecret=quader-s3")
 		pitrHelm(t, "pitr-step4", extra...)
 		out, err := kubectl("-n", cfg.namespace, "get", "jobs", "-l", "app.kubernetes.io/component=post-restore", "-o", "jsonpath={.items[*].metadata.name}")
 		if err != nil || len(strings.Fields(out)) != 1 {
@@ -313,7 +313,7 @@ func TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLa
 			t.Fatalf("the post-restore Job ended %s", e.Condition)
 		}
 		st.postRestore = bakJobLogs(cfg.namespace, job)
-		t.Logf("trove admin post-restore:\n%s", tail(st.postRestore, 2500))
+		t.Logf("quader admin post-restore:\n%s", tail(st.postRestore, 2500))
 		if !strings.Contains(st.postRestore, "token.revoked") || !strings.Contains(st.postRestore, "applied") {
 			t.Errorf("the post-restore output does not list token.revoked as applied")
 		}
@@ -324,13 +324,13 @@ func TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLa
 		} else if n, _ := strconv.Atoi(m[1]); n < 1 {
 			t.Errorf("the storage verify of the post-restore finds %d blobs without object, want at least the one collected after t", n)
 		}
-		if got := pitrSQL(t, "SELECT value #>> '{}' FROM trove.system_state WHERE key = 'keyspace_id'"); got == "" || got == st.keyspace {
+		if got := pitrSQL(t, "SELECT value #>> '{}' FROM quader.system_state WHERE key = 'keyspace_id'"); got == "" || got == st.keyspace {
 			t.Errorf("system_state.keyspace_id is %q after the post-restore, the source had %q: want a new one", got, st.keyspace)
 		}
-		if got := pitrSQL(t, "SELECT (value <> 'null'::jsonb)::text FROM trove.system_state WHERE key = 'deletions_paused_at'"); got != "true" {
+		if got := pitrSQL(t, "SELECT (value <> 'null'::jsonb)::text FROM quader.system_state WHERE key = 'deletions_paused_at'"); got != "true" {
 			t.Errorf("the deletion pause is %q after the post-restore, want it set", got)
 		}
-		if got := pitrSQL(t, fmt.Sprintf("SELECT revoked_at IS NOT NULL FROM trove.api_token WHERE id = '%s'", st.victim.ID)); got != "t" {
+		if got := pitrSQL(t, fmt.Sprintf("SELECT revoked_at IS NOT NULL FROM quader.api_token WHERE id = '%s'", st.victim.ID)); got != "t" {
 			t.Errorf("the journal replay did not revoke the token in the new database")
 		}
 	})
@@ -341,10 +341,10 @@ func TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLa
 		// It removes the delete markers younger than t from the keys of the blobs whose object is missing; the objects written after t stay
 		// and are orphans of the restored database.
 		logs := pitrAdminJob(t, "pitr-restore-versions", "admin", "storage", "restore-versions", "--before", st.tRFC,
-			"--credentials-file", "/etc/trove/post-restore/credentials.yaml")
+			"--credentials-file", "/etc/quader/post-restore/credentials.yaml")
 		m := regexp.MustCompile(`(\d+) without object, (\d+) restored, (\d+) delete markers removed, 0 still without object`).FindStringSubmatch(logs)
 		if m == nil {
-			t.Fatalf("the last line of trove admin storage restore-versions does not report every missing blob restored:\n%s", logs)
+			t.Fatalf("the last line of quader admin storage restore-versions does not report every missing blob restored:\n%s", logs)
 		}
 		if restored, _ := strconv.Atoi(m[2]); restored < 1 {
 			t.Errorf("no blob was restored, but the collector deleted %s after t", st.gone.key())
@@ -397,17 +397,17 @@ func TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLa
 	})
 
 	step("R-HA-025 step 7: deletions resume, and the object written after t was not deleted while they were paused", func(t *testing.T) {
-		logs := pitrS3Job(t, "pitr-orphan-check", fmt.Sprintf(`s3api head-object --bucket trove-blobs --key %q >/dev/null && echo "present %s"`, st.post.key(), st.post.key()))
+		logs := pitrS3Job(t, "pitr-orphan-check", fmt.Sprintf(`s3api head-object --bucket quader-blobs --key %q >/dev/null && echo "present %s"`, st.post.key(), st.post.key()))
 		if !strings.Contains(logs, "present "+st.post.key()) {
 			t.Errorf("the object written after t was deleted while the deletion pause was set")
 		}
 		// The command runs in a pod of the started installation, with the configuration of its release, as an operator runs it.
-		out := kn(t, "exec", "deploy/trove-worker", "--", "trove", "admin", "maintenance", "resume-deletions")
-		t.Logf("trove admin maintenance resume-deletions:\n%s", out)
+		out := kn(t, "exec", "deploy/quader-worker", "--", "quader", "admin", "maintenance", "resume-deletions")
+		t.Logf("quader admin maintenance resume-deletions:\n%s", out)
 		if !strings.Contains(out, "deletion pause cleared (it was set at") || !strings.Contains(out, "post-restore") {
 			t.Errorf("resume-deletions does not report the pause of the post-restore as cleared: %q", out)
 		}
-		if got := pitrSQL(t, "SELECT count(*) FROM trove.system_state WHERE key = 'deletions_paused_at' AND value <> 'null'::jsonb"); got != "0" {
+		if got := pitrSQL(t, "SELECT count(*) FROM quader.system_state WHERE key = 'deletions_paused_at' AND value <> 'null'::jsonb"); got != "0" {
 			t.Errorf("the deletion pause is still set")
 		}
 		if r, err := adm.send(http.MethodPost, "/api/v1/system/tasks/gc/run", nil); err != nil || (r.Status != 202 && r.Status != 409) {

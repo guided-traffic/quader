@@ -34,8 +34,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/e2e/ctlretry"
-	"github.com/guided-traffic/trove/test/e2e/rotationhold"
+	"github.com/guided-traffic/quader/test/e2e/ctlretry"
+	"github.com/guided-traffic/quader/test/e2e/rotationhold"
 )
 
 // ── profile ──────────────────────────────────────────────────────────────────
@@ -59,17 +59,17 @@ func recordProfile(profile string, env []string) {
 // runUp runs deploy/dev/up.sh with the profile; the cluster name and the ports come from the environment, as
 // make dev-up got them.
 func runUp(profile string, env ...string) error {
-	dev := os.Getenv("TROVE_E2E_DEV_DIR")
+	dev := os.Getenv("QUADER_E2E_DEV_DIR")
 	if dev == "" {
-		return fmt.Errorf("TROVE_E2E_DEV_DIR is not set; run the suite through deploy/dev/e2e.sh")
+		return fmt.Errorf("QUADER_E2E_DEV_DIR is not set; run the suite through deploy/dev/e2e.sh")
 	}
 	cmd := exec.Command(filepath.Join(dev, "up.sh"))
 	cmd.Dir = cfg.repo
-	cmd.Env = append(append(os.Environ(), "TROVE_PROFILE="+profile), env...)
+	cmd.Env = append(append(os.Environ(), "QUADER_PROFILE="+profile), env...)
 	out, err := cmd.CombinedOutput()
 	_ = os.WriteFile(filepath.Join(cfg.out, "profile-"+profile+".log"), out, 0o644)
 	if err != nil {
-		return fmt.Errorf("up.sh with TROVE_PROFILE=%s: %w\n%s", profile, err, tail(string(out), 2000))
+		return fmt.Errorf("up.sh with QUADER_PROFILE=%s: %w\n%s", profile, err, tail(string(out), 2000))
 	}
 	recordProfile(profile, env)
 	return nil
@@ -87,10 +87,10 @@ var (
 	scatterErr  error
 )
 
-// scatterProfile is the profile useScatter switches to: scatter, or the profile named by TROVE_E2E_SCATTER_PROFILE (the sets of the
+// scatterProfile is the profile useScatter switches to: scatter, or the profile named by QUADER_E2E_SCATTER_PROFILE (the sets of the
 // drain test of E5.9 name `drain`: the scatter profile with garbage collection without a grace period).
 func scatterProfile() string {
-	if p := os.Getenv("TROVE_E2E_SCATTER_PROFILE"); p != "" {
+	if p := os.Getenv("QUADER_E2E_SCATTER_PROFILE"); p != "" {
 		return p
 	}
 	return "scatter"
@@ -98,7 +98,7 @@ func scatterProfile() string {
 
 // useScatter puts the cluster into the scatter profile (three api and three packages replicas, every request to another
 // one) for the tests of E1.8 to E1.14 and waits for the six replicas. It runs once per process; TestMain returns the cluster
-// to the default profile at the end (TROVE_E2E_SCATTER_RETURN=0 keeps it).
+// to the default profile at the end (QUADER_E2E_SCATTER_RETURN=0 keeps it).
 func useScatter(t testing.TB) {
 	t.Helper()
 	scatterOnce.Do(func() {
@@ -125,8 +125,8 @@ func restoreProfile() {
 	profileMu.Lock()
 	cur := currentProfile
 	profileMu.Unlock()
-	// TROVE_E2E_BASTION_KEEP=1 leaves the Bastions installed, and with them the profile their main installation needs
-	if cur != "default" && os.Getenv("TROVE_E2E_SCATTER_RETURN") != "0" && (cur != "bastion" || !keepBastions()) {
+	// QUADER_E2E_BASTION_KEEP=1 leaves the Bastions installed, and with them the profile their main installation needs
+	if cur != "default" && os.Getenv("QUADER_E2E_SCATTER_RETURN") != "0" && (cur != "bastion" || !keepBastions()) {
 		if err := runUp("default"); err != nil {
 			fmt.Fprintln(os.Stderr, "e2e: returning to the default profile:", err)
 		}
@@ -151,7 +151,7 @@ func caPool(t testing.TB) *x509.CertPool {
 		caPoolVal.AppendCertsFromPEM(pem)
 	})
 	if caPoolVal == nil {
-		t.Fatalf("TROVE_E2E_CA_FILE %q is not readable: the M1 tests need the dev CA", cfg.caFile)
+		t.Fatalf("QUADER_E2E_CA_FILE %q is not readable: the M1 tests need the dev CA", cfg.caFile)
 	}
 	return caPoolVal
 }
@@ -160,13 +160,13 @@ func edgePort(t testing.TB) string {
 	t.Helper()
 	u, err := url.Parse(cfg.edgeURL)
 	if err != nil || u.Port() == "" {
-		t.Fatalf("TROVE_E2E_EDGE_URL %q has no port", cfg.edgeURL)
+		t.Fatalf("QUADER_E2E_EDGE_URL %q has no port", cfg.edgeURL)
 	}
 	return u.Port()
 }
 
 // route says where a connection to a name goes: the edge's published port for every name the edge serves
-// (localhost, packages.trove.localhost), the port-forward for the test IdP's Service name, and the table's
+// (localhost, packages.quader.localhost), the port-forward for the test IdP's Service name, and the table's
 // entry for a name that a test pinned (a single pod, a forward).
 type route struct {
 	mu   sync.Mutex
@@ -181,7 +181,7 @@ func (r *route) dial(t testing.TB) func(ctx context.Context, network, addr strin
 		host, _, _ := net.SplitHostPort(addr)
 		r.mu.Lock()
 		target, ok := r.pins[host]
-		if !ok && len(r.rr) > 0 && !strings.HasPrefix(host, "trove-keycloak.") {
+		if !ok && len(r.rr) > 0 && !strings.HasPrefix(host, "quader-keycloak.") {
 			target = r.rr[r.next%len(r.rr)]
 			r.next++
 			ok = true
@@ -190,7 +190,7 @@ func (r *route) dial(t testing.TB) func(ctx context.Context, network, addr strin
 		switch {
 		case ok:
 			addr = target
-		case strings.HasPrefix(host, "trove-keycloak."):
+		case strings.HasPrefix(host, "quader-keycloak."):
 			addr = keycloakAddr(t)
 		default:
 			addr = net.JoinHostPort("127.0.0.1", edgePort(t))
@@ -200,7 +200,7 @@ func (r *route) dial(t testing.TB) func(ctx context.Context, network, addr strin
 }
 
 // api is an HTTP client of the edge. It sends a new connection per request, so the scatter profile's round robin
-// shows in X-Trove-Replica. Credentials: Bearer token, or the session cookie of its jar with the CSRF header.
+// shows in X-Quader-Replica. Credentials: Bearer token, or the session cookie of its jar with the CSRF header.
 type api struct {
 	t     testing.TB
 	c     *http.Client
@@ -208,7 +208,7 @@ type api struct {
 	base  string // https://localhost:<edge port>, the default endpoint
 	token string
 	csrf  string
-	// minEpoch, when set, is sent as Trove-Authz-Min-Epoch on every request that names no value itself (R-AUTHZ-032): the
+	// minEpoch, when set, is sent as Quader-Authz-Min-Epoch on every request that names no value itself (R-AUTHZ-032): the
 	// client sees the grant changes its suite made, on whichever replica answers.
 	minEpoch string
 	// writes guards the write class of the token (withWriteBudget); nil guards nothing
@@ -338,7 +338,7 @@ type reply struct {
 	Dur    time.Duration
 }
 
-func (r reply) Replica() string { return r.Header.Get("X-Trove-Replica") }
+func (r reply) Replica() string { return r.Header.Get("X-Quader-Replica") }
 
 func (r reply) String() string {
 	b := r.Body
@@ -437,7 +437,7 @@ func (a *api) send(method, path string, body any, h ...string) (reply, error) {
 		req.Header.Set("Origin", a.base)
 	}
 	if a.minEpoch != "" {
-		req.Header.Set("Trove-Authz-Min-Epoch", a.minEpoch)
+		req.Header.Set("Quader-Authz-Min-Epoch", a.minEpoch)
 	}
 	for i := 0; i+1 < len(h); i += 2 {
 		if strings.EqualFold(h[i], "Host") {
@@ -492,7 +492,7 @@ func (a *api) getOverForward(path string, h ...string) reply {
 
 // safeOverForward is getOverForward for any request that is safe to repeat (GET, HEAD, a conditional or a Range GET): the
 // checks of a refusal through one replica's forward (wantRefused) send their requests this way, so a broken forward is
-// renewed and the request repeated instead of failing the test on a transport error that never reached trove.
+// renewed and the request repeated instead of failing the test on a transport error that never reached quader.
 func (a *api) safeOverForward(method, path string, h ...string) reply {
 	a.t.Helper()
 	if method != http.MethodGet && method != http.MethodHead {
@@ -517,7 +517,7 @@ func (a *api) safeOverForward(method, path string, h ...string) reply {
 // writeOverForward is the write counterpart of safeOverForward, for a write that is idempotent: a PATCH with a JSON merge
 // patch (R-API-013) or a PUT, which set a state and leave the same state when sent twice. A transport error before a
 // response renews the forward and repeats the write, twice at most, each repeat logged (overForward). The first attempt
-// may have reached trove before the connection broke, so after any repeat the helper reads the resource over the forward
+// may have reached quader before the connection broke, so after any repeat the helper reads the resource over the forward
 // and requires that it shows state (the members the write set, in the shape of a merge patch, ctlretry.StateShown): a
 // repeat answered 412 because the first attempt changed the ETag is accepted when the state is shown, and the resource
 // read back is returned as the answer; any other status of a repeat is left to the caller, and a 2xx whose resource does
@@ -591,21 +591,21 @@ func (a *api) cookie(name string) string {
 }
 
 // syncCSRF takes the CSRF token the UI would read from its cookie.
-func (a *api) syncCSRF() { a.csrf = a.cookie("__Host-trv_csrf") }
+func (a *api) syncCSRF() { a.csrf = a.cookie("__Host-qdr_csrf") }
 
 // ── bootstrap ────────────────────────────────────────────────────────────────
 
-// troveAdmin runs `trove admin …` in a worker pod, as the bootstrap of a fresh installation does. stdout is
+// quaderAdmin runs `quader admin …` in a worker pod, as the bootstrap of a fresh installation does. stdout is
 // returned; stderr (the JSON log lines of the command) is only logged on failure.
-func troveAdmin(t testing.TB, stdin string, args ...string) (string, error) {
+func quaderAdmin(t testing.TB, stdin string, args ...string) (string, error) {
 	t.Helper()
-	full := append([]string{"--context", cfg.kubeContext, "-n", cfg.namespace, "exec", "-i", "deploy/trove-worker", "--", "trove", "admin"}, args...)
+	full := append([]string{"--context", cfg.kubeContext, "-n", cfg.namespace, "exec", "-i", "deploy/quader-worker", "--", "quader", "admin"}, args...)
 	cmd := exec.Command("kubectl", full...)
 	cmd.Stdin = strings.NewReader(stdin)
 	var out, errb bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errb
 	if err := cmd.Run(); err != nil {
-		return out.String(), fmt.Errorf("trove admin %s: %w: %s", strings.Join(args, " "), err, tail(errb.String(), 600))
+		return out.String(), fmt.Errorf("quader admin %s: %w: %s", strings.Join(args, " "), err, tail(errb.String(), 600))
 	}
 	return strings.TrimSpace(out.String()), nil
 }
@@ -616,17 +616,17 @@ var (
 	adminErr  error
 )
 
-// adminToken is the token of the service account `e2e-admin`, created with `trove admin service-account create
-// --admin` and `trove admin token create` the way a fresh installation is bootstrapped. The account is kept
+// adminToken is the token of the service account `e2e-admin`, created with `quader admin service-account create
+// --admin` and `quader admin token create` the way a fresh installation is bootstrapped. The account is kept
 // between runs; every run mints a new token (24 h).
 func adminToken(t testing.TB) string {
 	t.Helper()
 	adminOnce.Do(func() {
-		if _, err := troveAdmin(t, "", "service-account", "create", "e2e-admin", "--description", "end-to-end tests", "--admin"); err != nil && !strings.Contains(err.Error(), "exist") {
+		if _, err := quaderAdmin(t, "", "service-account", "create", "e2e-admin", "--description", "end-to-end tests", "--admin"); err != nil && !strings.Contains(err.Error(), "exist") {
 			adminErr = err
 			return
 		}
-		adminTok, adminErr = troveAdmin(t, `{"inherit":true,"admin":true}`, "token", "create", "--service-account", "e2e-admin", "--ttl", "24h", "--scope-file", "/dev/stdin")
+		adminTok, adminErr = quaderAdmin(t, `{"inherit":true,"admin":true}`, "token", "create", "--service-account", "e2e-admin", "--ttl", "24h", "--scope-file", "/dev/stdin")
 		if adminErr != nil {
 			return
 		}
@@ -635,8 +635,8 @@ func adminToken(t testing.TB) string {
 		// within R-AUTHZ-028's bound. /api/v1/authz/me is of the api family, so wait until the binding is
 		// in force on every api replica, as an administrator who read the command's result would: the edge
 		// balances per connection, so a count of answers does not show that each replica
-		// answered; the replicas are told apart by X-Trove-Replica.
-		replicas, _ := strconv.Atoi(strings.TrimSpace(kn(t, "get", "deployment", "trove-api", "-o", "jsonpath={.spec.replicas}")))
+		// answered; the replicas are told apart by X-Quader-Replica.
+		replicas, _ := strconv.Atoi(strings.TrimSpace(kn(t, "get", "deployment", "quader-api", "-o", "jsonpath={.spec.replicas}")))
 		deadline := time.Now().Add(15 * time.Second)
 		for {
 			inForce := map[string]bool{}
@@ -722,7 +722,7 @@ func repoAPI(ref string) string {
 var (
 	projectMu    sync.Mutex
 	projectMade  bool
-	projectEpoch string // Trove-Authz-Epoch of the creation of e2eProject; empty when the project existed already
+	projectEpoch string // Quader-Authz-Epoch of the creation of e2eProject; empty when the project existed already
 )
 
 // ensureE2EProject creates the project e2eProject unless it exists; it is idempotent over runs.
@@ -735,12 +735,12 @@ func ensureE2EProject(t testing.TB, adm *api) {
 	}
 	r := adm.do(http.MethodPost, "/api/v1/projects", map[string]any{"key": e2eProject, "displayName": "End-to-end tests"}).
 		want(t, "create the project "+e2eProject, 201, 409)
-	projectEpoch = r.Header.Get("Trove-Authz-Epoch")
+	projectEpoch = r.Header.Get("Quader-Authz-Epoch")
 	projectMade = true
 }
 
 // adminAPI is a client with the bootstrap administrator's token; the project of the suite exists when it returns, and the
-// client asks every replica for a grant index at least as new as the project's creation (Trove-Authz-Min-Epoch, R-AUTHZ-032),
+// client asks every replica for a grant index at least as new as the project's creation (Quader-Authz-Min-Epoch, R-AUTHZ-032),
 // so that the project's lists (R-REPO-012) do not answer 404 on a replica that has not built the index yet.
 func adminAPI(t testing.TB) *api {
 	t.Helper()
@@ -850,7 +850,7 @@ func waitServingSettled(t testing.TB) {
 	t.Helper()
 	for _, role := range []string{"api", "packages"} {
 		sel := map[string]string{"api": selAPI, "packages": selPackages}[role]
-		want, _ := strconv.Atoi(strings.TrimSpace(kn(t, "get", "deployment", "trove-"+role, "-o", "jsonpath={.spec.replicas}")))
+		want, _ := strconv.Atoi(strings.TrimSpace(kn(t, "get", "deployment", "quader-"+role, "-o", "jsonpath={.spec.replicas}")))
 		waitFor(t, "the "+role+" pods to settle after a rollout", 5*time.Minute, 2*time.Second, func() bool {
 			ps := podsOf(t, sel)
 			if len(ps) != want {
@@ -1228,7 +1228,7 @@ func dialForward(ctx context.Context, d *net.Dialer, network, addr string) (net.
 
 // keycloakAddr is the local address of a port-forward to the test IdP's Service (kept for the whole run).
 func keycloakAddr(t testing.TB) string {
-	kcOnce.Do(func() { kcFwd = portForward(t, "svc/trove-keycloak", 8443).addr })
+	kcOnce.Do(func() { kcFwd = portForward(t, "svc/quader-keycloak", 8443).addr })
 	return kcFwd
 }
 
@@ -1311,7 +1311,7 @@ type loginTrace struct {
 }
 
 // oidcLogin walks the authorization code flow: GET start, the IdP's login form (posted with the user's
-// password when it shows), the redirect to the callback, trove's redirect into the UI. A fresh browser sees
+// password when it shows), the redirect to the callback, quader's redirect into the UI. A fresh browser sees
 // the form; one that holds an IdP session does not.
 func (b *browser) oidcLogin(user, password string) loginTrace {
 	b.t.Helper()
@@ -1345,7 +1345,7 @@ func (b *browser) walkLogin(first, user, password string) loginTrace {
 				b.t.Fatalf("login hop %d: redirect %d without a usable Location", hop, r.Status)
 			}
 			abs := cur.ResolveReference(loc)
-			if tr.AuthURL == nil && strings.HasPrefix(abs.Host, "trove-keycloak.") {
+			if tr.AuthURL == nil && strings.HasPrefix(abs.Host, "quader-keycloak.") {
 				tr.AuthURL = abs
 			}
 			next = abs.String()
@@ -1409,7 +1409,7 @@ func sessionEnded(t testing.TB, cookie string) {
 	var lastOK time.Duration
 	refused := map[string]bool{}
 	for time.Since(start) < 4*time.Second {
-		r := stale.get("/api/v1/auth/whoami", "Cookie", "__Host-trv_session="+cookie)
+		r := stale.get("/api/v1/auth/whoami", "Cookie", "__Host-qdr_session="+cookie)
 		switch r.Status {
 		case 200:
 			lastOK = time.Since(start)

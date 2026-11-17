@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/scope"
 )
 
 // TestR_NPM_038_ANameTheCallerMayNotReadIsNotForwarded: the audit forwards only names the caller may read on the
@@ -38,7 +38,7 @@ func TestR_NPM_038_ANameTheCallerMayNotReadIsNotForwarded(t *testing.T) {
 		if strings.Contains(string(a.Body), "lodash") {
 			t.Errorf("%s: the answer names the hidden package: %s", repo, a.Body)
 		}
-		want := "trove audited 1 of 3 packages; 2 internal or not yet proxied names were not sent to the advisory provider"
+		want := "Quader audited 1 of 3 packages; 2 internal or not yet proxied names were not sent to the advisory provider"
 		if got := a.Header.Get("npm-notice"); got != want {
 			t.Errorf("%s: npm-notice %q, want %q", repo, got, want)
 		}

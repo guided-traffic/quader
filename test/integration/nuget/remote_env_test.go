@@ -14,9 +14,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 // The remote class (R-NUGET-014, R-NUGET-015, R-NUGET-031) against the integration stack, with
@@ -82,9 +82,9 @@ func newRemoteEnv(t *testing.T, o remoteOptions) *renv {
 		t.Fatal(err)
 	}
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "nugetr", Valkey: o.Valkey, Env: append([]string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
 	}, o.Env...)})
 	e := &renv{t: t, st: st, stub: stub, srv: srv}
 	// The test server listens on 127.0.0.1; the service index is asked for under that name.

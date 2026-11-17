@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/jobs"
+	"github.com/guided-traffic/quader/internal/jobs"
 )
 
 type startInfo struct {
@@ -138,8 +138,8 @@ func TestDrainResumesFromCursor(t *testing.T) {
 		if c := cursor(); c < 8 || c >= total {
 			t.Fatalf("checkpoint at the release = %d", c)
 		}
-		if n := counterValue(t, claimer.reg, "trove_jobs_completed_total", map[string]string{"kind": "it.cursor", "outcome": "released"}); n != 1 {
-			t.Fatalf("trove_jobs_completed_total{outcome=\"released\"} = %v, want 1", n)
+		if n := counterValue(t, claimer.reg, "quader_jobs_completed_total", map[string]string{"kind": "it.cursor", "outcome": "released"}); n != 1 {
+			t.Fatalf("quader_jobs_completed_total{outcome=\"released\"} = %v, want 1", n)
 		}
 	})
 

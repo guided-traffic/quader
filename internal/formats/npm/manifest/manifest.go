@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The native npm error codes of R-NPM-007. They are part of the API contract of

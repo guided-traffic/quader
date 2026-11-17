@@ -6,8 +6,8 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	_ "github.com/guided-traffic/trove/internal/formats/all" // registers the formats the enums are compared with
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	_ "github.com/guided-traffic/quader/internal/formats/all" // registers the formats the enums are compared with
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // TestR_ARCH_010_PerClassFormatEnums: the OpenAPI document holds one enum of format

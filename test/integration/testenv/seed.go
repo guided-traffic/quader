@@ -1,8 +1,8 @@
 package testenv
 
 import (
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/token"
 )
 
 // The seed writes rows straight into the installation's database, before the

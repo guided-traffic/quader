@@ -10,8 +10,8 @@ import (
 // `worker` replicas claim jobs; `web` replicas enqueue them.
 type Jobs struct {
 	Workers              JobsWorkers              `yaml:"workers" doc:"Concurrent jobs per replica and queue."`
-	Queues               []string                 `yaml:"queues" default:"[]" doc:"Queues this worker claims; empty: every queue. Mutually exclusive with exclude_queues. As an environment variable the list is written as JSON, for example TROVE_JOBS_QUEUES='[\"index\"]'."`
-	ExcludeQueues        []string                 `yaml:"exclude_queues" default:"[]" doc:"Queues this worker does not claim; empty: none. Mutually exclusive with queues. As an environment variable the list is written as JSON, for example TROVE_JOBS_EXCLUDE_QUEUES='[\"index\",\"mirror\"]'."`
+	Queues               []string                 `yaml:"queues" default:"[]" doc:"Queues this worker claims; empty: every queue. Mutually exclusive with exclude_queues. As an environment variable the list is written as JSON, for example QUADER_JOBS_QUEUES='[\"index\"]'."`
+	ExcludeQueues        []string                 `yaml:"exclude_queues" default:"[]" doc:"Queues this worker does not claim; empty: none. Mutually exclusive with queues. As an environment variable the list is written as JSON, for example QUADER_JOBS_EXCLUDE_QUEUES='[\"index\",\"mirror\"]'."`
 	PollInterval         time.Duration            `yaml:"poll_interval" default:"2s" validate:"min=100ms"`
 	LeaseDuration        time.Duration            `yaml:"lease_duration" default:"60s" validate:"min=1s"`
 	HeartbeatInterval    time.Duration            `yaml:"heartbeat_interval" default:"15s" validate:"min=1s"`

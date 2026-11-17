@@ -19,7 +19,7 @@ const version = '1.0.0';
 const readme = [
   `# ${pkgName}`,
   '',
-  'Published by the trove browser journey.',
+  'Published by the Quader browser journey.',
   '',
   '## Usage',
   '',
@@ -27,9 +27,9 @@ const readme = [
   `const value = require('${pkgName}');`,
   '```',
   '',
-  '<script>window.troveReadmeRan = "script";</script>',
-  '<img src="x" onerror="window.troveReadmeRan = \'onerror\'">',
-  '<a href="javascript:window.troveReadmeRan = \'link\'">a link that runs script</a>',
+  '<script>window.quaderReadmeRan = "script";</script>',
+  '<img src="x" onerror="window.quaderReadmeRan = \'onerror\'">',
+  '<a href="javascript:window.quaderReadmeRan = \'link\'">a link that runs script</a>',
   '<iframe src="https://example.com/"></iframe>',
   '',
 ].join('\n');
@@ -54,7 +54,7 @@ function tarEntry(name: string, content: Buffer): Buffer {
 
 /** The body of an npm publish, the way the npm client sends it: the manifest and the tarball as an attachment. */
 function publishBody(): object {
-  const description = 'A package of the trove browser journey';
+  const description = 'A package of the Quader browser journey';
   const manifest = { name: pkgName, version, description, license: 'MIT' };
   const tgz = gzipSync(
     Buffer.concat([
@@ -92,12 +92,12 @@ function publishBody(): object {
 
 /**
  * The configure snippet of a client as setupSnippet renders npm's template for the matrix: the registry URL of the
- * edge on `localhost`, the keyed credential line with ${TROVE_TOKEN}, and the always-auth switches, because the
+ * edge on `localhost`, the keyed credential line with ${QUADER_TOKEN}, and the always-auth switches, because the
  * repository is not anonymously readable.
  */
 function matrixSnippet(client: string, edgePort: string): { file: string; content: string } {
   const registry = `https://localhost:${edgePort}/api/npm/${e2eProject}/${repoKey}/`;
-  const npmrc = `registry=${registry}\n${registry.replace(/^https:/, '')}:_authToken=\${TROVE_TOKEN}\n`;
+  const npmrc = `registry=${registry}\n${registry.replace(/^https:/, '')}:_authToken=\${QUADER_TOKEN}\n`;
   switch (client) {
     case 'npm':
       return { file: '.npmrc', content: npmrc };
@@ -108,7 +108,7 @@ function matrixSnippet(client: string, edgePort: string): { file: string; conten
     default:
       return {
         file: '.yarnrc.yml',
-        content: `npmRegistryServer: "${registry}"\nnpmAlwaysAuth: true\nnpmAuthToken: "\${TROVE_TOKEN}"\n`,
+        content: `npmRegistryServer: "${registry}"\nnpmAlwaysAuth: true\nnpmAuthToken: "\${QUADER_TOKEN}"\n`,
       };
   }
 }
@@ -159,12 +159,12 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     const row = page.getByRole('table', { name: 'Packages' }).getByRole('row', { name: new RegExp(pkgName) });
     await row.getByRole('button', { name: `Show the versions of ${pkgName}` }).click();
     // A one-line command is a field with its joined copy button (Q-UI-320).
-    await expect(page.locator('trove-repository-item-versions trove-address-field input')).toHaveValue(new RegExp(`install ${pkgName}@${version}`));
+    await expect(page.locator('quader-repository-item-versions quader-address-field input')).toHaveValue(new RegExp(`install ${pkgName}@${version}`));
     await expectAccessible(page, 'repository content, package and its version');
     // The header's Set up client opens the setup for this repository (Q-UI-321).
     await page.getByRole('link', { name: 'Set up client', exact: true }).click();
     await expect(page).toHaveURL(/\/setup\?repository=/);
-    await expect(page.locator('trove-client-setup pre').first()).toBeVisible();
+    await expect(page.locator('quader-client-setup pre').first()).toBeVisible();
     await expectAccessible(page, 'client setup of the repository');
   });
 
@@ -176,16 +176,16 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     await page.getByRole('link', { name: pkgName }).click();
     await expect(page.getByRole('heading', { name: pkgName, level: 1 }).first()).toBeVisible();
     await expect(page.getByRole('tab', { name: 'README', selected: true })).toBeVisible();
-    const rendered = page.locator('trove-package-readme .readme');
+    const rendered = page.locator('quader-package-readme .readme');
     await expect(rendered.getByRole('heading', { name: 'Usage', level: 2 })).toHaveAttribute(
       'id',
       'user-content-usage',
     );
     await expect(rendered.locator('pre code')).toContainText(`require('${pkgName}')`);
-    await expect(rendered).toContainText('Published by the trove browser journey.');
+    await expect(rendered).toContainText('Published by the Quader browser journey.');
     await expect(rendered.locator('script, iframe, [onerror], a[href^="javascript:" i]')).toHaveCount(0);
     expect(
-      await page.evaluate(() => (window as unknown as { troveReadmeRan?: string }).troveReadmeRan),
+      await page.evaluate(() => (window as unknown as { quaderReadmeRan?: string }).quaderReadmeRan),
     ).toBeUndefined();
     await expectAccessible(page, 'package detail with the README');
   });
@@ -194,7 +194,7 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     await page.getByRole('link', { name: 'Set up your client for this repository' }).click();
     await expect(page.getByRole('heading', { name: 'Client setup', level: 1 })).toBeVisible();
     // The credential is one line, the environment variable by default (Q-UI-316).
-    await expect(page.locator('.credential-line')).toContainText('The snippets read your token from the variable TROVE_TOKEN.');
+    await expect(page.locator('.credential-line')).toContainText('The snippets read your token from the variable QUADER_TOKEN.');
     const port = new URL(baseURL ?? '').port;
     const clientStep = page.getByRole('group', { name: 'Client', exact: true });
     for (const client of clients) {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The answers of [Standing] that end a job's use of a session.

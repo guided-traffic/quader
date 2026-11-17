@@ -5,10 +5,10 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/evaluate"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/evaluate"
 )
 
 // The wiring of the evaluation of the vulnerability scanning (docs/developer/vulnerabilities.md): the service

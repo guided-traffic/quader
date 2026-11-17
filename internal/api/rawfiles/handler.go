@@ -22,17 +22,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/files"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/files"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // Prefix is the path every route of the handler lies below.
@@ -170,7 +170,7 @@ func routeOf(r *http.Request, key qname.Repo, p repository.Cleaned) (bastionmain
 // decided returns the caller whose first allowed decision tells the observer the subject and the index the
 // request decides on. The decision itself is the service's, made while it resolves the path, so the observer
 // learns it from the service's question: after the read was allowed and before the item is looked up, and never
-// for a refused read, whose marking carries no Trove-Bastion-Read (R-BAS-013, Q-BAS-71).
+// for a refused read, whose marking carries no Quader-Bastion-Read (R-BAS-013, Q-BAS-71).
 func decided(obs bastionmain.RouteObserver, r *http.Request, caller files.Caller, m bastionmain.RouteMatch) files.Caller {
 	var idx *authz.Index
 	if acc, ok := caller.Access.(*edge.Access); ok {
@@ -211,7 +211,7 @@ func splitPath(escaped string) (key qname.Repo, rest string, ok bool) {
 // builds the caller of the generic layer (R-AUTHZ-015): one holder for every
 // decision of the request. The subject carries the endpoint whose listener
 // accepted it (R-EP-013). An index that cannot be confirmed is 503 authz_stale,
-// an unreached Trove-Authz-Min-Epoch 412.
+// an unreached Quader-Authz-Min-Epoch 412.
 func (h *Handler) caller(r *http.Request, key qname.Repo) (files.Caller, error) {
 	ctx := r.Context()
 	if _, ok := edge.AccessFrom(ctx); !ok && h.decider == nil { // a replica without the authz area

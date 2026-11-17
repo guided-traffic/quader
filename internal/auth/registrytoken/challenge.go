@@ -43,7 +43,7 @@ func Realm(baseURL string) (realm, service string) {
 // scope. An empty realm gives the plain challenge of R-AUTH-002, so a process that cannot name its base URL still answers.
 func Challenge(realm, service, scope, code string) string {
 	if realm == "" {
-		return `Bearer realm="trove"`
+		return `Bearer realm="quader"`
 	}
 	var b strings.Builder
 	b.WriteString(`Bearer realm=`)

@@ -14,13 +14,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The pass-through of a Volatile request (R-ARCH-013 step 6, Q-ARCH-270): a package search that the
@@ -95,7 +95,7 @@ func codeOf(err error) string {
 }
 
 func lookups(r *replica, repo, result string) float64 {
-	return r.metric("trove_remote_cache_lookups_total", "repo", repo, "kind", "query", "result", result)
+	return r.metric("quader_remote_cache_lookups_total", "repo", repo, "kind", "query", "result", result)
 }
 
 func TestR_ARCH_013_QueryIsKeptPerReplicaForThePeriod(t *testing.T) {
@@ -186,7 +186,7 @@ func TestR_ARCH_013_IdenticalQueriesWaitForOneContact(t *testing.T) {
 	if s.count() != 1 {
 		t.Fatalf("the upstream saw %d requests for 20 identical queries", s.count())
 	}
-	if collapsed.Load() == 0 || r.metric("trove_remote_collapsed_requests_total", "repo", "q-collapse") == 0 {
+	if collapsed.Load() == 0 || r.metric("quader_remote_collapsed_requests_total", "repo", "q-collapse") == 0 {
 		t.Fatalf("no query was told it waited: %d", collapsed.Load())
 	}
 
@@ -253,7 +253,7 @@ func TestR_ARCH_013_QueryContactsTheUpstreamOnlyWhereAFetchMay(t *testing.T) {
 		if s.count() != base {
 			t.Fatalf("%d requests left", s.count()-base)
 		}
-		if r.metric("trove_endpoint_cache_fill_refused_total", "endpoint", "mirror") != 1 {
+		if r.metric("quader_endpoint_cache_fill_refused_total", "endpoint", "mirror") != 1 {
 			t.Fatalf("the refusal on an endpoint that does not fill was not counted")
 		}
 	})
@@ -349,7 +349,7 @@ func TestR_ARCH_013_QueryMeetsTheCircuitAndClassifiesLikeAFetch(t *testing.T) {
 			}
 		}
 		waitFor(t, "the circuit to open", 3*time.Second, func() bool {
-			return r.metric("trove_remote_upstream_up", "repo", "q-circuit") == 0
+			return r.metric("quader_remote_upstream_up", "repo", "q-circuit") == 0
 		})
 		before := s.count() + up.Count("GET", "/broken")
 		_, err := r.query(rem, "search", url.Values{"q": {"during-outage"}}, time.Minute)
@@ -369,7 +369,7 @@ func TestR_ARCH_013_QueryMeetsTheCircuitAndClassifiesLikeAFetch(t *testing.T) {
 type bearerSource struct{}
 
 func (bearerSource) Secrets(context.Context, int64) ([]repository.StoredSecret, error) {
-	return []repository.StoredSecret{{Field: "/remote/password", Ref: &repository.SecretRef{Env: "TROVE_CAC_IT_QUERY_TOKEN"}}}, nil
+	return []repository.StoredSecret{{Field: "/remote/password", Ref: &repository.SecretRef{Env: "QUADER_CAC_IT_QUERY_TOKEN"}}}, nil
 }
 
 func TestR_REPO_033_QueryNeverSendsTheCredentialToAHostTheRemoteDoesNotSendItTo(t *testing.T) {
@@ -379,7 +379,7 @@ func TestR_REPO_033_QueryNeverSendsTheCredentialToAHostTheRemoteDoesNotSendItTo(
 	serveSearch(other, `{"from":"other"}`, 0)
 	opts := replicaOpts{
 		valkey: vkUnreachable, ups: []*proxytest.Upstream{other}, secrets: bearerSource{},
-		env: func(k string) (string, bool) { return "s3cret", k == "TROVE_CAC_IT_QUERY_TOKEN" },
+		env: func(k string) (string, bool) { return "s3cret", k == "QUADER_CAC_IT_QUERY_TOKEN" },
 	}
 	r := e.newReplica("a", opts)
 	towards := func(target *proxytest.Upstream) func(*proxy.QueryRequest) {
@@ -474,7 +474,7 @@ func TestR_ARCH_013_AChangeOfTheRepositoryFlushesItsCopies(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	entries := func() float64 { return r.metric("trove_cache_entries", "cache", proxy.CacheQueryResults) }
+	entries := func() float64 { return r.metric("quader_cache_entries", "cache", proxy.CacheQueryResults) }
 	if entries() != 2 {
 		t.Fatalf("entries = %v", entries())
 	}
@@ -534,7 +534,7 @@ func TestR_ARCH_013_ACopyOfTheCurrentConfigurationOutlivesTheChange(t *testing.T
 	// The poll runs only when the test asks for it, so the order of the two applications is the test's.
 	r := e.newReplica("a", replicaOpts{valkey: vkUnreachable, poll: time.Hour})
 	x := url.Values{"q": {"x"}}
-	entries := func() float64 { return r.metric("trove_cache_entries", "cache", proxy.CacheQueryResults) }
+	entries := func() float64 { return r.metric("quader_cache_entries", "cache", proxy.CacheQueryResults) }
 	// announce writes the change of a repository's row as the repository service does
 	// (internal/repository, recordAndNotify); the writer applies it at once.
 	announce := func(rem proxy.Remote, op string) {

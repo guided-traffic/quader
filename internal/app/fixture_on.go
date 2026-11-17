@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // fixtureBuild marks the test build the process-level drain tests compile

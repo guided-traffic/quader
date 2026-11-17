@@ -1,0 +1,60 @@
+{{- /*
+The Services of a further endpoint (R-EP-008, Q-EP-71): <fullname>-ep-<name> with the endpoint's port,
+selecting the pods of the role that serves the surface's packages and files families (the api pods
+when the surface holds neither), and <fullname>-api-ep-<name> beside it, selecting the api pods, when
+the surface holds families of both roles. With an endpoint pool the selectors name the pool's pods;
+while the bridge of R-HA-064 carries the edge (step 1), <fullname>-ep-<name> selects the web pods that
+served the endpoint before the cut, and <fullname>-api-ep-<name> already selects the api pods without
+a route, so that step 2 moves the edge onto a Service whose endpoints exist. sessionAffinity is fixed
+to None like every Service (R-HA-037).
+*/ -}}
+{{- $bridge := include "quader.bridgeRouted" . }}
+{{- range $name := include "quader.endpointNames" . | fromYamlArray }}
+{{- $e := include "quader.endpoint" (dict "root" $ "name" $name) | fromYaml }}
+{{- $roles := include "quader.surfaceRoles" (dict "root" $ "name" $name) | fromYamlArray }}
+{{- $targets := list (dict "prefix" "" "role" (ternary "web" (first $roles) (not (empty $bridge)))) }}
+{{- if eq (len $roles) 2 }}
+{{- $targets = append $targets (dict "prefix" "api-" "role" "api") }}
+{{- end }}
+{{- range $t := $targets }}
+{{- $role := $t.role }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "quader.fullname" $ }}-{{ $t.prefix }}ep-{{ $name }}
+  labels:
+    {{- include "quader.labels" (dict "root" $ "component" $role "pool" $e.pool) | nindent 4 }}
+    quader/endpoint: {{ $name | quote }}
+  {{- $bt := include "quader.endpointBackendTLS" (dict "root" $ "name" $name) | fromYaml }}
+  {{- $svcAnn := merge (dict) $e.serviceAnnotations $.Values.commonAnnotations }}
+  {{- /* Traefik reads the backend scheme and transport from the Service (R-HA-063). */}}
+  {{- if and $e.ingressEnabled $.Values.tls.enabled (eq $bt.controller "traefik") }}
+  {{- $_ := set $svcAnn "traefik.ingress.kubernetes.io/service.serversscheme" "https" }}
+  {{- with $bt.serversTransport }}
+  {{- $_ := set $svcAnn "traefik.ingress.kubernetes.io/service.serverstransport" . }}
+  {{- end }}
+  {{- end }}
+  {{- if $svcAnn }}
+  annotations:
+    {{- toYaml $svcAnn | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ $e.serviceType }}
+  sessionAffinity: None
+  {{- with $e.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  ports:
+    - name: ep-{{ $name }}
+      port: {{ $e.port }}
+      targetPort: {{ $e.port }}
+      protocol: TCP
+      {{- if $.Values.tls.enabled }}
+      appProtocol: https
+      {{- end }}
+  selector:
+    {{- include "quader.selectorLabels" (dict "root" $ "component" $role "pool" $e.pool) | nindent 4 }}
+{{- end }}
+{{- end }}

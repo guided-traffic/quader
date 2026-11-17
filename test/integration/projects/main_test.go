@@ -13,8 +13,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestMain fails the whole package, before any test runs, when the environment names a

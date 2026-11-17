@@ -24,14 +24,14 @@ type Tracing struct {
 	HeadersFile          string   `yaml:"headers_file" default:"" secret:"file" doc:"One \"Name: value\" per line."`
 	SampleRatio          float64  `yaml:"sample_ratio" default:"0.1" validate:"min=0,max=1"`
 	IncomingContext      string   `yaml:"incoming_context" default:"trusted_peers" validate:"oneof=trusted_peers|all|none" doc:"trusted_peers: continue an incoming traceparent only from tracing.trusted_peers; all: from every client; none: never. A context that is not continued becomes a span link."`
-	TrustedPeers         []string `yaml:"trusted_peers" default:"[]" doc:"Addresses or CIDRs of peers that set a trace context trove may continue (a mesh sidecar, an internal caller). Empty: every request starts a new trace. Never the edge proxy, which passes the client's header through."`
+	TrustedPeers         []string `yaml:"trusted_peers" default:"[]" doc:"Addresses or CIDRs of peers that set a trace context Quader may continue (a mesh sidecar, an internal caller). Empty: every request starts a new trace. Never the edge proxy, which passes the client's header through."`
 	PropagateToUpstreams bool     `yaml:"propagate_to_upstreams" default:"false"`
 	QueueSize            int      `yaml:"queue_size" default:"2048" validate:"min=1"`
 }
 
 // Validate checks the cross-field rules of the section.
 func (t *Tracing) Validate(r *Report) {
-	// With the trove key unset, the standard OTEL_EXPORTER_OTLP_* variables
+	// With the quader key unset, the standard OTEL_EXPORTER_OTLP_* variables
 	// apply (R-OPS-018), so a missing endpoint is an error only when they are
 	// unset too.
 	if t.Enabled && t.Endpoint == "" && os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" && os.Getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT") == "" {

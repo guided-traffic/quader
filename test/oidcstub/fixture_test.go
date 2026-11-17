@@ -16,7 +16,7 @@ import (
 
 // The fixtures in testdata were recorded from a real GitLab by cmd/record-gitlab (make
 // oidc-fixtures; Q-CI-25 of docs/spec/gitlab-ci-oidc.md). The tests in this file check the double
-// against them. They are evidence that the double is GitLab-shaped, not evidence for trove's
+// against them. They are evidence that the double is GitLab-shaped, not evidence for quader's
 // requirements, so their names carry no requirement ID; the requirement each one concerns is named
 // in its comment.
 
@@ -236,8 +236,8 @@ func TestDoubleReproducesTheRecordedIDTokens(t *testing.T) {
 func TestRecordedIDTokensOfDefaultAreReplaced(t *testing.T) {
 	fx := tokenFixtures(t)["default-id-tokens"]
 	want := map[string]map[string]string{
-		"claims":         {"TROVE_ID_TOKEN": "present", "ARRAY_ID_TOKEN": "present", "DEFAULT_ID_TOKEN": "absent"},
-		"claims-default": {"DEFAULT_ID_TOKEN": "present", "TROVE_ID_TOKEN": "absent"},
+		"claims":         {"QUADER_ID_TOKEN": "present", "ARRAY_ID_TOKEN": "present", "DEFAULT_ID_TOKEN": "absent"},
+		"claims-default": {"DEFAULT_ID_TOKEN": "present", "QUADER_ID_TOKEN": "absent"},
 	}
 	for job, vars := range want {
 		for v, state := range vars {

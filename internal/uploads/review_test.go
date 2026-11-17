@@ -13,11 +13,11 @@ import (
 
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 func TestR_STOR_011_ACommitThatLandedWhileTheRequestSawAnErrorKeepsTheRecordedTail(t *testing.T) {

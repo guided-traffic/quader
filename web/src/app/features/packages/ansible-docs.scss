@@ -9,7 +9,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
 
   p {
     margin: 0;
@@ -28,7 +28,7 @@ span.tree-row {
 }
 
 .node-label.muted .node-name {
-  color: var(--trove-text-muted);
+  color: var(--quader-text-muted);
 }
 
 .node-label .badge {
@@ -40,9 +40,9 @@ span.tree-row {
 }
 
 .doc-source {
-  margin-block: var(--trove-space-4) 0;
-  color: var(--trove-text-muted);
-  font-size: var(--trove-text-muted-size);
+  margin-block: var(--quader-space-4) 0;
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
 }
 
 // A version that has a README and no entries has no tree: the page takes the whole width, also on a narrow content area.

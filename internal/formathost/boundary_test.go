@@ -6,14 +6,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/packages"
-	"github.com/guided-traffic/trove/internal/repository"
-	vt "github.com/guided-traffic/trove/internal/virtual/virtualtest"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/packages"
+	"github.com/guided-traffic/quader/internal/repository"
+	vt "github.com/guided-traffic/quader/internal/virtual/virtualtest"
 )
 
 // recordSignals is a Signaler that remembers what was attached to a transaction.

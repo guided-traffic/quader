@@ -11,17 +11,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // SessionCookie is the name of the UI session cookie (Q-AUTH-2).
-const SessionCookie = "__Host-trv_session"
+const SessionCookie = "__Host-qdr_session"
 
 // failureWindow is the window of the failed-credential limiter: one minute
 // (R-AUTH-038). A throttled answer carries it as Retry-After.
@@ -36,7 +36,7 @@ type TokenValidator interface {
 }
 
 // HashValidator is what the stage needs of the token package to verify a registry token (R-OCI-005): the state of the
-// trove token it names by the SHA-256 of its secret, from the token cache under the freshness gate (R-AUTH-023).
+// quader token it names by the SHA-256 of its secret, from the token cache under the freshness gate (R-AUTH-023).
 // *token.Service implements it. A validator without it refuses every registry token as unknown.
 type HashValidator interface {
 	CheckSecretHash(ctx context.Context, hash [32]byte, typ token.Type, req token.Request) (token.Info, error)
@@ -76,7 +76,7 @@ type Options struct {
 	// [HeaderAPIKey] on the routes of [EndpointRules.APIKeyRoute]. Off, the header
 	// is never read and only Authorization applies there (R-AUTH-033).
 	APIKeyHeader bool
-	// Registry verifies the registry tokens of the OCI token service (R-OCI-005): a Bearer value with the prefix trv_rgt_
+	// Registry verifies the registry tokens of the OCI token service (R-OCI-005): a Bearer value with the prefix qdr_rgt_
 	// on a route below /v2/ is one. Nil refuses every registry token as a malformed credential.
 	Registry *registrytoken.Signer
 	// RegistryRealm names the realm and the service of the challenge below /v2/ for a request (R-OCI-004 step 1): the
@@ -205,7 +205,7 @@ func (s *Stage) apiKey(r *http.Request, route *routeAnswer) (string, bool) {
 	return raw, true
 }
 
-// apiKeyToken is the trove token an API-key header value carries: the whole value,
+// apiKeyToken is the quader token an API-key header value carries: the whole value,
 // or its part after the last ':' (the "<user>:<token>" convention of older setup
 // templates, whose username is ignored), when that passes the syntax step of
 // R-AUTH-023 (prefix, length, alphabet, checksum). "" when the value carries none.
@@ -222,7 +222,7 @@ func apiKeyToken(v string) string {
 	return ""
 }
 
-// metricMethod is the method label of trove_auth_attempts_total, in the vocabulary
+// metricMethod is the method label of quader_auth_attempts_total, in the vocabulary
 // of the request log (R-OPS-015): the API key is nuget_apikey.
 func metricMethod(m Method) string {
 	if m == MethodAPIKey {
@@ -247,8 +247,8 @@ func (s *Stage) fail(method Method, reason string, err error) (Result, error) {
 // unescaped path of [rulePaths]. A rejected token adds error="invalid_token" on the management
 // API. Basic is offered only to package clients on the package and raw-file routes,
 // which answer it with configured credentials, and on the registry's token service, which
-// takes the trove token as the Basic password (R-OCI-004 step 3); a browser, recognised by its Fetch
-// Metadata headers, would answer it with its native login dialog instead of trove's
+// takes the quader token as the Basic password (R-OCI-004 step 3); a browser, recognised by its Fetch
+// Metadata headers, would answer it with its native login dialog instead of quader's
 // sign-in screen, so it gets the Bearer challenge, as does every other route
 // (Q-AUTH-173), a route of a family the process does not serve included (Q-ARCH-306).
 // Every other route below /v2/ gets the registry's challenge, which names the token
@@ -256,23 +256,23 @@ func (s *Stage) fail(method Method, reason string, err error) (Result, error) {
 func (s *Stage) challenge(r *http.Request, path string, tokenRejected bool) string {
 	if isManagementAPI(path) {
 		if tokenRejected {
-			return `Bearer realm="trove", error="invalid_token"`
+			return `Bearer realm="quader", error="invalid_token"`
 		}
-		return `Bearer realm="trove"`
+		return `Bearer realm="quader"`
 	}
 	if path == registrytoken.TokenPath {
 		if fromBrowser(r) {
-			return `Bearer realm="trove"`
+			return `Bearer realm="quader"`
 		}
-		return `Basic realm="trove"`
+		return `Basic realm="quader"`
 	}
 	if isRegistryPath(path) {
 		return s.registryChallenge(r, tokenRejected)
 	}
 	if (strings.HasPrefix(path, "/api/") || strings.HasPrefix(path, "/files/")) && !fromBrowser(r) {
-		return `Basic realm="trove"`
+		return `Basic realm="quader"`
 	}
-	return `Bearer realm="trove"`
+	return `Bearer realm="quader"`
 }
 
 // registryChallenge is the challenge of R-OCI-004 step 1 for a request below /v2/:
@@ -280,7 +280,7 @@ func (s *Stage) challenge(r *http.Request, path string, tokenRejected bool) stri
 // and error="invalid_token" for a rejected credential.
 func (s *Stage) registryChallenge(r *http.Request, tokenRejected bool) string {
 	if s.o.RegistryRealm == nil {
-		return `Bearer realm="trove"`
+		return `Bearer realm="quader"`
 	}
 	realm, service := s.o.RegistryRealm(r)
 	var scope, code string
@@ -311,9 +311,9 @@ func (s *Stage) unauthenticated(r *http.Request, path, code, detail string, toke
 // credentialHeader extracts the token of an Authorization header. present is
 // true when the header carries any value, so that a header the stage cannot read
 // is a rejection and not a fall-through to anonymous. user is the Basic username.
-// The scheme "Token" of the Galaxy clients is a trove token on a route that declares
+// The scheme "Token" of the Galaxy clients is a quader token on a route that declares
 // it (galaxy asks [EndpointRules.TokenSchemeRoute], at most once and only when the
-// header has that scheme); on every other route it is "not a trove token" (R-ANS-006,
+// header has that scheme); on every other route it is "not a quader token" (R-ANS-006,
 // Q-ANS-4).
 func credentialHeader(r *http.Request, galaxy *routeAnswer) (raw string, method Method, user string, present bool) {
 	h := strings.TrimSpace(r.Header.Get("Authorization"))
@@ -347,7 +347,7 @@ func (s *Stage) byToken(r *http.Request, path string, ep EndpointRules, raw stri
 		return s.fail(method, reason, s.unauthenticated(r, path, errs.CodeInvalidToken, "The token is not valid.", true))
 	}
 	if method == MethodNone {
-		return reject("unsupported_scheme") // not a trove token: rejected without a lookup
+		return reject("unsupported_scheme") // not a quader token: rejected without a lookup
 	}
 	if method == MethodBasic && !s.o.BasicEnabled {
 		return reject("basic_disabled")
@@ -368,7 +368,7 @@ func (s *Stage) byToken(r *http.Request, path string, ep EndpointRules, raw stri
 	return s.accept(r, ep, info, Credential{Method: method, BasicUsername: user, ExpiresAt: info.ExpiresAt}, reject)
 }
 
-// accept is what the stage does with a valid trove token, presented itself or bound to a registry token: the endpoint
+// accept is what the stage does with a valid quader token, presented itself or bound to a registry token: the endpoint
 // bindings of its scope (R-EP-011) and the endpoint's rule for unbound tokens, the principal's groups at request time
 // (R-AUTHZ-002), the last use (R-AUTH-031) and the metric. cred carries the method and what the presentation adds (the
 // Basic user name, the expiry, a registry token's grant); the token's ID, type and scope come from info. Both paths call
@@ -559,7 +559,7 @@ func (s *Stage) noCredential(r *http.Request, path, raw string, ep EndpointRules
 
 // byRegistryToken authenticates a registry token on a route below /v2/ (R-OCI-005): the MAC with the named key, the
 // expiry and the endpoint first, without any lookup, so a forged or tampered token costs no query; then the state of the
-// trove token it names through the token cache of R-AUTH-023 and the rules of the endpoint, as for that token presented
+// quader token it names through the token cache of R-AUTH-023 and the rules of the endpoint, as for that token presented
 // itself. The grant travels with the result as a further ceiling; the decision point decides the request as for every
 // other (R-AUTHZ-015). An anonymous registry token stands for a request without a credential: it passes while the
 // endpoint allows anonymous requests (R-AUTH-037).
@@ -689,7 +689,7 @@ func PresentedFrom(r *http.Request) Presented {
 	return Presented{method: method, user: user, secret: &presentedSecret{v: raw}}
 }
 
-// PresentedForm is the credential of the OAuth 2.0 password grant (R-OCI-004 step 2): the password is the trove token and
+// PresentedForm is the credential of the OAuth 2.0 password grant (R-OCI-004 step 2): the password is the quader token and
 // the user name is recorded and ignored, as for Basic (INV-8). An empty password is no credential.
 func PresentedForm(user, password string) Presented {
 	if password == "" {
@@ -714,10 +714,10 @@ func (c Presented) Kind() string {
 func (c Presented) SecretSHA256() [32]byte { return token.Hash(c.value()) }
 
 // AuthenticateTokenRequest authenticates the credential of a token request of the registry's token service (R-OCI-004
-// step 3) with every rule of this stage and of the endpoint: a trove token as Bearer or Basic (Basic only while
+// step 3) with every rule of this stage and of the endpoint: a quader token as Bearer or Basic (Basic only while
 // auth.clients.basic is on), the failed-credential throttle, the endpoint's token types and bindings, and, without a
 // credential, the anonymous principal where the endpoint and R-AUTH-037 allow it. A registry token is no credential here:
-// it fails the syntax step of a trove token, so a registry token cannot renew itself. The 401 carries Basic realm="trove".
+// it fails the syntax step of a quader token, so a registry token cannot renew itself. The 401 carries Basic realm="quader".
 func (s *Stage) AuthenticateTokenRequest(r *http.Request, ep EndpointRules, c Presented) (Result, error) {
 	p, raw := rulePaths(r, ep)
 	switch c.method {

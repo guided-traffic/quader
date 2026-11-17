@@ -3,14 +3,14 @@
 package e2e
 
 // The digest of a collection archive through a remote (R-ANS-032, R-ANS-018, Q-ANS-13): the upstream announces a SHA-256 in the version
-// document, and trove compares it with the bytes it fetched whatever the policy says. The stub's wrong_digest switch serves other bytes than
+// document, and quader compares it with the bytes it fetched whatever the policy says. The stub's wrong_digest switch serves other bytes than
 // the document announces; the client must not get them, and a repository that refused them is not poisoned for the install that follows.
 
 import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/ansiblestub"
+	"github.com/guided-traffic/quader/test/ansiblestub"
 )
 
 func TestAnsibleDigest(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func spoolBytes(t *testing.T, r *rig) int64 {
@@ -56,7 +56,7 @@ func TestR_BAS_021_R_BAS_030_TheFillsInProgressNeverHoldMoreThanTheSpoolBudget(t
 		t.Fatalf("held = %d after the refused fill gave its bytes back, want 150", got)
 	}
 	if got := val(t, r.m.CacheErrors.WithLabelValues("spool")); got != 1 {
-		t.Fatalf("trove_bastion_cache_errors_total{op=spool} = %v, want 1", got)
+		t.Fatalf("quader_bastion_cache_errors_total{op=spool} = %v, want 1", got)
 	}
 	if n := spoolBytes(t, r); n > 500 {
 		t.Fatalf("%d bytes on disk in the spool, the budget is 500", n)

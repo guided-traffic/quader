@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Virtual repositories, namespace claims and package ownership (M2, WP2.S;
 -- R-REPO-017 to R-REPO-023, R-AUTHZ-018). Members, deploy targets and pin rules

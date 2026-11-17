@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // SchemaState is schema_state: the newest applied step and the compatibility
@@ -28,7 +28,7 @@ var ErrSchemaBehind = errors.New("schema is behind this binary")
 // process exits with its message (R-ARCH-026).
 type FloorError struct{ Floor, Version string }
 
-func (e *FloorError) Error() string { return "schema requires trove >= " + e.Floor }
+func (e *FloorError) Error() string { return "schema requires Quader >= " + e.Floor }
 
 // Gate is the compatibility gate of R-HA-018: a binary of version V serves iff
 // applied >= requiredSchema and compat_floor <= V. There is no upper bound on
@@ -130,7 +130,7 @@ func checkRestoreMarker(ctx context.Context, conn q.DBTX) error {
 	if err == nil {
 		return fmt.Errorf("%w: backup %s", ErrRestoreInProgress, backupIDOf(row.Value))
 	}
-	// `trove admin post-restore` of a platform restore holds the replicas the same way until its replay has finished.
+	// `quader admin post-restore` of a platform restore holds the replicas the same way until its replay has finished.
 	post, err := qs.GetSystemState(ctx, PostRestoreMarkerKey)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil
@@ -141,7 +141,7 @@ func checkRestoreMarker(ctx context.Context, conn q.DBTX) error {
 	return fmt.Errorf("%w: post-restore %s", ErrRestoreInProgress, restoredToOf(post.Value))
 }
 
-// PostRestoreMarkerKey is the system_state key `trove admin post-restore` commits in its first transaction and deletes in its
+// PostRestoreMarkerKey is the system_state key `quader admin post-restore` commits in its first transaction and deletes in its
 // last (R-HA-025 step 4): the schema check fails while it exists.
 const PostRestoreMarkerKey = "post_restore_in_progress"
 

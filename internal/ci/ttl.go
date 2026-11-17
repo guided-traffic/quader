@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // The lifetime of a CI token (R-CI-016, Q-CI-41): one formula for the exchange and the dry run.

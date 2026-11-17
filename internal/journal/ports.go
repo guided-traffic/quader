@@ -20,7 +20,7 @@ type Store interface {
 }
 
 // AllVersions is an optional capability of a Store listed with versions: GetAll returns every distinct content the key ever
-// held that is not a delete marker, oldest first. trove only ever rewrites a key with the same bytes, so more than one
+// held that is not a delete marker, oldest first. quader only ever rewrites a key with the same bytes, so more than one
 // content is somebody else's write; the reader replays each (R-HA-054).
 type AllVersions interface {
 	GetAll(ctx context.Context, key string) ([][]byte, error)
@@ -32,7 +32,7 @@ type Outbox interface {
 	Claim(ctx context.Context, limit int) ([]OutboxRow, error)
 	// Delete removes shipped rows.
 	Delete(ctx context.Context, ids []string) error
-	// Pending returns the number of rows and the age of the oldest (trove_revocation_journal_pending).
+	// Pending returns the number of rows and the age of the oldest (quader_revocation_journal_pending).
 	Pending(ctx context.Context) (rows int64, oldest time.Duration, err error)
 }
 

@@ -12,11 +12,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // newConnection drops every pooled connection and runs one statement, so the
@@ -70,7 +70,7 @@ func TestPostgresTLS(t *testing.T) {
 			t.Fatalf("the restored CA was not used by the next connection: %v", err)
 		}
 		if v := seriesValue(t, reg, tlsfiles.FamilyReloads, caFile); v < 2 {
-			t.Errorf("trove_tls_reloads_total{kind=database} = %v, want at least 2", v)
+			t.Errorf("quader_tls_reloads_total{kind=database} = %v, want at least 2", v)
 		}
 	})
 

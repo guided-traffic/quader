@@ -6,11 +6,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // CacheState is the name of the registered cache of the per-repository state: the
@@ -101,7 +101,7 @@ func (e *Engine) Forget(name string) {
 	e.m.forget(name)
 }
 
-// publishUp sets trove_remote_upstream_up from the state.
+// publishUp sets quader_remote_upstream_up from the state.
 func (e *Engine) publishUp(repoID int64, st *repoState) {
 	key, ok := e.keys.Load(repoID)
 	if !ok {
@@ -118,7 +118,7 @@ func (e *Engine) publishUp(repoID int64, st *repoState) {
 // repository's state when the change names it, and everything after a flush. The
 // reload runs in the background so that the poll that delivered the change never
 // waits for the database, and it sets the gauge of repositories no request has
-// touched since (trove_remote_upstream_up must follow the circuit within the
+// touched since (quader_remote_upstream_up must follow the circuit within the
 // change-log bound whether or not traffic arrives).
 func (e *Engine) onStateChange(c *cache.Cache[int64, *repoState], _ string, _ int, payload json.RawMessage) {
 	var p statePayload

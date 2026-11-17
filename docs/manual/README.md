@@ -1,13 +1,13 @@
-# trove manual
+# Quader manual
 
-The manual for the people who use trove and the people who run it. The binary embeds these pages and the UI shows
+The manual for the people who use Quader and the people who run it. The binary embeds these pages and the UI shows
 them under **Documentation** in the top bar, so the manual of an installation always matches the version it runs.
 Readers on GitHub can browse the same files here.
 
 | Section | Directory | For |
 |---|---|---|
 | User guide | [user/](user/) | Everyone who reads, installs or publishes packages and files |
-| Administrator guide | [admin/](admin/) | Everyone who installs, configures and operates trove |
+| Administrator guide | [admin/](admin/) | Everyone who installs, configures and operates Quader |
 
 ## User guide
 
@@ -27,12 +27,12 @@ Readers on GitHub can browse the same files here.
 
 ## Administrator guide
 
-1. [How trove runs](admin/overview.md)
+1. [How Quader runs](admin/overview.md)
 2. [Installation](admin/installation.md)
 3. [Configuration](admin/configuration.md)
 4. [TLS and certificates](admin/tls-and-certificates.md)
 5. [Endpoints and exposure rules](admin/endpoints.md)
-6. [The trove Bastion](admin/bastion.md)
+6. [The Quader Bastion](admin/bastion.md)
 7. [Sign-in and identities](admin/sign-in-and-identity.md)
 8. [Permissions](admin/permissions.md)
 9. [Projects and delegated administration](admin/projects.md)

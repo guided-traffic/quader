@@ -33,19 +33,19 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/downloads"
-	"github.com/guided-traffic/trove/internal/bastion/engine"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/link"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	bmetrics "github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/buildinfo"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/observability/health"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/downloads"
+	"github.com/guided-traffic/quader/internal/bastion/engine"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/link"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	bmetrics "github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/buildinfo"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability/health"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // Options configure a Bastion process.
@@ -167,7 +167,7 @@ func New(o Options) (*Server, error) {
 	return s, nil
 }
 
-// instanceName is the pod name for the logs, the metrics and Trove-Bastion-Replica.
+// instanceName is the pod name for the logs, the metrics and Quader-Bastion-Replica.
 func instanceName(environ []string) string {
 	env := map[string]string{}
 	for _, kv := range environ {
@@ -175,7 +175,7 @@ func instanceName(environ []string) string {
 			env[k] = v
 		}
 	}
-	for _, k := range []string{"TROVE_POD_NAME", "POD_NAME"} {
+	for _, k := range []string{"QUADER_POD_NAME", "POD_NAME"} {
 		if env[k] != "" {
 			return env[k]
 		}
@@ -183,11 +183,11 @@ func instanceName(environ []string) string {
 	if h, err := os.Hostname(); err == nil && h != "" {
 		return fmt.Sprintf("%s-%d", h, os.Getpid())
 	}
-	return "trove-bastion"
+	return "quader-bastion"
 }
 
 func (s *Server) checkObserver() health.Observer {
-	passing := s.metrics.NewGaugeVec("trove_health_check_passing", "1 while the readiness check passes, 0 while it fails.", "name")
+	passing := s.metrics.NewGaugeVec("quader_health_check_passing", "1 while the readiness check passes, 0 while it fails.", "name")
 	return func(name string, ok bool) {
 		v := 0.0
 		if ok {

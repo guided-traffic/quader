@@ -5,7 +5,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The documentation of a collection is the wiki part of the repository (R-ANS-033, R-ANS-037, R-AUTHZ-034): who may read the artifacts of a
@@ -14,7 +14,7 @@ import (
 //
 // The sites that ask it, one line each: the route docs-blob is declared Wiki in routes.go, so the dispatcher refuses a caller who may
 // not read the wiki before the handler runs; the handlers ask [wikiReadable] again for the repository they read from (a member of a
-// virtual repository); the management operations of internal/api/v1 are marked x-trove-part: wiki in api/openapi.yaml and ask
+// virtual repository); the management operations of internal/api/v1 are marked x-quader-part: wiki in api/openapi.yaml and ask
 // authz.ReadScope.MayReadWiki; the version details announce the documentation only to a caller who may read it.
 
 // wikiReadable asks the Host whether the subject of rq may read the wiki part of the repository rq addresses, for the target t. A

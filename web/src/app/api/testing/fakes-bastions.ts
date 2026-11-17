@@ -21,8 +21,8 @@ import { Versioned } from '../repositories-api';
 const problem = (status: number, code: string, extra: Record<string, unknown> = {}): ApiError =>
   new ApiError(status, { code, ...extra }, 'req-1');
 
-/** A secret of the shape of a Bastion token: `trv_bst_` and 49 characters (R-BAS-004). */
-export const BASTION_SECRET = 'trv_bst_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklm';
+/** A secret of the shape of a Bastion token: `qdr_bst_` and 49 characters (R-BAS-004). */
+export const BASTION_SECRET = 'qdr_bst_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklm';
 
 const DAY = 86_400_000;
 
@@ -34,7 +34,7 @@ export function inDays(days: number): string {
 export function sampleBastionToken(over: Partial<BastionTokenSummary> = {}): BastionTokenSummary {
   return {
     id: '0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41',
-    hint: 'trv_bst_3kQ9',
+    hint: 'qdr_bst_3kQ9',
     description: 'partners 2026',
     createdAt: inDays(-165),
     expiresAt: inDays(200),
@@ -45,7 +45,7 @@ export function sampleBastionToken(over: Partial<BastionTokenSummary> = {}): Bas
 
 export function sampleBastionContact(over: Partial<BastionContact> = {}): BastionContact {
   return {
-    replica: 'trove-bastion-7d9c-x2k4q',
+    replica: 'quader-bastion-7d9c-x2k4q',
     contactAt: inDays(-0.01),
     clientAddress: '198.51.100.20',
     release: '0.15.0',
@@ -65,7 +65,7 @@ export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
     tokens: [sampleBastionToken()],
     contacts: [
       sampleBastionContact(),
-      sampleBastionContact({ replica: 'trove-bastion-7d9c-m8v2j', clientAddress: '198.51.100.21', contactAt: inDays(-0.02) }),
+      sampleBastionContact({ replica: 'quader-bastion-7d9c-m8v2j', clientAddress: '198.51.100.21', contactAt: inDays(-0.02) }),
     ],
     ...over,
   };
@@ -176,7 +176,7 @@ export class FakeBastionsApi extends BastionsApi {
     const ttl = body.ttlSeconds ?? 365 * 86_400;
     const summary = sampleBastionToken({
       id: `t-${current.tokens.length + 1}`,
-      hint: 'trv_bst_Zz09',
+      hint: 'qdr_bst_Zz09',
       description: body.description ?? '',
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + ttl * 1000).toISOString(),

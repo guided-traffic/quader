@@ -19,7 +19,7 @@ const INLINE_SAMPLE = 60;
  * default cannot become markup.
  */
 @Component({
-  selector: 'trove-ansible-doc-entry',
+  selector: 'quader-ansible-doc-entry',
   imports: [CopyButton, DataTable, DocProse, PackageReadmeView],
   templateUrl: './ansible-doc-entry.html',
   styleUrl: './ansible-doc-entry.scss',
@@ -72,7 +72,7 @@ export class AnsibleDocEntry {
 
   /** 16 px per level (Q-UI-242). */
   protected indent(row: DocRow): string {
-    return `calc(var(--trove-space-3) + ${row.depth * 16}px)`;
+    return `calc(var(--quader-space-3) + ${row.depth * 16}px)`;
   }
 
   protected inlineSample(row: DocRow): boolean {

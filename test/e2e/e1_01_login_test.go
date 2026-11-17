@@ -10,7 +10,7 @@ import (
 )
 
 // TestE1_01Login is exit criterion E1.1: through the Ingress, a Keycloak user signs in with the authorization
-// code flow and PKCE, is created just in time, takes the groups of the configured claim, logs out (the trove
+// code flow and PKCE, is created just in time, takes the groups of the configured claim, logs out (the quader
 // session ends, and so does the IdP session through the RP-initiated logout), and the break-glass administrator
 // signs in with the generated password and can be disabled.
 //
@@ -22,8 +22,8 @@ import (
 func TestE1_01Login(t *testing.T) {
 	useScatter(t)
 	adm := adminAPI(t)
-	alicePw := secretValue(t, "trove-keycloak", "alice-password")
-	bobPw := secretValue(t, "trove-keycloak", "bob-password")
+	alicePw := secretValue(t, "quader-keycloak", "alice-password")
+	bobPw := secretValue(t, "quader-keycloak", "bob-password")
 
 	// A user that exists from an earlier run would make the just-in-time creation unobservable.
 	for _, u := range []string{"alice", "bob"} {
@@ -43,7 +43,7 @@ func TestE1_01Login(t *testing.T) {
 			t.Fatal("start did not redirect to the IdP")
 		}
 		q := tr.AuthURL.Query()
-		for k, want := range map[string]string{"response_type": "code", "client_id": "trove", "code_challenge_method": "S256"} {
+		for k, want := range map[string]string{"response_type": "code", "client_id": "quader", "code_challenge_method": "S256"} {
 			if q.Get(k) != want {
 				t.Errorf("authorization request %s = %q, want %q", k, q.Get(k), want)
 			}
@@ -67,7 +67,7 @@ func TestE1_01Login(t *testing.T) {
 		if tr.Final.Status != 200 {
 			t.Fatalf("the UI after sign-in answered %s", tr.Final)
 		}
-		for _, c := range []string{"__Host-trv_session", "__Host-trv_csrf"} {
+		for _, c := range []string{"__Host-qdr_session", "__Host-qdr_csrf"} {
 			if alice.cookie(c) == "" {
 				t.Errorf("no %s cookie after the sign-in", c)
 			}
@@ -83,7 +83,7 @@ func TestE1_01Login(t *testing.T) {
 		r.JSON(t, &w)
 		slices.Sort(w.Principal.Groups)
 		if want := []string{"platform-admins", "team-web"}; !slices.Equal(w.Principal.Groups, want) {
-			t.Errorf("groups %v, want %v (claim values trove-team-web and trove-platform-admins through the rule trove-(.+))", w.Principal.Groups, want)
+			t.Errorf("groups %v, want %v (claim values quader-team-web and quader-platform-admins through the rule quader-(.+))", w.Principal.Groups, want)
 		}
 		var u struct {
 			Origin string `json:"origin"`
@@ -91,8 +91,8 @@ func TestE1_01Login(t *testing.T) {
 			Email  string `json:"email"`
 		}
 		adm.get("/api/v1/users/alice").want(t, "alice after the login", 200).JSON(t, &u)
-		if u.Origin != "jit" || u.Status != "active" || u.Email != "alice@trove.test" {
-			t.Errorf("alice = %+v, want origin jit, active, email alice@trove.test", u)
+		if u.Origin != "jit" || u.Status != "active" || u.Email != "alice@quader.test" {
+			t.Errorf("alice = %+v, want origin jit, active, email alice@quader.test", u)
 		}
 	})
 
@@ -113,14 +113,14 @@ func TestE1_01Login(t *testing.T) {
 		}
 	})
 
-	t.Run("R-AUTH-013 E1.1 logout ends the trove session and the IdP session (RP-initiated logout)", func(t *testing.T) {
+	t.Run("R-AUTH-013 E1.1 logout ends the quader session and the IdP session (RP-initiated logout)", func(t *testing.T) {
 		if alice == nil {
 			t.Skip("alice's sign-in failed")
 		}
 		// Control: with the IdP session alive a second sign-in needs no password. Without it the check after the
 		// logout would prove nothing.
 		second := newBrowser(t)
-		second.c.Jar = alice.c.Jar // the same browser, so the IdP's cookies and trove's are shared
+		second.c.Jar = alice.c.Jar // the same browser, so the IdP's cookies and quader's are shared
 		sso := second.oidcLogin("alice", alicePw)
 		if sso.SawLoginForm {
 			t.Fatal("the IdP asked for the password again while its session was alive: the control does not hold")
@@ -128,24 +128,24 @@ func TestE1_01Login(t *testing.T) {
 		second.syncCSRF()
 		alice = second
 
-		sess := alice.cookie("__Host-trv_session") // the cookie value a stolen copy of the browser would still hold
+		sess := alice.cookie("__Host-qdr_session") // the cookie value a stolen copy of the browser would still hold
 		r := alice.do(http.MethodPost, "/auth/logout", nil).want(t, "POST /auth/logout", 200)
 		var out struct {
 			RedirectTo string `json:"redirectTo"`
 		}
 		r.JSON(t, &out)
 		end := mustURL(t, out.RedirectTo)
-		if !strings.HasPrefix(end.Host, "trove-keycloak.") || !strings.Contains(end.Path, "/protocol/openid-connect/logout") {
+		if !strings.HasPrefix(end.Host, "quader-keycloak.") || !strings.Contains(end.Path, "/protocol/openid-connect/logout") {
 			t.Fatalf("redirectTo %q is not the IdP's end-session endpoint", out.RedirectTo)
 		}
-		if end.Query().Get("id_token_hint") == "" || end.Query().Get("client_id") != "trove" {
+		if end.Query().Get("id_token_hint") == "" || end.Query().Get("client_id") != "quader" {
 			t.Errorf("the end-session URL lacks id_token_hint or client_id: %s", end.RawQuery)
 		}
 		wantBack := cfg.edgeURL + "/ui/logged-out"
 		if end.Query().Get("post_logout_redirect_uri") != wantBack {
 			t.Errorf("post_logout_redirect_uri %q, want %q", end.Query().Get("post_logout_redirect_uri"), wantBack)
 		}
-		// The browser follows it: the IdP ends its session and sends the browser back to trove.
+		// The browser follows it: the IdP ends its session and sends the browser back to quader.
 		end1 := alice.get(out.RedirectTo)
 		if end1.Status < 300 || end1.Status >= 400 || !strings.HasPrefix(end1.Header.Get("Location"), wantBack) {
 			t.Fatalf("the IdP answered %s (Location %q), want a redirect to %s", end1, end1.Header.Get("Location"), wantBack)
@@ -156,7 +156,7 @@ func TestE1_01Login(t *testing.T) {
 		}
 		page.want(t, "the logged-out page", 200)
 
-		// The trove session is gone on every replica: consecutive requests reach all three.
+		// The quader session is gone on every replica: consecutive requests reach all three.
 		sessionEnded(t, sess)
 		// The IdP session is gone: a new sign-in in the same browser shows the login form again.
 		again := newBrowser(t)
@@ -171,7 +171,7 @@ func TestE1_01Login(t *testing.T) {
 	})
 
 	t.Run("R-AUTH-014 E1.1 the break-glass administrator signs in with the generated password and can be disabled", func(t *testing.T) {
-		pw := secretValue(t, "trove-break-glass", "password")
+		pw := secretValue(t, "quader-break-glass", "password")
 		bg := newBrowser(t)
 		bg.localLogin("admin", "not-the-password-0123456789").want(t, "a wrong break-glass password", 401)
 		bg.localLogin("admin", pw).want(t, "the break-glass login", 204)
@@ -193,15 +193,15 @@ func TestE1_01Login(t *testing.T) {
 		// The environment variable is the same key (docs/developer/configuration.md) and needs no migration Job;
 		// the cleanup removes it again.
 		restore := func() {
-			_, _ = kubectl("-n", cfg.namespace, "set", "env", "deployment/trove-api", "TROVE_AUTH_BREAK_GLASS_ENABLED-")
-			_, _ = kubectl("-n", cfg.namespace, "rollout", "status", "deployment/trove-api", "--timeout=5m")
+			_, _ = kubectl("-n", cfg.namespace, "set", "env", "deployment/quader-api", "QUADER_AUTH_BREAK_GLASS_ENABLED-")
+			_, _ = kubectl("-n", cfg.namespace, "rollout", "status", "deployment/quader-api", "--timeout=5m")
 			waitServingSettled(t)
 		}
 		t.Cleanup(restore)
-		kn(t, "set", "env", "deployment/trove-api", "TROVE_AUTH_BREAK_GLASS_ENABLED=false")
+		kn(t, "set", "env", "deployment/quader-api", "QUADER_AUTH_BREAK_GLASS_ENABLED=false")
 		// Right after `set env` the old pods are still the ready ones, so the settled check alone passes before the
 		// rollout has replaced a single pod (access-long of Test and Release 43007020170: all nine attempts 204).
-		kn(t, "rollout", "status", "deployment/trove-api", "--timeout=5m")
+		kn(t, "rollout", "status", "deployment/quader-api", "--timeout=5m")
 		waitServingSettled(t)
 
 		fresh := newBrowser(t)

@@ -1,7 +1,7 @@
 import { DestroyRef, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { Checkbox } from '../../shared/ui/checkbox';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { newIdempotencyKey } from '../../api/client';
@@ -51,11 +51,11 @@ export const PREVIEW_DEBOUNCE_MS = 500;
  * before anything is saved; "Try it" asks why a principal may or may not do an action on a
  * repository through `PolicyExplainer`, which reads the draft today and the explain operation
  * once it exists. Saving an existing policy shows the diff against the loaded revision, then
- * sends `PUT` with `If-Match`. The `Trove-Authz-Epoch` of the write is kept by the HTTP layer and
- * sent as `Trove-Authz-Min-Epoch` on the reads that follow (R-AUTHZ-032, R-UI-042).
+ * sends `PUT` with `If-Match`. The `Quader-Authz-Epoch` of the write is kept by the HTTP layer and
+ * sent as `Quader-Authz-Min-Epoch` on the reads that follow (R-AUTHZ-032, R-UI-042).
  */
 @Component({
-  selector: 'trove-policy-editor',
+  selector: 'quader-policy-editor',
   imports: [
     PageHeader,
     Checkbox,
@@ -83,7 +83,7 @@ export class PolicyEditor {
   private readonly projectsApi = inject(ProjectsApi);
   private readonly repositoriesApi = inject(RepositoriesApi);
   private readonly explainer = inject(PolicyExplainer);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly confirmer = inject(Confirm);
   private readonly conflicts = inject(ConflictResolver);
   private readonly notifier = inject(Notifier);

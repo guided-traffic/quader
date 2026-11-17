@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // gzipped codes b with gzip, as nuget.org stores the documents of its gzip hives.
@@ -89,7 +89,7 @@ func TestR_NUGET_017_AGzipCodedRemoteMemberIsMerged(t *testing.T) {
 
 // TestR_NUGET_017_ARemoteMemberWithPagesByAddressIsMergedWhole (Q-NUGET-82): an upstream lists
 // the pages of an ID with 128 or more versions by address. The merge reads them through the
-// member and lists every version, with trove's paging and the virtual repository's addresses; it
+// member and lists every version, with quader's paging and the virtual repository's addresses; it
 // refused the member as an upstream failure before, so the whole document answered 502.
 func TestR_NUGET_017_ARemoteMemberWithPagesByAddressIsMergedWhole(t *testing.T) {
 	index, pages := pagedUpstream(t, 200)
@@ -120,7 +120,7 @@ func TestR_NUGET_017_ARemoteMemberWithPagesByAddressIsMergedWhole(t *testing.T) 
 		}
 	}
 	if total != 200 || len(idx.Items) != 4 {
-		t.Fatalf("%d versions on %d pages, want 200 on 4 (trove's paging of 64)", total, len(idx.Items))
+		t.Fatalf("%d versions on %d pages, want 200 on 4 (quader's paging of 64)", total, len(idx.Items))
 	}
 	page := get(t, h, http.MethodGet, "v3/registration-semver2/acme.widgets/page/1.128.0/1.191.0.json")
 	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), `"count":64`) {

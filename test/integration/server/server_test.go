@@ -29,16 +29,16 @@ func jsonLines(logs string) []map[string]any {
 func TestReplicas(t *testing.T) {
 	in := newInstall(t)
 
-	t.Run("R-ARCH-026 trove migrate up creates the schema on a fresh database", func(t *testing.T) {
+	t.Run("R-ARCH-026 quader migrate up creates the schema on a fresh database", func(t *testing.T) {
 		code, stdout, stderr := in.run(t, "migrate", "up")
 		if code != 0 {
 			t.Fatalf("exit %d\n%s\n%s", code, stdout, stderr)
 		}
 	})
 
-	all := in.start(t, "all", "trove-all-it")
-	web := in.start(t, "web", "trove-web-it")
-	worker := in.start(t, "worker", "trove-worker-it")
+	all := in.start(t, "all", "quader-all-it")
+	web := in.start(t, "web", "quader-web-it")
+	worker := in.start(t, "worker", "quader-worker-it")
 
 	t.Run("R-OPS-001 every role answers /readyz 200 and /healthz 200", func(t *testing.T) {
 		for _, r := range []*replica{all, web, worker} {
@@ -107,7 +107,7 @@ func TestReplicas(t *testing.T) {
 		if info.Valkey.Keyspace == nil || !regexp.MustCompile(`^[0-9a-f]{12}$`).MatchString(*info.Valkey.Keyspace) || info.Valkey.Mode != "sentinel" {
 			t.Errorf("valkey block: %s", body)
 		}
-		if info.AnsweredBy.Replica != "trove-web-it" || info.AnsweredBy.Role != "web" || info.BaseURL != "http://trove.test" || info.ObjectStore.Bucket == "" {
+		if info.AnsweredBy.Replica != "quader-web-it" || info.AnsweredBy.Role != "web" || info.BaseURL != "http://quader.test" || info.ObjectStore.Bucket == "" {
 			t.Errorf("info = %s", body)
 		}
 		if strings.Contains(strings.ToLower(body), "password") || strings.Contains(body, "26381") {
@@ -115,16 +115,16 @@ func TestReplicas(t *testing.T) {
 		}
 	})
 
-	t.Run("R-OPS-006 /metrics exposes trove_ metrics on the ops listener only", func(t *testing.T) {
+	t.Run("R-OPS-006 /metrics exposes quader_ metrics on the ops listener only", func(t *testing.T) {
 		web.get(t, "/api/v1/system/ping")
 		code, body := opsGet(web.ops, "/metrics")
-		if code != 200 || !strings.Contains(body, "trove_http_requests_total") || !strings.Contains(body, "trove_valkey_available 1") || !strings.Contains(body, `trove_build_info{`) {
+		if code != 200 || !strings.Contains(body, "quader_http_requests_total") || !strings.Contains(body, "quader_valkey_available 1") || !strings.Contains(body, `quader_build_info{`) {
 			t.Fatalf("metrics %d", code)
 		}
 		// The authentication stage runs before the router (R-ARCH-005): without a
 		// credential and with anonymous access off the client listener answers 401,
 		// with one it answers 404. Either way it serves no metrics.
-		if code, _, body := web.get(t, "/metrics"); (code != 404 && code != 401) || strings.Contains(body, "trove_") {
+		if code, _, body := web.get(t, "/metrics"); (code != 404 && code != 401) || strings.Contains(body, "quader_") {
 			t.Fatalf("client /metrics = %d: %.200s", code, body)
 		}
 	})
@@ -161,22 +161,22 @@ func TestReplicas(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-031 Valkey connections are named trove:<instance>:<class>", func(t *testing.T) {
+	t.Run("R-ARCH-031 Valkey connections are named quader:<instance>:<class>", func(t *testing.T) {
 		admin := valkeyAdmin(t)
 		out, err := admin.Do(context.Background(), admin.B().ClientList().Build()).ToString()
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, inst := range []string{"trove-web-it", "trove-worker-it", "trove-all-it"} {
-			if !strings.Contains(out, "name=trove:"+inst+":") {
-				t.Errorf("no Valkey connection named trove:%s:…", inst)
+		for _, inst := range []string{"quader-web-it", "quader-worker-it", "quader-all-it"} {
+			if !strings.Contains(out, "name=quader:"+inst+":") {
+				t.Errorf("no Valkey connection named quader:%s:…", inst)
 			}
 		}
 	})
 
 	t.Run("R-ARCH-019 and R-ARCH-001 PostgreSQL sessions are named; a web replica holds no lease session", func(t *testing.T) {
 		names := map[string]int{}
-		rows, err := in.conn.Query(context.Background(), `SELECT application_name FROM pg_stat_activity WHERE datname = current_database() AND application_name LIKE 'trove:%'`)
+		rows, err := in.conn.Query(context.Background(), `SELECT application_name FROM pg_stat_activity WHERE datname = current_database() AND application_name LIKE 'quader:%'`)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -186,12 +186,12 @@ func TestReplicas(t *testing.T) {
 			_ = rows.Scan(&n)
 			names[n]++
 		}
-		for _, inst := range []string{"trove-web-it", "trove-worker-it", "trove-all-it"} {
-			if names["trove:"+inst+":main"] == 0 {
-				t.Errorf("no session named trove:%s:main in %v", inst, names)
+		for _, inst := range []string{"quader-web-it", "quader-worker-it", "quader-all-it"} {
+			if names["quader:"+inst+":main"] == 0 {
+				t.Errorf("no session named quader:%s:main in %v", inst, names)
 			}
 		}
-		if names["trove:trove-web-it:lease"] != 0 {
+		if names["quader:quader-web-it:lease"] != 0 {
 			t.Errorf("a web replica holds a lease session: %v", names)
 		}
 	})
@@ -216,7 +216,7 @@ func TestReplicas(t *testing.T) {
 			}
 			roles[it.Name] = it.Roles[0]
 		}
-		want := map[string]string{"trove-web-it": "web", "trove-worker-it": "worker", "trove-all-it": "all"}
+		want := map[string]string{"quader-web-it": "web", "quader-worker-it": "worker", "quader-all-it": "all"}
 		for n, r := range want {
 			if roles[n] != r {
 				t.Errorf("roles = %v, want %s: %s", roles, n, r)
@@ -242,11 +242,11 @@ func TestReplicas(t *testing.T) {
 			}
 			return len(holders) >= 1
 		})
-		if len(holders) != 1 || holders[0] == "trove-web-it" {
+		if len(holders) != 1 || holders[0] == "quader-web-it" {
 			t.Fatalf("scheduler holders = %v", holders)
 		}
 		for _, it := range listReplicas(t, web) {
-			if it.Name == "trove-web-it" && len(it.Leases) != 0 {
+			if it.Name == "quader-web-it" && len(it.Leases) != 0 {
 				t.Errorf("the web replica lists leases %v", it.Leases)
 			}
 		}
@@ -255,7 +255,7 @@ func TestReplicas(t *testing.T) {
 	t.Run("R-ARCH-001 the web replica's instance UID never appears in job.locked_by, and the scheduled gc job runs on a worker-capable replica", func(t *testing.T) {
 		var webUID string
 		for _, it := range listReplicas(t, web) {
-			if it.Name == "trove-web-it" {
+			if it.Name == "quader-web-it" {
 				webUID = it.InstanceUID
 			}
 		}
@@ -271,7 +271,7 @@ func TestReplicas(t *testing.T) {
 			done = scalarInt(t, in, `SELECT count(*) FROM job WHERE kind = 'gc' AND state = 'succeeded'`)
 			return done > 0
 		})
-		claimed := func(r *replica) float64 { return metricValue(t, r, `trove_jobs_claimed_total{kind="gc"}`) }
+		claimed := func(r *replica) float64 { return metricValue(t, r, `quader_jobs_claimed_total{kind="gc"}`) }
 		if got := claimed(worker) + claimed(all); got < 1 {
 			t.Errorf("worker and all claimed %v gc jobs", got)
 		}
@@ -284,10 +284,10 @@ func TestReplicas(t *testing.T) {
 	})
 
 	t.Run("R-OPS-003 a SIGKILLed replica is listed lost within system.heartbeat_stale_after", func(t *testing.T) {
-		victim := in.start(t, "web", "trove-kill-it")
+		victim := in.start(t, "web", "quader-kill-it")
 		waitFor(t, "the victim in the registry", 10*time.Second, func() bool {
 			for _, it := range listReplicas(t, web) {
-				if it.Name == "trove-kill-it" && it.State == "ready" {
+				if it.Name == "quader-kill-it" && it.State == "ready" {
 					return true
 				}
 			}
@@ -298,7 +298,7 @@ func TestReplicas(t *testing.T) {
 		<-victim.exited
 		waitFor(t, "the victim listed lost", 3*time.Second+6*time.Second, func() bool {
 			for _, it := range listReplicas(t, web) {
-				if it.Name == "trove-kill-it" {
+				if it.Name == "quader-kill-it" {
 					return it.Lost
 				}
 			}
@@ -320,7 +320,7 @@ func TestReplicas(t *testing.T) {
 			}
 			ci := m["client-info"]
 			info, _ := ci.ToString()
-			if strings.Contains(info, "name=trove:trove-") && strings.Contains(info, "-it:") {
+			if strings.Contains(info, "name=quader:quader-") && strings.Contains(info, "-it:") {
 				ob, rs := m["object"], m["reason"]
 				obj, _ := ob.ToString()
 				reason, _ := rs.ToString()
@@ -416,7 +416,7 @@ func TestReplicas(t *testing.T) {
 	t.Run("R-ARCH-024 after the exit the web replica's database sessions and Valkey connections are gone", func(t *testing.T) {
 		time.Sleep(500 * time.Millisecond)
 		var n int
-		if err := in.conn.QueryRow(context.Background(), `SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'trove:trove-web-it:%'`).Scan(&n); err != nil {
+		if err := in.conn.QueryRow(context.Background(), `SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:quader-web-it:%'`).Scan(&n); err != nil {
 			t.Fatal(err)
 		}
 		if n != 0 {
@@ -424,14 +424,14 @@ func TestReplicas(t *testing.T) {
 		}
 		admin := valkeyAdmin(t)
 		out, _ := admin.Do(context.Background(), admin.B().ClientList().Build()).ToString()
-		if strings.Contains(out, "name=trove:trove-web-it:") {
+		if strings.Contains(out, "name=quader:quader-web-it:") {
 			t.Error("Valkey connections of the stopped replica remain")
 		}
 	})
 
 	t.Run("R-OPS-003 a replica that stopped cleanly deleted its registry row", func(t *testing.T) {
 		for _, it := range listReplicas(t, all) {
-			if it.Name == "trove-web-it" {
+			if it.Name == "quader-web-it" {
 				t.Errorf("the stopped web replica is still listed: %+v", it)
 			}
 		}
@@ -451,7 +451,7 @@ func TestStartWithoutSchema(t *testing.T) {
 		in := newInstall(t)
 		r := &replica{}
 		_ = r
-		rep := &replica{name: "trove-wait-it", role: "web", client: freeAddr(t), ops: freeAddr(t), logs: &syncBuffer{}, exited: make(chan error, 1)}
+		rep := &replica{name: "quader-wait-it", role: "web", client: freeAddr(t), ops: freeAddr(t), logs: &syncBuffer{}, exited: make(chan error, 1)}
 		cmd := startRaw(t, in, rep)
 		_ = cmd
 		for end := time.Now().Add(4 * time.Second); time.Now().Before(end); time.Sleep(200 * time.Millisecond) {

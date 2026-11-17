@@ -1,4 +1,4 @@
-// Package nugetstub is the counting test upstream for trove's NuGet repositories: a stub NuGet v3
+// Package nugetstub is the counting test upstream for quader's NuGet repositories: a stub NuGet v3
 // server that serves a deterministic, synthetic package set, counts every request per path and host,
 // and fails on command. Packages are generated in code (valid .nupkg archives with a .nuspec), so
 // nothing is recorded or downloaded. It answers over TLS only; there is no plain-HTTP listener.

@@ -25,7 +25,7 @@ export class NavState {
 
   private readonly key = computed(() => {
     const name = this.session.whoami()?.principal?.name;
-    return name ? `trove.nav.${name}` : null;
+    return name ? `quader.nav.${name}` : null;
   });
 
   /** The viewer collapsed the sidebar. Only honoured where the sidebar is pinned; the drawer starts closed. */

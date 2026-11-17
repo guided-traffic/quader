@@ -10,17 +10,17 @@ import (
 // name: issuer is the issuer's name (as many values as issuers), outcome and reason come from closed
 // sets (the reasons of internal/ci/reason), trigger from [RefreshTrigger].
 const (
-	MetricExchanges          = "trove_ci_exchanges_total"
-	MetricExchangeDuration   = "trove_ci_exchange_duration_seconds"
-	MetricKeysRefresh        = "trove_ci_signing_keys_refresh_total"
-	MetricKeysAge            = "trove_ci_signing_keys_age_seconds"
-	MetricMappingSetStale    = "trove_ci_mapping_set_stale_total"
-	MetricTokensActive       = "trove_ci_tokens_active"                     //nolint:gosec // G101: a metric name, not a credential
-	MetricJobTokenLookups    = "trove_ci_job_token_lookups_total"           //nolint:gosec // G101: a metric name, not a credential
-	MetricJobTokenLookupTime = "trove_ci_job_token_lookup_duration_seconds" //nolint:gosec // G101: a metric name, not a credential
+	MetricExchanges          = "quader_ci_exchanges_total"
+	MetricExchangeDuration   = "quader_ci_exchange_duration_seconds"
+	MetricKeysRefresh        = "quader_ci_signing_keys_refresh_total"
+	MetricKeysAge            = "quader_ci_signing_keys_age_seconds"
+	MetricMappingSetStale    = "quader_ci_mapping_set_stale_total"
+	MetricTokensActive       = "quader_ci_tokens_active"                     //nolint:gosec // G101: a metric name, not a credential
+	MetricJobTokenLookups    = "quader_ci_job_token_lookups_total"           //nolint:gosec // G101: a metric name, not a credential
+	MetricJobTokenLookupTime = "quader_ci_job_token_lookup_duration_seconds" //nolint:gosec // G101: a metric name, not a credential
 )
 
-// The outcome label of trove_ci_exchanges_total and trove_ci_signing_keys_refresh_total.
+// The outcome label of quader_ci_exchanges_total and quader_ci_signing_keys_refresh_total.
 const (
 	OutcomeSuccess = "success"
 	OutcomeDenied  = "denied"
@@ -28,8 +28,8 @@ const (
 )
 
 // Metrics are the counters and histograms of the CI federation that a replica increments itself. The
-// two gauges that are read from PostgreSQL, trove_ci_signing_keys_age_seconds and
-// trove_ci_tokens_active, follow the rule of R-OPS-007: the composition root registers them as a
+// two gauges that are read from PostgreSQL, quader_ci_signing_keys_age_seconds and
+// quader_ci_tokens_active, follow the rule of R-OPS-007: the composition root registers them as a
 // database gauge source (internal/app/wire_ci.go), evaluated once per metrics.db_gauge_interval, so
 // every replica reports the same value and dashboards aggregate with max, never sum.
 type Metrics struct {

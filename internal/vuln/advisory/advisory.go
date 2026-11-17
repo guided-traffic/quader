@@ -1,5 +1,5 @@
 // Package advisory holds the normalized record types of the vulnerability scanning (docs/spec/vulnerability-scanning.md,
-// R-VULN-006): one OSV record as trove stores and matches it, its severity levels and ranks, the attribution of its
+// R-VULN-006): one OSV record as quader stores and matches it, its severity levels and ranks, the attribution of its
 // source (R-VULN-003), the numeric identifier the npm audit answer gives it (Q-VULN-17) and the advisory URL rule of
 // R-VULN-017.
 //

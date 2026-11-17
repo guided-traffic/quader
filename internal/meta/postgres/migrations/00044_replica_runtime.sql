@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The replica registry (R-OPS-003, Q-OPS-175): every heartbeat also writes the replica's own measurements of the period
 -- since its previous heartbeat (the requests its client listener finished, their 5xx and latency percentiles, the requests

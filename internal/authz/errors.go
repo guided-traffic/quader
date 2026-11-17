@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Reason codes of R-AUTHZ-029, the values of Decision.Reason.
@@ -84,7 +84,7 @@ func (d Decision) Err() error {
 		return Unauthenticated()
 	case DenyEpochUnknown:
 		return errs.E(errs.PreconditionFailed, errs.CodeAuthzEpochUnknown,
-			"The authorization epoch named in Trove-Authz-Min-Epoch has not been reached by the database.")
+			"The authorization epoch named in Quader-Authz-Min-Epoch has not been reached by the database.")
 	case DenyHidden:
 		return NotFound()
 	case DenyVisible:
@@ -143,7 +143,7 @@ func (d Decision) Status() int {
 // Allowed reports whether the decision admits the request.
 func (d Decision) Allowed() bool { return d.Outcome == Allow }
 
-// ParseMinEpoch reads the Trove-Authz-Min-Epoch header (R-AUTHZ-032): absent is
+// ParseMinEpoch reads the Quader-Authz-Min-Epoch header (R-AUTHZ-032): absent is
 // 0, a decimal integer between 1 and 2^63-1 is that integer, anything else is
 // 400 invalid_header. The caller reads the header only for a request that
 // authenticated; an anonymous request ignores it.
@@ -165,13 +165,13 @@ func ParseMinEpoch(raw string) (int64, error) {
 
 func invalidMinEpoch() error {
 	return errs.E(errs.Invalid, errs.CodeInvalidHeader,
-		"Trove-Authz-Min-Epoch must be a decimal integer between 1 and 9223372036854775807.")
+		"Quader-Authz-Min-Epoch must be a decimal integer between 1 and 9223372036854775807.")
 }
 
 // HeaderMinEpoch is the request header that names the epoch a request needs
 // (R-AUTHZ-032); HeaderEpoch is the response header that carries the epoch a
 // write produced.
 const (
-	HeaderMinEpoch = "Trove-Authz-Min-Epoch"
-	HeaderEpoch    = "Trove-Authz-Epoch"
+	HeaderMinEpoch = "Quader-Authz-Min-Epoch"
+	HeaderEpoch    = "Quader-Authz-Epoch"
 )

@@ -13,12 +13,12 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // Changes is the part of *cluster.Changes the engine uses (R-AUTHZ-028): the
@@ -406,7 +406,7 @@ func (e *Engine) confirmed(idx *Index) bool {
 	return e.labelMatchesChanges(idx) && e.o.Changes.FreshWithin(max)
 }
 
-// stalenessSeconds is trove_authz_index_staleness_seconds: the time since the
+// stalenessSeconds is quader_authz_index_staleness_seconds: the time since the
 // installed index was last confirmed. It is exact only up to the resolution of
 // the poll, which is what the bound is stated in.
 func (e *Engine) stalenessSeconds() float64 {

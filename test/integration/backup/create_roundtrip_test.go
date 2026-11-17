@@ -6,12 +6,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_BAK_021_ABackupOfTheCreatePipelineRestoresIntoAFreshInstallation is the round trip: the installation of the restore
@@ -19,7 +19,7 @@ import (
 // - and the backup is restored into an empty database and blob prefix. The data, the blobs and the sequences come back.
 func TestR_BAK_021_ABackupOfTheCreatePipelineRestoresIntoAFreshInstallation(t *testing.T) {
 	src := newSource(t, 25)
-	loaded, err := config.Load(config.Options{Environ: append(src.stack.Environ(), "TROVE_BACKUP_TARGET_BUCKET="+testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS")), Command: config.CommandBackup})
+	loaded, err := config.Load(config.Options{Environ: append(src.stack.Environ(), "QUADER_BACKUP_TARGET_BUCKET="+testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS")), Command: config.CommandBackup})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func TestR_BAK_021_ABackupOfTheCreatePipelineRestoresIntoAFreshInstallation(t *t
 	in.dbCfg.Preflight.AllowSuperuser = true
 
 	// A target of its own, so that the backup under test is the pipeline's and not the fixture's.
-	tc := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), "none")
+	tc := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), "none")
 	tgt := newTarget(t, tc)
 	cleanup(t, tgt, tc.Target.Prefix+"/")
 	r := &rig{cfg: in.backupConfig(t), tgt: tgt}

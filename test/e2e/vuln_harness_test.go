@@ -29,16 +29,16 @@ import (
 )
 
 func TestVuln_SetupSurvivesABrokenForward(t *testing.T) {
-	npmHost := os.Getenv("TROVE_E2E_NPMSTUB_HOST")
+	npmHost := os.Getenv("QUADER_E2E_NPMSTUB_HOST")
 	if npmHost == "" {
-		t.Fatal("TROVE_E2E_NPMSTUB_HOST is not set; run the vulnerability sets of deploy/dev/e2e.sh")
+		t.Fatal("QUADER_E2E_NPMSTUB_HOST is not set; run the vulnerability sets of deploy/dev/e2e.sh")
 	}
 	nugetHost, _ := nugetStubHosts(t)
 	b := make([]byte, 3)
 	_, _ = rand.Read(b)
 	run := hex.EncodeToString(b)
 	npmControl := func(t *testing.T) *stubControl {
-		c := newStubControl(t, "svc/npmstub", npmHost, "trove-npmstub", 30*time.Second)
+		c := newStubControl(t, "svc/npmstub", npmHost, "quader-npmstub", 30*time.Second)
 		t.Cleanup(func() { stopForward(c.fwd) })
 		return c
 	}
@@ -98,7 +98,7 @@ func TestVuln_SetupSurvivesABrokenForward(t *testing.T) {
 	})
 
 	t.Run("a NuGet publish whose answer is lost is accepted on the 409 of its repeat", func(t *testing.T) {
-		c := newStubControl(t, "svc/nugetstub", nugetHost, "trove-nugetstub", 30*time.Second)
+		c := newStubControl(t, "svc/nugetstub", nugetHost, "quader-nugetstub", 30*time.Second)
 		t.Cleanup(func() { stopForward(c.fwd) })
 		lost := loseFirstAnswer(t, c.c, c.fwd)
 		id := "E2e.Fwd" + run + ".Lost"

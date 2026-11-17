@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/answers"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/link"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/link"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
 )
 
 const baseURL = "https://packages.example.com"

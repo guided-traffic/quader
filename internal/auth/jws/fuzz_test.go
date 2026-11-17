@@ -7,7 +7,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/auth/jws"
+	"github.com/guided-traffic/quader/internal/auth/jws"
 )
 
 // FuzzR_CI_004_Parse holds the compact-JWS parser to its contract on every input (R-CI-004 steps 2

@@ -34,7 +34,7 @@ describe('Settings schema model', () => {
     expect(lines.filter((n) => n.kind === 'text' || n.kind === 'number').every((n) => typeof n.width === 'string')).toBe(true);
   });
 
-  it('R-UI-021 R-ARCH-004 only the members whose x-trove-classes contain the class are rendered, each by its type, in schema order', () => {
+  it('R-UI-021 R-ARCH-004 only the members whose x-quader-classes contain the class are rendered, each by its type, in schema order', () => {
     expect(settingNodes(SCHEMA, 'local', 'npm').map((n) => [n.kind, n.pointer])).toEqual([
       ['boolean', '/npm/latestGuard'],
     ]);
@@ -72,7 +72,7 @@ describe('Settings schema model', () => {
       properties: {
         audit: {
           type: 'object',
-          properties: { mode: { type: 'string', 'x-trove-classes': ['remote'] } },
+          properties: { mode: { type: 'string', 'x-quader-classes': ['remote'] } },
         },
       },
     } as SettingSchema;

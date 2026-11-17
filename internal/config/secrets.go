@@ -3,7 +3,7 @@ package config
 import "strings"
 
 // Secrets configures the stored-secret key ring (R-ARCH-021). There is no
-// default key and no generated key: a missing key ring stops `trove serve`.
+// default key and no generated key: a missing key ring stops `quader serve`.
 type Secrets struct {
 	EncryptionKeyFiles []string `yaml:"encryption_key_files" default:"[]" doc:"Key files: 32 random bytes, base64; the file name without .key is the key ID."`
 	ActiveKeyID        string   `yaml:"active_key_id" default:"" doc:"Key ID used for encryption; every listed key decrypts."`

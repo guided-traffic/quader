@@ -48,7 +48,7 @@ type Part uint8
 const (
 	// PartArtifacts is what package clients resolve, install and download, and the documents and searches that describe it.
 	PartArtifacts Part = iota
-	// PartWiki is the documentation of a repository's packages that trove serves or shows apart from their files.
+	// PartWiki is the documentation of a repository's packages that quader serves or shows apart from their files.
 	PartWiki
 )
 

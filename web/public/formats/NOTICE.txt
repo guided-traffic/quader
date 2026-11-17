@@ -1,7 +1,7 @@
 Format logos
 
 The web UI shows the logo of a package format's ecosystem next to the format's name, to name the format. The logos and
-the names are trademarks of their owners. trove is not affiliated with, sponsored or endorsed by any of them. Each file is
+the names are trademarks of their owners. Quader is not affiliated with, sponsored or endorsed by any of them. Each file is
 the owner's file, unchanged. The terms below were read on 2026-11-11.
 
 --------------------------------------------------------------------------------
@@ -13,10 +13,10 @@ Owner: Software in the Public Interest, Inc.
 
 Copyright (c) 1999 Software in the Public Interest, Inc. Released under the terms of the GNU Lesser General Public
 License, version 3 or any later version, or, at your option, of the Creative Commons Attribution-ShareAlike 3.0 Unported
-License. trove uses it under the Creative Commons Attribution-ShareAlike 3.0 Unported License
+License. quader uses it under the Creative Commons Attribution-ShareAlike 3.0 Unported License
 (https://creativecommons.org/licenses/by-sa/3.0/). No changes were made.
 
-Debian is a registered trademark owned by Software in the Public Interest, Inc. trove is not affiliated with Debian.
+Debian is a registered trademark owned by Software in the Public Interest, Inc. Quader is not affiliated with Debian.
 Trademark policy: https://www.debian.org/trademark
 
 --------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ Owner: the NuGet project, a project of the .NET Foundation
 From the NuGet project's media repository, whose content is available under the Creative Commons Attribution 2.0
 License (https://creativecommons.org/licenses/by/2.0/). No changes were made.
 
-NuGet and the NuGet logo are marks of their owner; trove uses them only to name the NuGet package format.
+NuGet and the NuGet logo are marks of their owner; quader uses them only to name the NuGet package format.
 
 --------------------------------------------------------------------------------
 Open Container Initiative (OCI) logo, icon

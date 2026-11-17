@@ -17,7 +17,7 @@ The report stays visible only to you and the maintainers until an advisory is pu
 coordinate the fix and the disclosure with you and credit you in the advisory unless you prefer
 otherwise.
 
-trove is in its specification phase. A flaw in the specified design under
+Quader is in its specification phase. A flaw in the specified design under
 [docs/spec/](docs/spec/README.md), for example a token, permission or federation flow that can be
 abused as written, is a valid report. Please send design flaws through the same private channel.
 

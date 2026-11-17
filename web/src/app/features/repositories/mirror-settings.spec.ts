@@ -132,7 +132,7 @@ describe('Mirror settings of a remote repository', () => {
       vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
       const advanced = r.root.querySelector('.advanced-settings')!;
-      expect(advanced.querySelector('trove-mirror-settings')).not.toBeNull();
+      expect(advanced.querySelector('quader-mirror-settings')).not.toBeNull();
       expect(control(r.root, 'f-remote-mode').checked).toBe(true);
       expect(r.root.querySelector('#f-remote-mirror-intervalSeconds')).toBeNull();
       await expectAccessible(r.root);
@@ -144,11 +144,11 @@ describe('Mirror settings of a remote repository', () => {
 
     it('R-UI-083 the Mirror group is absent for a format without mirror, and for a local or virtual repository of one with it', async () => {
       const without = await remoteForm([NO_MIRROR], 'nuget');
-      expect(without.root.querySelector('trove-mirror-settings')).toBeNull();
+      expect(without.root.querySelector('quader-mirror-settings')).toBeNull();
 
       for (const cls of ['local', 'virtual']) {
         const r = await remoteForm([NPM], 'npm', { cls });
-        expect(r.root.querySelector('trove-mirror-settings'), cls).toBeNull();
+        expect(r.root.querySelector('quader-mirror-settings'), cls).toBeNull();
       }
     });
 
@@ -255,7 +255,7 @@ describe('Mirror settings of a remote repository', () => {
 
     it('R-UI-021 Q-REPO-142 a caller without repositories:write-config (a project Owner) sees the group read-only and cannot create a mirror', async () => {
       const r = await remoteForm([NPM], 'npm', { capabilities: [] });
-      expect(text(r.root.querySelector('trove-mirror-settings')!)).toContain(
+      expect(text(r.root.querySelector('quader-mirror-settings')!)).toContain(
         'Only an administrator of the installation can switch a remote repository to mirror',
       );
       for (const radio of r.root.querySelectorAll<HTMLInputElement>('input[name="remote-mode"]')) {
@@ -335,7 +335,7 @@ describe('Mirror settings of a remote repository', () => {
           }
         },
       });
-      const tab = [...r.root.querySelectorAll<HTMLButtonElement>('trove-disclosure .toggle')].find((t) => text(t).endsWith('Mirror'));
+      const tab = [...r.root.querySelectorAll<HTMLButtonElement>('quader-disclosure .toggle')].find((t) => text(t).endsWith('Mirror'));
       tab?.click();
       await settle(r.fixture);
       return { r, tab, fake: r.get(RepositoriesApi) as FakeRepositoriesApi };
@@ -387,7 +387,7 @@ describe('Mirror settings of a remote repository', () => {
 
     it('R-UI-021 Q-REPO-142 a project Owner sees the section read-only except Pause, and Turn off sends the mode back to pullThrough', async () => {
       const { r, fake } = await open(stored('mirror', { intervalSeconds: 7200 }), { projectAdmin: true });
-      const section = r.root.querySelector('trove-mirror-settings')!;
+      const section = r.root.querySelector('quader-mirror-settings')!;
       expect(text(section)).toContain('Only an administrator of the installation');
       expect(control(r.root, 'f-remote-mirror-intervalSeconds').disabled).toBe(true);
       expect(control(r.root, 'f-remote-mirror-concurrency').disabled).toBe(true);

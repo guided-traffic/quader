@@ -5,8 +5,8 @@ package ansiblelocal
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The action map of R-AUTHZ-007 for the Ansible table of R-ANS-007 (local class), one case per row: a principal who holds exactly the
@@ -124,7 +124,7 @@ func TestR_ANS_028_PublishAndReadWorkOnTwoReplicasWithoutValkey(t *testing.T) {
 		// The task is read on the other replica: a row, not a replica's memory.
 		u, _ := pub.JSON(t)["task"].(string)
 		other := e.rs[(i+1)%2]
-		task := e.st.Do(other, "GET", u[len("http://trove.test"):], e.tokA, nil)
+		task := e.st.Do(other, "GET", u[len("http://quader.test"):], e.tokA, nil)
 		if task.Status != 200 || task.JSON(t)["state"] != "completed" {
 			t.Errorf("the task of %s on the other replica: %d %s", v, task.Status, task.Body)
 		}

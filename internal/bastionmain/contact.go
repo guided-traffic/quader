@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 const (
@@ -38,7 +38,7 @@ const (
 type Report struct {
 	// ClientAddress is the address the request came from after the trusted-proxy rule.
 	ClientAddress string
-	// UserAgent is the User-Agent of the request; "trove-bastion/<release>" carries the release.
+	// UserAgent is the User-Agent of the request; "quader-bastion/<release>" carries the release.
 	UserAgent string
 	// ResponseBaseURL is the response base URL the main installation derived for the request.
 	ResponseBaseURL string
@@ -76,7 +76,7 @@ func NewContacts(o ContactOptions) *Contacts {
 	return &Contacts{o: o, last: map[string]contactMark{}}
 }
 
-// Release extracts the release from the User-Agent of a Bastion ("trove-bastion/<release> …"), "" for any other.
+// Release extracts the release from the User-Agent of a Bastion ("quader-bastion/<release> …"), "" for any other.
 func Release(userAgent string) string {
 	rest, ok := strings.CutPrefix(userAgent, iface.UserAgentPrefix)
 	if !ok {

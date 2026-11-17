@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/guided-traffic/trove/internal/formats/deb/settings.schema.json",
+  "$id": "https://github.com/guided-traffic/quader/internal/formats/deb/settings.schema.json",
   "title": "Debian (APT) repository settings",
-  "description": "The deb member of a repository document. A member lists the classes it applies to in x-trove-classes; a member of another class is refused as not applicable.",
+  "description": "The deb member of a repository document. A member lists the classes it applies to in x-quader-classes; a member of another class is refused as not applicable.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -14,7 +14,7 @@
       "maxItems": 32,
       "uniqueItems": true,
       "default": ["amd64", "arm64"],
-      "x-trove-classes": ["local", "virtual"],
+      "x-quader-classes": ["local", "virtual"],
       "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,31}$", "not": { "const": "all" } }
     },
     "compression": {
@@ -24,22 +24,22 @@
       "maxItems": 1,
       "uniqueItems": true,
       "default": [],
-      "x-trove-classes": ["local", "virtual"],
+      "x-quader-classes": ["local", "virtual"],
       "items": { "type": "string", "enum": ["xz"] }
     },
     "origin": {
       "title": "Origin",
       "description": "The origin apt reports for this repository, which pinning rules can match. Up to 64 characters, no colon.",
       "type": "string",
-      "default": "trove",
-      "x-trove-classes": ["local", "virtual"],
+      "default": "quader",
+      "x-quader-classes": ["local", "virtual"],
       "pattern": "^[ -9;-~]{1,64}$"
     },
     "label": {
       "title": "Label",
       "description": "The label apt reports for this repository, which pinning rules can match. Left empty, it is the repository's key.",
       "type": "string",
-      "x-trove-classes": ["local", "virtual"],
+      "x-quader-classes": ["local", "virtual"],
       "pattern": "^[ -9;-~]{1,64}$"
     },
     "suites": {
@@ -49,7 +49,7 @@
       "maxItems": 32,
       "uniqueItems": true,
       "default": [],
-      "x-trove-classes": ["virtual"],
+      "x-quader-classes": ["virtual"],
       "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._+-]{0,63}$" }
     },
     "components": {
@@ -60,15 +60,15 @@
       "maxItems": 32,
       "uniqueItems": true,
       "default": ["main"],
-      "x-trove-classes": ["virtual"],
+      "x-quader-classes": ["virtual"],
       "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._+-]{0,63}$" }
     },
     "upstreamKeys": {
       "title": "Upstream keys",
-      "description": "The upstream's public signing keys, pasted as one armored OpenPGP block of up to 32 keys. With them trove checks every release before storing it; a mirror and a member of a virtual repository need them.",
+      "description": "The upstream's public signing keys, pasted as one armored OpenPGP block of up to 32 keys. With them Quader checks every release before storing it; a mirror and a member of a virtual repository need them.",
       "type": ["string", "null"],
       "default": null,
-      "x-trove-classes": ["remote"],
+      "x-quader-classes": ["remote"],
       "maxLength": 262144
     },
     "mirror": {
@@ -76,7 +76,7 @@
       "description": "What a mirror of the APT archive keeps.",
       "type": "object",
       "additionalProperties": false,
-      "x-trove-classes": ["remote"],
+      "x-quader-classes": ["remote"],
       "properties": {
         "suites": {
           "title": "Suites",

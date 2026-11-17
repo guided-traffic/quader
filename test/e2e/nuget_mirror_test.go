@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 // TestNuGetMirror_R_REPO_055_ClientsFirst is the e2e criterion of R-REPO-055 and E6b.6 for NuGet: the mirror of the NuGet test upstream (the
@@ -54,7 +54,7 @@ func (e *mirrorEnv) clientsFirstNuGet(t *testing.T) {
 	took := time.Since(start)
 	after := preempted(t, key)
 	open := nugetInflight(t)
-	t.Logf("dotnet restore of %d packages with the pass: %s; the test upstream held at most %d requests open (bound %d); trove_mirror_preempted_total %v -> %v",
+	t.Logf("dotnet restore of %d packages with the pass: %s; the test upstream held at most %d requests open (bound %d); quader_mirror_preempted_total %v -> %v",
 		n, took.Round(time.Millisecond), open.Max, bound, before, after)
 	if err != nil {
 		t.Fatalf("dotnet restore through %s with a pass running: %v\n%s", key, err, tailLines(out, 25))

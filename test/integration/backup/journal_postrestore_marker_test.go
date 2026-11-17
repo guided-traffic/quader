@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/fixup"
-	"github.com/guided-traffic/trove/internal/backup/postrestore"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/fixup"
+	"github.com/guided-traffic/quader/internal/backup/postrestore"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // observingReplayer reports what the schema check of a replica says while the replay runs.

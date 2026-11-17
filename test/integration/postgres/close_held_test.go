@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // R-HA-011, R-ARCH-024 step 6: a connection still acquired from a pool must not hold the close of the pools past the close
@@ -57,7 +57,7 @@ func TestR_HA_011_CloseContextEndsAProbeStatementThatIsStillRunning(t *testing.T
 	t.Cleanup(db.Close)
 	// The probe reads schema_state; a lock held by another session keeps that statement waiting.
 	mustExec(t, admin, "BEGIN")
-	mustExec(t, admin, "LOCK TABLE trove.schema_state IN ACCESS EXCLUSIVE MODE")
+	mustExec(t, admin, "LOCK TABLE quader.schema_state IN ACCESS EXCLUSIVE MODE")
 	t.Cleanup(func() { _, _ = admin.Exec(context.Background(), "ROLLBACK") })
 	probed := make(chan error, 1)
 	go func() { probed <- db.CheckSchema(context.Background(), "0.0.0") }()

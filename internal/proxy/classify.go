@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/proxy/upstream"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/proxy/upstream"
 )
 
 // failure is the classification of an upstream outcome (R-REPO-029): what the client
@@ -25,9 +25,9 @@ type failure struct {
 	status int
 	// event is the security event the failure writes, "" for none.
 	event string
-	// sourceNetwork: counts trove_remote_source_network_unavailable_total.
+	// sourceNetwork: counts quader_remote_source_network_unavailable_total.
 	sourceNetwork bool
-	// egress: counts trove_remote_egress_denied_total.
+	// egress: counts quader_remote_egress_denied_total.
 	egress bool
 	// host is the host a security event names; "" is the host of the fetch's request. A token service's refusal names the
 	// service's host.
@@ -46,13 +46,13 @@ func classifyStatus(rem Remote, resp *http.Response) failure {
 		f.count = true
 		f.retryAfter = retryAfterOf(resp.Header, time.Duration(rem.Settings.Availability.CircuitOpenSeconds)*time.Second)
 		f.err = errs.E(errs.Unavailable, errs.CodeUpstreamRateLimited,
-			"The upstream of "+rem.Repo.Name.String()+" is rate limiting trove.", errs.WithRetryAfter(f.retryAfter))
+			"The upstream of "+rem.Repo.Name.String()+" is rate limiting Quader.", errs.WithRetryAfter(f.retryAfter))
 	case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
 		f.count = true
 		f.err = errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, "The upstream of "+rem.Repo.Name.String()+" answered "+strconv.Itoa(s)+".")
 	default:
 		f.err = errs.E(errs.UpstreamFailed, errs.CodeUpstreamUnexpectedStatus,
-			"The upstream of "+rem.Repo.Name.String()+" answered "+strconv.Itoa(s)+", which trove does not act on.")
+			"The upstream of "+rem.Repo.Name.String()+" answered "+strconv.Itoa(s)+", which Quader does not act on.")
 	}
 	return f
 }
@@ -109,7 +109,7 @@ func (e *Engine) classifyError(rem Remote, target *url.URL, err error, idle bool
 	case upstream.CodeTooManyRedirects:
 		return failure{err: errs.E(errs.UpstreamFailed, errs.CodeTooManyRedirects, "The upstream redirected more often than proxy.max_redirects allows.")}
 	case upstream.CodeInsecureRedirect:
-		return failure{err: errs.E(errs.UpstreamFailed, errs.CodeInsecureRedirect, "The upstream redirected from https to http, which trove refuses.")}
+		return failure{err: errs.E(errs.UpstreamFailed, errs.CodeInsecureRedirect, "The upstream redirected from https to http, which Quader refuses.")}
 	case upstream.CodeTimeout:
 		return failure{count: true, err: errs.E(errs.UpstreamTimeout, errs.CodeUpstreamTimeout, "The upstream of "+rem.Repo.Name.String()+" did not answer in time.")}
 	}

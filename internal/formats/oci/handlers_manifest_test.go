@@ -13,10 +13,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 )
 
 // indexOf builds an OCI image index over manifests; an entry is "<digest>" or "<digest> <os>/<arch>[/<variant>]".
@@ -165,7 +165,7 @@ func TestR_OCI_010_PullABlobOfAName(t *testing.T) {
 // of WriteError rows.
 func TestValidatorsAreTheRegistrysForm(t *testing.T) {
 	mk := func(inm string) *formats.Request {
-		hr, _ := http.NewRequest(http.MethodGet, "https://trove.test/x", nil)
+		hr, _ := http.NewRequest(http.MethodGet, "https://quader.test/x", nil)
 		hr.Header.Set("If-None-Match", inm)
 		hr.Header.Set("If-Range", `"sha256:abc"`)
 		return &formats.Request{Request: hr}

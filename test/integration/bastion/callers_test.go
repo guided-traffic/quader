@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // atBastionHost reads from the main installation directly with the forwarded headers a Bastion sends

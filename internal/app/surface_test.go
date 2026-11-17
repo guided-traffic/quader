@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"testing"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 func TestAPISurfaceRouteCheck(t *testing.T) {
@@ -17,12 +17,12 @@ paths:
   /api/v1/system/ping:
     get:
       operationId: getPing
-      x-trove-permission: {public: true}
+      x-quader-permission: {public: true}
       responses: {"200": {description: ok}}
   /api/v1/auth/oidc/token:
     post:
       operationId: exchangeToken
-      x-trove-permission: {public: true}
+      x-quader-permission: {public: true}
       responses: {"200": {description: ok}}
 `))
 	if err != nil {
@@ -61,13 +61,13 @@ paths:
 func TestBootstrapAnonymousReadOnlyOnDefaultEndpoint(t *testing.T) {
 	t.Run("R-EP-010 SA3 bootstrap anonymous read opens system.read on the default endpoint and not on a further one", func(t *testing.T) {
 		h := startEndpoints(t, "web", map[string]string{
-			"TROVE_SYSTEM_BOOTSTRAP_ANONYMOUS_READ": "true",
-			"TROVE_SERVER_BASE_URL":                 "http://trove.example.com",
-			"TROVE_SERVER_ENDPOINTS": fmt.Sprintf(
+			"QUADER_SYSTEM_BOOTSTRAP_ANONYMOUS_READ": "true",
+			"QUADER_SERVER_BASE_URL":                 "http://quader.example.com",
+			"QUADER_SERVER_ENDPOINTS": fmt.Sprintf(
 				`{"customers":{"listen":%q,"base_url":"http://packages.example.com","surface":["api","packages"],"auth":{"anonymous":true}}}`, anyPort),
 		})
 		def, cust := h.app.EndpointAddr("default"), h.app.EndpointAddr("customers")
-		if code, body := hostGet(t, def, "trove.example.com", "/api/v1/system/replicas"); code != 200 {
+		if code, body := hostGet(t, def, "quader.example.com", "/api/v1/system/replicas"); code != 200 {
 			t.Fatalf("default endpoint: %d %s", code, body)
 		}
 		if code, body := hostGet(t, cust, "packages.example.com", "/api/v1/system/replicas"); code != 401 {
@@ -75,11 +75,11 @@ func TestBootstrapAnonymousReadOnlyOnDefaultEndpoint(t *testing.T) {
 		}
 		// Q-AUTHZ-16, H-63: the bridge opens the two operations, not every
 		// operation that settings:read covers.
-		if code, body := hostGet(t, def, "trove.example.com", "/api/v1/system/info"); code != 200 {
+		if code, body := hostGet(t, def, "quader.example.com", "/api/v1/system/info"); code != 200 {
 			t.Fatalf("system info: %d %s", code, body)
 		}
 		for _, p := range []string{"/api/v1/system/tasks", "/api/v1/system/encryption", "/api/v1/settings/auth"} {
-			if code, body := hostGet(t, def, "trove.example.com", p); code != 401 {
+			if code, body := hostGet(t, def, "quader.example.com", p); code != 401 {
 				t.Fatalf("%s: %d %s, want 401", p, code, body)
 			}
 		}

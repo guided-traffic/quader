@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The cross-repository blob mount (R-OCI-012). A mount names its source, the host checks it, and nothing of the answer says whether

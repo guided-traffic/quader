@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/ci/subject"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/subject"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 // FuzzR_CI_004_SubjectToken runs the whole validation on arbitrary input (R-CI-004): Parse and

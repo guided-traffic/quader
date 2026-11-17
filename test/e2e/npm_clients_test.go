@@ -13,7 +13,7 @@ import (
 )
 
 // The clients pod of the npm acceptance matrix (R-NPM-045): test/e2e/clients/Dockerfile holds the eight
-// gate rows, and deploy/dev/e2e.sh (marker M2 npm-clients) starts the pods trove-e2e-npm-<i>, each with a
+// gate rows, and deploy/dev/e2e.sh (marker M2 npm-clients) starts the pods quader-e2e-npm-<i>, each with a
 // forwarder on 127.0.0.1:<base-URL port> and the dev CA mounted. These tests run the clients through
 // `kubectl exec`; the scenarios of the matrix build on npmClientExec.
 
@@ -24,13 +24,13 @@ var npmGateRows = []string{"npm10", "npm11", "npm12", "pnpm10", "pnpm11", "pnpm1
 // npmClientPod returns the name of the i-th clients pod; a missing setting is a failure, never a skip.
 func npmClientPod(t testing.TB, i int) string {
 	t.Helper()
-	prefix, count := os.Getenv("TROVE_E2E_NPM_CLIENTS_POD_PREFIX"), os.Getenv("TROVE_E2E_NPM_CLIENTS_PODS")
+	prefix, count := os.Getenv("QUADER_E2E_NPM_CLIENTS_POD_PREFIX"), os.Getenv("QUADER_E2E_NPM_CLIENTS_PODS")
 	if prefix == "" || count == "" {
-		t.Fatal("TROVE_E2E_NPM_CLIENTS_POD_PREFIX and TROVE_E2E_NPM_CLIENTS_PODS are not set; run `deploy/dev/e2e.sh clients`")
+		t.Fatal("QUADER_E2E_NPM_CLIENTS_POD_PREFIX and QUADER_E2E_NPM_CLIENTS_PODS are not set; run `deploy/dev/e2e.sh clients`")
 	}
 	n, err := strconv.Atoi(count)
 	if err != nil || i < 0 || i >= n {
-		t.Fatalf("clients pod %d is outside TROVE_E2E_NPM_CLIENTS_PODS=%q", i, count)
+		t.Fatalf("clients pod %d is outside QUADER_E2E_NPM_CLIENTS_PODS=%q", i, count)
 	}
 	return prefix + strconv.Itoa(i)
 }
@@ -38,9 +38,9 @@ func npmClientPod(t testing.TB, i int) string {
 // npmClientCount is the number of client pods `deploy/dev/e2e.sh` started.
 func npmClientCount(t testing.TB) int {
 	t.Helper()
-	n, err := strconv.Atoi(os.Getenv("TROVE_E2E_NPM_CLIENTS_PODS"))
+	n, err := strconv.Atoi(os.Getenv("QUADER_E2E_NPM_CLIENTS_PODS"))
 	if err != nil || n < 1 {
-		t.Fatal("TROVE_E2E_NPM_CLIENTS_PODS is not set; run `deploy/dev/e2e.sh npm`")
+		t.Fatal("QUADER_E2E_NPM_CLIENTS_PODS is not set; run `deploy/dev/e2e.sh npm`")
 	}
 	return n
 }
@@ -103,9 +103,9 @@ func TestNPMClients(t *testing.T) {
 	// carries it to the cluster, and the client verifies the certificate against `localhost` with the
 	// mounted dev CA: a plain Node request without any option of its own is the strictest client.
 	t.Run("R-NPM-045 the base URL reaches the cluster with a verified certificate", func(t *testing.T) {
-		port := os.Getenv("TROVE_DEV_HTTP_PORT")
+		port := os.Getenv("QUADER_DEV_HTTP_PORT")
 		if port == "" {
-			t.Fatal("TROVE_DEV_HTTP_PORT is not set")
+			t.Fatal("QUADER_DEV_HTTP_PORT is not set")
 		}
 		js := fmt.Sprintf(`require('https').get('https://localhost:%s/api/v1/system/ping',r=>{console.log(r.statusCode);r.resume()}).on('error',e=>{console.error(e.message);process.exit(1)})`, port)
 		if got := strings.TrimSpace(npmClientExec(t, 0, "node", "-e", js)); got != "200" {

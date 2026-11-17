@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/project"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/project"
 )
 
 // fakeProjects is a project.Service that serves a fixed list; the methods it does

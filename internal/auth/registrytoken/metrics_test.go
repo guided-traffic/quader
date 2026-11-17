@@ -36,7 +36,7 @@ func TestTokenServiceMetrics(t *testing.T) {
 		t.Fatalf("anonymous = %v", got)
 	}
 	families, err := reg.Gather()
-	if err != nil || len(families) != 1 || families[0].GetName() != "trove_oci_registry_tokens_total" || len(families[0].GetMetric()) != 3 {
+	if err != nil || len(families) != 1 || families[0].GetName() != "quader_oci_registry_tokens_total" || len(families[0].GetMetric()) != 3 {
 		t.Fatalf("families %v %v", families, err)
 	}
 }

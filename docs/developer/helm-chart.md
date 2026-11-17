@@ -1,8 +1,8 @@
 # Helm chart
 
-The chart lives in [deploy/helm/trove](../../deploy/helm/trove). This page covers its layout, what
+The chart lives in [deploy/helm/quader](../../deploy/helm/quader). This page covers its layout, what
 it renders, how its values reach the pods, how it is validated and tested, and how to extend it.
-The second chart, `trove-bastion`, has its own section at the end: [The Bastion chart](#the-bastion-chart).
+The second chart, `quader-bastion`, has its own section at the end: [The Bastion chart](#the-bastion-chart).
 The requirements are in [ha-and-helm.md](../spec/ha-and-helm.md) (R-HA-002, R-HA-011, R-HA-016, R-HA-019,
 R-HA-027 to R-HA-037, R-HA-042, R-HA-056, R-HA-060 to R-HA-064; the Jobs also R-BAK-012) and [endpoints.md](../spec/endpoints.md) (R-EP-008); the dev profile that installs it is described in
 [local-profile.md](local-profile.md).
@@ -19,13 +19,13 @@ of being silently ignored.
 | role Services `<fullname>-api` and `<fullname>-packages`, pool Services, ops Service `<fullname>-ops`, `sessionAffinity: None` (R-HA-037) | |
 | PodDisruptionBudget and HorizontalPodAutoscaler per Deployment, topology spread with `nodeTaintsPolicy: Honor` (R-HA-032) | |
 | one NetworkPolicy per Deployment and per Job (migration, backup, restore, post-restore), ingress only (R-HA-042, ADR-154) | |
-| PrometheusRule with 32 alerts, every row of the table of R-HA-045: the sixteen rows of R-HA-045 whose metrics the binary exports, `TroveRevocationJournalBacklog` and the six alerts of the backup runs (R-BAK-014), the three of the vulnerability scanning, `TroveMirrorFailing` and `TroveMirrorStale` (R-OPS-046, Q-OPS-160, Q-OPS-171), `TroveBridgeLeftOn` (R-VULN-024, Q-HA-92) and `TroveBlobMissing` (R-HA-024, Q-STOR-152), `metrics.prometheusRule.*` | |
+| PrometheusRule with 32 alerts, every row of the table of R-HA-045: the sixteen rows of R-HA-045 whose metrics the binary exports, `QuaderRevocationJournalBacklog` and the six alerts of the backup runs (R-BAK-014), the three of the vulnerability scanning, `QuaderMirrorFailing` and `QuaderMirrorStale` (R-OPS-046, Q-OPS-160, Q-OPS-171), `QuaderBridgeLeftOn` (R-VULN-024, Q-HA-92) and `QuaderBlobMissing` (R-HA-024, Q-STOR-152), `metrics.prometheusRule.*` | |
 | migration Job as `pre-install,pre-upgrade` hook, with hook ConfigMap and ServiceAccount (R-HA-019); not rendered while `restore.enabled` | |
 | post-restore hook Job `<fullname>-post-restore` with its ServiceAccount, policy and credentials file (R-HA-025 step 4), see [The post-restore Job](#the-post-restore-job) | |
 | backup CronJob `<fullname>-backup` and restore Job `<fullname>-restore`, each with its ServiceAccount and a policy that admits nothing (R-HA-060, R-BAK-012), see [The backup and restore Jobs](#the-backup-and-restore-jobs) | |
-| configuration file `trove.yaml`, Secret wiring including the login secrets `secrets.oidc` and `secrets.breakGlass`, downward-API variables (R-HA-030); `secrets.databaseBackup`, `secrets.backupTarget`, `secrets.backupTargetCA` | `trustedCA`, `bootstrap` |
+| configuration file `quader.yaml`, Secret wiring including the login secrets `secrets.oidc` and `secrets.breakGlass`, downward-API variables (R-HA-030); `secrets.databaseBackup`, `secrets.backupTarget`, `secrets.backupTargetCA` | `trustedCA`, `bootstrap` |
 | restricted-PSS security contexts, probes, spool and `/tmp` volumes (R-HA-033 to R-HA-035, R-HA-061) | `initContainers`, `sidecars`, `lifecycle`, Service types beyond the three in the schema |
-| Ingress with the path rules of the roles (R-HA-037); HTTPRoute of the default endpoint (`gateway.*`, R-HA-038, see [The HTTPRoute](#the-httproute)); ServiceMonitor (`metrics.serviceMonitor.*`, R-HA-045, see [The ServiceMonitor](#the-servicemonitor)); TLS on trove's listeners (R-HA-063); the values reference of the spec (R-HA-031, see [The values reference](#the-values-reference)) | the HTTPRoute of further endpoints (R-EP-008); profiles `small`, `medium`, `large` (R-HA-050) |
+| Ingress with the path rules of the roles (R-HA-037); HTTPRoute of the default endpoint (`gateway.*`, R-HA-038, see [The HTTPRoute](#the-httproute)); ServiceMonitor (`metrics.serviceMonitor.*`, R-HA-045, see [The ServiceMonitor](#the-servicemonitor)); TLS on Quader's listeners (R-HA-063); the values reference of the spec (R-HA-031, see [The values reference](#the-values-reference)) | the HTTPRoute of further endpoints (R-EP-008); profiles `small`, `medium`, `large` (R-HA-050) |
 | further endpoints: Services, Ingress, optional pool per role, certificates (R-EP-008), see [Endpoints](#endpoints) | the validation rows of the features in the right column |
 
 Gaps in what is there:
@@ -36,13 +36,13 @@ Gaps in what is there:
   binary), not at `helm install`. When the binary emits its schema, `values.schema.json` takes it
   as the `config` property.
 - **The container is started with `args: [serve, --role, <role>]` and no `command`.** It relies on
-  the image's `ENTRYPOINT` being the trove binary.
+  the image's `ENTRYPOINT` being the Quader binary.
 - **No kubeconform run** over the rendered output yet; the tool is not pinned.
 
 ## The cut into roles
 
 The chart renders the roles of ADR-153 and ADR-155 ([roadmap](../coverage/roadmap.md#phase-6a--task-areas), WP6a.3). Every template that
-renders something per Deployment ranges over one list, `trove.units` ([_units.tpl](../../deploy/helm/trove/templates/_units.tpl)): a
+renders something per Deployment ranges over one list, `quader.units` ([_units.tpl](../../deploy/helm/quader/templates/_units.tpl)): a
 map per Deployment with its `name`, `role`, `pool`, `kind` (`main`, `pool`, `endpoint`, `bridge`), effective values `r`, and for a worker
 pool its `queues`. The Deployment, its PodDisruptionBudget, HorizontalPodAutoscaler and NetworkPolicy therefore cannot disagree on
 name, labels or selector.
@@ -51,27 +51,27 @@ name, labels or selector.
 |---|---|---|
 | Deployments | `<fullname>-api`, `<fullname>-packages`, `<fullname>-worker`; path pools `<fullname>-<role>-<pool>`; worker pools `<fullname>-worker-<pool>`; endpoint pools `<fullname>-packages-ep-<name>` and `<fullname>-api-ep-<name>` (one per role the surface holds) | R-HA-002, R-HA-062, R-EP-008 |
 | Services | `<fullname>-api` and `<fullname>-packages` on 8080; one per path pool; `<fullname>-ops`; per further endpoint `<fullname>-ep-<name>` and, for a surface of both roles, `<fullname>-api-ep-<name>`; worker pods have none | R-HA-002, R-HA-028, Q-EP-71 |
-| Edge | per host the `Prefix` rules `/` and `/api/v1` to `api`, `/api`, `/files`, `/v2`, `/.well-known` to `packages`, and the paths of the path pools before them ([_edge.tpl](../../deploy/helm/trove/templates/_edge.tpl), `trove.edgeRules`); a further endpoint over one role is routed whole, one over both by the rows of its families | R-HA-037, Q-HA-71 |
+| Edge | per host the `Prefix` rules `/` and `/api/v1` to `api`, `/api`, `/files`, `/v2`, `/.well-known` to `packages`, and the paths of the path pools before them ([_edge.tpl](../../deploy/helm/quader/templates/_edge.tpl), `quader.edgeRules`); a further endpoint over one role is routed whole, one over both by the rows of its families | R-HA-037, Q-HA-71 |
 | PDB, HPA | one per Deployment; the HPA (`autoscaling/v2`, CPU and memory targets, `metrics`, `behavior`) replaces `spec.replicas` | R-HA-032 |
 | NetworkPolicy | one per Deployment, named as it, a rule per port its pods open; none for egress | R-HA-042, Q-HA-76 |
 | Login secrets | `secrets.oidc[]` and `secrets.breakGlass` in `api` pods only (main, pools, endpoint pools) and the bridge's `web` pods | R-HA-030, Q-HA-79 |
-| Environment | `TROVE_POOL_NAME` on every pool, `TROVE_JOBS_QUEUES` (a JSON list) on a worker pool, `TROVE_JOBS_EXCLUDE_QUEUES` on the main worker beside pools; the two preflight counts on the migration Job | R-HA-030, R-HA-016, Q-HA-82 |
-| Upgrade bridge | three steps, each of which changes either the edge or the backends: `web.enabled: true` also renders `<fullname>-web`, the Service `<fullname>` and the edge `/` (step 1); `web.routed: false` beside it renders the edge of the target shape while the bridge keeps running (step 2, `trove.bridgeRouted` in `_edge.tpl`); `web.enabled: false` removes the bridge (step 3). The endpoint pools of the roles and a two-role endpoint's `<fullname>-api-ep-<name>` render beside the bridge, the BackendTLSPolicies cover `<fullname>` and the role Services for the whole bridge (`trove.edgeBackendServices`); a `lookup` guard refuses the upgrade that moves the edge (the Ingress `<fullname>` or an endpoint Service still on the bridge) while a serving Deployment of the target shape (api, packages, path pools, endpoint pools) is not ready, and step 3 while the edge is still on the bridge; `TroveBridgeLeftOn` reports a bridge left on | R-HA-064, Q-HA-73, Q-HA-90, Q-HA-92, Q-HA-130, Q-HA-132 |
+| Environment | `QUADER_POOL_NAME` on every pool, `QUADER_JOBS_QUEUES` (a JSON list) on a worker pool, `QUADER_JOBS_EXCLUDE_QUEUES` on the main worker beside pools; the two preflight counts on the migration Job | R-HA-030, R-HA-016, Q-HA-82 |
+| Upgrade bridge | three steps, each of which changes either the edge or the backends: `web.enabled: true` also renders `<fullname>-web`, the Service `<fullname>` and the edge `/` (step 1); `web.routed: false` beside it renders the edge of the target shape while the bridge keeps running (step 2, `quader.bridgeRouted` in `_edge.tpl`); `web.enabled: false` removes the bridge (step 3). The endpoint pools of the roles and a two-role endpoint's `<fullname>-api-ep-<name>` render beside the bridge, the BackendTLSPolicies cover `<fullname>` and the role Services for the whole bridge (`quader.edgeBackendServices`); a `lookup` guard refuses the upgrade that moves the edge (the Ingress `<fullname>` or an endpoint Service still on the bridge) while a serving Deployment of the target shape (api, packages, path pools, endpoint pools) is not ready, and step 3 while the edge is still on the bridge; `QuaderBridgeLeftOn` reports a bridge left on | R-HA-064, Q-HA-73, Q-HA-90, Q-HA-92, Q-HA-130, Q-HA-132 |
 
-A **pool** is the role's values with the entry's keys on top, key by key (`trove.poolValues`, so `false` and `0` override, and
+A **pool** is the role's values with the entry's keys on top, key by key (`quader.poolValues`, so `false` and `0` override, and
 `autoscaling` is inherited, Q-HA-84). A path pool opens the ports of the endpoints without a pool, like the main Deployment, but
 only the default endpoint's edge routes its `paths` (Q-HA-83). The names of pools match `^[a-z][a-z0-9-]{0,19}$` and may not start
-with `ep-`; `trove.validatePools` checks names, paths inside the role's families, queues and duplicates.
+with `ep-`; `quader.validatePools` checks names, paths inside the role's families, queues and duplicates.
 
-The **connection budget** (R-HA-016): `trove.connectionCounts` sums `maxReplicas` (or `replicaCount`) plus `maxSurge` over every
-Deployment, serving roles and worker apart, and passes `TROVE_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS` and
+The **connection budget** (R-HA-016): `quader.connectionCounts` sums `maxReplicas` (or `replicaCount`) plus `maxSurge` over every
+Deployment, serving roles and worker apart, and passes `QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS` and
 `..._WORKER_REPLICAS` to the migration Job; `NOTES.txt` prints the resulting `max_connections` (231 with the defaults, 311 while the
-bridge runs). The key `expected_serving_replicas` is the binary's (WP6a.1); until it lands, `trove admin config validate` over
+bridge runs). The key `expected_serving_replicas` is the binary's (WP6a.1); until it lands, `quader admin config validate` over
 the rendered environment names it as unknown.
 
 A path pool takes `routed: false` to render without its route, the first of two applies that add a pool (Q-HA-90). With an autoscaler a Deployment renders the live `spec.replicas` read through `lookup`, so switching the autoscaler on keeps the replicas (Q-HA-91). A provider of `config.auth.oidc.providers` that has a client secret and no entry in `secrets.oidc` fails the render (Q-HA-93).
 
-The **guard** of the bridge ([_validate_roles.tpl](../../deploy/helm/trove/templates/_validate_roles.tpl)) reads Deployments with
+The **guard** of the bridge ([_validate_roles.tpl](../../deploy/helm/quader/templates/_validate_roles.tpl)) reads Deployments with
 `lookup`, which returns nothing under `helm template` and in these tests. The chart test checks that the rendering does not
 depend on it; the refusal is verified against a cluster (the upgrade e2e test, `helm upgrade --dry-run=server`), see Q-HA-86. While
 the bridge runs, its `web` pods hold the secrets of both roles
@@ -82,7 +82,7 @@ The HTTPRoute of R-HA-038 loops over the same table, see [The HTTPRoute](#the-ht
 ## Layout
 
 ```text
-deploy/helm/trove/
+deploy/helm/quader/
 ├── Chart.yaml              apiVersion v2; version = appVersion = 0.0.0-dev (the release pipeline, build.yml, rewrites both)
 ├── values.yaml             defaults; a value is commented only where its name does not say it
 ├── values.schema.json      draft-07, additionalProperties false for everything the chart owns
@@ -106,11 +106,11 @@ deploy/helm/trove/
     ├── _secrets.tpl        the Secret mounts of a pod, as one list used for volumes and mounts
     ├── _pod.tpl            probes, topology spread, downward-API variables
     ├── _validate.tpl       fail-fast validation (R-HA-029), endpoint validation (R-EP-008)
-    ├── _units.tpl          the Deployments as data (trove.units), surface roles, endpoints per pod, replica counts
-    ├── _edge.tpl           the edge's path rules (trove.edgeRules), read by the Ingresses and the BackendTLSPolicies
+    ├── _units.tpl          the Deployments as data (quader.units), surface roles, endpoints per pod, replica counts
+    ├── _edge.tpl           the edge's path rules (quader.edgeRules), read by the Ingresses and the BackendTLSPolicies
     ├── _validate_roles.tpl roles, pools, autoscalers, spool and memory budgets, the bridge guard
     ├── _deployment.tpl     one Deployment of a unit
-    ├── _endpoints.tpl      endpoint defaults, trove.yaml block, mounts, S3 settings from a Secret
+    ├── _endpoints.tpl      endpoint defaults, quader.yaml block, mounts, S3 settings from a Secret
     ├── _notes.tpl          the text of NOTES.txt
     ├── validate.yaml       renders nothing; includes the validation
     ├── deployments.yaml    one Deployment per unit
@@ -120,8 +120,8 @@ deploy/helm/trove/
     ├── NOTES.txt           endpoints and warnings
     ├── networkpolicy.yaml  one ingress policy per Deployment and the migration Job's
     ├── prometheusrule.yaml the PrometheusRule (only with metrics.prometheusRule.enabled); the alerts are _rules.tpl
-    ├── _rules.tpl          the alerts as a YAML list (trove.rules.all) and their names (trove.rules.names)
-    ├── configmap.yaml      <fullname>-config (trove.yaml)
+    ├── _rules.tpl          the alerts as a YAML list (quader.rules.all) and their names (quader.rules.names)
+    ├── configmap.yaml      <fullname>-config (quader.yaml)
     ├── serviceaccount.yaml
     ├── migrate.yaml        hook ConfigMap, hook ServiceAccount and the migration Job
     ├── ingress.yaml        only with ingress.enabled
@@ -130,33 +130,33 @@ deploy/helm/trove/
 
 | File | Responsibility |
 |---|---|
-| `_helpers.tpl` | `trove.fullname` (release name, or `<release>-trove`, cut at 50 characters so derived names stay DNS labels), `trove.labels` / `trove.selectorLabels`, `trove.image` (digest wins over tag), `trove.bytes` and `trove.seconds` (parse sizes and durations; they fail on anything else, so a typo never becomes a wrong budget), `trove.spoolBudget`, `trove.config` |
-| `_secrets.tpl` | `trove.secretMounts` builds one list per scope (`runtime` for the Deployments, `migrate` for the Job); `trove.secretVolumes` and `trove.secretVolumeMounts` render it |
-| `_units.tpl` | `trove.units`, the one list of Deployments; `trove.unitEndpoints` (which endpoint ports a pod opens, R-EP-002); `trove.poolValues`; `trove.connectionCounts` |
+| `_helpers.tpl` | `quader.fullname` (release name, or `<release>-quader`, cut at 50 characters so derived names stay DNS labels), `quader.labels` / `quader.selectorLabels`, `quader.image` (digest wins over tag), `quader.bytes` and `quader.seconds` (parse sizes and durations; they fail on anything else, so a typo never becomes a wrong budget), `quader.spoolBudget`, `quader.config` |
+| `_secrets.tpl` | `quader.secretMounts` builds one list per scope (`runtime` for the Deployments, `migrate` for the Job); `quader.secretVolumes` and `quader.secretVolumeMounts` render it |
+| `_units.tpl` | `quader.units`, the one list of Deployments; `quader.unitEndpoints` (which endpoint ports a pod opens, R-EP-002); `quader.poolValues`; `quader.connectionCounts` |
 | `_validate.tpl`, `_validate_roles.tpl` | every `fail` of R-HA-029, each message naming the offending value |
-| `deployments.yaml` | one loop over `trove.units`, so no role can drift from another; the same `trove.deployment` renders a pool |
+| `deployments.yaml` | one loop over `quader.units`, so no role can drift from another; the same `quader.deployment` renders a pool |
 | `migrate.yaml` | the Job and its hook resources; renders nothing with `migrations.mode: disabled` |
 
 ## What the chart renders
 
-`<fullname>` is the release name, or `<release>-trove` when the release name does not contain
-`trove`; `fullnameOverride` wins.
+`<fullname>` is the release name, or `<release>-quader` when the release name does not contain
+`quader`; `fullnameOverride` wins.
 
 | Kind | Name | Notes |
 |---|---|---|
-| Deployment | `<fullname>-api`, `<fullname>-packages` | `trove serve --role api` / `--role packages`; ports `http` 8080 and `ops` 8081 (and the ports of the further endpoints they serve) |
-| Deployment | `<fullname>-worker` | `trove serve --role worker`; port `ops` 8081 only |
+| Deployment | `<fullname>-api`, `<fullname>-packages` | `quader serve --role api` / `--role packages`; ports `http` 8080 and `ops` 8081 (and the ports of the further endpoints they serve) |
+| Deployment | `<fullname>-worker` | `quader serve --role worker`; port `ops` 8081 only |
 | Deployment, Service (path pools only) | `<fullname>-api-<pool>`, `<fullname>-packages-<pool>`, `<fullname>-worker-<pool>` | per entry of `api.pools`, `packages.pools`, `worker.pools` |
 | Deployment, Service | `<fullname>-web`, `<fullname>` | `web.enabled` only: `--role web`, the bridge of R-HA-064 |
 | Service | `<fullname>-api`, `<fullname>-packages` | port `http` 8080, select the main pods of their role only, `sessionAffinity: None` |
-| Service | `<fullname>-ops` | port `ops` 8081, selects every pod labelled `trove/serve: "true"` (`api`, `packages`, `worker`, `web`) |
-| ConfigMap | `<fullname>-config` | `trove.yaml`, mounted at `/etc/trove/trove.yaml` |
+| Service | `<fullname>-ops` | port `ops` 8081, selects every pod labelled `quader/serve: "true"` (`api`, `packages`, `worker`, `web`) |
+| ConfigMap | `<fullname>-config` | `quader.yaml`, mounted at `/etc/quader/quader.yaml` |
 | ServiceAccount | `<fullname>` | `automountServiceAccountToken: false` |
 | PodDisruptionBudget | one per Deployment, named as it | `maxUnavailable: 1`, `unhealthyPodEvictionPolicy: AlwaysAllow` |
 | HorizontalPodAutoscaler | one per Deployment, named as it | `autoscaling.enabled` of the role or pool; `autoscaling/v2` |
 | NetworkPolicy | one per Deployment, named as it, and `<fullname>-migrate` (hook) | `networkPolicy.enabled`, ingress only, see [Network policy](#network-policy) |
-| ConfigMap, ServiceAccount (hook, weight -10) | `<fullname>-migrate` | same `trove.yaml` as `<fullname>-config` |
-| Job (hook, weight 0) | `<fullname>-migrate` | `trove migrate up`, which also applies `config.authz.role_bindings` (R-AUTHZ-010; `TestR_AUTHZ_010_DeclaredRoleBindingsReachTheMigrationJob`); `backoffLimit` 2, deadline 1800 s, TTL 86400 s |
+| ConfigMap, ServiceAccount (hook, weight -10) | `<fullname>-migrate` | same `quader.yaml` as `<fullname>-config` |
+| Job (hook, weight 0) | `<fullname>-migrate` | `quader migrate up`, which also applies `config.authz.role_bindings` (R-AUTHZ-010; `TestR_AUTHZ_010_DeclaredRoleBindingsReachTheMigrationJob`); `backoffLimit` 2, deadline 1800 s, TTL 86400 s |
 | Service, Ingress; pool Deployments, PodDisruptionBudgets, HorizontalPodAutoscalers `<fullname>-<role>-ep-<name>` | `<fullname>-ep-<name>` (and `-api`) | per further endpoint, see [Endpoints](#endpoints) |
 | Ingress | `<fullname>` | `ingress.enabled`; per host the path rules of R-HA-037 (all `Prefix`, port name `http`), `/` to `<fullname>` in the bridge; backend-over-TLS annotations per controller, see [TLS](#tls) |
 | BackendTLSPolicy | one per Service the default Ingress names, named as the Service | `tls.backendTLSPolicy.enabled` only; Gateway API CRD, see [TLS](#tls) |
@@ -167,13 +167,13 @@ no CRD (R-HA-028, R-HA-033, R-HA-061); the tests check each.
 
 Labels on every object: `app.kubernetes.io/name`, `instance`, `version`, `managed-by`,
 `component` (`api`, `packages`, `worker`, `web`, `migrate`, `ops`, `config`, `ingress`, `serviceaccount`) and `helm.sh/chart`.
-The pods of `api`, `packages`, `worker` and `web` also carry `trove/pool` (selector label: the pool's name, `ep-<name>` for an
+The pods of `api`, `packages`, `worker` and `web` also carry `quader/pool` (selector label: the pool's name, `ep-<name>` for an
 endpoint pool, the empty value for the main Deployments, so that a pool never overlaps their selectors or a role Service's;
-selector labels are immutable) and `trove/serve: "true"` (what the ops Service selects).
+selector labels are immutable) and `quader/serve: "true"` (what the ops Service selects).
 
 ### Pod template
 
-- `checksum/config` (hash of the rendered `trove.yaml`) and `checksum/encryption-keys` (hash of the
+- `checksum/config` (hash of the rendered `quader.yaml`) and `checksum/encryption-keys` (hash of the
   key *names*) roll the pods when either changes. Secret contents are never hashed.
 - `enableServiceLinks: false`, `automountServiceAccountToken: false`.
 - Container: restricted-PSS security context, UID/GID 65532, read-only root file system.
@@ -194,24 +194,24 @@ The chart sets these variables and no others (R-HA-030):
 
 | Variable | Value | Pods |
 |---|---|---|
-| `TROVE_POD_NAME`, `TROVE_POD_NAMESPACE`, `TROVE_NODE_NAME` | downward API (`metadata.name`, `metadata.namespace`, `spec.nodeName`) | every trove pod |
-| `TROVE_RUNTIME_MEMORY_LIMIT_BYTES` | `resourceFieldRef limits.memory` | every Deployment |
-| `TROVE_RUNTIME_TERMINATION_GRACE_PERIOD` | `<terminationGracePeriodSeconds>s` | every Deployment |
-| `TROVE_POOL_NAME` | the pool's name, `ep-<name>` for an endpoint pool | the pods of a pool (R-HA-062, R-EP-002) |
-| `TROVE_JOBS_QUEUES` | the pool's `queues` as a JSON list, `["vuln"]` | a worker pool |
-| `TROVE_JOBS_EXCLUDE_QUEUES` | the sorted union of the worker pools' queues as a JSON list | the main `worker` while a pool lists a queue |
-| `TROVE_STORAGE_S3_BUCKET`, `..._REGION`, `..._ENDPOINT` | `secretKeyRef` into `secrets.s3.existingSecret`, only for the keys named by `secrets.s3.bucketKey`, `regionKey`, `endpointKey` (the settings of an S3 provisioner's Secret; not credentials) | every Deployment |
-| `TROVE_STORAGE_SPOOL_MAX_BYTES` | spool size minus `spool.headroom`, in bytes; not set when `config.storage.spool.max_bytes` is set | every Deployment |
+| `QUADER_POD_NAME`, `QUADER_POD_NAMESPACE`, `QUADER_NODE_NAME` | downward API (`metadata.name`, `metadata.namespace`, `spec.nodeName`) | every Quader pod |
+| `QUADER_RUNTIME_MEMORY_LIMIT_BYTES` | `resourceFieldRef limits.memory` | every Deployment |
+| `QUADER_RUNTIME_TERMINATION_GRACE_PERIOD` | `<terminationGracePeriodSeconds>s` | every Deployment |
+| `QUADER_POOL_NAME` | the pool's name, `ep-<name>` for an endpoint pool | the pods of a pool (R-HA-062, R-EP-002) |
+| `QUADER_JOBS_QUEUES` | the pool's `queues` as a JSON list, `["vuln"]` | a worker pool |
+| `QUADER_JOBS_EXCLUDE_QUEUES` | the sorted union of the worker pools' queues as a JSON list | the main `worker` while a pool lists a queue |
+| `QUADER_STORAGE_S3_BUCKET`, `..._REGION`, `..._ENDPOINT` | `secretKeyRef` into `secrets.s3.existingSecret`, only for the keys named by `secrets.s3.bucketKey`, `regionKey`, `endpointKey` (the settings of an S3 provisioner's Secret; not credentials) | every Deployment |
+| `QUADER_STORAGE_SPOOL_MAX_BYTES` | spool size minus `spool.headroom`, in bytes; not set when `config.storage.spool.max_bytes` is set | every Deployment |
 | `GOMAXPROCS` | `resourceFieldRef requests.cpu`, only when the role has no CPU limit | every Deployment |
-| `TMPDIR` | `/tmp` | every trove pod |
-| `TROVE_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS`, `..._WORKER_REPLICAS` | `serving_max` and `worker_max` of R-HA-016 | migration Job |
+| `TMPDIR` | `/tmp` | every Quader pod |
+| `QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS`, `..._WORKER_REPLICAS` | `serving_max` and `worker_max` of R-HA-016 | migration Job |
 
 `extraEnv` and `extraEnvFrom` append to this list. The binary's strict validation accepts the
-`TROVE_` names above as schema keys or as reserved variables (R-OPS-028).
+`QUADER_` names above as schema keys or as reserved variables (R-OPS-028).
 
 ### Configuration file
 
-`trove.config` (in `_helpers.tpl`) renders `config` merged with the keys the chart manages. The
+`quader.config` (in `_helpers.tpl`) renders `config` merged with the keys the chart manages. The
 chart-managed keys win, and setting one inside `config` fails the render naming it
 (`config.storage.spool.dir`, `config.database.password_file`, `config.secrets.active_key_id`, …).
 
@@ -223,30 +223,30 @@ never as an environment variable (the one exception is the non-secret S3 setting
 
 | Value | Keys (default names) | Mount path | Config key set by the chart | Pods |
 |---|---|---|---|---|
-| `secrets.database` | `username`, `password` | `/var/run/secrets/trove/database/` | `database.username_file`, `database.password_file` | all (the Job uses `secrets.databaseMigration` when set) |
-| `secrets.databaseBackup` | `username`, `password` | `/var/run/secrets/trove/database/` (the backup pods' mount of the database login) | `database.username_file`, `database.password_file` | the backup pods only; empty means `secrets.database` |
-| `secrets.databaseCA` | `ca.crt` | `/var/run/secrets/trove/database-ca/` | `database.ssl_root_cert_file` | all |
-| `secrets.databaseClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/trove/database-client/` | `database.ssl_cert_file`, `database.ssl_key_file` | all |
-| `secrets.encryption` | the names in `secrets.encryption.keys` | `/var/run/secrets/trove/encryption/` | `secrets.encryption_key_files` (ordered), `secrets.active_key_id` (first entry without `.key`) | every Deployment, the same Secret (R-HA-027) and the restore Job, which checks that it opens every key ID of the backup (R-BAK-020); the migration Job and the backup pods never mount it (R-HA-030, R-BAK-012) |
-| `secrets.s3` (`source: static`) | `access-key-id`, `secret-access-key` | `/var/run/secrets/trove/s3/` | `storage.s3.credentials.access_key_id_file`, `..._secret_access_key_file` | every Deployment, the restore Job (it writes the bucket) and the post-restore Job; not the backup pods |
-| `secrets.s3CA` | `ca.crt` (the Secret's `key`) | `/var/run/secrets/trove/s3-ca/` | `storage.s3.ca_file` (also refused inside `config`) | every Deployment, the backup pods and the restore Job; never the migration Job |
-| `secrets.backupTarget` (`config.backup.target.credentials.source: static`) | `access-key-id`, `secret-access-key`, `session-token` (with `sessionTokenKey`) | `/var/run/secrets/trove/backup-target/` | `backup.target.credentials.access_key_id_file`, `..._secret_access_key_file`, `..._session_token_file` (all three refused inside `config`) | the backup pods and the restore Job; no Deployment, not the migration Job |
-| `secrets.journalReader` (`journalCredentials.source: static` of `postRestore` or `restore`) | `access-key-id`, `secret-access-key` | `/var/run/secrets/trove/journal-reader/` | none; the credentials file names the paths | the post-restore Job and the restore Job only |
-| `secrets.backupSource` (`config.storage.s3.credentials.source: static`) | `access-key-id`, `secret-access-key` | `/var/run/secrets/trove/backup-source/` | `backup.source.credentials.*` and `backup.source.separate_credentials` (refused inside `config`, Q-BAK-49) | the backup pods only; they do not mount `secrets.s3` |
-| `secrets.backupTargetCA` | `ca.crt` (the Secret's `key`) | `/var/run/secrets/trove/backup-target-ca/` | `backup.target.ca_file` (refused inside `config`, Q-HA-146) | the backup pods and the restore Job |
-| `secrets.valkey` | `username` (omit with `usernameKey: ""`), `password` | `/var/run/secrets/trove/valkey/` | `valkey.username_file`, `valkey.password_file` | every Deployment |
-| `secrets.valkeySentinel` | `username` (default: none), `password` | `/var/run/secrets/trove/valkey-sentinel/` | `valkey.sentinel.username_file`, `valkey.sentinel.password_file` | every Deployment |
-| `secrets.valkeyCA` | `ca.crt` | `/var/run/secrets/trove/valkey-ca/` | `valkey.tls.ca_file` | every Deployment |
-| `secrets.valkeyClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/trove/valkey-client/` | `valkey.tls.cert_file`, `valkey.tls.key_file` | every Deployment |
-| `secrets.breakGlass` | `password` (the Secret's `key`) | `/var/run/secrets/trove/break-glass/` | `auth.break_glass.password_file` (also refused inside `config`); without the Secret `auth.break_glass.enabled: false` | `api` pods (main, pools, endpoint pools) and the bridge's `web`; never `packages`, `worker`, the Job or backup pods (R-AUTH-014, R-AUTH-042, Q-HA-79) |
-| `secrets.oidc[]` (`providerId`, `existingSecret`, `key`) | `client-secret` (the entry's `key`) | `/var/run/secrets/trove/oidc-<providerId>/` | `auth.oidc.providers.<providerId>.client_secret_file` (refused inside `config` for a listed provider) | `api` pods and the bridge's `web` only (R-AUTH-004, R-AUTH-042, Q-HA-79) |
-| `secrets.metricsToken` (`config.metrics.auth: static`) | `token` | `/var/run/secrets/trove/metrics/` | `metrics.bearer_token_file` | every Deployment |
-| `trustedCA` (`existingSecret` or `existingConfigMap`, `keys`) | the names in `trustedCA.keys` (default `ca-bundle.crt`) | `/etc/trove/ca/` | appended to `proxy.outbound.tls.ca_files` after the operator's own; with `useForObjectStore` the one file is `storage.s3.ca_file` (refused with `secrets.s3CA`) | every pod of the release: the Deployments and all Jobs ([Q-HA-272](../spec/ha-and-helm.md#q-ha-272--the-trusted-ca-bundle-is-mounted-in-every-pod-of-the-release-its-files-are-appended-to-ca_files-and-one-file-can-be-the-object-stores-ca)); the entry of `trove.secretMounts` named `trusted-ca` has `configMap` instead of `secret` for a ConfigMap source |
-| `tls.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/trove/tls/` | `server.tls.certificates[0]` | the pods that load the pair, see [Mounts follow the listeners](#mounts-follow-the-listeners); never the Job |
-| `tls.clientCA.secretName` | `ca.crt` | `/var/run/secrets/trove/tls-client-ca/` | `server.tls.client_ca_file`, `server.tls.client_auth` | the pods that open :8080 (`api`, `packages`, their path pools, the bridge's `web`), not an endpoint pool |
-| `tls.ops.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/trove/tls-ops/` | `ops_tls.certificates[0]`, `ops_tls.inherit: false` | every pod that opens the operations listener (every Deployment) |
-| `endpoints.<name>.tls.existingSecret`, each of `extraSecrets` | `tls.crt`, `tls.key` | `/var/run/secrets/trove/endpoints/<name>/<n>/` (`n` = position in `tls.certificates`) | `server.endpoints.<name>.tls.certificates` | the pods that serve the endpoint (the main Deployments of the roles its surface holds, or its pools) |
-| `endpoints.<name>.tls.clientCaSecret` | `ca.crt` | `/var/run/secrets/trove/endpoints/<name>/client-ca/` | `server.endpoints.<name>.tls.client_ca_file` | the pods that serve the endpoint |
+| `secrets.database` | `username`, `password` | `/var/run/secrets/quader/database/` | `database.username_file`, `database.password_file` | all (the Job uses `secrets.databaseMigration` when set) |
+| `secrets.databaseBackup` | `username`, `password` | `/var/run/secrets/quader/database/` (the backup pods' mount of the database login) | `database.username_file`, `database.password_file` | the backup pods only; empty means `secrets.database` |
+| `secrets.databaseCA` | `ca.crt` | `/var/run/secrets/quader/database-ca/` | `database.ssl_root_cert_file` | all |
+| `secrets.databaseClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/database-client/` | `database.ssl_cert_file`, `database.ssl_key_file` | all |
+| `secrets.encryption` | the names in `secrets.encryption.keys` | `/var/run/secrets/quader/encryption/` | `secrets.encryption_key_files` (ordered), `secrets.active_key_id` (first entry without `.key`) | every Deployment, the same Secret (R-HA-027) and the restore Job, which checks that it opens every key ID of the backup (R-BAK-020); the migration Job and the backup pods never mount it (R-HA-030, R-BAK-012) |
+| `secrets.s3` (`source: static`) | `access-key-id`, `secret-access-key` | `/var/run/secrets/quader/s3/` | `storage.s3.credentials.access_key_id_file`, `..._secret_access_key_file` | every Deployment, the restore Job (it writes the bucket) and the post-restore Job; not the backup pods |
+| `secrets.s3CA` | `ca.crt` (the Secret's `key`) | `/var/run/secrets/quader/s3-ca/` | `storage.s3.ca_file` (also refused inside `config`) | every Deployment, the backup pods and the restore Job; never the migration Job |
+| `secrets.backupTarget` (`config.backup.target.credentials.source: static`) | `access-key-id`, `secret-access-key`, `session-token` (with `sessionTokenKey`) | `/var/run/secrets/quader/backup-target/` | `backup.target.credentials.access_key_id_file`, `..._secret_access_key_file`, `..._session_token_file` (all three refused inside `config`) | the backup pods and the restore Job; no Deployment, not the migration Job |
+| `secrets.journalReader` (`journalCredentials.source: static` of `postRestore` or `restore`) | `access-key-id`, `secret-access-key` | `/var/run/secrets/quader/journal-reader/` | none; the credentials file names the paths | the post-restore Job and the restore Job only |
+| `secrets.backupSource` (`config.storage.s3.credentials.source: static`) | `access-key-id`, `secret-access-key` | `/var/run/secrets/quader/backup-source/` | `backup.source.credentials.*` and `backup.source.separate_credentials` (refused inside `config`, Q-BAK-49) | the backup pods only; they do not mount `secrets.s3` |
+| `secrets.backupTargetCA` | `ca.crt` (the Secret's `key`) | `/var/run/secrets/quader/backup-target-ca/` | `backup.target.ca_file` (refused inside `config`, Q-HA-146) | the backup pods and the restore Job |
+| `secrets.valkey` | `username` (omit with `usernameKey: ""`), `password` | `/var/run/secrets/quader/valkey/` | `valkey.username_file`, `valkey.password_file` | every Deployment |
+| `secrets.valkeySentinel` | `username` (default: none), `password` | `/var/run/secrets/quader/valkey-sentinel/` | `valkey.sentinel.username_file`, `valkey.sentinel.password_file` | every Deployment |
+| `secrets.valkeyCA` | `ca.crt` | `/var/run/secrets/quader/valkey-ca/` | `valkey.tls.ca_file` | every Deployment |
+| `secrets.valkeyClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/valkey-client/` | `valkey.tls.cert_file`, `valkey.tls.key_file` | every Deployment |
+| `secrets.breakGlass` | `password` (the Secret's `key`) | `/var/run/secrets/quader/break-glass/` | `auth.break_glass.password_file` (also refused inside `config`); without the Secret `auth.break_glass.enabled: false` | `api` pods (main, pools, endpoint pools) and the bridge's `web`; never `packages`, `worker`, the Job or backup pods (R-AUTH-014, R-AUTH-042, Q-HA-79) |
+| `secrets.oidc[]` (`providerId`, `existingSecret`, `key`) | `client-secret` (the entry's `key`) | `/var/run/secrets/quader/oidc-<providerId>/` | `auth.oidc.providers.<providerId>.client_secret_file` (refused inside `config` for a listed provider) | `api` pods and the bridge's `web` only (R-AUTH-004, R-AUTH-042, Q-HA-79) |
+| `secrets.metricsToken` (`config.metrics.auth: static`) | `token` | `/var/run/secrets/quader/metrics/` | `metrics.bearer_token_file` | every Deployment |
+| `trustedCA` (`existingSecret` or `existingConfigMap`, `keys`) | the names in `trustedCA.keys` (default `ca-bundle.crt`) | `/etc/quader/ca/` | appended to `proxy.outbound.tls.ca_files` after the operator's own; with `useForObjectStore` the one file is `storage.s3.ca_file` (refused with `secrets.s3CA`) | every pod of the release: the Deployments and all Jobs ([Q-HA-272](../spec/ha-and-helm.md#q-ha-272--the-trusted-ca-bundle-is-mounted-in-every-pod-of-the-release-its-files-are-appended-to-ca_files-and-one-file-can-be-the-object-stores-ca)); the entry of `quader.secretMounts` named `trusted-ca` has `configMap` instead of `secret` for a ConfigMap source |
+| `tls.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls/` | `server.tls.certificates[0]` | the pods that load the pair, see [Mounts follow the listeners](#mounts-follow-the-listeners); never the Job |
+| `tls.clientCA.secretName` | `ca.crt` | `/var/run/secrets/quader/tls-client-ca/` | `server.tls.client_ca_file`, `server.tls.client_auth` | the pods that open :8080 (`api`, `packages`, their path pools, the bridge's `web`), not an endpoint pool |
+| `tls.ops.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls-ops/` | `ops_tls.certificates[0]`, `ops_tls.inherit: false` | every pod that opens the operations listener (every Deployment) |
+| `endpoints.<name>.tls.existingSecret`, each of `extraSecrets` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`n` = position in `tls.certificates`) | `server.endpoints.<name>.tls.certificates` | the pods that serve the endpoint (the main Deployments of the roles its surface holds, or its pools) |
+| `endpoints.<name>.tls.clientCaSecret` | `ca.crt` | `/var/run/secrets/quader/endpoints/<name>/client-ca/` | `server.endpoints.<name>.tls.client_ca_file` | the pods that serve the endpoint |
 
 The file *names* inside a mount are fixed (`username`, `password`, `ca.crt`, …); the Secret's key
 names are the values (`usernameKey`, `passwordKey`, …). The encryption keys are the exception:
@@ -274,9 +274,9 @@ block of the same shape; `tls.*` stays the default endpoint and does not change.
 | `tls.ops.secretName`, `.certKey`, `.keyKey` | `""`, `tls.crt`, `tls.key` | own certificate for `:8081`: `ops_tls.inherit: false` |
 | `tls.backendTLSPolicy.enabled`, `.caConfigMapName`, `.hostname` | `false`, `""`, `<fullname>.<namespace>.svc` | optional `BackendTLSPolicy` for a Gateway |
 | `ingress.backendTLS.controller` | `haproxy` | `haproxy` (HAProxy Ingress, primary), `traefik`, `ingress-nginx` or `manual` |
-| `ingress.backendTLS.verify` | `true` | the controller verifies the trove certificate; `false` accepts an unverified connection |
+| `ingress.backendTLS.verify` | `true` | the controller verifies the Quader certificate; `false` accepts an unverified connection |
 | `ingress.backendTLS.caSecret` | `""` | haproxy, ingress-nginx: Secret in the release namespace with `ca.crt`; required while `verify` |
-| `ingress.backendTLS.clientCertSecret` | `""` | haproxy: Secret with `tls.crt` and `tls.key` the controller presents to trove; required with `tls.clientCA` |
+| `ingress.backendTLS.clientCertSecret` | `""` | haproxy: Secret with `tls.crt` and `tls.key` the controller presents to Quader; required with `tls.clientCA` |
 | `ingress.backendTLS.serversTransport` | `""` | Traefik: `<namespace>-<name>@kubernetescrd` of a `ServersTransport`; required while `verify` |
 
 </details>
@@ -290,7 +290,7 @@ What the chart does with them:
   `tls.reloadInterval` and swaps the certificate without a restart. A subPath mount would never
   see the update. Only the pods that load a pair mount it, see below; the migration Job serves no listener (R-HA-030).
 - <a id="mounts-follow-the-listeners"></a>**Mounts follow the listeners.** The private key of `tls.secretName` is mounted
-  into a pod only when its process loads that pair (`trove.secretMounts`, `_secrets.tpl`): the pods that open :8080
+  into a pod only when its process loads that pair (`quader.secretMounts`, `_secrets.tpl`): the pods that open :8080
   (`api`, `packages`, their path pools and the bridge's `web`: the client listener of the default endpoint), a pod that serves a further endpoint without a pair of its own, and every pod
   whose operations listener inherits it, which is every pod while `tls.ops.secretName` is empty. With `tls.ops`, the
   `worker` and an endpoint pool whose endpoints each bring `tls.existingSecret` hold no copy of the client listener's key;
@@ -315,7 +315,7 @@ What the chart does with them:
 
 ### Ingress and Gateway
 
-trove speaks HTTPS, so the controller must connect to the backend with HTTPS and should verify
+Quader speaks HTTPS, so the controller must connect to the backend with HTTPS and should verify
 it. The settings differ per controller and the chart sets only those of the controller named in
 `ingress.backendTLS.controller`. HAProxy Ingress is the default and the tested target (the
 standard edge of the owner's platform); the other rows are rendered and tested for their
@@ -326,7 +326,7 @@ backend on plain HTTP and every request fails with a gateway error.
 | `controller` | What the chart renders | What you provide |
 |---|---|---|
 | `haproxy` | Ingress annotations with the default prefix `haproxy-ingress.github.io/`: `secure-backends: "true"`; with `caSecret`: `secure-verify-ca-secret: <caSecret>` and `secure-sni: <fullname>.<namespace>.svc` (the name is validated against the certificate when a CA is given); with `clientCertSecret`: `secure-crt-secret: <clientCertSecret>` | the CA Secret with key `ca.crt` (a cert-manager Secret carries it, so `caSecret` can equal `tls.secretName`); for `tls.clientCA`, a Secret with `tls.crt` and `tls.key` that the CA signs. The Secrets must be in the release namespace: reading across namespaces is off in HAProxy Ingress unless `cross-namespace-secrets-ca` / `-crt` allow it. |
-| `ingress-nginx` | Ingress annotations `nginx.ingress.kubernetes.io/backend-protocol: HTTPS`; with `caSecret`: `proxy-ssl-verify: "on"`, `proxy-ssl-secret: <namespace>/<caSecret>`, `proxy-ssl-name: <fullname>.<namespace>.svc`, `proxy-ssl-server-name: "on"` | the Secret with `ca.crt` (and `tls.crt`/`tls.key` when `tls.clientCA` is set: the controller presents them to trove) |
+| `ingress-nginx` | Ingress annotations `nginx.ingress.kubernetes.io/backend-protocol: HTTPS`; with `caSecret`: `proxy-ssl-verify: "on"`, `proxy-ssl-secret: <namespace>/<caSecret>`, `proxy-ssl-name: <fullname>.<namespace>.svc`, `proxy-ssl-server-name: "on"` | the Secret with `ca.crt` (and `tls.crt`/`tls.key` when `tls.clientCA` is set: the controller presents them to Quader) |
 | `traefik` | Service annotations `traefik.ingress.kubernetes.io/service.serversscheme: https` and `...service.serverstransport` | a `ServersTransport` (a Traefik CRD the chart does not create) with `serverName: <fullname>.<namespace>.svc`, `rootCAs` from the CA, and `certificatesSecrets` for mTLS |
 | `manual` | nothing | the backend protocol, through `ingress.annotations` and `service.annotations` of your controller |
 
@@ -353,14 +353,14 @@ so the policies apply to routes you create yourself.
 
 `endpoints` (values) is a map of endpoint name to entry; the entry `default` tunes the default endpoint, every other entry
 is a further endpoint (R-EP-008, [endpoints.md](endpoints.md)). The commented block in
-[values.yaml](../../deploy/helm/trove/values.yaml) lists every key with its default; `values.schema.json` refuses unknown
+[values.yaml](../../deploy/helm/quader/values.yaml) lists every key with its default; `values.schema.json` refuses unknown
 keys, and the keys `default` may not set (`port`, `baseUrl`, `tls`, `pool`, `ingress`, …).
 
 | Per further endpoint | Object | Notes |
 |---|---|---|
-| `port`, `baseUrl`, … | `server.endpoints.<name>` in `trove.yaml` | `listen: ":<port>"`; `pool: ep-<name>` when `pool.enabled`; keys that are unset render their defaults (a further endpoint: `surface: [packages]`, `auth` bound SAT only, `exposure: rules`, `cache_fill: false`, `rate_limit_class: external`, `replica_header: never`, `max_in_flight: 1024`) |
-| | Service `<fullname>-ep-<name>` and, for a surface over both roles, `<fullname>-api-ep-<name>` | port `ep-<name>` = `port` (target port numeric), `appProtocol: https` under `tls.enabled`, `sessionAffinity: None`; the first selects the pods of the role of the surface's `packages` and `files` families (`api` when it holds neither), the second the `api` pods, each the main Deployment or the pool; `service.type`, `annotations`, `loadBalancerSourceRanges` (Q-EP-71, `trove.surfaceRoles`) |
-| `pool.enabled` | Deployment, PodDisruptionBudget, HorizontalPodAutoscaler `<fullname>-packages-ep-<name>` and, with `api` families, `<fullname>-api-ep-<name>` | `serve --role packages` / `--role api`, `TROVE_POOL_NAME=ep-<name>`, label `trove/pool: ep-<name>`, the role's values with the keys of `pool` on top (merged key by key, so `false` and `0` do override); only these Deployments open the port, the main pods do not (Q-EP-70). In the bridge: `<fullname>-web-ep-<name>` with `--role web` |
+| `port`, `baseUrl`, … | `server.endpoints.<name>` in `quader.yaml` | `listen: ":<port>"`; `pool: ep-<name>` when `pool.enabled`; keys that are unset render their defaults (a further endpoint: `surface: [packages]`, `auth` bound SAT only, `exposure: rules`, `cache_fill: false`, `rate_limit_class: external`, `replica_header: never`, `max_in_flight: 1024`) |
+| | Service `<fullname>-ep-<name>` and, for a surface over both roles, `<fullname>-api-ep-<name>` | port `ep-<name>` = `port` (target port numeric), `appProtocol: https` under `tls.enabled`, `sessionAffinity: None`; the first selects the pods of the role of the surface's `packages` and `files` families (`api` when it holds neither), the second the `api` pods, each the main Deployment or the pool; `service.type`, `annotations`, `loadBalancerSourceRanges` (Q-EP-71, `quader.surfaceRoles`) |
+| `pool.enabled` | Deployment, PodDisruptionBudget, HorizontalPodAutoscaler `<fullname>-packages-ep-<name>` and, with `api` families, `<fullname>-api-ep-<name>` | `serve --role packages` / `--role api`, `QUADER_POOL_NAME=ep-<name>`, label `quader/pool: ep-<name>`, the role's values with the keys of `pool` on top (merged key by key, so `false` and `0` do override); only these Deployments open the port, the main pods do not (Q-EP-70). In the bridge: `<fullname>-web-ep-<name>` with `--role web` |
 | `ingress.enabled` | Ingress `<fullname>-ep-<name>` | `className`, per host (the host of `baseUrl`, `hosts`, then `wildcardHost`) `/` to the one Service when the surface lies within one role, else the rows of R-HA-037's table whose families it holds (`/api/v1` and `/` to the `-api` Service), all `Prefix`, backend by port number, `ingress.tls` as given; backend-over-TLS annotations from `ingress.backendTLS`, any key of the endpoint's own `ingress.backendTLS` winning; the HAProxy verified name is the endpoint Service's `<name>.<ns>.svc`, which the endpoint's certificate must cover |
 | `networkPolicy.enabled` (global) | a rule in the policy of every Deployment that opens the port | its port from `networkPolicy.from` (empty = anywhere); an endpoint pool's policy holds that rule and 8081, no 8080 (Q-HA-76) |
 | `tls.existingSecret`, `extraSecrets`, `clientCaSecret` | mounts and `tls.certificates` | position 0 is `existingSecret`; without it and with `extraSecrets`, position 0 is the listener pair of `tls.secretName`; without any, no block is rendered and the endpoint serves `server.tls` |
@@ -368,7 +368,7 @@ keys, and the keys `default` may not set (`port`, `baseUrl`, `tls`, `pool`, `ing
 The default endpoint's `server.endpoints.default.hosts` is rendered from `config.server.base_url` and
 `config.server.additional_base_urls` as soon as there is a further endpoint (unless `endpoints.default.hosts` is set), so a
 request that reaches `:8080` for another endpoint's host answers `421` (H-59). A client that reaches the default endpoint by
-another name (the in-cluster Service name) needs that name in `endpoints.default.hosts`. NOTES.txt (the template `trove.notes`)
+another name (the in-cluster Service name) needs that name in `endpoints.default.hosts`. NOTES.txt (the template `quader.notes`)
 lists each endpoint with its Services, hosts and pods, and warns about an endpoint with `exposure: rules` on the main
 Deployments or with an empty `networkPolicy.from`.
 
@@ -378,9 +378,9 @@ Not rendered: `gateway.*` (HTTPRoute, BackendTLSPolicy per endpoint; the default
 
 An object-store provisioner writes one Secret with the credentials and the location. `secrets.s3.existingSecret` names it;
 `accessKeyIdKey` and `secretAccessKeyKey` name the credential keys (mounted as files with `credentials.source: static`);
-`bucketKey`, `regionKey` and `endpointKey` name the keys that become `TROVE_STORAGE_S3_BUCKET`, `..._REGION` and
+`bucketKey`, `regionKey` and `endpointKey` name the keys that become `QUADER_STORAGE_S3_BUCKET`, `..._REGION` and
 `..._ENDPOINT` by `secretKeyRef`. The environment wins over the file, so `config.storage.s3.bucket` may stay empty; the
-chart's bucket check accepts `bucketKey` instead. [ci/s3-provisioner.yaml](../../deploy/helm/trove/ci/s3-provisioner.yaml)
+chart's bucket check accepts `bucketKey` instead. [ci/s3-provisioner.yaml](../../deploy/helm/quader/ci/s3-provisioner.yaml)
 shows the key names of one provisioner (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET`, `S3_REGION`,
 `S3_ENDPOINT`). Its endpoint is a host without a scheme, which the binary treats as https. The migration Job does not
 read these variables (it uses no object store).
@@ -400,7 +400,7 @@ exactly one port.
 | `<fullname>-worker`, each worker pool | TCP 8081 as above; a worker listens on no client port |
 | `<fullname>-migrate` | nothing; `ingress: []` |
 
-No rule admits one trove pod from another: replicas never talk to each other and the cut adds no seam between roles. A caller in
+No rule admits one Quader pod from another: replicas never talk to each other and the cut adds no seam between roles. A caller in
 another namespace that addresses a role Service directly (a Bastion) reaches 8080 only when `networkPolicy.ingress.http.from` admits it.
 
 With neither an `ops.from` peer nor a `probeCIDRs` entry, the 8081 rule is left out rather than rendered with an
@@ -434,7 +434,7 @@ tests in `chart_test.go` assert both, row by row.
 | `api`, `packages` or `worker` below 1 replica | implemented, naming `<role>.replicaCount` (`.autoscaling.minReplicas`) |
 | an autoscaler without a metric, or whose `maxReplicas` is below `minReplicas` | implemented |
 | pools: a repeated name or path prefix or queue, a name starting `ep-` or too long, a path outside the families of the role or equal to the role's own prefixes, a queue that does not exist | implemented, naming `<role>.pools[<name>]` and the value |
-| while `<fullname>-web` exists and the edge is still on the bridge (the Ingress `<fullname>` routes to the Service `<fullname>`, or a `<fullname>-ep-<name>` selects the `web` pods): the edge of the target shape (`web.enabled: false` or `web.routed: false`) while `<fullname>-api`, `-packages` or a pool is missing or not ready, and `web.enabled: false` at all; with no edge to read, the target shape while `<fullname>-api` or `-packages` does not exist | implemented with `lookup` (`trove.bridgeFacts`) and a decision on those facts (`trove.bridgeGuard`, tested with given facts in `TestRolesBridge`, Q-HA-132); inert under `helm template` |
+| while `<fullname>-web` exists and the edge is still on the bridge (the Ingress `<fullname>` routes to the Service `<fullname>`, or a `<fullname>-ep-<name>` selects the `web` pods): the edge of the target shape (`web.enabled: false` or `web.routed: false`) while `<fullname>-api`, `-packages` or a pool is missing or not ready, and `web.enabled: false` at all; with no edge to read, the target shape while `<fullname>-api` or `-packages` does not exist | implemented with `lookup` (`quader.bridgeFacts`) and a decision on those facts (`quader.bridgeGuard`, tested with given facts in `TestRolesBridge`, Q-HA-132); inert under `helm template` |
 | `config.storage.upload.max_size` larger than the spool budget of a `packages` (or `web`) Deployment; the UI's upload limit (`config.ui.deploy.max_upload_bytes`, `config.storage.upload.max_size` when 0) larger than that of an `api` Deployment | implemented, naming both values |
 | `terminationGracePeriodSeconds` below `config.health.shutdown_drain_delay` + 15 s | implemented, per Deployment |
 | a serving Deployment (`api`, `packages`, `web`, a path pool or an endpoint pool) without `resources.limits.memory`, or with a limit that admits fewer than 64 requests (Q-HA-70); a limit that is not an integer with an optional binary or decimal unit | implemented, naming the limit and the values the request bytes come from |
@@ -451,7 +451,7 @@ tests in `chart_test.go` assert both, row by row.
 | a name in `metrics.prometheusRule.disabledAlerts` that is no alert of the chart | implemented, listing the names |
 | `tls.enabled` without `tls.secretName` (names the key and the opt-out); `ingress.enabled` with TLS and verification but no `caSecret` (haproxy, ingress-nginx) or `serversTransport` (traefik); `tls.clientCA` with haproxy and no `clientCertSecret`; the same three rules for the merged `ingress.backendTLS` of each further endpoint with `ingress.enabled` (`endpoints.<name>.ingress.backendTLS.caSecret`, `.serversTransport`, `.clientCertSecret` with the endpoint's `tls.clientCaSecret`); `tls.clientCA`, `tls.ops`, `tls.backendTLSPolicy` without `tls.enabled`; `tls.backendTLSPolicy.enabled` without `caConfigMapName` | implemented |
 | `backup.enabled` (or `restore.enabled`) without `config.backup.target.bucket`; a CronJob name over 52 characters | implemented, naming the value (and `fullnameOverride`) |
-| `backup.schedule` outside the dialect of trove's cron parser (six or seven fields, `?`, `L`, `W`, `#`, day of week `7`, `@every`, `@reboot`, `TZ=`, `CRON_TZ=`, an unknown macro) | implemented, the reason named; a value out of range and an expression that never fires are Kubernetes's at apply time |
+| `backup.schedule` outside the dialect of Quader's cron parser (six or seven fields, `?`, `L`, `W`, `#`, day of week `7`, `@every`, `@reboot`, `TZ=`, `CRON_TZ=`, an unknown macro) | implemented, the reason named; a value out of range and an expression that never fires are Kubernetes's at apply time |
 | the target on the blob store's bucket and endpoint (the endpoints compared as the binary does, no scheme meaning https) without `allow_same_bucket`, or with one prefix containing the other; for any configured target, the backup on or off, because every replica's configuration check refuses it too | implemented, naming both locations |
 | `config.backup.target.credentials.source: static` without `secrets.backupTarget.existingSecret` while `backup.enabled` or `restore.enabled` renders a Job that mounts it | implemented, naming both |
 | `postRestore.enabled` without an RFC 3339 `postRestore.restoredTo`, together with `restore.enabled`, or with `journalCredentials.source: static` and no `secrets.journalReader.existingSecret`; `skipRevocationJournal` with a credentials source | implemented, naming the values |
@@ -465,45 +465,45 @@ tests in `chart_test.go` assert both, row by row.
 
 ## The HTTPRoute
 
-`gateway.enabled` renders one HTTPRoute `<fullname>` ([httproute.yaml](../../deploy/helm/trove/templates/httproute.yaml), R-HA-038) for the
+`gateway.enabled` renders one HTTPRoute `<fullname>` ([httproute.yaml](../../deploy/helm/quader/templates/httproute.yaml), R-HA-038) for the
 default endpoint: `gateway.parentRefs` (required), `hostnames` (default the host of `config.server.base_url`), and one rule per row of
-`trove.edgeRules`, the table the Ingress reads, each a `PathPrefix` match to the Service of its role on `service.port`, with
+`quader.edgeRules`, the table the Ingress reads, each a `PathPrefix` match to the Service of its role on `service.port`, with
 `gateway.timeouts` and `gateway.filters` on every rule and `gateway.extraRules` appended. In the bridge the one rule is `/` to `<fullname>`.
 The Ingress and the HTTPRoute may run together. The BackendTLSPolicies are `tls.backendTLSPolicy`'s and do not depend on `gateway.enabled`.
 The check for the Gateway API is a capability, so every offline render of a set with `gateway.enabled` passes
 `--api-versions gateway.networking.k8s.io/v1/HTTPRoute`: `templateArgs` in the chart tests and [lint.sh](../../test/chart/lint.sh) do, and
-`helm lint`, which takes no API versions, runs with `--set gateway.enabled=false` on a set that enables it ([ci/gateway.yaml](../../deploy/helm/trove/ci/gateway.yaml)).
+`helm lint`, which takes no API versions, runs with `--set gateway.enabled=false` on a set that enables it ([ci/gateway.yaml](../../deploy/helm/quader/ci/gateway.yaml)).
 Not built: the HTTPRoute of further endpoints (R-EP-008) and the Gateway the chart creates (R-HA-053); the criteria with Envoy Gateway in
 kind (200 MB `npm publish` through the route) are not part of the render tests.
 Test: `TestR_HA_038_GatewayAPIExposure`.
 
 ## The ServiceMonitor
 
-`metrics.serviceMonitor.enabled` renders one ServiceMonitor `<fullname>` ([servicemonitor.yaml](../../deploy/helm/trove/templates/servicemonitor.yaml)):
+`metrics.serviceMonitor.enabled` renders one ServiceMonitor `<fullname>` ([servicemonitor.yaml](../../deploy/helm/quader/templates/servicemonitor.yaml)):
 the port `ops` of `<fullname>-ops`, path `/metrics`, `role` and `pool` relabelings first (from the pod labels `app.kubernetes.io/component`
-and `trove/pool`), then `metrics.serviceMonitor.relabelings`; with `tls.enabled` `scheme: https` and a `tlsConfig` that verifies
+and `quader/pool`), then `metrics.serviceMonitor.relabelings`; with `tls.enabled` `scheme: https` and a `tlsConfig` that verifies
 `<fullname>-ops.<namespace>.svc` (the certificate of the operator must carry it) against `ca.crt` of `tls.ops.secretName` or `tls.secretName`,
 read from the ServiceMonitor's namespace; with `config.metrics.auth: static` the bearer token of `secrets.metricsToken`. Test:
 `TestServiceMonitor`; the requirement's ID is carried by `TestR_HA_045_PrometheusRule` (see [The PrometheusRule](#the-prometheusrule)).
 
 ## The backup and restore Jobs
 
-Requirements: R-HA-060 and R-BAK-012; the commands are `trove backup create` and `trove backup restore` ([backup.md](backup.md)). They are
-commands of the binary and not roles (Q-ARCH-342): the pods serve nothing, open no port, have no probe, carry no `trove/serve` label (no
+Requirements: R-HA-060 and R-BAK-012; the commands are `quader backup create` and `quader backup restore` ([backup.md](backup.md)). They are
+commands of the binary and not roles (Q-ARCH-342): the pods serve nothing, open no port, have no probe, carry no `quader/serve` label (no
 Service and no Valkey policy selects them) and mount no volume but `/tmp` and the extra volumes of their own values (`backup.extraVolumes`, `restore.extraVolumes`, `postRestore.extraVolumes`).
 
 | Object | Rendered | Notes |
 |---|---|---|
-| CronJob `<fullname>-backup` ([backup.yaml](../../deploy/helm/trove/templates/backup.yaml)) | with `backup.enabled` (default `false`, Q-HA-17; turned on, it needs `config.backup.target.bucket`) | `trove backup create --trigger schedule`, plus `--adopt-target` with `backup.adoptTarget`. `concurrencyPolicy: Forbid` is fixed; `suspend` is `backup.suspend` or `restore.enabled` |
-| Job `<fullname>-restore` ([restore.yaml](../../deploy/helm/trove/templates/restore.yaml)) | with `restore.enabled` | `trove backup restore <restore.backupId>`, `--skip-revocation-journal` with `restore.skipRevocationJournal`, then `restore.extraArgs`. An ordinary Job, not a hook. After a failure for good the operator deletes it and runs the same `helm upgrade` again, which creates it anew (R-HA-060) |
+| CronJob `<fullname>-backup` ([backup.yaml](../../deploy/helm/quader/templates/backup.yaml)) | with `backup.enabled` (default `false`, Q-HA-17; turned on, it needs `config.backup.target.bucket`) | `quader backup create --trigger schedule`, plus `--adopt-target` with `backup.adoptTarget`. `concurrencyPolicy: Forbid` is fixed; `suspend` is `backup.suspend` or `restore.enabled` |
+| Job `<fullname>-restore` ([restore.yaml](../../deploy/helm/quader/templates/restore.yaml)) | with `restore.enabled` | `quader backup restore <restore.backupId>`, `--skip-revocation-journal` with `restore.skipRevocationJournal`, then `restore.extraArgs`. An ordinary Job, not a hook. After a failure for good the operator deletes it and runs the same `helm upgrade` again, which creates it anew (R-HA-060) |
 | ServiceAccounts `<fullname>-backup`, `<fullname>-restore` | with their Job; `backup.serviceAccount.*`, `restore.serviceAccount.*` | no token; the annotations carry a workload identity, which is how the target's and the blob bucket's rights differ per Job (R-BAK-015) |
 | NetworkPolicies `<fullname>-backup`, `<fullname>-restore` | with their Job and `networkPolicy.enabled` | `policyTypes: [Ingress]` and `ingress: []`; the Jobs need no rule, and the target is reached outbound, which the chart never restricts (ADR-154). The counters a backup pod exports on its operations port for clusters that scrape Jobs are therefore not reachable unless the operator adds a policy |
-| the pod and the failure policy ([_backup.tpl](../../deploy/helm/trove/templates/_backup.tpl)) | `trove.jobPod`, `trove.jobPodFailurePolicy` | one template for both Jobs. The policy ignores `DisruptionTarget` first, so a drain or a preemption never consumes `backoffLimit`, then fails the Job on exit 2, 3, 4 and 6 (R-BAK-013); 75 and 1 are retried. `safe-to-evict: "false"` is always set |
+| the pod and the failure policy ([_backup.tpl](../../deploy/helm/quader/templates/_backup.tpl)) | `quader.jobPod`, `quader.jobPodFailurePolicy` | one template for both Jobs. The policy ignores `DisruptionTarget` first, so a drain or a preemption never consumes `backoffLimit`, then fails the Job on exit 2, 3, 4 and 6 (R-BAK-013); 75 and 1 are retried. `safe-to-evict: "false"` is always set |
 
-Secrets are scoped by the argument `scope` of `trove.secretMounts` ([_secrets.tpl](../../deploy/helm/trove/templates/_secrets.tpl)):
+Secrets are scoped by the argument `scope` of `quader.secretMounts` ([_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl)):
 `backup` (the login `secrets.databaseBackup` or else `secrets.database`, the CA of the database, the blob store's read credential and CA, the
 target) and `restore` (the migration login or else `secrets.database`, the blob store, the target, and the key ring that the restore checks
-before it loads anything). Valkey is in neither. The files of the target are chart-managed config keys (`trove.config`), so the shared
+before it loads anything). Valkey is in neither. The files of the target are chart-managed config keys (`quader.config`), so the shared
 `<fullname>-config` names them and only the two scopes have anything at those paths. The Jobs take no global `extraEnv`, `extraVolumes` or
 `extraEnvFrom` (Q-HA-149): what a Job mounts is what its values and its scope say.
 
@@ -522,15 +522,15 @@ restored installation) is the end-to-end suite's.
 when `<fullname>-backup` exceeds it. `kubectl create job --from=cronjob/<fullname>-backup <name>` copies the arguments, so a manual run
 records `trigger: schedule`; `config.backup.manual_run.*` (chart-managed, rendered with the CronJob) names it for the UI.
 
-**Dev profile.** [values-dev.yaml](../../deploy/dev/values-dev.yaml) sets the target to the bucket `trove-backups` of the profile's SeaweedFS
-(a bucket of its own beside `trove-blobs`), static keys from the secret of the blob store, the dev CA, the schedule `0 */6 * * *` and
+**Dev profile.** [values-dev.yaml](../../deploy/dev/values-dev.yaml) sets the target to the bucket `quader-backups` of the profile's SeaweedFS
+(a bucket of its own beside `quader-blobs`), static keys from the secret of the blob store, the dev CA, the schedule `0 */6 * * *` and
 `config.backup.expected_interval: 6h`.
 
 ## The post-restore Job
 
-Requirement: R-HA-025 step 4 (Q-HA-150); the command is `trove admin post-restore` ([backup.md](backup.md)). `postRestore.enabled` renders the
-Job `<fullname>-post-restore` ([post-restore.yaml](../../deploy/helm/trove/templates/post-restore.yaml)) with its ServiceAccount, a policy
-with `ingress: []`, and the pod template of the other Jobs (`trove.jobPod`, scope `post-restore`). It is a `post-install,post-upgrade`
+Requirement: R-HA-025 step 4 (Q-HA-150); the command is `quader admin post-restore` ([backup.md](backup.md)). `postRestore.enabled` renders the
+Job `<fullname>-post-restore` ([post-restore.yaml](../../deploy/helm/quader/templates/post-restore.yaml)) with its ServiceAccount, a policy
+with `ingress: []`, and the pod template of the other Jobs (`quader.jobPod`, scope `post-restore`). It is a `post-install,post-upgrade`
 hook with the delete policy `before-hook-creation`: Helm waits for it and fails the upgrade when it fails, a second `helm upgrade` replaces
 it, and a finished Job stays for its log. Run it with every role at zero (step 1 of the procedure), because a replica that started before it
 keeps the old keyspace until it restarts.
@@ -539,13 +539,13 @@ keeps the old keyspace until it restarts.
 |---|---|
 | `postRestore.restoredTo` | required, RFC 3339; the argument `--restored-to` |
 | `postRestore.skipRevocationJournal` | `--skip-revocation-journal`; refused together with a `journalCredentials.source` other than `runtime` |
-| `restore.journalCredentials.source` | the same three sources for the restore Job (`--journal-credentials-file /etc/trove/restore/credentials.yaml`, ConfigMap `<fullname>-restore`), Q-HA-159 |
+| `restore.journalCredentials.source` | the same three sources for the restore Job (`--journal-credentials-file /etc/quader/restore/credentials.yaml`, ConfigMap `<fullname>-restore`), Q-HA-159 |
 | `postRestore.journalCredentials.source` | `runtime`: no file, the replay lists with the blob store's credential. `default`: the chart renders `credentials.yaml` (`source: default`) into the ConfigMap `<fullname>-post-restore` and passes `--credentials-file`, so the identity of the Job's ServiceAccount lists object versions (`postRestore.serviceAccount.annotations`). `static`: the same file names `secrets.journalReader` (`access-key-id`, `secret-access-key`), mounted in this Job only |
 | `postRestore.backoffLimit`, `activeDeadlineSeconds`, `terminationGracePeriodSeconds`, `resources`, `podAnnotations`, `extraEnv`, `serviceAccount.*` | as for the restore Job |
 
-The Job is named `<fullname>-post-restore-<8 hex digits of the sha256 of restoredTo>` and carries the annotation `trove/restored-to`, so the Jobs of two restore points stay visible side by side; a repeat of the same point is a Job of the same name, which Helm replaces and the command answers without running its steps again (Q-HA-161), and NOTES prints a reminder to set `postRestore.enabled` back to false. Every role, pool, endpoint pool and the bridge must be at zero (the rule of `restore.enabled`, H1 of the audit): the hook runs after the Deployments are applied, so a replica would serve the restored database before the journal replay.
+The Job is named `<fullname>-post-restore-<8 hex digits of the sha256 of restoredTo>` and carries the annotation `quader/restored-to`, so the Jobs of two restore points stay visible side by side; a repeat of the same point is a Job of the same name, which Helm replaces and the command answers without running its steps again (Q-HA-161), and NOTES prints a reminder to set `postRestore.enabled` back to false. Every role, pool, endpoint pool and the bridge must be at zero (the rule of `restore.enabled`, H1 of the audit): the hook runs after the Deployments are applied, so a replica would serve the restored database before the journal replay.
 
-The scope `post-restore` of `trove.secretMounts` mounts the owner login (`secrets.databaseMigration`, else `secrets.database`), the CA and
+The scope `post-restore` of `quader.secretMounts` mounts the owner login (`secrets.databaseMigration`, else `secrets.database`), the CA and
 client certificate of the database, the blob store's keys and CA, and the journal credential; no Valkey Secret, no key ring, nothing of the
 backup target. Validation: `postRestore.restoredTo` must be an RFC 3339 time, `postRestore.enabled` with `restore.enabled` is refused (a
 backup restore runs the clean-up itself), `static` needs `secrets.journalReader.existingSecret`. Test: `TestR_HA_025_PostRestoreJob`.
@@ -553,66 +553,66 @@ backup restore runs the clean-up itself), `static` needs `secrets.journalReader.
 ## The values reference
 
 The values block of [R-HA-031](../spec/ha-and-helm.md) is the reference; `TestR_HA_031_ValuesReference` ([values_reference_test.go](../../test/chart/values_reference_test.go))
-holds it to [values.yaml](../../deploy/helm/trove/values.yaml): every key of values.yaml is in the block with the same default, every key of the
+holds it to [values.yaml](../../deploy/helm/quader/values.yaml): every key of values.yaml is in the block with the same default, every key of the
 block is in values.yaml unless the feature that owns it is not rendered yet (`unbuiltPrefixes` in the test: the post-restore Job, the chart-created
 Gateway, `contentOrigin`, `bootstrap`, Service tuning, the extension points, and the keys under `config`), and
-[values.schema.json](../../deploy/helm/trove/values.schema.json) declares every key. A value added to the chart is added to the block in the
+[values.schema.json](../../deploy/helm/quader/values.schema.json) declares every key. A value added to the chart is added to the block in the
 same change; a feature that arrives takes its prefix out of `unbuiltPrefixes`.
 
 ## The PrometheusRule
 
 `metrics.prometheusRule.enabled` renders one PrometheusRule `<fullname>`, group `<fullname>`: every alert of
-[_rules.tpl](../../deploy/helm/trove/templates/_rules.tpl) except `disabledAlerts`, then `extraRules`, with `labels` on the object. With
+[_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) except `disabledAlerts`, then `extraRules`, with `labels` on the object. With
 `backup.enabled` the rule holds 35 alerts; without it the last six, the alerts of the backup runs, are left out (29 alerts, Q-HA-17),
-because with no CronJob no run succeeds and `TroveBackupStale` would fire one interval after every installation that leaves the backup
-off. A name of the six stays a valid entry of `disabledAlerts` either way. The order: `TroveReplicasNotReady`, `TroveDatabaseUnreachable`,
-`TroveObjectStoreUnreachable`, `TroveObjectStoreUnreachableSingleReplica`, `TroveDatabasePoolSaturated`, `TroveControlConnectionWaits`, `TroveJobsStuck`, `TroveLeaseLost`,
-`TroveMixedVersions`, `TroveSpoolNearlyFull` (rows of R-HA-045's table), `TroveVulnerabilityDataStale`, `TroveVulnerabilitySyncFailing`,
-`TroveVulnerabilityRecordsRejected`, `TroveVulnerabilityRecordsInvalid`, `TroveVulnerabilityMaliciousRecordRejected`, `TroveVulnerabilityClaimedNameMalicious` (R-VULN-024, Q-VULN-122), `TroveMirrorFailing`, `TroveMirrorStale` (R-OPS-046, Q-OPS-160, Q-OPS-167),
-`TroveBridgeLeftOn` (a `web` replica registered for 24 hours, Q-HA-92), `TroveBlobMissing` (a read found the object of a blob missing within the
-hour, R-HA-024, Q-STOR-152), `TroveGCStale`, `TroveBackupCheckFailed` (R-HA-023), `TroveRevocationJournalBacklog` (R-HA-054), `TroveRevocationJournalQuarantined` (a row set aside, Q-HA-162), `TroveValkeyUnavailable`, `TroveValkeyUnavailableSingleReplica`,
-`TroveValkeySentinelsDegraded`, `TroveValkeyFailoverFlapping`, `TroveValkeyPrimaryDisagreement` (rows of the table), `TroveBackupStale`,
-`TroveBackupFailed`, `TroveBackupRunningLong`, `TroveBackupGlobalHoldLong`, `TroveBackupSourceDamage` and `TroveBackupVerifyFindings` (R-BAK-014). Severities are in the spec's table (`critical`:
-`TroveReplicasNotReady`, `TroveDatabaseUnreachable`, `TroveObjectStoreUnreachable`, `TroveValkeyUnavailable`, `TroveValkeyPrimaryDisagreement`,
-`TroveVulnerabilityMaliciousRecordRejected`, `TroveVulnerabilityClaimedNameMalicious`, `TroveBlobMissing`, `TroveBackupCheckFailed`, `TroveRevocationJournalQuarantined`, `TroveBackupStale`, `TroveBackupFailed`,
-`TroveBackupSourceDamage`, `TroveBackupVerifyFindings`; the others `warning`).
+because with no CronJob no run succeeds and `QuaderBackupStale` would fire one interval after every installation that leaves the backup
+off. A name of the six stays a valid entry of `disabledAlerts` either way. The order: `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`,
+`QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`,
+`QuaderMixedVersions`, `QuaderSpoolNearlyFull` (rows of R-HA-045's table), `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`,
+`QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious` (R-VULN-024, Q-VULN-122), `QuaderMirrorFailing`, `QuaderMirrorStale` (R-OPS-046, Q-OPS-160, Q-OPS-167),
+`QuaderBridgeLeftOn` (a `web` replica registered for 24 hours, Q-HA-92), `QuaderBlobMissing` (a read found the object of a blob missing within the
+hour, R-HA-024, Q-STOR-152), `QuaderGCStale`, `QuaderBackupCheckFailed` (R-HA-023), `QuaderRevocationJournalBacklog` (R-HA-054), `QuaderRevocationJournalQuarantined` (a row set aside, Q-HA-162), `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`,
+`QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement` (rows of the table), `QuaderBackupStale`,
+`QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage` and `QuaderBackupVerifyFindings` (R-BAK-014). Severities are in the spec's table (`critical`:
+`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderValkeyUnavailable`, `QuaderValkeyPrimaryDisagreement`,
+`QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderBlobMissing`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalQuarantined`, `QuaderBackupStale`, `QuaderBackupFailed`,
+`QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`; the others `warning`).
 
-**The platform check.** `TroveBackupCheckFailed` is `min(trove_backup_check_ok) == 0` for an hour. The gauge is exported by every replica
+**The platform check.** `QuaderBackupCheckFailed` is `min(quader_backup_check_ok) == 0` for an hour. The gauge is exported by every replica
 from the report that the task `backup-check` stored in `system_state` (Q-OPS-185, [backup.md](backup.md#the-platform-check)); a protection
 that is not declared (`config.backup.recovery_window`, `config.backup.object_versioning`) or that the credential may not read has no series, so
-the alert is silent on an installation that relies on trove's backup alone. With this alert every row of R-HA-045's table is rendered and
+the alert is silent on an installation that relies on Quader's backup alone. With this alert every row of R-HA-045's table is rendered and
 tested, and `TestR_HA_045_PrometheusRule` carries the requirement's ID.
 
 **The alerts of the backup runs** read the gauges that every `api` and `worker` replica computes from `backup_run` in PostgreSQL
 (R-BAK-014), so a finished backup pod need not be scraped. The two timestamps have no series until a run of that outcome exists
-(Q-OPS-180), and the expressions handle the absence: `TroveBackupFailed` is `max(last_failure) > (max(last_success) or vector(0))`, silent
-without a failure and firing for a first backup that failed; `TroveBackupStale` is `time() - max(last_success) > 1.5 * max(expected_interval)`
+(Q-OPS-180), and the expressions handle the absence: `QuaderBackupFailed` is `max(last_failure) > (max(last_success) or vector(0))`, silent
+without a failure and firing for a first backup that failed; `QuaderBackupStale` is `time() - max(last_success) > 1.5 * max(expected_interval)`
 or, when no success series exists, `max(absent(last_success))` while the gauge of the expected interval has existed for a whole
 `config.backup.expected_interval` (`offset`, Q-OPS-182), so a young installation is silent and one that never succeeded fires one interval
 after the replicas first reported. The window is a literal in the rule, rendered from `config.backup.expected_interval` (default `24h`, parsed
-by `trove.seconds`), the same value the replicas export; the chart has no threshold of its own. An `interrupted` run leaves no failure
-series, so a drain followed by a successful retry never fires `TroveBackupFailed`.
+by `quader.seconds`), the same value the replicas export; the chart has no threshold of its own. An `interrupted` run leaves no failure
+series, so a drain followed by a successful retry never fires `QuaderBackupFailed`.
 
 **Names.** The expressions are the specification's, and the binary exports every metric they read under that name (Q-HA-135): the
-spool gauges are `trove_spool_used_bytes` and `trove_spool_free_bytes`, the pool metrics are in
+spool gauges are `quader_spool_used_bytes` and `quader_spool_free_bytes`, the pool metrics are in
 [internal/meta/postgres/metrics.go](../../internal/meta/postgres/metrics.go) and
 [internal/app/wire_gauges.go](../../internal/app/wire_gauges.go), the queue ages in the `JobQueueGauges` query. `TestR_HA_045_PrometheusRule` fails
-for an expression that reads a `trove_*` name no code under `internal/` registers.
+for an expression that reads a `quader_*` name no code under `internal/` registers.
 
-- `TroveReplicasNotReady` reads kube-state-metrics: `min by (deployment)` of `kube_deployment_status_replicas_available` for the Deployments
+- `QuaderReplicasNotReady` reads kube-state-metrics: `min by (deployment)` of `kube_deployment_status_replicas_available` for the Deployments
   `<fullname>-(api|packages|worker|web)(-.*)?`, the main Deployments, their pools (`<fullname>-<role>-<pool>`) and the bridge; a Deployment
   that is scaled to one replica by choice fires too.
 - Every selector carries `namespace="<release namespace>"`, so two installations in one Prometheus do not blend (Q-VULN-55). A scrape
   through the Prometheus operator always sets that label.
-- The stale threshold is `config.vulnerabilities.stale_after` (default `24h`, parsed by `trove.seconds`), the key the binary reads; a
+- The stale threshold is `config.vulnerabilities.stale_after` (default `24h`, parsed by `quader.seconds`), the key the binary reads; a
   `stale_after` that arrives only through `extraEnv` is not seen.
 - A rule file renders no object when every alert is disabled and `extraRules` is empty.
-- To add an alert: append it to `trove.rules.all` and its name to `trove.rules.names`, add a test that fires and one that stays silent to
-  [tests/rules_test.yaml](../../deploy/helm/trove/tests/rules_test.yaml) (`TestR_VULN_024_PromtoolRules` fails otherwise; the expected
+- To add an alert: append it to `quader.rules.all` and its name to `quader.rules.names`, add a test that fires and one that stays silent to
+  [tests/rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml) (`TestR_VULN_024_PromtoolRules` fails otherwise; the expected
   annotations are the rule's text, so a changed text fails the test until the test file follows), a row to `alertSeverities` in
   [prometheusrule_test.go](../../test/chart/prometheusrule_test.go) and a row to R-HA-045.
 
-[tests/rules_test.yaml](../../deploy/helm/trove/tests/rules_test.yaml) is rendered from `ci/monitoring.yaml` as release `trove` in the
+[tests/rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml) is rendered from `ci/monitoring.yaml` as release `quader` in the
 namespace `default` and run with the pinned promtool (`make chart-test` fetches it, see [The Bastion chart](#the-bastion-chart)).
 
 ## Value sets and tests
@@ -621,7 +621,7 @@ namespace `default` and run with the pinned promtool (`make chart-test` fetches 
 [values-dev.yaml](../../deploy/dev/values-dev.yaml) is rendered alongside them (E0.7). Adding a
 file to `ci/` adds it to every per-set assertion with no code change.
 
-[examples/production.yaml](../../deploy/helm/trove/examples/production.yaml) is not a `ci/` set: it is the file an operator copies, and every host, bucket, namespace and
+[examples/production.yaml](../../deploy/helm/quader/examples/production.yaml) is not a `ci/` set: it is the file an operator copies, and every host, bucket, namespace and
 Secret name in it is an example. [test/chart/production_test.go](../../test/chart/production_test.go) renders it and asserts, per Deployment (the three roles and the pool `vuln`), the
 PodDisruptionBudget, the two topology spread constraints with `nodeTaintsPolicy: Honor` and the HorizontalPodAutoscaler that owns the replica count
 (`TestR_HA_032_ProductionExample`); the ingress policies that name the Ingress controller's, the Gateway's and the monitoring namespace
@@ -633,7 +633,7 @@ PodDisruptionBudget, the two topology spread constraints with `nodeTaintsPolicy:
 | `make chart-lint` → [test/chart/lint.sh](../../test/chart/lint.sh) | `helm lint --strict` and `helm template` for every `ci/` set, `examples/production.yaml`, `values-dev.yaml`, and `values-dev.yaml` with `values-pooler.yaml` |
 | `make chart-test` → [test/chart/test.sh](../../test/chart/test.sh) | the Go package [test/chart](../../test/chart/chart_test.go) with build tag `chart`; writes `.out/test-chart.json` for the coverage generator |
 | `go test -tags chart ./test/chart/...` | the same, without the wrapper |
-| [test/chart/image_test.go](../../test/chart/image_test.go) | the default image is `docker.io/guidedtraffic/trove` at the appVersion, and `values.yaml` has one `  tag:` line, which the release pipeline rewrites |
+| [test/chart/image_test.go](../../test/chart/image_test.go) | the default image is `docker.io/guidedtraffic/quader` at the appVersion, and `values.yaml` has one `  tag:` line, which the release pipeline rewrites |
 
 Both need only `helm` at the version in `tools/versions.env` (the test binary and `lint.sh` fail
 with the install command when it differs) and no cluster. The tests run `helm template` and parse
@@ -642,7 +642,7 @@ is where the coverage generator reads the IDs from.
 
 | Test (subtest prefix) | Asserts |
 |---|---|
-| `R-HA-043` (`TestR_HA_043_TrustedCA`) | the bundle of a Secret or a ConfigMap is mounted without `subPath` at `/etc/trove/ca/` in every Deployment and Job, its files follow the operator's `ca_files`, `useForObjectStore` sets `storage.s3.ca_file`, PostgreSQL's CA stays apart, the refusals name the value |
+| `R-HA-043` (`TestR_HA_043_TrustedCA`) | the bundle of a Secret or a ConfigMap is mounted without `subPath` at `/etc/quader/ca/` in every Deployment and Job, its files follow the operator's `ca_files`, `useForObjectStore` sets `storage.s3.ca_file`, PostgreSQL's CA stays apart, the refusals name the value |
 | `R-HA-050` (`TestR_HA_050_SizingProfiles`) | each file of `profiles/` renders on [operator-minimum.yaml](../../test/chart/testdata/operator-minimum.yaml) and the rendered replicas, autoscalers, resources, spool and `max_conns` equal the row of the table in the specification |
 | `R-HA-028` | lint passes for every set; no Secret, RBAC, CRD or subchart; names follow the fullname rule; standard labels |
 | `R-HA-002` | every Deployment runs the `--role` its name says (`api`, `packages`, `worker`; `web` only with the bridge), never `all`; `api`/`packages`/`worker` replicas below 1 fail naming the key; each role Service selects the main pods of its role; the pool label is in the selectors |
@@ -651,7 +651,7 @@ is where the coverage generator reads the IDs from.
 | `R-HA-037`, `R-HA-062`, `R-EP-008` (`TestRolesEdge`) | the six fixed `Prefix` rules per host, the pool paths before them, a further endpoint whole or by the rows of its families, a mixed surface opens its port on both main Deployments |
 | `R-HA-042` (`TestRolesNetworkPolicy`) | in every value set: ingress only, no `egress`, every rule one port, no empty `from`; per Deployment the ports it admits and their peers; the default policies |
 | `R-HA-029`, `R-HA-062` (`TestRolesValidation`) | every pool, autoscaler and spool row fails and names the value |
-| `R-HA-064` (`TestRolesBridge`) | `web.enabled` renders `trove-web` (`--role web`), the Service `trove`, the edge `/`, the web endpoint pool, policies; nothing of it without; step 2 (`web.routed: false`) keeps every Deployment and Service of step 1 and step 3 moves no route; a Service step 2 routes to exists in step 1; the BackendTLSPolicies of the bridge; the notes name the step; the guard's decision for given facts of the cluster (`bridgeGuardOf`: the edge on the bridge or moved, a target not ready or missing, step 3 before step 2, no readable edge); the rendering does not depend on the guard |
+| `R-HA-064` (`TestRolesBridge`) | `web.enabled` renders `quader-web` (`--role web`), the Service `quader`, the edge `/`, the web endpoint pool, policies; nothing of it without; step 2 (`web.routed: false`) keeps every Deployment and Service of step 1 and step 3 moves no route; a Service step 2 routes to exists in step 1; the BackendTLSPolicies of the bridge; the notes name the step; the guard's decision for given facts of the cluster (`bridgeGuardOf`: the edge on the bridge or moved, a target not ready or missing, step 3 before step 2, no readable edge); the rendering does not depend on the guard |
 | `R-HA-061` | no `ReadWriteMany`, `ReadOnlyMany`, PVC, StatefulSet, `volumeClaimTemplates`, hostPath; a `ReadWriteMany` spool fails schema validation; only the spool and `/tmp` are writable |
 | `R-HA-029` | one subtest per implemented row fails and names the value; the schema refuses unknown keys and wrong types |
 | `R-HA-029` and `R-HA-027` | without the encryption Secret the error prints the `kubectl create secret` command |
@@ -660,17 +660,17 @@ is where the coverage generator reads the IDs from.
 | `R-HA-033` | every pod and container of every set satisfies the restricted Pod Security Standard; UID 65532 |
 | `R-HA-034`, `R-ARCH-024` | probes as the table of R-HA-034; ports; no `preStop` |
 | `R-HA-011` (`TestChart`) | the chart half: grace period per role, its environment variable, above the drain delay |
-| `R-HA-011` (`TestShutdownBudgetDerivation`) | builds the binary and runs `trove admin config validate` over the rendered file and environment of `packages` and `worker`: `server.shutdown_timeout` equals grace - drain - 5 s and its source is `derived` |
+| `R-HA-011` (`TestShutdownBudgetDerivation`) | builds the binary and runs `quader admin config validate` over the rendered file and environment of `packages` and `worker`: `server.shutdown_timeout` equals grace - drain - 5 s and its source is `derived` |
 | `R-HA-042` (`TestNetworkPolicy`) | the policies of the roles: ports, peers, selectors that match the pods, no `from` meaning "anywhere" on 8081, `enabled: false` renders none |
 | `R-HA-030` (`TestMigrationJobSecrets`) | the migration Job mounts no key ring; `api`, `packages` and `worker` do |
 | `R-ARCH-006` (`TestTrustedProxiesExample`) | the `trusted_proxies` example is no pod-wide range and the default list is empty |
 | `R-HA-035`, `R-HA-036` | spool `sizeLimit` and budget; `GOMAXPROCS` rule; default resources |
-| `R-VULN-025` (`TestR_VULN_025_SpoolHoldsOneArchive`) | the worker spool must hold one archive: the defaults pass, a larger `max_archive_size` fails naming both values (also in mode `repository`), the headroom counts, mode `off` and a disabled scanning are not checked, the worker's `TROVE_STORAGE_SPOOL_MAX_BYTES` follows its own `sizeLimit` |
+| `R-VULN-025` (`TestR_VULN_025_SpoolHoldsOneArchive`) | the worker spool must hold one archive: the defaults pass, a larger `max_archive_size` fails naming both values (also in mode `repository`), the headroom counts, mode `off` and a disabled scanning are not checked, the worker's `QUADER_STORAGE_SPOOL_MAX_BYTES` follows its own `sizeLimit` |
 | `Q-VULN-145` (`TestQ_VULN_145_SpoolHoldsTheImageScanning`) | the worker spool budget must hold the image scanning: the defaults pass (8Gi, a budget of 6GiB against 5.5GiB), a smaller `sizeLimit` fails naming `max_image_size` and `worker.spool.sizeLimit`, the sum is exact to the MiB, a larger `max_image_size` and the headroom count, the pool that claims `vuln` is the one checked, images or scanning off is not checked |
-| `R-VULN-025` (`TestR_VULN_025_ConfigurationPassesThrough`) | the `vulnerabilities` section reaches `trove.yaml` as set; `ci/monitoring.yaml` passes `trove admin config validate` with the other sets |
-| `R-VULN-024` (`TestR_VULN_024_PrometheusRuleValues`) | no rule by default; the alerts (the three of the vulnerability scanning, the two of the mirror, `TroveBridgeLeftOn`, `TroveBlobMissing`) and their severities; the `labels`; the threshold follows `stale_after`; every selector is scoped to the namespace; `disabledAlerts` and `extraRules`; a misspelt alert name fails; all alerts disabled renders nothing |
-| `R-HA-045` (`TestR_HA_045_PrometheusRule`) | the rule is rendered with `enabled` and carries the `labels`, none by default or with `enabled: false`; the 32 alerts and their severities, `for` durations, summaries and descriptions; the role regex follows `<fullname>`; the expressions of the three rows with a special shape; every `trove_*` name an expression reads is registered by code under `internal/`; `disabledAlerts` |
-| `R-VULN-024` (`TestR_VULN_024_PromtoolRules`) | `promtool check rules` and `promtool test rules` over the rendered rules, and one firing and one silent test per alert; the backup alerts' tests are `TroveBackupStale` at 90 minutes after the last success (and for a backup that never ran), `TroveBackupFailed` for a failure after the last success and for a first failure (silent after an interrupted run), `TroveRevocationJournalBacklog` and the others |
+| `R-VULN-025` (`TestR_VULN_025_ConfigurationPassesThrough`) | the `vulnerabilities` section reaches `quader.yaml` as set; `ci/monitoring.yaml` passes `quader admin config validate` with the other sets |
+| `R-VULN-024` (`TestR_VULN_024_PrometheusRuleValues`) | no rule by default; the alerts (the three of the vulnerability scanning, the two of the mirror, `QuaderBridgeLeftOn`, `QuaderBlobMissing`) and their severities; the `labels`; the threshold follows `stale_after`; every selector is scoped to the namespace; `disabledAlerts` and `extraRules`; a misspelt alert name fails; all alerts disabled renders nothing |
+| `R-HA-045` (`TestR_HA_045_PrometheusRule`) | the rule is rendered with `enabled` and carries the `labels`, none by default or with `enabled: false`; the 32 alerts and their severities, `for` durations, summaries and descriptions; the role regex follows `<fullname>`; the expressions of the three rows with a special shape; every `quader_*` name an expression reads is registered by code under `internal/`; `disabledAlerts` |
+| `R-VULN-024` (`TestR_VULN_024_PromtoolRules`) | `promtool check rules` and `promtool test rules` over the rendered rules, and one firing and one silent test per alert; the backup alerts' tests are `QuaderBackupStale` at 90 minutes after the last success (and for a backup that never ran), `QuaderBackupFailed` for a failure after the last success and for a first failure (silent after an interrupted run), `QuaderRevocationJournalBacklog` and the others |
 | `R-HA-060`, `R-BAK-012` (`TestR_HA_060_BackupCronJob`) | the CronJob's fields, `Forbid`, the pod failure policy (an eviction ignored first, then 2, 3, 4, 6), `restartPolicy: Never`, no `activeDeadlineSeconds` by default, the grace period, the autoscaler annotation, `TMPDIR` and the one `emptyDir`, the memory limit, no port or probe, its own ServiceAccount, the values (rendered with `backupSets`, which turns the backup on); a value set renders the CronJob exactly when it sets `backup.enabled: true` |
 | `R-HA-060`, `R-HA-045` (`TestR_HA_060_BackupOffByDefault`) | the default: `backup.enabled: false` in values.yaml, no CronJob, ServiceAccount, NetworkPolicy or `backup.manual_run` and no target bucket needed; the target's static keys required only while a Job mounts them; a restore with the backup off; the note in `NOTES.txt`; the six alerts of the backup runs only with the backup |
 | `R-HA-060` (`TestR_HA_060_RestoreJob`) | the Job (not a hook), the arguments, the failure handling, the account, no migration Job, the suspended CronJob, the roles at zero, pools and the bridge |
@@ -680,40 +680,40 @@ is where the coverage generator reads the IDs from.
 | `R-HA-025` (`TestR_HA_025_PostRestoreJob`) | the hook annotations, the arguments, the account, the policy, the scoped Secrets (the journal credential reaches this Job only), the three credential sources, the validation rows |
 | `R-HA-059` (`TestR_HA_059_NoDisruptionBudgetForTheJobs`) | no PodDisruptionBudget selects a Job's pods |
 | `R-HA-042` (`TestR_HA_042_JobsAdmitNothing`) | the Jobs' policies: ingress only, an explicit empty list, selecting exactly their pods; no egress in any set |
-| `R-HA-029` (memory) | a serving pod (`api`, `packages`, a pool) without a memory limit, or one whose memory slots (`trove.requestBytes` and the three cache budgets, the formula of `internal/app/memory.go`) are fewer than 64, fails; `2G`, `64Mi` and a plain integer render |
+| `R-HA-029` (memory) | a serving pod (`api`, `packages`, a pool) without a memory limit, or one whose memory slots (`quader.requestBytes` and the three cache budgets, the formula of `internal/app/memory.go`) are fewer than 64, fails; `2G`, `64Mi` and a plain integer render |
 | `R-HA-032` | PDB, spread, tolerations, default replica counts and rolling update |
 | `R-HA-037`, `R-ARCH-032` | `sessionAffinity: None` everywhere, no affinity annotations, every Ingress rule `Prefix` and never the operations port, `ingress.path` fails naming `path` |
-| `R-HA-019` | hook annotations and weights, `podFailurePolicy`, same `trove.yaml`, nothing from Valkey or S3; disabled renders no Job |
+| `R-HA-019` | hook annotations and weights, `podFailurePolicy`, same `quader.yaml`, nothing from Valkey or S3; disabled renders no Job |
 | `R-HA-056` | Valkey wiring reaches `api`, `packages` and `worker` only |
 | `R-EP-008` (`TestEndpoints`) | two endpoints render two Services (own port, selecting the main packages pods), two Ingresses (class, hosts incl. the wildcard, TLS entry, backend), the port rules in the packages policy, the `server.endpoints` block and the default endpoint's hosts; mounts of the pairs without `subPath`; backend TLS per controller; the pool (Deployment of the role, PDB, Service, spread selector, policy with the operations port, no port on the main pods); NOTES; each validation row |
 | `R-HA-030`, `R-HA-029` (`TestS3ProvisionerSecret`) | bucket, region, endpoint by `secretKeyRef`, credentials as files with only their two keys, the Job reads none, the bucket is required unless the Secret carries it |
 | `R-HA-030` (`TestTLSMountsFollowTheListeners`) | the listener pair is mounted by the pods that load it: everywhere without `tls.ops`; with it, not into the worker, into an endpoint pool only while an endpoint it serves has no pair of its own; the client CA reaches the main `packages` pods and not an endpoint pool |
-| `R-HA-030`, `R-AUTH-014`, `R-AUTH-042` (`TestLoginSecrets`) | `secrets.breakGlass` and `secrets.oidc[]` mount a directory of the Secret read-only without `subPath` into `api` pods only (main, pools, endpoint pools, the bridge's `web`; not `packages`, `worker` or the Job), render the config paths, take a different key, leave `enabled` alone with a Secret and render `auth.break_glass.enabled: false` without; the validation rows; the rendered file passes `trove admin config validate` |
+| `R-HA-030`, `R-AUTH-014`, `R-AUTH-042` (`TestLoginSecrets`) | `secrets.breakGlass` and `secrets.oidc[]` mount a directory of the Secret read-only without `subPath` into `api` pods only (main, pools, endpoint pools, the bridge's `web`; not `packages`, `worker` or the Job), render the config paths, take a different key, leave `enabled` alone with a Secret and render `auth.break_glass.enabled: false` without; the validation rows; the rendered file passes `quader admin config validate` |
 | `R-HA-030` (`TestS3CA`) | `secrets.s3CA` mounts read-only without `subPath` with the one projected key, renders `storage.s3.ca_file`, stays out of the Job; without it nothing is rendered and `config.storage.s3.ca_file` is refused |
 | `R-HA-063`, `R-HA-030` (`TestTLS`) | HTTPS probes, mount without `subPath` of exactly the certificate and key, config paths, `appProtocol`; missing `tls.secretName` fails; opt-out renders no TLS wiring; no TLS mount in the migration Job; client CA and `ops_tls` separation; per-controller Ingress settings (HAProxy Ingress default, verification and client-certificate rules); one `BackendTLSPolicy` per role Service; every value set agrees between config and probe scheme |
 
 Not covered by these tests (needs a cluster): that the pods start in a restricted namespace, that
 `kubectl exec … touch /x` fails, that the Job finishes before the Deployments roll. The dev
-profile covers them once the trove image serves ([local-profile.md](local-profile.md)).
+profile covers them once the Quader image serves ([local-profile.md](local-profile.md)).
 
 ## Extension checklists
 
 **Add a value.**
 
-1. Add it to [values.yaml](../../deploy/helm/trove/values.yaml) with its default; comment it only where its name does not
+1. Add it to [values.yaml](../../deploy/helm/quader/values.yaml) with its default; comment it only where its name does not
    say its meaning, unit, range or consequence, and give an `example:` where the default is empty.
-2. Add it to [values.schema.json](../../deploy/helm/trove/values.schema.json) with its type and
+2. Add it to [values.schema.json](../../deploy/helm/quader/values.schema.json) with its type and
    enum. The schema is `additionalProperties: false`; a value missing there fails every render.
 3. Use it in the template, and add a validation row to `_validate.tpl` if a wrong value must fail.
 4. Add a subtest to `chart_test.go` named with the requirement ID.
 5. Update the tables on this page.
 
-**Add a Secret.** (For TLS material, see [TLS](#tls).) Add an entry in `trove.secretMounts` (`_secrets.tpl`) with its scope, the config
-key it sets in `trove.config`, the value in `values.yaml` and the schema, and the managed-key
+**Add a Secret.** (For TLS material, see [TLS](#tls).) Add an entry in `quader.secretMounts` (`_secrets.tpl`) with its scope, the config
+key it sets in `quader.config`, the value in `values.yaml` and the schema, and the managed-key
 check in `_validate.tpl`. Extend `R-HA-030 only the pods that need a Secret mount it`.
 
-**Add an object.** New template file, label it with `trove.labels`, take its name from
-`trove.fullname`, and extend `R-HA-028 names follow the fullname rule`. Check `R-HA-061` still
+**Add an object.** New template file, label it with `quader.labels`, take its name from
+`quader.fullname`, and extend `R-HA-028 names follow the fullname rule`. Check `R-HA-061` still
 passes: no PVC, no StatefulSet.
 
 **Add a role or pool.** Both roles come from one loop in `deployments.yaml`, `pdb.yaml` and the
@@ -722,17 +722,17 @@ needs a migration plan for the existing Deployments.
 
 ## The Bastion chart
 
-The second chart, [deploy/helm/trove-bastion](../../deploy/helm/trove-bastion), deploys the Bastion: `trove serve --role bastion`,
+The second chart, [deploy/helm/quader-bastion](../../deploy/helm/quader-bastion), deploys the Bastion: `quader serve --role bastion`,
 a read-only, internet-facing cache in front of a main installation ([spec/bastion.md](../spec/bastion.md), R-BAS-001, R-BAS-002,
 R-BAS-025, R-BAS-030, R-BAS-033, R-BAS-038, R-BAS-040 to R-BAS-047; the security view is
-[security/bastion.md](../security/bastion.md)). It is separate from the chart `trove` on purpose (Q-BAS-5): no PostgreSQL, no
+[security/bastion.md](../security/bastion.md)). It is separate from the chart `quader` on purpose (Q-BAS-5): no PostgreSQL, no
 object store of the main installation, no migration Job, no second role, no Secret, no Role and no RoleBinding. The helper
-names are `trove-bastion.*` (`_helpers.tpl`), the idioms are those of the chart `trove`: `<fullname>` (release name, or
-`<release>-trove-bastion`, cut at 50 characters), the secret mount list used for volumes and mounts, the fail-fast
+names are `quader-bastion.*` (`_helpers.tpl`), the idioms are those of the chart `quader`: `<fullname>` (release name, or
+`<release>-quader-bastion`, cut at 50 characters), the secret mount list used for volumes and mounts, the fail-fast
 validation, restricted pod security, probes on the ops port, `extraObjects` through `tpl`.
 
 ```text
-deploy/helm/trove-bastion/
+deploy/helm/quader-bastion/
 ├── Chart.yaml              version = appVersion = 0.0.0-dev (build.yml rewrites both with the release version)
 ├── values.yaml             the block of R-BAS-046, copied there verbatim
 ├── values.schema.json      draft-07, additionalProperties false outside config; config = the generated role schema (below)
@@ -759,19 +759,19 @@ deploy/helm/trove-bastion/
 a Deployment, or a StatefulSet with `cacheVolume.type: persistent`, whose claim template gives every pod a volume of its own; the
 cache volume of the default `ephemeral` type is a generic ephemeral volume of the pod, `emptyDir` an `emptyDir`, and the bucket
 backend mounts none (the spool of fills is `/tmp`). `replicas` is `replicaCount`, and absent with `autoscaling.enabled`, where the
-HPA owns it. The NetworkPolicy holds ingress rules only, as the chart `trove`'s (R-BAS-047, ADR-154): the https port from
+HPA owns it. The NetworkPolicy holds ingress rules only, as the chart `quader`'s (R-BAS-047, ADR-154): the https port from
 `networkPolicy.ingress.https.from`, the ops port from `networkPolicy.ingress.ops.from` and `probeCIDRs`. There is no
 `networkPolicy.egress` value; the Bastion pods' egress is the cluster operator's
 ([H-522](../security/bastion.md#h-522--the-chart-restricts-no-egress-of-the-bastion-pods)).
 
-**Configuration (R-BAS-002).** `trove-bastion.config` merges `config` with the keys the chart manages (managed wins):
+**Configuration (R-BAS-002).** `quader-bastion.config` merges `config` with the keys the chart manages (managed wins):
 `bastion.main.token_file`, `bastion.main.ca_file` and `bastion.cache.bucket.ca_file` (the one key of `trustedCA`),
-`bastion.signing_key_file`, `bastion.cache.volume.dir` (`/var/cache/trove-bastion`, volume backend), the bucket credential
+`bastion.signing_key_file`, `bastion.cache.volume.dir` (`/var/cache/quader-bastion`, volume backend), the bucket credential
 files (`source: static`), `bastion.replicas`, `valkey.username_file`, `valkey.password_file`, `valkey.sentinel.username_file`, `valkey.sentinel.password_file`
 (from `secrets.valkeySentinel`; the Sentinels of a Valkey that requires a password need them, found by the end-to-end run) and `valkey.tls.ca_file` (the Valkey CA,
 else the trust bundle) while Valkey is configured, and `server.tls` with the listener pair while `tls.enabled` (`server.ops_tls` keeps
-its default, which inherits it). `trove-bastion.validate` refuses a managed key under `config`. The ConfigMap `<fullname>-config` is
-mounted at `/etc/trove/trove.yaml` with `subPath`, and `checksum/config` is the hash of the merged text only: the Secrets are
+its default, which inherits it). `quader-bastion.validate` refuses a managed key under `config`. The ConfigMap `<fullname>-config` is
+mounted at `/etc/quader/quader.yaml` with `subPath`, and `checksum/config` is the hash of the merged text only: the Secrets are
 mounted as directories without `subPath`, so a replaced Secret reaches the files (token, TLS, trust bundle are re-read by the
 binary) and rolls nothing, while any change of `config` rolls the pods.
 
@@ -801,15 +801,15 @@ is no alert, autoscaling bounds and metric, `highAvailability.enforce` (two repl
 
 **The spool and the volumes** ([Q-BAS-131](../spec/bastion.md#q-bas-131--the-bytes-of-the-fills-in-progress-are-bounded-and-the-chart-sizes-the-volumes-from-the-bound)).
 The binary bounds the bytes of the fills in progress at `config.bastion.cache.spool_max_bytes` (2 GiB); the chart makes the volumes agree.
-`trove-bastion.bytes` reads a size in the forms of both the role (`2GiB`) and Kubernetes (`2Gi`). With the bucket backend the fills are spooled
-into the `tmp` emptyDir: `tmp.sizeLimit` is empty by default and then `spool_max_bytes` plus 256 MiB (`2304Mi`, `trove-bastion.tmpSizeLimit`), and a
+`quader-bastion.bytes` reads a size in the forms of both the role (`2GiB`) and Kubernetes (`2Gi`). With the bucket backend the fills are spooled
+into the `tmp` emptyDir: `tmp.sizeLimit` is empty by default and then `spool_max_bytes` plus 256 MiB (`2304Mi`, `quader-bastion.tmpSizeLimit`), and a
 `tmp.sizeLimit` below that fails the render ("evicted" is in the message: an emptyDir over its limit evicts the pod). With the volume backend the
 fills go below `<cache dir>/tmp`, and `cacheVolume.size` must hold `max_bytes` plus the spool; `tmp` stays 1 Gi. `spool_max_bytes` below
 `max_object_bytes` fails as well. The values `tmp.sizeLimit` and `config.bastion.cache.spool_max_bytes` are in the values block of
 R-BAS-046; change both places.
 
-**Schema and the `config` subtree.** [values.schema.json](../../deploy/helm/trove-bastion/values.schema.json) is generated once from
-the key set of `values.yaml` and edited by hand afterwards (like the one of the chart `trove`) for everything outside `config`, which
+**Schema and the `config` subtree.** [values.schema.json](../../deploy/helm/quader-bastion/values.schema.json) is generated once from
+the key set of `values.yaml` and edited by hand afterwards (like the one of the chart `quader`) for everything outside `config`, which
 is `additionalProperties: false`. The `config` property is not hand-written: it is the schema the binary emits for the role `bastion`,
 [internal/config/bastion.schema.json](../../internal/config/bastion.schema.json) without `$schema` and `$id` (the root is draft-07),
 spliced in by `go generate ./internal/config` ([schemagen](../../internal/config/schemagen/main.go), flag `-bastion-chart`). So
@@ -817,12 +817,12 @@ spliced in by `go generate ./internal/config` ([schemagen](../../internal/config
 (CI) fails when the committed file differs. A typo, a wrong type or an out-of-range value under `config` fails `helm template`,
 `helm lint` and `helm install` with the path of the key. Never edit the `config` property or `chart-managed-keys.yaml` by hand.
 
-The keys the chart renders itself are tagged `chart:"managed"` in `bastion_role.go` and carry `x-trove-chart-managed` in the role
+The keys the chart renders itself are tagged `chart:"managed"` in `bastion_role.go` and carry `x-quader-chart-managed` in the role
 schema (the binary reads them, so the schema has them). The same run writes the topmost managed paths to
-[chart-managed-keys.yaml](../../deploy/helm/trove-bastion/chart-managed-keys.yaml), which `templates/_validate.tpl` reads with
+[chart-managed-keys.yaml](../../deploy/helm/quader-bastion/chart-managed-keys.yaml), which `templates/_validate.tpl` reads with
 `.Files.Get` and refuses with a message naming the key set (`config.<path> is managed by the chart`); the `server.*` paths only while
-`tls.enabled`. Adding a key the chart renders into `/etc/trove/trove.yaml`: tag the field, run `make generate`, render it in
-`trove-bastion.config` in `_helpers.tpl`; `TestR_BAS_046_EveryRenderedKeyIsInTheRoleSchemaAndManaged` fails for a rendered key that
+`tls.enabled`. Adding a key the chart renders into `/etc/quader/quader.yaml`: tag the field, run `make generate`, render it in
+`quader-bastion.config` in `_helpers.tpl`; `TestR_BAS_046_EveryRenderedKeyIsInTheRoleSchemaAndManaged` fails for a rendered key that
 is missing in the schema or not tagged. `bastion.cache.bucket.credentials.web_identity_token_file` is deliberately not managed: the
 chart mounts no token for it, the operator sets the path of the workload identity's token.
 
@@ -833,13 +833,13 @@ Tests: [bastion_schema_test.go](../../test/chart/bastion_schema_test.go) (`TestR
 **PrometheusRule and its tests (R-BAS-041).** `_rules.tpl` holds the alerts as a YAML list; `prometheusrule.yaml` drops the names
 of `disabledAlerts` and appends `extraRules`. The Valkey alert exists only while `config.valkey.mode` is not `none`, and the replica
 alert reads the StatefulSet's metric for a StatefulSet. Selectors carry the release's `namespace` and ops `service`, because one
-Prometheus can scrape several Bastions; thresholds come from gauges of the Bastion. [tests/rules_test.yaml](../../deploy/helm/trove-bastion/tests/rules_test.yaml)
+Prometheus can scrape several Bastions; thresholds come from gauges of the Bastion. [tests/rules_test.yaml](../../deploy/helm/quader-bastion/tests/rules_test.yaml)
 has one healthy test in which no alert fires and one test per alert in which it fires; `TestR_BAS_041_PromtoolRules` renders the
 rule file from `ci/bucket-valkey.yaml`, runs `promtool check rules` and `promtool test rules`, and fails when an alert lacks either
 kind of test. promtool is the release binary at `PROMTOOL_VERSION` of `tools/versions.env` (`go install` of the module is refused by
 its `replace` directives): `make promtool` fetches it into `.bin/promtool-<version>` after checking the SHA-256 of the platform,
-`make chart-test` depends on it and passes the path as `TROVE_PROMTOOL`, `make versions-check` compares installed copies with the pin.
-Running the test by hand needs `TROVE_PROMTOOL`.
+`make chart-test` depends on it and passes the path as `QUADER_PROMTOOL`, `make versions-check` compares installed copies with the pin.
+Running the test by hand needs `QUADER_PROMTOOL`.
 
 **Tests.** `make chart-lint` lints and renders every `ci/` set of both charts; `make chart-test` runs the Bastion's tests next to the
 other chart tests:
@@ -862,14 +862,14 @@ other chart tests:
 
 **Extension checklists.**
 
-*Add a value.* Add it to [values.yaml](../../deploy/helm/trove-bastion/values.yaml) with its default (commented only where its name does not say it) and to
+*Add a value.* Add it to [values.yaml](../../deploy/helm/quader-bastion/values.yaml) with its default (commented only where its name does not say it) and to
 the values block of [spec/bastion.md](../spec/bastion.md) R-BAS-046 as the same line (the block is a verbatim copy; the key-set test
 compares the keys), to
-[values.schema.json](../../deploy/helm/trove-bastion/values.schema.json), use it in a template, add a validation row if a wrong value
+[values.schema.json](../../deploy/helm/quader-bastion/values.schema.json), use it in a template, add a validation row if a wrong value
 must fail, and a subtest named with the requirement.
 
-*Add an alert.* Add it to `_rules.tpl` and to `trove-bastion.rules.names`, to the table of R-BAS-041, and a failure test and a healthy
+*Add an alert.* Add it to `_rules.tpl` and to `quader-bastion.rules.names`, to the table of R-BAS-041, and a failure test and a healthy
 assertion to `tests/rules_test.yaml`; `TestR_BAS_041_PromtoolRules` fails without them.
 
-*Add a Secret.* Add an entry to `trove-bastion.secretMounts` and the file path to `trove-bastion.config`, the managed key to the list in
+*Add a Secret.* Add an entry to `quader-bastion.secretMounts` and the file path to `quader-bastion.config`, the managed key to the list in
 `_validate.tpl` and to R-BAS-046's list of managed keys.

@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/answers"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/link"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
+	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/link"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
 )
 
 // TestR_BAS_027_AReplicaStartsUnreachableAndBecomesReachableWithAHandshakeAndAPoll: a replica is unreachable
@@ -104,7 +104,7 @@ func TestR_BAS_027_NoSuccessfulPollForUnreachableAfterBeginsUnreachable(t *testi
 		t.Fatal("a feed poll 5 s late (unreachable_after 10 s) made the replica unreachable")
 	}
 	if lag := r.gauge("lag"); lag < 4.9 || lag > 5.1 {
-		t.Errorf("trove_bastion_feed_lag_seconds = %v, want 5", lag)
+		t.Errorf("quader_bastion_feed_lag_seconds = %v, want 5", lag)
 	}
 	r.tickAfter(5 * time.Second)
 	st := r.l.State()
@@ -120,7 +120,7 @@ func TestR_BAS_027_NoSuccessfulPollForUnreachableAfterBeginsUnreachable(t *testi
 
 // TestR_BAS_027_AForwardErrorAloneDoesNotBeginUnreachableButARefusedTokenDoes: errors of the request flow that
 // say nothing about the link are not the link's business; a 401 bastion_token_invalid on a call of the interface's
-// own or a mismatch in any answer is, at once, and the former sets trove_bastion_main_token_refused.
+// own or a mismatch in any answer is, at once, and the former sets quader_bastion_main_token_refused.
 func TestR_BAS_027_AForwardErrorAloneDoesNotBeginUnreachableButARefusedTokenDoes(t *testing.T) {
 	r := newRig(t, rigOpts{})
 	r.connect()
@@ -368,7 +368,7 @@ func TestR_BAS_028_AMismatchInAnyAnswerIsNotedAtOnce(t *testing.T) {
 // TestR_BAS_010_TheHandshakesBaseURLMustEqualTheBastions: the main installation derives the response base URL
 // from the forwarded host the client sent (R-BAS-017); a Bastion whose host is not among the main
 // installation's additional base URLs gets the main URL back, which is unreachable, with
-// trove_bastion_base_url_mismatch 1 and a log line. A port that is not the default is part of the comparison.
+// quader_bastion_base_url_mismatch 1 and a log line. A port that is not the default is part of the comparison.
 func TestR_BAS_010_TheHandshakesBaseURLMustEqualTheBastions(t *testing.T) {
 	r := newRig(t, rigOpts{})
 	r.main.SetBaseURLHonoured(false)
@@ -807,7 +807,7 @@ func TestR_BAS_006_TheTokenLifetimeIsExportedAndWarnedOnceADay(t *testing.T) {
 }
 
 // TestR_BAS_006_ARevokedTokenSetsTheRefusedGaugeWithinThePollIntervalPlus5Seconds: revoking the token in use
-// makes the replica report trove_bastion_main_token_refused 1 and unreachable.
+// makes the replica report quader_bastion_main_token_refused 1 and unreachable.
 func TestR_BAS_006_ARevokedTokenSetsTheRefusedGaugeWithinThePollIntervalPlus5Seconds(t *testing.T) {
 	replicas := realTimeReplicas(t, 1, 25*time.Millisecond)
 	r := replicas[0]

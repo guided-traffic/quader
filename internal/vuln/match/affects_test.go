@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // dotted is a test adapter: versions are dotted numbers ("1.2.3"), compared field by field.

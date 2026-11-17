@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/docgen"
+	"github.com/guided-traffic/quader/internal/formats/ansible/docgen"
 )
 
 // TestR_ANS_039_TheMarkupTableHasACasePerMacro: each macro of the Ansible markup becomes its tag, the text is escaped, and what is not a closed

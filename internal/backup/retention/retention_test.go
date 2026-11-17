@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/listing"
-	"github.com/guided-traffic/trove/internal/backup/listing/fixture"
-	"github.com/guided-traffic/trove/internal/backup/runstoretest"
-	"github.com/guided-traffic/trove/internal/backup/verify"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/listing"
+	"github.com/guided-traffic/quader/internal/backup/listing/fixture"
+	"github.com/guided-traffic/quader/internal/backup/runstoretest"
+	"github.com/guided-traffic/quader/internal/backup/verify"
 )
 
 func manifestAt(id format.ID, age time.Duration) listing.Backup {
@@ -139,7 +139,7 @@ func TestR_BAK_016_ResultRecordsPolicyAndRetainedBackups(t *testing.T) {
 	if len(res.Retained) != 2 || res.Retained[0].BackupID != string(fixture.ID(2)) || !res.Retained[0].Damaged || res.Retained[1].Damaged {
 		t.Fatalf("Retained = %+v", res.Retained)
 	}
-	if res.Retained[0].BlobCount != 3 || res.Retained[0].SchemaStep != 46 || res.Retained[0].TroveVersion != "0.1.0" || res.Retained[0].DatabaseBytes == 0 {
+	if res.Retained[0].BlobCount != 3 || res.Retained[0].SchemaStep != 46 || res.Retained[0].QuaderVersion != "0.1.0" || res.Retained[0].DatabaseBytes == 0 {
 		t.Fatalf("Retained[0] = %+v", res.Retained[0])
 	}
 }
@@ -470,7 +470,7 @@ func newRunEnv(t *testing.T, policy Policy) *runEnv {
 	return &runEnv{env: e, runs: runs, runner: &Runner{
 		Stage: e.stage, Runs: runs,
 		Timing: backup.Timing{Lease: time.Minute, Heartbeat: time.Second, Stall: time.Hour, Finalize: time.Second},
-		Target: "s3://b/trove", Pod: "pod-1", TroveVersion: "0.1.0",
+		Target: "s3://b/quader", Pod: "pod-1", QuaderVersion: "0.1.0",
 		NewRunID: func() string { n++; return fmt.Sprintf("00000000-0000-7000-8000-%012d", n) },
 	}}
 }

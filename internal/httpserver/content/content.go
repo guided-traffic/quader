@@ -1,5 +1,5 @@
 // Package content wraps the writer of a response whose body is package content,
-// or a page or document trove renders from it, so that the headers of R-ARCH-007
+// or a page or document quader renders from it, so that the headers of R-ARCH-007
 // hold whatever the handler does (R-ARCH-007: the core sets the headers, not the
 // handler).
 //
@@ -21,12 +21,12 @@ const (
 	// File is stored content: nosniff, the sandbox policy, the resource policy
 	// and Content-Disposition: attachment with the file name.
 	File Kind = iota
-	// Index is a page trove renders itself, the directory index of a folder:
+	// Index is a page quader renders itself, the directory index of a folder:
 	// nosniff, the resource policy and the policy without sandbox, and no
 	// Content-Disposition.
 	Index
 	// Document is a document derived from package content or metadata that
-	// trove renders or relays (a package document, a service index): nosniff,
+	// quader renders or relays (a package document, a service index): nosniff,
 	// the sandbox policy and the resource policy, and no Content-Disposition,
 	// because a client reads it as a response and does not save it as a file.
 	Document

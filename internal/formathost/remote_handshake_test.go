@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 type fakeFormatAuth struct {

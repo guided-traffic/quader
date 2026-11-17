@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/remote"
+	"github.com/guided-traffic/quader/internal/formats/npm/remote"
 )
 
 // TestR_NPM_010_TheReadmeOfAVersionManifestIsWikiContent: with NoReadme a rendering leaves readme and readmeFilename out of every

@@ -3,9 +3,9 @@ package httpserver
 import (
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // This file holds the seam between the authentication stage (R-ARCH-005 step 6)
@@ -48,7 +48,7 @@ type AuthMethod string
 const (
 	// MethodNone is the anonymous request.
 	MethodNone AuthMethod = ""
-	// MethodAPIKey is a trove token in the NuGet API-key header X-NuGet-ApiKey,
+	// MethodAPIKey is a quader token in the NuGet API-key header X-NuGet-ApiKey,
 	// read only on a route that declares it (R-AUTH-033, Q-AUTH-186). The audit
 	// records it as api_key; the request log and the metrics name it nuget_apikey.
 	MethodAPIKey AuthMethod = "api_key"
@@ -63,14 +63,14 @@ const (
 	MethodSession AuthMethod = "session"
 )
 
-// TokenType is the type of a trove token, from its prefix (R-AUTH-022).
+// TokenType is the type of a quader token, from its prefix (R-AUTH-022).
 type TokenType string
 
 // The token types.
 const (
-	TokenPAT TokenType = "pat" // trv_pat_, personal access token
-	TokenSAT TokenType = "sat" // trv_sat_, service-account token
-	TokenCIT TokenType = "cit" // trv_cit_, CI token
+	TokenPAT TokenType = "pat" // qdr_pat_, personal access token
+	TokenSAT TokenType = "sat" // qdr_sat_, service-account token
+	TokenCIT TokenType = "cit" // qdr_cit_, CI token
 )
 
 // GroupRef names a group the caller belongs to.
@@ -105,7 +105,7 @@ type Credential struct {
 	// Registry is the grant of a registry token (R-OCI-005), nil for every other
 	// credential: a further ceiling below /v2/ that the registry root checks before
 	// the decision point. With it, TokenID, TokenType and Scope are those of the
-	// trove token the registry token was issued for (none for an anonymous one).
+	// quader token the registry token was issued for (none for an anonymous one).
 	Registry *RegistryGrant
 }
 
@@ -182,7 +182,7 @@ type Principal struct {
 	// principal cache (R-AUTH-044); false for every principal that is no user. It makes the caller not internal
 	// (R-AUTHZ-030).
 	External bool
-	// MinEpoch is the value of the request header Trove-Authz-Min-Epoch of an
+	// MinEpoch is the value of the request header Quader-Authz-Min-Epoch of an
 	// authenticated request, 0 when absent or anonymous (R-AUTHZ-032). The
 	// composition root fills it after authentication succeeded.
 	MinEpoch int64

@@ -60,7 +60,7 @@ func TestOCIRanges(t *testing.T) {
 }
 
 func TestOCIEnvironment(t *testing.T) {
-	l := mustLoad(t, Options{Environ: servableEnv("TROVE_OCI_TOKEN_LIFETIME=600s"), Command: CommandServe})
+	l := mustLoad(t, Options{Environ: servableEnv("QUADER_OCI_TOKEN_LIFETIME=600s"), Command: CommandServe})
 	if l.Config.OCI.TokenLifetime != 600*time.Second || l.Sources["oci.token_lifetime"].Kind != "env" {
 		t.Errorf("token_lifetime = %s, source = %+v", l.Config.OCI.TokenLifetime, l.Sources["oci.token_lifetime"])
 	}

@@ -19,10 +19,10 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
-// newOTLPExporter builds the span exporter of tracing.protocol. Unset trove keys
+// newOTLPExporter builds the span exporter of tracing.protocol. Unset quader keys
 // fall back to the standard OTEL_EXPORTER_OTLP_* variables, which the exporters
 // read themselves.
 func newOTLPExporter(ctx context.Context, cfg config.Tracing) (sdktrace.SpanExporter, error) {

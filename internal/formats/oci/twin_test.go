@@ -13,9 +13,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 )
 
 // twin is the in-memory twin of the data port for the tests of the handlers: the rows of the manifests a push wrote, the references,

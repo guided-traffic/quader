@@ -11,11 +11,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func openBackupStore(t *testing.T) (*backup.PGStore, *pgx.Conn) {
@@ -31,7 +31,7 @@ func openBackupStore(t *testing.T) (*backup.PGStore, *pgx.Conn) {
 }
 
 func newRun(id string, op backup.Operation, lease time.Duration) backup.NewRun {
-	return backup.NewRun{ID: id, Operation: op, Trigger: backup.TriggerManual, Target: "s3://b/p", Pod: "pod-" + id[:4], TroveVersion: "0.1.0", Lease: lease}
+	return backup.NewRun{ID: id, Operation: op, Trigger: backup.TriggerManual, Target: "s3://b/p", Pod: "pod-" + id[:4], QuaderVersion: "0.1.0", Lease: lease}
 }
 
 const (
@@ -110,7 +110,7 @@ func TestBackupRunStore(t *testing.T) {
 		if err := store.Heartbeat(ctx, runA, backup.StateStarting, backup.Progress{Phase: "copying", BlobsCopied: 3}, nil, true, time.Minute); err != nil {
 			t.Fatal(err)
 		}
-		mustExec(t, admin, "UPDATE trove.backup_run SET lease_expires_at = now() - interval '1 minute' WHERE id = $1", runA)
+		mustExec(t, admin, "UPDATE quader.backup_run SET lease_expires_at = now() - interval '1 minute' WHERE id = $1", runA)
 		b, err := store.Begin(ctx, newRun(runB, backup.OpCreate, time.Minute))
 		if err != nil {
 			t.Fatalf("Begin B after A's lease expired: %v", err)
@@ -179,33 +179,33 @@ func TestStorageUsageRecount(t *testing.T) {
 		for i := range sum {
 			sum[i] = b
 		}
-		mustExec(t, admin, `INSERT INTO trove.blobs (sha256, sha1, md5, sha512, size, state) VALUES ($1, $2, $3, $4, $5, $6)`,
+		mustExec(t, admin, `INSERT INTO quader.blobs (sha256, sha1, md5, sha512, size, state) VALUES ($1, $2, $3, $4, $5, $6)`,
 			sum, make([]byte, 20), make([]byte, 16), make([]byte, 64), size, state)
 		return sum
 	}
-	mustExec(t, admin, `INSERT INTO trove.repositories (key, format, class, project_id) VALUES ('raw-local', 'raw', 'local', (SELECT id FROM trove.project WHERE key = 'it'))`)
-	repo := scalar[int64](t, admin, `SELECT id FROM trove.repositories WHERE key = 'raw-local'`)
+	mustExec(t, admin, `INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('raw-local', 'raw', 'local', (SELECT id FROM quader.project WHERE key = 'it'))`)
+	repo := scalar[int64](t, admin, `SELECT id FROM quader.repositories WHERE key = 'raw-local'`)
 	live := blob(1, 100, "live")
 	blob(2, 50, "live")
-	mustExec(t, admin, `INSERT INTO trove.items (repo_id, path, parent_path, kind, blob_sha256, size) VALUES ($1, 'a', '', 'file', $2, 100)`, repo, live)
-	mustExec(t, admin, `INSERT INTO trove.items (repo_id, path, parent_path, kind, explicit_folder) VALUES ($1, 'd', '', 'folder', true)`, repo)
+	mustExec(t, admin, `INSERT INTO quader.items (repo_id, path, parent_path, kind, blob_sha256, size) VALUES ($1, 'a', '', 'file', $2, 100)`, repo, live)
+	mustExec(t, admin, `INSERT INTO quader.items (repo_id, path, parent_path, kind, explicit_folder) VALUES ($1, 'd', '', 'folder', true)`, repo)
 	// A restore loads with the user triggers disabled and drops unreferenced blob rows, so the folded counters lie.
-	mustExec(t, admin, `UPDATE trove.storage_usage_totals SET physical_bytes = 12345, blobs = 99`)
-	mustExec(t, admin, `INSERT INTO trove.repository_usage (repo_id, logical_bytes, files, folders) VALUES ($1, 7, 7, 7) ON CONFLICT (repo_id) DO UPDATE SET logical_bytes = 7`, repo)
+	mustExec(t, admin, `UPDATE quader.storage_usage_totals SET physical_bytes = 12345, blobs = 99`)
+	mustExec(t, admin, `INSERT INTO quader.repository_usage (repo_id, logical_bytes, files, folders) VALUES ($1, 7, 7, 7) ON CONFLICT (repo_id) DO UPDATE SET logical_bytes = 7`, repo)
 
 	t.Run("R-STOR-047 storage_usage_recount recomputes the folded counters and empties the deltas", func(t *testing.T) {
-		mustExec(t, admin, `SELECT trove.storage_usage_recount()`)
-		if n := scalar[int](t, admin, `SELECT count(*) FROM trove.storage_usage_deltas`); n != 0 {
+		mustExec(t, admin, `SELECT quader.storage_usage_recount()`)
+		if n := scalar[int](t, admin, `SELECT count(*) FROM quader.storage_usage_deltas`); n != 0 {
 			t.Fatalf("%d delta rows left", n)
 		}
-		l := scalar[int64](t, admin, `SELECT logical_bytes FROM trove.repository_usage WHERE repo_id = $1`, repo)
-		f := scalar[int64](t, admin, `SELECT files FROM trove.repository_usage WHERE repo_id = $1`, repo)
-		fo := scalar[int64](t, admin, `SELECT folders FROM trove.repository_usage WHERE repo_id = $1`, repo)
+		l := scalar[int64](t, admin, `SELECT logical_bytes FROM quader.repository_usage WHERE repo_id = $1`, repo)
+		f := scalar[int64](t, admin, `SELECT files FROM quader.repository_usage WHERE repo_id = $1`, repo)
+		fo := scalar[int64](t, admin, `SELECT folders FROM quader.repository_usage WHERE repo_id = $1`, repo)
 		if l != 100 || f != 1 || fo != 1 {
 			t.Fatalf("repository_usage = %d bytes, %d files, %d folders", l, f, fo)
 		}
-		p := scalar[int64](t, admin, `SELECT physical_bytes FROM trove.storage_usage_totals`)
-		b := scalar[int64](t, admin, `SELECT blobs FROM trove.storage_usage_totals`)
+		p := scalar[int64](t, admin, `SELECT physical_bytes FROM quader.storage_usage_totals`)
+		b := scalar[int64](t, admin, `SELECT blobs FROM quader.storage_usage_totals`)
 		if p != 150 || b != 2 {
 			t.Fatalf("storage_usage_totals = %d bytes, %d blobs", p, b)
 		}
@@ -216,23 +216,23 @@ func TestBackupRoleGrants(t *testing.T) {
 	st := getStack(t)
 	name, admin := st.newDatabase(t)
 	cfg := st.config(t, name)
-	role := "trove_backup_" + testenv.RandHex(4)
+	role := "quader_backup_" + testenv.RandHex(4)
 	maint := st.admin(t, "postgres")
 	mustExec(t, maint, "CREATE ROLE "+role+" LOGIN PASSWORD 'x'")
 	t.Cleanup(func() {
 		_, _ = admin.Exec(context.Background(), "DROP OWNED BY "+role)
 		_, _ = maint.Exec(context.Background(), "DROP ROLE IF EXISTS "+role)
 	})
-	mustExec(t, admin, "CREATE SCHEMA IF NOT EXISTS trove")
-	mustExec(t, admin, "GRANT USAGE ON SCHEMA trove TO "+role)
+	mustExec(t, admin, "CREATE SCHEMA IF NOT EXISTS quader")
+	mustExec(t, admin, "GRANT USAGE ON SCHEMA quader TO "+role)
 
-	t.Run("R-BAK-015 trove migrate grants the backup role what the backup pod needs, and nothing else", func(t *testing.T) {
+	t.Run("R-BAK-015 quader migrate grants the backup role what the backup pod needs, and nothing else", func(t *testing.T) {
 		cfg.BackupRole = role
 		if _, err := postgres.Migrate(ctxT(t, 60*time.Second), cfg, opts(nil)); err != nil {
 			t.Fatalf("migrate: %v", err)
 		}
 		can := func(table, priv string) bool {
-			return scalar[bool](t, admin, "SELECT has_table_privilege($1, $2, $3)", role, "trove."+table, priv)
+			return scalar[bool](t, admin, "SELECT has_table_privilege($1, $2, $3)", role, "quader."+table, priv)
 		}
 		for _, c := range []struct {
 			table, priv string
@@ -254,19 +254,19 @@ func TestBackupRoleGrants(t *testing.T) {
 			}
 		}
 		// The backup writes its audit events through the function and not through INSERT (Q-BAK-50).
-		if !scalar[bool](t, admin, "SELECT has_function_privilege($1, 'trove.backup_record_event(text, text, text, text, jsonb)', 'EXECUTE')", role) {
+		if !scalar[bool](t, admin, "SELECT has_function_privilege($1, 'quader.backup_record_event(text, text, text, text, jsonb)', 'EXECUTE')", role) {
 			t.Error("EXECUTE on backup_record_event() = false, want true")
 		}
 		// A table the owner creates later is readable at once (the monthly audit partitions, R-OPS-015).
-		mustExec(t, admin, "CREATE TABLE trove.zz_later (id int)")
+		mustExec(t, admin, "CREATE TABLE quader.zz_later (id int)")
 		if !can("zz_later", "SELECT") {
 			t.Error("a table created after the run is not readable by the backup role")
 		}
 	})
 	t.Run("R-BAK-015 a configured backup role that does not exist stops the run and names it", func(t *testing.T) {
-		cfg.BackupRole = "trove_no_such_role"
+		cfg.BackupRole = "quader_no_such_role"
 		_, err := postgres.Migrate(ctxT(t, 60*time.Second), cfg, opts(nil))
-		if err == nil || !strings.Contains(err.Error(), "trove_no_such_role") {
+		if err == nil || !strings.Contains(err.Error(), "quader_no_such_role") {
 			t.Fatalf("err = %v", err)
 		}
 	})

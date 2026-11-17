@@ -1,6 +1,6 @@
 # Stored-secret encryption
 
-Package [internal/secrets](../../internal/secrets) seals the secrets that trove stores in PostgreSQL to reach
+Package [internal/secrets](../../internal/secrets) seals the secrets that Quader stores in PostgreSQL to reach
 other systems (upstream credentials, webhook secrets, outbound proxy passwords). Requirements: R-ARCH-021,
 R-HA-027, Q-HA-8 in [architecture.md](../spec/architecture.md) and [ha-and-helm.md](../spec/ha-and-helm.md).
 User-visible secrets of other kinds (tokens, passwords of principals) are hashed, not sealed, and are not part
@@ -25,8 +25,8 @@ of this package.
   file of any other size that is not base64 is refused. The file name without
   `.key` is the key ID, which must match `[A-Za-z0-9][A-Za-z0-9._-]{0,63}` (no `:`; it sits in the envelope).
 - Create one by hand: `head -c 32 /dev/urandom | base64 > 2026-10.key`, or as a Secret:
-  `kubectl -n trove create secret generic trove-encryption-keys --from-file=2026-10.key=<(head -c 32 /dev/urandom | base64)`.
-- There is no default key and no generated key. `Load` fails, and `trove serve` stops, when the list is empty,
+  `kubectl -n quader create secret generic quader-encryption-keys --from-file=2026-10.key=<(head -c 32 /dev/urandom | base64)`.
+- There is no default key and no generated key. `Load` fails, and `quader serve` stops, when the list is empty,
   a file is missing, unreadable, neither 32 raw bytes nor base64 of 32 bytes, a key ID is listed twice, or the active key is
   not in the ring. The messages name the file or ID and never print key material.
 - The ring is immutable after `Load`; a key change is a roll-out (the chart's pod checksum rolls the pods).
@@ -34,7 +34,7 @@ of this package.
 `ring.Status()` returns the key IDs, the active ID and which keys are loaded. `ring.StatusWithCounts(ctx, counter)`
 adds the sealed values per key ID over every registered column; the PostgreSQL layer implements
 `ValueCounter`. A key ID that values reference but the ring lacks is listed with `loaded: false`. Both the
-future `trove admin secrets status` and `GET /api/v1/system/encryption` (M1) call these; neither may add key
+future `quader admin secrets status` and `GET /api/v1/system/encryption` (M1) call these; neither may add key
 material, fingerprints, ciphertext or plaintext. `KeyRing` implements `String` and `LogValue` with key IDs only.
 
 ## Envelope
@@ -44,7 +44,7 @@ v1:<key id>:<base64(nonce ‖ ciphertext ‖ tag)>
 ```
 
 AES-256-GCM, random 96-bit nonce per seal. The additional authenticated data binds the value to its place:
-the literal `trove/sealed/v1`, the table and the column, each length-prefixed (uvarint), then the number of
+the literal `quader/sealed/v1`, the table and the column, each length-prefixed (uvarint), then the number of
 row-key parts and each part, length-prefixed. A row is named by `secrets.Row(parts...)`, one part per primary
 key column in the registered order, so the parts are never joined into one string: `Row("a:b", "c")` and
 `Row("a", "b:c")` are different rows with different AAD. A database writer who moves a ciphertext to another
@@ -118,7 +118,7 @@ canary column is not in the registry of user secrets, so it never counts as a se
 ## Fingerprints
 
 `ring.Fingerprint(value)` is HMAC-SHA-256 under a key derived with HKDF-SHA-256 from the active key (info
-`trove fingerprint v1`), for configuration-as-code diffs. After a rotation of the active key every fingerprint
+`quader fingerprint v1`), for configuration-as-code diffs. After a rotation of the active key every fingerprint
 changes once.
 
 ## What is deliberately not here

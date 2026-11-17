@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/login"
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/oidc"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/api/login"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/oidc"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // The login area (WP1.1) is two areas, both on the replicas that serve the client

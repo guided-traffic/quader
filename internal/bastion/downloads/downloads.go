@@ -12,13 +12,13 @@ package downloads
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // Buffer is the download event buffer of a replica.
 type Buffer interface {
 	// Add appends an event, or drops it when the buffer is full: the drop is counted in
-	// trove_bastion_audit_events_dropped_total and reported in the next batch's dropped member (R-BAS-039).
+	// quader_bastion_audit_events_dropped_total and reported in the next batch's dropped member (R-BAS-039).
 	// It never blocks the request that serves the download.
 	Add(e iface.DownloadEvent)
 	// SetEnabled follows recordDownloads of the handshake (R-BAS-010): while false, Add discards without

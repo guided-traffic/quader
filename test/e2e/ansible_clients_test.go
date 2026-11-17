@@ -17,8 +17,8 @@ import (
 // The client pods of the Ansible acceptance tests (R-ANS-032, Q-ANS-23, Q-ANS-49): deploy/dev/ansible-clients.yaml holds the pod (a real
 // ansible-galaxy of the pinned release on the pinned Python, curl, a forwarder on 127.0.0.1:<edge port>, the dev CA trusted through
 // SSL_CERT_FILE), test/e2e/ansibleclients builds the two images, and deploy/dev/e2e.sh (marker F0 ansible) starts the pods
-// trove-e2e-ansible-<image> in the namespace trove-e2e-ansible. The tests run the clients through `kubectl exec`, every command in a clean
-// home (trove-clean), so that no ansible.cfg, ~/.netrc or collection of an earlier scenario reaches it.
+// quader-e2e-ansible-<image> in the namespace quader-e2e-ansible. The tests run the clients through `kubectl exec`, every command in a clean
+// home (quader-clean), so that no ansible.cfg, ~/.netrc or collection of an earlier scenario reaches it.
 
 // ansibleImage is one of the two clients: the pins in tools/versions.env that name it and what the image must run.
 type ansibleImage struct {
@@ -38,9 +38,9 @@ var (
 // ansiblePod returns the name of the pod of an image; a missing setting is a failure, never a skip.
 func ansiblePod(t testing.TB, img ansibleImage) string {
 	t.Helper()
-	prefix := os.Getenv("TROVE_E2E_ANSIBLE_CLIENTS_POD_PREFIX")
+	prefix := os.Getenv("QUADER_E2E_ANSIBLE_CLIENTS_POD_PREFIX")
 	if prefix == "" {
-		t.Fatal("TROVE_E2E_ANSIBLE_CLIENTS_POD_PREFIX is not set; run `deploy/dev/e2e.sh ansible-clients`")
+		t.Fatal("QUADER_E2E_ANSIBLE_CLIENTS_POD_PREFIX is not set; run `deploy/dev/e2e.sh ansible-clients`")
 	}
 	return prefix + img.name
 }
@@ -48,9 +48,9 @@ func ansiblePod(t testing.TB, img ansibleImage) string {
 // ansibleClientsNamespace is the namespace of the client pods (Pod Security level baseline).
 func ansibleClientsNamespace(t testing.TB) string {
 	t.Helper()
-	ns := os.Getenv("TROVE_E2E_ANSIBLE_CLIENTS_NAMESPACE")
+	ns := os.Getenv("QUADER_E2E_ANSIBLE_CLIENTS_NAMESPACE")
 	if ns == "" {
-		t.Fatal("TROVE_E2E_ANSIBLE_CLIENTS_NAMESPACE is not set; run `deploy/dev/e2e.sh ansible-clients`")
+		t.Fatal("QUADER_E2E_ANSIBLE_CLIENTS_NAMESPACE is not set; run `deploy/dev/e2e.sh ansible-clients`")
 	}
 	return ns
 }
@@ -71,7 +71,7 @@ func ansibleKubectl(t testing.TB, timeout time.Duration, args ...string) (string
 // (both streams) and the error of a non-zero exit.
 func ansibleTry(t testing.TB, img ansibleImage, env []string, script string) (string, error) {
 	t.Helper()
-	argv := []string{"exec", "-c", "ansible", ansiblePod(t, img), "--", "trove-clean", "env"}
+	argv := []string{"exec", "-c", "ansible", ansiblePod(t, img), "--", "quader-clean", "env"}
 	argv = append(argv, env...)
 	argv = append(argv, "sh", "-c", script)
 	return ansibleKubectl(t, 15*time.Minute, argv...)
@@ -107,7 +107,7 @@ func TestAnsibleClients(t *testing.T) {
 
 		// The base URL of the setup snippets is https://localhost:<port>/api/ansible/... The forwarder in the pod carries it to the cluster; the
 		// client verifies the edge's certificate for `localhost` with the dev CA of SSL_CERT_FILE. Any HTTP status proves that the handshake
-		// passed; a failed verification is a certificate error and never reaches trove.
+		// passed; a failed verification is a certificate error and never reaches quader.
 		t.Run("R-ANS-032 "+img.name+" verifies the edge's certificate with the dev CA", func(t *testing.T) {
 			script := fmt.Sprintf(`python3 -c 'import sys, urllib.error, urllib.request
 try:

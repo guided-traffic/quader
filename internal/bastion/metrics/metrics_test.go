@@ -29,7 +29,7 @@ func specNames(t *testing.T) []string {
 		table = table[:end]
 	}
 	seen := map[string]bool{}
-	for _, m := range regexp.MustCompile("`(trove_bastion_[a-z_]+)`").FindAllStringSubmatch(table, -1) {
+	for _, m := range regexp.MustCompile("`(quader_bastion_[a-z_]+)`").FindAllStringSubmatch(table, -1) {
 		seen[m[1]] = true
 	}
 	out := make([]string, 0, len(seen))

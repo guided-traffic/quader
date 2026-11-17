@@ -10,7 +10,7 @@ import (
 
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
 )
 
 type lineWriter struct {

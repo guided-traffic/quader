@@ -11,17 +11,17 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection"
-	"github.com/guided-traffic/trove/internal/formats/ansible/galaxydoc"
-	"github.com/guided-traffic/trove/internal/formats/ansible/version"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
+	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
+	"github.com/guided-traffic/quader/internal/formats/ansible/version"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The remote class's registration and its handlers (R-ANS-016 to R-ANS-018, R-ANS-020). The documents are rendered from the upstream
 // documents the engine keeps (fresh, refreshed or stale); the stored bytes are never altered (R-ANS-017). What a response says
-// about the archives and the roles is trove's own address, so nothing of the upstream's addresses reaches a client.
+// about the archives and the roles is quader's own address, so nothing of the upstream's addresses reaches a client.
 func init() {
 	registerClass(formats.Remote, func(f *Format) { f.remote = remoteAdapter{f: f} })
 	for route, h := range map[string]func(*Format) formats.HandlerFunc{
@@ -214,7 +214,7 @@ func (f *Format) remoteCollection(ctx context.Context, rq *formats.Request, w ht
 
 // remoteVersions answers the version list (R-ANS-004, R-ANS-017, Q-ANS-12). The upstream's list is stored in pages of the size the
 // upstream answers (100 at most), one document each; the page of the request is cut from the stored pages that cover its range, and
-// the count and the links are trove's.
+// the count and the links are quader's.
 func (f *Format) remoteVersions(ctx context.Context, rq *formats.Request, w http.ResponseWriter) error {
 	ns, name, err := remoteCollectionOf(rq)
 	if err != nil {
@@ -337,7 +337,7 @@ func (f *Format) remoteVersion(ctx context.Context, rq *formats.Request, w http.
 		}
 		v, _, err := galaxydoc.ParseUpstreamVersion(raw)
 		if err != nil {
-			return nil, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a version document that trove cannot use: "+err.Error()+".", errs.WithCause(err))
+			return nil, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a version document that Quader cannot use: "+err.Error()+".", errs.WithCause(err))
 		}
 		v.Namespace, v.Name, v.Filename = ns, name, collection.FileName(ns, name, ver)
 		if found {

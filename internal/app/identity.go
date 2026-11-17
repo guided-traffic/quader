@@ -16,14 +16,14 @@ type Identity struct {
 	UID string
 	// Role is web, worker or all.
 	Role string
-	// Node is the Kubernetes node name (TROVE_NODE_NAME); empty outside Kubernetes.
+	// Node is the Kubernetes node name (QUADER_NODE_NAME); empty outside Kubernetes.
 	Node string
-	// Pool is the pool name of a further split (TROVE_POOL_NAME); empty otherwise.
+	// Pool is the pool name of a further split (QUADER_POOL_NAME); empty otherwise.
 	Pool string
 }
 
 // NewIdentity derives the identity from the environment. The instance name is
-// the first of TROVE_POD_NAME (what the chart sets from the downward API) and
+// the first of QUADER_POD_NAME (what the chart sets from the downward API) and
 // POD_NAME; HOSTNAME counts only inside Kubernetes (KUBERNETES_SERVICE_HOST is
 // set), where it is the pod name. Anywhere else it is "<hostname>-<pid>", so two
 // processes on one machine never share an instance name.
@@ -34,10 +34,10 @@ func NewIdentity(environ []string, role string) Identity {
 			env[k] = v
 		}
 	}
-	id := Identity{Role: role, Node: env["TROVE_NODE_NAME"], Pool: env["TROVE_POOL_NAME"], UID: randomUID()}
+	id := Identity{Role: role, Node: env["QUADER_NODE_NAME"], Pool: env["QUADER_POOL_NAME"], UID: randomUID()}
 	switch {
-	case env["TROVE_POD_NAME"] != "":
-		id.Instance = env["TROVE_POD_NAME"]
+	case env["QUADER_POD_NAME"] != "":
+		id.Instance = env["QUADER_POD_NAME"]
 	case env["POD_NAME"] != "":
 		id.Instance = env["POD_NAME"]
 	case env["KUBERNETES_SERVICE_HOST"] != "" && env["HOSTNAME"] != "":
@@ -48,7 +48,7 @@ func NewIdentity(environ []string, role string) Identity {
 			host = h
 		}
 		if host == "" {
-			host = "trove"
+			host = "quader"
 		}
 		id.Instance = fmt.Sprintf("%s-%d", host, os.Getpid())
 	}

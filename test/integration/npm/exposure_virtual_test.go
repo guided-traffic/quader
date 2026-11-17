@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // The endpoint fixture of R-EP-012 on a VIRTUAL repository with a remote member
@@ -43,12 +43,12 @@ func TestR_EP_018_ACustomersEndpointOnAVirtualRepositoryWithARemoteMember(t *tes
 	if a.Status != http.StatusCreated {
 		t.Fatalf("create the rule: %d %s", a.Status, a.Body)
 	}
-	epoch := a.Header.Get("Trove-Authz-Min-Epoch")
+	epoch := a.Header.Get("Quader-Authz-Min-Epoch")
 	if epoch == "" {
-		epoch = a.Header.Get("Trove-Authz-Epoch")
+		epoch = a.Header.Get("Quader-Authz-Epoch")
 	}
 	onCustomers := func(path string) testenv.Answer {
-		return r.st.DoAt(rep.Addr("customers"), customersHost, http.MethodGet, "/api/npm/it/"+rCustomers+"/"+path, r.acmeSAT, nil, "Trove-Authz-Min-Epoch", epoch)
+		return r.st.DoAt(rep.Addr("customers"), customersHost, http.MethodGet, "/api/npm/it/"+rCustomers+"/"+path, r.acmeSAT, nil, "Quader-Authz-Min-Epoch", epoch)
 	}
 	onDefault := func(path string) testenv.Answer {
 		return r.st.Do(rep, http.MethodGet, "/api/npm/it/"+rCustomers+"/"+path, r.tokA, nil)
@@ -83,7 +83,7 @@ func TestR_EP_018_ACustomersEndpointOnAVirtualRepositoryWithARemoteMember(t *tes
 	t.Run("R-NPM-048 a document lists what is exposed, latest moves, and URLs are the endpoint's", func(t *testing.T) {
 		r.stub.Reset()
 		for _, accept := range []string{"application/json", abbreviatedAccept} {
-			a := r.st.DoAt(rep.Addr("customers"), customersHost, http.MethodGet, "/api/npm/it/"+rCustomers+"/"+p.Name, r.acmeSAT, nil, "Trove-Authz-Min-Epoch", epoch, "Accept", accept)
+			a := r.st.DoAt(rep.Addr("customers"), customersHost, http.MethodGet, "/api/npm/it/"+rCustomers+"/"+p.Name, r.acmeSAT, nil, "Quader-Authz-Min-Epoch", epoch, "Accept", accept)
 			if a.Status != 200 {
 				t.Fatalf("%s: %d %.300s %v", accept, a.Status, a.Body, a.Header)
 			}
@@ -95,7 +95,7 @@ func TestR_EP_018_ACustomersEndpointOnAVirtualRepositoryWithARemoteMember(t *tes
 				t.Fatalf("%s: dist-tags %v", accept, tags)
 			}
 			body := string(a.Body)
-			for _, secret := range []string{rRemote, rLocal, "Trove-Resolved-From", r.run.Addr, testenv.DefaultHost} {
+			for _, secret := range []string{rRemote, rLocal, "Quader-Resolved-From", r.run.Addr, testenv.DefaultHost} {
 				if strings.Contains(body, secret) {
 					t.Fatalf("%s: the body names %q: %.300s", accept, secret, body)
 				}
@@ -134,8 +134,8 @@ func TestR_EP_018_ACustomersEndpointOnAVirtualRepositoryWithARemoteMember(t *tes
 		if got.Status != 200 || integrityOf(got.Body) != p.Versions[p.Find(shown)].Dist.Integrity {
 			t.Fatalf("exposed cached version: %d", got.Status)
 		}
-		if got.Header.Get("Trove-Resolved-From") != "" || got.Header.Get("Cache-Status") != "" {
-			t.Errorf("Trove-Resolved-From = %q, Cache-Status = %q on an endpoint with rules", got.Header.Get("Trove-Resolved-From"), got.Header.Get("Cache-Status"))
+		if got.Header.Get("Quader-Resolved-From") != "" || got.Header.Get("Cache-Status") != "" {
+			t.Errorf("Quader-Resolved-From = %q, Cache-Status = %q on an endpoint with rules", got.Header.Get("Quader-Resolved-From"), got.Header.Get("Cache-Status"))
 		}
 		for _, v := range []string{hidden, other} {
 			if a := onCustomers(file(v)); a.Status != 404 {
@@ -143,7 +143,7 @@ func TestR_EP_018_ACustomersEndpointOnAVirtualRepositoryWithARemoteMember(t *tes
 			}
 		}
 		// default caches the hidden-on-customers version; customers still does not serve it.
-		if d := r.install(rep, "http://trove.test/api/npm/it/"+rCustomers+"/"+file(hidden), r.tokA); d.Status != 200 {
+		if d := r.install(rep, "http://quader.test/api/npm/it/"+rCustomers+"/"+file(hidden), r.tokA); d.Status != 200 {
 			t.Fatalf("default install of the version customers hides: %d", d.Status)
 		}
 		if a := onCustomers(file(hidden)); a.Status != 404 {

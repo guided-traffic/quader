@@ -23,7 +23,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 // tokenEnv is the environment variable that carries the control token.

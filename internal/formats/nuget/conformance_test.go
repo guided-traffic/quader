@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // nugetChanges are the writes of check 9: every hook and every route that changes package
@@ -178,7 +178,7 @@ func conformance(f *Format) formattest.Fixture {
 		Host: func() formattest.HostOptions {
 			return formattest.HostOptions{
 				Data: newDocStore(),
-				// The vulnerability information is served while trove's NuGet data is complete (R-VULN-018).
+				// The vulnerability information is served while quader's NuGet data is complete (R-VULN-018).
 				Vulnerabilities: newScanning(),
 				// The push reads the shadowing verdict, and the search and the documents the scope of the caller, which is
 				// the kit's: its Allow (R-AUTHZ-016, Q-AUTHZ-255).
@@ -222,7 +222,7 @@ func conformance(f *Format) formattest.Fixture {
 			{Name: "registration index of two versions", Path: feed("registration-semver2/acme.widgets/index.json"), Seed: seedTwoWidgets},
 			{Name: "search", Path: feed("search")},
 			{Name: "vulnerability index", Path: feed("vulnerabilities/index.json")},
-			{Name: "vulnerability page", Path: feed("vulnerabilities/trove.json")},
+			{Name: "vulnerability page", Path: feed("vulnerabilities/quader.json")},
 			{Name: "autocomplete", Path: feed("autocomplete"), Status: notBuilt},
 			{Name: "symbols", Path: feed("symbols/acme.widgets.pdb/0123456789abcdef0123456789abcdefFFFFFFFF/acme.widgets.pdb"), Status: notBuilt},
 		},
@@ -246,7 +246,7 @@ func conformance(f *Format) formattest.Fixture {
 			Package:  "view.sample",
 			Seed:     seedVersions("view.sample", "1.0.0", "1.10.0", "1.2.0", "2.0.0-beta.1", "2.0.0"),
 		},
-		OptionNames: []string{"--password", "--store-password-in-clear-text", "-Password", "ClearTextPassword", "TROVE_TOKEN"},
+		OptionNames: []string{"--password", "--store-password-in-clear-text", "-Password", "ClearTextPassword", "QUADER_TOKEN"},
 		Remote:      remoteFixture(),
 		Merge:       mergeFixture(),
 		Discovery:   discoveryFixture(),

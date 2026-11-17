@@ -1,10 +1,10 @@
 # Upgrades
 
-This page explains how trove versions its releases, what an upgrade can and cannot keep before the first stable release, how to upgrade an installation with Helm, how the database migrations run during an upgrade, which corrections of stored data run afterwards, what to check afterwards, and which parts of the upgrade path are not verified yet.
+This page explains how Quader versions its releases, what an upgrade can and cannot keep before the first stable release, how to upgrade an installation with Helm, how the database migrations run during an upgrade, which corrections of stored data run afterwards, what to check afterwards, and which parts of the upgrade path are not verified yet.
 
 ## Versions and release notes
 
-trove is released from its main branch by an automated pipeline that derives the version from the commit messages:
+Quader is released from its main branch by an automated pipeline that derives the version from the commit messages:
 
 | Change in the release | Version step |
 |---|---|
@@ -12,13 +12,13 @@ trove is released from its main branch by an automated pipeline that derives the
 | A new feature | minor, for example `0.5.1` to `0.6.0` |
 | A breaking change | minor as well, while the major version is 0 |
 
-trove is pre-1.0 and stays on major version 0 until a 1.0 release is decided. Under major version 0 a minor release can contain a breaking change, such as a renamed configuration key or a changed default. The release notes, generated from the same commit messages, list breaking changes in a section of their own. Read the notes of every release between your version and the target on the [releases page](https://github.com/guided-traffic/trove/releases) before you upgrade. Automated dependency updates are released as patch releases.
+Quader is pre-1.0 and stays on major version 0 until a 1.0 release is decided. Under major version 0 a minor release can contain a breaking change, such as a renamed configuration key or a changed default. The release notes, generated from the same commit messages, list breaking changes in a section of their own. Read the notes of every release between your version and the target on the [releases page](https://github.com/guided-traffic/quader/releases) before you upgrade. Automated dependency updates are released as patch releases.
 
-The image `docker.io/guidedtraffic/trove` and the Helm chart carry the same version as the release. A chart installs the image of its own version unless you set `image.tag` or `image.digest`, so upgrading the chart upgrades trove.
+The image `docker.io/guidedtraffic/quader` and the Helm chart carry the same version as the release. A chart installs the image of its own version unless you set `image.tag` or `image.digest`, so upgrading the chart upgrades Quader.
 
 ## Before the first stable release
 
-trove is pre-alpha, and until its first stable release it keeps no backward compatibility. Plan every upgrade with this in mind:
+Quader is pre-alpha, and until its first stable release it keeps no backward compatibility. Plan every upgrade with this in mind:
 
 - **An upgrade may require a fresh database.** A release may change a migration that an earlier release already applied. The migration Job then refuses your database with `migration <name>.sql was changed after this database applied it (checksum mismatch)`, applies nothing, and `helm upgrade` fails while the old pods keep serving. The way forward is a new, empty database for the new release; the data of the old one is not carried over.
 - **No rollback is supported.** Once the migration Job of the new release has run, nothing guarantees that the previous release works against the schema it left. `helm rollback` is not a way back; the backup you took before the upgrade is (see [Rolling back](#rolling-back)).
@@ -30,52 +30,52 @@ This ends with the first stable release.
 ## Before you upgrade
 
 1. Read the release notes, as above, and adjust your values file to any renamed or removed key.
-2. Back up the PostgreSQL database with the tools of your database platform, such as the backups of [CloudNativePG](https://cloudnative-pg.io/documentation/). Migrations are not reversible. trove's own backup ([Backups](operations.md#backups)) restores into a new, empty installation and is no rollback of an upgrade, so back up the database here as well. The object store needs no extra step: migrations do not touch it.
+2. Back up the PostgreSQL database with the tools of your database platform, such as the backups of [CloudNativePG](https://cloudnative-pg.io/documentation/). Migrations are not reversible. Quader's own backup ([Backups](operations.md#backups)) restores into a new, empty installation and is no rollback of an upgrade, so back up the database here as well. The object store needs no extra step: migrations do not touch it.
 3. Check that the new chart accepts your values. Rendering runs the chart's schema and its checks without changing anything:
 
    ```shell
-   helm repo update trove
-   helm search repo trove/trove --versions
-   helm template trove trove/trove -n trove -f values.yaml --version <version> > /dev/null   # example: the target version
+   helm repo update quader
+   helm search repo quader/quader --versions
+   helm template quader quader/quader -n quader -f values.yaml --version <version> > /dev/null   # example: the target version
    ```
 
    This does not check the keys inside `config`; the new binary checks them when the migration Job starts (see below).
 4. Check the background data migrations of the running version. A migration of the target that removes stored data can depend on one of them; its release notes name it, and it must show `succeeded`:
 
    ```shell
-   curl -s -H "Authorization: Bearer $TROVE_TOKEN" https://trove.example.com/api/v1/system/migrations   # example: a token with settings:read and your base URL
+   curl -s -H "Authorization: Bearer $QUADER_TOKEN" https://quader.example.com/api/v1/system/migrations   # example: a token with settings:read and your base URL
    ```
 
    The answer lists each background migration under `background` with its `state` (`pending`, `running`, `failed` or `succeeded`), the rows it has `processed` and when it started. The migration Job of the target checks the same: it refuses such a migration while the background migration it depends on has not succeeded (exit status 3, nothing applied), and the previous version keeps serving. No migration of this version depends on a background migration.
 
 ## Upgrade from a release before the split into roles
 
-The releases before the split into `api` and `packages` ran one Deployment, `trove-web`, behind the Service `trove`. A Deployment cannot be renamed, and Helm applies a release in one pass, so one `helm upgrade` from that shape would leave the edge without a ready backend while the new pods start. An ingress controller also applies a removed backend sooner than a moved route, so an upgrade that moves the routes and removes the old Service at once answers `503` for a second or two. The upgrade therefore takes three steps, each of which either moves the edge or adds or removes backends, joined by the values `web.enabled` and `web.routed`:
+The releases before the split into `api` and `packages` ran one Deployment, `quader-web`, behind the Service `quader`. A Deployment cannot be renamed, and Helm applies a release in one pass, so one `helm upgrade` from that shape would leave the edge without a ready backend while the new pods start. An ingress controller also applies a removed backend sooner than a moved route, so an upgrade that moves the routes and removes the old Service at once answers `503` for a second or two. The upgrade therefore takes three steps, each of which either moves the edge or adds or removes backends, joined by the values `web.enabled` and `web.routed`:
 
-Before step 1, check what your installation admits by the pods' labels outside the chart: a NetworkPolicy of your PostgreSQL, Valkey and Sentinels, or of anything else trove calls, that selects `app.kubernetes.io/component: web` (and `worker`) must also select `api` and `packages`, or the new pods cannot reach the database and stay not ready. Keep `web` in it until step 3 is done. The same holds for labels your cluster-wide policies key on (`web.podLabels`): give `api.podLabels` and `packages.podLabels` the ones each role needs (`api` signs users in through the identity provider and reaches the object store for the UI's transfers; `packages` reaches the object store and the upstreams of remote repositories). Size the connection budget for steps 1 and 2 as well: `web`, `api` and `packages` run side by side, and the migration Job of step 1 refuses a PostgreSQL whose `max_connections` is below the budget the chart's NOTES print.
+Before step 1, check what your installation admits by the pods' labels outside the chart: a NetworkPolicy of your PostgreSQL, Valkey and Sentinels, or of anything else Quader calls, that selects `app.kubernetes.io/component: web` (and `worker`) must also select `api` and `packages`, or the new pods cannot reach the database and stay not ready. Keep `web` in it until step 3 is done. The same holds for labels your cluster-wide policies key on (`web.podLabels`): give `api.podLabels` and `packages.podLabels` the ones each role needs (`api` signs users in through the identity provider and reaches the object store for the UI's transfers; `packages` reaches the object store and the upstreams of remote repositories). Size the connection budget for steps 1 and 2 as well: `web`, `api` and `packages` run side by side, and the migration Job of step 1 refuses a PostgreSQL whose `max_connections` is below the budget the chart's NOTES print.
 
-1. `helm upgrade … --set web.enabled=true` with your values otherwise unchanged. The chart keeps `trove-web` (rolled to the new release) and the Service `trove`, and the edge keeps sending every host whole to it. The Deployments and Services of `api`, `packages` and `worker` start beside it. Wait until `kubectl -n trove rollout status` reports `trove-api` and `trove-packages` ready, and add the `api.*` and `packages.*` sizing you want.
-2. `helm upgrade … --set web.enabled=true --set web.routed=false`. The edge switches to the path routing onto the role Services, which have been ready since step 1, and a further endpoint's Service to the pods of its role. Nothing is removed: `trove-web` and the Service `trove` keep running, so a request the ingress controller still sends by the old route is served. If you route with your own Gateway API HTTPRoute instead of the chart's Ingress, move it to `trove-api` and `trove-packages` now. Move in-cluster callers from the Service `trove` to `trove-api` and `trove-packages`.
-3. `helm upgrade … --set web.enabled=false` (the default). Helm deletes `trove-web`, its endpoint pools and the Service `trove`, which no route names any more; their pods drain first.
+1. `helm upgrade … --set web.enabled=true` with your values otherwise unchanged. The chart keeps `quader-web` (rolled to the new release) and the Service `quader`, and the edge keeps sending every host whole to it. The Deployments and Services of `api`, `packages` and `worker` start beside it. Wait until `kubectl -n quader rollout status` reports `quader-api` and `quader-packages` ready, and add the `api.*` and `packages.*` sizing you want.
+2. `helm upgrade … --set web.enabled=true --set web.routed=false`. The edge switches to the path routing onto the role Services, which have been ready since step 1, and a further endpoint's Service to the pods of its role. Nothing is removed: `quader-web` and the Service `quader` keep running, so a request the ingress controller still sends by the old route is served. If you route with your own Gateway API HTTPRoute instead of the chart's Ingress, move it to `quader-api` and `quader-packages` now. Move in-cluster callers from the Service `quader` to `quader-api` and `quader-packages`.
+3. `helm upgrade … --set web.enabled=false` (the default). Helm deletes `quader-web`, its endpoint pools and the Service `quader`, which no route names any more; their pods drain first.
 
-**Admin area › System › System status** shows a group `web` until step 3, next to `api`, `packages` and `worker`, and none after it. `helm status` prints which step the release is at and the next one. Where the chart can read the cluster (`helm upgrade`, `helm install --dry-run=server`), it reads where the edge points while `trove-web` exists: the chart's Ingress routing to the Service `trove`, or the Service of a further endpoint selecting the `web` pods, means the edge has not moved yet. It refuses the upgrade that moves the edge while `trove-api`, `trove-packages` or one of their pools is missing or not ready, and it refuses step 3 while the edge has not moved (step 2 was skipped); both messages name the three steps. Once the edge has moved, any upgrade with the values of step 2 or 3 goes through even while a Deployment of the target shape is not ready (a crash loop, an autoscaler scaling up, a rollout in progress): it moves nothing, and you need not go back to step 1 to apply a fix. Under `helm template` there is nothing to read, and a route outside the chart is never read, so follow the steps.
+**Admin area › System › System status** shows a group `web` until step 3, next to `api`, `packages` and `worker`, and none after it. `helm status` prints which step the release is at and the next one. Where the chart can read the cluster (`helm upgrade`, `helm install --dry-run=server`), it reads where the edge points while `quader-web` exists: the chart's Ingress routing to the Service `quader`, or the Service of a further endpoint selecting the `web` pods, means the edge has not moved yet. It refuses the upgrade that moves the edge while `quader-api`, `quader-packages` or one of their pools is missing or not ready, and it refuses step 3 while the edge has not moved (step 2 was skipped); both messages name the three steps. Once the edge has moved, any upgrade with the values of step 2 or 3 goes through even while a Deployment of the target shape is not ready (a crash loop, an autoscaler scaling up, a rollout in progress): it moves nothing, and you need not go back to step 1 to apply a fix. Under `helm template` there is nothing to read, and a route outside the chart is never read, so follow the steps.
 
-Roll back one step at a time: from step 3 to the revision of step 2, then from step 2 to the revision of step 1 (`helm history trove` lists the revisions). Each of these rollbacks changes one kind of thing and has no gap: rolling back step 3 brings `trove-web` back without a route to it, rolling back step 2 moves the edge back to `trove`, whose pods still run, and rolling back step 1 rolls `trove-web` back. `helm rollback` applies a stored release without rendering it, so no guard can stop a rollback from step 3 straight to a revision of step 1: it recreates `trove-web` and points the Ingress at the Service `trove` at once, and the host answers `503` until the restored `web` pods are ready.
+Roll back one step at a time: from step 3 to the revision of step 2, then from step 2 to the revision of step 1 (`helm history quader` lists the revisions). Each of these rollbacks changes one kind of thing and has no gap: rolling back step 3 brings `quader-web` back without a route to it, rolling back step 2 moves the edge back to `quader`, whose pods still run, and rolling back step 1 rolls `quader-web` back. `helm rollback` applies a stored release without rendering it, so no guard can stop a rollback from step 3 straight to a revision of step 1: it recreates `quader-web` and points the Ingress at the Service `quader` at once, and the host answers `503` until the restored `web` pods are ready.
 
 ## Upgrade with Helm
 
 ```shell
-helm upgrade trove trove/trove -n trove -f values.yaml --version <version>     # example: the target version
-kubectl -n trove logs job/trove-migrate
-kubectl -n trove rollout status deployment/trove-api
-kubectl -n trove rollout status deployment/trove-packages
-kubectl -n trove rollout status deployment/trove-worker
+helm upgrade quader quader/quader -n quader -f values.yaml --version <version>     # example: the target version
+kubectl -n quader logs job/quader-migrate
+kubectl -n quader rollout status deployment/quader-api
+kubectl -n quader rollout status deployment/quader-packages
+kubectl -n quader rollout status deployment/quader-worker
 ```
 
 `helm upgrade` runs these steps in order:
 
 1. Helm validates the values. A value the new chart does not know, or a required value that is missing, stops the upgrade before anything changes.
-2. Helm deletes the previous migration Job and starts a new `trove-migrate` Job with the new image and the new configuration. With `secrets.databaseMigration` set, the Job signs in as that schema owner.
+2. Helm deletes the previous migration Job and starts a new `quader-migrate` Job with the new image and the new configuration. With `secrets.databaseMigration` set, the Job signs in as that schema owner.
 3. The Job loads the configuration (an invalid key stops it here), checks that the database's `max_connections` covers the connection pools of the configured replica counts, takes the migration lock, waiting up to `migrate.advisory_lock_wait` (5 minutes) for another run to finish, and applies every pending migration in order. It exits successfully when nothing was pending.
 4. Only after the Job has succeeded does Helm update the Deployments. Kubernetes then replaces the `api`, `packages` and `worker` pods one at a time: a new pod is started before an old one stops, and an old pod drains its requests or jobs before it exits.
 
@@ -95,7 +95,7 @@ While the rollout runs, a browser's requests reach pods of both versions, and ea
 With `migrations.mode: disabled` the chart renders no Job, and you run the migration yourself, with the new image and the same configuration and database credentials, before you roll the Deployments:
 
 ```shell
-trove migrate up --config /etc/trove/trove.yaml      # example path; prints a JSON summary on success
+quader migrate up --config /etc/quader/quader.yaml      # example path; prints a JSON summary on success
 ```
 
 A new replica that starts before the migration has run stays unready and waits until the schema is current.
@@ -105,15 +105,15 @@ A new replica that starts before the migration has run stays unready and waits u
 - The migrations are embedded in the binary and numbered. Each runs in its own transaction and is recorded with a checksum; a recorded migration whose file has changed is refused.
 - One run at a time: the migration lock is a PostgreSQL advisory lock, so a second Job or a manual run waits for the first.
 - A migration may add, drop, rename or tighten anything. Before the first stable release nothing keeps a replica of the previous version working after it (see above).
-- A migration can carry the minimum trove version it needs. The runner refuses it (exit status 3, nothing applied) while a live replica runs an older version, and once it is applied, a replica of an older version exits with `schema requires trove >= <version>`. One migration of this version carries such a minimum, `0.1.0`, which every release meets.
+- A migration can carry the minimum Quader version it needs. The runner refuses it (exit status 3, nothing applied) while a live replica runs an older version, and once it is applied, a replica of an older version exits with `schema requires Quader >= <version>`. One migration of this version carries such a minimum, `0.1.0`, which every release meets.
 - A migration that removes something a background data migration converts also names that background migration. The runner refuses it (exit status 3, nothing applied) until the background migration has succeeded, and names it with its state.
 - A replica checks the schema when it starts and keeps checking it: if the schema is behind the newest migration its binary embeds, the replica stays or becomes unready until the migration has run.
 
-`GET /api/v1/system/migrations` shows the state without taking the lock, to a caller with `settings:read`: the schema version and its compatibility floor, the version and required schema of the replica that answers, the migrations that replica's binary has and the database has not applied (`pending`, each with what the runner checks before it), every applied migration with its release and time, and the background data migrations with their states. During a rolling upgrade, replicas of both versions answer, each for its own binary. `trove migrate status` prints the same report from the same code and adds whether that binary may serve:
+`GET /api/v1/system/migrations` shows the state without taking the lock, to a caller with `settings:read`: the schema version and its compatibility floor, the version and required schema of the replica that answers, the migrations that replica's binary has and the database has not applied (`pending`, each with what the runner checks before it), every applied migration with its release and time, and the background data migrations with their states. During a rolling upgrade, replicas of both versions answer, each for its own binary. `quader migrate status` prints the same report from the same code and adds whether that binary may serve:
 
 ```shell
-curl -s -H "Authorization: Bearer $TROVE_TOKEN" https://trove.example.com/api/v1/system/migrations   # example: a token with settings:read
-kubectl -n trove exec deploy/trove-worker -- /usr/local/bin/trove migrate status
+curl -s -H "Authorization: Bearer $QUADER_TOKEN" https://quader.example.com/api/v1/system/migrations   # example: a token with settings:read
+kubectl -n quader exec deploy/quader-worker -- /usr/local/bin/quader migrate status
 ```
 
 ## Background data migrations
@@ -123,14 +123,14 @@ A correction of stored data runs after the upgrade as a job on a worker, not in 
 - The first worker that starts after the upgrade queues it. While a pod of 0.9.0 or older is still live, it waits: the result says `state: waiting` and names those pods, and it tries again a minute later. Once the rollout has finished, it runs.
 - Follow it under **Admin area › System › Jobs** with the kind `data_migration_nuget_semver2`. A run that reached the end shows `state: recomputed` with the number of versions it `examined` and `changed` and the `packages` they belong to. A version it could not read is counted as `unreadable` and named in the worker's log.
 - `GET /api/v1/system/migrations` lists it under `background` as `nuget_semver2` (release `0.10.0`): `pending` until a worker runs it and while it waits for older pods, `running` while it runs, `failed` when its last run failed, and `succeeded` once its completion is recorded, with the number of versions it examined.
-- It runs once per installation: trove records the completion in the database, and a worker that starts later queues nothing. A package it changed gets a new revision, so clients and caches see the change.
+- It runs once per installation: Quader records the completion in the database, and a worker that starts later queues nothing. A package it changed gets a new revision, so clients and caches see the change.
 
 ## After the upgrade
 
-1. `helm status trove -n trove` shows `deployed`, and `helm history trove -n trove` lists the new revision.
+1. `helm status quader -n quader` shows `deployed`, and `helm history quader -n quader` lists the new revision.
 2. The Job log ends with a JSON summary: `applied` lists the migrations of this run, `nothingToDo` is `true` when none was pending, and `schemaApplied` is the schema version now.
 3. `GET /api/v1/system/migrations` (see [How the migrations work](#how-the-migrations-work)) answers with the new version in `binary.version`, an empty `pending`, and every entry of `background` `succeeded`. A background migration that is still `pending` or `running` finishes on its own; one that shows `failed` has a failed job under **Admin area › System › Jobs** whose error names the cause.
-4. Every pod of `trove-api`, `trove-packages` and `trove-worker` is ready and none restarts repeatedly.
+4. Every pod of `quader-api`, `quader-packages` and `quader-worker` is ready and none restarts repeatedly.
 5. **Admin area › System › System status** shows **All ready**; every replica in the replica table shows the new **Version**, and the **Database** part shows the new **Schema version**.
 6. Sign in, open a repository and download a file, as a quick check of the full request path.
 
@@ -138,13 +138,13 @@ A correction of stored data runs after the upgrade as a job on a worker, not in 
 
 ## Rolling back
 
-Before the first stable release no rollback is supported. `helm rollback` runs no migration job: the migration hook runs on install and upgrade only. The schema therefore stays at the newer version, and the older pods start whenever the schema is at least the one their binary needs and no applied migration requires a newer trove, but nothing guarantees that they work against the newer schema. To go back, restore the database backup you took before the upgrade along with the rollback; everything written to trove since that backup is lost.
+Before the first stable release no rollback is supported. `helm rollback` runs no migration job: the migration hook runs on install and upgrade only. The schema therefore stays at the newer version, and the older pods start whenever the schema is at least the one their binary needs and no applied migration requires a newer Quader, but nothing guarantees that they work against the newer schema. To go back, restore the database backup you took before the upgrade along with the rollback; everything written to Quader since that backup is lost.
 
 After a rollback to 0.9.0 or older, NuGet versions pushed during the rollback are classified the old way again, and `data_migration_nuget_semver2` does not run again by itself when you upgrade once more. Remove its record, then restart a worker pod, which queues it:
 
 ```shell
-psql "$DATABASE_URL" -c "DELETE FROM trove.system_state WHERE key = 'nuget_semver2_recomputed'"   # example connection and schema
-kubectl -n trove rollout restart deploy/trove-worker
+psql "$DATABASE_URL" -c "DELETE FROM quader.system_state WHERE key = 'nuget_semver2_recomputed'"   # example connection and schema
+kubectl -n quader rollout restart deploy/quader-worker
 ```
 
 ## What is not verified yet

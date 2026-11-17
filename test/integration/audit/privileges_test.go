@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 func wantState(t *testing.T, c *pgx.Conn, code, sql string) {
@@ -51,15 +51,15 @@ func TestR_OPS_015_TheRuntimeRoleAppendsAndCannotChangeOrDeleteAuditRows(t *test
 	}
 
 	conn := e.runtimeConn()
-	part := "trove.audit_event_" + currentMonth(t, e)
-	wantState(t, conn, "42501", "UPDATE trove.audit_event SET outcome = 'success'")
-	wantState(t, conn, "42501", "UPDATE trove.audit_event SET details = '{}'::jsonb WHERE action = 'probe.thing.created'")
-	wantState(t, conn, "42501", "DELETE FROM trove.audit_event")
-	wantState(t, conn, "42501", "TRUNCATE trove.audit_event")
+	part := "quader.audit_event_" + currentMonth(t, e)
+	wantState(t, conn, "42501", "UPDATE quader.audit_event SET outcome = 'success'")
+	wantState(t, conn, "42501", "UPDATE quader.audit_event SET details = '{}'::jsonb WHERE action = 'probe.thing.created'")
+	wantState(t, conn, "42501", "DELETE FROM quader.audit_event")
+	wantState(t, conn, "42501", "TRUNCATE quader.audit_event")
 	wantState(t, conn, "42501", "DELETE FROM "+part)
 	wantState(t, conn, "42501", "UPDATE "+part+" SET outcome = 'success'")
-	wantState(t, conn, "42501", "UPDATE trove.audit_policy SET retention_days = 1")
-	wantState(t, conn, "42501", "SELECT trove.audit_create_partitions('2025-01-15Z', '2025-04-02Z')")
+	wantState(t, conn, "42501", "UPDATE quader.audit_policy SET retention_days = 1")
+	wantState(t, conn, "42501", "SELECT quader.audit_create_partitions('2025-01-15Z', '2025-04-02Z')")
 	if n := count(t, e, "audit_event", "true"); n != 2 {
 		t.Errorf("audit rows after the refused statements = %d, want 2", n)
 	}

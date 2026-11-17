@@ -48,7 +48,7 @@ func TestR_VULN_025_TheSectionDefaults(t *testing.T) {
 	}
 }
 
-// R-VULN-025 acceptance: `trove admin config validate` refuses max_shrink: 1.5, ecosystems: [PyPI] on a release without a
+// R-VULN-025 acceptance: `quader admin config validate` refuses max_shrink: 1.5, ecosystems: [PyPI] on a release without a
 // PyPI adapter, and mode: repository without repository.
 func TestR_VULN_025_TheRefusals(t *testing.T) {
 	cases := []struct {
@@ -66,7 +66,7 @@ func TestR_VULN_025_TheRefusals(t *testing.T) {
 		{"a pattern as the kev repository", "vulnerabilities:\n  sources:\n    kev:\n      mode: off\n      repository: platform/vuln-*\n", nil, []string{"vulnerabilities.sources.kev.repository"}},
 		{"an http base url", "vulnerabilities:\n  sources:\n    osv:\n      base_url: http://osv.example.com/\n", nil, []string{"vulnerabilities.sources.osv.base_url", "https"}},
 		{"an http kev url", "vulnerabilities:\n  sources:\n    kev:\n      url: http://kev.example.com/k.json\n", nil, []string{"vulnerabilities.sources.kev.url"}},
-		{"a base url from the environment", "", []string{"TROVE_VULNERABILITIES_SOURCES_OSV_BASE_URL=ftp://x/"}, []string{"vulnerabilities.sources.osv.base_url"}},
+		{"a base url from the environment", "", []string{"QUADER_VULNERABILITIES_SOURCES_OSV_BASE_URL=ftp://x/"}, []string{"vulnerabilities.sources.osv.base_url"}},
 		{"epss is P1 and stays off", "vulnerabilities:\n  sources:\n    epss:\n      mode: online\n", nil, []string{"vulnerabilities.sources.epss.mode", "not built"}},
 		{"an unknown enforcement", "vulnerabilities:\n  enforcement: warn\n", nil, []string{"vulnerabilities.enforcement"}},
 		{"an unknown source mode", "vulnerabilities:\n  sources:\n    osv:\n      mode: mirror\n", nil, []string{"vulnerabilities.sources.osv.mode"}},
@@ -102,7 +102,7 @@ func TestR_VULN_025_WhatIsAccepted(t *testing.T) {
 		}
 	}
 	// The environment override of the specification (INV-15).
-	l, err := loadVuln(t, "", "TROVE_VULNERABILITIES_ENFORCEMENT=report", "TROVE_VULNERABILITIES_STALE_AFTER=48h")
+	l, err := loadVuln(t, "", "QUADER_VULNERABILITIES_ENFORCEMENT=report", "QUADER_VULNERABILITIES_STALE_AFTER=48h")
 	if err != nil || l.Config.Vulnerabilities.Enforcement != "report" || l.Config.Vulnerabilities.StaleAfter != 48*time.Hour {
 		t.Fatalf("%v %v", l, err)
 	}

@@ -31,10 +31,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // kindProbe is the diagnostic job kind the release's workers run (internal/jobs/probe.go): it counts
@@ -68,7 +68,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		<-ctx.Done()
 		return nil
 	}
-	loaded, err := config.Load(config.Options{File: "/etc/trove/trove.yaml", Environ: os.Environ(), Command: config.CommandMigrate})
+	loaded, err := config.Load(config.Options{File: "/etc/quader/quader.yaml", Environ: os.Environ(), Command: config.CommandMigrate})
 	if err != nil {
 		return err
 	}
@@ -239,7 +239,7 @@ func orNull(b []byte) []byte {
 // instance names a peer after the pod and the purpose, so application_name in
 // PostgreSQL and the client name in Valkey show whose connection it is.
 func instance(purpose string) string {
-	pod := os.Getenv("TROVE_POD_NAME")
+	pod := os.Getenv("QUADER_POD_NAME")
 	if pod == "" {
 		pod, _ = os.Hostname()
 	}

@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/formattest/crafted"
-	"github.com/guided-traffic/trove/test/debstub/debgen"
+	"github.com/guided-traffic/quader/internal/formats/formattest/crafted"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
 )
 
 type arMember struct {

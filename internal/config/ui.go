@@ -29,7 +29,7 @@ type UIReadme struct {
 
 // UIClientSetup shapes the snippets of the client setup (R-API-030).
 type UIClientSetup struct {
-	TokenEnvVar string        `yaml:"token_env_var" default:"TROVE_TOKEN" validate:"max=64" doc:"Name of the environment variable that snippets with credentials=env read the token from."`
+	TokenEnvVar string        `yaml:"token_env_var" default:"QUADER_TOKEN" validate:"max=64" doc:"Name of the environment variable that snippets with credentials=env read the token from."`
 	TokenTTL    time.Duration `yaml:"token_ttl" default:"720h" validate:"min=1m" doc:"Lifetime the setup dialog asks for when it creates a token; at most auth.tokens.pat.max_ttl."`
 }
 
@@ -84,7 +84,7 @@ func (c *Config) validateUICoupling(r *Report) {
 	if c.UI.ClientSetup.TokenTTL > c.Auth.Tokens.PAT.MaxTTL {
 		r.Add("ui.client_setup.token_ttl", "(%s) must not exceed auth.tokens.pat.max_ttl (%s)", c.UI.ClientSetup.TokenTTL, c.Auth.Tokens.PAT.MaxTTL)
 	}
-	// An image of trove's own origin would make the viewer's browser send authenticated
+	// An image of quader's own origin would make the viewer's browser send authenticated
 	// requests to package or file endpoints (R-AUTHZ-008): the list may not name one.
 	own := map[string]bool{}
 	for _, b := range append([]string{c.Server.BaseURL}, c.Server.AdditionalBaseURLs...) {
@@ -96,7 +96,7 @@ func (c *Config) validateUICoupling(r *Report) {
 	delete(own, "")
 	for _, o := range c.UI.Readme.ExternalImageOrigins {
 		if own[originOfURL(o)] {
-			r.Add("ui.readme.external_image_origins", "%q is an origin of this installation: a README image from it could make a viewer's browser send authenticated requests to trove (R-AUTHZ-008)", o)
+			r.Add("ui.readme.external_image_origins", "%q is an origin of this installation: a README image from it could make a viewer's browser send authenticated requests to Quader (R-AUTHZ-008)", o)
 		}
 	}
 }

@@ -18,16 +18,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastion/answers"
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/guard"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/link"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/bastion/shared"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/link"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // ---- configuration ----------------------------------------------------------------------------------------
@@ -37,10 +37,10 @@ type configT = config.BastionConfig
 func testConfig(t *testing.T, mods ...func(*config.BastionConfig)) *config.BastionConfig {
 	t.Helper()
 	l, err := config.LoadBastion(config.Options{
-		File: "/etc/trove/trove.yaml", Command: config.CommandServe,
+		File: "/etc/quader/quader.yaml", Command: config.CommandServe,
 		ReadFile: func(name string) ([]byte, error) {
-			if name == "/etc/trove/trove.yaml" {
-				return []byte("server:\n  base_url: https://packages.example.com\nbastion:\n  main:\n    url: https://trove.example.com\n    token_file: /nonexistent\n"), nil
+			if name == "/etc/quader/quader.yaml" {
+				return []byte("server:\n  base_url: https://packages.example.com\nbastion:\n  main:\n    url: https://quader.example.com\n    token_file: /nonexistent\n"), nil
 			}
 			return nil, os.ErrNotExist
 		},

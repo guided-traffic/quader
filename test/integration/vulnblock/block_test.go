@@ -10,15 +10,15 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const (
-	mal  = "trove-test-mal"
+	mal  = "quader-test-mal"
 	malA = "MAL-2026-1234"
 )
 
@@ -72,7 +72,7 @@ func TestR_VULN_015_ALocalNpmTarballWithAnOpenMaliciousFindingIsRefused(t *testi
 	if body["code"] != errs.CodeVulnerabilityBlocked {
 		t.Errorf("code = %q", body["code"])
 	}
-	for _, want := range []string{"trove blocked trove-test-mal@1.0.0 in it/npm-local: malicious package (" + malA + ")", "/ui/vulnerabilities/findings/" + id} {
+	for _, want := range []string{"Quader blocked quader-test-mal@1.0.0 in it/npm-local: malicious package (" + malA + ")", "/ui/vulnerabilities/findings/" + id} {
 		if !strings.Contains(body["error"], want) {
 			t.Errorf("error text %q lacks %q", body["error"], want)
 		}
@@ -109,10 +109,10 @@ func TestR_VULN_015_OnlyTheTriageBlockOrAMaliciousFindingBlocks(t *testing.T) {
 	e := newEnv(t, options{})
 	r := e.replica("web-1")
 	for _, repo := range []string{rNPM, rNPMB} {
-		e.publish(r, repo, "trove-test-vuln", "1.0.0")
+		e.publish(r, repo, "quader-test-vuln", "1.0.0")
 	}
-	path, pathB := tgzPath(rNPM, "trove-test-vuln", "1.0.0"), tgzPath(rNPMB, "trove-test-vuln", "1.0.0")
-	id := e.finding(rNPM, "npm", "trove-test-vuln", "1.0.0", "GHSA-aaaa-aaaa-0001", "vulnerability", "needs_triage")
+	path, pathB := tgzPath(rNPM, "quader-test-vuln", "1.0.0"), tgzPath(rNPMB, "quader-test-vuln", "1.0.0")
+	id := e.finding(rNPM, "npm", "quader-test-vuln", "1.0.0", "GHSA-aaaa-aaaa-0001", "vulnerability", "needs_triage")
 	for _, status := range []string{"needs_triage", "confirmed"} {
 		e.setStatus(id, status)
 		if a := e.do(r, "GET", path, e.tokReader); a.Status != 200 {
@@ -132,7 +132,7 @@ func TestR_VULN_015_OnlyTheTriageBlockOrAMaliciousFindingBlocks(t *testing.T) {
 		t.Errorf("blocked to confirmed did not lift the block: %d", a.Status)
 	}
 	// blockMalicious false: an open malicious finding does not block, a triage block does.
-	mid := e.finding(rNPMB, "npm", "trove-test-vuln", "1.0.0", malA, "malicious", "needs_triage")
+	mid := e.finding(rNPMB, "npm", "quader-test-vuln", "1.0.0", malA, "malicious", "needs_triage")
 	if a := e.do(r, "GET", pathB, e.tokReader); a.Status != 200 {
 		t.Errorf("a malicious finding blocks in a repository with blockMalicious false: %d", a.Status)
 	}
@@ -174,7 +174,7 @@ func TestR_VULN_016_ANuGetPackageIsRefusedWithOnePlainLine(t *testing.T) {
 		t.Errorf("Content-Type = %q", ct)
 	}
 	line := string(a.Body)
-	if strings.ContainsAny(line, "\r\n") || !strings.HasPrefix(line, "vulnerability_blocked: trove blocked contoso.json.codecs@1.0.0 in it/nuget-local: malicious package (MAL-2026-1301). Details: ") ||
+	if strings.ContainsAny(line, "\r\n") || !strings.HasPrefix(line, "vulnerability_blocked: Quader blocked contoso.json.codecs@1.0.0 in it/nuget-local: malicious package (MAL-2026-1301). Details: ") ||
 		!strings.Contains(line, "/ui/vulnerabilities/findings/"+id) {
 		t.Errorf("body %q", line)
 	}
@@ -206,7 +206,7 @@ func TestR_VULN_016_TheRawViewAnswersProblemDetailsWithTheAdvisoryAndTheFinding(
 	if p["code"] != errs.CodeVulnerabilityBlocked || p["advisory"] != malA || p["findingId"] != id || p["status"] != float64(403) {
 		t.Errorf("problem = %v", p)
 	}
-	if detail, _ := p["detail"].(string); !strings.Contains(detail, "trove blocked trove-test-mal@1.0.0 in it/npm-local") {
+	if detail, _ := p["detail"].(string); !strings.Contains(detail, "Quader blocked quader-test-mal@1.0.0 in it/npm-local") {
 		t.Errorf("detail = %q", detail)
 	}
 }
@@ -223,7 +223,7 @@ func TestR_VULN_015_OnMissingDataBlockRefusesWhileTheDataIsNotComplete(t *testin
 	if a.Status != http.StatusForbidden {
 		t.Fatalf("onMissingData block: %d %s", a.Status, a.Body)
 	}
-	if body := npmError(t, a); body["code"] != errs.CodeVulnerabilityDataMissing || !strings.Contains(body["error"], "trove blocked trove-test-mal@1.0.0 in it/npm-strict") {
+	if body := npmError(t, a); body["code"] != errs.CodeVulnerabilityDataMissing || !strings.Contains(body["error"], "Quader blocked quader-test-mal@1.0.0 in it/npm-strict") {
 		t.Errorf("body = %v", body)
 	}
 	if a.Header.Get("Cache-Control") != "no-store" {
@@ -240,11 +240,11 @@ func TestR_VULN_015_OnMissingDataBlockRefusesWhileTheDataIsNotComplete(t *testin
 
 // R-VULN-015 "Report mode": nothing is refused, the would-be block is counted with mode report and recorded with enforced false.
 func TestR_VULN_015_TheModeReportRefusesNothingAndCountsTheWouldBeBlock(t *testing.T) {
-	e := newEnv(t, options{Env: []string{"TROVE_VULNERABILITIES_ENFORCEMENT=report"}})
+	e := newEnv(t, options{Env: []string{"QUADER_VULNERABILITIES_ENFORCEMENT=report"}})
 	r := e.replica("web-1")
 	e.publish(r, rNPM, mal, "1.0.0")
 	e.finding(rNPM, "npm", mal, "1.0.0", malA, "malicious", "needs_triage")
-	series := `trove_vuln_downloads_blocked_total{format="npm",mode="report",reason="malicious"}`
+	series := `quader_vuln_downloads_blocked_total{format="npm",mode="report",reason="malicious"}`
 	before := metric(t, r, series)
 	for i := range 3 {
 		if a := e.do(r, "GET", tgzPath(rNPM, mal, "1.0.0"), e.tokReader); a.Status != 200 {
@@ -273,7 +273,7 @@ func TestR_VULN_016_TheAuditEventIsRecordedOncePerMinuteAndTheMetricCountsEveryR
 			t.Fatalf("%d", a.Status)
 		}
 	}
-	series := `trove_vuln_downloads_blocked_total{format="npm",mode="enforce",reason="malicious"}`
+	series := `quader_vuln_downloads_blocked_total{format="npm",mode="enforce",reason="malicious"}`
 	if got := metric(t, r, series); got != 5 {
 		t.Errorf("%s = %v, want 5", series, got)
 	}
@@ -481,7 +481,7 @@ func TestR_VULN_015_MissingDataAppliesOnlyToVersionsInScope(t *testing.T) {
 
 // R-VULN-015: the installation switch off blocks nothing, whatever the findings say.
 func TestR_VULN_015_TheInstallationSwitchOffBlocksNothing(t *testing.T) {
-	e := newEnv(t, options{Env: []string{"TROVE_VULNERABILITIES_ENABLED=false"}})
+	e := newEnv(t, options{Env: []string{"QUADER_VULNERABILITIES_ENABLED=false"}})
 	r := e.replica("web-1")
 	e.publish(r, rNPM, mal, "1.0.0")
 	e.finding(rNPM, "npm", mal, "1.0.0", malA, "malicious", "blocked")

@@ -19,7 +19,7 @@ const (
 	Length         = 57
 	randomDigits   = 43
 	checksumDigits = 6
-	prefixLength   = 8 // "trv_pat_"
+	prefixLength   = 8 // "qdr_pat_"
 	base62         = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	hintRandom     = 4
 )
@@ -28,7 +28,7 @@ const (
 func Prefix(t Type) string {
 	switch t {
 	case TypePAT, TypeSAT, TypeCIT, TypeBST:
-		return "trv_" + string(t) + "_"
+		return "qdr_" + string(t) + "_"
 	}
 	return ""
 }
@@ -75,7 +75,7 @@ func Generate(t Type) (string, error) {
 // prefix, the length, the alphabet and the checksum. It needs no database and
 // returns the type of the prefix, or [ErrMalformed].
 func Check(raw string) (Type, error) {
-	if len(raw) != Length || !strings.HasPrefix(raw, "trv_") {
+	if len(raw) != Length || !strings.HasPrefix(raw, "qdr_") {
 		return "", ErrMalformed
 	}
 	t := Type(raw[4:7])

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# helm lint and helm template for every value set of the chart trove (deploy/helm/trove/ci/*.yaml and
+# helm lint and helm template for every value set of the chart quader (deploy/helm/quader/ci/*.yaml and
 # the dev profile's values: deploy/dev/values-dev.yaml, also with values-pooler.yaml layered on
-# it, and the sizing profiles of deploy/helm/trove/profiles on test/chart/testdata/operator-minimum.yaml) and of the chart trove-bastion (deploy/helm/trove-bastion/ci/*.yaml). Needs only helm at the
+# it, and the sizing profiles of deploy/helm/quader/profiles on test/chart/testdata/operator-minimum.yaml) and of the chart quader-bastion (deploy/helm/quader-bastion/ci/*.yaml). Needs only helm at the
 # version pinned in tools/versions.env, no cluster.
 #
 # The render assertions (what the output must and must not contain) are in chart_test.go and run
@@ -9,8 +9,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-CHART="$ROOT/deploy/helm/trove"
-BASTION_CHART="$ROOT/deploy/helm/trove-bastion"
+CHART="$ROOT/deploy/helm/quader"
+BASTION_CHART="$ROOT/deploy/helm/quader-bastion"
 # shellcheck source=/dev/null
 . "$ROOT/tools/versions.env"
 
@@ -39,7 +39,7 @@ run_chart() {
 }
 run() {
   local label="$1"; shift
-  run_chart "$CHART" trove "$label" "$@"
+  run_chart "$CHART" quader "$label" "$@"
 }
 
 for f in "${sets[@]}"; do
@@ -59,7 +59,7 @@ run "deploy/dev/values-dev.yaml" -f "$ROOT/deploy/dev/values-dev.yaml"
 run "deploy/dev/values-dev.yaml + values-pooler.yaml" -f "$ROOT/deploy/dev/values-dev.yaml" -f "$ROOT/deploy/dev/values-pooler.yaml"
 
 for f in "$BASTION_CHART"/ci/*.yaml; do
-  run_chart "$BASTION_CHART" trove-bastion "trove-bastion ci/$(basename "$f")" -f "$f"
+  run_chart "$BASTION_CHART" quader-bastion "quader-bastion ci/$(basename "$f")" -f "$f"
 done
 
 # Offline rendering has no cluster capabilities; the kubeconform run of R-HA-028 joins with the

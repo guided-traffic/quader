@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 )
 
 // TestR_NUGET_008_TheMetadataTheWriterStoresIsTheMetadataTheDocumentsRead: the ingestion writes

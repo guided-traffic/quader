@@ -6,8 +6,8 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 )
 
 // The list and delete side of the in-memory twin of the data port (twin_test.go has the push and pull side): the tags list, the referrers,

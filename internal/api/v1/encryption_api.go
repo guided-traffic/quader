@@ -5,17 +5,17 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // The status of the stored-secret key ring (R-API-049, R-ARCH-021). The
 // implementation of the per-key counts is internal/secrets (shared with
-// `trove admin secrets status`); this file adds the replicas' rings from the
+// `quader admin secrets status`); this file adds the replicas' rings from the
 // registry, the canary state and the compatibility rule.
 
 // KindSecretsReencrypt is the job kind and task name of the re-encryption

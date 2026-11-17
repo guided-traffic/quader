@@ -14,10 +14,10 @@ import (
 func TestHAFaults_ValkeyPlannedFailover(t *testing.T) {
 	h := npmHAFx(t)
 
-	t.Run("R-HA-052 R-HA-057 E5.10 SENTINEL FAILOVER under the npm load: every npm command exits 0, k6 only 2xx and 304, /readyz 200 throughout, trove_valkey_primary_changes_total rises by one on every replica within 10 s of the request", func(t *testing.T) {
-		const changes = "trove_valkey_primary_changes_total"
+	t.Run("R-HA-052 R-HA-057 E5.10 SENTINEL FAILOVER under the npm load: every npm command exits 0, k6 only 2xx and 304, /readyz 200 throughout, quader_valkey_primary_changes_total rises by one on every replica within 10 s of the request", func(t *testing.T) {
+		const changes = "quader_valkey_primary_changes_total"
 		const bound = 10 * time.Second
-		pods := podNames(livePods(t, selTrove))
+		pods := podNames(livePods(t, selQuader))
 		var before map[string]float64
 		followed := map[string]time.Duration{}
 		var mu sync.Mutex
@@ -80,6 +80,6 @@ func TestHAFaults_ValkeyPlannedFailover(t *testing.T) {
 			}
 		}
 		r.res.installPublished(t, h)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 	})
 }

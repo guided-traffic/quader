@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // failRunner fails the test when the pause touches the database.

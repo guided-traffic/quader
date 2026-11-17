@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // R-CI-017, R-CI-030: the revocation of a mapping or an issuer runs while the issuer row is locked FOR UPDATE, which
@@ -26,7 +26,7 @@ func TestR_CI_017_ARevocationReadsOnlyTheUnexpiredRecords(t *testing.T) {
 	// The other live tokens of the installation: so many that a plan driven by the live tokens costs more than one
 	// driven by the issuer's records, as in an installation with many personal access tokens.
 	e.exec(`INSERT INTO api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at)
-	        SELECT gen_random_uuid(), 'pat', sha256(('it-pat-' || g)::bytea), 'trv_pat_…' || g, p.id, 'a token of ops', '{"inherit": true}',
+	        SELECT gen_random_uuid(), 'pat', sha256(('it-pat-' || g)::bytea), 'qdr_pat_…' || g, p.id, 'a token of ops', '{"inherit": true}',
 	               'api', now() + interval '1 day'
 	          FROM generate_series(1, 20000) g, principal p WHERE p.kind = 'user' AND p.name = 'ops'`)
 	e.exec("ANALYZE ci_token_issuances")

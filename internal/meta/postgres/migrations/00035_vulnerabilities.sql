@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Vulnerability scanning (R-VULN-004, R-VULN-006, R-VULN-008, R-VULN-010, R-VULN-012), beta phase 6, expand class
 -- (R-HA-018). The eight tables are new and empty, so they take their keys and indexes inline. The one existing table
@@ -152,7 +152,7 @@ CREATE TABLE vuln_finding_event (
     finding_id   uuid NOT NULL REFERENCES vuln_finding (id) ON DELETE CASCADE,
     seq          bigint GENERATED ALWAYS AS IDENTITY,
     at           timestamptz NOT NULL DEFAULT now(),
-    actor        uuid,                                   -- NULL for trove
+    actor        uuid,                                   -- NULL for quader
     change       text NOT NULL CHECK (change IN ('detected', 'status_changed', 'resolved', 'redetected', 'reopened', 'advisory_changed')),
     from_status  text,
     to_status    text,

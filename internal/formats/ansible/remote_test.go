@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/galaxydoc"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
 )
 
 func TestR_ANS_016_TheApiRootIsParsedIntoRelativePrefixes(t *testing.T) {
@@ -207,7 +207,7 @@ func TestR_ANS_020_AVersionOnAnUnlistedHostIsDroppedAndTheRestPointsToTheReposit
 		roleEntryJSON("0.7.0", ""),
 		roleEntryJSON("0.6.0", "https://u:p@github.com/x.tar.gz"),
 	)
-	out, err := renderRoleVersions(doc, "16", "https://trove.example/api/ansible/p/r/", allowed, "")
+	out, err := renderRoleVersions(doc, "16", "https://quader.example/api/ansible/p/r/", allowed, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,11 +228,11 @@ func TestR_ANS_020_AVersionOnAnUnlistedHostIsDroppedAndTheRestPointsToTheReposit
 		t.Fatalf("results %+v", got.Results)
 	}
 	for _, r := range got.Results {
-		if r.DownloadURL != "https://trove.example/api/ansible/p/r/v1/roles/archives/16/"+r.Name+".tar.gz" || r.CommitSHA != "abc" {
+		if r.DownloadURL != "https://quader.example/api/ansible/p/r/v1/roles/archives/16/"+r.Name+".tar.gz" || r.CommitSHA != "abc" {
 			t.Errorf("entry %+v", r)
 		}
 	}
-	const repo = "https://trove.example/api/ansible/p/r/v1/roles/16/versions/?"
+	const repo = "https://quader.example/api/ansible/p/r/v1/roles/16/versions/?"
 	if got.NextLink != repo+"page=3&page_size=50" || got.Next != got.NextLink || got.PreviousLink != repo+"page=1&page_size=50" {
 		t.Errorf("links %q %q %q", got.NextLink, got.Next, got.PreviousLink)
 	}
@@ -246,7 +246,7 @@ func TestR_ANS_020_AVersionOnAnUnlistedHostIsDroppedAndTheRestPointsToTheReposit
 		t.Errorf("%+v dropped %d %v", maps, dropped, err)
 	}
 	// Rewriting its own output keeps the same entries: Rewrite is idempotent.
-	again, err := renderRoleVersions(out, "16", "https://trove.example/api/ansible/p/r/", allowed, "https://trove.example/api/ansible/p/r/")
+	again, err := renderRoleVersions(out, "16", "https://quader.example/api/ansible/p/r/", allowed, "https://quader.example/api/ansible/p/r/")
 	if err != nil || string(again) != string(out) {
 		t.Errorf("a rewritten document changed: %v\n%s\n%s", err, out, again)
 	}
@@ -255,7 +255,7 @@ func TestR_ANS_020_AVersionOnAnUnlistedHostIsDroppedAndTheRestPointsToTheReposit
 func TestR_ANS_020_ALookupKeepsTheRolesFieldsAndNamesTheRepositoryAsTheirAddress(t *testing.T) {
 	doc := []byte(`{"count":1,"next":null,"previous":null,"results":[{"id":16,"url":"/api/v1/roles/16/","related":{"versions":"/api/v1/roles/16/versions/"},` +
 		`"github_user":"geerlingguy","summary_fields":{"tags":["x"]}},{"id":"bad","url":"/api/v1/roles/x/"}]}`)
-	out, err := renderRoleLookup(doc, "https://trove.example/api/ansible/p/r/", "geerlingguy", "pip")
+	out, err := renderRoleLookup(doc, "https://quader.example/api/ansible/p/r/", "geerlingguy", "pip")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,8 +266,8 @@ func TestR_ANS_020_ALookupKeepsTheRolesFieldsAndNamesTheRepositoryAsTheirAddress
 		t.Fatalf("%v %s", err, out)
 	}
 	r := got.Results[0]
-	if string(r["url"]) != `"https://trove.example/api/ansible/p/r/v1/roles/16/"` ||
-		string(r["related"]) != `{"versions":"https://trove.example/api/ansible/p/r/v1/roles/16/versions/"}` ||
+	if string(r["url"]) != `"https://quader.example/api/ansible/p/r/v1/roles/16/"` ||
+		string(r["related"]) != `{"versions":"https://quader.example/api/ansible/p/r/v1/roles/16/versions/"}` ||
 		string(r["github_user"]) != `"geerlingguy"` || !strings.Contains(string(r["summary_fields"]), "tags") {
 		t.Errorf("role %v", r)
 	}

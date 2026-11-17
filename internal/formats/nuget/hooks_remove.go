@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 )
 
 // noActor is the id a tombstone records for a removal that no principal asked for (the
@@ -88,7 +88,7 @@ func (f *Format) OnItemsRemoved(ctx context.Context, tx formats.Tx, e formats.It
 			}
 			if row, ok := byVersion[v]; ok && row.LeadItem != 0 {
 				return errs.E(errs.Conflict, errs.CodeConflict,
-					"A file of "+lowerID+" "+v+" that trove generated cannot be deleted on its own; delete the package version.")
+					"A file of "+lowerID+" "+v+" that Quader generated cannot be deleted on its own; delete the package version.")
 			}
 		}
 		versions := make([]string, 0, len(g.nupkg))

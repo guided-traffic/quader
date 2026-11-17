@@ -1,8 +1,8 @@
 package app
 
 import (
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/avatar"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/avatar"
 )
 
 // avatarService is the avatar store of the management API (R-API-055): the PNG in the blob store, its name in user_avatars.

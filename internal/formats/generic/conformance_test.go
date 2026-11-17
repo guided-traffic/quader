@@ -3,8 +3,8 @@ package generic
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
 )
 
 // conformance is the fixture of the generic format: it has no routes (its protocol
@@ -24,7 +24,7 @@ func conformance() formattest.Fixture {
 			{Path: "folder/", Want: formats.PathInfo{Kind: formats.PathComputed}},
 			{Path: "", Want: formats.PathInfo{Kind: formats.PathComputed}},
 		},
-		OptionNames: []string{"TROVE_TOKEN"},
+		OptionNames: []string{"QUADER_TOKEN"},
 		Skip: map[formattest.Check]string{
 			formattest.CheckAmbiguity:  "no routes: /files/ is the protocol, served by the generic layer and tested by rawfiles (Q-GENERIC-7, R-GENERIC-002)",
 			formattest.CheckRewrite:    "local class only: no remote adapter, no upstream document to rewrite",

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // race sends the requests at once, each to its replica, and returns their statuses.

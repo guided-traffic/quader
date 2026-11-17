@@ -3,9 +3,9 @@ package authz
 import (
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/ci/claims"
 )
 
 // JobSubject is the subject a job carries for the request that queued it: who asked, with which credential, and on which endpoint,

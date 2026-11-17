@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/document"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/document"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // The exposure adapter of npm (R-NPM-048, R-EP-018): the version syntax of the rules, the

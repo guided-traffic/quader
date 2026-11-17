@@ -15,12 +15,12 @@ func monitoringSet() string { return filepath.Join(chartDir, "ci", "monitoring.y
 
 // TestR_VULN_024_PromtoolRules (R-VULN-024): the rendered PrometheusRule passes `promtool check rules` and
 // `promtool test rules`, with one test per alert that fires on its failure input and one in which it stays silent
-// (deploy/helm/trove/tests/rules_test.yaml). It runs over every alert of the chart, those of R-HA-045 included; the
+// (deploy/helm/quader/tests/rules_test.yaml). It runs over every alert of the chart, those of R-HA-045 included; the
 // requirement's own checks are in TestR_HA_045_PrometheusRule.
 func TestR_VULN_024_PromtoolRules(t *testing.T) {
 	promtool := promtoolPath(t)
 	_, docs := render(t, []string{monitoringSet()})
-	pr := find(docs, "PrometheusRule", "trove")
+	pr := find(docs, "PrometheusRule", "quader")
 	if pr == nil {
 		t.Fatal("no PrometheusRule")
 	}
@@ -88,7 +88,7 @@ func TestR_VULN_024_PrometheusRuleValues(t *testing.T) {
 
 	t.Run("the alerts, with the labels of the values and their severity", func(t *testing.T) {
 		_, docs := render(t, []string{monitoringSet()})
-		pr := find(docs, "PrometheusRule", "trove")
+		pr := find(docs, "PrometheusRule", "quader")
 		if pr == nil {
 			t.Fatal("no PrometheusRule")
 		}
@@ -96,14 +96,14 @@ func TestR_VULN_024_PrometheusRuleValues(t *testing.T) {
 			t.Errorf("labels = %v, want the release label of metrics.prometheusRule.labels", at(pr, "metadata", "labels"))
 		}
 		want := map[string]string{
-			"TroveVulnerabilityDataStale":            "warning",
-			"TroveVulnerabilitySyncFailing":          "warning",
-			"TroveVulnerabilityClaimedNameMalicious": "critical",
-			"TroveVulnerabilityImageScansFailing":    "warning",
-			"TroveMirrorFailing":                     "warning",
-			"TroveMirrorStale":                       "warning",
-			"TroveBridgeLeftOn":                      "warning",
-			"TroveBlobMissing":                       "critical",
+			"QuaderVulnerabilityDataStale":            "warning",
+			"QuaderVulnerabilitySyncFailing":          "warning",
+			"QuaderVulnerabilityClaimedNameMalicious": "critical",
+			"QuaderVulnerabilityImageScansFailing":    "warning",
+			"QuaderMirrorFailing":                     "warning",
+			"QuaderMirrorStale":                       "warning",
+			"QuaderBridgeLeftOn":                      "warning",
+			"QuaderBlobMissing":                       "critical",
 		}
 		for _, r := range list(pr, "spec", "groups", "0", "rules") {
 			name := str(r, "alert")
@@ -123,16 +123,16 @@ func TestR_VULN_024_PrometheusRuleValues(t *testing.T) {
 
 	t.Run("the stale threshold follows config.vulnerabilities.stale_after", func(t *testing.T) {
 		_, docs := render(t, []string{monitoringSet()}, "config.vulnerabilities.stale_after=48h")
-		for _, r := range list(find(docs, "PrometheusRule", "trove"), "spec", "groups", "0", "rules") {
-			if str(r, "alert") == "TroveVulnerabilityDataStale" && !strings.HasSuffix(strings.TrimSpace(str(r, "expr")), "> 172800") {
+		for _, r := range list(find(docs, "PrometheusRule", "quader"), "spec", "groups", "0", "rules") {
+			if str(r, "alert") == "QuaderVulnerabilityDataStale" && !strings.HasSuffix(strings.TrimSpace(str(r, "expr")), "> 172800") {
 				t.Errorf("expr = %q, want a threshold of 172800 s", str(r, "expr"))
 			}
 		}
 	})
 
 	t.Run("every selector is scoped to the release namespace", func(t *testing.T) {
-		_, docs := renderRelease(t, "trove", []string{monitoringSet()})
-		for _, r := range list(find(docs, "PrometheusRule", "trove"), "spec", "groups", "0", "rules") {
+		_, docs := renderRelease(t, "quader", []string{monitoringSet()})
+		for _, r := range list(find(docs, "PrometheusRule", "quader"), "spec", "groups", "0", "rules") {
 			if !strings.Contains(str(r, "expr"), `namespace="default"`) {
 				t.Errorf("%s: expr %q is not scoped to the namespace", str(r, "alert"), str(r, "expr"))
 			}
@@ -141,15 +141,15 @@ func TestR_VULN_024_PrometheusRuleValues(t *testing.T) {
 
 	t.Run("disabledAlerts removes an alert and extraRules adds one", func(t *testing.T) {
 		_, docs := render(t, []string{monitoringSet()},
-			"metrics.prometheusRule.disabledAlerts={TroveVulnerabilitySyncFailing}",
+			"metrics.prometheusRule.disabledAlerts={QuaderVulnerabilitySyncFailing}",
 			"metrics.prometheusRule.extraRules[0].alert=Mine", "metrics.prometheusRule.extraRules[0].expr=vector(1)")
 		var names []string
-		for _, r := range list(find(docs, "PrometheusRule", "trove"), "spec", "groups", "0", "rules") {
+		for _, r := range list(find(docs, "PrometheusRule", "quader"), "spec", "groups", "0", "rules") {
 			names = append(names, str(r, "alert"))
 		}
 		want := []string{}
 		for _, a := range alertSeverities() {
-			if a.name != "TroveVulnerabilitySyncFailing" {
+			if a.name != "QuaderVulnerabilitySyncFailing" {
 				want = append(want, a.name)
 			}
 		}
@@ -160,8 +160,8 @@ func TestR_VULN_024_PrometheusRuleValues(t *testing.T) {
 	})
 
 	t.Run("a name in disabledAlerts that is no alert fails", func(t *testing.T) {
-		renderFails(t, []string{monitoringSet()}, []string{"metrics.prometheusRule.disabledAlerts={TroveVulnerabilitySynkFailing}"},
-			"disabledAlerts", "TroveVulnerabilitySynkFailing", "TroveVulnerabilitySyncFailing")
+		renderFails(t, []string{monitoringSet()}, []string{"metrics.prometheusRule.disabledAlerts={QuaderVulnerabilitySynkFailing}"},
+			"disabledAlerts", "QuaderVulnerabilitySynkFailing", "QuaderVulnerabilitySyncFailing")
 	})
 
 	t.Run("every alert disabled renders no PrometheusRule", func(t *testing.T) {
@@ -203,9 +203,9 @@ func TestR_VULN_025_SpoolHoldsOneArchive(t *testing.T) {
 	})
 	t.Run("the worker pods carry a spool limit of the value, not the web's", func(t *testing.T) {
 		_, docs := render(t, required(), "worker.spool.sizeLimit=6Gi", "config.vulnerabilities.images.enabled=false")
-		env := envByName(at(find(docs, "Deployment", "trove-worker"), "spec", "template", "spec"))
-		if got := str(env["TROVE_STORAGE_SPOOL_MAX_BYTES"], "value"); got != "4294967296" {
-			t.Errorf("TROVE_STORAGE_SPOOL_MAX_BYTES of the worker = %q, want 4294967296 (6Gi - 2GiB)", got)
+		env := envByName(at(find(docs, "Deployment", "quader-worker"), "spec", "template", "spec"))
+		if got := str(env["QUADER_STORAGE_SPOOL_MAX_BYTES"], "value"); got != "4294967296" {
+			t.Errorf("QUADER_STORAGE_SPOOL_MAX_BYTES of the worker = %q, want 4294967296 (6Gi - 2GiB)", got)
 		}
 	})
 }
@@ -219,7 +219,7 @@ func TestQ_VULN_145_SpoolHoldsTheImageScanning(t *testing.T) {
 	})
 	t.Run("a worker spool below the sum fails and names the image limit and the value to raise", func(t *testing.T) {
 		renderFails(t, required(), []string{"worker.spool.sizeLimit=7Gi"},
-			"config.vulnerabilities.images.max_image_size", "worker.spool.sizeLimit", "trove-worker", "queue vuln")
+			"config.vulnerabilities.images.max_image_size", "worker.spool.sizeLimit", "quader-worker", "queue vuln")
 	})
 	t.Run("the sum is exact: 7.5Gi holds it, a byte less does not", func(t *testing.T) {
 		render(t, required(), "worker.spool.sizeLimit=7680Mi")
@@ -237,7 +237,7 @@ func TestQ_VULN_145_SpoolHoldsTheImageScanning(t *testing.T) {
 	})
 	t.Run("the pool that claims the queue vuln is the one checked", func(t *testing.T) {
 		pool := []string{"worker.pools[0].name=v", "worker.pools[0].queues={vuln}", "worker.pools[0].replicaCount=2"}
-		renderFails(t, required(), append(pool, "worker.pools[0].spool.sizeLimit=6Gi"), "max_image_size", "trove-worker-v")
+		renderFails(t, required(), append(pool, "worker.pools[0].spool.sizeLimit=6Gi"), "max_image_size", "quader-worker-v")
 		render(t, required(), append(pool, "worker.pools[0].spool.sizeLimit=8Gi", "worker.spool.sizeLimit=3Gi")...)
 	})
 	t.Run("the scanning of images off, or the scanning off, is not checked", func(t *testing.T) {
@@ -246,12 +246,12 @@ func TestQ_VULN_145_SpoolHoldsTheImageScanning(t *testing.T) {
 	})
 }
 
-// TestR_VULN_025_ConfigurationPassesThrough (R-VULN-025): the vulnerabilities section is rendered into trove.yaml as set,
+// TestR_VULN_025_ConfigurationPassesThrough (R-VULN-025): the vulnerabilities section is rendered into quader.yaml as set,
 // and the binary's validator accepts it (the value set ci/monitoring.yaml is part of TestRenderedConfigurationPassesTheBinary).
 func TestR_VULN_025_ConfigurationPassesThrough(t *testing.T) {
 	_, docs := render(t, []string{monitoringSet()}, "config.vulnerabilities.enforcement=report")
 	var cfg map[string]any
-	if err := yaml.Unmarshal([]byte(str(find(docs, "ConfigMap", "trove-config"), "data", "trove.yaml")), &cfg); err != nil {
+	if err := yaml.Unmarshal([]byte(str(find(docs, "ConfigMap", "quader-config"), "data", "quader.yaml")), &cfg); err != nil {
 		t.Fatal(err)
 	}
 	if got := str(cfg, "vulnerabilities", "enforcement"); got != "report" {

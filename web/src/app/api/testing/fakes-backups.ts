@@ -25,9 +25,9 @@ export function sampleRun(over: Partial<BackupRun> = {}): BackupRun {
     backupId: '20261027T020000Z-1c9e',
     state: 'completed',
     trigger: 'schedule',
-    pod: 'trove-backup-29885880-x7k2q',
-    troveVersion: '0.4.0',
-    target: 's3://trove-backups/trove',
+    pod: 'quader-backup-29885880-x7k2q',
+    quaderVersion: '0.4.0',
+    target: 's3://quader-backups/quader',
     startedAt: '2026-10-27T02:00:04.112Z',
     heartbeatAt: '2026-10-27T02:47:30.870Z',
     leaseExpired: false,
@@ -59,7 +59,7 @@ export function sampleSummary(over: Partial<BackupSummary> = {}): BackupSummary 
     overdue: false,
     lastFailure: null,
     active: null,
-    target: 's3://trove-backups/trove',
+    target: 's3://quader-backups/quader',
     retention: { keepLast: 7, keepWithinSeconds: 0 },
     storedBackups: {
       asOf: '2026-10-27T02:47:31.009Z',
@@ -68,7 +68,7 @@ export function sampleSummary(over: Partial<BackupSummary> = {}): BackupSummary 
         {
           backupId: '20261027T020000Z-1c9e',
           snapshotAt: '2026-10-27T02:00:08.913Z',
-          troveVersion: '0.4.0',
+          quaderVersion: '0.4.0',
           schemaStep: 42,
           databaseBytes: 183_500_800,
           blobCount: 51_234,
@@ -78,7 +78,7 @@ export function sampleSummary(over: Partial<BackupSummary> = {}): BackupSummary 
       ],
     },
     restoredFrom: null,
-    manualRun: { namespace: 'trove', cronJob: 'trove-backup' },
+    manualRun: { namespace: 'quader', cronJob: 'quader-backup' },
     ...over,
   };
 }

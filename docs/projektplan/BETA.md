@@ -1,9 +1,9 @@
-# trove · Project plan to the beta release
+# Quader · Project plan to the beta release
 
 **Status:** ⚪ not started · 🟡 in progress or partly done · 🟢 done
 **Last updated:** 2026-11-10
 
-The way from zero to the beta release. The beta is trove with two package registries, **npm** and
+The way from zero to the beta release. The beta is Quader with two package registries, **npm** and
 **NuGet (.NET)**, each with local, remote (pull-through) and virtual repositories, running on the
 production topology the owner requires: HA PostgreSQL, HA Valkey with Sentinel, S3, separate `web`
 and `worker` roles, node drains without outage, and a backup job. Everything after the beta
@@ -29,9 +29,9 @@ numbers (owner, 2026-11-02).
 | [4 · NuGet registry](#phase-4--nuget-net-registry-m3) | NuGet v3 local, remote, virtual | 🟢 |
 | [5a · Projects](#phase-5a--projects-and-delegated-administration) | Projects with project administrators who manage their repositories, policies and the technical accounts of external parties | 🟢 |
 | [5 · GitLab CI OIDC](#phase-5--gitlab-ci-oidc-m4) | CI jobs get scoped tokens without stored secrets | 🟢 |
-| [5b · trove Bastion](#phase-5b--trove-bastion-m13) | An exposed, read-only cache instance in front of the main installation that serves released content to external parties and takes load off it | 🟢 |
-| [6 · Vulnerability scanning](#phase-6--vulnerability-scanning-m4b) | Own advisory mirror, findings and vulnerability report, malicious versions blocked, npm and NuGet audits from trove's data | 🟢 |
-| [6a · Task areas](#phase-6a--task-areas) | trove cut into task areas: `api`, `packages` and `worker` as roles of one binary with Deployments of their own, ingress rules between the chart's pods | 🟢 |
+| [5b · Quader Bastion](#phase-5b--quader-bastion-m13) | An exposed, read-only cache instance in front of the main installation that serves released content to external parties and takes load off it | 🟢 |
+| [6 · Vulnerability scanning](#phase-6--vulnerability-scanning-m4b) | Own advisory mirror, findings and vulnerability report, malicious versions blocked, npm and NuGet audits from Quader's data | 🟢 |
+| [6a · Task areas](#phase-6a--task-areas) | Quader cut into task areas: `api`, `packages` and `worker` as roles of one binary with Deployments of their own, ingress rules between the chart's pods | 🟢 |
 | [6b · Remote full mirror](#phase-6b--remote-full-mirror) | A remote repository can mirror every discoverable package of its upstream in the background, besides the default pull-through | 🟢 |
 | [7 · HA, backup, Helm](#phase-7--ha-hardening-backup-and-helm-m5) | Drains and failovers without errors, backup and restore; beta candidate | 🟡 |
 | [8 · Walkthrough and beta](#phase-8--walkthrough-and-beta-release) | Owner review, objections fixed; **beta release** | ⚪ |
@@ -43,7 +43,7 @@ Every registry ships with both test levels before its phase counts as done:
 - **Integration tests:** Go tests against real PostgreSQL, Valkey with Sentinel and an S3 store in
   containers. They drive the registry protocol over HTTP (publish, fetch, metadata, errors,
   permissions) and run the format conformance kit.
-- **E2E tests:** the real package-manager clients against trove deployed with the Helm chart in a
+- **E2E tests:** the real package-manager clients against Quader deployed with the Helm chart in a
   local Kubernetes cluster, with several `web` replicas and random request distribution, through
   local, remote and virtual repositories; plus browser tests of the registry's UI screens.
 
@@ -86,7 +86,7 @@ Details: [roadmap M0](../coverage/roadmap.md#m0--foundation)
 - 🟢 Helm chart skeleton: one Deployment per role, Services, PodDisruptionBudgets, topology spread
 - 🟢 Local HA-shaped stack on the owner's toolstack: CloudNativePG with standby, valkey-operator with three Sentinels, SeaweedFS, HAProxy Ingress, cert-manager, internal-secrets-operator (dev-only deviation: the operator's default Valkey user, see [local-profile](../developer/local-profile.md))
 - 🟢 Metrics, JSON request log, health and readiness endpoints
-- 🟢 TLS on every connection, trove's listeners included; certificate rotation without restart
+- 🟢 TLS on every connection, Quader's listeners included; certificate rotation without restart
 - 🟢 Endpoints: further client listeners with their own port, hosts (one wildcard allowed), base URL and certificates chosen by SNI; the endpoint is the listener's, a foreign host gets `421`; route families per endpoint; host-root binding reserved for later registries ([spec](../spec/endpoints.md))
 - 🟢 Helm chart per endpoint: Service or own pool, Ingress with its own class, hosts and TLS Secret, NetworkPolicy per port (the Gateway route per endpoint arrives with the chart's Gateway support, R-HA-038, in phase 7)
 
@@ -105,14 +105,14 @@ Details: [roadmap M1](../coverage/roadmap.md#m1--access-core)
 - 🟢 OIDC login with a test identity provider (Keycloak in the dev profile, Q-AUTH-35), sessions, CSRF protection, logout
 - 🟢 Break-glass administrator and bootstrap commands; the chart mounts its password from a Secret that internal-secrets-operator can generate and rotate (`secrets.breakGlass`)
 - 🟢 Users, groups (from the login provider's claims) and service accounts
-- 🟢 Personal and service-account tokens (`trv_pat_`, `trv_sat_`): scopes, lifetime, revocation
+- 🟢 Personal and service-account tokens (`qdr_pat_`, `qdr_sat_`): scopes, lifetime, revocation
 - 🟢 Brute-force protection with cluster-wide counters
 
 **Permissions**
 - 🟢 Permission policies: principals, repositories, name patterns, actions
 - 🟢 Evaluation engine with caches that stay correct across replicas
 - 🟢 Audit of logins, token changes, policy changes and denied requests
-- 🟢 System role bindings from the Helm values (`config.authz.role_bindings`), applied by `trove migrate` and read-only in
+- 🟢 System role bindings from the Helm values (`config.authz.role_bindings`), applied by `quader migrate` and read-only in
   the API and the UI, so an IdP group becomes the administrator through GitOps; the `auditor` role reads the metadata of
   every repository and downloads no artifact (added 2026-11-02, owner:
   [Q-AUTHZ-170](../spec/authorization.md#q-authz-170--system-role-bindings-declared-in-the-configuration),
@@ -202,7 +202,7 @@ Details: [roadmap M3](../coverage/roadmap.md#m3--nuget) · spec: [formats/nuget.
   address, Q-NUGET-82), merged search over local and remote members decided on the addressed repository, four members at
   a time on one scan budget (Q-NUGET-75, Q-NUGET-76, Q-NUGET-81), publishing through the deployment target
 - 🟢 Authentication: token as password in `nuget.config`, token as API key for push (`X-NuGet-ApiKey`, Q-AUTH-186)
-- 🟢 Clients: the .NET 10 SDK on Linux and nuget.exe on Mono run against trove on every change (e2e `nuget`); setup
+- 🟢 Clients: the .NET 10 SDK on Linux and nuget.exe on Mono run against Quader on every change (e2e `nuget`); setup
   instructions for Visual Studio in the guide. The Windows row and the manual Visual Studio checklist run in the owner
   walkthrough of phase 8 ([Q-NUGET-72](../spec/formats/nuget.md#q-nuget-72--the-windows-row-of-e31-and-the-visual-studio-checklist-run-in-the-owner-walkthrough-not-on-a-ci-runner))
 - 🟢 Package UI and client setup snippets for .NET (`dotnet`, nuget.exe, `nuget.config`, the token in each shell's spelling)
@@ -320,7 +320,7 @@ Bastion serves those parties. Phase 5 then maps GitLab pipelines into projects.
 
 **Security audit and code review of the phase (2026-11-02; fixed in the fix wave, what stays open is an H-item of its page)**
 - 🟢 HIGH · A project administrator with `manageRepositories` could send installation secrets to a host it chooses: the
-  unsaved upstream test resolves any `secretRef` (`env` `TROVE_CAC_…`, a file in `secrets_dir`) and sends it to the URL of
+  unsaved upstream test resolves any `secretRef` (`env` `QUADER_CAC_…`, a file in `secrets_dir`) and sends it to the URL of
   the request, and a `PATCH` that changes the URL of an assigned remote keeps its sealed password (`{"set": true}`)
   (`upstream_api.go`, `repository/upstream.go`, `secrets_store.go`); H-281 covered `repositories:write-config` only.
   Fixed: a project administrator gives an upstream secret as a value, a stored one does not follow a new address
@@ -436,7 +436,7 @@ Details: [roadmap M4](../coverage/roadmap.md#m4--gitlab-ci-oidc) · spec: [gitla
 - 🟢 The spec listed three save-time warnings, `internal/ci/reason` six more; R-CI-010 lists all nine now
 - 🟢 A rule violation of a management write: every violation in `errors[]` with its pointer and code, a rule the spec names
   also as the problem's `code` (Q-CI-30)
-- 🟢 `ca_bundle_ref`: `file:/abs/path` or `env:TROVE_CIC_<NAME>`; the installation's trust always applies and the bundle
+- 🟢 `ca_bundle_ref`: `file:/abs/path` or `env:QUADER_CIC_<NAME>`; the installation's trust always applies and the bundle
   only adds to it (Q-CI-31)
 - 🟢 The exchange: a `ttl` below `ci.token.min_ttl` answered `subject_token_expires_too_soon`, which names the wrong cause; an
   empty `subject_token` had no stated reason; `ci.exchange.enabled: false` answering 404 was only in the code; the 405 of
@@ -454,7 +454,7 @@ Details: [roadmap M4](../coverage/roadmap.md#m4--gitlab-ci-oidc) · spec: [gitla
   and W2's `jws.ParseJWKS`; one of them goes, so the key status and the validation cannot disagree (W4). The key store stores and
   reads its sets through `jws.ParseJWKS` and selects with `jws.Candidates`, its own rules are gone
   ([Q-CI-42](../spec/gitlab-ci-oidc.md#q-ci-42--one-implementation-of-the-key-rules-the-shared-leaf), `TestR_CI_003_TheKeyStatusAndTheValidationAgree`)
-- 🟢 Test and Release run 41525937899 failed in `integration (shard b)`: since W1, `trove migrate` applies `ci.issuers` on
+- 🟢 Test and Release run 41525937899 failed in `integration (shard b)`: since W1, `quader migrate` applies `ci.issuers` on
   every run, and the test helper `testenv.DeclareRoleBindings` built a bare configuration without the CI caches' SafetyTTL
   (`cache: "ci_issuers" needs a SafetyTTL`); the helper sets them as `config.Load` does
 - 🟢 `TestR_CI_003_AFetchHoldsNoTransactionOpenAndAnUnchangedSetLeavesTheEpoch` failed in 2 of 3 runs after the merge of W3:
@@ -473,10 +473,10 @@ Details: [roadmap M4](../coverage/roadmap.md#m4--gitlab-ci-oidc) · spec: [gitla
   neither a version nor the name
 - 🟢 `make image` failed with "no space left on device": the build context took in `.claude/worktrees`, the worktrees of
   the development sessions with their tool binaries; `.dockerignore` leaves `.claude` out
-- 🟢 The owner's dev cluster runs the current main again (owner, 2026-11-02, option a): its `trove` schema was dropped and the
+- 🟢 The owner's dev cluster runs the current main again (owner, 2026-11-02, option a): its `quader` schema was dropped and the
   migration Job built it afresh; the database's earlier content is gone
-- 🟢 `make dev-up` on an existing cluster installed a newly loaded `guidedtraffic/trove:dev` without rolling the pods: the tag
-  and the pod spec were unchanged. `deploy/dev/up.sh` now puts the loaded image's ID into the pod annotation `trove-dev/image-id` of
+- 🟢 `make dev-up` on an existing cluster installed a newly loaded `guidedtraffic/quader:dev` without rolling the pods: the tag
+  and the pod spec were unchanged. `deploy/dev/up.sh` now puts the loaded image's ID into the pod annotation `quader-dev/image-id` of
   both roles, so the pods roll exactly when the image changed and a second run with the same image changes nothing (checked on the
   dev cluster: a changed image rolled `web` and `worker`, the next `make dev-up` left the pods alone; W7)
 - ➡️ `TestR_CI_021_TheAddressBudgetIsOneAcrossReplicas` holds R-CI-021's "1,000 requests within 5 s" as a hard bound; on a
@@ -503,7 +503,7 @@ Details: [roadmap M4](../coverage/roadmap.md#m4--gitlab-ci-oidc) · spec: [gitla
   substring match, and the new task `ci-keys-refresh` added a "Run task ci-keys-refresh now" button to the same screen; the
   locator is exact now
 - 🟢 The dispatched run 41568514247 of HA and Performance (nightly) failed `TestCIHAPodDelete` in `e2e-ci on kind (ci-ha)`
-  (drain, Valkey stopped, single use and FLUSHALL passed): 15 of the 50 jobs got `Post "https://oidcstub.trove.svc:8444/mint": EOF`
+  (drain, Valkey stopped, single use and FLUSHALL passed): 15 of the 50 jobs got `Post "https://oidcstub.quader.svc:8444/mint": EOF`
   and the other 35 ran 444 exchanges. No exchange was refused; the test infrastructure failed. The jobs minted their ID tokens at the
   same moment, each over a new TLS connection (`DisableKeepAlives`) through the one `kubectl port-forward` to the double's control
   port, and the CI runner is CPU-limited. The double is not the limit (verified: 400 simultaneous new TLS mints through a
@@ -511,7 +511,7 @@ Details: [roadmap M4](../coverage/roadmap.md#m4--gitlab-ci-oidc) · spec: [gitla
   under `-race`); the burst of 50 new forwarded streams is the one thing the path has that those do not. Not reproduced on the
   laptop, so the stream creation of `kubectl port-forward` on the starved runner is the likely link, not proven. Now `mintAll`
   mints the 50 tokens before the window, 6 at a time over kept-alive connections, and fails the test on a refused mint, so the
-  measured window holds trove's exchanges only and the criterion is unchanged (every exchange 200, no reset, no 5xx, no retry).
+  measured window holds Quader's exchanges only and the criterion is unchanged (every exchange 200, no reset, no 5xx, no retry).
   `make e2e SET=ci-ha` twice on kind: 403.7 s and 380.3 s, 628 exchanges by 50 jobs both times, all 200. The nightly run
   after this change is the closing evidence
 
@@ -584,7 +584,7 @@ Details: [roadmap M4](../coverage/roadmap.md#m4--gitlab-ci-oidc) · spec: [gitla
   (Q-CI-47): a project tier's render failure, bound (`expiresAt`, bundle version 2) and disable or delete reach its own
   contribution only, the system tier owns its tokens, and the evaluator drops a project's ended or inactive contribution
   (`tiers_test.go`; gaps H-424, H-425, H-427)
-- 🟢 MEDIUM · `trove migrate` changes a declared issuer's `issuer` URL and `kind` in place under the same issuer ID, which the
+- 🟢 MEDIUM · `quader migrate` changes a declared issuer's `issuer` URL and `kind` in place under the same issuer ID, which the
   API refuses as `immutable`: pins, package owners (`ci:<issuer>:project:<id>`) and unpinned private-issuer mappings move to the
   new instance, the old key set stays valid until the next refresh, nothing is revoked (`issuers_declared.go`) — fixed
   (Q-CI-48): the migration stops, names both values and asks for a new name (`TestR_CI_001_ADeclaredIssuerKeepsItsIssuerURL`)
@@ -612,10 +612,10 @@ Details: [roadmap M4](../coverage/roadmap.md#m4--gitlab-ci-oidc) · spec: [gitla
   per-replica copy, the unknown-`kid` re-read and refetch throttles, `max_stale`, `ci-keys-refresh` on workers
   (`test/integration/ci`, [ci-federation.md](../security/ci-federation.md), Q-CI-30 to Q-CI-32); the criteria that
   needed the exchange and the revoker pass since W4 and W5, and end to end in the set `ci` (W7)
-- 🟢 GitLab issuers declared in the Helm values (`config.ci.issuers`), applied by `trove migrate`, shown in trove and
-  read-only there ([Q-CI-16](../spec/gitlab-ci-oidc.md#q-ci-16--ci-issuers-provisioned-through-the-helm-values-are-read-only-in-trove), owner 2026-11-02); built (`ApplyDeclared` in `trove migrate`, `TestR_CI_001_*` in `test/integration/ci`); removing an
+- 🟢 GitLab issuers declared in the Helm values (`config.ci.issuers`), applied by `quader migrate`, shown in Quader and
+  read-only there ([Q-CI-16](../spec/gitlab-ci-oidc.md#q-ci-16--ci-issuers-provisioned-through-the-helm-values-are-read-only-in-quader), owner 2026-11-02); built (`ApplyDeclared` in `quader migrate`, `TestR_CI_001_*` in `test/integration/ci`); removing an
   issuer that has issuance records disables it and revokes its tokens (W5), and a changed URL or kind stops the migration (Q-CI-48)
-- 🟢 Token exchange: GitLab ID token (`id_tokens:` with trove as audience) in, short-lived CI token (`trv_cit_`) out;
+- 🟢 Token exchange: GitLab ID token (`id_tokens:` with Quader as audience) in, short-lived CI token (`qdr_cit_`) out;
   `CI_JOB_TOKEN` is not accepted (owner 2026-11-02; its fallback stays P2, R-CI-022). Built (W4): `POST /api/v1/auth/oidc/token` with
   form and JSON bodies, the scope, the lifetime, the re-check of the issuer and the mappings `FOR SHARE` in one transaction with the
   replay set and the restore cut-off, the issuance record, the events and metrics, the cluster-wide budgets per address and per
@@ -630,7 +630,7 @@ Details: [roadmap M4](../coverage/roadmap.md#m4--gitlab-ci-oidc) · spec: [gitla
   mapping, verify with the dry run, read the issuances, troubleshoot refusals) (owner 2026-11-02), written while the phase is
   built (owner, 2026-11-02), with three how-tos: how a project administrator lets the pipelines of a GitLab project write
   to the project's repositories; how a project administrator gives a whole GitLab instance or group read access to the
-  whole project or to one repository; how a pipeline gets its trove token. Documented in
+  whole project or to one repository; how a pipeline gets its Quader token. Documented in
   [admin/gitlab-ci.md](../manual/admin/gitlab-ci.md) and [user/gitlab-ci-pipelines.md](../manual/user/gitlab-ci-pipelines.md);
   W7 removed the "not available yet" notes and the 501 paragraphs, added the section on the screens, checked the labels against
   `web/src/app/features/ci` and the nuget.config of the pipeline against the run (Q-CI-44), and removed the "not released yet"
@@ -681,7 +681,7 @@ Details: [roadmap M4](../coverage/roadmap.md#m4--gitlab-ci-oidc) · spec: [gitla
   cases, the key set and its caching, `CI_JOB_TOKEN`'s shape (`make oidc-fixtures`, `test/oidcstub/testdata`); a fork merge request
   opened by a parent member runs in the parent, no claim pins an ancestor group (H-27)
 
-## Phase 5b · trove Bastion (M13)
+## Phase 5b · Quader Bastion (M13)
 
 Details: [roadmap M13](../coverage/roadmap.md#p1-platform-milestones) · spec: [bastion.md](../spec/bastion.md)
 
@@ -694,7 +694,7 @@ to denial-of-service attempts.
   what the Bastion refuses. Decided by the owner on 2026-10-31: the Bastion asks the main installation whether a
   credential is valid and what it may read, and keeps the answers for a short, bounded time; it holds no copy of
   users, tokens or policies. Decided by the owner on 2026-11-02: the Bastion's own credential towards the main
-  installation is a token that a trove administrator of the main installation issues for the Bastion (read only, nothing
+  installation is a token that a Quader administrator of the main installation issues for the Bastion (read only, nothing
   else); a client certificate is not its identity, because a TLS-terminating reverse proxy in front of the main
   installation would not pass it on. The Bastion connects to the main endpoint of the main installation (owner,
   2026-11-02): the Bastion replaces the customer endpoint of the earlier plans. Settled on the page: the bound (R-BAS-020,
@@ -703,7 +703,7 @@ to denial-of-service attempts.
   R-BAS-034). Catalog entries it pulls forward: the chained remote repository (RMT-040, RMT-041, RMT-044) and the read-only
   deployment profile with its trust between source and instance (DIST-024, DIST-025), raised to MVP with the page; RMT-042,
   RMT-043, RMT-045 and RMT-046 stay P2 (Q-BAS-47)
-- 🟢 A second Helm chart (`trove-bastion`) for this instance type (owner, 2026-11-02) with its own Ingress, Service, NetworkPolicy and TLS Secret; horizontal replicas
+- 🟢 A second Helm chart (`quader-bastion`) for this instance type (owner, 2026-11-02) with its own Ingress, Service, NetworkPolicy and TLS Secret; horizontal replicas
   without PostgreSQL of its own if the design allows, otherwise the smallest state that keeps the replicas consistent
 - 🟢 Same authentication as the main installation: personal, service-account and CI tokens and the same login, with
   revocation reaching the Bastion within a stated bound; permissions and exposure rules of the main installation
@@ -748,7 +748,7 @@ to denial-of-service attempts.
 - 🟢 Configured only through its Helm chart (owner, 2026-11-02): the Bastion has no settings held anywhere else; every value
   (main installation, its token, cache, periods, limits, blocking, trusted proxies) is a chart value, and a change is a
   rollout
-- 🟢 Blocking in two stages (owner, 2026-11-02): the Bastion itself enforces the rules that need trove's knowledge (failed
+- 🟢 Blocking in two stages (owner, 2026-11-02): the Bastion itself enforces the rules that need Quader's knowledge (failed
   authentication, misses, block duration, a block list shared through Valkey); its chart can put a coarser per-address
   limit in front at HAProxy Ingress, which can be switched off and is set wider than the Bastion's own. Volumetric attacks
   on bandwidth are the network provider's, not the Bastion's
@@ -781,7 +781,7 @@ to denial-of-service attempts.
 
 Details: [roadmap M4b](../coverage/roadmap.md#m4b--vulnerability-scanning) · spec: [vulnerability-scanning.md](../spec/vulnerability-scanning.md)
 
-The owner decided on 2026-10-31 that trove scans its stored packages itself and shows a vulnerability dashboard in the
+The owner decided on 2026-10-31 that Quader scans its stored packages itself and shows a vulnerability dashboard in the
 beta. The phase comes before the HA phase, so that phase 7 hardens the scanner with everything else. The testing rule above
 applies to the npm and NuGet parts of this phase.
 
@@ -796,8 +796,8 @@ applies to the npm and NuGet parts of this phase.
 - 🟢 Download blocking: malicious versions by default, every other block set and lifted in triage on a confirmed finding, no severity threshold (owner, 2026-10-31); on every route that serves a version, in the one item-lookup query; report mode for the whole installation
 
 **Formats**
-- 🟢 npm: `npm audit`, `pnpm audit` and `yarn npm audit` answered from trove's data on local, remote and virtual repositories; no package name leaves the installation
-- 🟢 NuGet: `VulnerabilityInfo` from trove's data on every repository class, so `dotnet restore` reports NU1901 to NU1904
+- 🟢 npm: `npm audit`, `pnpm audit` and `yarn npm audit` answered from Quader's data on local, remote and virtual repositories; no package name leaves the installation
+- 🟢 NuGet: `VulnerabilityInfo` from Quader's data on every repository class, so `dotnet restore` reports NU1901 to NU1904
 - 🟢 Blocked downloads in npm's and NuGet's error shapes
 
 **API and UI**
@@ -818,7 +818,7 @@ applies to the npm and NuGet parts of this phase.
   41739280012 every assertion of the criterion passed (queued again, ended on a second worker from its checkpoint after 5
   batches) before its cleanup failed on the test source's control connection (the control client now repeats an idempotent call on a new forward, `test/e2e/ctlretry`; to be confirmed in a nightly run)
 - 🟢 E4b.2: the corpus `internal/vuln/match` (22 real records, results equal to osv-scanner v2.7.0's offline mode) and the per-format
-  table tests; the claims rule and `TroveVulnerabilityClaimedNameMalicious` in `test/integration/vulnfindings` and the chart's promtool
+  table tests; the claims rule and `QuaderVulnerabilityClaimedNameMalicious` in `test/integration/vulnfindings` and the chart's promtool
   tests
 - 🟢 E4b.3: `test/integration/vulnfindings` (21 tests and the fix-wave cases), `TestR_VULN_015_E4b3_E4b4_TheFlowFromTheAdvisorySourceToTheBlockedDownload`
   of `test/integration/vulnflow`, the reopen and bulk triage with their audit events in `test/integration/vulnapi`
@@ -826,7 +826,7 @@ applies to the npm and NuGet parts of this phase.
   request, the cross-replica dismissal, Valkey stopped, `querycount_test.go`: the scanning adds no statement to a download); the
   blocked installs, malicious and in triage, of every gated npm client row and the blocked restore of .NET 8, 9 and 10 in the set `vuln`
 - 🟢 E4b.5: npm, pnpm 11 and 12 and Yarn 4 audits through `npm-local`, `npm-remote` and `npm-all` with zero upstream and advisory-source
-  requests, NU1903, NU1904 and `NuGetAuditSuppress` (set `vuln`); the recorded public answer against trove's in
+  requests, NU1903, NU1904 and `NuGetAuditSuppress` (set `vuln`); the recorded public answer against Quader's in
   `TestR_VULN_017_TheReferenceLockfileMatchesThePublicAnswer` (67 real advisories of a control body, identical identifiers and severities)
 - 🟢 E4b.6: the four browser journeys with axe across three `web` replicas (set `vuln`); the `@team-a/*` narrowing of list, counts,
   trend and export in `test/integration/vulnapi`
@@ -846,16 +846,16 @@ Details: [roadmap phase 6a](../coverage/roadmap.md#phase-6a--task-areas) · spec
 [ha-and-helm.md R-HA-002](../spec/ha-and-helm.md#r-ha-002--role-split-into-api-packages-and-worker-deployments) to
 [R-HA-064](../spec/ha-and-helm.md#r-ha-064--upgrade-across-the-cut-into-roles)
 
-Decided by the owner on 2026-11-04: trove is cut into task areas, as roles of one binary that run as Deployments of
+Decided by the owner on 2026-11-04: Quader is cut into task areas, as roles of one binary that run as Deployments of
 their own, with network seams only at trust or load boundaries
-([ADR-153](../decisions.md#adr-153--trove-is-cut-into-task-areas-roles-of-one-binary-network-seams-only-at-trust-or-load-boundaries)).
+([ADR-153](../decisions.md#adr-153--quader-is-cut-into-task-areas-roles-of-one-binary-network-seams-only-at-trust-or-load-boundaries)).
 Network policies are ingress rules between the chart's pods, each with its port
 ([ADR-154](../decisions.md#adr-154--network-policies-are-ingress-rules-between-the-charts-pods-each-with-its-port)).
 The phase comes before phase 6b, so that the mirror's background passes and its upstream contacts land in their task
 areas.
 
 - 🟢 Principle of the cut (ADR-153) and the network-policy rule (ADR-154)
-- 🟢 The network-policy rule for the chart `trove-bastion` too (owner, 2026-11-05): its egress policy removed, R-BAS-047 is ingress
+- 🟢 The network-policy rule for the chart `quader-bastion` too (owner, 2026-11-05): its egress policy removed, R-BAS-047 is ingress
   rules only, Q-BAS-55 superseded in part, the egress gap
   [H-522](../security/bastion.md#h-522--the-chart-restricts-no-egress-of-the-bastion-pods); chart tests green. The rewritten
   `TestBastion_R_BAS_049_NetworkPolicy` (ingress refused from another namespace at both ports, admitted from the ingress controller's
@@ -884,11 +884,11 @@ areas.
   ([Q-HA-99](../spec/ha-and-helm.md#q-ha-99--the-uis-hashed-assets-across-an-upgrade); between releases with the shared asset store
   the skew is fixed, Q-HA-120). The dev PostgreSQL allows 450
   connections for the bridge (Q-HA-98). E6a.8: `TestR_HA_031_ValuesReference` and `TestR_HA_038_GatewayAPIExposure` name R-HA-031 and R-HA-038; R-HA-045 is complete since
-  2026-11-07: the ServiceMonitor (`TestServiceMonitor`) and every alert of its table, the seven `TroveBackup*` alerts,
-  `TroveRevocationJournalBacklog` and `TroveRevocationJournalQuarantined` included, rendered with promtool tests firing and silent
-  (`TestR_HA_045_PrometheusRule`; Q-HA-135, Q-OPS-182, Q-HA-162); `TroveBackupCheckFailed` reads the gauge of the task `backup-check`
+  2026-11-07: the ServiceMonitor (`TestServiceMonitor`) and every alert of its table, the seven `QuaderBackup*` alerts,
+  `QuaderRevocationJournalBacklog` and `QuaderRevocationJournalQuarantined` included, rendered with promtool tests firing and silent
+  (`TestR_HA_045_PrometheusRule`; Q-HA-135, Q-OPS-182, Q-HA-162); `QuaderBackupCheckFailed` reads the gauge of the task `backup-check`
   (R-HA-023, Q-HA-151). The leg `e2e-upgrade (upgrade)` passed both upgrade tests in the dispatched nightly run 42177273488.
-  R-HA-021 (2026-11-06, finding F-59): `GET /api/v1/system/migrations` is built, the report of `trove migrate status` from the same
+  R-HA-021 (2026-11-06, finding F-59): `GET /api/v1/system/migrations` is built, the report of `quader migrate status` from the same
   code with the background migrations and their states (Q-HA-114), and a contract step declares the background migration it
   depends on, which the guard enforces (Q-HA-115). `TestR_HA_021_UpgradePreparation` names R-HA-021 and passes against the local
   integration stack (step 4: report and guard agree for each state; the runner's part of both criteria); it passed in Test and Release run 42233888865, and
@@ -912,7 +912,7 @@ Details: [roadmap phase 6b](../coverage/roadmap.md#phase-6b--remote-full-mirror)
 discovery
 
 The owner's request of 2026-11-02: pull-through stays the default of a remote repository; a remote can also be set to full
-mirror, in which trove downloads and keeps everything it can discover at the upstream on its own. The phase comes before
+mirror, in which Quader downloads and keeps everything it can discover at the upstream on its own. The phase comes before
 phase 7, so that the failure suite covers the background sync too. Its engine waits for phase 6a: until then
 `mode: mirror` is refused with `not_applicable` (R-REPO-050).
 
@@ -968,7 +968,7 @@ Details: [roadmap M5](../coverage/roadmap.md#m5--ha-hardening-and-helm-ga) · sp
   failed the 30 s object-store outage: the `packages` replicas stalled at its start (F-66), a regression against 42211913572. Objects lost from the store (F-62, seen on the dev cluster): a
   remote's cached document, tarball or package without its object is filled again from the upstream, `503 content_unavailable` while it
   cannot, never `500` and never `404` (also through a virtual repository for a caller who may not fill); a fill that cannot restore it
-  backs off for 5 minutes; the read marks the blob, `TroveBlobMissing` fires, and the mark heals once the object is back (a read asks the
+  backs off for 5 minutes; the read marks the blob, `QuaderBlobMissing` fires, and the mark heals once the object is back (a read asks the
   store again once per blob and 30 s) (Q-REPO-202 to Q-REPO-206, Q-STOR-151 to Q-STOR-153, `TestR_STOR_027_*`, `TestR_HA_024_*`)
   (`TestNPMHACrash`, `TestNPMHA`, `TestNPMHAClosing`, `TestE13Failover`). The dispatched nightly run 42461514664 (2026-11-08, release v0.26.0) passed `e2e-npm (ha-suite)` whole, with no reset at the client forwarder (F-70 closed); the stall of F-66 did not recur in the dispatched runs 42338478182 and 42461514664 and is closed as not reproduced
 - 🟡 Node drain under npm and NuGet load with zero failed requests; the NuGet load (`TestNuGetHA`) and R-ARCH-024's drain
@@ -981,7 +981,7 @@ Details: [roadmap M5](../coverage/roadmap.md#m5--ha-hardening-and-helm-ga) · sp
   the dispatched nightly run 42177273488
   Reopened on 2026-11-09: this item's evidence is variant A; E5.9 asks for variants A to E under the whole load, and the runs below are not green yet
 - 🟡 E5.9, drain variants A to E under the whole client load, the long-transfer probes and R-STOR-046's drain criterion. Built on 2026-11-09 (`TestDrainLoad`, `TestDrainLoadPooler`, Q-HA-240 to Q-HA-245, Q-STOR-211). On branch runs: variant B green (42608957054), D green with the poolers (42642170448: 373 `npm ci`, 283 `dotnet restore`, both downloads cut once and resumed with `206`, `gc-full` moved with attempt 1). Open: variant A red (42647914453: p99 12.1 s against a warm-up of 3.3 s, the Valkey failover subtest), variant C red on its p99 outside the switchover window (15.8 s against 3.75 s, run with neighbours), variant E lost its runner six times, drained pods ending with exit 137 (H-798), no retention run because the product has none (Q-STOR-211). Product defect found and fixed: a switchover cost every running job an attempt
-- 🟢 E5.2, a replica killed during a cold install. `trove admin storage verify` built (Q-STOR-200), `TestColdCrash` (set `cold-crash`, Q-HA-220): the 500-package lockfile and the reference solution, one `packages` pod force-deleted partway, every client exit 0, the verify report clean; green on kind and in the nightly leg of run 42595813923
+- 🟢 E5.2, a replica killed during a cold install. `quader admin storage verify` built (Q-STOR-200), `TestColdCrash` (set `cold-crash`, Q-HA-220): the 500-package lockfile and the reference solution, one `packages` pod force-deleted partway, every client exit 0, the verify report clean; green on kind and in the nightly leg of run 42595813923
 - 🟡 E5.10, the failover rows under load. Built on 2026-11-09 (sets `ha-faults` and `ha-pooler`, Q-HA-250 to Q-HA-259): database at 0 instances for 2 minutes, Sentinel quorum loss, `FLUSHALL`, slow Valkey, a Valkey credential mismatch, a lost pooler instance. Passed at least once on a runner: Sentinel quorum loss, `FLUSHALL`, credential mismatch, the pooler loss. Two product defects found and fixed (a stopping pooler answered 500; a rejected object-store credential never opened the circuit), and H-794: requests during a database outage now fail within the retry budget (a unit reproduction; the scenario has not run since). Open: no run with every test green (H-795), the slow Valkey's p99
 - 🟢 npm load in the drain and failover tests reliably green (moved from phase 3, owner 2026-11-01). Diagnosis of
   2026-11-01: `make e2e SET=npm-ha` passes on a 17-CPU kind cluster (drain: 40,894 k6 requests, 0 failures, every job at
@@ -1049,7 +1049,7 @@ Details: [roadmap M5](../coverage/roadmap.md#m5--ha-hardening-and-helm-ga) · sp
 - 🟢 Rolling upgrade from the previous pre-release with mixed versions. `TestUpgrade_R_HA_020_RollingFromThePreviousRelease`
   (set `upgrade`) passed on kind on 2026-11-06: v0.19.0 (resolved from the tags) upgraded with its migration Job and rolled back with
   `helm rollback`, under 447 `npm ci`, 47 publishes, 545 `dotnet restore` and 71 browser journeys, 0 failed; R-HA-020's verification
-  (rollout status, only the new version listed, no pending migration through `trove migrate status`, since the endpoint was F-59). The
+  (rollout status, only the new version listed, no pending migration through `quader migrate status`, since the endpoint was F-59). The
   test is strict on the UI's assets. Passed in the dispatched nightly run 42177273488 as well. Since 2026-11-06 the verification reads `GET /api/v1/system/migrations` and
   waits for the background migrations to succeed, with the command as the cross-check (Q-HA-116), passed in nightly run 42230022283. The UI's hashed files across the window
   (F-58) are served by the shared asset store since 2026-11-06 ([Q-HA-120](../spec/ha-and-helm.md#q-ha-120--how-a-replica-serves-a-hashed-ui-file-of-the-other-release)
@@ -1074,14 +1074,14 @@ Details: [roadmap M5](../coverage/roadmap.md#m5--ha-hardening-and-helm-ga) · sp
 
 **Backup and restore**
 - 🟢 Backup job (CronJob): consistent database snapshot, blobs copied incrementally to the backup S3 target. Built on 2026-11-07
-  ([backup.md](../developer/backup.md)): `trove backup create` exports every table under one snapshot with the migration lock held
+  ([backup.md](../developer/backup.md)): `quader backup create` exports every table under one snapshot with the migration lock held
   shared, copies the referenced blobs into the content-addressed pool (server-side within a size-derived bound, else streamed), keeps
   garbage collection away from them through the hold and the pins, commits with the manifest, and prunes by the retention policy and a
   proven pool sweep; `list`, `verify`, `delete`, `prune`; the CronJob with its own identity, a read-only blob login and the target's
   credentials only in the backup pod; a retry pod of the same Job takes over a killed run (Q-BAK-44). Evidence: the integration tests
   of `test/integration/backup` (`TestR_BAK_005_*` to `TestR_BAK_019_*`, the hold property test over interleavings, the real binary's exit
   codes, `kill -9` takeover and SIGTERM), `TestR_HA_060_BackupCronJob`; reviewed (code review, security audit) and every finding fixed
-- 🟢 Restore job into an empty installation. Built on 2026-11-07: `trove backup restore` checks the preconditions, anchors, migrates
+- 🟢 Restore job into an empty installation. Built on 2026-11-07: `quader backup restore` checks the preconditions, anchors, migrates
   the empty database to the backup's step, copies the blobs, loads every table in one transaction, migrates the rest, fixes up the
   derived state (keyspace, incarnation, revisions, jobs, storage usage, remote caches), replays the revocation journal and resumes after
   a kill at any step; the restore Job with every replica refused while it runs. Evidence: `TestR_BAK_020_*`, `TestR_BAK_021_*` (end to
@@ -1092,23 +1092,23 @@ Details: [roadmap M5](../coverage/roadmap.md#m5--ha-hardening-and-helm-ga) · sp
   of the database at *t*: a Bastion registration's disable and deletion ([Q-BAS-145](../spec/bastion.md)), one `token.revoked` per token a
   disable or deletion revokes, written in batches, and a cleared auto-join flag ([Q-AUTH-198](../spec/identity-and-authentication.md)), a
   repository's disable and deletion ([Q-AUTHZ-238, Q-AUTHZ-239](../spec/authorization.md)); every journaled event has a handler in the
-  `trove` binary (`TestR_HA_054_EveryJournaledEventHasAReplayHandler`). The blocks of findings replay since Q-VULN-114, the blocks the evaluation sets since Q-VULN-130 to Q-VULN-132 (F-74), and the narrowings of identities, groups, token maxima, repositories and claims since R-REPO-061 and Q-AUTH-205 to Q-AUTH-207 (F-72); what a restore still brings back is H-569 (upstream, storage and format settings of a repository)
+  `quader` binary (`TestR_HA_054_EveryJournaledEventHasAReplayHandler`). The blocks of findings replay since Q-VULN-114, the blocks the evaluation sets since Q-VULN-130 to Q-VULN-132 (F-74), and the narrowings of identities, groups, token maxima, repositories and claims since R-REPO-061 and Q-AUTH-205 to Q-AUTH-207 (F-72); what a restore still brings back is H-569 (upstream, storage and format settings of a repository)
 - 🟢 E2E: backup taken during publishing restores with every npm and NuGet file digest-correct. Built on 2026-11-07 (set `backup`,
   nightly leg `e2e-backup` on `large`, Q-HA-154; [e2e.md](../developer/e2e.md)) and passed on kind locally: `TestBackupDrill` (a backup
   during 19 npm, 19 NuGet and 19 file publishes with deletes, trashes and a collector at `grace_period: 0s`, restored by the restore Job
   into a second namespace: 1,036 file items and 1,037 blobs digest-correct, `npm view` and the NuGet version lists equal the restored
-  database, `trove backup verify --deep` exits 0, two overlapping Jobs end one Complete and one exit 3), `TestBackupDrain` (a drain and a
+  database, `quader backup verify --deep` exits 0, two overlapping Jobs end one Complete and one exit 3), `TestBackupDrain` (a drain and a
   `kill -9` during a backup and during a restore, every Job Complete), `TestBackupJournal` (E5.12's token, user, npm withhold and
   reinstate, NuGet reservation, exposure, storage summary and restore origin), the scenarios 1, 2, 5, 7 and 10 of R-BAK-029 against the
   integration stack. On 2026-11-08 E5.12's CI bullets joined `TestBackupJournal` on the cluster (a replayed mapping disable suspends the later mappings, the single-use subject token answers `subject_token_predates_restore`) and E5.13's restore part passed (`TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage`), both on kind. The leg's first CI run (dispatched nightly 42461514664) passed TestBackupDrill and TestBackupJournal and failed TestBackupDrain's two restore subtests, which slept four seconds that the runner's restore outlasted; fixed by acting on the line before the blob copy and proving the interruption (bd2446dc, twice green on kind). The leg passed whole on the CI runner in the nightly runs 42571414393 and 42595813923 (2026-11-09); the restore across releases and PostgreSQL majors stays gap H-568
 
-- 🟡 E5.1, the point-in-time restore of the platform layer. Built on 2026-11-09: WAL archive and base backup through the Barman Cloud plugin in an opt-in dev profile, `TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLayer` (set `backup-pitr`), `postRestore.hold` as the chart's way to stop every role (Q-HA-210 to Q-HA-213). The drill passed in CI run 42586045572: the data of before *t* digest-correct, the blob deleted after *t* back, a token revoked after *t* still `401`. Since then `trove admin storage restore-versions`, `trove admin maintenance pause-deletions` and `resume-deletions` exist and the drill calls them (Q-HA-270, Q-HA-271); that form passed on kind on 2026-11-10 (`make e2e SET=backup-pitr`, 13 of 13, Q-HA-289) and has not yet run in the nightly job on a fresh cluster
+- 🟡 E5.1, the point-in-time restore of the platform layer. Built on 2026-11-09: WAL archive and base backup through the Barman Cloud plugin in an opt-in dev profile, `TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLayer` (set `backup-pitr`), `postRestore.hold` as the chart's way to stop every role (Q-HA-210 to Q-HA-213). The drill passed in CI run 42586045572: the data of before *t* digest-correct, the blob deleted after *t* back, a token revoked after *t* still `401`. Since then `quader admin storage restore-versions`, `quader admin maintenance pause-deletions` and `resume-deletions` exist and the drill calls them (Q-HA-270, Q-HA-271); that form passed on kind on 2026-11-10 (`make e2e SET=backup-pitr`, 13 of 13, Q-HA-289) and has not yet run in the nightly job on a fresh cluster
 
 **Helm chart and release**
 - 🟡 Chart complete: values reference and schema, autoscaling, network policies, monitoring integration. Built on 2026-11-07: the values reference is held to `values.yaml` and `values.schema.json` (`TestR_HA_031_ValuesReference`), the Gateway API exposure (`TestR_HA_038_GatewayAPIExposure`), the ServiceMonitor and 23 alerts of the PrometheusRule with promtool tests ([Q-HA-135](../spec/ha-and-helm.md)). The backup CronJob, the restore Job and the post-restore hook Job with their values, schema, validation and Secrets by scope (R-HA-060, R-HA-025), and every alert of R-HA-045 (`TestR_HA_045_PrometheusRule`)
-  Reopened on 2026-11-09: E5.5 asks for more than the renders. Built on 2026-11-09: production example values (`deploy/helm/trove/examples/production.yaml`, four chart tests), the profile `edge` with an Envoy Gateway and `TestEdge_R_HA_039_TransfersThroughTheIngressAndTheGateway` (a 6 GiB upload, a 2 GiB slow download, a 1 GiB NuGet push through the Ingress and the HTTPRoute), the profile `alerts` with a Prometheus: eight scenarios, `MaintenanceStaysQuiet` among them, green in run 42647438388 on a GitHub-hosted runner; `TroveValkeyFailoverFlapping` no longer fires on two changes (Q-OPS-198). Open: `edge` has no CI result, it ended the runner four times (H-799; full size green locally in 25 minutes)
+  Reopened on 2026-11-09: E5.5 asks for more than the renders. Built on 2026-11-09: production example values (`deploy/helm/quader/examples/production.yaml`, four chart tests), the profile `edge` with an Envoy Gateway and `TestEdge_R_HA_039_TransfersThroughTheIngressAndTheGateway` (a 6 GiB upload, a 2 GiB slow download, a 1 GiB NuGet push through the Ingress and the HTTPRoute), the profile `alerts` with a Prometheus: eight scenarios, `MaintenanceStaysQuiet` among them, green in run 42647438388 on a GitHub-hosted runner; `QuaderValkeyFailoverFlapping` no longer fires on two changes (Q-OPS-198). Open: `edge` has no CI result, it ended the runner four times (H-799; full size green locally in 25 minutes)
 - 🟢 Security documentation in [docs/security](../security/README.md) and security review. Pages for the backup lane and the avatar upload, each audited on 2026-11-07 with every finding fixed or recorded as a gap. The review of the whole beta (E5.7) on 2026-11-08: a security audit found 68 beta gaps not linked on their mechanism's page, stale statuses and pages describing M0 to M2; all fixed, the npm and remote-engine pages written (gaps H-581 to H-583 new; H-581 closed by F-75 on 2026-11-08), and a second audit read every page against the code and found E5.7 met
-- 🟡 Release pipeline: `Release Docker & Helm` publishes the image `guidedtraffic/trove` (Docker Hub) with provenance and SBOM attestations and the chart (GitHub Pages) with each release ([releasing.md](../developer/releasing.md#the-release-pipeline)); it publishes every release since the switch to the organisation's CI standard. Tests run before a release; no job runs against the published artifacts (owner, 2026-11-10, Q-HA-281).
+- 🟡 Release pipeline: `Release Docker & Helm` publishes the image `guidedtraffic/quader` (Docker Hub) with provenance and SBOM attestations and the chart (GitHub Pages) with each release ([releasing.md](../developer/releasing.md#the-release-pipeline)); it publishes every release since the switch to the organisation's CI standard. Tests run before a release; no job runs against the published artifacts (owner, 2026-11-10, Q-HA-281).
 - ⚪ Beta candidate published
 
 ## Phase 8 · Walkthrough and beta release
@@ -1121,7 +1121,7 @@ Details: [roadmap: owner walkthrough](../coverage/roadmap.md#owner-walkthrough)
     the Visual Studio 2022 checklist of R-NUGET-027 (E3.1, moved from phase 4,
     [Q-NUGET-72](../spec/formats/nuget.md#q-nuget-72--the-windows-row-of-e31-and-the-visual-studio-checklist-run-in-the-owner-walkthrough-not-on-a-ci-runner))
   - ⚪ GitLab reference pipeline
-  - ⚪ Vulnerability report, a blocked malicious version, and the npm and .NET audits from trove's data
+  - ⚪ Vulnerability report, a blocked malicious version, and the npm and .NET audits from Quader's data
   - ⚪ Node drain and PostgreSQL and Valkey failover under load
   - ⚪ Backup by the CronJob and restore into an empty namespace
 - ⚪ Objections from the walkthrough worked off
@@ -1168,6 +1168,6 @@ Details: [roadmap: owner walkthrough](../coverage/roadmap.md#owner-walkthrough)
 | **NuGet (.NET)** | 🟢 | 🟡 | 🟢 |
 | Projects (delegated administration) | 🟢 | 🟢 | — |
 | GitLab CI OIDC | 🟢 | 🟢 | 🟢 |
-| trove Bastion | 🟢 | 🟢 | 🟢 |
+| Quader Bastion | 🟢 | 🟢 | 🟢 |
 | Vulnerability scanning | 🟢 | 🟢 | 🟡 |
 | Backup and restore | ⚪ | ⚪ | — |

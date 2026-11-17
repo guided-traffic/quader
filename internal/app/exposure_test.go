@@ -6,16 +6,16 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 func TestR_EP_010_EndpointRulesFromConfiguration(t *testing.T) {
 	srv := config.Server{
-		BaseURL: "https://trove.example.com",
+		BaseURL: "https://quader.example.com",
 		Endpoints: map[string]config.Endpoint{
 			"customers": {Listen: ":8443", BaseURL: "https://packages.example.com"},
 			"internal": {

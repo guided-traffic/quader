@@ -17,10 +17,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // The discovery and key fetch of R-CI-003. Every request goes through a client of the outbound factory
@@ -129,11 +129,11 @@ func newFetcher(f *outbound.Factory, out config.Outbound, cfg config.CISigningKe
 	return &fetcher{factory: f, outCfg: out, cfg: cfg, now: now, clients: make(map[clientKey]*http.Client), envFiles: map[string]string{}}
 }
 
-// bundleEnvPrefix is the prefix of the only environment variables a ca_bundle_ref may name, so that trove's
+// bundleEnvPrefix is the prefix of the only environment variables a ca_bundle_ref may name, so that quader's
 // own variables (secrets, database credentials) can never be routed into a trust store (Q-CI-31).
-const bundleEnvPrefix = "TROVE_CIC_"
+const bundleEnvPrefix = "QUADER_CIC_"
 
-var bundleEnvName = regexp.MustCompile(`^TROVE_CIC_[A-Z0-9_]{1,200}$`)
+var bundleEnvName = regexp.MustCompile(`^QUADER_CIC_[A-Z0-9_]{1,200}$`)
 
 // bundleFile returns the file that holds the PEM bundle of a ca_bundle_ref (R-CI-001, Q-CI-31). A file
 // reference is the file itself, which the trust store re-reads when it changes. An environment reference is
@@ -155,7 +155,7 @@ func (f *fetcher) bundleFile(ref string) (string, error) {
 		return p, nil
 	}
 	if f.envDir == "" {
-		dir, err := os.MkdirTemp("", "trove-ci-ca-")
+		dir, err := os.MkdirTemp("", "quader-ci-ca-")
 		if err != nil {
 			return "", err
 		}
@@ -397,7 +397,7 @@ func nextRefresh(cfg config.CISigningKeys, age time.Duration) time.Duration {
 }
 
 // validBundleRef checks the syntax of a ca_bundle_ref (Q-CI-31): "file:" and an absolute path to a PEM
-// bundle, or "env:" and the name of a variable that holds the PEM text, named TROVE_CIC_<NAME>.
+// bundle, or "env:" and the name of a variable that holds the PEM text, named QUADER_CIC_<NAME>.
 func validBundleRef(ref string) error {
 	if p, ok := strings.CutPrefix(ref, "file:"); ok {
 		if strings.HasPrefix(p, "/") && !strings.ContainsAny(p, "\x00\n\r") {

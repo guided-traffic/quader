@@ -30,7 +30,7 @@ describe('PackageMemory', () => {
   it('R-UI-006 the list is kept per signed-in principal and survives a new session of the service', async () => {
     const m = await memory();
     m.addRecent({ format: 'npm', name: 'left-pad' });
-    expect(new BrowserStorage().get('local', 'trove.packages.alice.web')).toContain('left-pad');
+    expect(new BrowserStorage().get('local', 'quader.packages.alice.web')).toContain('left-pad');
     expect(TestBed.inject(PackageMemory).recent()[0]?.name).toBe('left-pad');
   });
 
@@ -50,7 +50,7 @@ describe('PackageMemory', () => {
   });
 
   it('R-UI-006 stored data of a wrong shape is ignored', async () => {
-    new BrowserStorage().set('local', 'trove.packages.alice.web', '{"recent":[1,{"format":"npm"}],"views":"x"}');
+    new BrowserStorage().set('local', 'quader.packages.alice.web', '{"recent":[1,{"format":"npm"}],"views":"x"}');
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideRouter([{ path: '**', children: [] }]), ...provideFakeApis()] });
     await TestBed.inject(Router).navigateByUrl('/projects/web/packages');

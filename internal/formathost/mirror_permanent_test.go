@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/mirror"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/mirror"
 )
 
 // R-REPO-041, R-REPO-053: an artifact that came back with the wrong digest, or whose document announces nothing it could be

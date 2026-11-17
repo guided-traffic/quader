@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/registry/route"
-	_ "github.com/guided-traffic/trove/internal/formats/all" // registers the OCI format, whose routes the match reads
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/registry/route"
+	_ "github.com/guided-traffic/quader/internal/formats/all" // registers the OCI format, whose routes the match reads
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The dispatcher's match below /v2/ is the one the enforcement point of the registry tokens' grants asks (Q-OCI-56).

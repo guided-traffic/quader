@@ -9,11 +9,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// The database side of `trove backup restore` that is not the load: the inspection of check 4 and check 6, the anchor, the
+// The database side of `quader backup restore` that is not the load: the inspection of check 4 and check 6, the anchor, the
 // marker restore_in_progress and its phases, the statements of the fix-ups that name a table by a value taken from the
 // registry, and the finishing transaction (R-BAK-020, R-BAK-021, R-BAK-022). This file and backup_load.go assemble SQL from
 // catalog and registry names, every identifier quoted with pgx.Identifier and no value in the text; the architecture test
@@ -25,7 +25,7 @@ type RestoreInspection struct {
 	SchemaExists bool
 	// OwnsSchema is true when the credential is the schema's owner or a member of its owner role.
 	OwnsSchema bool
-	// Anchor is the backup ID in the schema comment 'trove-restore <id>', empty without an anchor (R-BAK-021 step 2).
+	// Anchor is the backup ID in the schema comment 'quader-restore <id>', empty without an anchor (R-BAK-021 step 2).
 	Anchor string
 	// Relations are the first names of the relations the schema contains, and RelationCount is how many there are.
 	Relations     []string
@@ -142,7 +142,7 @@ func (s *RestoreSession) Marker(ctx context.Context) (*RestoreMarker, error) {
 	return s.readMarker(ctx)
 }
 
-// SetAnchor sets COMMENT ON SCHEMA <database.schema> IS 'trove-restore <id>', the anchor that makes the database this
+// SetAnchor sets COMMENT ON SCHEMA <database.schema> IS 'quader-restore <id>', the anchor that makes the database this
 // restore's from its first write on (R-BAK-021 step 2). Setting the same anchor again changes nothing.
 func (s *RestoreSession) SetAnchor(ctx context.Context, backupID string) error {
 	_, err := s.conn.Exec(ctx, "COMMENT ON SCHEMA "+pgx.Identifier{s.cfg.Schema}.Sanitize()+" IS "+quoteLiteral(restoreAnchor+backupID))

@@ -11,16 +11,16 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/ci/subject"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/subject"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // RateLimiter is one of the exchange's cluster limiters (R-CI-021): *cluster.Limiter.

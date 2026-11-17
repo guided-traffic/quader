@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/jws"
-	"github.com/guided-traffic/trove/internal/ci/subject"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/jws"
+	"github.com/guided-traffic/quader/internal/ci/subject"
 )
 
 func authActor() audit.Actor { return audit.Actor{Kind: "user", Name: "alice"} }

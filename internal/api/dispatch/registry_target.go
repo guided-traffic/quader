@@ -4,12 +4,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/api/registry/route"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/registry/route"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The registry root's match of a request below /v2/ (Q-OCI-56, Q-OCI-100). The enforcement point of a registry token's grant

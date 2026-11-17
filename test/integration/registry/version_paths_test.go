@@ -8,8 +8,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_AUTHZ_005_APathPatternOnATagHidesItFromThePackageAPI: a version of an image is a tag, and the decision point decides it

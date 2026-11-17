@@ -20,15 +20,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/answers"
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/downloads"
-	"github.com/guided-traffic/trove/internal/bastion/guard"
-	"github.com/guided-traffic/trove/internal/bastion/link"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/bastion/shared"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/downloads"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/link"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // Deps is everything the engine is given. The server builds it from the configuration and runs the loops of

@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/observability/health"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/observability/health"
 )
 
 func TestStandingWarnings(t *testing.T) {
 	t.Run("R-OPS-005 an unset base_url warns at start", func(t *testing.T) {
-		h := start(t, "web", map[string]string{"TROVE_SERVER_BASE_URL": ""})
+		h := start(t, "web", map[string]string{"QUADER_SERVER_BASE_URL": ""})
 		if !strings.Contains(h.logs.String(), "server.base_url is not set") {
 			t.Fatalf("no warning at start:\n%s", h.logs.String())
 		}
@@ -25,7 +25,7 @@ func TestStandingWarnings(t *testing.T) {
 		}
 	})
 	t.Run("R-OPS-005 the warnings repeat on the interval", func(t *testing.T) {
-		h := start(t, "web", map[string]string{"TROVE_SERVER_BASE_URL": "", "TROVE_SYSTEM_BOOTSTRAP_ANONYMOUS_READ": "true"})
+		h := start(t, "web", map[string]string{"QUADER_SERVER_BASE_URL": "", "QUADER_SYSTEM_BOOTSTRAP_ANONYMOUS_READ": "true"})
 		before := strings.Count(h.logs.String(), "server.base_url is not set")
 		ctx, cancel := context.WithCancel(context.Background())
 		done := make(chan struct{})
@@ -50,13 +50,13 @@ func TestStandingWarnings(t *testing.T) {
 		}
 	})
 	t.Run("R-OPS-002 bootstrap_anonymous_read warns at start", func(t *testing.T) {
-		h := start(t, "web", map[string]string{"TROVE_SYSTEM_BOOTSTRAP_ANONYMOUS_READ": "true", "TROVE_SERVER_BASE_URL": "http://localhost:8080"})
+		h := start(t, "web", map[string]string{"QUADER_SYSTEM_BOOTSTRAP_ANONYMOUS_READ": "true", "QUADER_SERVER_BASE_URL": "http://localhost:8080"})
 		if !strings.Contains(h.logs.String(), "system.bootstrap_anonymous_read is true") {
 			t.Fatalf("no warning at start:\n%s", h.logs.String())
 		}
 	})
 	t.Run("R-OPS-005 a worker does not warn about the client origin", func(t *testing.T) {
-		h := start(t, "worker", map[string]string{"TROVE_SERVER_BASE_URL": ""})
+		h := start(t, "worker", map[string]string{"QUADER_SERVER_BASE_URL": ""})
 		if strings.Contains(h.logs.String(), "server.base_url is not set") {
 			t.Fatalf("a worker has no client listener:\n%s", h.logs.String())
 		}

@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // R-OPS-007, Q-OPS-10: the snapshot a replica rebuilds is what the metrics label cap follows. After a change of the

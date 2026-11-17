@@ -10,7 +10,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Freshness tells whether the replica's last completed change-log poll started
@@ -57,31 +57,31 @@ type Metrics struct {
 func NewMetrics(reg prometheus.Registerer) (*Metrics, error) {
 	m := &Metrics{
 		cacheBypassed: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_auth_cache_bypassed_total",
+			Name: "quader_auth_cache_bypassed_total",
 			Help: "Credential and principal lookups that bypassed the auth caches because the replica's change-log poll was older than auth.revocation_bound.",
 		}, []string{"reason"}),
 		cacheInvalidations: prometheus.NewCounter(prometheus.CounterOpts{
-			Name: "trove_auth_cache_invalidations_total",
+			Name: "quader_auth_cache_invalidations_total",
 			Help: "Changes of the area auth applied to the auth caches of this replica.",
 		}),
 		groupClaimMissing: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_auth_group_claim_missing_total",
+			Name: "quader_auth_group_claim_missing_total",
 			Help: "Logins whose group claim was missing, by provider (name) and reason (absent, wrong_type, overage) (R-AUTH-008, Q-AUTH-39).",
 		}, []string{"name", "reason"}),
 		attempts: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_auth_attempts_total",
+			Name: "quader_auth_attempts_total",
 			Help: "Authentication attempts of the stage, by credential method, outcome and reason.",
 		}, []string{"method", "outcome", "reason"}),
 		ratelimited: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_auth_ratelimited_total",
+			Name: "quader_auth_ratelimited_total",
 			Help: "Requests refused by an authentication limit (credential_failures).",
 		}, []string{"limit"}),
 		throttleExempt: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_auth_throttle_exempt_total",
+			Name: "quader_auth_throttle_exempt_total",
 			Help: "Credentials a throttled address could still validate, by the exemption that applied (marker).",
 		}, []string{"via"}),
 		lastUsedFlushFails: prometheus.NewCounter(prometheus.CounterOpts{
-			Name: "trove_auth_lastused_flush_failures_total",
+			Name: "quader_auth_lastused_flush_failures_total",
 			Help: "Flushes of the token last-used buffer that failed; the batch is dropped and the next use records the token again (R-AUTH-031).",
 		}),
 	}

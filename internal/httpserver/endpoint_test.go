@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // endpointFixture resolves an endpoint from a server section, like the loader does.
@@ -35,7 +35,7 @@ func endpointFixture(t *testing.T, s config.Server, name string) *Endpoint {
 
 func twoEndpoints() config.Server {
 	return config.Server{
-		Listen: ":8080", OpsListen: ":8081", BaseURL: "https://trove.example.com", MaxInFlight: 4096,
+		Listen: ":8080", OpsListen: ":8081", BaseURL: "https://quader.example.com", MaxInFlight: 4096,
 		ReplicaHeader: "authenticated", TrustedProxies: []string{"10.0.0.0/8"},
 		Endpoints: map[string]config.Endpoint{
 			"customers": {
@@ -105,8 +105,8 @@ func TestEndpointIdentity(t *testing.T) {
 	}
 
 	t.Run("R-EP-002 the endpoint in the context is the listener's whatever Host and forwarded host claim", func(t *testing.T) {
-		hosts := []string{"trove.example.com", "packages.example.com", "pkgs.example.org", "docker-all.registry.example.com", "evil.example", "", "10.0.0.5"}
-		forwarded := []string{"", "trove.example.com", "packages.example.com", "evil.example"}
+		hosts := []string{"quader.example.com", "packages.example.com", "pkgs.example.org", "docker-all.registry.example.com", "evil.example", "", "10.0.0.5"}
+		forwarded := []string{"", "quader.example.com", "packages.example.com", "evil.example"}
 		peers := []string{"192.0.2.9:4000", "10.1.2.3:4000"}
 		for name, h := range listeners {
 			for _, host := range hosts {
@@ -138,7 +138,7 @@ func TestEndpointIdentity(t *testing.T) {
 
 	t.Run("R-EP-003 a host outside the set answers 421 with the problem code, before routing", func(t *testing.T) {
 		h := listeners["customers"]
-		for _, host := range []string{"trove.example.com", "10.0.0.5", "", "registry.example.com", "a.b.registry.example.com", "evil.example"} {
+		for _, host := range []string{"quader.example.com", "10.0.0.5", "", "registry.example.com", "a.b.registry.example.com", "evil.example"} {
 			w := call(h, "GET", "/api/npm/it/npm-all/", host, "192.0.2.9:1")
 			if w.Code != 421 {
 				t.Errorf("Host %q: %d", host, w.Code)
@@ -149,7 +149,7 @@ func TestEndpointIdentity(t *testing.T) {
 			}
 		}
 		// The answer does not depend on the path: even an unknown path gives 421, not 404.
-		if w := call(h, "GET", "/does-not-exist", "trove.example.com", "192.0.2.9:1"); w.Code != 421 {
+		if w := call(h, "GET", "/does-not-exist", "quader.example.com", "192.0.2.9:1"); w.Code != 421 {
 			t.Errorf("unknown path on a foreign host: %d", w.Code)
 		}
 		if ev.misdirected["customers"] == 0 {
@@ -225,30 +225,30 @@ func TestEndpointIdentity(t *testing.T) {
 	t.Run("R-EP-003 the default endpoint without hosts keeps R-OPS-005 and checks once hosts are set", func(t *testing.T) {
 		h := listeners["default"]
 		_ = h
-		s := config.Server{Listen: ":8080", OpsListen: ":8081", BaseURL: "https://trove.example.com", MaxInFlight: 10, ReplicaHeader: "authenticated"}
+		s := config.Server{Listen: ":8080", OpsListen: ":8081", BaseURL: "https://quader.example.com", MaxInFlight: 10, ReplicaHeader: "authenticated"}
 		plain := endpointChain(t, s, "default", nil)
 		if w := call(plain, "GET", "/api/v1/system/ping", "anything.example", "192.0.2.9:1"); w.Code != 200 {
 			t.Fatalf("no check: %d", w.Code)
 		}
-		s.Endpoints = map[string]config.Endpoint{"default": {Hosts: []string{"trove.example.com"}}}
+		s.Endpoints = map[string]config.Endpoint{"default": {Hosts: []string{"quader.example.com"}}}
 		checked := endpointChain(t, s, "default", nil)
 		if w := call(checked, "GET", "/api/v1/system/ping", "packages.example.com", "192.0.2.9:1"); w.Code != 421 {
 			t.Errorf("foreign host on the checking default endpoint: %d", w.Code)
 		}
-		if w := call(checked, "GET", "/api/v1/system/ping", "trove.example.com", "192.0.2.9:1"); w.Code != 200 {
+		if w := call(checked, "GET", "/api/v1/system/ping", "quader.example.com", "192.0.2.9:1"); w.Code != 200 {
 			t.Errorf("own host: %d", w.Code)
 		}
 	})
 
 	t.Run("R-EP-003 the default endpoint host set holds the additional base URLs", func(t *testing.T) {
 		s := config.Server{
-			Listen: ":8080", OpsListen: ":8081", BaseURL: "https://trove.example.com", MaxInFlight: 10, ReplicaHeader: "authenticated",
-			AdditionalBaseURLs: []string{"https://trove.internal:8443"},
+			Listen: ":8080", OpsListen: ":8081", BaseURL: "https://quader.example.com", MaxInFlight: 10, ReplicaHeader: "authenticated",
+			AdditionalBaseURLs: []string{"https://quader.internal:8443"},
 			Endpoints:          map[string]config.Endpoint{"default": {Hosts: []string{"alias.example.com"}}},
 		}
 		h := endpointChain(t, s, "default", nil)
 		for host, want := range map[string]string{
-			"trove.example.com": "https://trove.example.com", "trove.internal": "https://trove.internal:8443", "alias.example.com": "https://alias.example.com",
+			"quader.example.com": "https://quader.example.com", "quader.internal": "https://quader.internal:8443", "alias.example.com": "https://alias.example.com",
 		} {
 			w := call(h, "GET", "/api/v1/system/ping", host, "192.0.2.9:1")
 			var got map[string]string
@@ -289,7 +289,7 @@ func TestEndpointIdentity(t *testing.T) {
 		if w.Code != 503 || problemOf(t, w).Code != "server_busy" {
 			t.Errorf("second request on customers: %d", w.Code)
 		}
-		if w := call(def, "GET", "/api/npm/it/xx/y", "trove.example.com", "192.0.2.9:1"); w.Code != 200 {
+		if w := call(def, "GET", "/api/npm/it/xx/y", "quader.example.com", "192.0.2.9:1"); w.Code != 200 {
 			t.Errorf("request on default: %d", w.Code)
 		}
 		close(release)
@@ -305,7 +305,7 @@ func TestEndpointIdentity(t *testing.T) {
 		if got := call(endpointChain(t, s, "customers", nil), "GET", "/api/npm/it/aa/b", "packages.example.com", "192.0.2.9:1").Header().Get(HeaderReplica); got != "pod-1" {
 			t.Errorf("customers: %q", got)
 		}
-		if got := call(endpointChain(t, s, "default", nil), "GET", "/api/v1/system/ping", "trove.example.com", "192.0.2.9:1").Header().Get(HeaderReplica); got != "" {
+		if got := call(endpointChain(t, s, "default", nil), "GET", "/api/v1/system/ping", "quader.example.com", "192.0.2.9:1").Header().Get(HeaderReplica); got != "" {
 			t.Errorf("default: %q", got)
 		}
 		// a further endpoint sends none by default
@@ -537,10 +537,10 @@ func TestEndpointTLS(t *testing.T) {
 	dir := t.TempDir()
 	exact, exactKey := ca.Issue(t, tlstest.Options{DNSNames: []string{"packages.example.com"}, Serial: big.NewInt(100)}).Files(t, dir, "exact")
 	wild, wildKey := ca.Issue(t, tlstest.Options{DNSNames: []string{"*.packages.example.com"}, Serial: big.NewInt(200)}).Files(t, dir, "wild")
-	def, defKey := ca.Issue(t, tlstest.Options{DNSNames: []string{"trove.example.com"}, Serial: big.NewInt(300)}).Files(t, dir, "default")
+	def, defKey := ca.Issue(t, tlstest.Options{DNSNames: []string{"quader.example.com"}, Serial: big.NewInt(300)}).Files(t, dir, "default")
 
 	s := config.Server{
-		Listen: ":8080", OpsListen: ":8081", BaseURL: "https://trove.example.com", MaxInFlight: 10, ReplicaHeader: "authenticated",
+		Listen: ":8080", OpsListen: ":8081", BaseURL: "https://quader.example.com", MaxInFlight: 10, ReplicaHeader: "authenticated",
 		TLS: config.ServerTLS{Certificates: pairOf(def, defKey), MinVersion: "1.2", ReloadInterval: 50 * time.Millisecond, ClientAuth: "none"},
 		Endpoints: map[string]config.Endpoint{"customers": {
 			Listen: ":8443", BaseURL: "https://packages.example.com",
@@ -583,7 +583,7 @@ func TestEndpointTLS(t *testing.T) {
 
 	t.Run("R-EP-004 the default endpoint serves the pair of server.tls and never an endpoint's pair", func(t *testing.T) {
 		addr := serve(t, "default")
-		for _, sni := range []string{"packages.example.com", "a.packages.example.com", "trove.example.com", ""} {
+		for _, sni := range []string{"packages.example.com", "a.packages.example.com", "quader.example.com", ""} {
 			if got := serial(addr, sni); got != 300 {
 				t.Errorf("SNI %q on default: serial %d", sni, got)
 			}
@@ -660,7 +660,7 @@ func TestEndpointTLS(t *testing.T) {
 			t.Error("a handshake without a client certificate succeeded")
 		}
 		// the default endpoint is unaffected
-		if got := serial(serve(t, "default"), "trove.example.com"); got != 300 {
+		if got := serial(serve(t, "default"), "quader.example.com"); got != 300 {
 			t.Errorf("default endpoint: %d", got)
 		}
 	})

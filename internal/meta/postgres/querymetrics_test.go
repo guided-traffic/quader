@@ -8,8 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // seriesOf returns the labels' value and the sample count or counter value of every series of a family, keyed by the query label.
@@ -53,10 +53,10 @@ func TestR_OPS_008_TheStatementMetricsCountByTheNameOfTheQuery(t *testing.T) {
 		run(tr, "-- name: GetThing :one\nSELECT 1", 60*time.Millisecond)
 		run(tr, "-- name: GetThing :one\nSELECT 1", 0)
 		run(tr, "-- name: Quick :exec\nSELECT 1", 0)
-		if got := seriesOf(t, m, "trove_db_slow_queries_total"); len(got) != 1 || got["GetThing"] != 1 {
+		if got := seriesOf(t, m, "quader_db_slow_queries_total"); len(got) != 1 || got["GetThing"] != 1 {
 			t.Fatalf("slow queries = %v, want GetThing 1 alone", got)
 		}
-		if f := family(t, m, "trove_db_query_duration_seconds"); f != nil {
+		if f := family(t, m, "quader_db_query_duration_seconds"); f != nil {
 			t.Fatal("the duration histogram is registered without metrics.db_query_histograms")
 		}
 	})
@@ -66,7 +66,7 @@ func TestR_OPS_008_TheStatementMetricsCountByTheNameOfTheQuery(t *testing.T) {
 		for _, sql := range []string{"SELECT 1 WHERE id = 1", "SELECT 1 WHERE id = 2", "  -- name:   Padded   :many\nSELECT 1"} {
 			run(tr, sql, 20*time.Millisecond)
 		}
-		got := seriesOf(t, m, "trove_db_slow_queries_total")
+		got := seriesOf(t, m, "quader_db_slow_queries_total")
 		if len(got) != 2 || got[unnamedQuery] != 2 || got["Padded"] != 1 {
 			t.Fatalf("slow queries = %v, want unnamed 2 and Padded 1", got)
 		}
@@ -77,7 +77,7 @@ func TestR_OPS_008_TheStatementMetricsCountByTheNameOfTheQuery(t *testing.T) {
 		for _, sql := range []string{"begin", "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY", "commit", "Rollback;"} {
 			run(tr, sql, 20*time.Millisecond)
 		}
-		got := seriesOf(t, m, "trove_db_slow_queries_total")
+		got := seriesOf(t, m, "quader_db_slow_queries_total")
 		if len(got) != 3 || got["begin"] != 2 || got["commit"] != 1 || got["rollback"] != 1 {
 			t.Fatalf("slow queries = %v, want begin 2, commit 1, rollback 1", got)
 		}
@@ -86,7 +86,7 @@ func TestR_OPS_008_TheStatementMetricsCountByTheNameOfTheQuery(t *testing.T) {
 	t.Run("a threshold of 0 counts none", func(t *testing.T) {
 		m, tr := build(0, false)
 		run(tr, "-- name: GetThing :one\nSELECT 1", 20*time.Millisecond)
-		if got := seriesOf(t, m, "trove_db_slow_queries_total"); len(got) != 0 {
+		if got := seriesOf(t, m, "quader_db_slow_queries_total"); len(got) != 0 {
 			t.Fatalf("slow queries = %v", got)
 		}
 	})
@@ -96,7 +96,7 @@ func TestR_OPS_008_TheStatementMetricsCountByTheNameOfTheQuery(t *testing.T) {
 		ctx := tr.TraceQueryStart(context.Background(), nil, pgx.TraceQueryStartData{SQL: "-- name: Hung :one\nSELECT 1"})
 		time.Sleep(20 * time.Millisecond)
 		tr.TraceQueryEnd(ctx, nil, pgx.TraceQueryEndData{Err: context.DeadlineExceeded})
-		if got := seriesOf(t, m, "trove_db_slow_queries_total"); got["Hung"] != 1 {
+		if got := seriesOf(t, m, "quader_db_slow_queries_total"); got["Hung"] != 1 {
 			t.Fatalf("slow queries = %v", got)
 		}
 	})
@@ -106,10 +106,10 @@ func TestR_OPS_008_TheStatementMetricsCountByTheNameOfTheQuery(t *testing.T) {
 		run(tr, "-- name: GetThing :one\nSELECT 1", 0)
 		run(tr, "-- name: GetThing :one\nSELECT 1", 0)
 		run(tr, "SELECT 2", 0)
-		if got := seriesOf(t, m, "trove_db_query_duration_seconds"); len(got) != 2 || got["GetThing"] != 2 || got[unnamedQuery] != 1 {
+		if got := seriesOf(t, m, "quader_db_query_duration_seconds"); len(got) != 2 || got["GetThing"] != 2 || got[unnamedQuery] != 1 {
 			t.Fatalf("durations = %v", got)
 		}
-		if got := seriesOf(t, m, "trove_db_slow_queries_total"); len(got) != 0 {
+		if got := seriesOf(t, m, "quader_db_slow_queries_total"); len(got) != 0 {
 			t.Fatalf("slow queries = %v", got)
 		}
 		if errs := m.Check(); len(errs) != 0 {
@@ -122,7 +122,7 @@ func TestR_OPS_008_TheStatementMetricsCountByTheNameOfTheQuery(t *testing.T) {
 		ctx := tr.TraceBatchStart(context.Background(), nil, pgx.TraceBatchStartData{})
 		time.Sleep(20 * time.Millisecond)
 		tr.TraceBatchEnd(ctx, nil, pgx.TraceBatchEndData{})
-		if got := seriesOf(t, m, "trove_db_slow_queries_total"); got[pipelineQuery] != 1 {
+		if got := seriesOf(t, m, "quader_db_slow_queries_total"); got[pipelineQuery] != 1 {
 			t.Fatalf("slow queries = %v", got)
 		}
 	})

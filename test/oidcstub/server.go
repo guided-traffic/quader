@@ -453,7 +453,7 @@ func (s *Server) discovery(f Fault, base string) map[string]any {
 		slices.Sort(algs)
 	}
 	// The members and the fixed lists of GitLab 19.0.1's document (testdata/issuer.json); the
-	// endpoints are below the base, as GitLab's are. trove reads issuer, jwks_uri and the
+	// endpoints are below the base, as GitLab's are. quader reads issuer, jwks_uri and the
 	// algorithms; the rest is there so that the document has GitLab's shape.
 	return map[string]any{
 		"issuer":                                issuer,
@@ -618,7 +618,7 @@ func (s *Server) Start(addr string, cfg *tls.Config, plainAddr string) (*Running
 }
 
 // StartSelfSigned starts the double on a throwaway CA and certificate for localhost and
-// 127.0.0.1 (and hosts) and returns the CA, whose PEM a test hands to trove as ca_bundle_ref.
+// 127.0.0.1 (and hosts) and returns the CA, whose PEM a test hands to quader as ca_bundle_ref.
 func (s *Server) StartSelfSigned(hosts ...string) (*Running, *SelfSigned, error) {
 	ss, err := NewSelfSigned(append([]string{"localhost", "127.0.0.1"}, hosts...)...)
 	if err != nil {

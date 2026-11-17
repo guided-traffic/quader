@@ -4,7 +4,7 @@
 // The interface is here so that the create pipeline, the retention and sweep code, verify and restore can be written and
 // tested against an in-memory implementation (internal/backup/target/targettest) while the S3 implementation is built in
 // internal/blob/s3, the only package that imports the AWS SDK (R-ARCH-002). The composition root of the backup commands
-// (cmd/trove) joins the two; neither side imports the other.
+// (cmd/quader) joins the two; neither side imports the other.
 //
 // Every write applies the configured server-side encryption (backup.target.sse); a caller never passes encryption
 // parameters, so a copy request cannot forget them (R-BAK-026).
@@ -69,7 +69,7 @@ type ObjectRef struct {
 }
 
 // CopyMode says how a pool object reached the target (R-BAK-006), the label of
-// trove_backup_copied_objects_total.
+// quader_backup_copied_objects_total.
 type CopyMode string
 
 // The copy modes.

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The bounds of a save (R-CI-009, R-CI-010, R-CI-016, Q-CI-47, Q-CI-49, Q-CI-51): what a mapping may hold so that an
@@ -24,7 +24,7 @@ type boundsEnv struct {
 
 func newBoundsEnv(t *testing.T) *boundsEnv {
 	t.Helper()
-	e := newEnv(t, options{valkey: true, env: []string{"TROVE_CI_MAPPINGS_MAX_PER_PROJECT=2", "TROVE_CI_MAPPINGS_MAX_PER_ISSUER=4"}})
+	e := newEnv(t, options{valkey: true, env: []string{"QUADER_CI_MAPPINGS_MAX_PER_PROJECT=2", "QUADER_CI_MAPPINGS_MAX_PER_ISSUER=4"}})
 	b := &boundsEnv{env: e, a: e.web("web-a")}
 	b.issuer(t, b.a, "gitlab-main", false)
 	for _, key := range []string{"web", "data"} {
@@ -37,7 +37,7 @@ func newBoundsEnv(t *testing.T) *boundsEnv {
 
 func (b *boundsEnv) bob(method, path string, body any) testenv.Answer {
 	b.t.Helper()
-	return b.as(b.a, b.bobPAT, method, path, body, "Trove-Authz-Min-Epoch", b.epoch)
+	return b.as(b.a, b.bobPAT, method, path, body, "Quader-Authz-Min-Epoch", b.epoch)
 }
 
 // webReader is a mapping of the project web that reads web-npm.

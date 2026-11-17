@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 const (
@@ -68,30 +68,30 @@ func TestBastionMigration(t *testing.T) {
 	})
 
 	t.Run("a registration is a principal of the kind bastion with a name of at most 20 characters", func(t *testing.T) { // R-BAS-004
-		mustExec(t, admin, "INSERT INTO trove.principal (id, kind, name) VALUES ($1, 'bastion', 'partners')", bastionPrincipal)
-		mustExec(t, admin, "INSERT INTO trove.bastion (principal_id, description) VALUES ($1, 'partner network')", bastionPrincipal)
-		wantState(t, admin, "23514", "INSERT INTO trove.principal (id, kind, name) VALUES (gen_random_uuid(), 'bastion', 'Partners')")
-		wantState(t, admin, "23514", "INSERT INTO trove.principal (id, kind, name) VALUES (gen_random_uuid(), 'bastion', '1partners')")
-		wantState(t, admin, "23514", "INSERT INTO trove.principal (id, kind, name) VALUES (gen_random_uuid(), 'bastion', 'abcdefghijklmnopqrstu')")
-		mustExec(t, admin, "INSERT INTO trove.principal (id, kind, name) VALUES ('bb000000-0000-0000-0000-0000000000a4', 'bastion', 'abcdefghijklmnopqrst')")
-		mustExec(t, admin, "INSERT INTO trove.bastion (principal_id) VALUES ('bb000000-0000-0000-0000-0000000000a4')")
-		wantState(t, admin, "23505", "INSERT INTO trove.principal (id, kind, name) VALUES (gen_random_uuid(), 'bastion', 'partners')")
+		mustExec(t, admin, "INSERT INTO quader.principal (id, kind, name) VALUES ($1, 'bastion', 'partners')", bastionPrincipal)
+		mustExec(t, admin, "INSERT INTO quader.bastion (principal_id, description) VALUES ($1, 'partner network')", bastionPrincipal)
+		wantState(t, admin, "23514", "INSERT INTO quader.principal (id, kind, name) VALUES (gen_random_uuid(), 'bastion', 'Partners')")
+		wantState(t, admin, "23514", "INSERT INTO quader.principal (id, kind, name) VALUES (gen_random_uuid(), 'bastion', '1partners')")
+		wantState(t, admin, "23514", "INSERT INTO quader.principal (id, kind, name) VALUES (gen_random_uuid(), 'bastion', 'abcdefghijklmnopqrstu')")
+		mustExec(t, admin, "INSERT INTO quader.principal (id, kind, name) VALUES ('bb000000-0000-0000-0000-0000000000a4', 'bastion', 'abcdefghijklmnopqrst')")
+		mustExec(t, admin, "INSERT INTO quader.bastion (principal_id) VALUES ('bb000000-0000-0000-0000-0000000000a4')")
+		wantState(t, admin, "23505", "INSERT INTO quader.principal (id, kind, name) VALUES (gen_random_uuid(), 'bastion', 'partners')")
 		// A subtype row of a principal of another kind is refused (AI001).
-		mustExec(t, admin, "INSERT INTO trove.principal (id, kind, name) VALUES ($1, 'service_account', 'not-a-bastion')", bastionOther)
-		wantState(t, admin, "AI001", "INSERT INTO trove.bastion (principal_id) VALUES ($1)", bastionOther)
+		mustExec(t, admin, "INSERT INTO quader.principal (id, kind, name) VALUES ($1, 'service_account', 'not-a-bastion')", bastionOther)
+		wantState(t, admin, "AI001", "INSERT INTO quader.bastion (principal_id) VALUES ($1)", bastionOther)
 		// The kinds of the other users of the principal table are unchanged.
-		mustExec(t, admin, "INSERT INTO trove.principal (id, kind, name) VALUES (gen_random_uuid(), 'user', 'bastion-test-user')")
-		wantState(t, admin, "23514", "INSERT INTO trove.principal (id, kind, name) VALUES (gen_random_uuid(), 'robot', 'x')")
+		mustExec(t, admin, "INSERT INTO quader.principal (id, kind, name) VALUES (gen_random_uuid(), 'user', 'bastion-test-user')")
+		wantState(t, admin, "23514", "INSERT INTO quader.principal (id, kind, name) VALUES (gen_random_uuid(), 'robot', 'x')")
 	})
 
 	t.Run("a registration holds no role binding and no membership; it owns bst tokens", func(t *testing.T) { // R-BAS-004, R-BAS-005
-		wantState(t, admin, "AI001", "INSERT INTO trove.authz_role_binding (role, principal_id) VALUES ('admin', $1)", bastionPrincipal)
-		mustExec(t, admin, "INSERT INTO trove.principal (id, kind, name) VALUES ('bb000000-0000-0000-0000-0000000000a3', 'group', 'bastion-test-group')")
-		mustExec(t, admin, "INSERT INTO trove.user_group (principal_id, origin) VALUES ('bb000000-0000-0000-0000-0000000000a3', 'admin')")
-		wantState(t, admin, "AI001", "INSERT INTO trove.group_membership (group_id, member_id, source) "+
+		wantState(t, admin, "AI001", "INSERT INTO quader.authz_role_binding (role, principal_id) VALUES ('admin', $1)", bastionPrincipal)
+		mustExec(t, admin, "INSERT INTO quader.principal (id, kind, name) VALUES ('bb000000-0000-0000-0000-0000000000a3', 'group', 'bastion-test-group')")
+		mustExec(t, admin, "INSERT INTO quader.user_group (principal_id, origin) VALUES ('bb000000-0000-0000-0000-0000000000a3', 'admin')")
+		wantState(t, admin, "AI001", "INSERT INTO quader.group_membership (group_id, member_id, source) "+
 			"VALUES ('bb000000-0000-0000-0000-0000000000a3', $1, 'manual')", bastionPrincipal)
-		token := "INSERT INTO trove.api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at) " +
-			"VALUES ($1, $2, decode(repeat('cd', 32), 'hex'), 'trv_bst_…abcd', $3, 'Bastion token', '{}', 'api', %s)"
+		token := "INSERT INTO quader.api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at) " +
+			"VALUES ($1, $2, decode(repeat('cd', 32), 'hex'), 'qdr_bst_…abcd', $3, 'Bastion token', '{}', 'api', %s)"
 		mustExec(t, admin, strings.Replace(token, "%s", "now() + interval '1 year'", 1), bastionToken, "bst", bastionPrincipal)
 		// A Bastion token expires; a bst token of a user principal is refused by the owner guard.
 		wantState(t, admin, "23514", strings.Replace(token, "%s", "NULL", 1), "bb000000-0000-0000-0000-0000000000b2", "bst", bastionPrincipal)
@@ -99,15 +99,15 @@ func TestBastionMigration(t *testing.T) {
 	})
 
 	t.Run("the description is a member of the registration: a change moves principal.revision", func(t *testing.T) { // R-API-012
-		before := scalar[int64](t, admin, "SELECT revision FROM trove.principal WHERE id = $1", bastionPrincipal)
-		mustExec(t, admin, "UPDATE trove.bastion SET description = 'partner network, EU' WHERE principal_id = $1", bastionPrincipal)
-		if after := scalar[int64](t, admin, "SELECT revision FROM trove.principal WHERE id = $1", bastionPrincipal); after != before+1 {
+		before := scalar[int64](t, admin, "SELECT revision FROM quader.principal WHERE id = $1", bastionPrincipal)
+		mustExec(t, admin, "UPDATE quader.bastion SET description = 'partner network, EU' WHERE principal_id = $1", bastionPrincipal)
+		if after := scalar[int64](t, admin, "SELECT revision FROM quader.principal WHERE id = $1", bastionPrincipal); after != before+1 {
 			t.Errorf("revision %d -> %d, want +1", before, after)
 		}
 	})
 
 	t.Run("the statements of the registration file run against the schema", func(t *testing.T) { // R-BAS-004
-		mustExec(t, admin, "SET search_path = trove, public")
+		mustExec(t, admin, "SET search_path = quader, public")
 		qs := q.New(admin)
 
 		got, err := qs.BastionGet(ctx, "partners")
@@ -191,7 +191,7 @@ func TestBastionMigration(t *testing.T) {
 	t.Run("the contact of a replica is written once a minute and reports a change", func(t *testing.T) { // R-BAS-010
 		qs := q.New(admin)
 		p := q.BastionContactUpsertParams{
-			BastionID: bastionPrincipal, Replica: "trove-bastion-7d9c-x2k4q", ClientAddress: "198.51.100.20", Release: "0.15.0",
+			BastionID: bastionPrincipal, Replica: "quader-bastion-7d9c-x2k4q", ClientAddress: "198.51.100.20", Release: "0.15.0",
 			InterfaceVersion: 1, BaseUrl: "https://packages.example.com", TokenID: bastionToken,
 		}
 		first, err := qs.BastionContactUpsert(ctx, p)
@@ -207,7 +207,7 @@ func TestBastionMigration(t *testing.T) {
 		if err != nil || upgraded.Written != 1 || !upgraded.Changed {
 			t.Fatalf("a changed release: %+v %v", upgraded, err)
 		}
-		mustExec(t, admin, "UPDATE trove.bastion_contact SET contact_at = now() - interval '2 minutes'")
+		mustExec(t, admin, "UPDATE quader.bastion_contact SET contact_at = now() - interval '2 minutes'")
 		due, err := qs.BastionContactUpsert(ctx, p)
 		if err != nil || due.Written != 1 || due.Changed {
 			t.Fatalf("a contact a minute after the last write: %+v %v", due, err)
@@ -222,7 +222,7 @@ func TestBastionMigration(t *testing.T) {
 		if urls, err := qs.BastionLastBaseURL(ctx, "partners"); err != nil || len(urls) != 1 || urls[0] != "https://packages.example.com" {
 			t.Fatalf("BastionLastBaseURL: %v %v", urls, err)
 		}
-		mustExec(t, admin, "UPDATE trove.bastion_contact SET contact_at = now() - interval '40 days'")
+		mustExec(t, admin, "UPDATE quader.bastion_contact SET contact_at = now() - interval '40 days'")
 		if n, err := qs.BastionContactPrune(ctx, 30*24*3600); err != nil || n != 1 {
 			t.Fatalf("BastionContactPrune: %d %v", n, err)
 		}
@@ -230,15 +230,15 @@ func TestBastionMigration(t *testing.T) {
 
 	t.Run("the feed statements read the journaled events behind and ahead of a cursor", func(t *testing.T) { // R-BAS-015
 		qs := q.New(admin)
-		mustExec(t, admin, "SELECT trove.audit_maintain_partitions()")
-		ins := "INSERT INTO trove.audit_event (id, occurred_at, action, category, outcome, actor_type, resource_type, resource_id, repository, details) " +
+		mustExec(t, admin, "SELECT quader.audit_maintain_partitions()")
+		ins := "INSERT INTO quader.audit_event (id, occurred_at, action, category, outcome, actor_type, resource_type, resource_id, repository, details) " +
 			"VALUES ($1, now() - $2::interval, $3, 'auth', 'success', 'user', 'token', 'x', $4, '{\"tokens\":[\"t1\"]}')"
 		mustExec(t, admin, ins, "bb000000-0000-0000-0000-0000000000d1", "10 minutes", "token.revoked", "")
 		mustExec(t, admin, ins, "bb000000-0000-0000-0000-0000000000d2", "3 minutes", "token.revoked", "")
 		mustExec(t, admin, ins, bastionEvent, "2 minutes", "npm.unpublish", "npm-local")
 		mustExec(t, admin, ins, "bb000000-0000-0000-0000-0000000000d3", "1 minute", "package.published", "npm-local")
 		actions := []string{"token.revoked", "npm.unpublish"}
-		at := scalar[string](t, admin, "SELECT to_char(occurred_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') FROM trove.audit_event WHERE id = $1", "bb000000-0000-0000-0000-0000000000d2")
+		at := scalar[string](t, admin, "SELECT to_char(occurred_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') FROM quader.audit_event WHERE id = $1", "bb000000-0000-0000-0000-0000000000d2")
 
 		ahead, err := qs.BastionFeedAhead(ctx, q.BastionFeedAheadParams{CursorAt: at, CursorID: "bb000000-0000-0000-0000-0000000000d2", Actions: actions, MaxRows: 10})
 		if err != nil || len(ahead) != 1 || ahead[0].ID != bastionEvent || ahead[0].Repository != "npm-local" || !strings.Contains(string(ahead[0].Details), "t1") {
@@ -272,11 +272,11 @@ func TestBastionMigration(t *testing.T) {
 
 	t.Run("a content entry names the repository and every virtual repository that includes it, recursively", func(t *testing.T) { // R-BAS-015
 		qs := q.New(admin)
-		mustExec(t, admin, "INSERT INTO trove.repositories (key, format, class, project_id) VALUES ('npm-local', 'npm', 'local', (SELECT id FROM trove.project WHERE key = 'it')), ('npm-all', 'npm', 'virtual', (SELECT id FROM trove.project WHERE key = 'it')), ('npm-top', 'npm', 'virtual', (SELECT id FROM trove.project WHERE key = 'it'))")
-		mustExec(t, admin, "INSERT INTO trove.virtual_members (virtual_id, position, member_id) "+
-			"SELECT v.id, 0, m.id FROM trove.repositories v, trove.repositories m WHERE v.key = 'npm-all' AND m.key = 'npm-local'")
-		mustExec(t, admin, "INSERT INTO trove.virtual_members (virtual_id, position, member_id) "+
-			"SELECT v.id, 0, m.id FROM trove.repositories v, trove.repositories m WHERE v.key = 'npm-top' AND m.key = 'npm-all'")
+		mustExec(t, admin, "INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('npm-local', 'npm', 'local', (SELECT id FROM quader.project WHERE key = 'it')), ('npm-all', 'npm', 'virtual', (SELECT id FROM quader.project WHERE key = 'it')), ('npm-top', 'npm', 'virtual', (SELECT id FROM quader.project WHERE key = 'it'))")
+		mustExec(t, admin, "INSERT INTO quader.virtual_members (virtual_id, position, member_id) "+
+			"SELECT v.id, 0, m.id FROM quader.repositories v, quader.repositories m WHERE v.key = 'npm-all' AND m.key = 'npm-local'")
+		mustExec(t, admin, "INSERT INTO quader.virtual_members (virtual_id, position, member_id) "+
+			"SELECT v.id, 0, m.id FROM quader.repositories v, quader.repositories m WHERE v.key = 'npm-top' AND m.key = 'npm-all'")
 		keys, err := qs.BastionVirtualClosure(ctx, []string{"it/npm-local"})
 		if err != nil || strings.Join(keys, ",") != "it/npm-all,it/npm-local,it/npm-top" {
 			t.Fatalf("BastionVirtualClosure: %v %v", keys, err)
@@ -295,17 +295,17 @@ func TestBastionMigration(t *testing.T) {
 		if _, err := qs.BastionContactUpsert(ctx, q.BastionContactUpsertParams{BastionID: bastionPrincipal, Replica: "r1", InterfaceVersion: 1}); err != nil {
 			t.Fatal(err)
 		}
-		mustExec(t, admin, "DELETE FROM trove.principal WHERE id = $1", bastionPrincipal)
+		mustExec(t, admin, "DELETE FROM quader.principal WHERE id = $1", bastionPrincipal)
 		for _, table := range []string{"bastion", "bastion_contact"} {
 			col := "principal_id"
 			if table == "bastion_contact" {
 				col = "bastion_id"
 			}
-			if n := scalar[int](t, admin, "SELECT count(*) FROM trove."+table+" WHERE "+col+" = $1", bastionPrincipal); n != 0 {
+			if n := scalar[int](t, admin, "SELECT count(*) FROM quader."+table+" WHERE "+col+" = $1", bastionPrincipal); n != 0 {
 				t.Errorf("%s still holds %d rows of the deleted registration", table, n)
 			}
 		}
-		if n := scalar[int](t, admin, "SELECT count(*) FROM trove.api_token WHERE principal_id = $1", bastionPrincipal); n != 0 {
+		if n := scalar[int](t, admin, "SELECT count(*) FROM quader.api_token WHERE principal_id = $1", bastionPrincipal); n != 0 {
 			t.Errorf("%d tokens of the deleted registration remain", n)
 		}
 	})

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestFirstAndSecondRequest is the happy path of R-REPO-025 and R-ARCH-013: a miss
@@ -31,7 +31,7 @@ func TestFirstAndSecondRequest(t *testing.T) {
 		if got.status != 200 || !bytes.Equal(got.body, doc) {
 			t.Fatalf("%d %q", got.status, got.body)
 		}
-		if cs := got.cacheStatus(); cs != "trove; fwd=uri-miss; fwd-status=200; stored" {
+		if cs := got.cacheStatus(); cs != "quader; fwd=uri-miss; fwd-status=200; stored" {
 			t.Fatalf("Cache-Status = %q", cs)
 		}
 		if n := up.Count("GET", "/pkg/lodash"); n != 1 {
@@ -43,7 +43,7 @@ func TestFirstAndSecondRequest(t *testing.T) {
 		if got.status != 200 || !bytes.Equal(got.body, doc) {
 			t.Fatalf("%d %q", got.status, got.body)
 		}
-		if cs := got.cacheStatus(); !strings.HasPrefix(cs, "trove; hit; ttl=") {
+		if cs := got.cacheStatus(); !strings.HasPrefix(cs, "quader; hit; ttl=") {
 			t.Fatalf("Cache-Status = %q", cs)
 		}
 		if n := up.Total(); n != 1 {
@@ -55,7 +55,7 @@ func TestFirstAndSecondRequest(t *testing.T) {
 		if got.status != 200 || !bytes.Equal(got.body, tarball) {
 			t.Fatalf("%d, %d bytes", got.status, len(got.body))
 		}
-		if cs := got.cacheStatus(); cs != "trove; fwd=uri-miss; fwd-status=200; stored" {
+		if cs := got.cacheStatus(); cs != "quader; fwd=uri-miss; fwd-status=200; stored" {
 			t.Fatalf("Cache-Status = %q", cs)
 		}
 		if n := e.number("SELECT count(*) FROM items WHERE path = 'pkg/lodash/-/lodash-4.17.21.tgz' AND upstream_url <> ''"); n != 1 {
@@ -68,7 +68,7 @@ func TestFirstAndSecondRequest(t *testing.T) {
 	t.Run("R-REPO-025 a stored artifact is a hit", func(t *testing.T) {
 		before := up.Total()
 		got := r.artifact(rem, "pkg/lodash/-/lodash-4.17.21.tgz")
-		if got.status != 200 || !bytes.Equal(got.body, tarball) || got.cacheStatus() != "trove; hit" {
+		if got.status != 200 || !bytes.Equal(got.body, tarball) || got.cacheStatus() != "quader; hit" {
 			t.Fatalf("%d %q", got.status, got.cacheStatus())
 		}
 		if up.Total() != before {
@@ -97,7 +97,7 @@ func TestRequestOrder(t *testing.T) {
 	// An open circuit: one counted failure opens it (threshold 1).
 	up.Set("/pkg/other", proxytest.Route{Status: 503})
 	_ = r.metadata(rem, "pkg/other")
-	waitFor(t, "the circuit to open", 5*time.Second, func() bool { return r.metric("trove_remote_upstream_up", "repo", "order") == 0 })
+	waitFor(t, "the circuit to open", 5*time.Second, func() bool { return r.metric("quader_remote_upstream_up", "repo", "order") == 0 })
 
 	offline := rem
 	offline.Settings.Availability.Mode = repository.AvailabilityOffline
@@ -121,7 +121,7 @@ func TestRequestOrder(t *testing.T) {
 	r.notifyState(rem)
 	t.Run("R-REPO-025 step 8 comes before the cache-fill check: a negative entry answers 404 hit", func(t *testing.T) {
 		got := r.artifactWith(rem, http.MethodGet, "pkg/late/-/late-1.tgz", nil, refused)
-		if got.status != 404 || got.cacheStatus() != "trove; hit; detail=negative" {
+		if got.status != 404 || got.cacheStatus() != "quader; hit; detail=negative" {
 			t.Fatalf("%d %q %s", got.status, got.cacheStatus(), got.body)
 		}
 	})
@@ -138,7 +138,7 @@ func TestRequestOrder(t *testing.T) {
 		if n := e.number("SELECT count(*) FROM remote_cache_entries"); n != 0 {
 			t.Fatalf("a refused fill left %d entries", n)
 		}
-		if got := r.metric("trove_endpoint_cache_fill_refused_total", "endpoint", "default"); got != 0 {
+		if got := r.metric("quader_endpoint_cache_fill_refused_total", "endpoint", "default"); got != 0 {
 			t.Fatalf("the default endpoint fills caches, the refusal is not the endpoint's: %v", got)
 		}
 	})

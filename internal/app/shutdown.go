@@ -3,9 +3,9 @@ package app
 import (
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/jobs"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/jobs"
 )
 
 // shutdownBudget is how the 5 s margin of the pod's grace period is spent

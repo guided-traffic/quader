@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Backup configures trove's own backup and restore (R-BAK-011) and the revocation journal (R-HA-054). The target
+// Backup configures quader's own backup and restore (R-BAK-011) and the revocation journal (R-HA-054). The target
 // credentials are file-only secrets; web and worker replicas read expected_interval and manual_run and never the target
 // (R-BAK-011, R-BAK-015). recovery_window and object_versioning declare the platform protection that the task backup-check verifies (R-HA-023).
 type Backup struct {
@@ -16,7 +16,7 @@ type Backup struct {
 	CompressionLevel  int                     `yaml:"compression_level" default:"3" validate:"min=1,max=19" doc:"zstd level of table files and the blob list."`
 	Exclude           BackupExclude           `yaml:"exclude"`
 	Retention         BackupRetention         `yaml:"retention"`
-	ExpectedInterval  time.Duration           `yaml:"expected_interval" default:"24h" validate:"min=1m" doc:"How often a backup is expected. TroveBackupStale and the overdue mark of the API and the UI fire after 1.5 times this value (R-BAK-014)."`
+	ExpectedInterval  time.Duration           `yaml:"expected_interval" default:"24h" validate:"min=1m" doc:"How often a backup is expected. QuaderBackupStale and the overdue mark of the API and the UI fire after 1.5 times this value (R-BAK-014)."`
 	ManualRun         BackupManualRun         `yaml:"manual_run"`
 	LeaseDuration     time.Duration           `yaml:"lease_duration" default:"5m" validate:"min=5s"`
 	HeartbeatInterval time.Duration           `yaml:"heartbeat_interval" default:"15s" validate:"min=1s"`
@@ -36,7 +36,7 @@ type BackupTarget struct {
 	Endpoint              string               `yaml:"endpoint" default:"" doc:"Empty means AWS endpoint resolution for the region. A host without a scheme means https://."`
 	Region                string               `yaml:"region" default:""`
 	Bucket                string               `yaml:"bucket" default:"" doc:"Required by every backup command."`
-	Prefix                string               `yaml:"prefix" default:"trove"`
+	Prefix                string               `yaml:"prefix" default:"quader"`
 	ForcePathStyle        bool                 `yaml:"force_path_style" default:"false"`
 	AllowInsecureEndpoint bool                 `yaml:"allow_insecure_endpoint" default:"false"`
 	CAFile                string               `yaml:"ca_file" default:"" doc:"Empty means the system trust store."`

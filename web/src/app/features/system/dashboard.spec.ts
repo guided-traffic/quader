@@ -50,7 +50,7 @@ describe('Admin dashboard (Q-OPS-175)', () => {
     const t = text(root);
     expect(t).toContain('All roles ready');
     expect(t).toContain('PostgreSQL');
-    expect(root.querySelectorAll('trove-error-notice').length).toBe(1);
+    expect(root.querySelectorAll('quader-error-notice').length).toBe(1);
     expect(t).not.toContain('Active tokens');
   });
 

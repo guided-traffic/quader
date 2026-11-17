@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
 
 // discovery is what the stored discovery document of an upstream parsed to (R-ANS-016): the path prefixes of its v3 and v1 APIs,
@@ -32,7 +32,7 @@ func (remoteAdapter) ParseDiscovery(_ context.Context, _ formats.RemoteContext, 
 
 // parseDiscovery reads {"available_versions": {"v3": "v3/", "v1": "v1/"}}. The v3 API is required, v1 optional. A prefix that is
 // absolute, has a scheme, leaves the API root or holds a query is refused (R-ANS-016): every upstream address is built from the
-// repository's URL and a relative prefix, so a document cannot send trove elsewhere.
+// repository's URL and a relative prefix, so a document cannot send quader elsewhere.
 func parseDiscovery(doc []byte) (*discovery, error) {
 	var d struct {
 		Available map[string]string `json:"available_versions"`

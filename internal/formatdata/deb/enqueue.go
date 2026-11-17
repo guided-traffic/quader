@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // Jobs enqueues a job in the caller's transaction; *jobs.Queue implements it.

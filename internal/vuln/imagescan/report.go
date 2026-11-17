@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // maxTextBytes and the bounds of a detection: a report is the analyser's answer to an untrusted image, so what it says is cut before it
@@ -255,7 +255,7 @@ func newAdvisory(v vulnerability) *Advisory {
 	return a
 }
 
-// severityOf maps the analyser's level onto trove's (R-VULN-007): the analyser has already chosen the vendor's severity for the distribution,
+// severityOf maps the analyser's level onto quader's (R-VULN-007): the analyser has already chosen the vendor's severity for the distribution,
 // which is more exact for an operating-system package than the highest CVSS.
 func severityOf(s string) advisory.Severity {
 	switch strings.ToUpper(s) {

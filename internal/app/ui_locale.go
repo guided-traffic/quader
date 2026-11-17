@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // uiPreferenceTimeout bounds what the choice of a locale may cost a request to

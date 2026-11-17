@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // failureLimiter satisfies auth.FailureLimiter for a step that only checks its inputs.

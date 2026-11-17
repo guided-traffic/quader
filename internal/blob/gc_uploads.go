@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // This file is the collection run's contact with the multi-request upload sessions (R-STOR-011 Expiry, R-STOR-025): the run aborts
@@ -170,7 +170,7 @@ func (r *run) sessionPause(ctx context.Context) (stop bool, err error) {
 }
 
 // canonicalID reports that id is a session id in the one form the service writes, the lower-case hyphenated UUID: the parser accepts
-// others (braced, 32 hexadecimal digits, urn:uuid:), and a directory in one of those is not a session of trove.
+// others (braced, 32 hexadecimal digits, urn:uuid:), and a directory in one of those is not a session of quader.
 func canonicalID(id string) bool {
 	u, err := uuid.Parse(id)
 	return err == nil && u.String() == id

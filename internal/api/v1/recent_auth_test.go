@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // staleSessions resolves every cookie to a session without a recent
@@ -55,7 +55,7 @@ func TestR_API_007_DocumentDeclaresRecentAuth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Run("R-API-007 exactly the operations of the table declare x-trove-recent-auth", func(t *testing.T) {
+	t.Run("R-API-007 exactly the operations of the table declare x-quader-recent-auth", func(t *testing.T) {
 		var got []string
 		for _, op := range doc.Operations() {
 			if op.RecentAuth {
@@ -67,9 +67,9 @@ func TestR_API_007_DocumentDeclaresRecentAuth(t *testing.T) {
 			t.Fatalf("declared:\n%v\nwant:\n%v", got, recentAuthOperations)
 		}
 	})
-	t.Run("R-API-007 x-trove-recent-auth: false is refused at load", func(t *testing.T) {
-		raw := strings.Replace(string(EmbeddedYAML()), "x-trove-recent-auth: true", "x-trove-recent-auth: false", 1)
-		if _, err := LoadDocument([]byte(raw)); err == nil || !strings.Contains(err.Error(), "x-trove-recent-auth") {
+	t.Run("R-API-007 x-quader-recent-auth: false is refused at load", func(t *testing.T) {
+		raw := strings.Replace(string(EmbeddedYAML()), "x-quader-recent-auth: true", "x-quader-recent-auth: false", 1)
+		if _, err := LoadDocument([]byte(raw)); err == nil || !strings.Contains(err.Error(), "x-quader-recent-auth") {
 			t.Fatalf("err = %v", err)
 		}
 	})

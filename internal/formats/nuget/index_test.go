@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nugettest"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nugettest"
 )
 
 func newHost(t *testing.T, o formattest.HostOptions) *formattest.Host {
@@ -29,7 +29,7 @@ func get(t *testing.T, h *formattest.Host, method, path string, mods ...func(*ht
 	return resp
 }
 
-const feedOfMain = "https://trove.test/api/nuget/it/main/v3/"
+const feedOfMain = "https://quader.test/api/nuget/it/main/v3/"
 
 // TestR_NUGET_001_TheServiceIndexIsIdenticalAtThreeSpellings: "<feed>/index.json", "<feed>/"
 // and "<feed>" answer with byte-identical bodies and headers, without a redirect.
@@ -185,7 +185,7 @@ func TestR_NUGET_002_TheETagFollowsItsInputs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	const base2 = "https://trove.test"
+	const base2 = "https://quader.test"
 	orig := indexETag(rq, base2, true, false)
 	if indexETag(rq, base2, false, false) == orig {
 		t.Error("the publish resources do not change the ETag")

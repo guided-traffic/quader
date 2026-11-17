@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nugettest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nugettest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 )
 
 // streamStore is a store that offers the scan as one statement (Scanner): it hands n packages to

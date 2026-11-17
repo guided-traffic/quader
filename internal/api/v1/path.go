@@ -6,8 +6,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // Item paths and reserved names (R-API-004).
@@ -78,7 +78,7 @@ func CheckItemPath(p string, o PathOptions) (string, error) {
 // CheckReservedName answers 422 reserved_name when a create uses a name that a
 // route of the collection reserves (R-API-004), with the JSON pointer of the
 // member that holds it. reserved is the list the key schema carries as
-// x-trove-reserved-names.
+// x-quader-reserved-names.
 func CheckReservedName(pointer, name string, reserved ...string) error {
 	for _, r := range reserved {
 		if name == r {

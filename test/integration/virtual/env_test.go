@@ -25,24 +25,24 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/formathost"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/packages"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/virtual"
-	vt "github.com/guided-traffic/trove/internal/virtual/virtualtest"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/packages"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/virtual"
+	vt "github.com/guided-traffic/quader/internal/virtual/virtualtest"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-const schemaName = "trove"
+const schemaName = "quader"
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
 
@@ -74,15 +74,15 @@ type env struct {
 	cfg config.Database
 }
 
-// newEnv creates a database trove_virt_<random>, migrates it and drops it when the test ends.
+// newEnv creates a database quader_virt_<random>, migrates it and drops it when the test ends.
 func newEnv(t *testing.T) *env {
 	t.Helper()
-	host, user, secret := testenv.Get(t, "TROVE_TEST_PG_HOST"), testenv.Get(t, "TROVE_TEST_PG_USER"), testenv.Get(t, "TROVE_TEST_PG_PASSWORD")
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	host, user, secret := testenv.Get(t, "QUADER_TEST_PG_HOST"), testenv.Get(t, "QUADER_TEST_PG_USER"), testenv.Get(t, "QUADER_TEST_PG_PASSWORD")
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		t.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		t.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
-	name := "trove_virt_" + randHex(5)
+	name := "quader_virt_" + randHex(5)
 	maint := admin(t, "postgres")
 	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatalf("create database: %v", err)

@@ -5,7 +5,7 @@ package mirror
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // A mirror pass fills through the same engine request as a client (R-REPO-041): npm compares the digest its document announces

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 func TestR_NPM_024_OneRequestOfTheUpstreamThenNoneThenOneConditional(t *testing.T) {
@@ -94,7 +94,7 @@ func TestR_NPM_025_TarballAddressesAreOnTheServingRepository(t *testing.T) {
 			t.Fatalf("%s: %d tarballs", c.repo, len(tars))
 		}
 		for v, addr := range tars {
-			want := "http://trove.test/api/npm/it/" + c.repo + "/" + p.Name + "/-/" + corpus.TarballFile(p.Name, v)
+			want := "http://quader.test/api/npm/it/" + c.repo + "/" + p.Name + "/-/" + corpus.TarballFile(p.Name, v)
 			if addr != want {
 				t.Errorf("%s %s: tarball %q, want %q", c.repo, v, addr, want)
 			}

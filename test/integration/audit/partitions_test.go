@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 func partitions(t testing.TB, e *env) int {
 	t.Helper()
-	return scalar[int](t, e.admin, "SELECT count(*) FROM pg_inherits WHERE inhparent = 'trove.audit_event'::regclass")
+	return scalar[int](t, e.admin, "SELECT count(*) FROM pg_inherits WHERE inhparent = 'quader.audit_event'::regclass")
 }
 
 func currentMonth(t testing.TB, e *env) string {
@@ -29,8 +29,8 @@ func TestR_OPS_015_StartUpMaintainsThePartitionsThroughTheRuntimeRole(t *testing
 	e := newEnv(t)
 	// A replica that starts months after the last maintenance finds the window
 	// gone: simulate it by dropping the partitions of this month and the next.
-	mustExec(t, e.admin, "DROP TABLE trove.audit_event_"+currentMonth(t, e))
-	mustExec(t, e.admin, `DO $$ BEGIN EXECUTE format('DROP TABLE trove.audit_event_%s',
+	mustExec(t, e.admin, "DROP TABLE quader.audit_event_"+currentMonth(t, e))
+	mustExec(t, e.admin, `DO $$ BEGIN EXECUTE format('DROP TABLE quader.audit_event_%s',
 		to_char(date_trunc('month', now() AT TIME ZONE 'UTC') + interval '1 month', 'YYYYMM')); END $$`)
 	store := audit.NewStore(e.openWith(e.runtimeCfg()))
 	ctx := context.Background()
@@ -67,11 +67,11 @@ func TestR_OPS_017_ARuntimeRoleCannotShortenTheRetentionAndAReplicaWarnsNamingMi
 	if err := store.Prepare(context.Background(), 30, log); err != nil {
 		t.Fatal(err)
 	}
-	if got := scalar[int](t, e.admin, "SELECT retention_days FROM trove.audit_policy"); got != 365 {
+	if got := scalar[int](t, e.admin, "SELECT retention_days FROM quader.audit_policy"); got != 365 {
 		t.Errorf("the runtime role changed the retention to %d", got)
 	}
 	out := logs.String()
-	if !strings.Contains(out, "trove migrate") || !strings.Contains(out, `"level":"WARN"`) || !strings.Contains(out, "below 90") {
+	if !strings.Contains(out, "quader migrate") || !strings.Contains(out, `"level":"WARN"`) || !strings.Contains(out, "below 90") {
 		t.Errorf("warnings = %s", out)
 	}
 }
@@ -82,7 +82,7 @@ func TestR_OPS_015_SingleRoleModeWritesTheRetentionAtStartUp(t *testing.T) {
 	if err := store.Prepare(context.Background(), 120, quiet); err != nil {
 		t.Fatal(err)
 	}
-	if got := scalar[int](t, e.admin, "SELECT retention_days FROM trove.audit_policy"); got != 120 {
+	if got := scalar[int](t, e.admin, "SELECT retention_days FROM quader.audit_policy"); got != 120 {
 		t.Errorf("retention = %d, want 120", got)
 	}
 }
@@ -100,18 +100,18 @@ func TestR_OPS_015_MigrateWritesTheRetentionOnEveryRunAndAppliesIt(t *testing.T)
 			t.Fatalf("migrate: %v", err)
 		}
 	}
-	stored := func() int { return scalar[int](t, e.admin, "SELECT retention_days FROM trove.audit_policy") }
+	stored := func() int { return scalar[int](t, e.admin, "SELECT retention_days FROM quader.audit_policy") }
 
 	run(0) // keep for ever
-	mustExec(t, e.admin, "SELECT trove.audit_create_partitions('2025-01-15Z', '2025-04-02Z')")
+	mustExec(t, e.admin, "SELECT quader.audit_create_partitions('2025-01-15Z', '2025-04-02Z')")
 	run(0)
 	if stored() != 0 || partitions(t, e) != 8 {
 		t.Fatalf("retention 0: stored %d, partitions %d (want 0 and 8)", stored(), partitions(t, e))
 	}
 
-	updated := scalar[time.Time](t, e.admin, "SELECT updated_at FROM trove.audit_policy")
+	updated := scalar[time.Time](t, e.admin, "SELECT updated_at FROM quader.audit_policy")
 	run(0)
-	if again := scalar[time.Time](t, e.admin, "SELECT updated_at FROM trove.audit_policy"); !again.Equal(updated) {
+	if again := scalar[time.Time](t, e.admin, "SELECT updated_at FROM quader.audit_policy"); !again.Equal(updated) {
 		t.Error("an unchanged retention was written again")
 	}
 

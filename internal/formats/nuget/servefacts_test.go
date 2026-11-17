@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
 )
 
 // R-ARCH-027 (Q-ARCH-291): the key of the rows the serve check wants is the version row and the tombstone of a local repository,

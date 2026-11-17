@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
 )
 
 const (
@@ -40,7 +40,7 @@ func TestR_BAS_021_AMissIsForwardedWithTheCallersCredentialAndTheListedHeaders(t
 	s := newSiteHarness(t, options{})
 	s.site.artifacts[tgz] = []byte("tarball")
 	w := s.get(tgz+"?x=1", "Authorization", bearer(s.full), "Cookie", "a=b", "Range", "bytes=0-1", "If-None-Match", `"x"`, "If-Modified-Since", "Mon, 02 Jan 2006 15:04:05 GMT",
-		"Forwarded", "for=192.0.2.1", "X-Forwarded-For", "192.0.2.1", "X-Forwarded-Host", "evil.example", "Trove-Bastion-Class", "artifact", "Trove-Anything", "1",
+		"Forwarded", "for=192.0.2.1", "X-Forwarded-For", "192.0.2.1", "X-Forwarded-Host", "evil.example", "Quader-Bastion-Class", "artifact", "Quader-Anything", "1",
 		"Connection", "keep-alive, X-Hop", "X-Hop", "1", "X-NuGet-ApiKey", "secret", "Accept", "application/octet-stream", "User-Agent", "npm/10", "Te", "trailers")
 	if w.Code != http.StatusPartialContent || w.Body.String() != "ta" {
 		t.Fatalf("%d %q", w.Code, w.Body)
@@ -56,7 +56,7 @@ func TestR_BAS_021_AMissIsForwardedWithTheCallersCredentialAndTheListedHeaders(t
 	if r.Header.Get("Authorization") != bearer(s.full) || r.Header.Get("Accept") != "application/octet-stream" || r.Header.Get("User-Agent") != "npm/10" {
 		t.Fatalf("end-to-end headers missing: %v", r.Header)
 	}
-	for _, name := range []string{"Cookie", "Range", "If-None-Match", "If-Modified-Since", "Forwarded", "X-Forwarded-For", "X-Forwarded-Host", "Trove-Bastion-Class", "Trove-Anything", "X-Hop", "Connection", "X-Nuget-Apikey", "Te"} {
+	for _, name := range []string{"Cookie", "Range", "If-None-Match", "If-Modified-Since", "Forwarded", "X-Forwarded-For", "X-Forwarded-Host", "Quader-Bastion-Class", "Quader-Anything", "X-Hop", "Connection", "X-Nuget-Apikey", "Te"} {
 		if r.Header.Get(name) != "" {
 			t.Errorf("the request header %s was forwarded: %q", name, r.Header.Get(name))
 		}
@@ -73,7 +73,7 @@ func TestR_BAS_021_TheCallerReceivesTheMainInstallationsAnswerWithoutTheInternal
 	for _, p := range []string{tgz, doc} {
 		w := s.get(p, "Authorization", bearer(s.full))
 		for k := range w.Header() {
-			if strings.HasPrefix(k, "Trove-Bastion-") || k == "X-Trove-Replica" || k == "Cache-Status" || k == "Set-Cookie" || k == "Connection" {
+			if strings.HasPrefix(k, "Quader-Bastion-") || k == "X-Quader-Replica" || k == "Cache-Status" || k == "Set-Cookie" || k == "Connection" {
 				t.Errorf("%s: the response header %s reached the caller", p, k)
 			}
 		}
@@ -107,7 +107,7 @@ func TestR_BAS_021_AnArtifactIsSpooledKeptAndServedWithoutARequestTheSecondTime(
 		t.Fatalf("%+v", ent)
 	}
 	for k := range ent.Header {
-		if strings.HasPrefix(k, "Trove-Bastion-") || k == "Set-Cookie" || k == "X-Trove-Replica" {
+		if strings.HasPrefix(k, "Quader-Bastion-") || k == "Set-Cookie" || k == "X-Quader-Replica" {
 			t.Errorf("the entry keeps %s", k)
 		}
 	}

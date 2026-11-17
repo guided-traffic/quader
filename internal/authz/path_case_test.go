@@ -4,10 +4,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestR_AUTHZ_005_AnUpperCasePathPatternOnALowerCaseFormatIsRefused: NuGet stores lower-case paths (R-NUGET-005), and the

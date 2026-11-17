@@ -71,7 +71,7 @@ export function snippetExplanation(id: string): string | null {
     case 'yarn.publish':
       return $localize`:@@setup.snippet.publish-berry:Add this to .yarnrc.yml, then run yarn npm publish.`;
     case 'npm.publish.gitlab-ci.generic':
-      return $localize`:@@setup.snippet.gitlab-generic:For npm 10, pnpm 10 on npm 10 and Yarn 1. A pipeline step exchanges the job's ID token for a short-lived trove token and revokes it again as its last step.`;
+      return $localize`:@@setup.snippet.gitlab-generic:For npm 10, pnpm 10 on npm 10 and Yarn 1. A pipeline step exchanges the job's ID token for a short-lived Quader token and revokes it again as its last step.`;
     case 'npm.publish.gitlab-ci.native':
       return $localize`:@@setup.snippet.gitlab-native:For npm 11.5.1 and later, pnpm 11 and 12 and Yarn 4. The client exchanges the job's ID token itself.`;
     case 'dotnet.configure.shell':
@@ -96,9 +96,9 @@ export function snippetExplanation(id: string): string | null {
     case 'nuget.publish.powershell':
       return $localize`:@@setup.snippet.nuget-publish:Pushes the package to the repository that receives uploads. The token travels as the API key.`;
     case 'curl.configure.function':
-      return $localize`:@@setup.snippet.curl-function:Paste this into the shell or the CI script that runs curl. It defines trove_curl, which hands curl the credential on standard input, so the token never appears on curl's command line.`;
+      return $localize`:@@setup.snippet.curl-function:Paste this into the shell or the CI script that runs curl. It defines quader_curl, which hands curl the credential on standard input, so the token never appears on curl's command line.`;
     case 'curl.install':
-      return $localize`:@@setup.snippet.curl-install:Downloads a file of this repository with trove_curl. Replace <path> with the path of the file in the repository.`;
+      return $localize`:@@setup.snippet.curl-install:Downloads a file of this repository with quader_curl. Replace <path> with the path of the file in the repository.`;
     case 'curl.publish':
       return $localize`:@@setup.snippet.curl-publish:Uploads a file to the path you give. Replacing a file with other bytes also needs the overwrite permission.`;
     case 'docker.configure.shell':
@@ -119,7 +119,7 @@ export function snippetExplanation(id: string): string | null {
       return $localize`:@@setup.snippet.apt-configure:Installs the repository's signing key as a key file and adds the repository as an APT source that is verified against that key. The credentials go into a file that only root can read, never into the source URL. The key file is replaced by running the key command again, which is also how a key rotation reaches this machine.`;
     case 'apt.configure.shell.configure':
     case 'apt.configure.shell.configure-scoped':
-      return $localize`:@@setup.snippet.apt-configure-upstream:For a remote repository without upstream keys: adds the repository as an APT source that is verified against the archive's own keyring, which Debian and Ubuntu install on every system. No key of trove's is installed, and verification stays on.`;
+      return $localize`:@@setup.snippet.apt-configure-upstream:For a remote repository without upstream keys: adds the repository as an APT source that is verified against the archive's own keyring, which Debian and Ubuntu install on every system. No key of Quader's is installed, and verification stays on.`;
     case 'apt.configure.list':
     case 'apt.configure.list-scoped':
       return $localize`:@@setup.snippet.apt-list:The same source as one line, for systems that prefer a .list file. Install the key file as above first.`;
@@ -128,11 +128,11 @@ export function snippetExplanation(id: string): string | null {
     case 'apt.publish.curl':
       return $localize`:@@setup.snippet.apt-publish:Uploads a .deb file to the repository that receives uploads, into the suite and component named in the address. An index that lists the package follows within moments.`;
     case 'ansible-galaxy.configure.ansible-cfg':
-      return $localize`:@@setup.snippet.ansible-cfg:Save this as ansible.cfg next to your playbooks, or as ~/.ansible.cfg for the whole machine. It names this repository as the server trove. The token is not written into the file, because ansible.cfg does not expand variables: set it in the environment as shown below.`;
+      return $localize`:@@setup.snippet.ansible-cfg:Save this as ansible.cfg next to your playbooks, or as ~/.ansible.cfg for the whole machine. It names this repository as the server quader. The token is not written into the file, because ansible.cfg does not expand variables: set it in the environment as shown below.`;
     case 'ansible-galaxy.configure.token-env':
     case 'ansible-galaxy.configure.token-env-powershell':
     case 'ansible-galaxy.configure.token-env-cmd':
-      return $localize`:@@setup.snippet.ansible-token-env:ansible-galaxy reads the token of the server trove from this environment variable. Set it in the shell or the CI job that runs the command, and keep it out of version control.`;
+      return $localize`:@@setup.snippet.ansible-token-env:ansible-galaxy reads the token of the server quader from this environment variable. Set it in the shell or the CI job that runs the command, and keep it out of version control.`;
     case 'ansible-galaxy.configure.netrc':
       return $localize`:@@setup.snippet.ansible-netrc:Needed to install roles: the client downloads a role archive without its token header and falls back to ~/.netrc. This command appends the line to your ~/.netrc, in a file only you can read, and your shell fills in the token. One line serves every repository on this host, and the client then uses it for every request to the host, so keep the token in it valid.`;
     case 'ansible-galaxy.install.collection':

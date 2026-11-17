@@ -4,9 +4,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/mirror"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/mirror"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestMirrorHostOfAProcessWithoutTheAreas: the host is built on first use, and a process whose areas are not wired (the shell

@@ -11,15 +11,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/galaxydoc"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The tests of the virtual class run the handlers on the in-memory Host of the kit, with a resolver that behaves as the virtual engine
@@ -365,7 +365,7 @@ func TestR_ANS_022_TheVersionListIsTheUnionNewestFirstCutAfterTheMergeAndTheDige
 	if v := decodeVersions(t, r); v.Meta.Count != 2 || strings.Join(versionsOf(v), ",") != "1.0.0,0.9.0" {
 		t.Errorf("list %+v", v)
 	}
-	if got := counted(t, m, "trove_ansible_virtual_digest_conflicts_total", map[string]string{"repo": "it/virt"}); got != 1 {
+	if got := counted(t, m, "quader_ansible_virtual_digest_conflicts_total", map[string]string{"repo": "it/virt"}); got != 1 {
 		t.Errorf("conflicts = %v, want 1", got)
 	}
 
@@ -401,7 +401,7 @@ func TestR_ANS_022_ADigestConflictIsFoundForTheVersionsAMemberSharesWithAnUpstre
 	if r := w.get(versionsPath); r.Code != http.StatusOK {
 		t.Fatalf("%d %s", r.Code, r.Body.String())
 	}
-	if got := counted(t, m, "trove_ansible_virtual_digest_conflicts_total", nil); got != 1 {
+	if got := counted(t, m, "quader_ansible_virtual_digest_conflicts_total", nil); got != 1 {
 		t.Errorf("conflicts = %v, want 1", got)
 	}
 	for _, ask := range w.rem.asks {
@@ -412,7 +412,7 @@ func TestR_ANS_022_ADigestConflictIsFoundForTheVersionsAMemberSharesWithAnUpstre
 	// The same digest on both sides is no conflict.
 	w.res.docs["collections/acme/tools/versions.json"]["loc"] = localList(t, listEntry{Version: "1.0.0", SHA256: hexSHA(sha(2))})
 	w.get(versionsPath)
-	if got := counted(t, m, "trove_ansible_virtual_digest_conflicts_total", nil); got != 1 {
+	if got := counted(t, m, "quader_ansible_virtual_digest_conflicts_total", nil); got != 1 {
 		t.Errorf("conflicts = %v after a merge without one", got)
 	}
 }
@@ -427,7 +427,7 @@ func TestR_ANS_022_ALocalVersionNeverLosesToARemoteOneAndTheSameDigestIsNoConfli
 	w.doc("collections/acme/tools/versions.json", "rem", listPage(1, "1.0.0"))
 	w.store.announced[2] = []rows.Announced{{Name: "acme.tools", Version: "1.0.0", SHA256: sha(7)}}
 	w.get(versionsPath)
-	if got := counted(t, m, "trove_ansible_virtual_digest_conflicts_total", nil); got != 0 {
+	if got := counted(t, m, "quader_ansible_virtual_digest_conflicts_total", nil); got != 0 {
 		t.Errorf("conflicts = %v, want 0", got)
 	}
 	var merged listDoc
@@ -958,11 +958,11 @@ func TestR_ANS_030_TheConflictCounterIsRegisteredOnBindAndItsSeriesLeaveWithTheR
 	w.doc("collections/acme/tools/versions.json", "rem", listPage(1, "1.0.0"))
 	w.store.announced[2] = []rows.Announced{{Name: "acme.tools", Version: "1.0.0", SHA256: sha(2)}}
 	w.get(versionsPath)
-	if got := counted(t, m, "trove_ansible_virtual_digest_conflicts_total", nil); got != 1 {
+	if got := counted(t, m, "quader_ansible_virtual_digest_conflicts_total", nil); got != 1 {
 		t.Fatalf("conflicts = %v", got)
 	}
 	m.Repos().UpdateRepositories([]observability.RepoLabel{{Name: "it/other"}})
-	if got := counted(t, m, "trove_ansible_virtual_digest_conflicts_total", nil); got != 0 {
+	if got := counted(t, m, "quader_ansible_virtual_digest_conflicts_total", nil); got != 0 {
 		t.Errorf("the series of a forgotten repository stays: %v", got)
 	}
 	// A Host nobody bound with a registry counts nothing and does not fail.

@@ -1,22 +1,22 @@
 # Chart values of the local development profile (R-HA-051): the real chart with every role, api (2 replicas), packages
-# (3) and worker (2) plus a worker pool for the queue vuln (2), against the dependencies deploy/dev/up.sh installs into the "trove"
-# namespace of the kind cluster "trove". The backup CronJob runs every six hours against the bucket trove-backups of the same
-# SeaweedFS (s3.yaml creates it), a bucket of its own beside the blob bucket trove-blobs (R-HA-060).
+# (3) and worker (2) plus a worker pool for the queue vuln (2), against the dependencies deploy/dev/up.sh installs into the "quader"
+# namespace of the kind cluster "quader". The backup CronJob runs every six hours against the bucket quader-backups of the same
+# SeaweedFS (s3.yaml creates it), a bucket of its own beside the blob bucket quader-blobs (R-HA-060).
 image:
   registry: docker.io
-  repository: guidedtraffic/trove
+  repository: guidedtraffic/quader
   tag: dev                       # built by `make image`, loaded by up.sh with `kind load docker-image`
   pullPolicy: IfNotPresent       # the image never leaves the kind nodes
 
 highAvailability:
   enforce: true
 
-# TLS on trove's listeners (R-ARCH-035, R-HA-063): the certificate is Secret trove-tls, issued by
+# TLS on quader's listeners (R-ARCH-035, R-HA-063): the certificate is Secret quader-tls, issued by
 # cert-manager from the dev CA (pki.yaml). The short reload interval makes the rotation drill (E0.15)
 # fast; the chart default is 10s.
 tls:
   enabled: true
-  secretName: trove-tls
+  secretName: quader-tls
   reloadInterval: 2s
 
 api:
@@ -64,9 +64,9 @@ spool:
 
 config:
   server:
-    base_url: https://localhost:8080          # the edge's certificate names localhost; up.sh follows TROVE_DEV_HTTP_PORT
+    base_url: https://localhost:8080          # the edge's certificate names localhost; up.sh follows QUADER_DEV_HTTP_PORT
     trusted_proxies: ["10.244.0.0/24"]    # the pod range of the control-plane node, where HAProxy Ingress is pinned (haproxy-values.yaml); up.sh checks it against the node's podCIDR
-    replica_header: always                 # X-Trove-Replica on every response: the scatter profile (E0.11) counts replicas per request, also anonymous ones
+    replica_header: always                 # X-Quader-Replica on every response: the scatter profile (E0.11) counts replicas per request, also anonymous ones
   log:
     level: debug
   api:
@@ -97,11 +97,11 @@ config:
       providers:
         keycloak:                                 # the ID in the redirect URI /auth/oidc/keycloak/callback of the realm's client
           display_name: Keycloak (dev)
-          issuer: https://trove-keycloak.trove.svc:8443/realms/trove
-          client_id: trove
+          issuer: https://quader-keycloak.quader.svc:8443/realms/quader
+          client_id: quader
           group_sync:
             rules:
-              - match_regex: "trove-(.+)"        # trove-team-web -> team-web, trove-platform-admins -> platform-admins
+              - match_regex: "quader-(.+)"       # quader-team-web -> team-web, quader-platform-admins -> platform-admins
                 group: "$1"
             create_groups: true
   # The edge of the dev cluster needs 0.2 to 1.8 s to drop a draining pod's endpoint on the CI runners, and 13.4 s on a laptop
@@ -116,8 +116,8 @@ config:
     metadata_cache_bytes: 32MiB         # default 128MiB
     merged_metadata_cache_bytes: 64MiB  # default 256MiB
   database:
-    host: trove-db-rw.trove.svc           # the read-write Service of the CloudNativePG cluster trove-db
-    name: trove
+    host: quader-db-rw.quader.svc         # the read-write Service of the CloudNativePG cluster quader-db
+    name: quader
     ssl_mode: verify-full
   valkey:
     mode: sentinel
@@ -125,18 +125,18 @@ config:
       # The Valkey operator's names: <pod>.<headless Service>.<namespace>.svc.cluster.local, the only names
       # its certificate carries. The primary is named after the resource.
       addresses:
-        - trove-valkey-sentinel-0.trove-valkey-sentinel-headless.trove.svc.cluster.local:36379
-        - trove-valkey-sentinel-1.trove-valkey-sentinel-headless.trove.svc.cluster.local:36379
-        - trove-valkey-sentinel-2.trove-valkey-sentinel-headless.trove.svc.cluster.local:36379
-      primary_name: trove-valkey
+        - quader-valkey-sentinel-0.quader-valkey-sentinel-headless.quader.svc.cluster.local:36379
+        - quader-valkey-sentinel-1.quader-valkey-sentinel-headless.quader.svc.cluster.local:36379
+        - quader-valkey-sentinel-2.quader-valkey-sentinel-headless.quader.svc.cluster.local:36379
+      primary_name: quader-valkey
       tls: true
     tls:
       mode: verify-full
   storage:
     s3:
-      bucket: trove-blobs
+      bucket: quader-blobs
       region: us-east-1
-      endpoint: https://trove-s3.trove.svc:9000    # SeaweedFS over TLS; the certificate names trove-s3.trove.svc
+      endpoint: https://quader-s3.quader.svc:9000  # SeaweedFS over TLS; the certificate names quader-s3.quader.svc
       force_path_style: true
       credentials:
         source: static
@@ -144,9 +144,9 @@ config:
       max_size: 1GiB
   backup:
     target:
-      bucket: trove-backups                        # a bucket of its own on the blob store's SeaweedFS, over TLS like every link of the profile
+      bucket: quader-backups                       # a bucket of its own on the blob store's SeaweedFS, over TLS like every link of the profile
       region: us-east-1
-      endpoint: https://trove-s3.trove.svc:9000
+      endpoint: https://quader-s3.quader.svc:9000
       force_path_style: true
       credentials:
         source: static
@@ -160,110 +160,110 @@ backup:
 
 secrets:
   database:
-    existingSecret: trove-db-app          # created by CloudNativePG
+    existingSecret: quader-db-app         # created by CloudNativePG
   databaseCA:
-    existingSecret: trove-db-ca           # created by CloudNativePG
+    existingSecret: quader-db-ca          # created by CloudNativePG
     key: ca.crt
   s3:
-    existingSecret: trove-s3              # generated by the internal-secrets-operator (secrets.yaml)
+    existingSecret: quader-s3             # generated by the internal-secrets-operator (secrets.yaml)
   # Interim deviation from R-HA-056 / R-ARCH-031 (dev profile only): the Valkey operator has no ACL users and no
-  # separate Sentinel password, so trove connects as the `default` user (empty usernameKey) with the cluster
+  # separate Sentinel password, so quader connects as the `default` user (empty usernameKey) with the cluster
   # password, and the same Secret authenticates against the Sentinels. See local-profile.md.
   valkey:
-    existingSecret: trove-valkey-auth     # generated by the internal-secrets-operator
+    existingSecret: quader-valkey-auth    # generated by the internal-secrets-operator
     usernameKey: ""
   valkeySentinel:
-    existingSecret: trove-valkey-auth
+    existingSecret: quader-valkey-auth
   backupSource:
-    existingSecret: trove-s3              # the profile has one SeaweedFS login; a production profile gives the backup a login that may only read trove-blobs
+    existingSecret: quader-s3             # the profile has one SeaweedFS login; a production profile gives the backup a login that may only read quader-blobs
   backupTarget:
-    existingSecret: trove-s3              # the same SeaweedFS login as the blob store; a production target has keys of its own
+    existingSecret: quader-s3             # the same SeaweedFS login as the blob store; a production target has keys of its own
   s3CA:
-    existingSecret: trove-s3-tls          # the SeaweedFS certificate Secret (cert-manager, dev CA); renders storage.s3.ca_file
+    existingSecret: quader-s3-tls         # the SeaweedFS certificate Secret (cert-manager, dev CA); renders storage.s3.ca_file
     key: ca.crt
   backupTargetCA:
-    existingSecret: trove-s3-tls          # the same certificate; renders backup.target.ca_file
+    existingSecret: quader-s3-tls         # the same certificate; renders backup.target.ca_file
     key: ca.crt
   valkeyCA:
-    existingSecret: trove-valkey-tls      # the Valkey operator's certificate Secret (cert-manager, dev CA)
+    existingSecret: quader-valkey-tls     # the Valkey operator's certificate Secret (cert-manager, dev CA)
   encryption:
-    existingSecret: trove-encryption-keys # generated by the internal-secrets-operator: 32 raw bytes
+    existingSecret: quader-encryption-keys # generated by the internal-secrets-operator: 32 raw bytes
     keys: [dev.key]
   oidc:
     - providerId: keycloak
-      existingSecret: trove-keycloak      # generated by the internal-secrets-operator (keycloak.yaml)
+      existingSecret: quader-keycloak     # generated by the internal-secrets-operator (keycloak.yaml)
       key: client-secret
   breakGlass:
-    existingSecret: trove-break-glass     # generated and rotated by the internal-secrets-operator (secrets.yaml)
+    existingSecret: quader-break-glass    # generated and rotated by the internal-secrets-operator (secrets.yaml)
     key: password
 
-# The dev CA that signed Keycloak's certificate (Secret trove-keycloak-tls, keycloak.yaml): the outbound connection to
+# The dev CA that signed Keycloak's certificate (Secret quader-keycloak-tls, keycloak.yaml): the outbound connection to
 # the issuer trusts it through trustedCA (R-HA-043), in every pod of the release; the client secret and the break-glass
 # password use secrets.oidc and secrets.breakGlass.
 trustedCA:
-  existingSecret: trove-keycloak-tls
+  existingSecret: quader-keycloak-tls
   keys: [ca.crt]
 
-# The edge: HAProxy Ingress (haproxy-values.yaml) terminates TLS with Secret trove-edge-tls for localhost and
-# speaks HTTPS to trove, verifying trove's certificate against the dev CA (R-HA-063).
+# The edge: HAProxy Ingress (haproxy-values.yaml) terminates TLS with Secret quader-edge-tls for localhost and
+# speaks HTTPS to quader, verifying quader's certificate against the dev CA (R-HA-063).
 ingress:
   enabled: true
   className: haproxy
   tls:
-    - secretName: trove-edge-tls
+    - secretName: quader-edge-tls
       hosts: [localhost]
   backendTLS:
     controller: haproxy
     verify: true
-    caSecret: trove-tls                   # a cert-manager Secret carries ca.crt
+    caSecret: quader-tls                  # a cert-manager Secret carries ca.crt
 
 # The second endpoint (R-EP-001 to R-EP-005, E0.16, E1.14): `customers` listens on :8443 with its own host, its own
 # certificate pair plus a wildcard pair chosen by SNI (all from cert-manager, pki.yaml), serves the package routes, the
 # raw files and the management API (`surface: [packages, files, api]`, Q-EP-54: E1.14 needs the files and the
 # listings of the management API under exposure; /ui/ is not allowed on a further endpoint and answers the 404 of an
 # unknown path; the packages pods open :8443 for the packages and files families and the api pods for the api family, the
-# Services are trove-ep-customers and trove-api-ep-customers and the edge splits the host by path), accepts only service-account tokens bound to it and exposes what its rules say (the chart's
+# Services are quader-ep-customers and quader-api-ep-customers and the edge splits the host by path), accepts only service-account tokens bound to it and exposes what its rules say (the chart's
 # defaults for a further endpoint), and has its own Ingress on the same HAProxy Ingress, which verifies the endpoint's certificate for
-# trove-ep-customers.<namespace>.svc. The host resolves to the loopback address on every system that treats
-# *.localhost that way; the edge port follows TROVE_DEV_HTTP_PORT (up.sh sets baseUrl).
+# quader-ep-customers.<namespace>.svc. The host resolves to the loopback address on every system that treats
+# *.localhost that way; the edge port follows QUADER_DEV_HTTP_PORT (up.sh sets baseUrl).
 endpoints:
   customers:
     port: 8443
-    baseUrl: https://packages.trove.localhost:8080
-    hosts: [packages.trove.localhost]
-    wildcardHost: "*.packages.trove.localhost"
+    baseUrl: https://packages.quader.localhost:8080
+    hosts: [packages.quader.localhost]
+    wildcardHost: "*.packages.quader.localhost"
     surface: [packages, files, api]
     trustedProxies: ["10.244.0.0/24"]     # the same HAProxy pods as the default endpoint
     tls:
-      existingSecret: trove-customers-tls
-      extraSecrets: [trove-customers-wildcard-tls]
+      existingSecret: quader-customers-tls
+      extraSecrets: [quader-customers-wildcard-tls]
     ingress:
       enabled: true
       className: haproxy
       tls:
-        - secretName: trove-customers-edge-tls
-          hosts: [packages.trove.localhost, "*.packages.trove.localhost"]
-  # The bound host of the Docker Engine mirror (R-OCI-029, R-EP-006, R-EP-007): oci-mirror.trove.localhost answers /v2/ as the root of
+        - secretName: quader-customers-edge-tls
+          hosts: [packages.quader.localhost, "*.packages.quader.localhost"]
+  # The bound host of the Docker Engine mirror (R-OCI-029, R-EP-006, R-EP-007): oci-mirror.quader.localhost answers /v2/ as the root of
   # the repository e2e/oci-engine-mirror, which the OCI e2e set creates (a binding to a repository that does not exist is no binding). A Docker Engine
   # names the host in registry-mirrors and pulls without a login, so the endpoint admits anonymous requests; the repository grants
   # `read` to anonymous only while a test needs it. The host resolves to the loopback address on every system that treats *.localhost
-  # that way, and in the OCI client pods through hostAliases (deploy/dev/oci-clients.yaml); the edge port follows TROVE_DEV_HTTP_PORT.
+  # that way, and in the OCI client pods through hostAliases (deploy/dev/oci-clients.yaml); the edge port follows QUADER_DEV_HTTP_PORT.
   ocimirror:
     port: 8444
-    baseUrl: https://oci-mirror.trove.localhost:8080
-    hosts: [oci-mirror.trove.localhost]
+    baseUrl: https://oci-mirror.quader.localhost:8080
+    hosts: [oci-mirror.quader.localhost]
     hostRoots:
-      oci-mirror.trove.localhost: e2e/oci-engine-mirror
+      oci-mirror.quader.localhost: e2e/oci-engine-mirror
     surface: [packages]
     auth: {tokenTypes: [pat, sat], boundTokensOnly: false, anonymous: true}
     exposure: all
     cacheFill: true                       # a pull through the mirror host fills the remote's cache (a further endpoint does not by default)
     trustedProxies: ["10.244.0.0/24"]     # the same HAProxy pods as the default endpoint
     tls:
-      existingSecret: trove-ocimirror-tls
+      existingSecret: quader-ocimirror-tls
     ingress:
       enabled: true
       className: haproxy
       tls:
-        - secretName: trove-ocimirror-edge-tls
-          hosts: [oci-mirror.trove.localhost]
+        - secretName: quader-ocimirror-edge-tls
+          hosts: [oci-mirror.quader.localhost]

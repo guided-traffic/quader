@@ -18,13 +18,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/formats/deb/release"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/mirror"
-	"github.com/guided-traffic/trove/internal/openpgp"
-	"github.com/guided-traffic/trove/test/debstub"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/formats/deb/release"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/mirror"
+	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/test/debstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // A Debian remote in mode mirror against the counting archive of test/debstub (docs/spec/formats/debian.md "Mirror discovery", R-DEB-024,
@@ -83,10 +83,10 @@ func newDebRig(t *testing.T, o debOptions) *debRig {
 
 	r := &rig{t: t, format: "deb", traf: &traffic{}, url: srv.URL + "/", upstream: srv.URL + "/debian/"}
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "mirrorit", Env: append([]string{
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
-		"TROVE_API_RATE_LIMITS_ENABLED=false",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		"QUADER_API_RATE_LIMITS_ENABLED=false",
 	}, fastJobs...)})
 	st.Repository(repoKey, "remote", "deb", string(raw))
 	st.Exec(`INSERT INTO mirror_state (repo_id, next_pass_at) SELECT id, now() + interval '1 hour' FROM repositories WHERE key = $1`, repoKey)
@@ -257,7 +257,7 @@ func TestR_DEB_024_APassStoresTheScopeAndTheMirrorServesWithTheStubStopped(t *te
 // R-DEB-024: with include patterns and one version per name, only the newest version of each name is stored, over two suites.
 func TestR_DEB_024_TheVersionBoundKeepsTheNewestVersionOfEachNameAcrossTheSuites(t *testing.T) {
 	r := newDebRig(t, debOptions{
-		include: []string{"trove-hello", "trove-tools"}, mirror: settings{"maxVersionsPerPackage": 1},
+		include: []string{"quader-hello", "quader-tools"}, mirror: settings{"maxVersionsPerPackage": 1},
 		deb: map[string]any{"suites": []string{"stable", "testing"}},
 	})
 	one, _, _ := r.workers()
@@ -273,13 +273,13 @@ func TestR_DEB_024_TheVersionBoundKeepsTheNewestVersionOfEachNameAcrossTheSuites
 		}
 		return false
 	}
-	if !has("trove-hello_1.1-1_amd64.deb") || has("trove-hello_1.0-1_") {
-		t.Errorf("trove-hello: %v", got)
+	if !has("quader-hello_1.1-1_amd64.deb") || has("quader-hello_1.0-1_") {
+		t.Errorf("quader-hello: %v", got)
 	}
-	if !has("trove-tools_2.1-1_amd64.deb") || has("trove-tools_2.0-1_") {
-		t.Errorf("trove-tools: %v", got)
+	if !has("quader-tools_2.1-1_amd64.deb") || has("quader-tools_2.0-1_") {
+		t.Errorf("quader-tools: %v", got)
 	}
-	if has("trove-config") || has("libtrove1") {
+	if has("quader-config") || has("libquader1") {
 		t.Errorf("a name no pattern names is stored: %v", got)
 	}
 }
@@ -376,12 +376,12 @@ func TestR_DEB_024_SourcesAreKeptOnRequestAndClientsInstallDuringThePass(t *test
 }
 
 // TestProofMirrorServer is the harness of the by-hand proof of the Debian mirror with real APT clients (docs/developer/deb.md, "Proven by
-// hand"). It does nothing unless TROVE_DEB_PROOF_DIR names a directory: then it runs a pass, stops the stub, writes the port, a token,
+// hand"). It does nothing unless QUADER_DEB_PROOF_DIR names a directory: then it runs a pass, stops the stub, writes the port, a token,
 // the stub's key a and the repository path into the directory, and serves until the file "done" appears there.
 func TestProofMirrorServer(t *testing.T) {
-	dir := os.Getenv("TROVE_DEB_PROOF_DIR")
+	dir := os.Getenv("QUADER_DEB_PROOF_DIR")
 	if dir == "" {
-		t.Skip("TROVE_DEB_PROOF_DIR is not set")
+		t.Skip("QUADER_DEB_PROOF_DIR is not set")
 	}
 	r := newDebRig(t, debOptions{})
 	one, _, web := r.workers()

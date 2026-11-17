@@ -9,13 +9,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/document"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/remote"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/document"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/remote"
 )
 
 // The documents of remote and virtual repositories (R-NPM-024, R-NPM-025, R-NPM-027,

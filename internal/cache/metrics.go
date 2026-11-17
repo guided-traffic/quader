@@ -18,16 +18,16 @@ type metrics struct {
 func newMetrics(reg prometheus.Registerer) (*metrics, error) {
 	m := &metrics{
 		requests: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_cache_requests_total", Help: "Lookups in the in-process caches by result (hit, miss, expired, fill_skipped).",
+			Name: "quader_cache_requests_total", Help: "Lookups in the in-process caches by result (hit, miss, expired, fill_skipped).",
 		}, []string{"cache", "result"}),
 		flushes: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_cache_flushes_total", Help: "Whole-cache flushes by reason.",
+			Name: "quader_cache_flushes_total", Help: "Whole-cache flushes by reason.",
 		}, []string{"cache", "reason"}),
 		entries: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "trove_cache_entries", Help: "Entries held by an in-process cache.",
+			Name: "quader_cache_entries", Help: "Entries held by an in-process cache.",
 		}, []string{"cache"}),
 		bytes: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "trove_cache_bytes", Help: "Weighted size of an in-process cache.",
+			Name: "quader_cache_bytes", Help: "Weighted size of an in-process cache.",
 		}, []string{"cache"}),
 	}
 	if reg == nil {

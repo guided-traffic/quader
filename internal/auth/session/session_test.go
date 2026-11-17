@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 func TestR_AUTH_010_Cookies(t *testing.T) {
@@ -97,14 +97,14 @@ func bareStore(t *testing.T, rec audit.Recorder) *Store {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &Store{o: Options{Audit: rec, Origin: func(*http.Request) string { return "https://trove.test" }}, m: m, csrfLast: map[string]time.Time{}}
+	return &Store{o: Options{Audit: rec, Origin: func(*http.Request) string { return "https://quader.test" }}, m: m, csrfLast: map[string]time.Time{}}
 }
 
 func TestR_AUTH_012_CSRF(t *testing.T) {
 	token := NewSecret()
 	info := Info{ID: "s1", csrf: Hash(token)}
 	req := func(method string, hdr map[string]string) *http.Request {
-		r := httptest.NewRequest(method, "https://trove.test/api/v1/tokens", nil)
+		r := httptest.NewRequest(method, "https://quader.test/api/v1/tokens", nil)
 		for k, v := range hdr {
 			r.Header.Set(k, v)
 		}
@@ -117,11 +117,11 @@ func TestR_AUTH_012_CSRF(t *testing.T) {
 		ok     bool
 	}{
 		{"a safe method passes without the header", http.MethodGet, nil, true},
-		{"POST with the token and a same Origin passes", http.MethodPost, map[string]string{HeaderCSRF: token, "Origin": "https://trove.test"}, true},
+		{"POST with the token and a same Origin passes", http.MethodPost, map[string]string{HeaderCSRF: token, "Origin": "https://quader.test"}, true},
 		{"POST with the token, no Origin and Sec-Fetch-Site same-origin passes", http.MethodPost, map[string]string{HeaderCSRF: token, "Sec-Fetch-Site": "same-origin"}, true},
-		{"POST with the default port in Origin passes", http.MethodPost, map[string]string{HeaderCSRF: token, "Origin": "https://TROVE.test:443"}, true},
-		{"POST without the header is refused", http.MethodPost, map[string]string{"Origin": "https://trove.test"}, false},
-		{"DELETE with a wrong token is refused", http.MethodDelete, map[string]string{HeaderCSRF: NewSecret(), "Origin": "https://trove.test"}, false},
+		{"POST with the default port in Origin passes", http.MethodPost, map[string]string{HeaderCSRF: token, "Origin": "https://QUADER.test:443"}, true},
+		{"POST without the header is refused", http.MethodPost, map[string]string{"Origin": "https://quader.test"}, false},
+		{"DELETE with a wrong token is refused", http.MethodDelete, map[string]string{HeaderCSRF: NewSecret(), "Origin": "https://quader.test"}, false},
 		{"PUT with the token from another origin is refused", http.MethodPut, map[string]string{HeaderCSRF: token, "Origin": "https://evil.test"}, false},
 		{"PATCH with the token and neither Origin nor Sec-Fetch-Site is refused", http.MethodPatch, map[string]string{HeaderCSRF: token}, false},
 		{"POST with Origin null is refused", http.MethodPost, map[string]string{HeaderCSRF: token, "Origin": "null"}, false},

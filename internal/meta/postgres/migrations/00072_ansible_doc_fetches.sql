@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- What the last attempt to fetch the documentation of a version of a remote Ansible Galaxy repository came to (R-ANS-033, R-ANS-042): the
 -- states the screens call pending (queued) and unavailable. A version with documentation has a row in ansible_version_docs and needs none

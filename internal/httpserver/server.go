@@ -20,7 +20,7 @@ import (
 // grace period carries it, so it stays below that.
 const DefaultCommitGrace = 4 * time.Second
 
-// Transfer directions of trove_http_transfers_cut_total{direction}.
+// Transfer directions of quader_http_transfers_cut_total{direction}.
 const (
 	DirectionDownload = "download"
 	DirectionUpload   = "upload"
@@ -51,7 +51,7 @@ type ServerConfig struct {
 	// CommitGrace overrides DefaultCommitGrace.
 	CommitGrace time.Duration
 	// OnTransferCut is called once per request cut at the shutdown deadline, with
-	// the direction (trove_http_transfers_cut_total).
+	// the direction (quader_http_transfers_cut_total).
 	OnTransferCut func(direction string)
 }
 

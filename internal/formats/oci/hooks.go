@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci/manifest"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 )
 
 // OnCommit runs in the transaction that wrote an item (R-OCI-007, R-OCI-013 step 8).

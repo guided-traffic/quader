@@ -19,15 +19,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/listq"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/proxy/upstream"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/listq"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/proxy/upstream"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // The remote repository settings against PostgreSQL: the canonical document, the
@@ -323,7 +323,7 @@ func TestRemoteSecrets(t *testing.T) {
 		}
 
 		// What pg_dump would write: every row of every table of the schema, as text.
-		rows, err := e.admin.Query(ctx, `SELECT table_name FROM information_schema.tables WHERE table_schema = 'trove' AND table_type = 'BASE TABLE'`)
+		rows, err := e.admin.Query(ctx, `SELECT table_name FROM information_schema.tables WHERE table_schema = 'quader' AND table_type = 'BASE TABLE'`)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -338,7 +338,7 @@ func TestRemoteSecrets(t *testing.T) {
 		rows.Close()
 		for _, tbl := range tables {
 			var dump string
-			if err := e.admin.QueryRow(ctx, fmt.Sprintf(`SELECT coalesce(string_agg(x::text, E'\n'), '') FROM trove.%q x`, tbl)).Scan(&dump); err != nil {
+			if err := e.admin.QueryRow(ctx, fmt.Sprintf(`SELECT coalesce(string_agg(x::text, E'\n'), '') FROM quader.%q x`, tbl)).Scan(&dump); err != nil {
 				t.Fatalf("dump %s: %v", tbl, err)
 			}
 			if strings.Contains(dump, token) || strings.Contains(dump, base64.StdEncoding.EncodeToString([]byte(token))) {
@@ -468,8 +468,8 @@ func TestRemoteSecrets(t *testing.T) {
 		}
 	})
 
-	t.Run("R-REPO-033 a reference to a trove variable is refused with 422 invalid_secret", func(t *testing.T) {
-		for _, ref := range []string{`{"env":"TROVE_DATABASE_PASSWORD"}`, `{"file":"../db-password"}`, `{"file":"/etc/trove/database-password"}`} {
+	t.Run("R-REPO-033 a reference to a quader variable is refused with 422 invalid_secret", func(t *testing.T) {
+		for _, ref := range []string{`{"env":"QUADER_DATABASE_PASSWORD"}`, `{"file":"../db-password"}`, `{"file":"/etc/quader/database-password"}`} {
 			_, err := r.svc.Create(ctx, caller, "it", []byte(fmt.Sprintf(`{"key":"npm-ref","class":"remote","format":"npmlike","remote":{"url":%q,"authMode":"bearer","password":{"secretRef":%s}}}`, stub.srv.URL, ref)))
 			wantCode(t, err, 422, errs.CodeValidation)
 			if got := fieldCodes(t, err); got["/remote/password/secretRef"] != "invalid_secret" {

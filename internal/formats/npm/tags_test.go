@@ -4,7 +4,7 @@ import (
 	"maps"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
 )
 
 func TestR_NPM_016_TagAfterPublish(t *testing.T) {

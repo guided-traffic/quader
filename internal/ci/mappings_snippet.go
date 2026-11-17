@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The CI snippet (R-API-035, R-UI-035; R-CI-027 is the broader P1 requirement): a `.gitlab-ci.yml` fragment
@@ -166,17 +166,17 @@ func renderSnippet(in snippetInput) string {
 	var b strings.Builder
 	w := func(format string, args ...any) { fmt.Fprintf(&b, format+"\n", args...) }
 
-	w("# trove: CI snippet for the mapping %q of the CI issuer %q (%s).", in.Mapping.Name, in.Issuer, in.Format)
+	w("# Quader: CI snippet for the mapping %q of the CI issuer %q (%s).", in.Mapping.Name, in.Issuer, in.Format)
 	w("# It holds no secret. The ID token and the CI token exist only inside the job; the CI token is revoked as its last step.")
 	w("stages: [publish]")
 	w("")
 	w("variables:")
-	w("  TROVE_URL: %q", in.BaseURL)
+	w("  QUADER_URL: %q", in.BaseURL)
 	w("")
 	w("# Hidden job: requests the ID token and exchanges it in before_script.")
-	w(".trove:")
+	w(".quader:")
 	w("  id_tokens:")
-	w("    TROVE_ID_TOKEN:")
+	w("    QUADER_ID_TOKEN:")
 	w("      aud: %s", in.Audience)
 	w("  before_script:")
 	w("    - |")
@@ -184,15 +184,15 @@ func renderSnippet(in snippetInput) string {
 	w("        apt-get update -qq && apt-get install -y -qq --no-install-recommends curl jq ca-certificates >/dev/null")
 	w("      fi")
 	w("    - |")
-	w(`      response="$(printf '%%s' "$TROVE_ID_TOKEN" | curl -sS --retry 3 \`)
+	w(`      response="$(printf '%%s' "$QUADER_ID_TOKEN" | curl -sS --retry 3 \`)
 	w(`        --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \`)
 	w(`        --data-urlencode 'subject_token_type=urn:ietf:params:oauth:token-type:id_token' \`)
 	w(`        --data-urlencode 'subject_token@-' \`)
-	w(`        "$TROVE_URL/api/v1/auth/oidc/token")"`)
-	w(`      TROVE_TOKEN="$(printf '%%s' "$response" | jq -er '.access_token // empty')" \`)
+	w(`        "$QUADER_URL/api/v1/auth/oidc/token")"`)
+	w(`      QUADER_TOKEN="$(printf '%%s' "$response" | jq -er '.access_token // empty')" \`)
 	w(`        || { printf '%%s\n' "$response" | jq '{error, error_description, reason, requestId}' >&2; exit 1; }`)
-	w("      export TROVE_TOKEN")
-	w("      unset response TROVE_ID_TOKEN")
+	w("      export QUADER_TOKEN")
+	w("      unset response QUADER_ID_TOKEN")
 	w("")
 	if in.Format == FormatNuGet {
 		writeNuGetJob(w, in, host, keys, writes)
@@ -228,18 +228,18 @@ func writeNPMJob(w func(string, ...any), in snippetInput, host string, keys []qn
 	w("publish-npm:")
 	w("  stage: publish")
 	w("  image: node:24-bookworm   # example")
-	w("  extends: .trove")
+	w("  extends: .quader")
 	jobRules(in.Mapping, w)
 	w("  script:")
-	w("    # npm expands ${TROVE_TOKEN} at run time; the token is never written to disk.")
+	w("    # npm expands ${QUADER_TOKEN} at run time; the token is never written to disk.")
 	w("    - |")
 	w("      cat > .npmrc <<'EOF'")
 	w("      registry=%s%s", in.BaseURL, protocolBase(npmBaseTemplate, target))
 	for _, k := range keys {
-		w("      //%s%s:_authToken=${TROVE_TOKEN}", host, protocolBase(npmBaseTemplate, k))
+		w("      //%s%s:_authToken=${QUADER_TOKEN}", host, protocolBase(npmBaseTemplate, k))
 	}
 	if len(keys) == 0 {
-		w("      //%s%s:_authToken=${TROVE_TOKEN}", host, protocolBase(npmBaseTemplate, target))
+		w("      //%s%s:_authToken=${QUADER_TOKEN}", host, protocolBase(npmBaseTemplate, target))
 	}
 	w("      EOF")
 	w("    - npm ci")
@@ -257,22 +257,22 @@ func writeNuGetJob(w func(string, ...any), in snippetInput, host string, keys []
 	w("push-nuget:")
 	w("  stage: publish")
 	w("  image: mcr.microsoft.com/dotnet/sdk:10.0   # example")
-	w("  extends: .trove")
+	w("  extends: .quader")
 	jobRules(in.Mapping, w)
 	w("  script:")
-	w("    # nuget.config reads %%TROVE_TOKEN%% for restores; put this file in the repository root (developers use their personal access token in TROVE_TOKEN):")
+	w("    # nuget.config reads %%QUADER_TOKEN%% for restores; put this file in the repository root (developers use their personal access token in QUADER_TOKEN):")
 	w("    #")
 	w(`    #   <?xml version="1.0" encoding="utf-8"?>`)
 	w("    #   <configuration>")
 	w("    #     <packageSources>")
 	w("    #       <clear />")
-	w(`    #       <add key="trove" value="%s%sv3/index.json" />`, in.BaseURL, protocolBase(nugetBaseTemplate, target))
+	w(`    #       <add key="quader" value="%s%sv3/index.json" />`, in.BaseURL, protocolBase(nugetBaseTemplate, target))
 	w("    #     </packageSources>")
 	w("    #     <packageSourceCredentials>")
-	w("    #       <trove>")
+	w("    #       <quader>")
 	w(`    #         <add key="Username" value="ci" />`)
-	w(`    #         <add key="ClearTextPassword" value="%%TROVE_TOKEN%%" />`)
-	w("    #       </trove>")
+	w(`    #         <add key="ClearTextPassword" value="%%QUADER_TOKEN%%" />`)
+	w("    #       </quader>")
 	w("    #     </packageSourceCredentials>")
 	w("    #   </configuration>")
 	w("    - dotnet restore")
@@ -280,8 +280,8 @@ func writeNuGetJob(w func(string, ...any), in snippetInput, host string, keys []
 	if canWrite {
 		w("    - >-")
 		w("      dotnet nuget push \"out/*.nupkg\"")
-		w("      --source \"$TROVE_URL%sv3/index.json\"", protocolBase(nugetBaseTemplate, target))
-		w("      --api-key \"$TROVE_TOKEN\"")
+		w("      --source \"$QUADER_URL%sv3/index.json\"", protocolBase(nugetBaseTemplate, target))
+		w("      --api-key \"$QUADER_TOKEN\"")
 	} else {
 		w("    # The mapping's grants name no repository this job can push to; add your dotnet commands here.")
 	}
@@ -294,5 +294,5 @@ func revocation(w func(string, ...any)) {
 	w("    # Last step: revoke the CI token, so it does not outlive the job (R-CI-017).")
 	// A block scalar: a plain scalar with a colon and a space in it ("Authorization: Bearer") is a YAML mapping.
 	w("    - |")
-	w(`      printf 'Authorization: Bearer %%s\n' "$TROVE_TOKEN" | curl -sS -X DELETE -H @- "$TROVE_URL/api/v1/tokens/current"`)
+	w(`      printf 'Authorization: Bearer %%s\n' "$QUADER_TOKEN" | curl -sS -X DELETE -H @- "$QUADER_URL/api/v1/tokens/current"`)
 }

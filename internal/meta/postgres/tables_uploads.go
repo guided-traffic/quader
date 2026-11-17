@@ -1,6 +1,6 @@
 package postgres
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // Registrations of the tables of 00054_upload_sessions (R-STOR-011, R-BAK-004).
 //

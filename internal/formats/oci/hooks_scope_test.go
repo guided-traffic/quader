@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 func runScoped(t *testing.T, st *memStore, scope func(string) bool, paths ...string) (cascaded []string, err error) {

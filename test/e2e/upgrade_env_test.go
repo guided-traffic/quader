@@ -9,7 +9,7 @@ package e2e
 // describes the whole.
 //
 // Where the old release comes from: the chart from the Helm repository the release pipeline publishes to
-// (https://guided-traffic.github.io/trove/, the version of the tag), the image guidedtraffic/trove:<version> from Docker
+// (https://guided-traffic.github.io/quader/, the version of the tag), the image guidedtraffic/quader:<version> from Docker
 // Hub, which the kind nodes pull themselves, and the dev values of that release from git (`git show <tag>:deploy/dev/...`),
 // so the old release is installed with exactly the values its own repository used. The tags must be in the checkout
 // (`git fetch --tags`); a missing tag fails the test and says so.
@@ -31,11 +31,11 @@ import (
 )
 
 const (
-	upgradeChartRepo     = "https://guided-traffic.github.io/trove/"
+	upgradeChartRepo     = "https://guided-traffic.github.io/quader/"
 	upgradeMigrationsDir = "internal/meta/postgres/migrations"
 	// upgradeRolesSelector selects the Deployments and pods of the release's roles, the old shape's `web` included, and
 	// not the dev profile's dependencies or the driver pod.
-	upgradeRolesSelector = "app.kubernetes.io/instance=trove,app.kubernetes.io/component in (web,api,packages,worker)"
+	upgradeRolesSelector = "app.kubernetes.io/instance=quader,app.kubernetes.io/component in (web,api,packages,worker)"
 )
 
 var upgradeReleaseTag = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
@@ -91,7 +91,7 @@ func previousReleaseTag(t testing.TB) string {
 	return ""
 }
 
-// contractStepsSince lists the migration files added since the tag whose header says `-- trove:phase contract`: the steps
+// contractStepsSince lists the migration files added since the tag whose header says `-- quader:phase contract`: the steps
 // that R-HA-021 allows only with downtime or one release at a time.
 func contractStepsSince(t testing.TB, tag string) (added, contract []string) {
 	t.Helper()
@@ -101,7 +101,7 @@ func contractStepsSince(t testing.TB, tag string) (added, contract []string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if regexp.MustCompile(`(?m)^-- trove:phase contract\b`).Match(raw) {
+		if regexp.MustCompile(`(?m)^-- quader:phase contract\b`).Match(raw) {
 			contract = append(contract, filepath.Base(f))
 		}
 	}
@@ -123,7 +123,7 @@ func upHelm(t testing.TB, label string, timeout time.Duration, args ...string) (
 	return buf.String(), err
 }
 
-func upChart() string { return filepath.Join(cfg.repo, "deploy", "helm", "trove") }
+func upChart() string { return filepath.Join(cfg.repo, "deploy", "helm", "quader") }
 
 // upReleaseValues is the output of deploy/dev/release-values.sh: the helm arguments of the dev release in the scatter
 // profile, of the working tree (valuesDir "") or of the copy of an older release's files.
@@ -142,7 +142,7 @@ func upReleaseValuesOf(t testing.TB, valuesDir, image string) []string {
 	}
 	cmd := exec.Command(filepath.Join(cfg.repo, "deploy", "dev", "release-values.sh"), args...)
 	cmd.Dir = cfg.repo
-	cmd.Env = append(os.Environ(), "TROVE_IMAGE="+image)
+	cmd.Env = append(os.Environ(), "QUADER_IMAGE="+image)
 	var out, errb bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errb
 	if err := cmd.Run(); err != nil {
@@ -153,10 +153,10 @@ func upReleaseValuesOf(t testing.TB, valuesDir, image string) []string {
 
 // upImage is the image under test, the one `make image` builds and up.sh loads.
 func upImage() string {
-	if v := os.Getenv("TROVE_IMAGE"); v != "" {
+	if v := os.Getenv("QUADER_IMAGE"); v != "" {
 		return v
 	}
-	return "guidedtraffic/trove:dev"
+	return "guidedtraffic/quader:dev"
 }
 
 // upKindLoad puts the image under test onto the kind nodes, as up.sh does before its helm upgrade.
@@ -187,12 +187,12 @@ func upPodsExist(t testing.TB) bool {
 // The blobs in the object store stay: they are addressed by content and nothing references them.
 func resetInstallation(t testing.TB) {
 	t.Helper()
-	if out, err := upHelm(t, "uninstall", 10*time.Minute, "uninstall", "trove", "-n", cfg.namespace, "--wait", "--ignore-not-found"); err != nil {
+	if out, err := upHelm(t, "uninstall", 10*time.Minute, "uninstall", "quader", "-n", cfg.namespace, "--wait", "--ignore-not-found"); err != nil {
 		t.Fatalf("helm uninstall: %v\n%s", err, out)
 	}
 	waitFor(t, "the pods of the release to be gone", 5*time.Minute, 2*time.Second, func() bool { return !upPodsExist(t) })
 	primary := pgPrimary(t)
-	for _, stmt := range []string{"DROP DATABASE IF EXISTS trove WITH (FORCE)", "CREATE DATABASE trove OWNER trove"} {
+	for _, stmt := range []string{"DROP DATABASE IF EXISTS quader WITH (FORCE)", "CREATE DATABASE quader OWNER quader"} {
 		if out, err := kubectl("-n", cfg.namespace, "exec", primary, "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", stmt); err != nil {
 			t.Fatalf("%s: %v\n%s", stmt, err, out)
 		}
@@ -206,7 +206,7 @@ func resetInstallation(t testing.TB) {
 // installPrior installs the release from the chart repository with the dev values of its own tag.
 func installPrior(t testing.TB, rel priorRelease) time.Duration {
 	t.Helper()
-	args := []string{"install", "trove", "trove", "--repo", upgradeChartRepo, "--version", rel.version, "-n", cfg.namespace}
+	args := []string{"install", "quader", "quader", "--repo", upgradeChartRepo, "--version", rel.version, "-n", cfg.namespace}
 	args = append(args, upReleaseValues(t, rel.valuesDir)...)
 	args = append(args, "--set", "image.tag="+rel.version, "--wait", "--timeout", "15m")
 	start := time.Now()
@@ -214,7 +214,7 @@ func installPrior(t testing.TB, rel priorRelease) time.Duration {
 		t.Fatalf("helm install of %s: %v\n%s", rel.tag, err, tail(out, 3000))
 	}
 	took := time.Since(start)
-	t.Logf("installed %s (chart %s, image guidedtraffic/trove:%s) in %s", rel.tag, rel.version, rel.version, took.Round(time.Second))
+	t.Logf("installed %s (chart %s, image guidedtraffic/quader:%s) in %s", rel.tag, rel.version, rel.version, took.Round(time.Second))
 	return took
 }
 
@@ -222,7 +222,7 @@ func installPrior(t testing.TB, rel priorRelease) time.Duration {
 // scatter profile, and the extra arguments (`--set web.enabled=true`). It returns the window the upgrade took.
 func upgradeToTree(t testing.TB, label string, extra ...string) (from, to time.Time, out string, err error) {
 	t.Helper()
-	args := []string{"upgrade", "trove", upChart(), "-n", cfg.namespace}
+	args := []string{"upgrade", "quader", upChart(), "-n", cfg.namespace}
 	args = append(args, upReleaseValues(t, "")...)
 	args = append(args, extra...)
 	args = append(args, "--wait", "--timeout", "15m")
@@ -238,8 +238,8 @@ func upgradeToTree(t testing.TB, label string, extra ...string) (from, to time.T
 // collectMigrationEvidence keeps what the migration Job of a failed helm upgrade said: the next reset removes the Job.
 func collectMigrationEvidence(t testing.TB, label string) {
 	t.Helper()
-	logs, _ := kubectl("-n", cfg.namespace, "logs", "-l", "job-name=trove-migrate", "--all-containers", "--tail=60", "--prefix")
-	desc, _ := kubectl("-n", cfg.namespace, "describe", "job", "trove-migrate")
+	logs, _ := kubectl("-n", cfg.namespace, "logs", "-l", "job-name=quader-migrate", "--all-containers", "--tail=60", "--prefix")
+	desc, _ := kubectl("-n", cfg.namespace, "describe", "job", "quader-migrate")
 	_ = os.WriteFile(filepath.Join(cfg.out, "upgrade-"+label+"-migrate.log"), []byte(logs+"\n\n"+desc), 0o644)
 	if strings.TrimSpace(logs) != "" {
 		t.Logf("the migration Job's pods said:\n%s", tail(logs, 3000))
@@ -344,7 +344,7 @@ func upVersions(rs []upReplica) []string {
 	return out
 }
 
-// migrateStatus is the report of `trove migrate status` in a worker pod. The upgrade verification reads GET
+// migrateStatus is the report of `quader migrate status` in a worker pod. The upgrade verification reads GET
 // /api/v1/system/migrations (upMigrations); the command stays for the rollback, whose release has no such route, and as the
 // cross-check of the endpoint, which answers from the same code (Q-HA-116).
 type migrateStatus struct {
@@ -367,10 +367,10 @@ type migrateStatus struct {
 
 func upMigrateStatus(t testing.TB) migrateStatus {
 	t.Helper()
-	out := kn(t, "exec", "deploy/trove-worker", "--", "trove", "migrate", "status")
+	out := kn(t, "exec", "deploy/quader-worker", "--", "quader", "migrate", "status")
 	var s migrateStatus
 	if err := json.Unmarshal([]byte(out), &s); err != nil {
-		t.Fatalf("trove migrate status: %v\n%s", err, tail(out, 600))
+		t.Fatalf("quader migrate status: %v\n%s", err, tail(out, 600))
 	}
 	return s
 }
@@ -451,7 +451,7 @@ func upMigrations(t testing.TB, version string) migrationReport {
 
 // requireMigrationsDone is R-HA-020's third verification step for the release version: GET /api/v1/system/migrations shows
 // no pending step, the schema the binary requires is applied, and the expected background migrations, every one the binary
-// declares, reach `succeeded` (a failed one fails at once). `trove migrate status` in the worker of that release, which runs
+// declares, reach `succeeded` (a failed one fails at once). `quader migrate status` in the worker of that release, which runs
 // the same code, must agree on the schema, the binary and the pending steps (Q-HA-116).
 func requireMigrationsDone(t testing.TB, version string) {
 	t.Helper()
@@ -479,7 +479,7 @@ func requireMigrationsDone(t testing.TB, version string) {
 	cli := upMigrateStatus(t)
 	if cli.Binary.Version != version || cli.Binary.RequiredSchema != rep.Binary.RequiredSchema || cli.Schema.Applied != rep.Schema.Applied ||
 		cli.Schema.CompatFloor != rep.Schema.CompatFloor || len(cli.Pending) != len(rep.Pending) || !cli.Servable {
-		t.Errorf("`trove migrate status` in the worker disagrees with the endpoint: CLI %+v, endpoint schema %+v binary %+v pending %d", cli, rep.Schema, rep.Binary, len(rep.Pending))
+		t.Errorf("`quader migrate status` in the worker disagrees with the endpoint: CLI %+v, endpoint schema %+v binary %+v pending %d", cli, rep.Schema, rep.Binary, len(rep.Pending))
 	}
 }
 
@@ -514,7 +514,7 @@ func upDeployments(t testing.TB) map[string]deploymentState {
 // helmRevision is the number of the release's latest revision.
 func helmRevision(t testing.TB) int {
 	t.Helper()
-	out, err := upHelm(t, "history", 2*time.Minute, "history", "trove", "-n", cfg.namespace, "-o", "json")
+	out, err := upHelm(t, "history", 2*time.Minute, "history", "quader", "-n", cfg.namespace, "-o", "json")
 	if err != nil {
 		t.Fatalf("helm history: %v\n%s", err, out)
 	}
@@ -555,7 +555,7 @@ func rolloutComplete(t testing.TB, names []string) {
 
 // ── the administrator of a reset installation ───────────────────────────────
 
-// bootstrapAdmin is the bootstrap of adminToken for an installation of either shape: `trove admin` in a worker pod (every
+// bootstrapAdmin is the bootstrap of adminToken for an installation of either shape: `quader admin` in a worker pod (every
 // release has a worker Deployment), then a wait until the binding of the new administrator is in force on the replicas
 // that answer, which a count of consecutive answers from at least two replicas shows (the edge scatters per request). The
 // token is stored where adminAPI reads it, so the fixtures of the other suites build on it unchanged.
@@ -563,11 +563,11 @@ func bootstrapAdmin(t testing.TB) {
 	t.Helper()
 	adminOnce = sync.Once{}
 	adminOnce.Do(func() {
-		if _, err := troveAdmin(t, "", "service-account", "create", "e2e-admin", "--description", "end-to-end tests", "--admin"); err != nil && !strings.Contains(err.Error(), "exist") {
+		if _, err := quaderAdmin(t, "", "service-account", "create", "e2e-admin", "--description", "end-to-end tests", "--admin"); err != nil && !strings.Contains(err.Error(), "exist") {
 			adminErr = err
 			return
 		}
-		adminTok, adminErr = troveAdmin(t, `{"inherit":true,"admin":true}`, "token", "create", "--service-account", "e2e-admin", "--ttl", "24h", "--scope-file", "/dev/stdin")
+		adminTok, adminErr = quaderAdmin(t, `{"inherit":true,"admin":true}`, "token", "create", "--service-account", "e2e-admin", "--ttl", "24h", "--scope-file", "/dev/stdin")
 		if adminErr != nil {
 			return
 		}
@@ -610,9 +610,9 @@ func markScatterProfile() {
 func restoreCurrentRelease(t testing.TB) {
 	t.Helper()
 	cur := upDeployments(t)
-	_, hasWeb := cur["trove-web"]
-	if _, err := upHelm(t, "status", time.Minute, "status", "trove", "-n", cfg.namespace); err != nil || hasWeb {
-		t.Logf("the installation is not of the current shape (release known: %v, trove-web present: %v): replacing it", err == nil, hasWeb)
+	_, hasWeb := cur["quader-web"]
+	if _, err := upHelm(t, "status", time.Minute, "status", "quader", "-n", cfg.namespace); err != nil || hasWeb {
+		t.Logf("the installation is not of the current shape (release known: %v, quader-web present: %v): replacing it", err == nil, hasWeb)
 		resetInstallation(t)
 	}
 	if err := runUp("default"); err != nil {

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
 )
 
 // slowBlocks is a block list whose Set waits for a release, the way a Valkey round trip waits.
@@ -85,7 +85,7 @@ func TestR_BAS_037_ConcurrentRefusalsOfOneAddressSetOneBlock(t *testing.T) {
 	}
 	wg.Wait()
 	if got := value(r.m.Blocks.WithLabelValues("refusals")); got != 1 {
-		t.Fatalf("trove_bastion_blocks_total = %v, want 1", got)
+		t.Fatalf("quader_bastion_blocks_total = %v, want 1", got)
 	}
 	if lv, _ := r.st.Blocks.Level(ctx, "198.51.100.3"); lv != 1 {
 		t.Fatalf("level = %d, want 1", lv)

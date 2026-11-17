@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/blob/verify"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/blob/verify"
 )
 
 // fakeDB is a verify.Source over a slice of rows.
@@ -106,7 +106,7 @@ func newFixture(t *testing.T) *fixture {
 	add := func(name string) string {
 		d := blob.Digest(sha256.Sum256([]byte(name)))
 		f.db.rows = append(f.db.rows, verify.Row{Digest: d, Size: 3})
-		key := blob.Key("trove", d)
+		key := blob.Key("quader", d)
 		f.keys[name] = key
 		return key
 	}
@@ -137,7 +137,7 @@ func (f *fixture) entry(rep *Report, name string) Entry {
 // without any version and the intact blob are left alone, and no object version is deleted.
 func TestR_HA_025_RestoreVersionsRemovesTheDeleteMarkersYoungerThanTOfMissingBlobsOnly(t *testing.T) {
 	f := newFixture(t)
-	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "trove", Before: f.t0, PageSize: 2, Concurrency: 2})
+	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "quader", Before: f.t0, PageSize: 2, Concurrency: 2})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func TestR_HA_025_RestoreVersionsRemovesTheDeleteMarkersYoungerThanTOfMissingBlo
 // TestR_HA_025_RestoreVersionsDryRunRemovesNothing: a dry run reports what a run would restore and leaves the bucket as it is.
 func TestR_HA_025_RestoreVersionsDryRunRemovesNothing(t *testing.T) {
 	f := newFixture(t)
-	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "trove", Before: f.t0, DryRun: true})
+	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "quader", Before: f.t0, DryRun: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +188,7 @@ func TestR_HA_025_RestoreVersionsKeepsAMarkerWhenNoVersionIsBelow(t *testing.T) 
 	f := newFixture(t)
 	k := f.keys["never"]
 	f.store.mark(k, f.t0.Add(time.Minute))
-	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "trove", Before: f.t0})
+	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "quader", Before: f.t0})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +202,7 @@ func TestR_HA_025_RestoreVersionsKeepsAMarkerWhenNoVersionIsBelow(t *testing.T) 
 func TestR_HA_025_RestoreVersionsStopsAtAPermissionError(t *testing.T) {
 	f := newFixture(t)
 	f.store.denyList = &blob.StoreError{Op: "ListObjectVersions", Status: 403, Code: "AccessDenied", Kind: blob.KindConfig, Err: errors.New("denied")}
-	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "trove", Before: f.t0})
+	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "quader", Before: f.t0})
 	if err == nil || !blob.IsConfig(err) {
 		t.Fatalf("err = %v, want a configuration error", err)
 	}

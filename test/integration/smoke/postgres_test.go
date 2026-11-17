@@ -12,7 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func connect(ctx context.Context, t *testing.T, dsn string, mode pgx.QueryExecMode) *pgx.Conn {
@@ -85,7 +85,7 @@ func TestPostgresThroughPgBouncer(t *testing.T) {
 
 	// The pool mode is the one the stack promises. The admin console speaks the
 	// simple protocol only.
-	adminDSN := strings.Replace(dsn, "/trove?", "/pgbouncer?", 1)
+	adminDSN := strings.Replace(dsn, "/quader?", "/pgbouncer?", 1)
 	admin := connect(ctx, t, adminDSN, pgx.QueryExecModeSimpleProtocol)
 	rows, err := admin.Query(ctx, "SHOW CONFIG")
 	if err != nil {

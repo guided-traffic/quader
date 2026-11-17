@@ -3,16 +3,16 @@
 # (test/e2e/clients/fwd, the one of the npm clients) for linux/<arch>, then Dockerfile.docker on the pinned dind image and
 # Dockerfile.podman on the pinned Podman image. `make oci-clients-image` and deploy/dev/e2e.sh both call it.
 #
-#   build.sh [docker-image [podman-image]]    default trove-e2e-ociclients-docker:dev and trove-e2e-ociclients-podman:dev
+#   build.sh [docker-image [podman-image]]    default quader-e2e-ociclients-docker:dev and quader-e2e-ociclients-podman:dev
 #
-# Environment: TROVE_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
+# Environment: QUADER_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../deploy/dev" && pwd)/lib.sh"
 
-docker_image="${1:-trove-e2e-ociclients-docker:dev}"
-podman_image="${2:-trove-e2e-ociclients-podman:dev}"
-arch="${TROVE_E2E_CLIENTS_ARCH:-$(arch)}"
+docker_image="${1:-quader-e2e-ociclients-docker:dev}"
+podman_image="${2:-quader-e2e-ociclients-podman:dev}"
+arch="${QUADER_E2E_CLIENTS_ARCH:-$(arch)}"
 for v in E2E_OCICLIENTS_DOCKER_IMAGE E2E_OCICLIENTS_PODMAN_IMAGE; do
   [ -n "${!v:-}" ] || die "$v is not set in tools/versions.env"
 done

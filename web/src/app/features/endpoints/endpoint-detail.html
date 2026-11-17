@@ -1,4 +1,4 @@
-<trove-page-header [heading]="endpoint()" [name]="true">
+<quader-page-header [heading]="endpoint()" [name]="true">
   <span meta class="badge" i18n="@@ep.detail.heading">Endpoint</span>
   @if (canWrite() && !inert()) {
     <a actions class="btn btn-confirm"
@@ -7,10 +7,10 @@
       >New rule</a
     >
   }
-</trove-page-header>
+</quader-page-header>
 
 @if (failure(); as f) {
-  <trove-error-notice [error]="f" (retry)="detail.reload()" />
+  <quader-error-notice [error]="f" (retry)="detail.reload()" />
 } @else if (detail.isLoading() && !valueOf(detail)) {
   <p role="status" i18n="@@repo.loading">Loading.</p>
 } @else if (valueOf(detail); as e) {
@@ -36,46 +36,46 @@
 
   @if (e.configuration; as c) {
     <div class="settings">
-      <trove-text-field width="full" i18n-label="@@ep.col.base-url" label="Base URL" name="baseUrl" [value]="c.baseUrl" [readonly]="true" />
+      <quader-text-field width="full" i18n-label="@@ep.col.base-url" label="Base URL" name="baseUrl" [value]="c.baseUrl" [readonly]="true" />
       <div class="row">
-        <trove-text-field width="name" i18n-label="@@ep.col.mode" label="Exposure" name="exposure" [value]="c.exposure" [readonly]="true" />
-        <trove-text-field width="name" i18n-label="@@ep.col.surface" label="Surface" name="surface" [value]="c.surface.join(', ')" [readonly]="true" />
+        <quader-text-field width="name" i18n-label="@@ep.col.mode" label="Exposure" name="exposure" [value]="c.exposure" [readonly]="true" />
+        <quader-text-field width="name" i18n-label="@@ep.col.surface" label="Surface" name="surface" [value]="c.surface.join(', ')" [readonly]="true" />
       </div>
-      <trove-disclosure
+      <quader-disclosure
         i18n-heading="@@ep.config.heading"
         heading="Configuration"
         i18n-hint="@@ep.config.hint"
         hint="Read-only: this comes from the configuration file."
       >
-        <trove-text-field width="full" i18n-label="@@ep.col.hosts" label="Hosts" name="hosts" [value]="hostsText(c)" [readonly]="true" />
+        <quader-text-field width="full" i18n-label="@@ep.col.hosts" label="Hosts" name="hosts" [value]="hostsText(c)" [readonly]="true" />
         <div class="row">
-          <trove-text-field width="number" i18n-label="@@ep.col.port" label="Port" name="port" [value]="c.port === null || c.port === undefined ? '–' : '' + c.port" [readonly]="true" />
-          <trove-text-field width="name" i18n-label="@@ep.col.pool" label="Pool" name="pool" [value]="c.pool ?? '–'" [readonly]="true" />
+          <quader-text-field width="number" i18n-label="@@ep.col.port" label="Port" name="port" [value]="c.port === null || c.port === undefined ? '–' : '' + c.port" [readonly]="true" />
+          <quader-text-field width="name" i18n-label="@@ep.col.pool" label="Pool" name="pool" [value]="c.pool ?? '–'" [readonly]="true" />
         </div>
-        <trove-text-field width="full" i18n-label="@@ep.col.credentials" label="Accepted credentials" name="credentials" [value]="credentialsText(c)" [readonly]="true" />
-        <trove-text-field width="name" i18n-label="@@ep.col.rate-limit" label="Rate limit" name="rateLimit" [value]="rateLimitText(c)" [readonly]="true" />
-      </trove-disclosure>
+        <quader-text-field width="full" i18n-label="@@ep.col.credentials" label="Accepted credentials" name="credentials" [value]="credentialsText(c)" [readonly]="true" />
+        <quader-text-field width="name" i18n-label="@@ep.col.rate-limit" label="Rate limit" name="rateLimit" [value]="rateLimitText(c)" [readonly]="true" />
+      </quader-disclosure>
     </div>
   }
 
   <section class="rules" aria-labelledby="ep-rules">
     <h2 id="ep-rules" i18n="@@ep.rules.heading">Exposure rules</h2>
     @if (actionFailure(); as f) {
-      <trove-error-notice [error]="f" />
+      <quader-error-notice [error]="f" />
     }
     @if (rulesFailure(); as f) {
-      <trove-error-notice [error]="f" (retry)="rules.reload()" />
+      <quader-error-notice [error]="f" (retry)="rules.reload()" />
     } @else if (valueOf(rules); as list) {
       @if (list.length === 0) {
-        <trove-empty-state text="This endpoint has no exposure rule." i18n-text="@@ep.rules.empty">
+        <quader-empty-state text="This endpoint has no exposure rule." i18n-text="@@ep.rules.empty">
           @if (canWrite() && !inert()) {
             <a class="btn btn-default" [routerLink]="['/admin/endpoints', endpoint(), 'rules', 'new']" i18n="@@ep.rule.new">New rule</a>
           }
-        </trove-empty-state>
+        </quader-empty-state>
       } @else {
         <!-- The administrator manages the rules (Q-UI-331): what each exposes, as columns, and whether it is on; the address of a
              rule's repository on this endpoint is handed out with the row's copy button, whose name and tooltip carry it. -->
-        <trove-data-table [caption]="rulesCaption" [columns]="ruleColumns">
+        <quader-data-table [caption]="rulesCaption" [columns]="ruleColumns">
           @for (rule of list; track rule.name) {
             <tr>
               <th scope="row" class="wrap-name">
@@ -118,9 +118,9 @@
               <td class="actions">
                 @if (addressOf(rule); as a) {
                   @if (a.served) {
-                    <trove-copy-button [value]="a.url" [label]="copyValueLabel(a.url)" [quiet]="true" />
+                    <quader-copy-button [value]="a.url" [label]="copyValueLabel(a.url)" [quiet]="true" />
                   } @else {
-                    <span class="material-icons warn not-served" role="img" [attr.aria-label]="notServed" [troveTooltip]="notServed"
+                    <span class="material-icons warn not-served" role="img" [attr.aria-label]="notServed" [quaderTooltip]="notServed"
                       >link_off</span
                     >
                   }
@@ -150,7 +150,7 @@
               </td>
             </tr>
           }
-        </trove-data-table>
+        </quader-data-table>
       }
     } @else {
       <p role="status" i18n="@@repo.loading">Loading.</p>

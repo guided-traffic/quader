@@ -3,7 +3,7 @@
 package e2e
 
 // npm on a customer endpoint (E2.12, R-NPM-048, R-EP-018, R-EP-019): the endpoint `customers` of the dev profile has
-// its own Ingress and host (packages.trove.localhost) and exposes a repository only through rules. The clients reach it
+// its own Ingress and host (packages.quader.localhost) and exposes a repository only through rules. The clients reach it
 // by that host, which their pods resolve to the loopback address of their forwarder (hostAliases in deploy/dev/e2e.sh),
 // and use a token bound to the endpoint. The virtual repository of the test has a remote member, so the cache-fill rule
 // of R-EP-019 is part of it.
@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // endpointView lists the versions of a package as the row's client prints them for the registry of the endpoint.

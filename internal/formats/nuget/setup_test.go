@@ -9,7 +9,7 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 func renderSetup(t *testing.T, tpl formats.SetupTemplate, d formats.SetupData) string {
@@ -29,7 +29,7 @@ func renderSetup(t *testing.T, tpl formats.SetupTemplate, d formats.SetupData) s
 }
 
 func setupData(auth bool) formats.SetupData {
-	return formats.SetupData{RegistryURL: "https://trove.example.com/api/nuget/nuget-all/", Repository: "nuget-all", Endpoint: "default", RequiresAuth: auth}
+	return formats.SetupData{RegistryURL: "https://quader.example.com/api/nuget/nuget-all/", Repository: "nuget-all", Endpoint: "default", RequiresAuth: auth}
 }
 
 // refFor is the spelling of the token reference that the language of a template allows.
@@ -65,7 +65,7 @@ func TestR_NUGET_026_TheTemplatesSpellTheCredentialInTheirOwnSyntax(t *testing.T
 			if strings.Contains(out, "<no value>") || strings.Contains(out, "{{") || strings.Contains(out, "v2") {
 				t.Errorf("R-NUGET-026 %s: %q", tpl.ID, out)
 			}
-			if tpl.Section != "install" && !strings.Contains(out, "https://trove.example.com/api/nuget/nuget-all/v3/index.json") {
+			if tpl.Section != "install" && !strings.Contains(out, "https://quader.example.com/api/nuget/nuget-all/v3/index.json") {
 				t.Errorf("R-NUGET-026 %s: not the index.json address:\n%s", tpl.ID, out)
 			}
 		}
@@ -105,7 +105,7 @@ func TestR_NUGET_026_TheNuGetConfigIsWellFormed(t *testing.T) {
 			}
 			want := []string{"configuration", "packageSources", "clear", "add"}
 			if auth {
-				want = append(want, "packageSourceCredentials", "trove", "add", "add")
+				want = append(want, "packageSourceCredentials", "quader", "add", "add")
 			}
 			if strings.Join(names, " ") != strings.Join(want, " ") {
 				t.Errorf("%s auth=%v: elements %v, want %v", tpl.ID, auth, names, want)
@@ -113,7 +113,7 @@ func TestR_NUGET_026_TheNuGetConfigIsWellFormed(t *testing.T) {
 			if strings.Contains(out, "ClearTextPassword") != auth {
 				t.Errorf("%s auth=%v: ClearTextPassword present is %v", tpl.ID, auth, !auth)
 			}
-			if auth && !strings.Contains(out, `<add key="ClearTextPassword" value="%TROVE_TOKEN%" />`) {
+			if auth && !strings.Contains(out, `<add key="ClearTextPassword" value="%QUADER_TOKEN%" />`) {
 				t.Errorf("%s: the password is not the environment reference:\n%s", tpl.ID, out)
 			}
 			if !strings.Contains(out, `protocolVersion="3"`) {
@@ -134,16 +134,16 @@ func TestR_NUGET_026_TheCommandsAreTheOnesOfTheSpecification(t *testing.T) {
 	for _, tpl := range New().SetupTemplates() {
 		byID[tpl.ID] = tpl
 	}
-	const url = "https://trove.example.com/api/nuget/nuget-all/v3/index.json"
+	const url = "https://quader.example.com/api/nuget/nuget-all/v3/index.json"
 	for id, want := range map[string]string{
-		"dotnet.shell.configure":      "dotnet nuget add source " + url + " --name trove \\\n  --username trove --password \"${TROVE_TOKEN}\" --store-password-in-clear-text\n",
-		"dotnet.powershell.configure": "dotnet nuget add source " + url + " --name trove `\n  --username trove --password \"$env:TROVE_TOKEN\" --store-password-in-clear-text\n",
-		"nuget.cmd.configure":         "nuget sources add -Name trove -Source " + url + " ^\n  -Username trove -Password %TROVE_TOKEN%\n",
-		"nuget.powershell.configure":  "nuget sources add -Name trove -Source " + url + " `\n  -Username trove -Password \"$env:TROVE_TOKEN\"\n",
-		"dotnet.shell.publish":        "dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source " + url + " --api-key \"${TROVE_TOKEN}\"\n",
-		"dotnet.powershell.publish":   "dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source " + url + " --api-key \"$env:TROVE_TOKEN\"\n",
-		"nuget.cmd.publish":           "nuget push Acme.Widgets.1.2.3.nupkg -Source " + url + " -ApiKey %TROVE_TOKEN%\n",
-		"nuget.powershell.publish":    "nuget push Acme.Widgets.1.2.3.nupkg -Source " + url + " -ApiKey \"$env:TROVE_TOKEN\"\n",
+		"dotnet.shell.configure":      "dotnet nuget add source " + url + " --name quader \\\n  --username quader --password \"${QUADER_TOKEN}\" --store-password-in-clear-text\n",
+		"dotnet.powershell.configure": "dotnet nuget add source " + url + " --name quader `\n  --username quader --password \"$env:QUADER_TOKEN\" --store-password-in-clear-text\n",
+		"nuget.cmd.configure":         "nuget sources add -Name quader -Source " + url + " ^\n  -Username quader -Password %QUADER_TOKEN%\n",
+		"nuget.powershell.configure":  "nuget sources add -Name quader -Source " + url + " `\n  -Username quader -Password \"$env:QUADER_TOKEN\"\n",
+		"dotnet.shell.publish":        "dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source " + url + " --api-key \"${QUADER_TOKEN}\"\n",
+		"dotnet.powershell.publish":   "dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source " + url + " --api-key \"$env:QUADER_TOKEN\"\n",
+		"nuget.cmd.publish":           "nuget push Acme.Widgets.1.2.3.nupkg -Source " + url + " -ApiKey %QUADER_TOKEN%\n",
+		"nuget.powershell.publish":    "nuget push Acme.Widgets.1.2.3.nupkg -Source " + url + " -ApiKey \"$env:QUADER_TOKEN\"\n",
 	} {
 		tpl, ok := byID[id]
 		if !ok {
@@ -155,10 +155,10 @@ func TestR_NUGET_026_TheCommandsAreTheOnesOfTheSpecification(t *testing.T) {
 		}
 	}
 	// Without a credential the command is complete on one line.
-	if got := renderSetup(t, byID["dotnet.shell.configure"], setupData(false)); got != "dotnet nuget add source "+url+" --name trove\n" {
+	if got := renderSetup(t, byID["dotnet.shell.configure"], setupData(false)); got != "dotnet nuget add source "+url+" --name quader\n" {
 		t.Errorf("anonymous: %q", got)
 	}
-	if got := renderSetup(t, byID["nuget.cmd.configure"], setupData(false)); got != "nuget sources add -Name trove -Source "+url+"\n" {
+	if got := renderSetup(t, byID["nuget.cmd.configure"], setupData(false)); got != "nuget sources add -Name quader -Source "+url+"\n" {
 		t.Errorf("anonymous nuget.exe: %q", got)
 	}
 }

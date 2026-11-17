@@ -9,7 +9,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // OpenOptions select what Open returns.
@@ -17,7 +17,7 @@ type OpenOptions struct {
 	// Range reads part of the blob. Ranged reads cannot be verified (R-STOR-013).
 	Range *ByteRange
 	// Verify verifies a full read even when storage.download.verify is off: a caller whose bytes reach a browser as
-	// code of trove's origin, the shared asset store of the UI (Q-UI-143), never serves an object it has not checked.
+	// code of quader's origin, the shared asset store of the UI (Q-UI-143), never serves an object it has not checked.
 	Verify bool
 }
 

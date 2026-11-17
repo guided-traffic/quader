@@ -109,7 +109,7 @@ func (s *suite) readBack(t testing.TB, url string) answer {
 			return a
 		}
 		t.Logf("read-back of %s answered %d authz_stale on replica %q (attempt %d); repeating after %s, %s waited so far",
-			url, a.status, a.header.Get("X-Trove-Replica"), attempt, wait, time.Since(start).Round(time.Millisecond))
+			url, a.status, a.header.Get("X-Quader-Replica"), attempt, wait, time.Since(start).Round(time.Millisecond))
 		time.Sleep(wait)
 	}
 }
@@ -240,7 +240,7 @@ func (s *suite) testCreate(t *testing.T) {
 		t.Fatal("the create answered no Location")
 	}
 	if g := s.readBack(t, loc); g.status != 200 {
-		t.Fatalf("GET %s (the Location of the create) answered %d, replica %q\n%s", loc, g.status, g.header.Get("X-Trove-Replica"), g.body)
+		t.Fatalf("GET %s (the Location of the create) answered %d, replica %q\n%s", loc, g.status, g.header.Get("X-Quader-Replica"), g.body)
 	}
 }
 
@@ -279,7 +279,7 @@ func (s *suite) testTraversal(t *testing.T) {
 		for _, it := range items {
 			seen[s.res.Key(it.(map[string]any))]++
 		}
-		if r := a.header.Get("X-Trove-Replica"); r != "" {
+		if r := a.header.Get("X-Quader-Replica"); r != "" {
 			replicas[r] = true
 		}
 		cursor, _ := m["nextCursor"].(string)

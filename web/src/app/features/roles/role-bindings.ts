@@ -21,27 +21,27 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
  * the API would answer 409 `last_admin` (R-UI-005). A binding declared in the system configuration
  * (`source: configuration`, R-AUTHZ-010, Q-AUTHZ-170) has no unbind control and a hint where it is
  * changed, before the API would answer 409 `role_binding_managed_by_configuration`. A write
- * answers `Trove-Authz-Epoch`; the HTTP layer sends it as `Trove-Authz-Min-Epoch` on the reads
+ * answers `Quader-Authz-Epoch`; the HTTP layer sends it as `Quader-Authz-Min-Epoch` on the reads
  * that follow (R-AUTHZ-032), and the caller's own capabilities are read again because a binding
  * may have changed them.
  */
 @Component({
-  selector: 'trove-role-bindings',
+  selector: 'quader-role-bindings',
   imports: [DataTable, PageHeader, DatePipe, ErrorNotice, Needs, TextField],
   templateUrl: './role-bindings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
     /* A role's capabilities as a list in columns, one capability a line (UI-A-47). */
     .caps-heading {
-      margin: var(--trove-space-2) 0 var(--trove-space-1);
-      font-size: var(--trove-text-size);
+      margin: var(--quader-space-2) 0 var(--quader-space-1);
+      font-size: var(--quader-text-size);
       font-weight: 600;
     }
     .caps {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-      gap: var(--trove-space-1) var(--trove-space-4);
-      margin: 0 0 var(--trove-space-3);
+      gap: var(--quader-space-1) var(--quader-space-4);
+      margin: 0 0 var(--quader-space-3);
       padding: 0;
       list-style: none;
     }

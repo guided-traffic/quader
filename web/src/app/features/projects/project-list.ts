@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiError } from '../../api/problem';
@@ -24,10 +24,10 @@ import { PageHeader } from '../../shared/ui/page-header';
  * member of (Q-AUTHZ-207). Creating needs `projects:write`; editing through the row also the Owner of the project.
  */
 @Component({
-  selector: 'trove-project-list',
+  selector: 'quader-project-list',
   imports: [PageHeader, RouterLink, DataTable, ErrorNotice, FilterCategory, FilterPanel, FilterToggle, Needs, TextField, VisibilityIcon],
   template: `
-    <trove-page-header heading="Projects" i18n-heading="@@projects.heading">
+    <quader-page-header heading="Projects" i18n-heading="@@projects.heading">
       <button actions class="btn btn-confirm"
         type="button"
         [disabled]="!canWrite()"
@@ -37,21 +37,21 @@ import { PageHeader } from '../../shared/ui/page-header';
       >
         New project
       </button>
-    </trove-page-header>
-    <trove-needs id="needs-projects" capability="projects:write" />
+    </quader-page-header>
+    <quader-needs id="needs-projects" capability="projects:write" />
     <p i18n="@@projects.hint">
       A project holds a team's repositories. Its members have a role in it; its Owners manage the repositories, permission policies and service accounts without a system role.
     </p>
 
     @if (actionError(); as e) {
-      <trove-error-notice [error]="e" />
+      <quader-error-notice [error]="e" />
     }
 
     <div class="list-layout" [class.panel-open]="panelOpen()">
       <div class="list-toolbar">
-        <trove-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
+        <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
       </div>
-      <trove-filter-panel
+      <quader-filter-panel
         #panel
         class="list-side"
         [(open)]="panelOpen"
@@ -60,13 +60,13 @@ import { PageHeader } from '../../shared/ui/page-header';
         (apply)="apply()"
         (clearAll)="clear()"
       >
-        <trove-filter-category i18n-label="@@projects.q" label="Key or name" [active]="!!q().trim()" [expanded]="!!q().trim()">
-          <trove-text-field width="name" i18n-label="@@projects.q" label="Key or name" name="q" [(value)]="q" />
-        </trove-filter-category>
-      </trove-filter-panel>
+        <quader-filter-category i18n-label="@@projects.q" label="Key or name" [active]="!!q().trim()" [expanded]="!!q().trim()">
+          <quader-text-field width="name" i18n-label="@@projects.q" label="Key or name" name="q" [(value)]="q" />
+        </quader-filter-category>
+      </quader-filter-panel>
 
       <div class="list-main">
-        <trove-data-table
+        <quader-data-table
           [caption]="caption"
           [columns]="columns"
           [sort]="sort()"
@@ -85,7 +85,7 @@ import { PageHeader } from '../../shared/ui/page-header';
             <tr>
               <th scope="row"><a [routerLink]="['/projects', p.key]" translate="no">{{ p.key }}</a></th>
               <td>{{ p.displayName }}</td>
-              <td class="level"><trove-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
+              <td class="level"><quader-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
               <td class="wrap" translate="no">{{ ownerSummary(p) }}</td>
               <td>{{ p.members }}</td>
               <td>{{ p.repositories }}</td>
@@ -101,7 +101,7 @@ import { PageHeader } from '../../shared/ui/page-header';
               </td>
             </tr>
           }
-        </trove-data-table>
+        </quader-data-table>
       </div>
     </div>
   `,
@@ -109,7 +109,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 })
 export class ProjectList {
   private readonly api = inject(ProjectsApi);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly router = inject(Router);
   private readonly context = inject(ProjectContext);
   protected readonly session = inject(SessionStore);

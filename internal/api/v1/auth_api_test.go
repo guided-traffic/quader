@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 func asProblem(t *testing.T, err error) *errs.Error {
@@ -108,7 +108,7 @@ func TestIdentityRepresentations(t *testing.T) {
 		}
 	})
 	t.Run("R-AUTH-028 a record never shows the value or its hash", func(t *testing.T) {
-		raw, _ := json.Marshal((&Server{}).toToken(token.Record{ID: "0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e11", Type: token.TypePAT, Hint: "trv_pat_3kQ9", State: "active", Owner: token.Owner{Kind: principal.KindUser, Name: "alice"}}, false))
+		raw, _ := json.Marshal((&Server{}).toToken(token.Record{ID: "0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e11", Type: token.TypePAT, Hint: "qdr_pat_3kQ9", State: "active", Owner: token.Owner{Kind: principal.KindUser, Name: "alice"}}, false))
 		for _, banned := range []string{`"token"`, `"secret`, `"hash`} {
 			if strings.Contains(string(raw), banned) {
 				t.Errorf("%s in %s", banned, raw)
@@ -116,8 +116,8 @@ func TestIdentityRepresentations(t *testing.T) {
 		}
 	})
 	t.Run("R-AUTH-027 the value is part of the creation answer only", func(t *testing.T) {
-		c := token.Created{Secret: "trv_pat_secretvalue", Record: token.Record{ID: "0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e11", Type: token.TypePAT, Owner: token.Owner{Kind: principal.KindUser, Name: "alice"}}}
-		if toCreated(c).Token != "trv_pat_secretvalue" {
+		c := token.Created{Secret: "qdr_pat_secretvalue", Record: token.Record{ID: "0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e11", Type: token.TypePAT, Owner: token.Owner{Kind: principal.KindUser, Name: "alice"}}}
+		if toCreated(c).Token != "qdr_pat_secretvalue" {
 			t.Fatal("the creation answer has no value")
 		}
 	})

@@ -8,12 +8,12 @@ DEV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$DEV_DIR/../.." && pwd)"
 export REPO_ROOT DEV_DIR
 
-CLUSTER="${TROVE_DEV_CLUSTER:-trove}"
+CLUSTER="${QUADER_DEV_CLUSTER:-quader}"
 CTX="kind-${CLUSTER}"
-NS="${TROVE_DEV_NAMESPACE:-trove}"
+NS="${QUADER_DEV_NAMESPACE:-quader}"
 STATE_DIR="$REPO_ROOT/.dev"
 # The host port of the dev edge (HAProxy Ingress, HTTPS). base_url of values-dev.yaml names 8080.
-DEV_HTTP_PORT="${TROVE_DEV_HTTP_PORT:-8080}"
+DEV_HTTP_PORT="${QUADER_DEV_HTTP_PORT:-8080}"
 
 # One version per tool: every pin comes from tools/versions.env.
 set -a
@@ -259,19 +259,19 @@ release_values() {
   probe_cidrs="$probe_cidrs]"
   RELEASE_VALUES=(-f "$dir/values-dev.yaml" --set-json "networkPolicy.ingress.probeCIDRs=$probe_cidrs")
   [ "$EDGE_PORT" = "8080" ] || RELEASE_VALUES+=(--set "config.server.base_url=https://localhost:$EDGE_PORT" \
-    --set "endpoints.customers.baseUrl=https://packages.trove.localhost:$EDGE_PORT")
+    --set "endpoints.customers.baseUrl=https://packages.quader.localhost:$EDGE_PORT")
   # The endpoint of the Docker Engine mirror (R-OCI-029) is in the values of the working tree only: the copies of older releases that the
   # upgrade tests install do not have it, and a baseUrl alone would make an endpoint without a port.
   if [ "$EDGE_PORT" != "8080" ] && grep -q '^  ocimirror:' "$dir/values-dev.yaml"; then
-    RELEASE_VALUES+=(--set "endpoints.ocimirror.baseUrl=https://oci-mirror.trove.localhost:$EDGE_PORT")
+    RELEASE_VALUES+=(--set "endpoints.ocimirror.baseUrl=https://oci-mirror.quader.localhost:$EDGE_PORT")
   fi
   if [ "$annotate" = 1 ]; then
-    # The tag stays guidedtraffic/trove:dev while the image behind it changes, and kind load replaces the image on the nodes
+    # The tag stays guidedtraffic/quader:dev while the image behind it changes, and kind load replaces the image on the nodes
     # without touching the pod spec, so helm would find nothing to roll. The image ID in a pod annotation of every role
     # changes the spec exactly when the loaded image changed; a second run with the same image changes nothing (the profile
     # switches of the e2e suite run this script again and must not roll the pods).
     image_id="$(docker image inspect -f '{{.Id}}' "$IMAGE")"
-    RELEASE_VALUES+=(--set-string "api.podAnnotations.trove-dev/image-id=$image_id" --set-string "packages.podAnnotations.trove-dev/image-id=$image_id" --set-string "worker.podAnnotations.trove-dev/image-id=$image_id")
+    RELEASE_VALUES+=(--set-string "api.podAnnotations.quader-dev/image-id=$image_id" --set-string "packages.podAnnotations.quader-dev/image-id=$image_id" --set-string "worker.podAnnotations.quader-dev/image-id=$image_id")
   fi
   [ "$POOLER" = "1" ] && RELEASE_VALUES+=(-f "$dir/values-pooler.yaml")
   [ "$profile" = "scatter" ] && RELEASE_VALUES+=(-f "$dir/values-scatter.yaml")
@@ -284,7 +284,7 @@ release_values() {
   [ "$profile" = "drain" ] && RELEASE_VALUES+=(-f "$dir/values-scatter.yaml" -f "$dir/values-drain.yaml")
   # The Bastions' base URLs (deploy/dev/bastion.sh) carry the edge port the cluster was created with.
   [ "$profile" = "bastion" ] && RELEASE_VALUES+=(-f "$dir/values-bastion.yaml" \
-    --set-json "config.server.additional_base_urls=[\"https://trove-api.trove.svc:8080\",\"https://trove-packages.trove.svc:8080\",\"https://bastion-volume.trove.localhost:$EDGE_PORT\",\"https://bastion-bucket.trove.localhost:$EDGE_PORT\"]")
+    --set-json "config.server.additional_base_urls=[\"https://quader-api.quader.svc:8080\",\"https://quader-packages.quader.svc:8080\",\"https://bastion-volume.quader.localhost:$EDGE_PORT\",\"https://bastion-bucket.quader.localhost:$EDGE_PORT\"]")
   return 0
 }
 
@@ -330,7 +330,7 @@ valkey_cli() {
 valkey_primary() {
   local i out
   for i in 0 1 2; do
-    out="$(sentinel_cli "trove-valkey-sentinel-$i" sentinel get-master-addr-by-name trove-valkey 2>/dev/null | head -1 || true)"
+    out="$(sentinel_cli "quader-valkey-sentinel-$i" sentinel get-master-addr-by-name quader-valkey 2>/dev/null | head -1 || true)"
     if [ -n "$out" ] && [ "$out" != "(nil)" ]; then
       printf '%s\n' "$out"
       return 0
@@ -376,19 +376,19 @@ elapsed() {
   printf '%dm %ds' $((s / 60)) $((s % 60))
 }
 
-# pg_wait_healthy <timeout-seconds> waits until the CloudNativePG cluster trove-db has two ready
+# pg_wait_healthy <timeout-seconds> waits until the CloudNativePG cluster quader-db has two ready
 # instances and reports a healthy state, and prints the seconds it took.
 pg_wait_healthy() {
   local timeout="$1" start ready phase
   start="$(date +%s)"
   while :; do
-    ready="$(kn get cluster trove-db -o jsonpath='{.status.readyInstances}' 2>/dev/null || true)"
-    phase="$(kn get cluster trove-db -o jsonpath='{.status.phase}' 2>/dev/null || true)"
+    ready="$(kn get cluster quader-db -o jsonpath='{.status.readyInstances}' 2>/dev/null || true)"
+    phase="$(kn get cluster quader-db -o jsonpath='{.status.phase}' 2>/dev/null || true)"
     if [ "$ready" = "2" ] && [ "$phase" = "Cluster in healthy state" ]; then
       echo $(( $(date +%s) - start ))
       return 0
     fi
-    [ $(( $(date +%s) - start )) -lt "$timeout" ] || { echo "trove-db is not healthy after ${timeout}s (ready '$ready', phase '$phase')" >&2; return 1; }
+    [ $(( $(date +%s) - start )) -lt "$timeout" ] || { echo "quader-db is not healthy after ${timeout}s (ready '$ready', phase '$phase')" >&2; return 1; }
     sleep 1
   done
 }

@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/evaluate"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/evaluate"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // R-VULN-011: 100 syncs that each change one record within a minute cause at most two concurrent or queued vuln-evaluate
@@ -43,8 +43,8 @@ func TestR_VULN_011_AFullEvaluationRequestedWhileAnIncrementalJobWaitsStillRuns(
 	e := newEnvRole(t, "web")
 	e.setComplete("npm", true)
 	e.addAdvisory("npm", "GHSA-aaaa-aaaa-0001", "", "vulnerability", "high")
-	e.addAffected("npm", "GHSA-aaaa-aaaa-0001", 0, "trove-test-vuln", everyVersionRange, nil, true, nil)
-	e.addVersion("npm-remote", "trove-test-vuln", "1.0.0")
+	e.addAffected("npm", "GHSA-aaaa-aaaa-0001", 0, "quader-test-vuln", everyVersionRange, nil, true, nil)
+	e.addVersion("npm-remote", "quader-test-vuln", "1.0.0")
 	q := e.rep.App.Queue()
 	first, err := q.EnqueueNow(context.Background(), jobs.EnqueueSpec{Kind: vuln.KindEvaluate, DedupKey: vuln.DedupEvaluate})
 	if err != nil {
@@ -59,9 +59,9 @@ func TestR_VULN_011_AFullEvaluationRequestedWhileAnIncrementalJobWaitsStillRuns(
 	if second.Created || second.Job.ID != first.Job.ID {
 		t.Fatalf("the second enqueue created a job: %+v", second)
 	}
-	e.st.Start(t, testenv.ReplicaOptions{Name: "worker-a", Role: "worker", Env: []string{"TROVE_JOBS_POLL_INTERVAL=200ms"}})
+	e.st.Start(t, testenv.ReplicaOptions{Name: "worker-a", Role: "worker", Env: []string{"QUADER_JOBS_POLL_INTERVAL=200ms"}})
 	e.waitJob(first.Job.ID, vuln.KindEvaluate)
-	if got := e.findings("npm-remote", "trove-test-vuln", "1.0.0", ""); got != 1 {
+	if got := e.findings("npm-remote", "quader-test-vuln", "1.0.0", ""); got != 1 {
 		t.Errorf("the full evaluation produced %d findings", got)
 	}
 	if got := e.st.Number(`SELECT count(*) FROM vuln_source_state WHERE full_evaluation_requested_at IS NOT NULL`); got != 0 {
@@ -155,7 +155,7 @@ func TestR_VULN_011_ASettingChangedWhileARescanRunsIsAppliedBeforeItEnds(t *test
 	e := newEnvRole(t, "web")
 	e.setComplete("npm", true)
 	for i := range 5 {
-		name := fmt.Sprintf("trove-test-n%d", i)
+		name := fmt.Sprintf("quader-test-n%d", i)
 		id := fmt.Sprintf("MAL-2026-90%02d", i)
 		e.addAdvisory("npm", id, "", "malicious", "critical")
 		e.addAffected("npm", id, 0, name, everyVersionRange, nil, true, nil)
@@ -191,9 +191,9 @@ func TestR_VULN_002_DisablingScanningResolvesAndEnablingItRedetectsWithTheEarlie
 	e := newEnv(t)
 	e.setComplete("npm", true)
 	e.addAdvisory("npm", "GHSA-aaaa-aaaa-0001", "", "vulnerability", "high")
-	e.addAffected("npm", "GHSA-aaaa-aaaa-0001", 0, "trove-test-vuln", everyVersionRange, nil, true, nil)
-	e.addVersion("npm-remote", "trove-test-vuln", "1.0.0")
-	e.addVersion("npm-remote", "trove-test-vuln", "1.1.0")
+	e.addAffected("npm", "GHSA-aaaa-aaaa-0001", 0, "quader-test-vuln", everyVersionRange, nil, true, nil)
+	e.addVersion("npm-remote", "quader-test-vuln", "1.0.0")
+	e.addVersion("npm-remote", "quader-test-vuln", "1.1.0")
 	e.rescan("npm-remote")
 	e.st.Exec(`UPDATE vuln_finding SET status = 'confirmed' WHERE version = '1.0.0'`)
 	e.st.Exec(`UPDATE vuln_finding SET status = 'dismissed', dismissal_reason = 'test_only' WHERE version = '1.1.0'`)
@@ -218,13 +218,13 @@ func TestR_VULN_002_DisablingScanningResolvesAndEnablingItRedetectsWithTheEarlie
 	testenv.WaitFor(t, "the re-detection", 30*time.Second, func() bool {
 		return e.st.Number(`SELECT count(*) FROM vuln_finding WHERE status <> 'resolved'`) == 2
 	})
-	if got, want := e.status("npm-remote", "trove-test-vuln", "1.0.0"), "confirmed"; got != want {
+	if got, want := e.status("npm-remote", "quader-test-vuln", "1.0.0"), "confirmed"; got != want {
 		t.Errorf("1.0.0 is %q, want %q", got, want)
 	}
-	if got, want := e.status("npm-remote", "trove-test-vuln", "1.1.0"), "dismissed"; got != want {
+	if got, want := e.status("npm-remote", "quader-test-vuln", "1.1.0"), "dismissed"; got != want {
 		t.Errorf("1.1.0 is %q, want %q", got, want)
 	}
-	if got := e.history("npm-remote", "trove-test-vuln", "1.0.0"); got != "detected,resolved,redetected" {
+	if got := e.history("npm-remote", "quader-test-vuln", "1.0.0"); got != "detected,resolved,redetected" {
 		t.Errorf("history %q", got)
 	}
 }
@@ -232,8 +232,8 @@ func TestR_VULN_002_DisablingScanningResolvesAndEnablingItRedetectsWithTheEarlie
 // R-VULN-014: with resolved_retention 1h, a finding resolved two hours ago is gone after one run of the task, together with its
 // events; an open one of the same age and one resolved half an hour ago stay.
 func TestR_VULN_014_TheRetentionTaskDeletesOldResolvedFindingsWithTheirEvents(t *testing.T) {
-	e := newEnv(t, "TROVE_VULNERABILITIES_FINDINGS_RESOLVED_RETENTION=1h")
-	e.addVersion("npm-remote", "trove-test-vuln", "1.0.0")
+	e := newEnv(t, "QUADER_VULNERABILITIES_FINDINGS_RESOLVED_RETENTION=1h")
+	e.addVersion("npm-remote", "quader-test-vuln", "1.0.0")
 	insert := func(version, status, resolvedAgo string) {
 		resolved := "NULL"
 		if resolvedAgo != "" {
@@ -241,7 +241,7 @@ func TestR_VULN_014_TheRetentionTaskDeletesOldResolvedFindingsWithTheirEvents(t 
 		}
 		e.st.Exec(fmt.Sprintf(`INSERT INTO vuln_finding (id, repo_id, ecosystem, package_name, version, advisory_id, kind, severity, severity_rank,
 			fix_available, status, resolved_reason, resolved_at, advisory_modified, detected_at)
-			SELECT gen_random_uuid(), r.id, 'npm', 'trove-test-vuln', $2, 'GHSA-aaaa-aaaa-0001', 'vulnerability', 'high', 4, false, $3::text,
+			SELECT gen_random_uuid(), r.id, 'npm', 'quader-test-vuln', $2, 'GHSA-aaaa-aaaa-0001', 'vulnerability', 'high', 4, false, $3::text,
 			       CASE WHEN $3::text = 'resolved' THEN 'version_removed' END, %s, now(), now() - interval '3 hours'
 			  FROM repositories r WHERE r.key = $1::text`, resolved), "npm-remote", version, status)
 	}

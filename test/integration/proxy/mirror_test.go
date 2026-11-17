@@ -15,12 +15,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The remote engine's side of the mirror (R-REPO-054, R-REPO-055, R-REPO-057): the background requests of a pass against the
@@ -106,7 +106,7 @@ func TestR_REPO_055_AClientFetchPreemptsABackgroundFetchOnOneReplica(t *testing.
 		if s := r.artifact(rem, "pkg/c2/-/c2-1.tgz"); s.status != 200 || string(s.body) != "c2" {
 			t.Fatalf("the second client fetch: %d %s", s.status, s.body)
 		}
-		if wait := histogramSum(r, "trove_remote_fetch_queue_wait_seconds", "pre"); wait > 0.05 {
+		if wait := histogramSum(r, "quader_remote_fetch_queue_wait_seconds", "pre"); wait > 0.05 {
 			t.Fatalf("the client fetches waited %.3f s for their slots in all", wait)
 		}
 		select {
@@ -228,7 +228,7 @@ func TestR_REPO_055_AClientOnAnotherReplicaMakesTheBackgroundYieldThroughTheSign
 		go clientSide.artifact(rem, "pkg/c"+string(rune('0'+i))+"/-/c"+string(rune('0'+i))+"-1.tgz")
 	}
 	waitFor(t, "eight client fetches to take the client replica's slots", 5*time.Second, func() bool { return h.cur.Load() == 10 })
-	if w := histogramSum(clientSide, "trove_remote_fetch_queue_wait_seconds", "yield"); w > 0.5 {
+	if w := histogramSum(clientSide, "quader_remote_fetch_queue_wait_seconds", "yield"); w > 0.5 {
 		t.Fatalf("the eight client fetches waited %.2f s for slots", w)
 	}
 
@@ -447,7 +447,7 @@ func TestR_REPO_051_AMirrorsDiscoveryRequestsKeepToTheHostsAFormatMayReachAndNev
 	other.Set("/big", proxytest.Route{Body: bytes.Repeat([]byte("x"), 4096), Type: "application/json"})
 	opts := replicaOpts{
 		ups: []*proxytest.Upstream{other}, secrets: bearerSource{},
-		env: func(k string) (string, bool) { return "s3cret", k == "TROVE_CAC_IT_QUERY_TOKEN" },
+		env: func(k string) (string, bool) { return "s3cret", k == "QUADER_CAC_IT_QUERY_TOKEN" },
 	}
 	r := e.newReplica("a", opts)
 	bearer := func(st *repository.RemoteSettings) {

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // fakeChangeSQL stands in for the two statements of Notify on a fakeTx: it

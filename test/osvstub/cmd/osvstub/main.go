@@ -18,7 +18,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 func main() {

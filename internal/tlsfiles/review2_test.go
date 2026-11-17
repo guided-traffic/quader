@@ -9,8 +9,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/tlsfiles"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 func TestReloaderReview2(t *testing.T) {

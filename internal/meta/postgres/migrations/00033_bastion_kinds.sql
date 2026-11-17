@@ -1,5 +1,5 @@
--- trove:phase contract
--- trove:requires-app >= 0.1.0
+-- quader:phase contract
+-- quader:requires-app >= 0.1.0
 --
 -- The principal kind 'bastion' and the token type 'bst' (R-BAS-004, R-BAS-005, Q-BAS-23, Q-BAS-48). The
 -- two checks list their values, so a value is added by replacing the check: a DROP, which only a contract

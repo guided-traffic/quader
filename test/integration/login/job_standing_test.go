@@ -10,8 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/session"
 )
 
 // TestR_STOR_018_TheDeleteJobReadsTheSessionThatAskedFromItsRow: the delete job of a large subtree asks again, for every batch,

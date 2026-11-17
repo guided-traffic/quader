@@ -8,11 +8,11 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // Replay of the authorization events of the revocation journal (R-HA-054, R-AUTHZ-031). A replay removes or narrows and never
@@ -91,7 +91,7 @@ func replayUnbound(ctx context.Context, qs *q.Queries, env journal.Env, tx meta.
 	subject := e.Role + "/" + e.PrincipalID
 	// Whatever the restored database holds, the configuration of the restore must not bind this principal again: mark it
 	// before the row count is known. A declared binding that was added and removed after the restore point is absent from
-	// the snapshot and a delete finds nothing, but trove migrate would still bind it (Q-AUTHZ-236). The mark is by name,
+	// the snapshot and a delete finds nothing, but quader migrate would still bind it (Q-AUTHZ-236). The mark is by name,
 	// from the entry and from the principal the ID names in this database.
 	if err := suppress(ctx, qs, e.Role, e.PrincipalID, e.Principal); err != nil {
 		return journal.Result{}, err

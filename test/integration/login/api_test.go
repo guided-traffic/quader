@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/auth/session"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/auth/session"
 )
 
 // send sends a request as the browser does: same origin, the CSRF header from the
@@ -236,7 +236,7 @@ func TestR_AUTH_042_LoginJourneyOverTheAPI(t *testing.T) {
 
 	t.Run("R-AUTH-011 a token through a session needs a recent authentication", func(t *testing.T) {
 		resp, body := b.send(http.MethodPost, "/api/v1/tokens", `{"description":"laptop","ttlSeconds":3600}`, nil)
-		if resp.StatusCode != 201 || resp.Header.Get("Cache-Control") != "no-store" || !strings.HasPrefix(jsonOf(t, body)["token"].(string), "trv_pat_") {
+		if resp.StatusCode != 201 || resp.Header.Get("Cache-Control") != "no-store" || !strings.HasPrefix(jsonOf(t, body)["token"].(string), "qdr_pat_") {
 			t.Fatalf("%d %s %v", resp.StatusCode, body, resp.Header)
 		}
 		old := b.cookie(session.CookieSession)

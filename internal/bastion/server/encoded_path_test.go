@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
 )
 
 // TestR_BAS_003_R_BAS_006_AnEncodedSpellingOfTheInterfaceRoutesCannotTurnTheReplicaUnreachable: the main
@@ -37,7 +37,7 @@ func TestR_BAS_003_R_BAS_006_AnEncodedSpellingOfTheInterfaceRoutesCannotTurnTheR
 	if got := len(main.Forwards()); got != forwards {
 		t.Fatalf("the main installation saw %d forwards of the encoded paths", got-forwards)
 	}
-	if body := metricsBody(t, srv); !strings.Contains(grepLines(body, "trove_bastion_main_token_refused"), "trove_bastion_main_token_refused 0") {
-		t.Fatalf("trove_bastion_main_token_refused moved: %s", grepLines(body, "trove_bastion_main_token_refused"))
+	if body := metricsBody(t, srv); !strings.Contains(grepLines(body, "quader_bastion_main_token_refused"), "quader_bastion_main_token_refused 0") {
+		t.Fatalf("quader_bastion_main_token_refused moved: %s", grepLines(body, "quader_bastion_main_token_refused"))
 	}
 }

@@ -6,15 +6,15 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	debdata "github.com/guided-traffic/trove/internal/formatdata/deb"
-	"github.com/guided-traffic/trove/internal/formats"
-	debformat "github.com/guided-traffic/trove/internal/formats/deb"
-	"github.com/guided-traffic/trove/internal/formats/deb/index"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
+	"github.com/guided-traffic/quader/internal/formats"
+	debformat "github.com/guided-traffic/quader/internal/formats/deb"
+	"github.com/guided-traffic/quader/internal/formats/deb/index"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // startDebIndexer builds the indexer of the job deb-index (R-DEB-010) on a replica that claims jobs and keeps it in the App, where the
@@ -27,9 +27,9 @@ func (a *App) startDebIndexer(ports map[formats.ID]any) {
 	}
 	m := a.tele.metrics
 	obs := debObserver{
-		builds:  m.NewCounterVec("trove_deb_index_builds_total", "Builds of the indexes of a Debian suite by outcome (R-DEB-033).", "class", "outcome"),
-		seconds: m.NewHistogramVec("trove_deb_index_build_seconds", "Duration of the build of a Debian suite's indexes (R-DEB-033).", debBuildBuckets(), "class"),
-		delay:   m.NewHistogramVec("trove_deb_index_delay_seconds", "From the first change a published Debian generation covers to its commit (R-DEB-010, R-DEB-033).", debDelayBuckets(), "class"),
+		builds:  m.NewCounterVec("quader_deb_index_builds_total", "Builds of the indexes of a Debian suite by outcome (R-DEB-033).", "class", "outcome"),
+		seconds: m.NewHistogramVec("quader_deb_index_build_seconds", "Duration of the build of a Debian suite's indexes (R-DEB-033).", debBuildBuckets(), "class"),
+		delay:   m.NewHistogramVec("quader_deb_index_delay_seconds", "From the first change a published Debian generation covers to its commit (R-DEB-010, R-DEB-033).", debDelayBuckets(), "class"),
 	}
 	remote, _ := a.debRemote.get()
 	a.debIndexer.set(&debdata.Indexer{

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 var connFamily = cluster.RegisterTestKeyFamily("itest:conn", 1, 60*time.Second)
@@ -50,7 +50,7 @@ func TestConnect(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-056 CLIENT LIST names every connection trove:<instance>:... and shows at most six", func(t *testing.T) {
+	t.Run("R-HA-056 CLIENT LIST names every connection quader:<instance>:... and shows at most six", func(t *testing.T) {
 		c := newClient(t, stackConfig(t, 2*time.Second))
 		waitAvailable(t, c)
 		ch, _ := c.Channel(chanFamily, "conns")
@@ -65,14 +65,14 @@ func TestConnect(t *testing.T) {
 		check := func(when string) {
 			mine := named(clientList(ctx, t, admin), c.Instance)
 			if len(mine) == 0 || len(mine) > 6 {
-				t.Fatalf("%s: %d connections of trove:%s:..., want 1 to 6: %v", when, len(mine), c.Instance, mine)
+				t.Fatalf("%s: %d connections of quader:%s:..., want 1 to 6: %v", when, len(mine), c.Instance, mine)
 			}
 			var main, pubsub int
 			for _, m := range mine {
 				switch m["name"] {
-				case "trove:" + c.Instance + ":main":
+				case "quader:" + c.Instance + ":main":
 					main++
-				case "trove:" + c.Instance + ":pubsub":
+				case "quader:" + c.Instance + ":pubsub":
 					pubsub++
 				default:
 					t.Errorf("%s: connection named %q", when, m["name"])
@@ -113,13 +113,13 @@ func TestConnect(t *testing.T) {
 		for _, s := range v.Sentinels {
 			sc := sentinelAdmin(t, v, s)
 			for _, m := range named(clientList(ctx, t, sc), c.Instance) {
-				if m["name"] == "trove:"+c.Instance+":sentinel" {
+				if m["name"] == "quader:"+c.Instance+":sentinel" {
 					sentinelConns++
 				}
 			}
 		}
 		if sentinelConns != 1 {
-			t.Errorf("%d connections named trove:%s:sentinel on the Sentinels, want 1", sentinelConns, c.Instance)
+			t.Errorf("%d connections named quader:%s:sentinel on the Sentinels, want 1", sentinelConns, c.Instance)
 		}
 	})
 
@@ -164,8 +164,8 @@ func TestConnect(t *testing.T) {
 			}
 			msg := m["client-info"]
 			info, _ := msg.ToString()
-			if strings.Contains(info, "name=trove:"+c.Instance+":") {
-				t.Errorf("ACL denial for trove:%s: %s", c.Instance, info)
+			if strings.Contains(info, "name=quader:"+c.Instance+":") {
+				t.Errorf("ACL denial for quader:%s: %s", c.Instance, info)
 			}
 		}
 	})

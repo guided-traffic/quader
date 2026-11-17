@@ -1,6 +1,6 @@
 package cluster
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // The replica registry is transient: a restored installation starts with an
 // empty registry (R-OPS-003, R-BAK-004).

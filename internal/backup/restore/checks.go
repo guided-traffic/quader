@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // state is what the checks learn and the later steps use.
@@ -118,23 +118,23 @@ func (r *Restorer) checkSteps(st *state) error {
 	for _, s := range have {
 		byVersion[s.Version] = s
 	}
-	release := st.m.Trove.Version
+	release := st.m.Quader.Version
 	for _, want := range st.m.Schema.Steps {
 		got, ok := byVersion[want.Step]
 		switch {
 		case !ok:
 			return checkFailure(2, "schema steps", backup.CodeSchemaStepMismatch, fmt.Errorf(
-				"the backup needs migration step %d (%s), which this binary does not embed (it embeds %d steps); restore it with trove %s or a release that embeds the same steps",
+				"the backup needs migration step %d (%s), which this binary does not embed (it embeds %d steps); restore it with Quader %s or a release that embeds the same steps",
 				want.Step, want.Name, len(have), release))
 		case got.Name != want.Name || got.SHA256 != want.SHA256:
 			return checkFailure(2, "schema steps", backup.CodeSchemaStepMismatch, fmt.Errorf(
-				"migration step %d (%s) differs from the backup's (%s, SHA-256 %s against %s); restore it with trove %s or a release that embeds the same steps",
+				"migration step %d (%s) differs from the backup's (%s, SHA-256 %s against %s); restore it with Quader %s or a release that embeds the same steps",
 				want.Step, got.Name, want.Name, short(got.SHA256), short(want.SHA256), release))
 		}
 	}
 	if st.m.Schema.Step > len(have) {
 		return checkFailure(2, "schema steps", backup.CodeSchemaStepMismatch, fmt.Errorf(
-			"the backup is at schema step %d, this binary embeds %d; restore it with trove %s or newer", st.m.Schema.Step, len(have), release))
+			"the backup is at schema step %d, this binary embeds %d; restore it with Quader %s or newer", st.m.Schema.Step, len(have), release))
 	}
 	return nil
 }

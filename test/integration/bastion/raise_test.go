@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_BAS_015_ARaisedLevelKeepsWhatABastionHolds: a caller who reads by a grant is served from the cache after a warm-up, and an
@@ -28,11 +28,11 @@ func TestR_BAS_015_ARaisedLevelKeepsWhatABastionHolds(t *testing.T) {
 		t.Fatalf("before the raise: %d, %d requests to the main installation, want a hit", got.Status, len(w.front.Forwards(m, "/api/")))
 	}
 
-	applied := func() float64 { return sumMetric(r.metrics(t), "trove_bastion_feed_entries_applied_total") }
+	applied := func() float64 { return sumMetric(r.metrics(t), "quader_bastion_feed_entries_applied_total") }
 	before := applied()
 	w.anonymousPolicy() // the levels rise to public
 	testenv.WaitFor(t, "the Bastion to apply the entries of the raise", 20*time.Second, func() bool { return applied() > before })
-	if got := sumMetric(r.metrics(t), "trove_bastion_feed_entries_applied_total", `kind="grants"`); got != 0 {
+	if got := sumMetric(r.metrics(t), "quader_bastion_feed_entries_applied_total", `kind="grants"`); got != 0 {
 		t.Errorf("a raise applied %v grants entries: it dropped every answer a Bastion holds", got)
 	}
 

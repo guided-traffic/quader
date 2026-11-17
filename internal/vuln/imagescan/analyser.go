@@ -63,7 +63,7 @@ type Analyser interface {
 	Detect(ctx context.Context, sbom, out, scratch string, db DatabaseAccess, lim Limits) error
 }
 
-// javaArchives are left out of the analysis: reading them needs a second database, of Java artifacts, which trove does not mirror (H-810).
+// javaArchives are left out of the analysis: reading them needs a second database, of Java artifacts, which quader does not mirror (H-810).
 // Without the option the analyser stops on the first image that holds a JAR, because it refuses to work offline without that database.
 const javaArchives = "**/*.jar,**/*.war,**/*.ear,**/*.par"
 

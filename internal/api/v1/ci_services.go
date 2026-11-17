@@ -1,8 +1,8 @@
 package v1
 
 import (
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // The CI federation's handlers (R-API-035, docs/developer/ci-oidc.md), one file per work package:

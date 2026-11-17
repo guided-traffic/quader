@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // content makes the feed answer one content entry for the repository.

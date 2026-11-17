@@ -14,7 +14,7 @@ read it from there.
 | Go | the `go` line of [go.mod](../../go.mod) (`1.27.4`) | `make versions-check` fails when `go version` differs |
 | sqlc, oapi-codegen | the `tool` directives of [go.mod](../../go.mod) | run as `go tool sqlc …`, `go tool oapi-codegen …`; `versions-check` compares the running version with the module version |
 | golangci-lint, kind, kubectl, Helm, k6, CloudNativePG chart | [tools/versions.env](../../tools/versions.env) | `KEY=value` lines; the Makefile `include`s the file and exports its keys, CI appends it to `$GITHUB_ENV` |
-| Container images (PostgreSQL, PgBouncer, Valkey 9.1 (the only line tested while trove is in development), SeaweedFS, the release base image, the dev-profile images) | [tools/versions.env](../../tools/versions.env), each with its digest | `docker buildx imagetools inspect <tag>` prints the digest to pin |
+| Container images (PostgreSQL, PgBouncer, Valkey 9.1 (the only line tested while Quader is in development), SeaweedFS, the release base image, the dev-profile images) | [tools/versions.env](../../tools/versions.env), each with its digest | `docker buildx imagetools inspect <tag>` prints the digest to pin |
 | openssl | `OPENSSL_IMAGE` in [tools/versions.env](../../tools/versions.env), a container image with its digest | never the host's openssl (LibreSSL on macOS, 3.x on Ubuntu): [certs.sh](../../test/integration/certs.sh) and the e2e probes ([e2e.md](e2e.md)) run it with `docker run --rm --user "$(id -u):$(id -g)" -v <dir>:<dir> -w <dir>`, so the files belong to the caller |
 | Angular packages, Node.js | `web/package-lock.json`, `web/.nvmrc` | owned by the web workspace, see [web-ui.md](web-ui.md) |
 
@@ -29,7 +29,7 @@ It also runs [check-pins.sh](../../tools/sbom-generator/check-pins.sh), which ke
 
 | Target | What it does |
 |---|---|
-| `build` | `CGO_ENABLED=0 go build -trimpath` into `bin/trove`, with version, commit and date set through `-ldflags` in [internal/buildinfo](../../internal/buildinfo) |
+| `build` | `CGO_ENABLED=0 go build -trimpath` into `bin/quader`, with version, commit and date set through `-ldflags` in [internal/buildinfo](../../internal/buildinfo) |
 | `generate` | `go generate` over every package: the configuration schema today, sqlc and oapi-codegen as their packages arrive |
 | `generate-check` | `generate`, then `git diff --exit-code` and a check for untracked generated files (E0.1) |
 | `lint` | pinned golangci-lint over `./...` with the build tags `integration`, `e2e`, `compat` and `chart`, so every test tier is linted (configuration in [.golangci.yml](../../.golangci.yml)), then `go vet` |
@@ -43,25 +43,25 @@ It also runs [check-pins.sh](../../tools/sbom-generator/check-pins.sh), which ke
 | `test` | `go test -race ./...` with a coverage profile of the unit tier (`.out/coverage/unit.out`); the `go test -json` stream goes to `.out/test-unit.json`, which the coverage generator reads. It runs without the host's AWS configuration (`UNIT_ENV` in the Makefile: no `AWS_*` region, profile or keys, no `~/.aws` files), as on the CI runner; a bare `go test` reads them and can pass where CI fails |
 | `integration-up`, `integration-down` | start and stop the integration stack, see below |
 | `test-integration` | `go test -tags integration ./test/integration/...` with the environment of `.dev/integration/env`; the JSON stream goes to `.out/test-integration.json`, the profile to `.out/coverage/integration-<line>.out`; `SHARD=a\|b\|c` runs one third of the packages (the three CI legs: `a` seven of the slowest areas, `c` the OCI, Debian, registry, publication, vulnerability and Bastion areas, `b` everything else) and adds `-<shard>` to both names |
-| `test-performance` | the P-13 and P-14 latency tests of the integration tier, the Debian delay bound `TestR_DEB_010_DelayBound` (R-DEB-010, Q-DEB-59) and `TestR_EP_013_CeilingPerformance` of `internal/authz` and the takeover bound of `TestFlightLockWait` (R-ARCH-033) of `internal/cluster` and the decode time of the slowest accepted avatars (`TestR_API_055_TheWorstCaseInputsAreAccepted` and `TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline` of `internal/avatar`, Q-UI-173; both skip under `-race`, so only this target runs them) with `TROVE_PERF_GATE=1`, which enforces their p99 bounds (for the avatar tests only the least CPU time of seven decodes: the wall time of a decode on a shared runner is the runner's load, so it is logged and not judged) (with Valkey for the first; `test-integration` and `make test` log them only); the JSON stream goes to `.out/test-performance.json`. Run by the nightly workflow "HA and Performance (nightly)" ([releasing.md](releasing.md#ha-and-performance-nightly)) |
+| `test-performance` | the P-13 and P-14 latency tests of the integration tier, the Debian delay bound `TestR_DEB_010_DelayBound` (R-DEB-010, Q-DEB-59) and `TestR_EP_013_CeilingPerformance` of `internal/authz` and the takeover bound of `TestFlightLockWait` (R-ARCH-033) of `internal/cluster` and the decode time of the slowest accepted avatars (`TestR_API_055_TheWorstCaseInputsAreAccepted` and `TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline` of `internal/avatar`, Q-UI-173; both skip under `-race`, so only this target runs them) with `QUADER_PERF_GATE=1`, which enforces their p99 bounds (for the avatar tests only the least CPU time of seven decodes: the wall time of a decode on a shared runner is the runner's load, so it is logged and not judged) (with Valkey for the first; `test-integration` and `make test` log them only); the JSON stream goes to `.out/test-performance.json`. Run by the nightly workflow "HA and Performance (nightly)" ([releasing.md](releasing.md#ha-and-performance-nightly)) |
 | `silo-up`, `silo-down`, `s3-conformance` | Silo at `SILO_IMAGE`, served over TLS, and the conformance tests against it ([test/integration/silo.sh](../../test/integration/silo.sh)) |
 | `coverage-report` | merges `.out/coverage` into `coverage.txt`, `summary.md` and the badge `coverage.json` ([test/coverage/report.sh](../../test/coverage/report.sh)) |
 | `test-release-tooling` | `npm ci`, `npm audit signatures`, and [hack/verify-release-tooling.mjs](../../hack/verify-release-tooling.mjs) |
 | `web-ci`, `web-lint`, `web-test`, `web-embed` | `npm ci`, the lint script, the Angular unit tests and `npm run build:embed` in `web/`; `web` is `web-ci` and `web-embed` |
-| `image` | builds the release image for `linux/<arch>` (`IMAGE`, default `guidedtraffic/trove:dev`) with the [Containerfile](../../Containerfile): the Angular build, the Go build and the distroless base, no Node.js on the host. The binary's version is `VERSION`: the number of a `v0.*` tag on `HEAD` (the `v` stripped), else `dev`, else what the caller passes (CI passes `VERSION=dev`). A commit hash is never a version: the binary would not become ready |
-| `npm-stub-image` | builds the counting npm test upstream (`test/npmstub/cmd/npmstub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `NPM_STUB_IMAGE` (default `trove-e2e-npmstub:dev`); see [e2e.md](e2e.md#the-counting-npm-test-upstream) |
+| `image` | builds the release image for `linux/<arch>` (`IMAGE`, default `guidedtraffic/quader:dev`) with the [Containerfile](../../Containerfile): the Angular build, the Go build and the distroless base, no Node.js on the host. The binary's version is `VERSION`: the number of a `v0.*` tag on `HEAD` (the `v` stripped), else `dev`, else what the caller passes (CI passes `VERSION=dev`). A commit hash is never a version: the binary would not become ready |
+| `npm-stub-image` | builds the counting npm test upstream (`test/npmstub/cmd/npmstub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `NPM_STUB_IMAGE` (default `quader-e2e-npmstub:dev`); see [e2e.md](e2e.md#the-counting-npm-test-upstream) |
 | `npm-reference`, `npm-reference-check` | write, or check against a regeneration, the reference lockfile `perf/npm/reference` with the npm of the pinned Node image (`E2E_CLIENTS_NODE_IMAGE`) against the stub; need Docker, see [perf/README.md](../../perf/README.md) |
-| `oidc-stub-image` | builds the GitLab-shaped OIDC issuer double (`test/oidcstub/cmd/oidcstub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `OIDC_STUB_IMAGE` (default `trove-e2e-oidcstub:dev`); see [e2e.md](e2e.md#the-oidc-issuer-double) |
-| `oidc-fixtures` | re-records `test/oidcstub/testdata` from a real GitLab (`TROVE_GITLAB_URL`, `TROVE_GITLAB_TOKEN` of an administrator, optional `TROVE_GITLAB_CA_FILE`), then runs the double's fixture tests; manual, never in CI; see [e2e.md](e2e.md#validating-the-double-against-a-real-gitlab) |
-| `nuget-stub-image` | builds the counting NuGet test upstream (`test/nugetstub/cmd/nugetstub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `NUGET_STUB_IMAGE` (default `trove-e2e-nugetstub:dev`); see [e2e.md](e2e.md) |
+| `oidc-stub-image` | builds the GitLab-shaped OIDC issuer double (`test/oidcstub/cmd/oidcstub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `OIDC_STUB_IMAGE` (default `quader-e2e-oidcstub:dev`); see [e2e.md](e2e.md#the-oidc-issuer-double) |
+| `oidc-fixtures` | re-records `test/oidcstub/testdata` from a real GitLab (`QUADER_GITLAB_URL`, `QUADER_GITLAB_TOKEN` of an administrator, optional `QUADER_GITLAB_CA_FILE`), then runs the double's fixture tests; manual, never in CI; see [e2e.md](e2e.md#validating-the-double-against-a-real-gitlab) |
+| `nuget-stub-image` | builds the counting NuGet test upstream (`test/nugetstub/cmd/nugetstub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `NUGET_STUB_IMAGE` (default `quader-e2e-nugetstub:dev`); see [e2e.md](e2e.md) |
 | `nuget-vectors`, `nuget-vectors-check` | write, or check against a regeneration, the golden vectors of the NuGet version, range and ID rules ([tools/nugetvectors](../../tools/nugetvectors)) with the pinned .NET SDK image and NuGet.Versioning; need Docker (`DOTNET=local` runs a local `dotnet`) |
 | `nuget-reference-check` | fails when [perf/nuget/reference](../../perf/README.md) differs from a regeneration by the counting NuGet test upstream (`nugetstub reference -check`, no Docker); CI runs it in the job generate |
-| `deb-stub-image` | builds the counting Debian archive test upstream (`test/debstub/cmd/debstub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `DEB_STUB_IMAGE` (default `trove-e2e-debstub:dev`); see [deb.md](deb.md#testdebstub-the-counting-stub-archive) |
+| `deb-stub-image` | builds the counting Debian archive test upstream (`test/debstub/cmd/debstub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `DEB_STUB_IMAGE` (default `quader-e2e-debstub:dev`); see [deb.md](deb.md#testdebstub-the-counting-stub-archive) |
 | `apt-clients-image` | builds the four APT client images of the Debian e2e set (the pinned Debian 13, Debian 12, Ubuntu 24.04 and Ubuntu 22.04 images with curl and the forwarder, `test/e2e/aptclients/build.sh`) into the local Docker; see [e2e.md](e2e.md#the-apt-clients) |
 | `ansible-clients-image` | builds the two Ansible client images of the `ansible` e2e set (the pinned Python 3.11 and 3.13 images with ansible-core 2.17.14 and 2.21.6 under pinned constraints, curl and the forwarder, `test/e2e/ansibleclients/build.sh`) into the local Docker; see [e2e.md](e2e.md#the-ansible-clients) |
-| `oci-stub-image` | builds the counting OCI test upstream (`test/ocistub/cmd/ocistub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `OCI_STUB_IMAGE` (default `trove-e2e-ocistub:dev`); see [oci.md](oci.md#the-counting-stub-registry) and [e2e.md](e2e.md#the-counting-oci-test-upstream) |
+| `oci-stub-image` | builds the counting OCI test upstream (`test/ocistub/cmd/ocistub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `OCI_STUB_IMAGE` (default `quader-e2e-ocistub:dev`); see [oci.md](oci.md#the-counting-stub-registry) and [e2e.md](e2e.md#the-counting-oci-test-upstream) |
 | `oci-conformance-build`, `oci-conformance` | build the OCI distribution conformance suite (`OCI_CONFORMANCE_TAG`, default `v1.1.1`: the tag is resolved to its commit, the module `github.com/opencontainers/distribution-spec/conformance` is downloaded into `.out/oci-conformance/mod` and compiled with the repository's Go to `.out/oci-conformance/conformance.test`), and run it against a replica of the integration stack (`make integration-up` first) through a local and a virtual repository; the reports go to `.out/oci-conformance/{local,virtual}/` (`junit.xml`, `report.html`, `output.txt`). CI runs it in shard c of the integration job; see [oci.md](oci.md#the-protocol-tests-and-the-conformance-suite) |
-| `osv-stub-image` | builds the test advisory source (`test/osvstub/cmd/osvstub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `OSV_STUB_IMAGE` (default `trove-e2e-osvstub:dev`); see [e2e.md](e2e.md#the-test-advisory-source) |
+| `osv-stub-image` | builds the test advisory source (`test/osvstub/cmd/osvstub`) for `linux/<IMAGE_ARCH>` on the release base image, tag `OSV_STUB_IMAGE` (default `quader-e2e-osvstub:dev`); see [e2e.md](e2e.md#the-test-advisory-source) |
 | `osv-real-refresh` | fetches the real OSV records frozen in `test/osvstub/testdata/real` again from `api.osv.dev` (`test/osvstub/cmd/osvfreeze`); needs network, manual, never in CI |
 | `fuzz-nuget` | runs each NuGet fuzz target (`NUGET_FUZZ_TARGETS`, `package:Target` pairs) for `NUGET_FUZZTIME` (default 5m); a failing input stays in the package's `testdata/fuzz`. CI runs one target per leg for 30 minutes, on the closing run only ([releasing.md](releasing.md#ci)) |
 | `coverage` | `go run ./internal/tools/coverage`, see [coverage.md](coverage.md) |
@@ -91,7 +91,7 @@ ID survives. A function name may carry it in the underscore form, `TestR_API_053
 `R-API-053` ([coverage.md](coverage.md#implementation-status-the-test-naming-rule)).
 
 A latency target in microseconds is not a per-change assertion on a shared machine: the per-change run asserts the
-allocations, and the median where the race detector is off (`make test` runs with it, so there only the allocations), and the p99 is enforced with `TROVE_PERF_GATE=1` by `make test-performance` (for example
+allocations, and the median where the race detector is off (`make test` runs with it, so there only the allocations), and the p99 is enforced with `QUADER_PERF_GATE=1` by `make test-performance` (for example
 `TestR_EP_013_CeilingPerformance`, [Q-ARCH-250](../spec/architecture.md#q-arch-250--a-p99-bound-in-microseconds-is-a-nightly-gate-and-the-per-change-test-asserts-allocations-and-the-median)).
 
 A wait in a test is a guard or a budget, and only a budget may be tight. A guard bounds a wait for something that happens on its
@@ -149,13 +149,13 @@ refused. PgBouncer takes clients with `client_tls_sslmode = require` and talks t
 `server_tls_sslmode = verify-full` against the stack's CA. The SeaweedFS S3 gateway serves HTTPS only
 (`-s3.cert.file`, `-s3.key.file`); a plaintext request to its port is answered with a 400 by the TLS
 server and never reaches the S3 handler. Valkey and the Sentinels were TLS-only already. The tests verify the
-servers from the host (`sslmode=verify-full`, trove's `ssl_mode: verify-full` with `ssl_root_cert_file`,
+servers from the host (`sslmode=verify-full`, Quader's `ssl_mode: verify-full` with `ssl_root_cert_file`,
 `storage.s3.ca_file`) and no integration config uses `allow_insecure`, `allow_insecure_endpoint` or
 `ssl_mode: disable`, with two deliberate exceptions that test the refusal itself: the Valkey test
 "R-HA-056 the data node accepts TLS only" configures a client without TLS to prove it never connects,
 and the PostgreSQL test "R-HA-015 ssl_mode disable without allow_insecure is refused" proves the
 configuration check. Every `TestMain` of a suite calls `testenv.Main`, which fails the whole package before
-any test when a `TROVE_TEST_*` endpoint is plaintext or unverified or the CA file is missing; the smoke tests
+any test when a `QUADER_TEST_*` endpoint is plaintext or unverified or the CA file is missing; the smoke tests
 `TestPostgresIsTLSOnly` and `TestS3IsTLSOnly` prove the refusal against the running stack.
 
 What is not covered: the SeaweedFS master, volume and filer talk to each other plaintext inside the one
@@ -163,28 +163,28 @@ container (loopback, not published on the host); the Unix socket of PostgreSQL i
 uses `trust` for the image's init and `pg_isready`; and the certificates are RSA 2048 signed for 365 days,
 fine for a test stack and not a model for production.
 
-`TROVE_TEST_VALKEY_LINE=9.0` or `9.1` (default `9.1`) selects the Valkey line. Switching the line recreates
+`QUADER_TEST_VALKEY_LINE=9.0` or `9.1` (default `9.1`) selects the Valkey line. Switching the line recreates
 the stack, because Sentinel rewrote the configuration of the data nodes.
 
 | Service | Container | Host address | Notes |
 |---|---|---|---|
-| PostgreSQL 18 (the version under test, Q-ARCH-219) | `trove-it-postgres` | `127.0.0.1:15432` | user `trove`, database `trove`, superuser; data on tmpfs (`PGDATA` set in the compose file); TLS only (`hostssl`) |
-| PgBouncer | `trove-it-pgbouncer` | `127.0.0.1:16432` | `pool_mode = transaction`, a catch-all database entry, `max_prepared_statements = 100`; the admin console is the database `pgbouncer`; TLS in (`require`) and out (`verify-full`) |
-| Valkey primary, replica | `trove-it-valkey-primary`, `trove-it-valkey-replica` | `127.0.0.1:16379`, `:16380` | `port 0`, `tls-port`, `tls-replication yes`, ACL file with the users below |
-| Sentinels | `trove-it-valkey-sentinel-{1,2,3}` | `127.0.0.1:26381` to `:26383` | TLS only, password-protected, monitor name `trove`, quorum 2, `down-after-milliseconds 3000` |
-| SeaweedFS (S3 gateway) | `trove-it-seaweedfs` | `https://127.0.0.1:18333` | HTTPS only, path-style, static credentials; buckets `trove-blobs` (versioning on) and `trove-backups`; `-volume.max=100` (a bucket is a collection that grows several volumes, so a low count runs out after a few runs of the 500 MiB upload test; every suite removes what it wrote when its test ends, through `testenv.RemoveObjectsAtCleanup`, so a stack kept up through many runs keeps only what an aborted run left behind, and `-master.vacuumDeleteEmptyAfterSeconds=600` deletes a volume the vacuum left empty, which frees its slot; once all 100 volumes are full, every PUT answers 500 and every package after that point fails: `make integration-down integration-up` starts it empty), set in `compose.yaml` only: `make integration-up` is the one way the stack starts, locally and in CI. |
+| PostgreSQL 18 (the version under test, Q-ARCH-219) | `quader-it-postgres` | `127.0.0.1:15432` | user `quader`, database `quader`, superuser; data on tmpfs (`PGDATA` set in the compose file); TLS only (`hostssl`) |
+| PgBouncer | `quader-it-pgbouncer` | `127.0.0.1:16432` | `pool_mode = transaction`, a catch-all database entry, `max_prepared_statements = 100`; the admin console is the database `pgbouncer`; TLS in (`require`) and out (`verify-full`) |
+| Valkey primary, replica | `quader-it-valkey-primary`, `quader-it-valkey-replica` | `127.0.0.1:16379`, `:16380` | `port 0`, `tls-port`, `tls-replication yes`, ACL file with the users below |
+| Sentinels | `quader-it-valkey-sentinel-{1,2,3}` | `127.0.0.1:26381` to `:26383` | TLS only, password-protected, monitor name `quader`, quorum 2, `down-after-milliseconds 3000` |
+| SeaweedFS (S3 gateway) | `quader-it-seaweedfs` | `https://127.0.0.1:18333` | HTTPS only, path-style, static credentials; buckets `quader-blobs` (versioning on) and `quader-backups`; `-volume.max=100` (a bucket is a collection that grows several volumes, so a low count runs out after a few runs of the 500 MiB upload test; every suite removes what it wrote when its test ends, through `testenv.RemoveObjectsAtCleanup`, so a stack kept up through many runs keeps only what an aborted run left behind, and `-master.vacuumDeleteEmptyAfterSeconds=600` deletes a volume the vacuum left empty, which frees its slot; once all 100 volumes are full, every PUT answers 500 and every package after that point fails: `make integration-down integration-up` starts it empty), set in `compose.yaml` only: `make integration-up` is the one way the stack starts, locally and in CI. |
 
 **How a client on the host follows a failover.** The five Valkey processes run in separate containers
-that share one network namespace (the container `trove-it-net`), and every port is published on the host
+that share one network namespace (the container `quader-it-net`), and every port is published on the host
 under the same number. `replica-announce-ip` and `sentinel announce-ip` are `127.0.0.1`, so the addresses
 that Sentinel returns are valid inside the stack (replication, monitoring) and on the host (the tests).
 There is no name resolution to configure. A process can still be stopped on its own
-(`docker stop trove-it-valkey-primary`), which is how a failure is simulated. Stopping `trove-it-net`
+(`docker stop quader-it-valkey-primary`), which is how a failure is simulated. Stopping `quader-it-net`
 takes all five down.
 
 **Valkey users** (test constants, in [conf/users.acl](../../test/integration/conf/users.acl)):
-`trove` is the least-privilege user of R-ARCH-031's example rule; `bastion` is the same rule on the keys and channels below
-`trove-bastion:` (the Bastion's own Valkey, R-BAS-034; a stack started before that line existed gets the user from
+`quader` is the least-privilege user of R-ARCH-031's example rule; `bastion` is the same rule on the keys and channels below
+`quader-bastion:` (the Bastion's own Valkey, R-BAS-034; a stack started before that line existed gets the user from
 `test/integration/bastionshared`, which runs `ACL SETUSER` with the same rules on both nodes); `ops` may do everything and serves
 replication, Sentinel monitoring and the tests' inspection; the `default` user is off. The Sentinels
 carry the password from `.dev/integration/env`.
@@ -195,24 +195,24 @@ tests never skip.
 
 | Variable | Meaning |
 |---|---|
-| `TROVE_TEST_CA_FILE` | absolute path of the stack's CA certificate (`.dev/integration/certs/ca.crt`) |
-| `TROVE_TEST_CERT_DIR` | the directory of the stack's certificates and keys |
-| `TROVE_TEST_PG_DSN`, `TROVE_TEST_PG_PGBOUNCER_DSN` | PostgreSQL direct and through PgBouncer, `sslmode=verify-full&sslrootcert=<CA>` |
-| `TROVE_TEST_PG_HOST`, `_PORT`, `_PGBOUNCER_PORT`, `_USER`, `_PASSWORD`, `_DATABASE` | the same, split up |
-| `TROVE_TEST_VALKEY_LINE` | `9.0` or `9.1` |
-| `TROVE_TEST_VALKEY_SENTINELS`, `TROVE_TEST_VALKEY_NODES` | comma-separated `host:port` of the Sentinels and the data nodes |
-| `TROVE_TEST_VALKEY_PRIMARY_NAME` | the Sentinels' monitor name, `trove` |
-| `TROVE_TEST_VALKEY_USERNAME`, `_PASSWORD` | the least-privilege user |
-| `TROVE_TEST_VALKEY_SENTINEL_PASSWORD` | the Sentinels' password |
-| `TROVE_TEST_VALKEY_ADMIN_USERNAME`, `_ADMIN_PASSWORD` | the unrestricted user |
-| `TROVE_TEST_VALKEY_CA_FILE` | absolute path of the CA certificate (the same file as `TROVE_TEST_CA_FILE`) |
-| `TROVE_TEST_VALKEY_KEY_PREFIX` | `trove:`, the prefix the ACL rule allows |
-| `TROVE_TEST_VALKEY_CONTAINERS` | container names, for `docker stop` and `docker start` |
-| `TROVE_TEST_S3_ENDPOINT` (`https://127.0.0.1:18333`), `_REGION`, `_ACCESS_KEY`, `_SECRET_KEY`, `_FORCE_PATH_STYLE` | the S3 gateway |
-| `TROVE_TEST_S3_BUCKET_BLOBS`, `TROVE_TEST_S3_BUCKET_BACKUPS` | bucket names |
+| `QUADER_TEST_CA_FILE` | absolute path of the stack's CA certificate (`.dev/integration/certs/ca.crt`) |
+| `QUADER_TEST_CERT_DIR` | the directory of the stack's certificates and keys |
+| `QUADER_TEST_PG_DSN`, `QUADER_TEST_PG_PGBOUNCER_DSN` | PostgreSQL direct and through PgBouncer, `sslmode=verify-full&sslrootcert=<CA>` |
+| `QUADER_TEST_PG_HOST`, `_PORT`, `_PGBOUNCER_PORT`, `_USER`, `_PASSWORD`, `_DATABASE` | the same, split up |
+| `QUADER_TEST_VALKEY_LINE` | `9.0` or `9.1` |
+| `QUADER_TEST_VALKEY_SENTINELS`, `QUADER_TEST_VALKEY_NODES` | comma-separated `host:port` of the Sentinels and the data nodes |
+| `QUADER_TEST_VALKEY_PRIMARY_NAME` | the Sentinels' monitor name, `quader` |
+| `QUADER_TEST_VALKEY_USERNAME`, `_PASSWORD` | the least-privilege user |
+| `QUADER_TEST_VALKEY_SENTINEL_PASSWORD` | the Sentinels' password |
+| `QUADER_TEST_VALKEY_ADMIN_USERNAME`, `_ADMIN_PASSWORD` | the unrestricted user |
+| `QUADER_TEST_VALKEY_CA_FILE` | absolute path of the CA certificate (the same file as `QUADER_TEST_CA_FILE`) |
+| `QUADER_TEST_VALKEY_KEY_PREFIX` | `quader:`, the prefix the ACL rule allows |
+| `QUADER_TEST_VALKEY_CONTAINERS` | container names, for `docker stop` and `docker start` |
+| `QUADER_TEST_S3_ENDPOINT` (`https://127.0.0.1:18333`), `_REGION`, `_ACCESS_KEY`, `_SECRET_KEY`, `_FORCE_PATH_STYLE` | the S3 gateway |
+| `QUADER_TEST_S3_BUCKET_BLOBS`, `QUADER_TEST_S3_BUCKET_BACKUPS` | bucket names |
 
-`TROVE_TEST_` is a reserved prefix of the configuration loader (see
-[configuration.md](configuration.md)), so sourcing the file in a shell does not make `trove` reject its
+`QUADER_TEST_` is a reserved prefix of the configuration loader (see
+[configuration.md](configuration.md)), so sourcing the file in a shell does not make `quader` reject its
 environment.
 
 **Certificate layout** in `.dev/integration/certs` (keys are world-readable on purpose, the stack protects
@@ -220,7 +220,7 @@ nothing):
 
 | Files | Used by |
 |---|---|
-| `ca.crt`, `ca.key` | the CA; `ca.crt` is `TROVE_TEST_CA_FILE` |
+| `ca.crt`, `ca.key` | the CA; `ca.crt` is `QUADER_TEST_CA_FILE` |
 | `server.crt`, `server.key` | the five Valkey processes |
 | `postgres.crt`, `postgres.key` | PostgreSQL (copied by [conf/postgres.sh](../../test/integration/conf/postgres.sh) to a directory owned by `postgres` with mode 0600, which the server insists on) |
 | `pgbouncer.crt`, `pgbouncer.key` | PgBouncer, client side |
@@ -232,7 +232,7 @@ verifies from the host and between containers.
 **Helpers for tests.** `testenv.CAFile`, `testenv.CertDir`, `testenv.RootCAs`, `testenv.TLSConfig` and
 `testenv.HTTPClient` give a client that trusts exactly the stack's CA; `testenv.PgDSN(tb, database)` and
 `testenv.PgBouncerDSNFor` build verify-full DSNs; `testenv.SecureDatabase` and `testenv.SecureS3` set
-trove's `database.ssl_mode`/`ssl_root_cert_file` and `storage.s3.endpoint`/`ca_file`. A new suite starts with
+Quader's `database.ssl_mode`/`ssl_root_cert_file` and `storage.s3.endpoint`/`ca_file`. A new suite starts with
 `func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }`.
 
 **Rotating a certificate in place.** [rotate-cert.sh](../../test/integration/rotate-cert.sh)
@@ -268,15 +268,15 @@ engine, coordination, audit, PostgreSQL and the blob store (`test/integration/au
 
 | Piece | What it is |
 |---|---|
-| `testenv.NewStack(tb, StackOptions{Name, Valkey, Env})` ([stack.go](../../test/integration/testenv/stack.go)) | One installation: a database `trove_<Name>_<random>` created, migrated and dropped with the test, an S3 prefix `it/<database>` in the stack's bucket (`ObjectPrefix()`), removed with every version when the test ends, the shared environment of every replica (TLS to PostgreSQL, S3 and Valkey; short health and heartbeat timings; the management API's rate limits off) and a validator of the OpenAPI document. `Valkey: false` points the Sentinel at `127.0.0.1:1`, the state "Valkey stopped" (degraded mode). `Env` is appended to every replica's environment. With `TROVE_TEST_PG_POOLED=1` the replicas' main pool goes through PgBouncer |
+| `testenv.NewStack(tb, StackOptions{Name, Valkey, Env})` ([stack.go](../../test/integration/testenv/stack.go)) | One installation: a database `quader_<Name>_<random>` created, migrated and dropped with the test, an S3 prefix `it/<database>` in the stack's bucket (`ObjectPrefix()`), removed with every version when the test ends, the shared environment of every replica (TLS to PostgreSQL, S3 and Valkey; short health and heartbeat timings; the management API's rate limits off) and a validator of the OpenAPI document. `Valkey: false` points the Sentinel at `127.0.0.1:1`, the state "Valkey stopped" (degraded mode). `Env` is appended to every replica's environment. With `QUADER_TEST_PG_POOLED=1` the replicas' main pool goes through PgBouncer |
 | `Stack.Start(tb, ReplicaOptions{Name, Role, Env, Endpoints, Extra, Database})` ([replica.go](../../test/integration/testenv/replica.go)) | `app.New`, `Start`, waits for `Started` (a bootstrap error ends the wait at once with its text, through `App.Failed`), and shuts the replica down in the cleanup of the test, printing the tail of its log when the test failed. `Role` is `web` (default), `worker` or `all`; `Endpoints` is the JSON of `server.endpoints`; `Extra` registers more routes through `app.Options.Extra` (a route below `/api/v1/` must be in the document, so a test resource lives elsewhere); `Database` adds options to the replica's database pools through `app.Options.Database` (tests only), such as the tracer below |
 | `testenv.NewRequestTransactions()`, `Option()`, `Count(on)`, `Of(requestID)` ([requests.go](../../test/integration/testenv/requests.go)) | Counts, inside the replicas given its `Option()` and between `Count(true)` and `Count(false)` (outside that the tracer reads one flag, so the requests a test does not measure are not slowed), the transactions and statements each HTTP request ran, by the request ID its context carries (`httpserver.RequestID`, the answer's `X-Request-Id`). It is the pgx tracer of the request pool and the control connection: a statement of the replica's own loops or batched writers has no request ID and is not counted, and nothing depends on when PostgreSQL publishes its statistics. A transaction is counted as PostgreSQL counts one (an explicit one from `BEGIN` to its end, a statement or a batch outside one), and `Of` returns each with the names of its statements, so a test can take out the transactions of named statements exactly; the pool's liveness ping and the connection set-up are not statements of the tracer. The performance run reads V-5b with it ([perf/README.md](../../perf/README.md#reading-a-run)) |
 | `Replica.Addr(endpoint)`, `OpsAddr()`, `Metrics(tb)`, `Stop()`, `App` | Listener addresses, the ops listener's `/metrics`, a graceful stop (idempotent; it is how a test removes a replica), and the `*app.App` for the accessors the composition root exposes (`Queue`, `Repositories`, `RepositoryService`, `Valkey`, `Blobs`, `Changes`) |
 | `Stack.Do(replica, method, path, token, body, hdr...)`, `DoAt(addr, host, ...)` | One request with a bearer token and the Host of the endpoint; answers of `/api/v1/` are validated against the document and `Validator().Uncovered(...)` lists the operations a suite did not reach |
-| `Stack.User(name, groups...)`, `ServiceAccount`, `Bind(role, person)`, `Token(person, scope)`, `Repository(key, class, format, cfg)`, `Policy(...)` ([seed.go](../../test/integration/testenv/seed.go)) | Rows written straight into the database **before** the first replica starts, so that every replica builds its first grant index with them. A token is minted the way `token.Service` stores one (the SHA-256 of the value, never the value) and is a real `trv_` token, so the request meets the production authentication stage. A token exercises the capabilities its scope names that the owner's roles grant (R-AUTHZ-013), so a scope that should read settings names `settings:read` |
+| `Stack.User(name, groups...)`, `ServiceAccount`, `Bind(role, person)`, `Token(person, scope)`, `Repository(key, class, format, cfg)`, `Policy(...)` ([seed.go](../../test/integration/testenv/seed.go)) | Rows written straight into the database **before** the first replica starts, so that every replica builds its first grant index with them. A token is minted the way `token.Service` stores one (the SHA-256 of the value, never the value) and is a real `qdr_` token, so the request meets the production authentication stage. A token exercises the capabilities its scope names that the owner's roles grant (R-AUTHZ-013), so a scope that should read settings names `settings:read` |
 | `testenv.DefaultProject` (`it`), `Stack.Project(key)`, `Stack.Member(project, person, role)`, `Stack.RepositoryIn(project, key, class, format, cfg)`; `testenv.ProtocolURL(format, project, key)`, `FilesURL(project, key)`, `ManagementURL(project, key)` ([names.go](../../test/integration/testenv/names.go), [seed.go](../../test/integration/testenv/seed.go)) | Every repository belongs to a project: `NewStack` creates the project `it`, and `Repository` puts a bare key into it (a key `<project>/<key>` into that project, which `RepositoryIn` names explicitly; both create a missing project). `Member` writes a membership row with its role (`reader`, `developer`, `maintainer`, `owner`). The URL helpers render `/api/<format>/<project>/<key>/`, `/files/<project>/<key>/` and `/api/v1/projects/<project>/repositories/<key>` |
 | `Stack.Exec`, `Text`, `Number`, `Query` | SQL on the installation's database as its owner, for state a test sets up or asserts. Rows the product writes (audit events, journal rows, the change log) are read here instead of through a recorder double |
-| `testenv.RemoveObjectsAtCleanup(tb, bucket, prefix)`, `Leftovers(tb, bucket, prefix)` ([cleanup.go](../../test/integration/testenv/cleanup.go)) | The removal of a test's own prefix when the test ends: the unfinished multipart uploads, every object version and every delete marker below `<prefix>/`. The blob bucket keeps every version, so a deletion through trove's object store only writes a delete marker and the bytes stay; a suite that gives an object-store client a prefix of its own calls it once, before anything writes there, and `NewStack` calls it for `it/<database>`. A removal that fails fails the test. `Leftovers` counts versions, delete markers and uploads below a prefix, for the test of a cleanup |
+| `testenv.RemoveObjectsAtCleanup(tb, bucket, prefix)`, `Leftovers(tb, bucket, prefix)` ([cleanup.go](../../test/integration/testenv/cleanup.go)) | The removal of a test's own prefix when the test ends: the unfinished multipart uploads, every object version and every delete marker below `<prefix>/`. The blob bucket keeps every version, so a deletion through Quader's object store only writes a delete marker and the bytes stay; a suite that gives an object-store client a prefix of its own calls it once, before anything writes there, and `NewStack` calls it for `it/<database>`. A removal that fails fails the test. `Leftovers` counts versions, delete markers and uploads below a prefix, for the test of a cleanup |
 | `Stack.Environ()` | The environment every replica of the stack shares, for a suite that runs the binary instead of `Stack.Start` ([overload](../../test/integration/overload): a memory limit is per process) |
 
 The suites on the harness: [transfer](../../test/integration/transfer) (the HTTP surface of the files transfer and the

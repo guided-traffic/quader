@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"hash"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 // hashes are the four hash functions of the digest set (R-STOR-002), advanced over the whole content of a session. Go's

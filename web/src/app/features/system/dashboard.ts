@@ -19,7 +19,7 @@ import { PageHeader } from '../../shared/ui/page-header';
  * the counts of content and access with the way to their screens. It refreshes like the status screen, with a pause.
  */
 @Component({
-  selector: 'trove-dashboard',
+  selector: 'quader-dashboard',
   imports: [PageHeader, DatePipe, DecimalPipe, NgTemplateOutlet, RouterLink, ErrorNotice],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',

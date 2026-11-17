@@ -9,8 +9,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 func valueOf(t *testing.T, g prometheus.Gauge) float64 {
@@ -24,7 +24,7 @@ func valueOf(t *testing.T, g prometheus.Gauge) float64 {
 
 func TestSpoolGauges(t *testing.T) {
 	const free = uint64(10 << 30)
-	t.Run("R-OPS-007 trove_spool_used_bytes is the budget held by running uploads and trove_spool_free_bytes the free space of the volume", func(t *testing.T) {
+	t.Run("R-OPS-007 quader_spool_used_bytes is the budget held by running uploads and quader_spool_free_bytes the free space of the volume", func(t *testing.T) {
 		m := NewMetrics(observability.NewMetrics("packages"))
 		sp := newSpool(t, func(c *config.StorageSpool) { c.MaxBytes = 64 << 20 },
 			WithSpoolMetrics(m), WithFreeBytes(func(string) (uint64, error) { return free, nil }))
@@ -67,7 +67,7 @@ func TestSpoolGauges(t *testing.T) {
 }
 
 func TestGCLastSuccess(t *testing.T) {
-	t.Run("R-OPS-007 trove_gc_last_success_timestamp_seconds holds the end of the last successful run in seconds", func(t *testing.T) {
+	t.Run("R-OPS-007 quader_gc_last_success_timestamp_seconds holds the end of the last successful run in seconds", func(t *testing.T) {
 		m := NewMetrics(observability.NewMetrics("worker"))
 		if n := testCount(m.gcLastOK); n != 0 {
 			t.Fatalf("%d series before any run, want none: an install that never ran GC must not report a time of 0", n)

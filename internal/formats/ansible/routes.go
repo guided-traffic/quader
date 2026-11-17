@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The names of the routes (R-ANS-003 to R-ANS-009, R-ANS-020): "ansible.<resource>.<operation>". The request log and the metrics

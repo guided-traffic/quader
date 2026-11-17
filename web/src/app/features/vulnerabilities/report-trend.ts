@@ -77,7 +77,7 @@ export function trendGeometry(trend: VulnerabilityTrend): TrendGeometry {
  * chart is an image with a text alternative; the table is the accessible form of the data.
  */
 @Component({
-  selector: 'trove-vuln-trend',
+  selector: 'quader-vuln-trend',
   imports: [DecimalPipe, ErrorNotice],
   template: `
     <section class="vuln-trend" aria-labelledby="vuln-trend-title">
@@ -100,7 +100,7 @@ export function trendGeometry(trend: VulnerabilityTrend): TrendGeometry {
       </div>
       <div id="vuln-trend-body">
         @if (failure(); as f) {
-          <trove-error-notice [error]="f" (retry)="trend.reload()" />
+          <quader-error-notice [error]="f" (retry)="trend.reload()" />
         } @else if (!trend.hasValue()) {
           <p role="status" i18n="@@vuln.trend.loading">Loading the trend.</p>
         } @else if (asTable()) {

@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The method listing: the catalog of the distribution API, `GET /v2/_catalog` (oci.md "Mirror discovery"). A registry that offers it

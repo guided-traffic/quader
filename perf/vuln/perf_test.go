@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -45,8 +45,8 @@ const (
 
 // newInstallation starts the advisory source with the dumps of the size of the real ones, creates the stack and seeds the
 // 100,000 stored versions in SQL: a version is a package row and a version row, which is all the scanning reads (R-VULN-001).
-// The packages are named like the stub's filler records (trove-test-filler-NNNN; trove.test.fillerNNNN, displayed as
-// Trove.Test.FillerNNNN), so that the version 1.0.0 of every package is affected by one record and the others by none: 10 % of
+// The packages are named like the stub's filler records (quader-test-filler-NNNN; quader.test.fillerNNNN, displayed as
+// Quader.Test.FillerNNNN), so that the version 1.0.0 of every package is affected by one record and the others by none: 10 % of
 // the stored versions get a finding, 10,000.
 func newInstallation(t *testing.T) *installation {
 	t.Helper()
@@ -68,14 +68,14 @@ func newInstallation(t *testing.T) *installation {
 		t.Fatal(err)
 	}
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnperf", Env: []string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_VULNERABILITIES_SOURCES_OSV_BASE_URL=" + run.URL + "/",
-		"TROVE_VULNERABILITIES_SOURCES_KEV_MODE=off",
-		"TROVE_VULNERABILITIES_SOURCES_OSV_TIMEOUT=30m",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_VULNERABILITIES_SOURCES_OSV_BASE_URL=" + run.URL + "/",
+		"QUADER_VULNERABILITIES_SOURCES_KEV_MODE=off",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_TIMEOUT=30m",
 		// A worker enqueues the latest due slot of its tasks when it starts, and a running vuln-sync-osv makes the
 		// run of V-1 answer 409 (one OSV sync at a time, R-VULN-004): the test decides when the sync runs.
-		`TROVE_MAINTENANCE_TASKS={"vuln-sync-osv":{"enabled":false,"schedule":"*/15 * * * *"},"vuln-sync-osv-full":{"enabled":false,"schedule":"17 3 * * 0"},"vuln-sync-kev":{"enabled":false,"schedule":"41 */6 * * *"}}`,
+		`QUADER_MAINTENANCE_TASKS={"vuln-sync-osv":{"enabled":false,"schedule":"*/15 * * * *"},"vuln-sync-osv-full":{"enabled":false,"schedule":"17 3 * * 0"},"vuln-sync-kev":{"enabled":false,"schedule":"41 */6 * * *"}}`,
 	}})
 	in := &installation{t: t, st: st, stub: stub, active: activeStates(t, st), requests: testenv.NewRequestTransactions()}
 	in.admin, in.grantee = st.User("rita"), st.User("grace")
@@ -89,7 +89,7 @@ func newInstallation(t *testing.T) *installation {
 	st.Policy("perf-readers", []string{"read"}, []string{repoNPMLocal, repoNPMRemote, repoNuGet}, in.grantee)
 	// The grantee holds package-pattern grants (R-AUTHZ-005): the findings list narrows to them in SQL (V-7).
 	pol := st.Text(`SELECT id::text FROM authz_policy WHERE name = 'perf-readers'`)
-	st.Exec(`INSERT INTO authz_policy_pattern (policy_id, dimension, mode, pattern) VALUES ($1::uuid, 'package', 'include', 'trove-test-filler-0*'), ($1::uuid, 'package', 'include', 'Trove.Test.Filler00*')`, pol)
+	st.Exec(`INSERT INTO authz_policy_pattern (policy_id, dimension, mode, pattern) VALUES ($1::uuid, 'package', 'include', 'quader-test-filler-0*'), ($1::uuid, 'package', 'include', 'Quader.Test.Filler00*')`, pol)
 
 	start := time.Now()
 	in.seed()
@@ -129,9 +129,9 @@ func (in *installation) seed() {
 			       $2::text || lpad(g::text, 4, '0')
 			  FROM repositories r, generate_series($3::int, $4::int) g WHERE r.key = $1`, repo, prefix, from, to-1)
 	}
-	pkgs(repoNPMLocal, "trove-test-filler-", 0, npmPackages/2)
-	pkgs(repoNPMRemote, "trove-test-filler-", npmPackages/2, npmPackages)
-	pkgs(repoNuGet, "Trove.Test.Filler", 0, nugetPackages)
+	pkgs(repoNPMLocal, "quader-test-filler-", 0, npmPackages/2)
+	pkgs(repoNPMRemote, "quader-test-filler-", npmPackages/2, npmPackages)
+	pkgs(repoNuGet, "Quader.Test.Filler", 0, nugetPackages)
 	st.Exec(`INSERT INTO package_versions (package_id, version, display_version)
 		SELECT p.id, '1.' || v || '.0', '1.' || v || '.0' FROM packages p, generate_series(0, $1::int) v`, versionsPerPkg-1)
 }
@@ -272,7 +272,7 @@ func (in *installation) saveLogs(t *testing.T) string {
 }
 
 // TestR_VULN_028_PerformanceRun is the run of R-VULN-028: V-1 to V-9 in order, each recorded in .out/perf-vuln.json.
-// Without TROVE_PERF_GATE=1 it reports; with it a value above its target fails the test (the nightly workflow sets it). A
+// Without QUADER_PERF_GATE=1 it reports; with it a value above its target fails the test (the nightly workflow sets it). A
 // scenario that does not finish fails the test either way and is recorded as not finished. V-2 and V-9 need V-1's import;
 // every later scenario needs V-1 and V-2, because it measures an installation that is imported and evaluated: a scenario
 // whose need did not finish is recorded as not measured and does not run.
@@ -350,14 +350,14 @@ func TestR_VULN_028_PerformanceRun(t *testing.T) {
 	// publish, its _sum and _count move by that one call's duration, so the p99 is read from 300 exact samples and not from
 	// a bucket (F-43). The histogram stays what production reads; its bucket bound is noted beside the exact value.
 	rep.scenario(t, "V-4 evaluation on publish", []string{"V-4"}, evaluated, func(t *testing.T) {
-		const metric, series = "trove_vuln_evaluation_duration_seconds", `trigger="publish"`
+		const metric, series = "quader_vuln_evaluation_duration_seconds", `trigger="publish"`
 		sum, count, _ := histogramTotals(web.Metrics(t), metric, series)
 		var samples []time.Duration
 		repeated := 0
 		for i := range publishes {
-			name := fmt.Sprintf("trove-test-filler-%04d", 100000+i) // not in the dump: the common case of a publish
+			name := fmt.Sprintf("quader-test-filler-%04d", 100000+i) // not in the dump: the common case of a publish
 			if i%10 == 0 {
-				name = fmt.Sprintf("trove-test-filler-%04d", i) // one in ten has an advisory (version 1.0.0 is affected)
+				name = fmt.Sprintf("quader-test-filler-%04d", i) // one in ten has an advisory (version 1.0.0 is affected)
 			}
 			publish(t, in, web, repoNPMLocal, name, fmt.Sprintf("1.%d.0", 20+i))
 			nextSum, nextCount, ok := histogramTotals(web.Metrics(t), metric, series)
@@ -385,7 +385,7 @@ func TestR_VULN_028_PerformanceRun(t *testing.T) {
 	// background of the database and with when PostgreSQL publishes its counters, so it is not the value, but it also sees
 	// work a download would leave to a context without its request ID.
 	rep.scenario(t, "V-5 block check on a cached download", []string{"V-5a", "V-5b"}, evaluated, func(t *testing.T) {
-		off := in.web("web-off", "TROVE_VULNERABILITIES_ENABLED=false")
+		off := in.web("web-off", "QUADER_VULNERABILITIES_ENABLED=false")
 		name := "perf-cached"
 		publish(t, in, web, repoNPMLocal, name, "1.0.0")
 		path := fmt.Sprintf("/api/npm/%s/%s/%s/-/%s-1.0.0.tgz", testenv.DefaultProject, repoNPMLocal, name, name)
@@ -434,7 +434,7 @@ func TestR_VULN_028_PerformanceRun(t *testing.T) {
 	rep.scenario(t, "V-6 npm local audit of a 1,000-package lockfile", []string{"V-6"}, evaluated, func(t *testing.T) {
 		body := map[string][]string{}
 		for i := range auditPackages {
-			body[fmt.Sprintf("trove-test-filler-%04d", i)] = []string{"1.0.0"}
+			body[fmt.Sprintf("quader-test-filler-%04d", i)] = []string{"1.0.0"}
 		}
 		raw, _ := json.Marshal(body)
 		var samples []time.Duration

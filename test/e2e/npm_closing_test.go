@@ -5,7 +5,7 @@ package e2e
 // The additions of the full run of Test and Release on the commit that closes the phase (roadmap M2, E2.1, E2.2 and
 // R-NPM-045): the scenario list and the cold-cache install again with Valkey stopped, and the read-only subset against
 // the public registry. The workflow starts them only when it is dispatched with closing=true (Q-NPM-46); a run of
-// them without TROVE_E2E_NPM_CLOSING=1 is a failure, never a skip, so they cannot go missing from the closing run.
+// them without QUADER_E2E_NPM_CLOSING=1 is a failure, never a skip, so they cannot go missing from the closing run.
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ import (
 
 func requireClosingRun(t testing.TB) {
 	t.Helper()
-	if os.Getenv("TROVE_E2E_NPM_CLOSING") != "1" {
+	if os.Getenv("QUADER_E2E_NPM_CLOSING") != "1" {
 		t.Fatal("this test belongs to the closing run: start it with `deploy/dev/e2e.sh npm-closing` (the workflow's closing=true dispatch)")
 	}
 }

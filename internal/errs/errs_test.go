@@ -119,7 +119,7 @@ func TestWriteProblem(t *testing.T) {
 		}
 	})
 	t.Run("R-ARCH-023 a plain error becomes internal and hides its cause", func(t *testing.T) {
-		rec, p, logs := render(errors.New("pq: password authentication failed for user trove"))
+		rec, p, logs := render(errors.New("pq: password authentication failed for user quader"))
 		if rec.Code != 500 || p.Code != "internal" {
 			t.Fatalf("status %d code %q", rec.Code, p.Code)
 		}
@@ -147,8 +147,8 @@ func TestWriteProblem(t *testing.T) {
 		}
 	})
 	t.Run("R-ARCH-023 unauthenticated carries WWW-Authenticate", func(t *testing.T) {
-		rec, _, _ := render(E(Unauthenticated, CodeUnauthenticated, "", WithChallenge(`Bearer realm="trove"`)))
-		if rec.Code != 401 || rec.Header().Get("WWW-Authenticate") != `Bearer realm="trove"` {
+		rec, _, _ := render(E(Unauthenticated, CodeUnauthenticated, "", WithChallenge(`Bearer realm="quader"`)))
+		if rec.Code != 401 || rec.Header().Get("WWW-Authenticate") != `Bearer realm="quader"` {
 			t.Fatalf("status %d header %q", rec.Code, rec.Header().Get("WWW-Authenticate"))
 		}
 	})

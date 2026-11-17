@@ -14,8 +14,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // ruleDef describes one exposure rule of a fixture.
@@ -361,7 +361,7 @@ func TestR_EP_013_ExposureCeiling(t *testing.T) {
 			t.Fatalf("default lists %v", all)
 		}
 		if v := metricValue(t, e.m.hidden.WithLabelValues("customers", "item")); v != 2 {
-			t.Fatalf("trove_exposure_hidden_total{kind=item} = %v, want 2", v)
+			t.Fatalf("quader_exposure_hidden_total{kind=item} = %v, want 2", v)
 		}
 	})
 	t.Run("R-EP-009 the exposure metrics count refusals per endpoint and the enabled rules of the index", func(t *testing.T) {
@@ -369,10 +369,10 @@ func TestR_EP_013_ExposureCeiling(t *testing.T) {
 			t.Fatal("no refusal counted")
 		}
 		if v := metricValue(t, e.m.rules.WithLabelValues("customers")); v != 3 {
-			t.Fatalf("trove_exposure_rules{customers} = %v, want 3 enabled rules", v)
+			t.Fatalf("quader_exposure_rules{customers} = %v, want 3 enabled rules", v)
 		}
 		if v := metricValue(t, e.m.rules.WithLabelValues("default")); v != 0 {
-			t.Fatalf("trove_exposure_rules{default} = %v", v)
+			t.Fatalf("quader_exposure_rules{default} = %v", v)
 		}
 	})
 	t.Run("R-EP-012 R-AUTHZ-028 a rule change takes effect with the next index", func(t *testing.T) {
@@ -511,7 +511,7 @@ var ceilingShapes = []struct {
 // on an endpoint at the 1 ms target of R-AUTHZ-015. The per-change run asserts what
 // does not depend on the load of the machine: the allocations of one decision,
 // which were 16,042 when every pattern match built its own slices (Q-EP-64), and
-// the median. The p99 bound is enforced with TROVE_PERF_GATE=1, which
+// the median. The p99 bound is enforced with QUADER_PERF_GATE=1, which
 // `make test-performance` sets in the nightly run (Q-ARCH-220, Q-ARCH-250), and it
 // is the p99 of the CPU time of the deciding thread, not of the wall clock
 // (Q-EP-65); without the gate the p99 is logged. The race detector slows a
@@ -550,10 +550,10 @@ func TestR_EP_013_CeilingPerformance(t *testing.T) {
 			}
 			switch {
 			case p99 <= time.Millisecond:
-			case os.Getenv("TROVE_PERF_GATE") == "1":
+			case os.Getenv("QUADER_PERF_GATE") == "1":
 				t.Errorf("p99 %s (%s) is above the 1 ms target of R-AUTHZ-015", p99, cpuClock)
 			default:
-				t.Logf("p99 %s is above 1 ms; enforced with TROVE_PERF_GATE=1 (Q-ARCH-250)", p99)
+				t.Logf("p99 %s is above 1 ms; enforced with QUADER_PERF_GATE=1 (Q-ARCH-250)", p99)
 			}
 		})
 	}

@@ -6,7 +6,7 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
 )
 
 // The thresholds of R-BAS-031: a sweep acts above 95 % of a limit and deletes until 85 % remain.
@@ -42,7 +42,7 @@ func sweepLease(src LeaseSource) SweepLease {
 func percent(limit, p int64) int64 { return limit * p / 100 }
 
 // SweepOnce is one cycle of R-BAS-031 for this replica: it measures what the backend holds, publishes
-// trove_bastion_cache_bytes, and evicts by last access in each area above 95 % of its limit down to 85 %. With
+// quader_bastion_cache_bytes, and evicts by last access in each area above 95 % of its limit down to 85 %. With
 // the bucket backend and Valkey only the replica that holds the sweep lease runs it; without Valkey every
 // replica does, which is safe because a sweep only deletes. With the volume backend each replica sweeps its own
 // volume. src may be nil, which is a replica without shared state.

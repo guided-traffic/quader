@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // invalid is the 502 npm_invalid_upstream_document of R-NPM-024.

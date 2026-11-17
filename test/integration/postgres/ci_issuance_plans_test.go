@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // The issuance statements on a seeded table (R-CI-020, R-HA-018, Q-CI-53): migrations 00029 to 00031 are expand
@@ -67,7 +67,7 @@ func TestCIIssuanceIndexes(t *testing.T) {
 	ensureRuntimeRole(t, st)
 	_, _, admin := migrated(t, st)
 	ctx := context.Background()
-	mustExec(t, admin, "SET search_path = trove, public")
+	mustExec(t, admin, "SET search_path = quader, public")
 
 	t.Run("R-HA-018 the index steps are expand steps of one concurrent statement and the indexes exist", func(t *testing.T) {
 		steps, err := postgres.EmbeddedSteps()

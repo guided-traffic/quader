@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/proxy/invalidation"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/proxy/invalidation"
 )
 
 // AreaInvalidation is the cache invalidation of remote repositories.

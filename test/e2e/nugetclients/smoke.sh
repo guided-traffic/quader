@@ -9,16 +9,16 @@
 #      and `nuget install` fetch a package from the counting NuGet test upstream (test/nugetstub),
 #   5. without the CA both refuse the certificate (so 4 proves the trust logic and not a lax client).
 #
-#   smoke.sh [image]    default image trove-e2e-nugetclients:dev (build it first: make nuget-clients-image)
+#   smoke.sh [image]    default image quader-e2e-nugetclients:dev (build it first: make nuget-clients-image)
 #
-# Needs Docker and the stub image (make nuget-stub-image IMAGE_ARCH=<arch>, tag trove-e2e-nugetstub:dev; STUB_IMAGE
+# Needs Docker and the stub image (make nuget-stub-image IMAGE_ARCH=<arch>, tag quader-e2e-nugetstub:dev; STUB_IMAGE
 # overrides). `make nuget-clients-smoke` builds both and runs this.
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../deploy/dev" && pwd)/lib.sh"
 
-image="${1:-trove-e2e-nugetclients:dev}"
-stub_image="${STUB_IMAGE:-trove-e2e-nugetstub:dev}"
+image="${1:-quader-e2e-nugetclients:dev}"
+stub_image="${STUB_IMAGE:-quader-e2e-nugetstub:dev}"
 port=8443
 id=Contoso.Util
 version=2.1.0
@@ -58,14 +58,14 @@ docker run -d --name "$run-stub" --network "$net" --network-alias nugetstub -v "
 for _ in $(seq 1 50); do [ -s "$tmp/ca.crt" ] && break; sleep 0.2; done
 [ -s "$tmp/ca.crt" ] || { docker logs "$run-stub" >&2; die "the stub wrote no CA"; }
 
-# The pod's shape: non-root user of the image, read-only root, the CA read-only at /etc/trove-ca/ca.crt, SSL_CERT_FILE in the environment.
+# The pod's shape: non-root user of the image, read-only root, the CA read-only at /etc/quader-ca/ca.crt, SSL_CERT_FILE in the environment.
 docker run -d --name "$run-clients" --network "$net" --read-only \
   --tmpfs /tmp:rw,mode=1777,size=512m --tmpfs /work:rw,uid=1000,gid=1000,size=1g \
   --cap-drop ALL --security-opt no-new-privileges \
-  -v "$tmp/ca.crt:/etc/trove-ca/ca.crt:ro" -e SSL_CERT_FILE=/tmp/trove-ca/bundle.crt \
+  -v "$tmp/ca.crt:/etc/quader-ca/ca.crt:ro" -e SSL_CERT_FILE=/tmp/quader-ca/bundle.crt \
   "$image" -listen "127.0.0.1:$port" -to "nugetstub:$port" >/dev/null
-for _ in $(seq 1 50); do cx test -f /tmp/trove-ca/ready 2>/dev/null && break; sleep 0.2; done
-cx test -f /tmp/trove-ca/ready || { docker logs "$run-clients" >&2; die "the clients container did not become ready"; }
+for _ in $(seq 1 50); do cx test -f /tmp/quader-ca/ready 2>/dev/null && break; sleep 0.2; done
+cx test -f /tmp/quader-ca/ready || { docker logs "$run-clients" >&2; die "the clients container did not become ready"; }
 
 url="https://localhost:$port/v3/index.json"
 work=/work/smoke
@@ -76,7 +76,7 @@ check "dotnet --info names SDK $(printf '%s' "$E2E_NUGETCLIENTS_SDK_IMAGE" | sed
 check "nuget.exe on Mono prints $E2E_NUGETCLIENTS_NUGET_EXE_VERSION" bash -c \
   "docker exec $run-clients nuget help | head -1 | grep -F 'NuGet Version: $E2E_NUGETCLIENTS_NUGET_EXE_VERSION.'"
 check "the bundle holds the system roots and the CA" bash -c \
-  "docker exec $run-clients cat /tmp/trove-ca/bundle.crt | grep -c 'BEGIN CERTIFICATE' | awk '{exit !(\$1 > 50)}' && docker exec $run-clients grep -qF \"\$(sed -n 2p '$tmp/ca.crt')\" /tmp/trove-ca/bundle.crt"
+  "docker exec $run-clients cat /tmp/quader-ca/bundle.crt | grep -c 'BEGIN CERTIFICATE' | awk '{exit !(\$1 > 50)}' && docker exec $run-clients grep -qF \"\$(sed -n 2p '$tmp/ca.crt')\" /tmp/quader-ca/bundle.crt"
 check "the Mono store was filled for the pod user" bash -c \
   "docker exec $run-clients sh -c 'ls /work/.config/.mono/certs/Trust | wc -l' | awk '{exit !(\$1 > 50)}'"
 

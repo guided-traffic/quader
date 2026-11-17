@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/debstub"
+	"github.com/guided-traffic/quader/test/debstub"
 )
 
 // debVirtualBuilt says whether the virtual class of the Debian format is on main. While it is not, the row is skipped, with this reason.
@@ -46,7 +46,7 @@ func TestDebVirtual(t *testing.T) {
 
 	// a package only the local member has, and a name the remote serves in a higher version: the first upload claims it
 	only := newDebPackage(t, fx.name("virt"), "1.0")
-	claimed := newDebPackage(t, "trove-tools", "0.1")
+	claimed := newDebPackage(t, "quader-tools", "0.1")
 	seq := fx.upload(t, local, only, debSuite)
 	fx.awaitPublished(t, local, debSuite, seq)
 	fx.awaitPublished(t, local, debSuite, fx.upload(t, local, claimed, debSuite))
@@ -56,7 +56,7 @@ func TestDebVirtual(t *testing.T) {
 	arch := aptArch(t, aptDebian13)
 	waitFor(t, "the merged index of "+virtual+" to list the packages of both members", 5*time.Minute, 2*time.Second, func() bool {
 		idx, ok := fx.mergedPackages(t, virtual, arch)
-		return ok && strings.Contains(idx, "Package: "+only.name+"\n") && strings.Contains(idx, "Package: trove-hello\n")
+		return ok && strings.Contains(idx, "Package: "+only.name+"\n") && strings.Contains(idx, "Package: quader-hello\n")
 	})
 
 	for _, img := range aptImages {
@@ -66,11 +66,11 @@ func TestDebVirtual(t *testing.T) {
 			c.mustUpdate()
 			c.mustInstallAndRun(only.name+"="+only.version, only.name, only.line())
 			// a package of the remote member (with its dependency)
-			if out, err := c.install("trove-hello"); err != nil {
-				t.Fatalf("apt-get install trove-hello on %s: %v\n%s", img.name, err, tailLines(out, 30))
+			if out, err := c.install("quader-hello"); err != nil {
+				t.Fatalf("apt-get install quader-hello on %s: %v\n%s", img.name, err, tailLines(out, 30))
 			}
-			if out := c.must(`/usr/bin/trove-hello`); !strings.HasPrefix(trimLine(out), "hello from trove-hello ") {
-				t.Fatalf("trove-hello printed %q", trimLine(out))
+			if out := c.must(`/usr/bin/quader-hello`); !strings.HasPrefix(trimLine(out), "hello from quader-hello ") {
+				t.Fatalf("quader-hello printed %q", trimLine(out))
 			}
 		})
 
@@ -78,14 +78,14 @@ func TestDebVirtual(t *testing.T) {
 			c := fx.client(t, img)
 			c.configure(virtual)
 			c.mustUpdate()
-			c.mustInstallAndRun("trove-tools", claimed.name, claimed.line())
+			c.mustInstallAndRun("quader-tools", claimed.name, claimed.line())
 		})
 	}
 
 	t.Run("R-DEB-025 the merged index of an architecture lists the architecture all packages the stub keeps in binary-all only", func(t *testing.T) {
 		idx, ok := fx.mergedPackages(t, virtual, arch)
-		if !ok || countParagraphs(idx, "trove-config") != 1 {
-			t.Fatalf("the merged Packages of %s lists trove-config %d times, want once (ok=%v)", arch, countParagraphs(idx, "trove-config"), ok)
+		if !ok || countParagraphs(idx, "quader-config") != 1 {
+			t.Fatalf("the merged Packages of %s lists quader-config %d times, want once (ok=%v)", arch, countParagraphs(idx, "quader-config"), ok)
 		}
 	})
 
@@ -94,8 +94,8 @@ func TestDebVirtual(t *testing.T) {
 		if !ok {
 			t.Fatal("the merged Packages.gz is not served")
 		}
-		if n := countParagraphs(idx, "trove-tools"); n != 1 {
-			t.Fatalf("the merged Packages lists trove-tools %d times, want once:\n%.2000s", n, idx)
+		if n := countParagraphs(idx, "quader-tools"); n != 1 {
+			t.Fatalf("the merged Packages lists quader-tools %d times, want once:\n%.2000s", n, idx)
 		}
 		if !strings.Contains(idx, "members/"+local+"/") {
 			t.Errorf("the merged Packages names no file of the member %s", local)

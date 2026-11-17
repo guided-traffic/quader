@@ -1,0 +1,37 @@
+{{- if and .Values.tls.enabled .Values.tls.backendTLSPolicy.enabled }}
+{{- /*
+How a Gateway API implementation verifies quader (R-HA-063): one policy per Service the default
+endpoint's edge may route to (templates/_edge.tpl quader.edgeBackendServices: <fullname>-api,
+<fullname>-packages and the Services of the path pools; beside them <fullname> for as long as
+web.enabled keeps the bridge of R-HA-064, so a route outside the chart can move between the two at any
+point of the cut), named as the Service. Every policy targets the Service
+port http and verifies the name <fullname>.<namespace>.svc, the name the listener certificate
+carries (R-HA-037). The CA reference is a ConfigMap: Gateway API takes no Secret here. The chart
+creates neither the ConfigMap nor the CRD.
+*/ -}}
+{{- range $svc := include "quader.edgeBackendServices" . | fromYamlArray }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: {{ $svc }}
+  labels:
+    {{- include "quader.labels" (dict "root" $ "component" "ingress") | nindent 4 }}
+  {{- with (include "quader.commonAnnotations" $) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: {{ $svc }}
+      sectionName: http
+  validation:
+    hostname: {{ default (printf "%s.%s.svc" (include "quader.fullname" $) $.Release.Namespace) $.Values.tls.backendTLSPolicy.hostname | quote }}
+    caCertificateRefs:
+      - group: ""
+        kind: ConfigMap
+        name: {{ $.Values.tls.backendTLSPolicy.caConfigMapName }}
+{{- end }}
+{{- end }}

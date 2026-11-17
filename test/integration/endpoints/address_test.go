@@ -20,11 +20,11 @@ func TestR_REPO_001_ARepositoryIsAddressedByProjectAndKey(t *testing.T) {
 	r := e.start("a")
 	put := func(path, content string) {
 		t.Helper()
-		if a := e.send(r.def, "trove.test", "PUT", path, e.opsPAT, []byte(content), "Content-Type", "application/octet-stream"); a.Status != 201 {
+		if a := e.send(r.def, "quader.test", "PUT", path, e.opsPAT, []byte(content), "Content-Type", "application/octet-stream"); a.Status != 201 {
 			t.Fatalf("PUT %s: %d %s", path, a.Status, a.Body)
 		}
 	}
-	get := func(tok, path string) answer { return e.send(r.def, "trove.test", "GET", path, tok, nil) }
+	get := func(tok, path string) answer { return e.send(r.def, "quader.test", "GET", path, tok, nil) }
 
 	t.Run("R-REPO-001 the same key in two projects is two repositories", func(t *testing.T) {
 		put("/files/ops/generic-local/shared.txt", "from ops")

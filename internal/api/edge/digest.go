@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/items"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/items"
 )
 
 // ParseReprDigest reads the Repr-Digest header of an upload (RFC 9530, R-STOR-007):

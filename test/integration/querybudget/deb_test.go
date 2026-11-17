@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/debstub/debgen"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // R-ARCH-027, R-DEB-035: a download from a local Debian repository costs one PostgreSQL statement on every route that serves a stored
@@ -17,7 +17,7 @@ import (
 func TestR_ARCH_027_ADebianDownloadCostsOneStatement(t *testing.T) {
 	e := newEnv(t)
 	e.st.LogStatements(t)
-	r := e.st.Start(t, testenv.ReplicaOptions{Name: "web-1", Role: "all", Env: []string{"TROVE_DEB_INDEX_DELAY=1s"}})
+	r := e.st.Start(t, testenv.ReplicaOptions{Name: "web-1", Role: "all", Env: []string{"QUADER_DEB_INDEX_DELAY=1s"}})
 
 	keys := "/api/v1/projects/it/repositories/" + rDeb + "/deb/signing-keys"
 	if a := e.st.Do(r, "POST", keys, e.tokAdmin, map[string]any{"generate": true}); a.Status/100 != 2 {

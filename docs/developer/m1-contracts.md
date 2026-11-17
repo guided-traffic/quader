@@ -75,7 +75,7 @@ Rules that follow:
 | `httpserver.Principal`, `Credential` (its `Scope` is the `*scope.Scope` of [internal/auth/scope](../../internal/auth/scope/scope.go)), `GroupRef`, `PrincipalKind`, `AuthMethod`, `TokenType`, `AnonymousPrincipal()` | [principal.go](../../internal/httpserver/principal.go) | the value the chain stores; `Anonymous` stays, `Name` stays | WP1.2 fills it |
 | `auth.Authenticator`, `Result`, `Credential`, `EndpointRules`, `Method` | [auth.go](../../internal/auth/auth.go) | the authentication stage: credential sources and precedence of R-AUTH-001 to a `Result` or a 401 | WP1.2 (stage), WP1.9 (`EndpointRules` content, R-EP-010) |
 | `principal.Store`, `Principal`, `Kind`, `Status`, `GroupRef`, `ErrNotFound` | [principal.go](../../internal/auth/principal/principal.go) | read side of the principal table, cache-backed | WP1.2 |
-| `principal.Provisioner`, `LoginClaims`, `GroupClaimState`, `ErrUsernameTaken`, `ErrNotProvisioned`, `ErrUserDisabled`, `ErrUsernameInvalid` | same, [errors.go](../../internal/auth/principal/errors.go) | the seam login -> identity: just-in-time user, group sync, `user.*` events in its own transaction. `LoginClaims` carries the identity key (`Issuer`, `Subject`), the mapped values, `Groups` (trove group names the provider's rules mapped) and the provider policy (`GroupSync`, `ClaimState`, `KeepOnMissing`, `CreateGroups`, `JIT`, `SyncUsername`, `Source`); a refused sign-in is one of the four errors, which the login maps to its failure reasons (Q-AUTH-21, Q-AUTH-36) | WP1.2 implements, WP1.1 calls |
+| `principal.Provisioner`, `LoginClaims`, `GroupClaimState`, `ErrUsernameTaken`, `ErrNotProvisioned`, `ErrUserDisabled`, `ErrUsernameInvalid` | same, [errors.go](../../internal/auth/principal/errors.go) | the seam login -> identity: just-in-time user, group sync, `user.*` events in its own transaction. `LoginClaims` carries the identity key (`Issuer`, `Subject`), the mapped values, `Groups` (Quader group names the provider's rules mapped) and the provider policy (`GroupSync`, `ClaimState`, `KeepOnMissing`, `CreateGroups`, `JIT`, `SyncUsername`, `Source`); a refused sign-in is one of the four errors, which the login maps to its failure reasons (Q-AUTH-21, Q-AUTH-36) | WP1.2 implements, WP1.1 calls |
 | `token.Validator`, `Info`, `Scope` and `ScopeGrant` (aliases of the `scope` leaf), `Type`, `Err*` | [token.go](../../internal/auth/token/token.go) | validation of a presented token (R-AUTH-023), scope as a ceiling | WP1.2 |
 | `session.Validator`, `Info`, `ErrInvalid`, `ErrCSRF` | [session.go](../../internal/auth/session/session.go) | resolves the session cookie, applies CSRF (R-AUTH-012); `session.Problem` maps both errors to 401 `session_expired` and 403 `csrf_failed`. WP1.1 added `AuthMethod`, `ProviderID`, `AuthenticatedAt` and `AuthenticatedWithin` (R-AUTH-011) to `Info`. `app.m1.sessions` is the `*session.Store` (set by `wireSessions` before `wireIdentity`), whose `EndForPrincipal` ends a user's sessions on a caller's transaction | WP1.1 |
 | `authz.Authorizer` (`Decide`, `Readable`, `Require`), `Subject`, `Coordinate`, `Decision`, `Outcome`, `Action`, `Capability`, `RequestKind` | [authz.go](../../internal/authz/authz.go) | the decision point; action constants of R-AUTHZ-006, capability names of R-AUTHZ-010 | WP1.3 |
@@ -120,7 +120,7 @@ Changes WP1.3 made to the contracts above (see [authorization.md](authorization.
 | `authz.Outcome` | `DenyEpochUnknown` (412 `authz_epoch_unknown`) appended after `DenyStale` |
 | `authz.Decision` | `Target` (the coordinate as the caller sent it) and `Sources` (policy names or `role:admin`) added; `Err()`, `Status()` and `Allowed()` are in [errors.go](../../internal/authz/errors.go) |
 | `authz.Authorizer` implementation | `*authz.Engine` is also the `authz.Decider` (`Begin` and the `…On` forms: one index per request, Q-AUTHZ-159), and offers `Check`, `Effective` and `RecordAllowed`; `authz.NotFound()` is the one 404 for hidden and missing resources |
-| `httpserver.Principal` | `MinEpoch int64`, the parsed `Trove-Authz-Min-Epoch` of an authenticated request (Q-AUTHZ-17); `edge.SubjectFrom` copies it |
+| `httpserver.Principal` | `MinEpoch int64`, the parsed `Quader-Authz-Min-Epoch` of an authenticated request (Q-AUTHZ-17); `edge.SubjectFrom` copies it |
 | `v1.Access` | `v1.NewAccess` takes the per-request `authz.Decider` and holds the request's `edge.Access`; `v1.ActionAccess` (`RequireAction`) is the optional second interface it implements for the action form. The services of the composition root (`RepositoryServices.Authz`, `EndpointServices.Authorizer`) are typed `authz.Decider` as well, so there is no conversion from `authz.Authorizer` (`v1.DeciderOf` is gone) |
 | wiring | the authz area (`wireAuthz`) takes no anonymous-switch input any more (R-AUTH-037); `App.publicContent` reads the installed index |
 | `permission` strings of `Require` | capability names, and `role:<role>` for the role form |
@@ -130,7 +130,7 @@ Changes of the leftover items of the backend (wave 3, [http-api.md](http-api.md)
 | Contract | Change |
 |---|---|
 | `errs` | `AnyRevision`, `StaleRevision`, `Stale(what, current)`, `CurrentRevision` ([revision.go](../../internal/errs/revision.go)): the one 412 with `currentEtag` and the one value of a blind write. `authz.AnyVersion`, `authz.StaleRevision`, `authz.IsStale`, `repository.StaleVersion` and `token.SettingsChangedError` are gone; `v1.Failed(current)` lost its `view` parameter |
-| `v1.Operation` | `RecentAuth` (from `x-trove-recent-auth: true`), `OwnerRights` (from `x-trove-owner-rights: required`, Q-API-214) and `IfMatchRequired`; `Server.authorize` enforces the first two after the permission |
+| `v1.Operation` | `RecentAuth` (from `x-quader-recent-auth: true`), `OwnerRights` (from `x-quader-owner-rights: required`, Q-API-214) and `IfMatchRequired`; `Server.authorize` enforces the first two after the permission |
 | `repository.Hooks` | `OnDelete(ctx, tx, caller, repo)` joins `OnUpdated`; `repository.MultiHooks`; `authz.ExposureHook` records the rules a deletion takes with it |
 | `principal` | `User`, `Group`, `ServiceAccount` carry `Revision`; `UserPatch.Expected`, `GroupPatch.Expected`, `UpdateServiceAccount(…, expected)`; `token.SettingsPatch.IfRevision` became `Expected` (zero matches no revision; `errs.AnyRevision` is the blind write) |
 | `v1.AuthServices` | `EndpointConfigured func(string) bool` for `unknownEndpoints` |
@@ -250,7 +250,7 @@ Paths are those the spec pages name; an owner does not rename them. All are unde
 
 Not decided by this page and left to the owner, with the spec as the reference: the settings page of
 authorization (R-AUTHZ-031), the `/system/*` read-only pages not listed above (operations-and-observability.md), and the
-form of the `x-trove-permission` of each operation (R-API-008).
+form of the `x-quader-permission` of each operation (R-API-008).
 
 ## Decisions taken with the contracts
 
@@ -315,7 +315,7 @@ Changes to the contracts above; the page of the area is [endpoints.md](endpoints
 | `authz.Ceiling` | `Admits(x *Index, c Coordinate, a Action)`: the ceiling is evaluated on the index the request decides on, because the exposure rules are compiled into it. `ExposureCeiling` (built from the configured modes) is the implementation; `NoCeiling` stays |
 | `authz.Coordinate` | `Version` (a coordinate that names one version) and `Addressed` (the repository the client named when `Repository` is a consulted member) added; exposure is decided on `Addressed`, else `Repository` |
 | request endpoint | `authz.Subject.Endpoint`: `edge.SubjectFrom` copies the listener's endpoint (Q-EP-20 (b)); every decision reads the ceiling from the subject. `WithEndpoint`, `EndpointOf` and `Coordinate.Endpoint` are gone; a content route needs no endpoint code of its own, and only `internal/authz` and `internal/api/edge` may build a `Subject` (archtest R-EP-013) |
-| `authz.Engine` | the ceiling runs first in `evaluate`, before the repository lookup; the families `trove_exposure_hidden_total` and `trove_exposure_rules` are registered when the ceiling names endpoints; `authz.denied` fills the event's `Endpoint` column |
+| `authz.Engine` | the ceiling runs first in `evaluate`, before the repository lookup; the families `quader_exposure_hidden_total` and `quader_exposure_rules` are registered when the ceiling names endpoints; `authz.denied` fills the event's `Endpoint` column |
 | `authz.Snapshot` | `Exposure []q.EndpointsExposureBuildRow`, read in the build's snapshot |
 | `auth.EndpointRules` | `Refused func(*http.Request, Refusal)` and the type `Refusal` (`RefusedTokenType`, `RefusedTokenBinding`, `RefusedAnonymous`); the stage calls it for each endpoint refusal. `endpointRules` in `m1_convert.go` fills every field from the configuration |
 | `token.rejected` | the schema of `events_identity.go` accepts reason `endpoint_not_accepted` and the members `refusal` and `tokenType` |

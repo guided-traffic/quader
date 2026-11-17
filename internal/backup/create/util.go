@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/backup"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/backup"
 )
 
 func actor() audit.Actor { return audit.Actor{Kind: "system", Name: "backup"} }

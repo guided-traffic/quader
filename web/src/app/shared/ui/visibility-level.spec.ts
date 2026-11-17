@@ -7,14 +7,14 @@ import { VisibilityIcon, VisibilityLevel, VisibilityLevelControl, aboveProjectRe
 @Component({
   imports: [VisibilityLevelControl, VisibilityIcon],
   template: `
-    <trove-visibility-level
+    <quader-visibility-level
       label="Artifacts"
       subject="artifacts"
       [(value)]="level"
       [reasons]="reasons()"
       [disabled]="locked()"
     />
-    <trove-visibility-icon level="internal" />
+    <quader-visibility-icon level="internal" />
   `,
 })
 class Host {
@@ -83,7 +83,7 @@ describe('The visibility level control (R-UI-053, R-UI-055, Q-UI-228)', () => {
 
   it('Q-UI-230 the icon has the level name as its accessible label', async () => {
     const { root } = await render();
-    const icon = root.querySelector('trove-visibility-icon [role="img"]')!;
+    const icon = root.querySelector('quader-visibility-icon [role="img"]')!;
     expect(icon.getAttribute('aria-label')).toBe('Internal');
     expect(icon.textContent?.trim()).toBe('shield');
   });

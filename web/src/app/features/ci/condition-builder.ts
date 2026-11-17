@@ -43,7 +43,7 @@ const OPERATOR_LABELS: Record<Operator, string> = {
  * The server's problems appear under the node they point at.
  */
 @Component({
-  selector: 'trove-ci-condition-node',
+  selector: 'quader-ci-condition-node',
   imports: [],
   template: `
     @let n = node();
@@ -143,7 +143,7 @@ const OPERATOR_LABELS: Record<Operator, string> = {
           @if (problem(); as text) {
             <p class="field-error">{{ text }}</p>
           }
-          <trove-ci-condition-node [node]="n.child" [path]="[...path(), 0]" [ctx]="c" />
+          <quader-ci-condition-node [node]="n.child" [path]="[...path(), 0]" [ctx]="c" />
         </div>
       }
       @default {
@@ -167,7 +167,7 @@ const OPERATOR_LABELS: Record<Operator, string> = {
             <p class="field-error" [id]="idOf('error')">{{ text }}</p>
           }
           @for (child of children(); track child.id; let i = $index) {
-            <trove-ci-condition-node [node]="child" [path]="[...path(), i]" [ctx]="c" />
+            <quader-ci-condition-node [node]="child" [path]="[...path(), i]" [ctx]="c" />
           }
           @if (children().length === 0) {
             <p class="muted" i18n="@@ci.cond.empty-group">This group is empty. A condition needs at least one entry in every group.</p>
@@ -181,11 +181,11 @@ const OPERATOR_LABELS: Record<Operator, string> = {
       display: block;
     }
     .group {
-      margin-block: var(--trove-space-2);
-      padding: var(--trove-space-2) var(--trove-space-3);
-      border: 1px solid var(--trove-border);
-      border-radius: var(--trove-radius-m);
-      background: var(--trove-surface-raised);
+      margin-block: var(--quader-space-2);
+      padding: var(--quader-space-2) var(--quader-space-3);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-m);
+      background: var(--quader-surface-raised);
     }
     .group.not {
       border-style: dashed;
@@ -194,25 +194,25 @@ const OPERATOR_LABELS: Record<Operator, string> = {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--trove-space-2);
-      margin-block-end: var(--trove-space-2);
+      gap: var(--quader-space-2);
+      margin-block-end: var(--quader-space-2);
     }
     .leaf {
-      margin-block: var(--trove-space-2);
-      padding: var(--trove-space-2);
-      border: 1px solid var(--trove-border);
-      border-radius: var(--trove-radius-s);
+      margin-block: var(--quader-space-2);
+      padding: var(--quader-space-2);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-s);
     }
     .leaf-row {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-3);
+      gap: var(--quader-space-3);
       align-items: flex-end;
     }
     .cell {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-1);
+      gap: var(--quader-space-1);
     }
     .cell.claim {
       flex: 1 1 12rem;
@@ -221,31 +221,31 @@ const OPERATOR_LABELS: Record<Operator, string> = {
       flex: 2 1 14rem;
     }
     label {
-      font: var(--trove-type-label-medium);
+      font: var(--quader-type-label-medium);
     }
     .text-input,
     .select-input {
       box-sizing: border-box;
       inline-size: 100%;
-      padding: var(--trove-space-2);
-      border: 1px solid var(--trove-border-strong);
-      border-radius: var(--trove-radius-s);
-      background: var(--trove-surface-raised);
-      color: var(--trove-on-surface);
+      padding: var(--quader-space-2);
+      border: 1px solid var(--quader-border-strong);
+      border-radius: var(--quader-radius-s);
+      background: var(--quader-surface-raised);
+      color: var(--quader-on-surface);
       font: inherit;
     }
     .fold {
       display: flex;
       align-items: center;
-      gap: var(--trove-space-1);
+      gap: var(--quader-space-1);
     }
     .field-error {
-      margin: var(--trove-space-1) 0 0;
-      color: var(--trove-status-bad);
-      font: var(--trove-type-body-small);
+      margin: var(--quader-space-1) 0 0;
+      color: var(--quader-status-bad);
+      font: var(--quader-type-body-small);
     }
     .muted {
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
     .material-icons {
       font-size: 1.125rem;
@@ -307,7 +307,7 @@ export class ConditionNode {
  * claim names the leaves suggest and applies the edits of its nodes to the tree it is given.
  */
 @Component({
-  selector: 'trove-ci-condition-builder',
+  selector: 'quader-ci-condition-builder',
   imports: [ConditionNode],
   template: `
     <datalist id="ci-claims">
@@ -315,7 +315,7 @@ export class ConditionNode {
         <option [value]="c"></option>
       }
     </datalist>
-    <trove-ci-condition-node [node]="value()" [path]="[]" [ctx]="context" />
+    <quader-ci-condition-node [node]="value()" [path]="[]" [ctx]="context" />
   `,
 })
 export class ConditionBuilder {

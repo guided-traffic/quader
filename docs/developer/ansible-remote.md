@@ -45,7 +45,7 @@ whole is [ansible.md](ansible.md).
 | [`hub.go`](../../internal/formats/ansible/hub.go) | `formats.CredentialExchanger`: the refresh-token grant at `ansible.authUrl` and the reading of its answer |
 | [`internal/repository/validate_ansible.go`](../../internal/repository/validate_ansible.go) | the rules of `ansible.authUrl` when a document is saved |
 | [`internal/proxy/credential_exchange.go`](../../internal/proxy/credential_exchange.go) | the engine's side of the exchange |
-| [`remote_bind.go`](../../internal/formats/ansible/remote_bind.go) | `Bind`: the replica's configuration and metrics (`trove_ansible_role_versions_dropped_total`, `trove_ansible_document_bytes`) |
+| [`remote_bind.go`](../../internal/formats/ansible/remote_bind.go) | `Bind`: the replica's configuration and metrics (`quader_ansible_role_versions_dropped_total`, `quader_ansible_document_bytes`) |
 | [`internal/formatdata/ansible/remote_store.go`](../../internal/formatdata/ansible/remote_store.go) | `RecordAnnounced`, `Announced`, `AnnouncedNames` on `ansible_upstream_versions` (migration 00070, [ansible_remote.sql](../../internal/meta/postgres/queries/ansible_remote.sql)) |
 | [`remote_tables.go`](../../internal/formatdata/ansible/remote_tables.go), [`remote_purge.go`](../../internal/formatdata/ansible/remote_purge.go), [`internal/backup/fixup/ansible_remote.go`](../../internal/backup/fixup/ansible_remote.go) | the table's export class and the purge of a restore without remote caches |
 | [`test/integration/ansibleremote`](../../test/integration/ansibleremote) | the area: one request per document, paging, rewriting, digests, roles, credentials |
@@ -104,7 +104,7 @@ command. It answers over TLS only ([R-ANS-032](../spec/formats/ansible.md#r-ans-
 | [`counts.go`](../../test/ansiblestub/counts.go), [`inflight.go`](../../test/ansiblestub/inflight.go), [`control.go`](../../test/ansiblestub/control.go) | counters, open requests, the control API |
 | [`ansiblegen/`](../../test/ansiblestub/ansiblegen) | collection archives (with `MANIFEST.json` and `FILES.json`) and role archives, byte-for-byte deterministic |
 | [`cmd/ansiblestub`](../../test/ansiblestub/cmd/ansiblestub), [`Containerfile`](../../test/ansiblestub/Containerfile) | the program and its image (`make ansible-stub-image`) |
-| [`deploy/dev/ansiblestub.yaml`](../../deploy/dev/ansiblestub.yaml) | the manifest of the e2e harness (wired by the `ansible` set, `TROVE_E2E_ANSIBLESTUB=1`) |
+| [`deploy/dev/ansiblestub.yaml`](../../deploy/dev/ansiblestub.yaml) | the manifest of the e2e harness (wired by the `ansible` set, `QUADER_E2E_ANSIBLESTUB=1`) |
 
 ### What it serves
 
@@ -185,8 +185,8 @@ defer run.Close()
 
 As a process: `go run ./test/ansiblestub/cmd/ansiblestub serve -self-signed galaxy.localhost,github.localhost,codeload.localhost,unlisted.localhost,sso.localhost,localhost,127.0.0.1 -ca-out /tmp/ca.crt -control-token-file token`.
 As a container: `make ansible-stub-image`, then [`deploy/dev/ansiblestub.yaml`](../../deploy/dev/ansiblestub.yaml) (five Services on one pod, a control token in
-Secret `trove-ansiblestub`). The control API is `/-/stub/` with `Authorization: Bearer <token>`; the list of its requests is in
+Secret `quader-ansiblestub`). The control API is `/-/stub/` with `Authorization: Bearer <token>`; the list of its requests is in
 [`control.go`](../../test/ansiblestub/control.go).
 
-The stub generates and compares versions with its own code (`semver.go`, `ansiblegen`), independent of trove's packages, so a defect in
-trove's version order or archive reader does not hide in the test upstream.
+The stub generates and compares versions with its own code (`semver.go`, `ansiblegen`), independent of Quader's packages, so a defect in
+Quader's version order or archive reader does not hide in the test upstream.

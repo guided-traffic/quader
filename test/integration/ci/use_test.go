@@ -26,13 +26,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // ciIssuerName is the issuer of the use-time tests.
@@ -72,7 +72,7 @@ func newCIEnvWith(t *testing.T, o options, mappings ...string) *ciEnv {
 	st.Repository("nuget-internal", "local", "nuget", `{"local":{"packageOwnership":"enforce"}}`)
 	// The issuer row as the issuer service stores one; no test here fetches its keys or exchanges.
 	e.issuerID = e.text(`INSERT INTO ci_issuers (id, name, kind, issuer, allowed_audiences, required_claims, pin_claims, single_use_subject_tokens, public_issuer)
-	        VALUES (gen_random_uuid(), $1, 'gitlab', 'https://gitlab.example', '{https://trove.test}', '{}', '{project_id}', false, false) RETURNING id::text`, ciIssuerName)
+	        VALUES (gen_random_uuid(), $1, 'gitlab', 'https://gitlab.example', '{https://quader.test}', '{}', '{project_id}', false, false) RETURNING id::text`, ciIssuerName)
 	for i, name := range mappings {
 		e.maps[name] = e.ciMappingRow(name, i+1)
 	}
@@ -399,7 +399,7 @@ func TestR_AUTHZ_014_RemovingAMappingFromAPolicyFailsTheNextInstall(t *testing.T
 
 // R-CI-017: the CI token is presented as a Bearer token to npm whoami, as the password of HTTP Basic to a NuGet
 // source and as X-NuGet-ApiKey to a NuGet push (dotnet nuget push -k), all over HTTP as the clients send them.
-func TestR_CI_017_TheTokenIsPresentedLikeEveryTroveToken(t *testing.T) {
+func TestR_CI_017_TheTokenIsPresentedLikeEveryQuaderToken(t *testing.T) {
 	e := newCIEnv(t, false, "acme-release")
 	m := e.maps["acme-release"]
 	a := e.web("web-a")

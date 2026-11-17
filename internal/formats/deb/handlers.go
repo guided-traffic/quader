@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The handlers of the routes live in files of the work packages that build them (handlers_local.go, handlers_upload.go,

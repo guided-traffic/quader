@@ -30,7 +30,7 @@ func (e *env) send(endpoint string, q req) answer {
 	r.RemoteAddr = "203.0.113.7:4711"
 	r.Host = q.host
 	if r.Host == "" {
-		r.Host = "trove.test"
+		r.Host = "quader.test"
 	}
 	if q.auth != "" {
 		r.Header.Set("Authorization", q.auth)

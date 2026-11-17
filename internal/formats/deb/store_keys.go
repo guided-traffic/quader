@@ -3,8 +3,8 @@ package deb
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 // KeyStore is the part of the data port that holds the signing keys of the local and virtual repositories (R-DEB-015 to R-DEB-018,

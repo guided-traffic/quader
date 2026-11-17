@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // seen is what a stub recorded of the requests it got.
@@ -220,7 +220,7 @@ func clientCert(t *testing.T) tls.Certificate {
 		t.Fatal(err)
 	}
 	tmpl := &x509.Certificate{
-		SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "trove-test"},
+		SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "quader-test"},
 		NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour),
 		KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}
@@ -363,9 +363,9 @@ func TestUpstreamLogCall(t *testing.T) {
 		rec := record(t, PurposeRemote, Call{
 			Repo: "npm-remote", FlightRole: "leader",
 			CollapsedWaiters: func() int { return 0 },
-			CacheStatus:      func() string { return "trove; fwd=miss" },
+			CacheStatus:      func() string { return "quader; fwd=miss" },
 		}, WithLogAttrs(slog.String("repo", "ignored")))
-		for k, want := range map[string]any{"repo": "npm-remote", "flight_role": "leader", "cache_status": "trove; fwd=miss", "collapsed_waiters": float64(0)} {
+		for k, want := range map[string]any{"repo": "npm-remote", "flight_role": "leader", "cache_status": "quader; fwd=miss", "collapsed_waiters": float64(0)} {
 			if rec[k] != want {
 				t.Errorf("%s = %#v, want %#v", k, rec[k], want)
 			}

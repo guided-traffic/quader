@@ -33,10 +33,10 @@ type drainRole struct {
 }
 
 var drainRoles = []drainRole{
-	{"api", selAPI + ",trove/pool=", false},
-	{"packages", selPackages + ",trove/pool=", false},
-	{"worker", selWorker + ",trove/pool=", true},
-	{"worker-vuln", selWorker + ",trove/pool=vuln", false},
+	{"api", selAPI + ",quader/pool=", false},
+	{"packages", selPackages + ",quader/pool=", false},
+	{"worker", selWorker + ",quader/pool=", true},
+	{"worker-vuln", selWorker + ",quader/pool=vuln", false},
 }
 
 // evict asks the eviction API to remove a pod. A PodDisruptionBudget that does not allow it yet answers 429; the call is
@@ -66,13 +66,13 @@ func TestDrainRoles(t *testing.T) {
 		// is ready. The 90 s before the warm-up fill the replicas' caches with k6's documents: k6 cycles through its 406 at 75
 		// documents/s, 16 times in 90 s, so a replica has missed a given one with a chance of about (2/3)^16, 0.15 %.
 		const prime, warmUp, after = 90 * time.Second, 2 * time.Minute, 3 * time.Minute
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		initialPackages := map[string]bool{}
 		for _, p := range livePods(t, selPackages) {
 			initialPackages[p.Name] = true
 		}
 		adm := adminAPI(t)
-		watch := startPodWatch(t, selTrove)
+		watch := startPodWatch(t, selQuader)
 		o := haFullLoad()
 		o.allDocuments = true
 		npm := startNPMLoad(t, h, "drain-roles", o)
@@ -111,7 +111,7 @@ func TestDrainRoles(t *testing.T) {
 		roleFrom, roleTo := map[string]time.Time{}, map[string]time.Time{}
 		for _, role := range drainRoles {
 			before := map[string]pod{}
-			for _, p := range livePods(t, selTrove) {
+			for _, p := range livePods(t, selQuader) {
 				before[p.Name] = p
 			}
 			victims := livePods(t, role.selector)
@@ -159,7 +159,7 @@ func TestDrainRoles(t *testing.T) {
 			roleTo[role.name] = time.Now()
 			// The pods of the other roles keep their names, their UIDs and their restart counts.
 			now := map[string]pod{}
-			for _, p := range livePods(t, selTrove) {
+			for _, p := range livePods(t, selQuader) {
 				now[p.Name] = p
 			}
 			for name, was := range before {
@@ -277,7 +277,7 @@ func TestDrainRoles(t *testing.T) {
 		// The load reached the cold caches: every packages replica that replaced one rendered at least half of the documents.
 		replaced := 0
 		for replica, n := range served {
-			if !strings.HasPrefix(replica, "trove-packages-") || initialPackages[replica] {
+			if !strings.HasPrefix(replica, "quader-packages-") || initialPackages[replica] {
 				continue
 			}
 			replaced++
@@ -294,7 +294,7 @@ func TestDrainRoles(t *testing.T) {
 			t.Errorf("containers were killed: %v", watch.killed)
 		}
 		if name, d := watch.longestPending(); d > 60*time.Second {
-			t.Errorf("trove pod %s was Pending for %s", name, d.Round(time.Second))
+			t.Errorf("quader pod %s was Pending for %s", name, d.Round(time.Second))
 		}
 		checkEvents(t, evicted)
 		checkEndpointRemoval(t, "e14-drain-roles", streams)

@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-// podWatch records every change of the trove pods from `kubectl get pods -w`, stamped with the
+// podWatch records every change of the quader pods from `kubectl get pods -w`, stamped with the
 // time it arrived: the time a pod spent Pending, and every container that was terminated by
 // SIGKILL (exit code 137) or by the OOM killer. A watch sees each transition; polling would miss
 // the final state of a pod that is deleted a moment later.
@@ -224,7 +224,7 @@ func TestE14Drain(t *testing.T) {
 		const steps = 150
 		node := drainNode(t)
 		var onNode []pod
-		for _, p := range livePods(t, selTrove) {
+		for _, p := range livePods(t, selQuader) {
 			if p.Node == node {
 				onNode = append(onNode, p)
 			}
@@ -247,7 +247,7 @@ func TestE14Drain(t *testing.T) {
 		// and the requests in them after the readiness flip measure the edge's endpoint-removal time (drain_measure_test.go).
 		streams := streamPodLogs(t, "drain-", onNode)
 
-		watch := startPodWatch(t, selTrove)
+		watch := startPodWatch(t, selQuader)
 		drv := startDriverLoad(t, "drain", 20*time.Minute)
 		k := startK6(t, "drain", 30*time.Minute)
 		// E1.13: an upload and download loop on generic-local runs through the drain as well (transfer.js: PUT, GET,
@@ -260,10 +260,10 @@ func TestE14Drain(t *testing.T) {
 			ids = append(ids, strings.TrimSpace(driver(t, "probe", "-steps", fmt.Sprint(steps), "-interval-ms", "1000")))
 		}
 		waitFor(t, "both workers to run a probe job", 60*time.Second, time.Second, func() bool {
-			rows := sql(t, `SELECT r.name FROM trove.job j JOIN trove.replica r ON r.instance_uid = j.locked_by WHERE j.kind = 'system.probe' AND j.state = 'running' AND j.progress_total = 150 GROUP BY 1`)
+			rows := sql(t, `SELECT r.name FROM quader.job j JOIN quader.replica r ON r.instance_uid = j.locked_by WHERE j.kind = 'system.probe' AND j.state = 'running' AND j.progress_total = 150 GROUP BY 1`)
 			return len(strings.Fields(rows)) >= 2
 		})
-		owners := sql(t, `SELECT r.name || '=' || count(*) FROM trove.job j JOIN trove.replica r ON r.instance_uid = j.locked_by WHERE j.kind = 'system.probe' AND j.state = 'running' GROUP BY r.name`)
+		owners := sql(t, `SELECT r.name || '=' || count(*) FROM quader.job j JOIN quader.replica r ON r.instance_uid = j.locked_by WHERE j.kind = 'system.probe' AND j.state = 'running' GROUP BY r.name`)
 		t.Logf("running probe jobs per worker before the drain: %s", strings.ReplaceAll(owners, "\n", " "))
 		time.Sleep(5 * time.Second)
 
@@ -329,7 +329,7 @@ func TestE14Drain(t *testing.T) {
 			// what the limiters decided on each replica, for the one who reads a refusal (the k6 log has the headers)
 			for _, p := range readyServingPods(t) {
 				for k, v := range metricsOf(t, p) {
-					if strings.HasPrefix(k, "trove_ratelimit_decisions_total{limiter=\"api_write\"") || strings.HasPrefix(k, "trove_ratelimit_fallback{limiter=\"api_write\"") || strings.HasPrefix(k, "trove_api_rate_limited_total") {
+					if strings.HasPrefix(k, "quader_ratelimit_decisions_total{limiter=\"api_write\"") || strings.HasPrefix(k, "quader_ratelimit_fallback{limiter=\"api_write\"") || strings.HasPrefix(k, "quader_api_rate_limited_total") {
 						t.Logf("%s %s = %v", p, k, v)
 					}
 				}
@@ -346,9 +346,9 @@ func TestE14Drain(t *testing.T) {
 			t.Errorf("containers were killed: %v", watch.killed)
 		}
 		if name, d := watch.longestPending(); d > 60*time.Second {
-			t.Errorf("trove pod %s was Pending for %s", name, d.Round(time.Second))
+			t.Errorf("quader pod %s was Pending for %s", name, d.Round(time.Second))
 		} else {
-			t.Logf("longest Pending of a trove pod: %s (%s)", d.Round(100*time.Millisecond), name)
+			t.Logf("longest Pending of a quader pod: %s (%s)", d.Round(100*time.Millisecond), name)
 		}
 		checkEvents(t, onNode)
 		checkEndpointRemoval(t, "e14-drain", streams)

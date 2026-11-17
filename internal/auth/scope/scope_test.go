@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 func TestR_AUTH_024_ParseScope(t *testing.T) {

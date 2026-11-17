@@ -76,7 +76,7 @@ func TestClientAddress(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			r, err := NewResolver(c.trusted, "https://trove.example.com", nil)
+			r, err := NewResolver(c.trusted, "https://quader.example.com", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -120,7 +120,7 @@ func TestClientAddress(t *testing.T) {
 	}
 	for _, c := range fwd {
 		t.Run(c.name, func(t *testing.T) {
-			r, err := NewResolver(trusted, "https://trove.example.com", nil, WithForwardedHeader(c.header))
+			r, err := NewResolver(trusted, "https://quader.example.com", nil, WithForwardedHeader(c.header))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -133,7 +133,7 @@ func TestClientAddress(t *testing.T) {
 	t.Run("R-ARCH-006 spoof: a pass-through Forwarded header does not override the edge's X-Forwarded-For", func(t *testing.T) {
 		// The edge appended the real client to X-Forwarded-For; the client sent a
 		// Forwarded header of its own that the edge passed through.
-		r, err := NewResolver([]string{"10.42.0.0/16"}, "https://trove.example.com", nil)
+		r, err := NewResolver([]string{"10.42.0.0/16"}, "https://quader.example.com", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -168,41 +168,41 @@ func TestBaseURL(t *testing.T) {
 	extra := []string{"https://npm.example.com"}
 
 	t.Run("R-OPS-005 forwarded host from an untrusted peer is ignored", func(t *testing.T) {
-		r, _ := NewResolver(nil, "https://trove.example.com", nil)
+		r, _ := NewResolver(nil, "https://quader.example.com", nil)
 		got := r.Resolve(req("203.0.113.5:1", map[string]string{"X-Forwarded-Host": "evil.example", "X-Forwarded-Proto": "https"}))
-		if got.BaseURL != "https://trove.example.com" || got.BaseURLSource != "config" {
+		if got.BaseURL != "https://quader.example.com" || got.BaseURLSource != "config" {
 			t.Fatalf("%+v", got)
 		}
 	})
 	t.Run("R-OPS-005 a trusted peer's forwarded origin counts only when listed", func(t *testing.T) {
-		r, _ := NewResolver(trusted, "https://trove.example.com", extra)
+		r, _ := NewResolver(trusted, "https://quader.example.com", extra)
 		listed := r.Resolve(req("10.42.1.7:1", map[string]string{"X-Forwarded-Host": "npm.example.com", "X-Forwarded-Proto": "https"}))
 		if listed.BaseURL != "https://npm.example.com" {
 			t.Fatalf("listed: %+v", listed)
 		}
 		unlisted := r.Resolve(req("10.42.1.7:1", map[string]string{"X-Forwarded-Host": "evil.example", "X-Forwarded-Proto": "https"}))
-		if unlisted.BaseURL != "https://trove.example.com" {
+		if unlisted.BaseURL != "https://quader.example.com" {
 			t.Fatalf("unlisted: %+v", unlisted)
 		}
 	})
 	t.Run("R-OPS-005 Forwarded host and proto are read in forwarded mode only", func(t *testing.T) {
-		r, _ := NewResolver(trusted, "https://trove.example.com", extra, WithForwardedHeader(HeaderForwarded))
+		r, _ := NewResolver(trusted, "https://quader.example.com", extra, WithForwardedHeader(HeaderForwarded))
 		hdr := map[string]string{"Forwarded": "for=198.51.100.4;host=npm.example.com;proto=https"}
 		got := r.Resolve(req("10.42.1.7:1", hdr))
 		if got.BaseURL != "https://npm.example.com" {
 			t.Fatalf("%+v", got)
 		}
-		x, _ := NewResolver(trusted, "https://trove.example.com", extra)
-		if got := x.Resolve(req("10.42.1.7:1", hdr)); got.BaseURL != "https://trove.example.com" {
+		x, _ := NewResolver(trusted, "https://quader.example.com", extra)
+		if got := x.Resolve(req("10.42.1.7:1", hdr)); got.BaseURL != "https://quader.example.com" {
 			t.Fatalf("x-forwarded-for mode read Forwarded: %+v", got)
 		}
-		fm, _ := NewResolver(trusted, "https://trove.example.com", extra, WithForwardedHeader(HeaderForwarded))
-		if got := fm.Resolve(req("10.42.1.7:1", map[string]string{"X-Forwarded-Host": "npm.example.com", "X-Forwarded-Proto": "https"})); got.BaseURL != "https://trove.example.com" {
+		fm, _ := NewResolver(trusted, "https://quader.example.com", extra, WithForwardedHeader(HeaderForwarded))
+		if got := fm.Resolve(req("10.42.1.7:1", map[string]string{"X-Forwarded-Host": "npm.example.com", "X-Forwarded-Proto": "https"})); got.BaseURL != "https://quader.example.com" {
 			t.Fatalf("forwarded mode read X-Forwarded-*: %+v", got)
 		}
 	})
 	t.Run("R-OPS-005 X-Forwarded-Host with X-Forwarded-Port", func(t *testing.T) {
-		r, _ := NewResolver(trusted, "https://trove.example.com", extra)
+		r, _ := NewResolver(trusted, "https://quader.example.com", extra)
 		got := r.Resolve(req("10.42.1.7:1", map[string]string{"X-Forwarded-Host": "npm.example.com", "X-Forwarded-Proto": "https", "X-Forwarded-Port": "443"}))
 		if got.BaseURL != "https://npm.example.com" {
 			t.Fatalf("with port: %+v", got)
@@ -221,8 +221,8 @@ func TestBaseURL(t *testing.T) {
 		}
 	})
 	t.Run("R-OPS-005 a trailing slash and a default port do not change the origin", func(t *testing.T) {
-		r, _ := NewResolver(nil, "https://Trove.example.com:443/", nil)
-		if got := r.Resolve(req("192.0.2.1:1", nil)); got.BaseURL != "https://trove.example.com" {
+		r, _ := NewResolver(nil, "https://Quader.example.com:443/", nil)
+		if got := r.Resolve(req("192.0.2.1:1", nil)); got.BaseURL != "https://quader.example.com" {
 			t.Fatalf("%+v", got)
 		}
 	})

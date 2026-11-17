@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
 )
 
 // TestR_BAS_006_R_BAS_021_ATokenRefusalAnswerToAForwardIsNoRefusalOfTheBastionsToken: the path of a forward is the
@@ -27,12 +27,12 @@ func TestR_BAS_006_R_BAS_021_ATokenRefusalAnswerToAForwardIsNoRefusalOfTheBastio
 		t.Fatalf("a forward answered 401 bastion_token_invalid: %v", err)
 	}
 	if v := maintest.Value(r.m.MainTokenRefused); v != 0 {
-		t.Fatalf("trove_bastion_main_token_refused = %v after a forward", v)
+		t.Fatalf("quader_bastion_main_token_refused = %v after a forward", v)
 	}
 	if _, err := r.c.Handshake(ctx); !errors.Is(err, mainclient.ErrTokenRefused) {
 		t.Fatalf("the handshake with a revoked token: %v", err)
 	}
 	if v := maintest.Value(r.m.MainTokenRefused); v != 1 {
-		t.Fatalf("trove_bastion_main_token_refused = %v after the handshake", v)
+		t.Fatalf("quader_bastion_main_token_refused = %v after the handshake", v)
 	}
 }

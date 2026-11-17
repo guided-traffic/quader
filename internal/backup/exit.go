@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/format"
 )
 
 // The exit codes of the backup commands (R-BAK-013). The Job's pod failure policy reads 2, 3, 4 and 6 as FailJob and
@@ -77,7 +77,7 @@ var (
 	// ErrHoldLost is a blob that vanished from the source after the hold was lost (R-BAK-006).
 	ErrHoldLost = errors.New("backup: a blob left the source while the run still had to copy it")
 	// ErrPoolDamaged is the spot check finding a missing pool object (R-BAK-009).
-	ErrPoolDamaged = errors.New("backup: a pool object of an earlier backup is missing; run trove backup verify")
+	ErrPoolDamaged = errors.New("backup: a pool object of an earlier backup is missing; run quader backup verify")
 	// ErrInvariantViolation is a referenced blob row in state deleting (R-BAK-006).
 	ErrInvariantViolation = errors.New("backup: a referenced blob row is in state deleting")
 	// ErrFindings is verify with findings.
@@ -88,7 +88,7 @@ var (
 	ErrRestoreInProgress = errors.New("backup: the installation is being restored or migrated; nothing was written")
 )
 
-// ExitError carries an exit code, a failure code and the cause. cmd/trove prints the message and exits with Code.
+// ExitError carries an exit code, a failure code and the cause. cmd/quader prints the message and exits with Code.
 type ExitError struct {
 	Code    int
 	Failure string
@@ -98,7 +98,7 @@ type ExitError struct {
 func (e *ExitError) Error() string { return e.Err.Error() }
 func (e *ExitError) Unwrap() error { return e.Err }
 
-// ExitCode lets cmd/trove's run function find the code (it asks errors.As for an ExitCode method).
+// ExitCode lets cmd/quader's run function find the code (it asks errors.As for an ExitCode method).
 func (e *ExitError) ExitCode() int { return e.Code }
 
 // Fail wraps err with an exit code and a failure code.

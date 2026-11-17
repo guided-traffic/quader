@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 // ociInflight reads the requests the OCI test upstream has open and the most open at once since the last reset.
@@ -75,7 +75,7 @@ func TestOCIMirror_R_REPO_055_APassRunsWhileClientsPull(t *testing.T) {
 	e.run_(t, key, false)
 	st := e.awaitPassRunning(t, key)
 	pod, node := poolPodOfPass(t, st.Pass.Job.ID)
-	if !strings.HasPrefix(pod, "trove-worker-"+mirrorPoolName+"-") {
+	if !strings.HasPrefix(pod, "quader-worker-"+mirrorPoolName+"-") {
 		t.Errorf("the pass runs in %q (node %s), want a process of the pool %s", pod, node, mirrorPoolName)
 	}
 	t.Logf("the pass runs in %s (%s, %d names discovered, %d packages filled) when the clients pull", pod, st.Pass.Method, st.Pass.NamesDiscovered, st.Pass.PackagesDone)

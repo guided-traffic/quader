@@ -1,7 +1,7 @@
 # Release Docker & Helm: runs on every published release (semantic-release publishes it on main, see
-# release.yml). The release's tag is the version: the image guidedtraffic/trove (Docker Hub) for
-# linux/amd64 and linux/arm64, built from the Containerfile, and the Helm charts trove and trove-bastion in the
-# gh-pages branch (the chart repository https://guided-traffic.github.io/trove/) with the release's assets.
+# release.yml). The release's tag is the version: the image guidedtraffic/quader (Docker Hub) for
+# linux/amd64 and linux/arm64, built from the Containerfile, and the Helm charts quader and quader-bastion in the
+# gh-pages branch (the chart repository https://guided-traffic.github.io/quader/) with the release's assets.
 # docs/developer/releasing.md (The release pipeline) describes the jobs and the secrets.
 name: Release Docker & Helm
 
@@ -26,7 +26,7 @@ jobs:
     permissions:
       contents: write
     env:
-      TROVE_SBOM_RUN: ${{ github.run_id }}-${{ github.run_attempt }}
+      QUADER_SBOM_RUN: ${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -88,7 +88,7 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: |
-            guidedtraffic/trove
+            guidedtraffic/quader
           tags: |
             type=schedule
             type=ref,event=branch
@@ -99,12 +99,12 @@ jobs:
             type=sha
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
           labels: |
-            org.opencontainers.image.title=trove
-            org.opencontainers.image.description=trove, an artifact repository manager for package formats
+            org.opencontainers.image.title=quader
+            org.opencontainers.image.description=Quader, an artifact repository manager for package formats
             org.opencontainers.image.vendor=Guided Traffic
             org.opencontainers.image.licenses=Apache-2.0
-            org.opencontainers.image.documentation=https://github.com/guided-traffic/trove
-            org.opencontainers.image.source=https://github.com/guided-traffic/trove
+            org.opencontainers.image.documentation=https://github.com/guided-traffic/quader
+            org.opencontainers.image.source=https://github.com/guided-traffic/quader
 
       # The build arguments read the same pins as the Makefile: the Go line of go.mod, web/.nvmrc for the
       # Node.js of the web stage, and tools/versions.env for the base image.
@@ -162,7 +162,7 @@ jobs:
           provenance: true
           sbom: generator=${{ steps.sbom_generator.outputs.image }}
           # Pushed by digest and without a tag: no tag moves before the SBOM attestations are asserted (the next steps).
-          outputs: type=image,name=guidedtraffic/trove,push-by-digest=true,name-canonical=true,push=true,annotation-index.org.opencontainers.image.description=trove
+          outputs: type=image,name=guidedtraffic/quader,push-by-digest=true,name-canonical=true,push=true,annotation-index.org.opencontainers.image.description=Quader
 
       - name: Remove the SBOM generator registry
         if: always()
@@ -177,7 +177,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::the build step wrote no image digest"; exit 1; }
-          tools/sbom-generator/creators.sh image "guidedtraffic/trove@${DIGEST}"
+          tools/sbom-generator/creators.sh image "guidedtraffic/quader@${DIGEST}"
 
       # The tags of docker/metadata-action (version, major.minor, major, sha, and latest on main) point at the index that was
       # asserted. imagetools create adds them to that index as it is: the attestation manifests are part of it, and the tags
@@ -193,8 +193,8 @@ jobs:
             [ -z "$tag" ] || args+=(-t "$tag")
           done <<< "$TAGS"
           [ "${#args[@]}" -gt 0 ] || { echo "::error::docker/metadata-action wrote no tag"; exit 1; }
-          docker buildx imagetools create "${args[@]}" "guidedtraffic/trove@${DIGEST}"
-          docker buildx imagetools inspect "guidedtraffic/trove:${GITHUB_REF_NAME#v}" --format '{{ json .Manifest }}' | jq -e --arg d "$DIGEST" '.digest == $d' >/dev/null \
+          docker buildx imagetools create "${args[@]}" "guidedtraffic/quader@${DIGEST}"
+          docker buildx imagetools inspect "guidedtraffic/quader:${GITHUB_REF_NAME#v}" --format '{{ json .Manifest }}' | jq -e --arg d "$DIGEST" '.digest == $d' >/dev/null \
             || { echo "::error::the version tag does not resolve to the asserted digest"; exit 1; }
 
       # The SPDX file of the release is written by the pinned syft image (SYFT_IMAGE, the same version as the attestation above,
@@ -206,22 +206,22 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          out="${GITHUB_WORKSPACE}/guidedtraffic-trove_${VERSION}.spdx.json"
-          docker run --rm "${SYFT_IMAGE}" "registry:guidedtraffic/trove:${VERSION}" -o spdx-json > "$out"
+          out="${GITHUB_WORKSPACE}/guidedtraffic-quader_${VERSION}.spdx.json"
+          docker run --rm "${SYFT_IMAGE}" "registry:guidedtraffic/quader:${VERSION}" -o spdx-json > "$out"
           test -s "$out"
 
       - name: Upload the SPDX SBOM as a workflow artifact
         uses: actions/upload-artifact@v7
         with:
-          name: guidedtraffic-trove_${{ steps.version.outputs.version }}.spdx.json
-          path: ${{ github.workspace }}/guidedtraffic-trove_${{ steps.version.outputs.version }}.spdx.json
+          name: guidedtraffic-quader_${{ steps.version.outputs.version }}.spdx.json
+          path: ${{ github.workspace }}/guidedtraffic-quader_${{ steps.version.outputs.version }}.spdx.json
           if-no-files-found: error
 
       - name: Upload SBOM to release
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            ${{ github.workspace }}/guidedtraffic-trove_*.spdx.json
+            ${{ github.workspace }}/guidedtraffic-quader_*.spdx.json
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -230,7 +230,7 @@ jobs:
         uses: docker/scout-action@v1
         with:
           command: cves
-          image: guidedtraffic/trove:${{ steps.version.outputs.version }}
+          image: guidedtraffic/quader:${{ steps.version.outputs.version }}
           sarif-file: scout-report.sarif
           summary: true
           dockerhub-user: guidedtraffic
@@ -261,8 +261,8 @@ jobs:
           version: ${{ env.HELM_VERSION }}
 
       # Update the chart version and the app version of both charts to the release (R-ARCH-025, R-BAS-045),
-      # and the image tag in the values.yaml of the chart trove (the only line that starts with two spaces
-      # and "tag:", see test/chart/image_test.go). The chart trove-bastion keeps image.tag empty, which
+      # and the image tag in the values.yaml of the chart quader (the only line that starts with two spaces
+      # and "tag:", see test/chart/image_test.go). The chart quader-bastion keeps image.tag empty, which
       # means its appVersion.
       - name: Update Chart Versions
         id: version
@@ -274,21 +274,21 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           # Update the chart version and the app version of both charts
-          for chart in trove trove-bastion; do
+          for chart in quader quader-bastion; do
             sed -i "s/^version:.*$/version: ${VERSION}/" "deploy/helm/${chart}/Chart.yaml"
             sed -i "s/^appVersion:.*$/appVersion: \"${VERSION}\"/" "deploy/helm/${chart}/Chart.yaml"
           done
           # Update the image tag in values.yaml
-          sed -i "s/^  tag:.*$/  tag: \"${VERSION}\"/" deploy/helm/trove/values.yaml
+          sed -i "s/^  tag:.*$/  tag: \"${VERSION}\"/" deploy/helm/quader/values.yaml
 
       - name: Create Helm Packages
         run: |
           cd deploy/helm
-          helm package trove/ trove-bastion/
+          helm package quader/ quader-bastion/
           mkdir -p repo
           mv ./*.tgz repo/
           # Create a temporary index for the new charts
-          helm repo index repo/ --url https://guided-traffic.github.io/trove/
+          helm repo index repo/ --url https://guided-traffic.github.io/quader/
           cd ../..
 
       - name: Configure Git
@@ -319,12 +319,12 @@ jobs:
             mkdir -p temp-repo
             cp ./*.tgz temp-repo/
             # Merge with the existing index
-            helm repo index temp-repo/ --url https://guided-traffic.github.io/trove/ --merge index.yaml
+            helm repo index temp-repo/ --url https://guided-traffic.github.io/quader/ --merge index.yaml
             cp temp-repo/index.yaml .
             rm -rf temp-repo
           else
             # Create a new index if none exists
-            helm repo index . --url https://guided-traffic.github.io/trove/
+            helm repo index . --url https://guided-traffic.github.io/quader/
           fi
 
           git add --force ./*.tgz index.yaml
@@ -338,8 +338,8 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            trove-${{ steps.version.outputs.version }}.tgz
-            trove-bastion-${{ steps.version.outputs.version }}.tgz
+            quader-${{ steps.version.outputs.version }}.tgz
+            quader-bastion-${{ steps.version.outputs.version }}.tgz
             index.yaml
           fail_on_unmatched_files: true
         env:

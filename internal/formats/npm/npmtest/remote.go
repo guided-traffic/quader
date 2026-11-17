@@ -4,8 +4,8 @@ import (
 	"context"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // remoteRec is the record of a stored upstream document and the facts of its versions

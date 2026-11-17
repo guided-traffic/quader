@@ -15,7 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func scrapeBody(t *testing.T, m *Metrics, accept string) string {
@@ -39,21 +39,21 @@ func grepLines(s, sub string) string {
 }
 
 func TestMetricsEndpoint(t *testing.T) {
-	t.Run("R-OPS-006 /metrics exposes trove_ metrics and build info with the role", func(t *testing.T) {
+	t.Run("R-OPS-006 /metrics exposes quader_ metrics and build info with the role", func(t *testing.T) {
 		m := NewMetrics("worker")
 		body := scrapeBody(t, m, "")
-		if !strings.Contains(body, `trove_build_info{`) || !strings.Contains(body, `role="worker"`) {
+		if !strings.Contains(body, `quader_build_info{`) || !strings.Contains(body, `role="worker"`) {
 			t.Errorf("build info missing:\n%s", grepLines(body, "build_info"))
 		}
 		for _, k := range []string{"version=", "revision=", "goversion="} {
-			if !strings.Contains(grepLines(body, "trove_build_info{"), k) {
+			if !strings.Contains(grepLines(body, "quader_build_info{"), k) {
 				t.Errorf("build info lacks %s", k)
 			}
 		}
 		if !strings.Contains(body, "go_goroutines") || !strings.Contains(body, "process_cpu_seconds_total") {
 			t.Error("runtime or process collector missing")
 		}
-		if strings.Contains(body, "trove_build_info{} ") {
+		if strings.Contains(body, "quader_build_info{} ") {
 			t.Error("empty labels")
 		}
 	})
@@ -73,7 +73,7 @@ func TestMetricsEndpoint(t *testing.T) {
 	t.Run("R-OPS-006 samples carry no timestamps", func(t *testing.T) {
 		m := NewMetrics("web")
 		for _, l := range strings.Split(scrapeBody(t, m, ""), "\n") {
-			if strings.HasPrefix(l, "trove_build_info") && len(strings.Fields(l)) != 2 {
+			if strings.HasPrefix(l, "quader_build_info") && len(strings.Fields(l)) != 2 {
 				t.Errorf("sample with extra fields: %q", l)
 			}
 		}
@@ -127,7 +127,7 @@ func TestMetricsEndpoint(t *testing.T) {
 }
 
 func TestMetricNaming(t *testing.T) {
-	t.Run("R-OPS-007 every exposed trove family obeys the naming and label rules", func(t *testing.T) {
+	t.Run("R-OPS-007 every exposed quader family obeys the naming and label rules", func(t *testing.T) {
 		m := NewMetrics("web")
 		h := RequestLog(NewLogger(testLogCfg(), &discard{}), m)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			RequestInfoFrom(r.Context()).SetHandler("files.get")
@@ -144,11 +144,11 @@ func TestMetricNaming(t *testing.T) {
 			name   string
 			labels []string
 		}{
-			{"trove_x_total", []string{"user"}},
-			{"trove_x_total", []string{"path"}},
-			{"trove_y_total", []string{"trace_id"}},
-			{"trove_z_total", []string{"role"}}, // role only on trove_build_info
-			{"trove_w_total", []string{"ip"}},
+			{"quader_x_total", []string{"user"}},
+			{"quader_x_total", []string{"path"}},
+			{"quader_y_total", []string{"trace_id"}},
+			{"quader_z_total", []string{"role"}}, // role only on quader_build_info
+			{"quader_w_total", []string{"ip"}},
 		} {
 			func() {
 				defer func() {
@@ -163,7 +163,7 @@ func TestMetricNaming(t *testing.T) {
 
 	t.Run("R-OPS-007 CheckFamilies flags a family registered directly on the registry", func(t *testing.T) {
 		m := NewMetrics("web")
-		bad := prometheus.NewCounterVec(prometheus.CounterOpts{Name: "trove_sneaky_total", Help: "h"}, []string{"username"})
+		bad := prometheus.NewCounterVec(prometheus.CounterOpts{Name: "quader_sneaky_total", Help: "h"}, []string{"username"})
 		bad.WithLabelValues("bob").Inc()
 		m.Registry().MustRegister(bad)
 		other := prometheus.NewGauge(prometheus.GaugeOpts{Name: "foreign_gauge", Help: "h"})
@@ -174,12 +174,12 @@ func TestMetricNaming(t *testing.T) {
 		}
 	})
 
-	t.Run("R-OPS-007 names need the trove_ prefix and _total on counters only", func(t *testing.T) {
+	t.Run("R-OPS-007 names need the quader_ prefix and _total on counters only", func(t *testing.T) {
 		m := NewMetrics("web")
 		for _, f := range []func(){
 			func() { m.NewCounterVec("other_x_total", "h") },
-			func() { m.NewCounterVec("trove_x", "h") },
-			func() { m.NewGaugeVec("trove_x_total", "h") },
+			func() { m.NewCounterVec("quader_x", "h") },
+			func() { m.NewGaugeVec("quader_x_total", "h") },
 		} {
 			func() {
 				defer func() {
@@ -205,11 +205,11 @@ func TestMetricNaming(t *testing.T) {
 		if !strings.Contains(body, `method="OTHER"`) || strings.Contains(body, "PROPFIND") {
 			t.Error("non-standard method not folded")
 		}
-		count := strings.Count(body, "trove_http_requests_total{")
+		count := strings.Count(body, "quader_http_requests_total{")
 		if count > maxHandlerLabels+10 {
 			t.Errorf("%d request series, handler label unbounded", count)
 		}
-		if !strings.Contains(body, `trove_metrics_label_overflow_total{family="trove_http_requests_total",label="handler"}`) {
+		if !strings.Contains(body, `quader_metrics_label_overflow_total{family="quader_http_requests_total",label="handler"}`) {
 			t.Error("overflow not counted")
 		}
 	})
@@ -265,7 +265,7 @@ func TestCappedLabels(t *testing.T) {
 		m.Repos().UpdateRepositories(repoLabels(keys))
 		got := []string{}
 		for _, k := range keys {
-			got = append(got, m.Repos().Value("trove_repository_requests_total", k))
+			got = append(got, m.Repos().Value("quader_repository_requests_total", k))
 		}
 		// limit 3: web/npm-x, web/npm-y (pattern web/npm-*; "*" does not cross the "/" of the qualified name),
 		// then ops/nuget-prod (pattern */nuget-prod). ops/npm-z matches no pattern and comes after the cap.
@@ -275,7 +275,7 @@ func TestCappedLabels(t *testing.T) {
 				t.Errorf("%s -> %s, want %s", k, got[i], exp[k])
 			}
 		}
-		if !strings.Contains(scrapeBody(t, m, ""), `trove_metrics_label_overflow_total{family="trove_repository_requests_total",label="repo"} 4`) {
+		if !strings.Contains(scrapeBody(t, m, ""), `quader_metrics_label_overflow_total{family="quader_repository_requests_total",label="repo"} 4`) {
 			t.Errorf("overflow:\n%s", grepLines(scrapeBody(t, m, ""), "overflow"))
 		}
 	})
@@ -325,7 +325,7 @@ func TestCappedLabels(t *testing.T) {
 }
 
 func TestDBGauges(t *testing.T) {
-	desc := prometheus.NewDesc("trove_jobs_queued", "Queued jobs.", []string{"kind"}, nil)
+	desc := prometheus.NewDesc("quader_jobs_queued", "Queued jobs.", []string{"kind"}, nil)
 
 	t.Run("R-OPS-007 DB gauges are evaluated in the background and a scrape never calls the source", func(t *testing.T) {
 		m := NewMetrics("web")
@@ -337,12 +337,12 @@ func TestDBGauges(t *testing.T) {
 				return []prometheus.Metric{prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, 7, "gc")}, nil
 			},
 		})
-		if strings.Contains(scrapeBody(t, m, ""), "trove_jobs_queued") {
+		if strings.Contains(scrapeBody(t, m, ""), "quader_jobs_queued") {
 			t.Error("value before the first evaluation")
 		}
 		m.DBGauges().Evaluate(context.Background())
 		for range 20 {
-			if !strings.Contains(scrapeBody(t, m, ""), `trove_jobs_queued{kind="gc"} 7`) {
+			if !strings.Contains(scrapeBody(t, m, ""), `quader_jobs_queued{kind="gc"} 7`) {
 				t.Fatal("value missing")
 			}
 		}
@@ -367,7 +367,7 @@ func TestDBGauges(t *testing.T) {
 			},
 		})
 		age := func() string {
-			return grepLines(scrapeBody(t, m, ""), "trove_metrics_db_gauges_last_success_timestamp_seconds ")
+			return grepLines(scrapeBody(t, m, ""), "quader_metrics_db_gauges_last_success_timestamp_seconds ")
 		}
 		if age() != "" {
 			t.Error("age present before any success")
@@ -383,7 +383,7 @@ func TestDBGauges(t *testing.T) {
 		if age() != first {
 			t.Error("age advanced although the evaluation failed")
 		}
-		if !strings.Contains(scrapeBody(t, m, ""), `trove_jobs_queued{kind="gc"} 3`) {
+		if !strings.Contains(scrapeBody(t, m, ""), `quader_jobs_queued{kind="gc"} 3`) {
 			t.Error("last values dropped on failure")
 		}
 	})
@@ -423,12 +423,12 @@ type noopExporter struct{}
 func (noopExporter) ExportSpans(context.Context, []sdktrace.ReadOnlySpan) error { return nil }
 func (noopExporter) Shutdown(context.Context) error                             { return nil }
 
-// TestBuildInfoRoleValuesOfTheCut: trove_build_info{role} is the name given to --role (Q-OPS-161).
+// TestBuildInfoRoleValuesOfTheCut: quader_build_info{role} is the name given to --role (Q-OPS-161).
 func TestBuildInfoRoleValuesOfTheCut(t *testing.T) {
 	for _, role := range []string{"api", "packages", "worker", "web", "all"} {
 		t.Run("R-OPS-006 Q-OPS-161 build info of a "+role+" replica", func(t *testing.T) {
 			body := scrapeBody(t, NewMetrics(role), "")
-			if !strings.Contains(grepLines(body, "trove_build_info{"), `role="`+role+`"`) {
+			if !strings.Contains(grepLines(body, "quader_build_info{"), `role="`+role+`"`) {
 				t.Errorf("build info lacks role=%q:\n%s", role, grepLines(body, "build_info"))
 			}
 		})

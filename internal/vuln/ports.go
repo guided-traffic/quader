@@ -3,10 +3,10 @@ package vuln
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // DataState is the state of one ecosystem's advisory data; the type lives in the leaf so that the format contract can

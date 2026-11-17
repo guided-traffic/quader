@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // A request whose body arrives slowly loses its lease; another request takes the session and completes the part, which removes the

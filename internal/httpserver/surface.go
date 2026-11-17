@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // FamilyOther is the family of a route that belongs to no surface family: the

@@ -16,7 +16,7 @@ func TestOCILocal(t *testing.T) {
 	fx := ociFx(t)
 	host := ociRegistryHost(t)
 
-	t.Run("R-OCI-004 R-OCI-035 both clients log in with a trove token", func(t *testing.T) {
+	t.Run("R-OCI-004 R-OCI-035 both clients log in with a quader token", func(t *testing.T) {
 		fx.client(t, 0, ociDocker, "login").login(host)
 		fx.client(t, 0, ociPodman, "login").login(host)
 	})

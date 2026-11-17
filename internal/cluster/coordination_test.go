@@ -11,8 +11,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 func TestAreas(t *testing.T) {
@@ -116,7 +116,7 @@ func TestSignals(t *testing.T) {
 		bus.setAvailable(false)
 		s, reg := newTestSignals(t, bus, time.Millisecond)
 		s.Publish("jobs", "default")
-		waitFor(t, "the drop", time.Second, func() bool { return gather(t, reg, "trove_cluster_signals_dropped_total", "area", "jobs") == 1 })
+		waitFor(t, "the drop", time.Second, func() bool { return gather(t, reg, "quader_cluster_signals_dropped_total", "area", "jobs") == 1 })
 		if bus.count() != 0 {
 			t.Fatal("published while unavailable")
 		}
@@ -272,11 +272,11 @@ func TestNotify(t *testing.T) {
 		bus.mu.Lock()
 		msg := bus.published[0]
 		bus.mu.Unlock()
-		if !strings.HasPrefix(msg, "trove:test:inv:v1 ") {
+		if !strings.HasPrefix(msg, "quader:test:inv:v1 ") {
 			t.Fatalf("channel: %s", msg)
 		}
 		var w wireChange
-		if err := json.Unmarshal([]byte(strings.TrimPrefix(msg, "trove:test:inv:v1 ")), &w); err != nil {
+		if err := json.Unmarshal([]byte(strings.TrimPrefix(msg, "quader:test:inv:v1 ")), &w); err != nil {
 			t.Fatal(err)
 		}
 		if w.A != "unit_a" || w.E != 7 || w.V != 2 || string(w.P) != `{"k":"v"}` {
@@ -291,7 +291,7 @@ func TestNotify(t *testing.T) {
 		tx := newFakeTx(map[string]int64{})
 		_ = c.Notify(tx, "unit_a", 1, 1)
 		_ = tx.commit(context.Background())
-		waitFor(t, "the drop", time.Second, func() bool { return gather(t, reg, "trove_cluster_changes_dropped_total", "area", "unit_a") == 1 })
+		waitFor(t, "the drop", time.Second, func() bool { return gather(t, reg, "quader_cluster_changes_dropped_total", "area", "unit_a") == 1 })
 	})
 	t.Run("R-ARCH-018 a payload above 1 KiB, a bad version and an unknown area are refused", func(t *testing.T) {
 		c, _, _ := newChanges(t, nil)

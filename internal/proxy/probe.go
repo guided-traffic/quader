@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Probe answers whether a remote repository serves a package, for the shadowing check
@@ -22,7 +22,7 @@ import (
 //     request. The probe stores nothing, neither an entry nor a negative entry (but for
 //     the discovery document of a format whose addressing follows one, which it resolves
 //     like any request does, as the system: the address of the package document is
-//     unknown without it), and reads no negative entry: a value from Valkey may make trove refuse, never admit
+//     unknown without it), and reads no negative entry: a value from Valkey may make quader refuse, never admit
 //     a write (R-ARCH-030).
 func (e *Engine) Probe(ctx context.Context, rem Remote, path string, a Adapter) (ProbeResult, error) {
 	if e.offline(rem) {

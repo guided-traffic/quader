@@ -7,21 +7,21 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // ThroughPgBouncer turns cfg, a direct configuration of the database cfg.Name,
 // into one whose main pool goes through PgBouncer in transaction mode
-// (TROVE_TEST_PG_POOLED=1, see [PgPooled]) and whose session class goes
+// (QUADER_TEST_PG_POOLED=1, see [PgPooled]) and whose session class goes
 // straight to PostgreSQL. A transaction-mode pooler cannot carry the session
 // settings as startup parameters, so they become role defaults of user in this
 // database (R-HA-014), as a deployment does. maint is a connection that may
 // ALTER ROLE.
 func ThroughPgBouncer(tb testing.TB, cfg config.Database, user string, maint *pgx.Conn) config.Database {
 	tb.Helper()
-	bport, err := strconv.Atoi(Get(tb, "TROVE_TEST_PG_PGBOUNCER_PORT"))
+	bport, err := strconv.Atoi(Get(tb, "QUADER_TEST_PG_PGBOUNCER_PORT"))
 	if err != nil {
-		tb.Fatalf("TROVE_TEST_PG_PGBOUNCER_PORT: %v", err)
+		tb.Fatalf("QUADER_TEST_PG_PGBOUNCER_PORT: %v", err)
 	}
 	for _, set := range []string{
 		"statement_timeout = " + strconv.FormatInt(cfg.Session.StatementTimeout.Milliseconds(), 10),

@@ -28,20 +28,20 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-const schemaName = "trove"
+const schemaName = "quader"
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
 
@@ -59,13 +59,13 @@ type stack struct {
 
 func getStack(t testing.TB) stack {
 	t.Helper()
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		t.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		t.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
 	return stack{
-		host: testenv.Get(t, "TROVE_TEST_PG_HOST"), port: port,
-		user: testenv.Get(t, "TROVE_TEST_PG_USER"), secret: testenv.Get(t, "TROVE_TEST_PG_PASSWORD"),
+		host: testenv.Get(t, "QUADER_TEST_PG_HOST"), port: port,
+		user: testenv.Get(t, "QUADER_TEST_PG_USER"), secret: testenv.Get(t, "QUADER_TEST_PG_PASSWORD"),
 	}
 }
 
@@ -99,7 +99,7 @@ type env struct {
 func newEnv(t *testing.T) *env {
 	t.Helper()
 	st := getStack(t)
-	name := "trove_ident_" + randHex(5)
+	name := "quader_ident_" + randHex(5)
 	maint := st.admin(t, "postgres")
 	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatalf("create database: %v", err)
@@ -157,7 +157,7 @@ func writeFile(t *testing.T, name, content string) string {
 	return p
 }
 
-var keyPrefix = "trove:iti" + randHex(3) + ":"
+var keyPrefix = "quader:iti" + randHex(3) + ":"
 
 func valkeyConfig(t *testing.T) config.Valkey {
 	v := testenv.ValkeyConfig(t)

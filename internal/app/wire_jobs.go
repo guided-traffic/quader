@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/jobs"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/jobs"
 )
 
 // Fallback cron schedules of the storage tasks (R-STOR-025). The configuration

@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 var (
@@ -28,9 +28,9 @@ var (
 // host (flat container, search), as deploy/dev/e2e.sh exports them.
 func nugetStubHosts(t testing.TB) (api, content string) {
 	t.Helper()
-	api, content = os.Getenv("TROVE_E2E_NUGETSTUB_HOST"), os.Getenv("TROVE_E2E_NUGETSTUB_CONTENT_HOST")
+	api, content = os.Getenv("QUADER_E2E_NUGETSTUB_HOST"), os.Getenv("QUADER_E2E_NUGETSTUB_CONTENT_HOST")
 	if api == "" || content == "" {
-		t.Fatal("TROVE_E2E_NUGETSTUB_HOST and TROVE_E2E_NUGETSTUB_CONTENT_HOST are not set; run `deploy/dev/e2e.sh nuget`")
+		t.Fatal("QUADER_E2E_NUGETSTUB_HOST and QUADER_E2E_NUGETSTUB_CONTENT_HOST are not set; run `deploy/dev/e2e.sh nuget`")
 	}
 	return api, content
 }
@@ -40,7 +40,7 @@ func nugetStubHosts(t testing.TB) (api, content string) {
 func nugetStub(t testing.TB) *stubControl {
 	t.Helper()
 	host, _ := nugetStubHosts(t)
-	nugetStubOnce.Do(func() { nugetStubVal = newStubControl(t, "svc/nugetstub", host, "trove-nugetstub", 30*time.Second) })
+	nugetStubOnce.Do(func() { nugetStubVal = newStubControl(t, "svc/nugetstub", host, "quader-nugetstub", 30*time.Second) })
 	return nugetStubVal
 }
 

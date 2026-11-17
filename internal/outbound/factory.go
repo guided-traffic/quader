@@ -18,10 +18,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/buildinfo"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/buildinfo"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // Purposes of outbound clients. They are the kind label of the outbound metrics
@@ -129,10 +129,10 @@ func New(cfg config.Outbound, opts ...Option) *Factory {
 	}
 	f.setupErr = errors.Join(errs...)
 	if f.metrics != nil {
-		f.requests = f.metrics.NewCounterVec("trove_outbound_requests_total", "Requests sent to other systems by purpose.", "kind", "code")
-		f.duration = f.metrics.NewHistogramVec("trove_outbound_request_duration_seconds",
+		f.requests = f.metrics.NewCounterVec("quader_outbound_requests_total", "Requests sent to other systems by purpose.", "kind", "code")
+		f.duration = f.metrics.NewHistogramVec("quader_outbound_request_duration_seconds",
 			"Time of an outbound request including the body, by purpose.", observability.HTTPBuckets(), "kind")
-		f.denied = f.metrics.NewCounterVec("trove_outbound_egress_denied_total", "Connections refused by the egress address policy, by purpose.", "kind")
+		f.denied = f.metrics.NewCounterVec("quader_outbound_egress_denied_total", "Connections refused by the egress address policy, by purpose.", "kind")
 	}
 	return f
 }
@@ -275,7 +275,7 @@ func (f *Factory) defaults(purpose string) clientSettings {
 // Client returns an HTTP client for the purpose. The client owns a connection
 // pool: build one per purpose (or per remote repository) at start-up or when
 // the remote's settings change, and keep it. The client sends
-// User-Agent: trove/<version>, does not decompress responses (Accept-Encoding
+// User-Agent: quader/<version>, does not decompress responses (Accept-Encoding
 // is the caller's choice), and verifies TLS against the factory's trust store.
 func (f *Factory) Client(purpose string, opts ...ClientOption) *http.Client {
 	s := f.defaults(purpose)
@@ -371,8 +371,8 @@ func (f *Factory) transport(purpose string, s clientSettings, roots *x509.CertPo
 }
 
 // checkedProxy wraps a proxy selector so that the target behind a proxy is
-// resolved and checked by trove itself before the request goes out; the proxy
-// connects on its own and trove cannot see that connection (H-6).
+// resolved and checked by quader itself before the request goes out; the proxy
+// connects on its own and quader cannot see that connection (H-6).
 func (f *Factory) checkedProxy(sel func(*http.Request) (*url.URL, error), egress bool, onDeny func()) func(*http.Request) (*url.URL, error) {
 	return func(r *http.Request) (*url.URL, error) {
 		p, err := sel(r)
@@ -473,5 +473,5 @@ func callFrom(ctx context.Context) Call {
 
 // userAgent returns the User-Agent every client sends.
 func (f *Factory) userAgent() string {
-	return "trove/" + strings.TrimPrefix(f.version, "v")
+	return "quader/" + strings.TrimPrefix(f.version, "v")
 }

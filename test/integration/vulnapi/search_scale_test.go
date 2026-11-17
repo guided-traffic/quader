@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_VULN_028_TheSearchesOfTheDashboardAtScale: 100,000 findings in two projects, 5,000 advisories each with an alias; the

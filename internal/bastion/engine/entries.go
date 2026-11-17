@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/answers"
-	"github.com/guided-traffic/trove/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
 )
 
 // computeKey sets the cache key of the request (R-BAS-018): the path and query exactly as received, and the

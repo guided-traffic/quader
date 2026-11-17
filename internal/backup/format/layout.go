@@ -10,7 +10,7 @@ import (
 // Object names below the target prefix (R-BAK-002).
 const (
 	// MarkerName is the target marker object.
-	MarkerName = "trove-backup-target.json"
+	MarkerName = "quader-backup-target.json"
 	// PoolDir is the shared blob pool.
 	PoolDir = "pool/sha256"
 	// BackupsDir holds one directory per backup.

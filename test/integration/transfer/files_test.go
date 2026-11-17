@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/authz"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/authz"
 )
 
 // content returns n deterministic bytes that differ by seed.

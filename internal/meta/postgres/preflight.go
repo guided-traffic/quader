@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // minServerVersion is the PostgreSQL floor (R-HA-013, Q-HA-2).
@@ -29,10 +29,10 @@ func serverChecks(ctx context.Context, db q.DBTX, cfg config.Database) (q.Server
 		return info, fmt.Errorf("PostgreSQL %s is older than the supported minimum 16 (server_version_num %d)", info.Version, info.VersionNum)
 	}
 	if !strings.EqualFold(info.Encoding, "UTF8") {
-		return info, fmt.Errorf("the database encoding is %s, trove needs UTF8", info.Encoding)
+		return info, fmt.Errorf("the database encoding is %s, Quader needs UTF8", info.Encoding)
 	}
 	if info.IsSuperuser && !cfg.Preflight.AllowSuperuser {
-		return info, fmt.Errorf("the database role %q is a superuser; trove refuses it unless database.preflight.allow_superuser is true", info.RoleName)
+		return info, fmt.Errorf("the database role %q is a superuser; Quader refuses it unless database.preflight.allow_superuser is true", info.RoleName)
 	}
 	return info, nil
 }

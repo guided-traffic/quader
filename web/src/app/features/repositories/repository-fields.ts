@@ -14,7 +14,7 @@ export type RepositoryFieldsSection = 'notes' | 'paths' | 'access';
  * error at `/adminNotes`, `/includePatterns/…`, `/excludePatterns/…` or `/hideExistence` is sent to (`f-<member>`).
  */
 @Component({
-  selector: 'trove-repository-fields',
+  selector: 'quader-repository-fields',
   template: `
     @switch (section()) {
       @case ('notes') {
@@ -133,14 +133,14 @@ export type RepositoryFieldsSection = 'notes' | 'paths' | 'access';
     .field {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-1);
-      margin-block-end: var(--trove-space-3);
+      gap: var(--quader-space-1);
+      margin-block-end: var(--quader-space-3);
     }
     .hint {
       margin: 0;
     }
     .syntax {
-      margin-block-end: var(--trove-space-3);
+      margin-block-end: var(--quader-space-3);
     }
   `,
 })

@@ -1,16 +1,16 @@
 # The Gateway API edge of the profile `edge` (R-HA-038, R-HA-039): a platform-owned Gateway `shared` in the namespace gateway-system, implemented
-# by Envoy Gateway (up.sh installs it from tools/versions.env, DEV_ENVOY_GATEWAY_*). trove's HTTPRoute (values-edge.yaml) attaches to it from the
+# by Envoy Gateway (up.sh installs it from tools/versions.env, DEV_ENVOY_GATEWAY_*). quader's HTTPRoute (values-edge.yaml) attaches to it from the
 # namespace ${NS}, as a route of a tenant attaches to a platform Gateway.
 #
 #   GatewayClass eg        Envoy Gateway's controller, configured by the EnvoyProxy `dev` (two proxy pods, the Service of type ClusterIP: the client pods of
 #                          the e2e set reach it inside the cluster, like the dev Ingress's NodePort they need no host port)
-#   Gateway shared         one HTTPS listener on 443 with the certificate Secret trove-edge-tls of the namespace ${NS} (the certificate of the Ingress,
+#   Gateway shared         one HTTPS listener on 443 with the certificate Secret quader-edge-tls of the namespace ${NS} (the certificate of the Ingress,
 #                          for `localhost`), allowed for routes of every namespace; the ReferenceGrant lets the Gateway read that Secret
 #   ClientTrafficPolicy    the requirements of R-HA-039 that the Gateway API does not carry: encoded slashes and double slashes passed through
 #                          unchanged (scoped npm names), no request-received timeout, an idle timeout above the longest pause of a slow transfer
-#   BackendTrafficPolicy   the route-independent timeouts towards trove: none that cut a transfer at 15 minutes
+#   BackendTrafficPolicy   the route-independent timeouts towards quader: none that cut a transfer at 15 minutes
 #
-# The CA ConfigMap trove-tls-ca of the BackendTLSPolicies (the chart renders them with tls.backendTLSPolicy.enabled) is made by up.sh from the
+# The CA ConfigMap quader-tls-ca of the BackendTLSPolicies (the chart renders them with tls.backendTLSPolicy.enabled) is made by up.sh from the
 # dev CA, because Gateway API takes a ConfigMap and cert-manager writes a Secret.
 apiVersion: v1
 kind: Namespace
@@ -61,7 +61,7 @@ spec:
         certificateRefs:
           - group: ""
             kind: Secret
-            name: trove-edge-tls
+            name: quader-edge-tls
             namespace: ${NS}
       allowedRoutes:
         namespaces:
@@ -80,12 +80,12 @@ spec:
   to:
     - group: ""
       kind: Secret
-      name: trove-edge-tls
+      name: quader-edge-tls
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy
 metadata:
-  name: trove-paths-and-timeouts
+  name: quader-paths-and-timeouts
   namespace: gateway-system
 spec:
   targetRefs:
@@ -105,7 +105,7 @@ spec:
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
-  name: trove-timeouts
+  name: quader-timeouts
   namespace: gateway-system
 spec:
   targetRefs:

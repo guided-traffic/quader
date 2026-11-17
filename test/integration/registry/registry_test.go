@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/registry"
-	"github.com/guided-traffic/trove/internal/api/registry/registrytest"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/formats"
-	_ "github.com/guided-traffic/trove/internal/formats/all" // registers the OCI format
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/api/registry"
+	"github.com/guided-traffic/quader/internal/api/registry/registrytest"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/formats"
+	_ "github.com/guided-traffic/quader/internal/formats/all" // registers the OCI format
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func ociFormat(t *testing.T) formats.Format {
@@ -100,7 +100,7 @@ func TestAnEndpointWithoutPackagesHasNoRegistryRoot(t *testing.T) {
 
 func TestR_OCI_003_TheVersionCheck(t *testing.T) {
 	e := newEnv(t, nil)
-	challenge := `Bearer realm="http://trove.test/v2/_token",service="trove.test"`
+	challenge := `Bearer realm="http://quader.test/v2/_token",service="quader.test"`
 	t.Run("without a credential and without anonymous access: 401 with the challenge, in the OCI shape", func(t *testing.T) {
 		a := e.do("default", "", "GET", "/v2/", "")
 		if a.Code != http.StatusUnauthorized || a.Header().Get("WWW-Authenticate") != challenge || a.Header().Get(registry.APIVersionHeader) != registry.APIVersion {
@@ -131,7 +131,7 @@ func TestR_OCI_003_TheVersionCheck(t *testing.T) {
 		}
 	})
 	t.Run("an invalid credential is 401 UNAUTHORIZED", func(t *testing.T) {
-		a := e.do("default", "", "GET", "/v2/", "trv_pat_notatoken")
+		a := e.do("default", "", "GET", "/v2/", "qdr_pat_notatoken")
 		if a.Code != http.StatusUnauthorized || a.code(t) != "UNAUTHORIZED" || a.Header().Get(registry.APIVersionHeader) != registry.APIVersion {
 			t.Fatalf("%d %v %s", a.Code, a.Header(), a.Body.String())
 		}
@@ -202,7 +202,7 @@ func TestABoundHostIsTheDistributionAPIOfItsRepository(t *testing.T) {
 			t.Fatalf("pull with the token: %d %s", a.Code, a.Body.String())
 		}
 		a := e.do("mirror", mirrorHost, "PUT", "/v2/library/alpine/manifests/3", rgt)
-		want := `Bearer realm="http://mirror.trove.test/v2/_token",service="mirror.trove.test",scope="repository:library/alpine:push",error="insufficient_scope"`
+		want := `Bearer realm="http://mirror.quader.test/v2/_token",service="mirror.quader.test",scope="repository:library/alpine:push",error="insufficient_scope"`
 		if a.Code != http.StatusUnauthorized || a.Header().Get("WWW-Authenticate") != want {
 			t.Fatalf("push with a pull token: %d %v", a.Code, a.Header())
 		}
@@ -232,7 +232,7 @@ func TestABoundHostIsTheDistributionAPIOfItsRepository(t *testing.T) {
 			t.Fatalf("%d", a.Code)
 		}
 		u := e.do("mirror", mirrorHost, "GET", "/v2/", "")
-		if u.Header().Get("WWW-Authenticate") != `Bearer realm="http://mirror.trove.test/v2/_token",service="mirror.trove.test"` {
+		if u.Header().Get("WWW-Authenticate") != `Bearer realm="http://mirror.quader.test/v2/_token",service="mirror.quader.test"` {
 			t.Fatalf("challenge %q", u.Header().Get("WWW-Authenticate"))
 		}
 	})

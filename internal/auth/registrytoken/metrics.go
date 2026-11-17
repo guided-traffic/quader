@@ -6,14 +6,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// The outcomes of trove_oci_registry_tokens_total (R-OCI-034).
+// The outcomes of quader_oci_registry_tokens_total (R-OCI-034).
 const (
 	OutcomeIssued    = "issued"
 	OutcomeAnonymous = "anonymous"
 	OutcomeDenied    = "denied"
 )
 
-// Metrics counts the answers of the token service (R-OCI-034): trove_oci_registry_tokens_total by outcome, issued for a
+// Metrics counts the answers of the token service (R-OCI-034): quader_oci_registry_tokens_total by outcome, issued for a
 // token of a principal, anonymous for an anonymous token, denied for a token request the authentication stage refused. A
 // nil *Metrics counts nothing.
 type Metrics struct {
@@ -24,7 +24,7 @@ type Metrics struct {
 // dashboard sees the series before the first token.
 func NewMetrics(reg prometheus.Registerer) (*Metrics, error) {
 	m := &Metrics{tokens: prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "trove_oci_registry_tokens_total",
+		Name: "quader_oci_registry_tokens_total",
 		Help: "Answers of the OCI registry's token service, by outcome: issued, anonymous, denied (R-OCI-034).",
 	}, []string{"outcome"})}
 	for _, o := range []string{OutcomeIssued, OutcomeAnonymous, OutcomeDenied} {

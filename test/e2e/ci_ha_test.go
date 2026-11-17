@@ -160,7 +160,7 @@ func postWithRetry(a *api, form string) (reply, int, error) {
 // answers 5xx, and the package requests with the issued tokens answer 200.
 func TestCIHASingleUse(t *testing.T) {
 	fx := ciFx(t)
-	single := double(t, "oidcstub-single", "TROVE_E2E_OIDCSTUB_SINGLE_HOST")
+	single := double(t, "oidcstub-single", "QUADER_E2E_OIDCSTUB_SINGLE_HOST")
 	single.resetAll(t)
 	const issuerName = "gitlab-single"
 	fx.adm.do(http.MethodDelete, "/api/v1/ci/issuers/"+issuerName+"?cascade=true", nil)
@@ -287,7 +287,7 @@ func TestCIHASingleUse(t *testing.T) {
 		t.Errorf("only %d of %d tokens ended with exactly one success", got, tokens)
 	}
 	// R-CI-029: this page's only Valkey keys are the counters of the two limiters
-	keys := valkeyPrimaryCLI(t, "--scan", "--pattern", "trove:*")
+	keys := valkeyPrimaryCLI(t, "--scan", "--pattern", "quader:*")
 	for _, k := range strings.Fields(keys) {
 		if strings.Contains(k, "ci") && !strings.Contains(k, "ci_exchange_address") && !strings.Contains(k, "ci_exchange_subject") && strings.Contains(k, "ci_") {
 			t.Errorf("R-CI-029: Valkey key %q is not a counter of ci_exchange_address or ci_exchange_subject", k)

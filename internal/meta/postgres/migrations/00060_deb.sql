@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The tables of the Debian (APT) format's local and virtual repositories (R-DEB-008, Q-DEB-5, Q-DEB-6): the suites of a repository
 -- with the sequence numbers of the index build, a row per stored package file with its normalized control paragraph, the suites and

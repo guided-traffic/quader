@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastionmain"
 )
 
 // issue creates a registration and a token through the API and returns the token's ID and value.
@@ -157,7 +157,7 @@ func TestR_BAS_005_TheAuthenticatorValidatesAgainstTheDatabase(t *testing.T) {
 			t.Fatalf("token.rejected = %+v, want one event", evs)
 		}
 		// R-BAS-005 (item of the review): the rejection names the source of the request it came with.
-		if src := e.text(`SELECT COALESCE(host(source_ip), '') || ' ' || COALESCE(user_agent, '') FROM audit_event WHERE action = 'token.rejected'`); src != "198.51.100.20 trove-bastion/0.15.0" {
+		if src := e.text(`SELECT COALESCE(host(source_ip), '') || ' ' || COALESCE(user_agent, '') FROM audit_event WHERE action = 'token.rejected'`); src != "198.51.100.20 quader-bastion/0.15.0" {
 			t.Errorf("token.rejected names the source %q, want the Bastion's address and agent", src)
 		}
 	})

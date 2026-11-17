@@ -9,10 +9,10 @@ import (
 	"sync"
 	"testing"
 
-	docs "github.com/guided-traffic/trove/docs/manual"
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/manual"
+	docs "github.com/guided-traffic/quader/docs/manual"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/manual"
 )
 
 // manualServer serves the manual operations to the caller authn produces (nil is
@@ -30,7 +30,7 @@ func manualServer(t *testing.T, m *manual.Manual, authn func(*http.Request) (htt
 		Repositories: RepositoryServices{PublicContent: func(context.Context) bool { return anonymous }},
 		Manual:       m,
 	}).Register(router)
-	res, err := httpserver.NewResolver(nil, "https://trove.example.com", nil)
+	res, err := httpserver.NewResolver(nil, "https://quader.example.com", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func TestR_API_054_TheManualIsLoadedByTheFirstRequestThatNeedsIt(t *testing.T) {
 			Repositories: RepositoryServices{PublicContent: func(context.Context) bool { return false }},
 			LoadManual:   load,
 		}).Register(router)
-		res, err := httpserver.NewResolver(nil, "https://trove.example.com", nil)
+		res, err := httpserver.NewResolver(nil, "https://quader.example.com", nil)
 		if err != nil {
 			t.Fatal(err)
 		}

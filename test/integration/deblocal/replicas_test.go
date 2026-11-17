@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func (e *env) getOn(r *testenv.Replica, path, token string) testenv.Answer {
@@ -149,7 +149,7 @@ func TestR_DEB_010_FiftyParallelUploadsThroughThreeReplicas(t *testing.T) {
 	if ps := e.packagesOn(e.rs[2], "stable", rel, "main/binary-amd64/Packages.gz"); len(ps) != n {
 		t.Errorf("the index lists %d of %d uploads", len(ps), n)
 	}
-	if builds := e.metric("trove_deb_index_builds_total", `outcome="published"`); builds >= n {
+	if builds := e.metric("quader_deb_index_builds_total", `outcome="published"`); builds >= n {
 		t.Errorf("%v builds ran for %d uploads", builds, n)
 	}
 }

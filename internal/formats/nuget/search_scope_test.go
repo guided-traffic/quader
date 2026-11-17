@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nugettest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nugettest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The scope of a search: the terms meet only the versions the caller may read (Q-NUGET-74), the

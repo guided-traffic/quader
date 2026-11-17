@@ -14,8 +14,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // fakeUpstream is the discover.Upstream of a plan test: documents and artifacts by canonical path, and a handler for Get.
@@ -626,7 +626,7 @@ func TestMirrorSettingsMember(t *testing.T) {
 // A registry whose token service refuses the catalog scope (Docker Hub answers 400) offers no catalog; the mirror goes on with the exact names.
 func TestARefusedCatalogTokenMeansNoCatalog(t *testing.T) {
 	f := newFake(t, "https://registry.example.com/", ``)
-	f.getErr = errs.E(errs.UpstreamFailed, errs.CodeUpstreamUnexpectedStatus, "The upstream answered 400, which trove does not act on.")
+	f.getErr = errs.E(errs.UpstreamFailed, errs.CodeUpstreamUnexpectedStatus, "The upstream answered 400, which Quader does not act on.")
 	methods, err := adapter().MirrorMethods(context.Background(), f)
 	if err != nil || !reflect.DeepEqual(methods, []discover.Method{discover.MethodNames}) {
 		t.Fatalf("methods %v, error %v", methods, err)

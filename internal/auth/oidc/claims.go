@@ -11,8 +11,8 @@ import (
 
 	"golang.org/x/text/unicode/norm"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // maxGroupValues is how many values of the group claim are read (R-AUTH-008).
@@ -214,7 +214,7 @@ func compileRules(rules []config.AuthOIDCGroupRule) []compiledRule {
 	return out
 }
 
-// applyRules maps claim values to trove group names: the union of every rule's
+// applyRules maps claim values to quader group names: the union of every rule's
 // results, sorted; results that violate the group-name rule of R-AUTH-018 are
 // returned as skipped.
 func applyRules(rules []config.AuthOIDCGroupRule, values []string) (groups, skipped []string) {

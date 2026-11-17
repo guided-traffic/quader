@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // DB is what the audit package needs of the database: transactions for the
@@ -275,8 +275,8 @@ func (s *Store) Prepare(ctx context.Context, retentionDays int, log *slog.Logger
 }
 
 // SyncRetention compares audit.retention_days with audit_policy. In two-role
-// mode the runtime role may only read the row and trove migrate writes it, so a
-// difference is a warning that names trove migrate (R-OPS-015). In single-role
+// mode the runtime role may only read the row and quader migrate writes it, so a
+// difference is a warning that names quader migrate (R-OPS-015). In single-role
 // mode the replica owns the schema and writes the row itself (H-39). A value
 // below 90 days logs a warning (R-OPS-017).
 func (s *Store) SyncRetention(ctx context.Context, days int, log *slog.Logger) error {
@@ -303,7 +303,7 @@ func (s *Store) SyncRetention(ctx context.Context, days int, log *slog.Logger) e
 	case err == nil:
 		log.Info("audit retention written (single-role mode)", "retention_days", days, "was", stored)
 	case postgres.IsPrivilegeError(err):
-		log.Warn("audit.retention_days differs from the stored retention; run trove migrate to apply it",
+		log.Warn("audit.retention_days differs from the stored retention; run quader migrate to apply it",
 			"configured", days, "stored", stored)
 	default:
 		return fmt.Errorf("audit_policy: %w", err)

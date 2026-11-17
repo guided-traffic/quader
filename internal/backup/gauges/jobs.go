@@ -9,11 +9,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup"
 )
 
 // OverdueFactor is the multiple of backup.expected_interval after which the last success counts as overdue: the condition of
-// TroveBackupStale, of the API's overdue mark and of the UI's (R-BAK-014, R-API-050). A mark at 1 would flap on every
+// QuaderBackupStale, of the API's overdue mark and of the UI's (R-BAK-014, R-API-050). A mark at 1 would flap on every
 // schedule whose runs vary in length.
 const OverdueFactor = 1.5
 

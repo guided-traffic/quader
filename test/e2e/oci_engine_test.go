@@ -18,7 +18,7 @@ import (
 // ociEngineMirrorKey is the repository the endpoint ocimirror binds to its host (deploy/dev/values-dev.yaml endpoints.ocimirror.hostRoots).
 const ociEngineMirrorKey = "oci-engine-mirror"
 
-// TestOCIEngineMirror: the daemons of the client pods name https://oci-mirror.trove.localhost:<port> in registry-mirrors (daemon.json,
+// TestOCIEngineMirror: the daemons of the client pods name https://oci-mirror.quader.localhost:<port> in registry-mirrors (daemon.json,
 // written by test/e2e/ociclients/entrypoint-docker.sh). `docker pull app:1` asks Docker Hub's name, docker.io/library/app, and the daemon
 // asks the mirror first: the bound host answers /v2/library/app/... as the root of the remote repository over the counting test upstream,
 // which records the manifest request.
@@ -50,9 +50,9 @@ func TestOCIEngineMirror(t *testing.T) {
 
 	t.Run("R-OCI-029 on the bound host a path is read as sent: /v2/e2e/oci-engine-mirror/library/app is an image name of the bound repository, not a repository", func(t *testing.T) {
 		s.reset(t)
-		host := fmt.Sprintf("oci-mirror.trove.localhost:%s", edgePort(t))
+		host := fmt.Sprintf("oci-mirror.quader.localhost:%s", edgePort(t))
 		name := repoRef(ociEngineMirrorKey) + "/library/app"
-		out := ociClientExec(t, 0, ociPodman, "curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--cacert", "/etc/trove-ca/ca.crt",
+		out := ociClientExec(t, 0, ociPodman, "curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--cacert", "/etc/quader-ca/ca.crt",
 			"-H", "Accept: "+ociManifestAccept, "https://"+host+"/v2/"+name+"/manifests/1")
 		if strings.TrimSpace(out) != "404" {
 			t.Fatalf("GET /v2/%s/manifests/1 on the bound host answered %q, want 404", name, out)
@@ -153,16 +153,16 @@ func TestOCIKubernetes(t *testing.T) {
 		if snippet == "" || !strings.Contains(snippet, "kubectl create secret") {
 			t.Fatalf("the client setup of %s has no Kubernetes snippet: %+v", repos.all, setup.Snippets)
 		}
-		_, _ = ociKubectl(t, time.Minute, "", "delete", "secret", "trove-registry", "--ignore-not-found")
+		_, _ = ociKubectl(t, time.Minute, "", "delete", "secret", "quader-registry", "--ignore-not-found")
 		cmd := exec.Command("sh", "-c", snippet)
-		cmd.Env = append(os.Environ(), "KUBECONFIG="+ociKubeconfig(t), "TROVE_TOKEN="+fx.token)
+		cmd.Env = append(os.Environ(), "KUBECONFIG="+ociKubeconfig(t), "QUADER_TOKEN="+fx.token)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("the Kubernetes snippet failed: %v\n%s", err, out)
 		}
-		defer ociKubectl(t, time.Minute, "", "delete", "secret", "trove-registry", "--ignore-not-found")
+		defer ociKubectl(t, time.Minute, "", "delete", "secret", "quader-registry", "--ignore-not-found")
 
 		pod := "oci-pull-" + fx.run
-		if out, err := ociKubectl(t, time.Minute, ociPodManifest(pod, ref, "trove-registry"), "apply", "-f", "-"); err != nil {
+		if out, err := ociKubectl(t, time.Minute, ociPodManifest(pod, ref, "quader-registry"), "apply", "-f", "-"); err != nil {
 			t.Fatalf("create the pod: %v\n%s", err, out)
 		}
 		defer ociKubectl(t, time.Minute, "", "delete", "pod", pod, "--ignore-not-found", "--wait=false")

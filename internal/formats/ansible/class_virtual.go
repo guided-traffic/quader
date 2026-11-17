@@ -1,7 +1,7 @@
 package ansible
 
 import (
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The virtual class (R-ANS-022 to R-ANS-024). The virtual engine plans a request (the repository's patterns, the pin rules and claims of

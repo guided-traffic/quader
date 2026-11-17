@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_AUTHZ_031_BlindWritesJournalTheStateTheyReplace: two blind updates

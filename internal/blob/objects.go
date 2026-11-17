@@ -86,7 +86,7 @@ func credentialCode(code string) bool {
 	return false
 }
 
-// IsCredentialRejection reports whether err is the store's refusal of the credential trove signed with (a revoked key,
+// IsCredentialRejection reports whether err is the store's refusal of the credential quader signed with (a revoked key,
 // a wrong secret, an expired token).
 func IsCredentialRejection(err error) bool {
 	var se *StoreError
@@ -159,7 +159,7 @@ type DeleteFailure struct {
 	Code string
 }
 
-// ObjectStore is the object-store client trove needs (R-STOR-030). Keys are
+// ObjectStore is the object-store client quader needs (R-STOR-030). Keys are
 // full keys including the configured prefix. Implementations return
 // ErrNotFound for a missing key and a *StoreError for every other store error.
 // The interface is small on purpose: internal/blob/s3 implements it, Guard

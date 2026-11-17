@@ -26,24 +26,24 @@ export default async function globalSetup(): Promise<void> {
     throw new Error('NODE_EXTRA_CA_CERTS is not set: the dev CA is needed to verify the endpoints');
   }
   for (const name of [
-    'TROVE_E2E_ALICE_PASSWORD',
-    'TROVE_E2E_BOB_PASSWORD',
-    'TROVE_E2E_BREAKGLASS_PASSWORD',
-    'TROVE_E2E_ADMIN_TOKEN',
+    'QUADER_E2E_ALICE_PASSWORD',
+    'QUADER_E2E_BOB_PASSWORD',
+    'QUADER_E2E_BREAKGLASS_PASSWORD',
+    'QUADER_E2E_ADMIN_TOKEN',
   ]) {
     if (!process.env[name]) throw new Error(`${name} is not set`);
   }
-  const edge = new URL(process.env['TROVE_E2E_EDGE_URL'] ?? 'https://localhost:8080');
+  const edge = new URL(process.env['QUADER_E2E_EDGE_URL'] ?? 'https://localhost:8080');
   await verify(edge.hostname, Number(edge.port || 443), edge.hostname);
-  const kc = process.env['TROVE_E2E_KEYCLOAK_ADDR'];
+  const kc = process.env['QUADER_E2E_KEYCLOAK_ADDR'];
   if (kc) {
     const [host, port] = kc.split(':');
-    await verify(host ?? '127.0.0.1', Number(port), 'trove-keycloak.trove.svc');
+    await verify(host ?? '127.0.0.1', Number(port), 'quader-keycloak.quader.svc');
   }
   // The journeys create their repositories in this project (R-REPO-001); an earlier run may have left it.
   const project = await fetch(`${edge.origin}/api/v1/projects`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${process.env['TROVE_E2E_ADMIN_TOKEN']}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${process.env['QUADER_E2E_ADMIN_TOKEN']}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ key: 'e2e', displayName: 'Browser journeys', description: 'Created by the browser journeys' }),
   });
   if (project.status !== 201 && project.status !== 409) {
@@ -52,7 +52,7 @@ export default async function globalSetup(): Promise<void> {
   for (const user of ['alice', 'bob']) {
     const res = await fetch(`${edge.origin}/api/v1/users/${user}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${process.env['TROVE_E2E_ADMIN_TOKEN']}` },
+      headers: { Authorization: `Bearer ${process.env['QUADER_E2E_ADMIN_TOKEN']}` },
     });
     if (res.status !== 204 && res.status !== 404) {
       throw new Error(`DELETE /api/v1/users/${user}: ${res.status} ${await res.text()}`);

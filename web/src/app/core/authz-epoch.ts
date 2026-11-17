@@ -2,8 +2,8 @@ import { Injectable, signal } from '@angular/core';
 
 /**
  * The highest authorization epoch this tab has seen on one of its own permission changes
- * (`Trove-Authz-Epoch`, R-UI-042, R-API-052). The interceptor sends it back as
- * `Trove-Authz-Min-Epoch` so that the next screen shows the change on whichever replica answers.
+ * (`Quader-Authz-Epoch`, R-UI-042, R-API-052). The interceptor sends it back as
+ * `Quader-Authz-Min-Epoch` so that the next screen shows the change on whichever replica answers.
  * It lives in memory only, never in browser storage, and is cleared on 401, on sign-out and when
  * the server answers `authz_epoch_unknown`.
  */

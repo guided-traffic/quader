@@ -75,7 +75,7 @@ func NewSelfSigned(hosts ...string) (*SelfSigned, error) {
 	now := time.Now()
 	caTmpl := &x509.Certificate{
 		SerialNumber:          big.NewInt(1),
-		Subject:               pkix.Name{CommonName: "trove osvstub test CA"},
+		Subject:               pkix.Name{CommonName: "quader osvstub test CA"},
 		NotBefore:             now.Add(-time.Hour),
 		NotAfter:              now.Add(30 * 24 * time.Hour),
 		IsCA:                  true,

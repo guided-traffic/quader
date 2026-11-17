@@ -5,7 +5,7 @@
 //
 // The content is a blob like any other (INV-4): spooled, hashed and committed through the commit protocol of R-STOR-005,
 // read back with the verification of R-STOR-013 whatever storage.download.verify says (Q-UI-143), because the bytes reach a
-// browser as code of trove's origin. A row of ui_assets names it by the locale directory and the path below it, holds the
+// browser as code of quader's origin. A row of ui_assets names it by the locale directory and the path below it, holds the
 // reference that keeps the collector away (R-STOR-024), and records when a replica whose build has the row's bytes last
 // said so; which bytes a name keeps when two builds fill it differently is Q-UI-142. Nothing here is reachable from a request but the read; the writes are the replica's own start-up and
 // its hourly renewal (Keeper).
@@ -23,11 +23,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/webui"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/webui"
 )
 
 const (

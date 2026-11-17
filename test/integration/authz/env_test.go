@@ -24,24 +24,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-const schemaName = "trove"
+const schemaName = "quader"
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
 
@@ -61,11 +61,11 @@ type env struct {
 
 func newEnv(t *testing.T) *env {
 	t.Helper()
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		t.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		t.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
-	host, user, secret := testenv.Get(t, "TROVE_TEST_PG_HOST"), testenv.Get(t, "TROVE_TEST_PG_USER"), testenv.Get(t, "TROVE_TEST_PG_PASSWORD")
+	host, user, secret := testenv.Get(t, "QUADER_TEST_PG_HOST"), testenv.Get(t, "QUADER_TEST_PG_USER"), testenv.Get(t, "QUADER_TEST_PG_PASSWORD")
 	connect := func(database string) *pgx.Conn {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -80,7 +80,7 @@ func newEnv(t *testing.T) *env {
 		t.Cleanup(func() { _ = conn.Close(context.Background()) })
 		return conn
 	}
-	name := "trove_authz_" + randHex(5)
+	name := "quader_authz_" + randHex(5)
 	maint := connect("postgres")
 	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatalf("create database: %v", err)

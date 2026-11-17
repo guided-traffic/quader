@@ -1,23 +1,23 @@
-<trove-page-header [heading]="heading" />
-<trove-profile-nav />
+<quader-page-header [heading]="heading" />
+<quader-profile-nav />
 
 @if (loadError(); as e) {
-  <trove-error-notice [error]="e" (retry)="load()" />
+  <quader-error-notice [error]="e" (retry)="load()" />
 }
 
 <!-- One column like the user's page in the admin area: who you are as read-only fields at the top, then quiet sections
      (Q-UI-333); the preferences are open, being what a user changes here. -->
 @if (user(); as u) {
-  <trove-profile-avatar [seed]="u.id" />
+  <quader-profile-avatar [seed]="u.id" />
 
   <div class="settings">
     <div class="row">
-      <trove-text-field width="name" i18n-label="@@profile.username" label="User name" name="username" [value]="u.username" [readonly]="true" />
-      <trove-text-field width="name" i18n-label="@@profile.display-name" label="Display name" name="displayName" [value]="u.displayName ?? ''" [readonly]="true" />
+      <quader-text-field width="name" i18n-label="@@profile.username" label="User name" name="username" [value]="u.username" [readonly]="true" />
+      <quader-text-field width="name" i18n-label="@@profile.display-name" label="Display name" name="displayName" [value]="u.displayName ?? ''" [readonly]="true" />
     </div>
     <div class="row">
-      <trove-text-field width="name" i18n-label="@@profile.email" label="Email" name="email" [value]="u.email ?? ''" [readonly]="true" />
-      <trove-text-field width="name" i18n-label="@@profile.last-login" label="Last sign-in" name="lastLogin" [value]="(u.lastLoginAt | date: 'medium') ?? ''" [readonly]="true" />
+      <quader-text-field width="name" i18n-label="@@profile.email" label="Email" name="email" [value]="u.email ?? ''" [readonly]="true" />
+      <quader-text-field width="name" i18n-label="@@profile.last-login" label="Last sign-in" name="lastLogin" [value]="(u.lastLoginAt | date: 'medium') ?? ''" [readonly]="true" />
     </div>
     <p class="muted" i18n="@@profile.identity-note">
       Your name and email come from the identity provider and are replaced at every sign-in.
@@ -26,7 +26,7 @@
 }
 
 <div class="settings">
-  <trove-disclosure
+  <quader-disclosure
     i18n-heading="@@profile.preferences"
     heading="Preferences"
     i18n-hint="@@profile.preferences-hint"
@@ -34,25 +34,25 @@
     [expanded]="true"
   >
     @if (prefError(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     }
     @if (prefsLoaded()) {
       <form class="form-grid" (submit)="savePreferences($event)">
-        <trove-select-field i18n-label="@@profile.pref.locale" label="Language" name="locale" [options]="localeOptions" [(value)]="locale" />
-        <trove-select-field i18n-label="@@profile.pref.theme" label="Theme" name="theme" [options]="themeOptions" [(value)]="theme" />
-        <trove-checkbox [checked]="shortcuts()" (checkedChange)="shortcuts.set($event)">
+        <quader-select-field i18n-label="@@profile.pref.locale" label="Language" name="locale" [options]="localeOptions" [(value)]="locale" />
+        <quader-select-field i18n-label="@@profile.pref.theme" label="Theme" name="theme" [options]="themeOptions" [(value)]="theme" />
+        <quader-checkbox [checked]="shortcuts()" (checkedChange)="shortcuts.set($event)">
           <ng-container i18n="@@profile.pref.shortcuts">Keyboard shortcuts with a single key, such as / for the search</ng-container>
-        </trove-checkbox>
+        </quader-checkbox>
         <div class="row-actions">
           <button class="btn btn-confirm" type="submit" [disabled]="saving()" i18n="@@profile.pref.save">Save preferences</button>
         </div>
       </form>
     }
-  </trove-disclosure>
+  </quader-disclosure>
 
   @if (user(); as u) {
     <!-- Open when the last sign-in carried no usable group claim, so the notice is seen. -->
-    <trove-disclosure
+    <quader-disclosure
       i18n-heading="@@profile.groups"
       heading="Groups"
       i18n-hint="@@profile.groups-hint"
@@ -102,8 +102,8 @@
           </tbody>
         </table>
       }
-    </trove-disclosure>
-    <trove-disclosure i18n-heading="@@profile.roles" heading="System roles" i18n-hint="@@profile.roles-hint" hint="The system roles you hold.">
+    </quader-disclosure>
+    <quader-disclosure i18n-heading="@@profile.roles" heading="System roles" i18n-hint="@@profile.roles-hint" hint="The system roles you hold.">
       @if (roles().length === 0) {
         <p i18n="@@profile.no-roles">You hold no system role.</p>
       } @else {
@@ -113,6 +113,6 @@
           }
         </ul>
       }
-    </trove-disclosure>
+    </quader-disclosure>
   }
 </div>

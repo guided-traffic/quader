@@ -5,7 +5,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // Error is a refusal of the claim engine with the reason the API and the audit event carry. The

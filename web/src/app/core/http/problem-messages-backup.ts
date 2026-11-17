@@ -11,9 +11,9 @@ export function describeBackupProblem(code: string | null): string | null {
     case 'superseded':
       return $localize`:@@problem.backup.superseded:Another run took over this one after its lease had passed.`;
     case 'pool_damaged':
-      return $localize`:@@problem.backup.pool-damaged:A blob of an earlier backup is missing in the target. Run trove backup verify.`;
+      return $localize`:@@problem.backup.pool-damaged:A blob of an earlier backup is missing in the target. Run quader backup verify.`;
     case 'invariant_violation':
-      return $localize`:@@problem.backup.invariant-violation:The exported data breaks a rule of trove's schema, so no backup was written.`;
+      return $localize`:@@problem.backup.invariant-violation:The exported data breaks a rule of Quader's schema, so no backup was written.`;
     case 'stalled':
       return $localize`:@@problem.backup.stalled:The run made no progress for the stall timeout and was stopped.`;
     case 'lease_expired':

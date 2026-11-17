@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, LOCALE_ID, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Bastion, BastionsApi, BastionTokenCreated, BastionTokenSummary } from '../../api/bastions-api';
 import { ApiError } from '../../api/problem';
@@ -29,12 +29,12 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
 /**
  * One Bastion registration (R-BAS-007): its facts and actions, the last contact of each replica and its
  * tokens. Disable and enable read the registration for its `ETag` first, because the list carries none
- * (R-API-012). A token's value is shown once through `<trove-token-secret>` and lives in this card's
+ * (R-API-012). A token's value is shown once through `<quader-token-secret>` and lives in this card's
  * signal only (R-UI-043). Which actions show follows the capabilities of R-BAS-004: `endpoints:write`
  * for the registration and for issuing a token, `endpoints:write` or `tokens:revoke` for revoking one.
  */
 @Component({
-  selector: 'trove-bastion-card',
+  selector: 'quader-bastion-card',
   imports: [DatePipe, DataTable, ErrorNotice, TokenSecret],
   template: `
     <section class="card" [attr.aria-labelledby]="headingId()">
@@ -81,14 +81,14 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
       }
 
       @if (actionError(); as e) {
-        <trove-error-notice [error]="e" />
+        <quader-error-notice [error]="e" />
       }
       @if (secret(); as s) {
-        <trove-token-secret [value]="s.token" [description]="secretNote(s)" (closed)="secret.set(null)" />
+        <quader-token-secret [value]="s.token" [description]="secretNote(s)" (closed)="secret.set(null)" />
       }
 
       <h3 i18n="@@bastion.contacts">Last contact</h3>
-      <trove-data-table
+      <quader-data-table
         [caption]="contactsCaption()"
         [columns]="contactColumns"
         [empty]="bastion().contacts.length === 0"
@@ -105,10 +105,10 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
             <td translate="no">{{ c.baseUrl || '–' }}</td>
           </tr>
         }
-      </trove-data-table>
+      </quader-data-table>
 
       <h3 i18n="@@bastion.tokens">Tokens</h3>
-      <trove-data-table
+      <quader-data-table
         [caption]="tokensCaption()"
         [columns]="tokenColumns"
         [empty]="bastion().tokens.length === 0"
@@ -150,7 +150,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
             </td>
           </tr>
         }
-      </trove-data-table>
+      </quader-data-table>
     </section>
   `,
   styleUrl: '../../shared/access/access.scss',
@@ -164,7 +164,7 @@ export class BastionCard {
 
   private readonly api = inject(BastionsApi);
   private readonly confirmer = inject(Confirm);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly notifier = inject(Notifier);
   private readonly session = inject(SessionStore);
   private readonly locale = inject(LOCALE_ID);

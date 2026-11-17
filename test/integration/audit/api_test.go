@@ -16,13 +16,13 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/repository"
-	itstack "github.com/guided-traffic/trove/test/integration/stack"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/repository"
+	itstack "github.com/guided-traffic/quader/test/integration/stack"
 )
 
 // The audit operations over HTTP (R-OPS-017) on three web replicas that share one
@@ -122,10 +122,10 @@ func TestE1_5_PolicyChangesAndDeniedDeploysAreFoundAndLogged(t *testing.T) {
 
 	created := f.a.Do(me, "POST", policiesPath, policy("p1"))
 	want(t, created, 201, "")
-	want(t, f.b.Do(me, "PUT", policiesPath+"/p1", policy("p1"), "If-Match", `"1"`, "Trove-Authz-Min-Epoch", fmt.Sprint(created.Epoch())), 200, "")
+	want(t, f.b.Do(me, "PUT", policiesPath+"/p1", policy("p1"), "If-Match", `"1"`, "Quader-Authz-Min-Epoch", fmt.Sprint(created.Epoch())), 200, "")
 	want(t, f.c.Do(me, "PUT", "/api/v1/role-bindings/webhook-admin/user:bob", nil), 201, "")
-	want(t, f.a.Do(me, "DELETE", policiesPath+"/p1", nil, "Trove-Authz-Min-Epoch", fmt.Sprint(f.e.AuthzEpoch())), 204, "")
-	want(t, f.a.Do(me, "DELETE", "/api/v1/role-bindings/webhook-admin/user:bob", nil, "Trove-Authz-Min-Epoch", fmt.Sprint(f.e.AuthzEpoch())), 204, "")
+	want(t, f.a.Do(me, "DELETE", policiesPath+"/p1", nil, "Quader-Authz-Min-Epoch", fmt.Sprint(f.e.AuthzEpoch())), 204, "")
+	want(t, f.a.Do(me, "DELETE", "/api/v1/role-bindings/webhook-admin/user:bob", nil, "Quader-Authz-Min-Epoch", fmt.Sprint(f.e.AuthzEpoch())), 204, "")
 
 	t.Run("R-OPS-017 every policy and role change is found, newest first, and is in the log stream", func(t *testing.T) {
 		items := f.find(t, "action=authz.*&limit=100", 5)

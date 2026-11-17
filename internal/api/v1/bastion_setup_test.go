@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // reportedURLs is a BastionBaseURLs over a map from a registration to what it reported.
@@ -28,7 +28,7 @@ func (failingURLs) ReportedBaseURL(context.Context, string) (string, bool, error
 
 func bastionServer(t *testing.T, reported BastionBaseURLs, additional ...string) http.Handler {
 	t.Helper()
-	return setupServerWith(t, "https://trove.example.com", true, authed, func(ps *PackageServices) {
+	return setupServerWith(t, "https://quader.example.com", true, authed, func(ps *PackageServices) {
 		ps.Bastions = reported
 		ps.AdditionalBaseURLs = additional
 	})
@@ -83,7 +83,7 @@ func TestR_BAS_007_ClientSetupRendersOnTheBaseURLTheBastionReported(t *testing.T
 			t.Errorf("configure snippet lacks %q:\n%s", want, conf)
 		}
 	}
-	if strings.Contains(conf, "trove.example.com") {
+	if strings.Contains(conf, "quader.example.com") {
 		t.Errorf("the main installation's address is in a Bastion's snippet:\n%s", conf)
 	}
 }
@@ -100,7 +100,7 @@ func TestR_BAS_007_TheSwitchIsNpmsAndTheBastionsOnly(t *testing.T) {
 			t.Errorf("%s: %s", sn.Id, sn.Content)
 		}
 	}
-	if !hasPublish || direct.RegistryUrl != "https://trove.example.com/api/npm/it/npm-all/" {
+	if !hasPublish || direct.RegistryUrl != "https://quader.example.com/api/npm/it/npm-all/" {
 		t.Errorf("the direct setup changed: %+v", direct)
 	}
 	for _, client := range []string{"pnpm", "yarn", "yarn-classic"} {

@@ -3,7 +3,7 @@ package cluster
 import (
 	"time"
 
-	"github.com/guided-traffic/trove/internal/observability/health"
+	"github.com/guided-traffic/quader/internal/observability/health"
 )
 
 // Watchdog is the part of the liveness registry that the loops of this package

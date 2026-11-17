@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // DeferredError is returned by a [Window] once an upstream asked for a wait longer than [LongWait] (R-REPO-054): the run holds no

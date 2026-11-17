@@ -7,7 +7,7 @@
 .fstatus {
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
   white-space: nowrap;
 
   .material-icons {
@@ -23,7 +23,7 @@
 .fstatus-main {
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
   white-space: nowrap;
 }
 
@@ -33,7 +33,7 @@
 }
 
 // The report's time of detection may wrap ("2 minutes / ago"), so the column fits its header (Q-UI-380).
-.trove-data-table td.vuln-detected time {
+.quader-data-table td.vuln-detected time {
   white-space: normal;
 }
 
@@ -45,17 +45,17 @@
 
 .sev-critical,
 .sev-high {
-  color: var(--trove-status-bad);
+  color: var(--quader-status-bad);
 }
 
 .sev-medium {
-  color: var(--trove-status-warn);
+  color: var(--quader-status-warn);
 }
 
 .sev-low,
 .sev-none,
 .sev-unknown {
-  color: var(--trove-text-muted);
+  color: var(--quader-text-muted);
 }
 
 .sev-score {
@@ -64,7 +64,7 @@
 }
 
 .fstatus-blocked {
-  color: var(--trove-status-bad);
+  color: var(--quader-status-bad);
   font-weight: 600;
 }
 
@@ -75,11 +75,11 @@
 .vuln-marker {
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-1);
-  margin-inline-start: var(--trove-space-2);
-  padding: 0 var(--trove-space-2);
-  border: 1px solid var(--trove-border-strong);
-  border-radius: var(--trove-radius-s);
+  gap: var(--quader-space-1);
+  margin-inline-start: var(--quader-space-2);
+  padding: 0 var(--quader-space-2);
+  border: 1px solid var(--quader-border-strong);
+  border-radius: var(--quader-radius-s);
   font-size: 0.75rem;
   font-weight: 400;
 
@@ -92,14 +92,14 @@
 
 // The open findings by severity as the severity bar of R-UI-092, its segments the filter links (Q-UI-376).
 .vuln-bar {
-  margin-block: var(--trove-space-3);
+  margin-block: var(--quader-space-3);
 }
 
 .vuln-counts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
-  gap: var(--trove-space-3);
-  margin: 0 0 var(--trove-space-3);
+  gap: var(--quader-space-3);
+  margin: 0 0 var(--quader-space-3);
   padding: 0;
   list-style: none;
 }
@@ -107,37 +107,37 @@
 .vuln-count {
   display: flex;
   flex-direction: column;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
   block-size: 100%;
   box-sizing: border-box;
-  padding: var(--trove-space-3);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-m);
-  background: var(--trove-surface-raised);
-  color: var(--trove-on-surface);
+  padding: var(--quader-space-3);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-m);
+  background: var(--quader-surface-raised);
+  color: var(--quader-on-surface);
   text-decoration: none;
 
   &:hover {
-    background: var(--trove-row-hover);
+    background: var(--quader-row-hover);
   }
 
   &:focus-visible {
-    outline: var(--trove-focus-ring);
+    outline: var(--quader-focus-ring);
     outline-offset: 2px;
   }
 }
 
 .vuln-count-number {
-  font: var(--trove-type-headline-small);
+  font: var(--quader-type-headline-small);
   font-variant-numeric: tabular-nums;
 }
 
 .vuln-count-label {
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-1);
-  color: var(--trove-text-muted);
-  font-size: var(--trove-text-muted-size);
+  gap: var(--quader-space-1);
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
 
   .material-icons {
     font-size: 1.125rem;
@@ -146,49 +146,49 @@
 
 .vuln-count.sev-critical .vuln-count-label,
 .vuln-count.sev-high .vuln-count-label {
-  color: var(--trove-status-bad);
+  color: var(--quader-status-bad);
 }
 
 .vuln-count.sev-medium .vuln-count-label {
-  color: var(--trove-status-warn);
+  color: var(--quader-status-warn);
 }
 
 .vuln-coverage {
-  margin: 0 0 var(--trove-space-4);
-  color: var(--trove-text-muted);
-  font-size: var(--trove-text-muted-size);
+  margin: 0 0 var(--quader-space-4);
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
 }
 
 // ---- Trend -------------------------------------------------------------------------------
 
 .vuln-trend {
-  margin-block: var(--trove-space-4);
-  padding: var(--trove-space-3) var(--trove-space-4);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-m);
-  background: var(--trove-surface-raised);
+  margin-block: var(--quader-space-4);
+  padding: var(--quader-space-3) var(--quader-space-4);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-m);
+  background: var(--quader-surface-raised);
 }
 
 .vuln-trend-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
 
   h2 {
     margin: 0;
     margin-inline-end: auto;
-    font: var(--trove-type-title-medium);
+    font: var(--quader-type-title-medium);
   }
 }
 
 .vuln-range {
   display: inline-flex;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
 
   button[aria-pressed='true'] {
-    background: var(--trove-accent-container);
-    color: var(--trove-on-accent-container);
+    background: var(--quader-accent-container);
+    color: var(--quader-on-accent-container);
   }
 }
 
@@ -196,67 +196,67 @@
   display: block;
   inline-size: 100%;
   max-block-size: 16rem;
-  margin-block-start: var(--trove-space-3);
+  margin-block-start: var(--quader-space-3);
 }
 
 .trend-grid {
-  stroke: var(--trove-border);
+  stroke: var(--quader-border);
   stroke-width: 1;
 }
 
 .trend-tick {
-  fill: var(--trove-text-muted);
+  fill: var(--quader-text-muted);
   font-size: 11px;
 }
 
 .trend-series {
-  stroke: var(--trove-surface-raised);
+  stroke: var(--quader-surface-raised);
   stroke-width: 0.25;
 }
 
 .trend-critical {
-  fill: var(--trove-chart-critical);
-  background: var(--trove-chart-critical);
+  fill: var(--quader-chart-critical);
+  background: var(--quader-chart-critical);
 }
 
 .trend-high {
-  fill: var(--trove-chart-high);
-  background: var(--trove-chart-high);
+  fill: var(--quader-chart-high);
+  background: var(--quader-chart-high);
 }
 
 .trend-medium {
-  fill: var(--trove-chart-medium);
-  background: var(--trove-chart-medium);
+  fill: var(--quader-chart-medium);
+  background: var(--quader-chart-medium);
 }
 
 .trend-low {
-  fill: var(--trove-chart-low);
-  background: var(--trove-chart-low);
+  fill: var(--quader-chart-low);
+  background: var(--quader-chart-low);
 }
 
 .trend-none {
-  fill: var(--trove-chart-none);
-  background: var(--trove-chart-none);
+  fill: var(--quader-chart-none);
+  background: var(--quader-chart-none);
 }
 
 .trend-unknown {
-  fill: var(--trove-chart-unknown);
-  background: var(--trove-chart-unknown);
+  fill: var(--quader-chart-unknown);
+  background: var(--quader-chart-unknown);
 }
 
 .trend-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2) var(--trove-space-4);
-  margin: var(--trove-space-2) 0 0;
+  gap: var(--quader-space-2) var(--quader-space-4);
+  margin: var(--quader-space-2) 0 0;
   padding: 0;
   list-style: none;
 
   li {
     display: inline-flex;
     align-items: center;
-    gap: var(--trove-space-1);
-    font-size: var(--trove-text-muted-size);
+    gap: var(--quader-space-1);
+    font-size: var(--quader-text-muted-size);
   }
 
   .material-icons {
@@ -272,13 +272,13 @@
 
 .trend-table-scroll {
   max-block-size: 18rem;
-  margin-block-start: var(--trove-space-3);
+  margin-block-start: var(--quader-space-3);
   overflow: auto;
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-s);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-s);
 
   &:focus-visible {
-    outline: var(--trove-focus-ring);
+    outline: var(--quader-focus-ring);
     outline-offset: -2px;
   }
 
@@ -289,15 +289,15 @@
 
   th,
   td {
-    padding: var(--trove-space-1) var(--trove-space-3);
+    padding: var(--quader-space-1) var(--quader-space-3);
     text-align: start;
-    border-block-end: 1px solid var(--trove-border);
+    border-block-end: 1px solid var(--quader-border);
   }
 
   thead th {
     position: sticky;
     inset-block-start: 0;
-    background: var(--trove-table-head-bg);
+    background: var(--quader-table-head-bg);
   }
 
   .num {
@@ -313,13 +313,13 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--trove-space-3);
-  margin-block: var(--trove-space-3);
+  gap: var(--quader-space-3);
+  margin-block: var(--quader-space-3);
 
   .field {
     display: flex;
     flex-direction: column;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
     flex: 1 1 12rem;
   }
 
@@ -329,8 +329,8 @@
 }
 
 .vuln-list-title {
-  margin-block: var(--trove-space-4) var(--trove-space-2);
-  font: var(--trove-type-title-medium);
+  margin-block: var(--quader-space-4) var(--quader-space-2);
+  font: var(--quader-type-title-medium);
 }
 
 .vuln-selected {
@@ -340,31 +340,31 @@
 .vuln-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2);
-  margin-block: var(--trove-space-3);
+  gap: var(--quader-space-2);
+  margin-block: var(--quader-space-3);
 
   .material-icons {
     font-size: 1.125rem;
-    margin-inline-end: var(--trove-space-1);
+    margin-inline-end: var(--quader-space-1);
   }
 }
 
 .finding-title {
-  margin-block: var(--trove-space-3);
-  font: var(--trove-type-title-large);
+  margin-block: var(--quader-space-3);
+  font: var(--quader-type-title-large);
   overflow-wrap: anywhere;
 }
 
 .secondary-inline {
-  margin-inline-start: var(--trove-space-2);
-  color: var(--trove-text-muted);
-  font-size: var(--trove-text-muted-size);
+  margin-inline-start: var(--quader-space-2);
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
   font-weight: 400;
 }
 
 .secondary-link {
-  margin-inline-start: var(--trove-space-3);
-  font-size: var(--trove-text-muted-size);
+  margin-inline-start: var(--quader-space-3);
+  font-size: var(--quader-text-muted-size);
   font-weight: 400;
 }
 
@@ -381,19 +381,19 @@
 // The advisory's details are untrusted text the server rendered and sanitized (Q-VULN-52); the README component binds them.
 .advisory-text {
   max-inline-size: 70ch;
-  margin-block: var(--trove-space-2) var(--trove-space-4);
+  margin-block: var(--quader-space-2) var(--quader-space-4);
   overflow-wrap: anywhere;
 }
 
 .advisory h3 {
-  margin-block: var(--trove-space-4) var(--trove-space-2);
-  font: var(--trove-type-title-small);
+  margin-block: var(--quader-space-4) var(--quader-space-2);
+  font: var(--quader-type-title-small);
 }
 
 .vuln-source {
-  margin-block-start: var(--trove-space-4);
-  color: var(--trove-text-muted);
-  font-size: var(--trove-text-muted-size);
+  margin-block-start: var(--quader-space-4);
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
 }
 
 table.history {
@@ -402,17 +402,17 @@ table.history {
 
   th,
   td {
-    padding: var(--trove-space-2) var(--trove-space-3);
+    padding: var(--quader-space-2) var(--quader-space-3);
     text-align: start;
     vertical-align: top;
-    border-block-end: 1px solid var(--trove-border);
+    border-block-end: 1px solid var(--quader-border);
   }
 }
 
 .command {
   display: flex;
   align-items: flex-start;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 
   pre {
     flex: 1 1 auto;
@@ -423,15 +423,15 @@ table.history {
 }
 
 .vuln-repo {
-  margin-block-end: var(--trove-space-5);
+  margin-block-end: var(--quader-space-5);
 
   h2 {
-    margin-block: 0 var(--trove-space-2);
-    font: var(--trove-type-title-medium);
+    margin-block: 0 var(--quader-space-2);
+    font: var(--quader-type-title-medium);
   }
 }
 
 // The grade card of a repository's section on the package page (R-UI-093, R-VULN-023).
 .vuln-grade {
-  margin-block: var(--trove-space-2) var(--trove-space-4);
+  margin-block: var(--quader-space-2) var(--quader-space-4);
 }

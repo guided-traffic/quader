@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 // restStore carries the groups of the data port that the local class does not use. A call panics on the nil interface, so a test that

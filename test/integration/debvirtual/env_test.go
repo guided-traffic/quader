@@ -21,13 +21,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	_ "github.com/guided-traffic/trove/internal/formats/all"
-	"github.com/guided-traffic/trove/internal/formats/deb/control"
-	"github.com/guided-traffic/trove/internal/openpgp"
-	"github.com/guided-traffic/trove/test/debstub"
-	"github.com/guided-traffic/trove/test/debstub/debgen"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	_ "github.com/guided-traffic/quader/internal/formats/all"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
+	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/test/debstub"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -92,13 +92,13 @@ func newEnv(t *testing.T, o options) *venv {
 	}
 	e.keyA = string(ring)
 	e.st = testenv.NewStack(t, testenv.StackOptions{Name: "debvirtual", Env: []string{
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
-		"TROVE_API_RATE_LIMITS_ENABLED=false",
-		"TROVE_DEB_INDEX_DELAY=1s",
-		"TROVE_DEB_VIRTUAL_INDEX_INTERVAL=10s",
-		"TROVE_DEB_INDEX_WAIT_MAX=2s",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		"QUADER_API_RATE_LIMITS_ENABLED=false",
+		"QUADER_DEB_INDEX_DELAY=1s",
+		"QUADER_DEB_VIRTUAL_INDEX_INTERVAL=10s",
+		"QUADER_DEB_INDEX_WAIT_MAX=2s",
 	}})
 	e.st.Repository(rLocal, "local", "deb", `{"local":{"packageOwnership":"off"}}`)
 	e.st.Repository(rRemote, "remote", "deb", e.remoteDoc(o.remoteTTL, o.fillAction))

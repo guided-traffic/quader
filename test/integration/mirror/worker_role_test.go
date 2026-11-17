@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/mirror"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/mirror"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // TestR_REPO_055_AWorkerRunsAPassThroughItsOwnEngineAgainstTheNpmUpstream: a replica with the role worker that claims the queue
@@ -52,9 +52,9 @@ func TestR_REPO_055_AWorkerRunsAPassThroughItsOwnEngineAgainstTheNpmUpstream(t *
 	}
 
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "mirrorw", Valkey: true, Env: []string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
 	}})
 	doc := map[string]any{
 		"includePatterns": []string{pkg.Name}, "excludePatterns": []string{},
@@ -81,7 +81,7 @@ func TestR_REPO_055_AWorkerRunsAPassThroughItsOwnEngineAgainstTheNpmUpstream(t *
 	// No MirrorOverride: the host is the one the composition root builds for a worker. The worker claims the queue mirror
 	// for the pass and maintenance for the dispatch, which runs there (Q-ARCH-321).
 	rep := st.Start(t, testenv.ReplicaOptions{
-		Name: "worker-1", Role: "worker", Env: append(append([]string{}, fastJobs...), `TROVE_JOBS_QUEUES=["mirror","maintenance"]`),
+		Name: "worker-1", Role: "worker", Env: append(append([]string{}, fastJobs...), `QUADER_JOBS_QUEUES=["mirror","maintenance"]`),
 	})
 	dispatch := func() {
 		if _, err := rep.App.Queue().EnqueueNow(context.Background(), jobs.EnqueueSpec{Kind: mirror.KindDispatch}); err != nil {

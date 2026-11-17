@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // sharedSubjects are callers the Host allows to read everything: a user, a service account and the anonymous
@@ -35,7 +35,7 @@ func callerHeaders() []http.Header {
 			"X-Nuget-Session-Id": {"11111111-1111-1111-1111-111111111111"}, "X-Forwarded-For": {"203.0.113.1"}, "Referer": {"https://a.example/"},
 		},
 		{
-			"Authorization": {"Bearer trv_sat_ci-bot"}, "User-Agent": {"NuGet Command Line/6.14.0 (Linux)"},
+			"Authorization": {"Bearer qdr_sat_ci-bot"}, "User-Agent": {"NuGet Command Line/6.14.0 (Linux)"},
 			"Npm-Session": {"fedcba9876543210"}, "Npm-Command": {"ci"},
 			"X-Nuget-Session-Id": {"22222222-2222-2222-2222-222222222222"}, "X-Forwarded-For": {"198.51.100.2"},
 		},

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // ServeCheck runs before the core serves a stored item on any route: the npm tarball

@@ -79,7 +79,7 @@ func init() {
 			`"state":{"type":"string","enum":["primary","next"]}},` +
 			`"required":["fingerprint","state"],"additionalProperties":false}`,
 	})
-	// `trove admin deb reinstate`: a package file the replay withheld is served again. Not journaled: it restores access.
+	// `quader admin deb reinstate`: a package file the replay withheld is served again. Not journaled: it restores access.
 	Register(EventType{
 		Name: EventDebReinstate, Category: CategoryContent, Mode: Transactional,
 		Schema: `{"type":"object","properties":{` + debPath + `,` + debSHA256 + `},` +

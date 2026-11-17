@@ -121,7 +121,7 @@ func TestR_NPM_007_ArchiveRules(t *testing.T) {
 func TestR_NPM_007_ManifestConsistency(t *testing.T) {
 	e := newEnv(t)
 	reject := e.replica("web-a")
-	warn := e.replica("web-w", "TROVE_NPM_PUBLISH_MANIFEST_CONSISTENCY=warn")
+	warn := e.replica("web-w", "QUADER_NPM_PUBLISH_MANIFEST_CONSISTENCY=warn")
 	withDeps := tarballOf(t, pkg{Name: "needy", Version: "1.0.0", Deps: map[string]string{"left-pad": "^1.0.0"}})
 	p := pkg{Name: "needy", Version: "1.0.0", Tarball: withDeps} // the request manifest declares none
 	t.Run("R-NPM-007 reject", func(t *testing.T) {
@@ -265,7 +265,7 @@ func TestR_NPM_007_RequestRules(t *testing.T) {
 // TestR_NPM_007_Limits: a publish beyond a limit is 413 npm_too_large and stores nothing.
 func TestR_NPM_007_Limits(t *testing.T) {
 	e := newEnv(t)
-	small := e.replica("web-s", "TROVE_NPM_PUBLISH_MAX_TARBALL_SIZE=64KiB", "TROVE_NPM_PUBLISH_MAX_TAR_ENTRIES=4", "TROVE_NPM_PUBLISH_MAX_UNPACKED_SIZE=32KiB")
+	small := e.replica("web-s", "QUADER_NPM_PUBLISH_MAX_TARBALL_SIZE=64KiB", "QUADER_NPM_PUBLISH_MAX_TAR_ENTRIES=4", "QUADER_NPM_PUBLISH_MAX_UNPACKED_SIZE=32KiB")
 	noise := make([]byte, 200<<10)
 	r := rand.NewChaCha8([32]byte{1})
 	_, _ = r.Read(noise)

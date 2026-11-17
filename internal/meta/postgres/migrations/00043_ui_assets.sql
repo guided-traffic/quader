@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The shared asset store of the UI (R-HA-020, Q-HA-120 to Q-HA-123). Every replica that serves the UI publishes the hashed
 -- files of its embedded build at start-up: the content goes into the blob store like any other content (INV-4), and a row

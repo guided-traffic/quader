@@ -165,7 +165,7 @@ func TestNPMReplicas(t *testing.T) {
 		if len(versions) != 1 || versions[0] != "1.1.0" {
 			t.Fatalf("after the unpublish of 1.0.0: versions %v", versions)
 		}
-		// R-NPM-046: the access of the requests is counted per replica (trove_npm_requests_total, R-NPM-044); the
+		// R-NPM-046: the access of the requests is counted per replica (quader_npm_requests_total, R-NPM-044); the
 		// requests of the unpublish must have reached more than one replica
 		after, served := npmRequestsPerReplica(t), 0
 		for p, n := range after {
@@ -274,13 +274,13 @@ func duringChaos(t *testing.T, fx *npmFixture, row, name string, chaos func(stop
 	}
 }
 
-// npmRequestsPerReplica is the sum of trove_npm_requests_total of each ready packages pod.
+// npmRequestsPerReplica is the sum of quader_npm_requests_total of each ready packages pod.
 func npmRequestsPerReplica(t testing.TB) map[string]float64 {
 	t.Helper()
 	out := map[string]float64{}
 	for _, p := range readyPackagesPods(t) {
 		for series, v := range metricsOf(t, p) {
-			if strings.HasPrefix(series, "trove_npm_requests_total{") {
+			if strings.HasPrefix(series, "quader_npm_requests_total{") {
 				out[p] += v
 			}
 		}
@@ -332,7 +332,7 @@ func cacheInvalidationOnEveryReplica(t *testing.T, fx *npmFixture) {
 
 // dropOneAnswer makes the edge drop the connection (silent-drop of HAProxy 2.8) instead of answering the first revisioned PUT it carries (the write
 // of an unpublish), after the replica has committed it: HAProxy Ingress takes the rules through the config-backend
-// annotation of trove's Ingress, a stick-table counter lets exactly one answer through the rule. The returned function
+// annotation of quader's Ingress, a stick-table counter lets exactly one answer through the rule. The returned function
 // restores the annotation the profile set.
 func dropOneAnswer(t *testing.T) func() { return dropOneAnswerOf(t, "path_sub /-rev/", "") }
 
@@ -347,7 +347,7 @@ func dropOneAnswerOf(t *testing.T, pathACL, status string) func() {
 		statusCond = " { status " + status + " }"
 	}
 	const key = "haproxy-ingress.github.io/config-backend"
-	was := kn(t, "get", "ingress", "trove", "-o", `jsonpath={.metadata.annotations.haproxy-ingress\.github\.io/config-backend}`)
+	was := kn(t, "get", "ingress", "quader", "-o", `jsonpath={.metadata.annotations.haproxy-ingress\.github\.io/config-backend}`)
 	rules := was + `
 stick-table type string size 1 expire 1m store gpc0
 acl e2e_put method PUT
@@ -355,10 +355,10 @@ acl e2e_rev ` + pathACL + `
 http-request track-sc0 str(e2e-drop) if e2e_put e2e_rev
 http-request set-var(txn.e2e_rev) int(1) if e2e_put e2e_rev
 http-response silent-drop if { var(txn.e2e_rev) -m found }` + statusCond + ` { sc0_get_gpc0 eq 0 } { sc0_inc_gpc0 gt 0 }`
-	kn(t, "annotate", "ingress", "trove", "--overwrite", key+"="+rules)
+	kn(t, "annotate", "ingress", "quader", "--overwrite", key+"="+rules)
 	time.Sleep(8 * time.Second) // the controller renders the backend and reloads HAProxy
 	return func() {
-		kn(t, "annotate", "ingress", "trove", "--overwrite", key+"="+was)
+		kn(t, "annotate", "ingress", "quader", "--overwrite", key+"="+was)
 		time.Sleep(5 * time.Second)
 	}
 }

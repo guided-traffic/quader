@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // codeAutoJoinAdminConflict is a code of the identity area that the
@@ -70,7 +70,7 @@ func (s *Service) bindable(ctx context.Context, role Role, ref string) (Ref, str
 // exists keeps its source, so binding one that authz.role_bindings declares
 // answers 200 and leaves it to the configuration (Q-AUTHZ-171). Binding a role
 // to an auto-join group is refused with 409 auto_join_admin_conflict. The second
-// result is the epoch to return in Trove-Authz-Epoch: the epoch the write
+// result is the epoch to return in Quader-Authz-Epoch: the epoch the write
 // produced, or the current one when nothing changed.
 func (s *Service) BindRole(ctx context.Context, actor Subject, role Role, ref string) (created bool, epoch int64, err error) {
 	r, id, err := s.bindable(ctx, role, ref)

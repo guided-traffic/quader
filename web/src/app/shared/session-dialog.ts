@@ -16,16 +16,16 @@ export interface SessionDialogData {
  * re-authentication) is the editors' part.
  */
 @Component({
-  selector: 'trove-session-dialog',
+  selector: 'quader-session-dialog',
   imports: [DialogTitle, DialogClose],
   template: `
     @if (data.kind === 'ended') {
-      <h2 troveDialogTitle i18n="@@session.ended.title">Your session has ended</h2>
+      <h2 quaderDialogTitle i18n="@@session.ended.title">Your session has ended</h2>
       <div class="dialog-body" i18n="@@session.ended.text">
         You were signed out. Sign in again to continue where you left off.
       </div>
     } @else {
-      <h2 troveDialogTitle i18n="@@session.reauth.title">Confirm it is you</h2>
+      <h2 quaderDialogTitle i18n="@@session.reauth.title">Confirm it is you</h2>
       <div class="dialog-body" i18n="@@session.reauth.text">
         This action needs a recent sign-in. Sign in again, then repeat the action.
       </div>
@@ -38,7 +38,7 @@ export interface SessionDialogData {
         </button>
       }
       <!-- <<< M1 ui-b -->
-      <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@session.later">Not now</button>
+      <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@session.later">Not now</button>
       <button class="btn btn-confirm" type="button" (click)="signIn()" i18n="@@session.sign-in-again">
         Sign in again
       </button>

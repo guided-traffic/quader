@@ -7,7 +7,7 @@
 | `member_unverified: <member>` | The member's stored release was not verified by a current upstream key, or the member has no keys. Set `deb.upstreamKeys` on the member; the next build fetches and verifies the release anew. |
 | `member_expired: <member>` | The member's release has a `Valid-Until` that has passed. The archive must publish a new release. |
 | `member_rollback: <member>` | The upstream served a release older than the one the last build merged. Taking the member out of the virtual repository and adding it back accepts the older release deliberately. |
-| `member_unavailable: <member>` | The member could not be asked and trove has no stored copy of its release. |
+| `member_unavailable: <member>` | The member could not be asked and Quader has no stored copy of its release. |
 | `no_signing_key` | The virtual repository has no primary signing key. |
 
 ### Uploads

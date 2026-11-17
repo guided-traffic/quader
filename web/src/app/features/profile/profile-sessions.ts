@@ -16,25 +16,25 @@ import { ProfileNav } from './profile-nav';
  * that is signing out.
  */
 @Component({
-  selector: 'trove-profile-sessions',
+  selector: 'quader-profile-sessions',
   imports: [DatePipe, DataTable, ErrorNotice, PageHeader, ProfileNav],
   template: `
-    <trove-page-header [heading]="heading">
+    <quader-page-header [heading]="heading">
       @if (others() > 0) {
         <button actions class="btn btn-confirm" type="button" (click)="endOthers()" i18n="@@profile.sessions.end-others">
           End all other sessions
         </button>
       }
-    </trove-page-header>
-    <trove-profile-nav />
+    </quader-page-header>
+    <quader-profile-nav />
 
     @if (error(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     }
     <!-- The shared data table: a column budget, the browser's long user agent wrapping in its cell, and stacked rows below
          48 rem, so the page never scrolls sideways (R-UI-029, at 390 px it did by about 230 px). -->
     @if (loaded() || !error()) {
-      <trove-data-table [caption]="caption" [columns]="columns" [loaded]="loaded()" [loading]="!loaded()" [empty]="sessions().length === 0">
+      <quader-data-table [caption]="caption" [columns]="columns" [loaded]="loaded()" [loading]="!loaded()" [empty]="sessions().length === 0">
         @for (s of sessions(); track s.id) {
           <tr>
             <th scope="row">
@@ -57,7 +57,7 @@ import { ProfileNav } from './profile-nav';
             </td>
           </tr>
         }
-      </trove-data-table>
+      </quader-data-table>
     }
   `,
   styleUrl: '../../shared/access/access.scss',

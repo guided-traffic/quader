@@ -1,10 +1,10 @@
-// Golden-vector generator for the NuGet version, range and ID rules of trove (R-NUGET-003,
+// Golden-vector generator for the NuGet version, range and ID rules of quader (R-NUGET-003,
 // R-NUGET-004). It prints one JSON document on stdout; generate.sh stores it as
 // internal/formats/nuget/version/testdata/vectors.json. The Go packages
 // internal/formats/nuget/version and internal/formats/nuget/id must agree with every entry.
 //
 // Accept or reject, the normalized forms, the ordering and the range semantics come from the
-// pinned NuGet.Versioning library. Two things are trove's own rule written down here, because the
+// pinned NuGet.Versioning library. Two things are quader's own rule written down here, because the
 // library has no such notion: is_semver2 (the rule nuget.org applies) and the ID rules (the
 // regular expressions of R-NUGET-003 under .NET's definition of \w).
 using System.Text;

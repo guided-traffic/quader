@@ -13,10 +13,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // Options are what [Open] and [New] need.
@@ -30,7 +30,7 @@ type Options struct {
 	// Signer signs the answer records (R-BAS-032). Required with Valkey.
 	Signer *cache.Signer
 	Log    *slog.Logger
-	// Registry receives trove_valkey_*, trove_ratelimit_decisions_total and trove_ratelimit_fallback; nil
+	// Registry receives quader_valkey_*, quader_ratelimit_decisions_total and quader_ratelimit_fallback; nil
 	// registers nothing.
 	Registry prometheus.Registerer
 	// Metrics counts the answer records that failed their signature; nil counts nothing.
@@ -45,10 +45,10 @@ var ErrNoSigner = errors.New("shared: Valkey holds answers only signed: a signin
 
 // Open builds the state of a replica: the local one for valkey.mode none, and for sentinel or standalone the
 // Valkey form behind the client of internal/cluster, made without a keyspace under the key prefix
-// trove-bastion:<valkey.key_prefix>: (R-BAS-034). The returned closer stops the client.
+// quader-bastion:<valkey.key_prefix>: (R-BAS-034). The returned closer stops the client.
 //
 // A Valkey that cannot be reached, or that refuses the credential, is not an error here: the client keeps
-// trying, the state runs its local forms and the log and trove_valkey_available say so. A replica never
+// trying, the state runs its local forms and the log and quader_valkey_available say so. A replica never
 // becomes unready because of it (R-BAS-034).
 func Open(ctx context.Context, o Options) (*State, io.Closer, error) {
 	o = o.withDefaults()

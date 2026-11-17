@@ -9,7 +9,7 @@
   display: grid;
   grid-template-columns: clamp(18rem, 30%, 26rem) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
   block-size: var(--browse-height);
 
   .pane {
@@ -17,9 +17,9 @@
     flex-direction: column;
     min-block-size: 0;
     min-inline-size: 0;
-    border: 1px solid var(--trove-border);
-    border-radius: var(--trove-radius-m);
-    background: var(--trove-surface-raised);
+    border: 1px solid var(--quader-border);
+    border-radius: var(--quader-radius-m);
+    background: var(--quader-surface-raised);
     overflow: hidden;
   }
 
@@ -28,10 +28,10 @@
     flex: none;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--trove-space-2);
-    padding: var(--trove-space-2) var(--trove-space-3);
-    border-block-end: 1px solid var(--trove-border);
-    background: var(--trove-table-head-bg);
+    gap: var(--quader-space-2);
+    padding: var(--quader-space-2) var(--quader-space-3);
+    border-block-end: 1px solid var(--quader-border);
+    background: var(--quader-table-head-bg);
   }
 
   .pane-body {
@@ -42,17 +42,17 @@
 
   .pane-status,
   .pane-more {
-    margin: var(--trove-space-3);
-    color: var(--trove-text-muted);
+    margin: var(--quader-space-3);
+    color: var(--quader-text-muted);
   }
 
   .pane-empty {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--trove-space-3);
-    padding: var(--trove-space-4);
-    color: var(--trove-text-muted);
+    gap: var(--quader-space-3);
+    padding: var(--quader-space-4);
+    color: var(--quader-text-muted);
 
     p {
       margin: 0;
@@ -62,7 +62,7 @@
   // ---- Tree pane -------------------------------------------------------------------------------
 
   .tree-toolbar {
-    gap: var(--trove-space-2);
+    gap: var(--quader-space-2);
 
     .filter-toggle {
       white-space: nowrap;
@@ -73,58 +73,58 @@
     display: flex;
     flex: 1 1 100%;
     align-items: center;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
   }
 
   .filter-field {
     display: flex;
     flex: 1 1 100%;
     align-items: center;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
     min-inline-size: 0;
     min-block-size: 36px;
-    padding-inline: var(--trove-space-2);
-    border: 1px solid var(--trove-border-strong);
-    border-radius: var(--trove-radius-s);
-    background: var(--trove-surface);
+    padding-inline: var(--quader-space-2);
+    border: 1px solid var(--quader-border-strong);
+    border-radius: var(--quader-radius-s);
+    background: var(--quader-surface);
 
     &:focus-within {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: 1px;
     }
 
     .material-icons {
       font-size: 1.125rem;
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
   }
 
   .filter-input {
     flex: 1 1 auto;
     min-inline-size: 0;
-    padding: var(--trove-space-1) 0;
+    padding: var(--quader-space-1) 0;
     border: 0;
     background: transparent;
-    color: var(--trove-on-surface);
+    color: var(--quader-on-surface);
     font: inherit;
     outline: none;
 
     &::placeholder {
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
       opacity: 1;
     }
   }
 
   .pane-chips {
     margin: 0;
-    padding: var(--trove-space-2) var(--trove-space-3) 0;
+    padding: var(--quader-space-2) var(--quader-space-3) 0;
   }
 
   .pane-count {
     flex: none;
     margin: 0 0 0 auto;
-    color: var(--trove-text-muted);
-    font-size: var(--trove-text-muted-size);
+    color: var(--quader-text-muted);
+    font-size: var(--quader-text-muted-size);
   }
 
   .tree-filters {
@@ -141,7 +141,7 @@
   }
 
   .tree-scroll {
-    padding: var(--trove-space-1) var(--trove-space-2) var(--trove-space-3);
+    padding: var(--quader-space-1) var(--quader-space-2) var(--quader-space-3);
 
     &[hidden] {
       display: none;
@@ -156,7 +156,7 @@
   }
 
   .tree ul {
-    padding-inline-start: var(--trove-space-4);
+    padding-inline-start: var(--quader-space-4);
   }
 
   // A row that is a link (the tree of the documentation, Q-UI-248) keeps the colour of the other rows, not the colour of a link.
@@ -171,27 +171,27 @@
     > .node-label {
       display: flex;
       align-items: center;
-      gap: var(--trove-space-1);
+      gap: var(--quader-space-1);
       min-block-size: 32px;
-      padding: 0 var(--trove-space-2) 0 0;
-      border-radius: var(--trove-radius-s);
+      padding: 0 var(--quader-space-2) 0 0;
+      border-radius: var(--quader-radius-s);
       cursor: pointer;
 
       &:hover {
-        background: var(--trove-row-hover);
+        background: var(--quader-row-hover);
       }
     }
 
     &[aria-selected='true'] > .node-label,
     &[aria-current='page'] > .node-label {
-      background: var(--trove-accent-container);
-      color: var(--trove-on-accent-container);
+      background: var(--quader-accent-container);
+      color: var(--quader-on-accent-container);
       font-weight: 600;
     }
 
     &:focus-visible > .node-label,
     &[data-active='true']:focus > .node-label {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: -2px;
     }
   }
@@ -200,13 +200,13 @@
     flex: none;
     inline-size: 1.25rem;
     font-size: 1.25rem;
-    color: var(--trove-text-muted);
+    color: var(--quader-text-muted);
   }
 
   .node-icon {
     flex: none;
     font-size: 1.25rem;
-    color: var(--trove-text-muted);
+    color: var(--quader-text-muted);
   }
 
   :is([aria-selected='true'], [aria-current='page']) > .node-label :is(.node-chevron, .node-icon) {
@@ -223,16 +223,16 @@
 
   .node-size {
     margin-inline-start: auto;
-    color: var(--trove-text-muted);
+    color: var(--quader-text-muted);
     font-size: 0.75rem;
     white-space: nowrap;
   }
 
   .tag {
     flex: none;
-    padding: 0 var(--trove-space-1);
-    border: 1px solid var(--trove-border-strong);
-    border-radius: var(--trove-radius-s);
+    padding: 0 var(--quader-space-1);
+    border: 1px solid var(--quader-border-strong);
+    border-radius: var(--quader-radius-s);
     color: inherit;
     font-size: 0.6875rem;
     font-weight: 500;
@@ -241,16 +241,16 @@
   }
 
   .status-row {
-    padding: var(--trove-space-1) var(--trove-space-2);
-    color: var(--trove-text-muted);
-    font-size: var(--trove-text-muted-size);
+    padding: var(--quader-space-1) var(--quader-space-2);
+    color: var(--quader-text-muted);
+    font-size: var(--quader-text-muted-size);
   }
 
   // ---- Details pane ----------------------------------------------------------------------------
 
   .details-head {
     justify-content: space-between;
-    row-gap: var(--trove-space-2);
+    row-gap: var(--quader-space-2);
   }
 
   .back {
@@ -272,8 +272,8 @@
 
     li + li::before {
       content: '/';
-      margin-inline: var(--trove-space-2);
-      color: var(--trove-text-muted);
+      margin-inline: var(--quader-space-2);
+      color: var(--quader-text-muted);
     }
 
     li {
@@ -289,39 +289,39 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--trove-space-2);
+    gap: var(--quader-space-2);
 
     .material-icons {
-      margin-inline-end: var(--trove-space-1);
+      margin-inline-end: var(--quader-space-1);
       font-size: 1.125rem;
     }
 
-    trove-copy-button .material-icons {
+    quader-copy-button .material-icons {
       margin: 0;
     }
   }
 
   .details-body {
-    padding: var(--trove-space-2) var(--trove-space-4) var(--trove-space-4);
+    padding: var(--quader-space-2) var(--quader-space-4) var(--quader-space-4);
   }
 
   .tab {
-    padding-block: var(--trove-space-3);
+    padding-block: var(--quader-space-3);
 
     h3 {
-      margin-block: var(--trove-space-4) var(--trove-space-2);
-      font: var(--trove-type-title-small);
+      margin-block: var(--quader-space-4) var(--quader-space-2);
+      font: var(--quader-type-title-small);
     }
   }
 
   .digest {
     display: flex;
     align-items: flex-start;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
 
     code {
       min-inline-size: 0;
-      padding-block: var(--trove-space-2);
+      padding-block: var(--quader-space-2);
       font-size: 0.8125rem;
       overflow-wrap: anywhere;
     }
@@ -330,21 +330,21 @@
   .links {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--trove-space-4);
-    margin-block: var(--trove-space-3);
+    gap: var(--quader-space-4);
+    margin-block: var(--quader-space-3);
   }
 
   .members {
     margin: 0;
-    padding-inline-start: var(--trove-space-6);
+    padding-inline-start: var(--quader-space-6);
   }
 
   .deleting {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--trove-space-2);
-    margin-block: var(--trove-space-2);
+    gap: var(--quader-space-2);
+    margin-block: var(--quader-space-2);
   }
 
   .details-empty {
@@ -358,15 +358,15 @@
     }
 
     .empty-title {
-      color: var(--trove-on-surface);
-      font: var(--trove-type-title-medium);
+      color: var(--quader-on-surface);
+      font: var(--quader-type-title-medium);
     }
   }
 
   .entry {
     display: inline-flex;
     align-items: center;
-    gap: var(--trove-space-2);
+    gap: var(--quader-space-2);
     text-decoration: none;
 
     // A link in a table is underlined under the pointer and on focus only, as every other table (UI-A-19, Q-UI-128).
@@ -382,13 +382,13 @@
 
     .material-icons {
       font-size: 1.25rem;
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
   }
 
   // The folder table sits in a pane that scrolls on its own; the table keeps its sticky header
   // inside a region that is shorter than the pane.
-  .trove-data-table .table-scroll {
+  .quader-data-table .table-scroll {
     max-block-size: max(14rem, calc(var(--browse-height) - 11rem));
   }
 

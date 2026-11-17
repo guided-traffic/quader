@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 const npmLikeSchema = `{
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "latestGuard":          {"type": "boolean", "x-trove-classes": ["local"]},
-    "serveRemovedVersions": {"type": "boolean", "x-trove-classes": ["remote"]},
-    "latestStrategy":       {"type": "string", "enum": ["highest-member-latest", "newest-published"], "x-trove-classes": ["virtual"]}
+    "latestGuard":          {"type": "boolean", "x-quader-classes": ["local"]},
+    "serveRemovedVersions": {"type": "boolean", "x-quader-classes": ["remote"]},
+    "latestStrategy":       {"type": "string", "enum": ["highest-member-latest", "newest-published"], "x-quader-classes": ["virtual"]}
   }
 }`
 

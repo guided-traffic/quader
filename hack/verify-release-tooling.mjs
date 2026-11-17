@@ -99,14 +99,14 @@ const context = {
   logger,
   cwd: process.cwd(),
   options: {
-    repositoryUrl: "https://github.com/guided-traffic/trove.git",
+    repositoryUrl: "https://github.com/guided-traffic/quader.git",
   },
   lastRelease: { gitTag: "v0.1.0", gitHead: COMMITS[0].hash, version: "0.1.0" },
   nextRelease: { gitTag: "v0.2.0", gitHead: COMMITS[3].hash, version: "0.2.0" },
 };
 
 // Step 1: the analyzer must load the preset and classify the commit set. The breaking change is
-// a minor release while trove stays on major version 0 (releaseRules in .releaserc.json).
+// a minor release while quader stays on major version 0 (releaseRules in .releaserc.json).
 const { analyzeCommits } = await loadPlugin("@semantic-release/commit-analyzer");
 const analyzerConfig = pluginConfigFrom(releaserc, "@semantic-release/commit-analyzer");
 

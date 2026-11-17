@@ -12,12 +12,12 @@ import (
 
 	"github.com/ulikunitz/xz"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/control"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/formats/deb/version"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats/deb/version"
 )
 
-// computed are the fields of a Packages paragraph that trove writes itself; whatever an uploaded paragraph held of them is dropped
+// computed are the fields of a Packages paragraph that quader writes itself; whatever an uploaded paragraph held of them is dropped
 // before (R-DEB-007, R-DEB-034).
 func computed() []string { return []string{"Filename", "Size", "MD5sum", "SHA256"} }
 

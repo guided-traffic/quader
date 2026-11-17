@@ -18,7 +18,7 @@ var errHalted = errors.New("mirror: the pass sends no further request")
 type throttle struct {
 	clock  Clock
 	jitter Jitter
-	// onWindow is told the window after every change (trove_mirror_concurrency).
+	// onWindow is told the window after every change (quader_mirror_concurrency).
 	onWindow func(int)
 
 	mu          sync.Mutex
@@ -146,7 +146,7 @@ func (t *throttle) setWindow(w int) {
 
 // success ends a request that the upstream answered: it counts towards the growth of the window and resets the run of
 // rate-limit answers. A request that was in flight when a wait began does not count towards the growth: the window the wait
-// halved stays halved while the wait lasts (trove_mirror_concurrency is at most half of its value before the answer,
+// halved stays halved while the wait lasts (quader_mirror_concurrency is at most half of its value before the answer,
 // R-REPO-054), and grows only by what is sent after it.
 func (t *throttle) success(tk ticket) {
 	t.mu.Lock()

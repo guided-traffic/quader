@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 // host is the Host header the stub counts a request of one of its names under.

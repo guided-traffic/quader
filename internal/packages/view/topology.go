@@ -4,8 +4,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // maxNesting bounds the depth the members of virtual repositories are followed to.

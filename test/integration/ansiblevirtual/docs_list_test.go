@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_ANS_026_ARemoteMembersCollectionInstalledThroughAVirtualRepositoryIsListedWithItsDocumentation: the archive a client installs through
@@ -45,7 +45,7 @@ func TestR_ANS_026_ARemoteMembersCollectionInstalledThroughAVirtualRepositoryIsL
 	if len(lic) != 1 || lic[0] != "GPL-3.0-or-later" || md["requiresAnsible"] == nil || md["requiresAnsible"] == "" || md["authors"] == nil {
 		t.Errorf("the page shows %v", detail)
 	}
-	if first := list.JSON(t)["items"].([]any)[0].(map[string]any); first["description"] != "trove test collection acme.base" {
+	if first := list.JSON(t)["items"].([]any)[0].(map[string]any); first["description"] != "quader test collection acme.base" {
 		t.Errorf("the list shows %v", first)
 	}
 	repos := ""

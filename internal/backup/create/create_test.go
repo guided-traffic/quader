@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 func exitOf(t *testing.T, err error, want int, code string) {
@@ -49,10 +49,10 @@ func TestR_BAK_009_PhasesAndManifest(t *testing.T) {
 	if m.Encryption.SSE != "AES256" || m.Secrets.KeyIDs[0] != "2026-10" || m.Postgres.Isolation != "repeatable read" {
 		t.Fatalf("manifest = %+v", m)
 	}
-	if _, ok := e.mem.Data("trove/pool/sha256/" + a.Hex()[:2] + "/" + a.Hex()[2:4] + "/" + a.Hex()); !ok {
+	if _, ok := e.mem.Data("quader/pool/sha256/" + a.Hex()[:2] + "/" + a.Hex()[2:4] + "/" + a.Hex()); !ok {
 		t.Fatalf("pool object missing: %v", e.mem.Keys())
 	}
-	if _, ok := e.mem.Data("trove/trove-backup-target.json"); !ok {
+	if _, ok := e.mem.Data("quader/quader-backup-target.json"); !ok {
 		t.Fatal("marker not written")
 	}
 	if e.runs.finished != backup.StateCompleted || len(e.runs.pins) != 0 || !e.prune.called {
@@ -187,7 +187,7 @@ func TestR_BAK_006_ServerSideAndStreamingCopy(t *testing.T) {
 		if e.mem.Calls["copy"] != 0 {
 			t.Fatalf("calls = %v", e.mem.Calls)
 		}
-		if b, _ := e.mem.Data("trove/pool/sha256/" + d.Hex()[:2] + "/" + d.Hex()[2:4] + "/" + d.Hex()); string(b) != "alpha" {
+		if b, _ := e.mem.Data("quader/pool/sha256/" + d.Hex()[:2] + "/" + d.Hex()[2:4] + "/" + d.Hex()); string(b) != "alpha" {
 			t.Fatalf("pool object = %q", b)
 		}
 	})
@@ -226,7 +226,7 @@ func TestR_BAK_006_SourceDamage(t *testing.T) {
 		if m := e.manifest(res.BackupID); m.Blobs.Damaged[0].Status != "corrupt" {
 			t.Fatalf("damaged = %+v", m.Blobs.Damaged)
 		}
-		if _, ok := e.mem.Data("trove/pool/sha256/" + d.Hex()[:2] + "/" + d.Hex()[2:4] + "/" + d.Hex()); ok {
+		if _, ok := e.mem.Data("quader/pool/sha256/" + d.Hex()[:2] + "/" + d.Hex()[2:4] + "/" + d.Hex()); ok {
 			t.Fatal("a corrupt blob must not reach the pool")
 		}
 	})
@@ -301,7 +301,7 @@ func TestR_BAK_013_ExitCodes(t *testing.T) {
 		e := newEnv(t)
 		m := format.NewMarker("someone-else", "inc-9", time.Now())
 		b, _ := m.Encode()
-		e.mem.Set("trove/trove-backup-target.json", b)
+		e.mem.Set("quader/quader-backup-target.json", b)
 		_, err := e.create(backup.CreateOptions{})
 		exitOf(t, err, backup.ExitForeignTarget, backup.CodeForeignTarget)
 		if !strings.Contains(err.Error(), "someone-else") || e.hasManifest() {
@@ -310,16 +310,16 @@ func TestR_BAK_013_ExitCodes(t *testing.T) {
 	})
 	t.Run("4 a prefix with backups but no marker", func(t *testing.T) {
 		e := newEnv(t)
-		e.mem.Set("trove/backups/20260101T000000Z-aaaa/manifest.json", []byte("{}"))
+		e.mem.Set("quader/backups/20260101T000000Z-aaaa/manifest.json", []byte("{}"))
 		_, err := e.create(backup.CreateOptions{})
 		exitOf(t, err, backup.ExitForeignTarget, backup.CodeForeignTarget)
 	})
 	t.Run("6 a previous backup of a higher manifest format", func(t *testing.T) {
 		e := newEnv(t)
-		e.mem.Set("trove/backups/20260101T000000Z-aaaa/manifest.json", []byte(`{"format": 99}`))
+		e.mem.Set("quader/backups/20260101T000000Z-aaaa/manifest.json", []byte(`{"format": 99}`))
 		m := format.NewMarker("inst-1", "inc-1", time.Now())
 		b, _ := m.Encode()
-		e.mem.Set("trove/trove-backup-target.json", b)
+		e.mem.Set("quader/quader-backup-target.json", b)
 		_, err := e.create(backup.CreateOptions{})
 		exitOf(t, err, backup.ExitPrecondition, backup.CodeFormatUnknown)
 	})
@@ -364,7 +364,7 @@ func TestR_BAK_013_ExitCodes(t *testing.T) {
 		if _, err := e.create(backup.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
-		e.mem.Remove("trove/pool/sha256/" + a.Hex()[:2] + "/" + a.Hex()[2:4] + "/" + a.Hex())
+		e.mem.Remove("quader/pool/sha256/" + a.Hex()[:2] + "/" + a.Hex()[2:4] + "/" + a.Hex())
 		e.runs = newFakeRuns()
 		e.snap.runs = e.runs
 		e.now = e.now.Add(time.Minute)

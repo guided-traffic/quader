@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // The kinds and tasks of the coordination layer itself (R-ARCH-016 table,

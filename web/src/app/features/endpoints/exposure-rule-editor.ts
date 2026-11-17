@@ -110,7 +110,7 @@ const FIELD_LABELS: readonly (readonly [prefix: string, label: () => string])[] 
  * `If-Match`; a create sends the `Idempotency-Key` generated when the page opened (R-UI-042).
  */
 @Component({
-  selector: 'trove-exposure-rule-editor',
+  selector: 'quader-exposure-rule-editor',
   imports: [PageHeader, AddressField, Disclosure, ErrorNotice, ErrorSummary],
   templateUrl: './exposure-rule-editor.html',
   styleUrl: './exposure-rule-editor.scss',

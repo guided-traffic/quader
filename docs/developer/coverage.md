@@ -37,7 +37,7 @@ references, the implemented counts and every heading it skipped inside a code fe
 | Input | Read for |
 |---|---|
 | `docs/features/**/*.md` | `### <ID> · <Title>` with `Priority: **<P>**` directly below. Page order follows the page table of [features/README.md](../features/README.md). |
-| `docs/spec/**/*.md` | `### R-… · <Title>` with `Priority: **<P>** · Covers: <ID>, …` or `Covers: trove-only` directly below. |
+| `docs/spec/**/*.md` | `### R-… · <Title>` with `Priority: **<P>** · Covers: <ID>, …` or `Covers: quader-only` directly below. |
 | `docs/**/*.md` except `features/` | `### Q-… · …` and `### H-<n> · …` headings, for the uniqueness check only. |
 | `docs/coverage/implemented.txt` | The requirements with passing evidence, as of the last `-tests` run. |
 | `docs/coverage/README.md` | The prose around the marker pairs `<!-- coverage-gen:begin NAME -->` and `<!-- coverage-gen:end NAME -->`, kept untouched. |
@@ -46,8 +46,8 @@ The program exits with 1 and prints every problem (not only the first) for:
 
 - a catalog entry or requirement whose priority line is missing or whose value is not one of
   `MVP`, `P1`, `P2`, `Later`, `Out of scope`;
-- a `Covers:` ID that is not in the catalog, a token that is neither an ID nor `trove-only`, an
-  ID listed twice, `trove-only` mixed with IDs;
+- a `Covers:` ID that is not in the catalog, a token that is neither an ID nor `quader-only`, an
+  ID listed twice, `quader-only` mixed with IDs;
 - a duplicate catalog ID, requirement ID, `Q-` ID or `H-` number;
 - an unclosed code fence;
 - a test name that carries a requirement ID no spec page defines;

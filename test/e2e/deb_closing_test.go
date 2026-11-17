@@ -4,7 +4,7 @@ package e2e
 
 // The additions of the full run of Test and Release on the commit that closes the phase (R-DEB-031, R-DEB-035): the Debian clients with Valkey
 // stopped, and a read-only check against the Debian archive. The workflow starts them only when it is dispatched with closing=true; a run of
-// them without TROVE_E2E_DEB_CLOSING=1 is a failure, never a skip, so they cannot go missing from the closing run (deploy/dev/e2e.sh deb-closing).
+// them without QUADER_E2E_DEB_CLOSING=1 is a failure, never a skip, so they cannot go missing from the closing run (deploy/dev/e2e.sh deb-closing).
 
 import (
 	"io"
@@ -14,13 +14,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/openpgp"
-	"github.com/guided-traffic/trove/test/debstub"
+	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/test/debstub"
 )
 
 func requireDebClosingRun(t testing.TB) {
 	t.Helper()
-	if os.Getenv("TROVE_E2E_DEB_CLOSING") != "1" {
+	if os.Getenv("QUADER_E2E_DEB_CLOSING") != "1" {
 		t.Fatal("this test belongs to the closing run: start it with deploy/dev/e2e.sh deb-closing (the closing=true dispatch of the workflow)")
 	}
 }
@@ -51,7 +51,7 @@ func TestDebClosing(t *testing.T) {
 	arch := aptArch(t, aptDebian13)
 	waitFor(t, "the merged index of "+virtual+" to list the packages of both members", 5*time.Minute, 2*time.Second, func() bool {
 		idx, ok := fx.mergedPackages(t, virtual, arch)
-		return ok && strings.Contains(idx, "Package: "+only.name+"\n") && strings.Contains(idx, "Package: trove-hello\n")
+		return ok && strings.Contains(idx, "Package: "+only.name+"\n") && strings.Contains(idx, "Package: quader-hello\n")
 	})
 
 	withValkeyStopped(t, func() {
@@ -71,8 +71,8 @@ func TestDebClosing(t *testing.T) {
 				c := fx.client(t, img)
 				c.configure(remote)
 				c.mustUpdate()
-				if out, err := c.install("trove-hello"); err != nil {
-					t.Fatalf("apt-get install trove-hello on %s: %v\n%s", img.name, err, tailLines(out, 30))
+				if out, err := c.install("quader-hello"); err != nil {
+					t.Fatalf("apt-get install quader-hello on %s: %v\n%s", img.name, err, tailLines(out, 30))
 				}
 			})
 			t.Run("R-DEB-031 "+img.name+" installs a local and a remote package through a virtual repository with Valkey stopped", func(t *testing.T) {
@@ -80,8 +80,8 @@ func TestDebClosing(t *testing.T) {
 				c.configure(virtual)
 				c.mustUpdate()
 				c.mustInstallAndRun(only.name+"="+only.version, only.name, only.line())
-				if out, err := c.install("trove-hello"); err != nil {
-					t.Fatalf("apt-get install trove-hello on %s: %v\n%s", img.name, err, tailLines(out, 30))
+				if out, err := c.install("quader-hello"); err != nil {
+					t.Fatalf("apt-get install quader-hello on %s: %v\n%s", img.name, err, tailLines(out, 30))
 				}
 			})
 		}
@@ -98,7 +98,7 @@ const debPublicRequestBound = 30
 
 // TestDebClosingPublic is the read-only check against the Debian archive (R-DEB-035): a pull-through remote of https://deb.debian.org/debian/
 // with Debian's archive key, fetched here and checked against a pinned fingerprint, and `apt-get install hello` in debian:13, anonymously. Nothing
-// is changed upstream. The archive's request count cannot be read from outside; the remote counts the requests it sent (trove_remote_upstream_requests_total).
+// is changed upstream. The archive's request count cannot be read from outside; the remote counts the requests it sent (quader_remote_upstream_requests_total).
 func TestDebClosingPublic(t *testing.T) {
 	requireDebClosingRun(t)
 	fx := debFx(t)
@@ -144,7 +144,7 @@ func TestDebClosingPublic(t *testing.T) {
 		if out := c.must(`/usr/bin/hello`); !strings.Contains(out, "Hello, world!") {
 			t.Fatalf("hello printed %q", trimLine(out))
 		}
-		n := sumSeries(t, "trove_remote_upstream_requests_total", key+`"`)
+		n := sumSeries(t, "quader_remote_upstream_requests_total", key+`"`)
 		t.Logf("the remote sent %d requests to deb.debian.org", int(n))
 		if n < 1 || n > debPublicRequestBound {
 			t.Fatalf("the remote sent %d requests to the Debian archive, want 1 to %d", int(n), debPublicRequestBound)

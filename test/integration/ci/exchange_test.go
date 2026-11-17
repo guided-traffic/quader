@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 func TestR_CI_007_AnExchangeIssuesACIToken(t *testing.T) {
@@ -65,7 +65,7 @@ func TestR_CI_007_AnExchangeIssuesACIToken(t *testing.T) {
 }
 
 func TestR_CI_016_TheLifetimeOfACIToken(t *testing.T) {
-	x := newXEnv(t, options{valkey: true, env: []string{"TROVE_CI_TOKEN_MIN_TTL=2s"}})
+	x := newXEnv(t, options{valkey: true, env: []string{"QUADER_CI_TOKEN_MIN_TTL=2s"}})
 	a := x.web("web-a")
 	x.issuer(a)
 	x.addMapping(a, releaseMapping("acme-release-publish", 100))

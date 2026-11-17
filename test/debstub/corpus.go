@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/test/debstub/debgen"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
 )
 
 // The layout of the archive the stub serves. Everything is relative to the stub's one host.
@@ -76,7 +76,7 @@ func (sp *srcPkg) dir() string {
 func (sp *srcPkg) paragraph() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Package: %s\nBinary: %s\nVersion: %s\nMaintainer: %s\nArchitecture: any all\nStandards-Version: 4.6.2\nFormat: 3.0 (quilt)\nDirectory: %s\nPriority: optional\nSection: misc\n",
-		sp.name, strings.Join(sp.binaries, ", "), sp.version, "trove test archive <debstub@trove.invalid>", sp.dir())
+		sp.name, strings.Join(sp.binaries, ", "), sp.version, "quader test archive <debstub@quader.invalid>", sp.dir())
 	b.WriteString("Files:\n")
 	for _, f := range sp.files {
 		fmt.Fprintf(&b, " %s %d %s\n", f.sum.MD5, f.sum.Size, f.name)
@@ -126,18 +126,18 @@ func defs(suite string) []pkgDef {
 	}
 	out := []pkgDef{
 		{
-			name: "trove-hello", version: hello, comp: "main", depends: "libtrove1 (>= 1.2)", arches: []string{"amd64", "arm64"},
-			desc: "prints a fixed line", long: []string{"The first package of the trove test archive.", "", "It installs one script that prints a fixed line."},
+			name: "quader-hello", version: hello, comp: "main", depends: "libquader1 (>= 1.2)", arches: []string{"amd64", "arm64"},
+			desc: "prints a fixed line", long: []string{"The first package of the quader test archive.", "", "It installs one script that prints a fixed line."},
 		},
-		{name: "trove-hello-doc", version: hello, comp: "main", source: "trove-hello", arches: []string{"all"}, desc: "documentation of trove-hello"},
-		{name: "trove-tools", version: tools, comp: "main", depends: "trove-hello (>= 1.0) | trove-config", arches: []string{"amd64", "arm64"}, desc: "tools of the trove test archive"},
-		{name: "trove-config", version: "1.0-1", comp: "main", provides: "trove-config-default", arches: []string{"all"}, desc: "default configuration"},
-		{name: "libtrove1", version: lib, comp: "main", source: "libtrove", arches: []string{"amd64", "arm64"}, desc: "shared library of the trove test archive"},
-		{name: "trove-extra", version: extra, comp: "contrib", depends: "trove-hello", arches: []string{"amd64"}, desc: "an extra from the contrib component"},
-		{name: "trove-extra-data", version: extra, comp: "contrib", source: "trove-extra", arches: []string{"all"}, desc: "data of trove-extra"},
+		{name: "quader-hello-doc", version: hello, comp: "main", source: "quader-hello", arches: []string{"all"}, desc: "documentation of quader-hello"},
+		{name: "quader-tools", version: tools, comp: "main", depends: "quader-hello (>= 1.0) | quader-config", arches: []string{"amd64", "arm64"}, desc: "tools of the quader test archive"},
+		{name: "quader-config", version: "1.0-1", comp: "main", provides: "quader-config-default", arches: []string{"all"}, desc: "default configuration"},
+		{name: "libquader1", version: lib, comp: "main", source: "libquader", arches: []string{"amd64", "arm64"}, desc: "shared library of the quader test archive"},
+		{name: "quader-extra", version: extra, comp: "contrib", depends: "quader-hello", arches: []string{"amd64"}, desc: "an extra from the contrib component"},
+		{name: "quader-extra-data", version: extra, comp: "contrib", source: "quader-extra", arches: []string{"all"}, desc: "data of quader-extra"},
 	}
 	if newpkg != "" {
-		out = append(out, pkgDef{name: "trove-newpkg", version: newpkg, comp: "main", arches: []string{"all"}, desc: "a package only testing has"})
+		out = append(out, pkgDef{name: "quader-newpkg", version: newpkg, comp: "main", arches: []string{"all"}, desc: "a package only testing has"})
 	}
 	return out
 }
@@ -167,7 +167,7 @@ func buildSource(name, version, comp string, binaries []string) (*srcPkg, error)
 	if err != nil {
 		return nil, err
 	}
-	deb, err := debgen.TarGz(map[string][]byte{"debian/changelog": []byte(name + " (" + version + ") unstable; urgency=low\n\n  * test package\n\n -- trove test archive <debstub@trove.invalid>  Thu, 01 Jan 2026 00:00:00 +0000\n")}, []string{"debian/changelog"})
+	deb, err := debgen.TarGz(map[string][]byte{"debian/changelog": []byte(name + " (" + version + ") unstable; urgency=low\n\n  * test package\n\n -- quader test archive <debstub@quader.invalid>  Thu, 01 Jan 2026 00:00:00 +0000\n")}, []string{"debian/changelog"})
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func buildSource(name, version, comp string, binaries []string) (*srcPkg, error)
 		files[i].sum = debgen.Sum(files[i].data)
 	}
 	var dsc strings.Builder
-	fmt.Fprintf(&dsc, "Format: 3.0 (quilt)\nSource: %s\nBinary: %s\nArchitecture: any all\nVersion: %s\nMaintainer: trove test archive <debstub@trove.invalid>\nStandards-Version: 4.6.2\nChecksums-Sha256:\n", name, strings.Join(binaries, ", "), version)
+	fmt.Fprintf(&dsc, "Format: 3.0 (quilt)\nSource: %s\nBinary: %s\nArchitecture: any all\nVersion: %s\nMaintainer: quader test archive <debstub@quader.invalid>\nStandards-Version: 4.6.2\nChecksums-Sha256:\n", name, strings.Join(binaries, ", "), version)
 	for _, f := range files {
 		fmt.Fprintf(&dsc, " %s %d %s\n", f.sum.SHA256, f.sum.Size, f.name)
 	}
@@ -225,7 +225,7 @@ func newCorpus() (*corpus, error) {
 		if suite == SuiteTesting {
 			version = "1.1-1"
 		}
-		sp, err := buildSource("trove-hello", version, "main", []string{"trove-hello", "trove-hello-doc"})
+		sp, err := buildSource("quader-hello", version, "main", []string{"quader-hello", "quader-hello-doc"})
 		if err != nil {
 			return nil, err
 		}

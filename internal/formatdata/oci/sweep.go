@@ -7,14 +7,14 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // SweepJobKind is the periodic job that removes the blob items no manifest of their image name references (R-OCI-019, Q-OCI-71):
@@ -58,7 +58,7 @@ type SweepOptions struct {
 	// Batch is the number of candidates read per statement; 0 is 200.
 	Batch int
 	// Removed is told how many blob items a run removed in one repository, for the counter
-	// trove_oci_sweep_blobs_removed_total (R-OCI-034); nil is ignored.
+	// quader_oci_sweep_blobs_removed_total (R-OCI-034); nil is ignored.
 	Removed func(n int)
 	Log     *slog.Logger
 }

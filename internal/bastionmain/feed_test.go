@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // TestR_BAS_015_TheMappingTableOfTheFeed: every row of the table of R-BAS-015, from the stored event to the

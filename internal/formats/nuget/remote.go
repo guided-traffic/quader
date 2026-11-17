@@ -8,13 +8,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/formats/nuget/id"
-	"github.com/guided-traffic/trove/internal/formats/nuget/registration"
-	"github.com/guided-traffic/trove/internal/formats/nuget/remote"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/nuget/id"
+	"github.com/guided-traffic/quader/internal/formats/nuget/registration"
+	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // The remote class (R-NUGET-014, R-NUGET-015). The remote engine owns the request path, the

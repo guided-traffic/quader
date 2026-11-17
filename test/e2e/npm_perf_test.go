@@ -85,7 +85,7 @@ func TestNPMPerf(t *testing.T) {
 		// The k6 container joins the network namespace of the control-plane node, which routes the pod network, so it
 		// reaches the pod's listener without the edge; the pod's certificate names localhost.
 		node := strings.TrimPrefix(cfg.kubeContext, "kind-") + "-control-plane"
-		name := fmt.Sprintf("trove-e2e-k6-perf-%d", os.Getpid())
+		name := fmt.Sprintf("quader-e2e-k6-perf-%d", os.Getpid())
 		args := []string{
 			"run", "--rm", "--name", name, "--network", "container:" + node,
 			"--user", fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid()),

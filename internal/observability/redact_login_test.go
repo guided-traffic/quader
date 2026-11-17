@@ -14,13 +14,13 @@ func TestR_OPS_013_LoginSecretsInURLsAreScrubbed(t *testing.T) {
 		},
 		{
 			"R-OPS-013 Q-OPS-91 a callback inside a logged URL keeps its fragment and what follows",
-			`redirect to "https://trove.test/auth/oidc/corp/callback?state=s3cr3t&code=c0de" failed`,
-			`redirect to "https://trove.test/auth/oidc/corp/callback?[REDACTED]" failed`,
+			`redirect to "https://quader.test/auth/oidc/corp/callback?state=s3cr3t&code=c0de" failed`,
+			`redirect to "https://quader.test/auth/oidc/corp/callback?[REDACTED]" failed`,
 		},
 		{
 			"R-OPS-013 Q-OPS-91 an ID token hint",
-			"https://idp.test/logout?id_token_hint=eyJhbGciOi.eyJzdWIi.sig&post_logout_redirect_uri=https%3A%2F%2Ftrove.test%2F",
-			"https://idp.test/logout?id_token_hint=[REDACTED]&post_logout_redirect_uri=https%3A%2F%2Ftrove.test%2F",
+			"https://idp.test/logout?id_token_hint=eyJhbGciOi.eyJzdWIi.sig&post_logout_redirect_uri=https%3A%2F%2Fquader.test%2F",
+			"https://idp.test/logout?id_token_hint=[REDACTED]&post_logout_redirect_uri=https%3A%2F%2Fquader.test%2F",
 		},
 		{
 			"R-OPS-010 the state filter of the token listing stays readable",

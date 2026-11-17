@@ -9,9 +9,9 @@ import (
 	"sync"
 	"testing"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/auth/token"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/auth/token"
 )
 
 // assertNoSecret scans every table as text, the stand-in for a dump of the

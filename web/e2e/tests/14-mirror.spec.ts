@@ -1,10 +1,10 @@
 import { e2eProject, expect, expectAccessible, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
 
 // R-UI-047 journeys "mirror" (R-REPO-059, R-UI-021, Q-UI-104, Q-UI-105, Q-UI-119 to Q-UI-124) and "upstream settings" (F-54,
-// R-UI-021, R-REPO-024, R-REPO-033). Both use the counting npm test upstream of the end-to-end tests (test/npmstub): trove
+// R-UI-021, R-REPO-024, R-REPO-033). Both use the counting npm test upstream of the end-to-end tests (test/npmstub): Quader
 // reaches it as https://npmstub.<ns>.svc, which is the only thing the browser needs of it, since the journeys type that
-// address into the form and trove, not the browser, talks to the stub. The run that starts these journeys exports
-// TROVE_E2E_NPMSTUB_HOST (deploy/dev/e2e.sh with TROVE_E2E_NPMSTUB=1, which the sets that run TestE1_11Journeys set).
+// address into the form and Quader, not the browser, talks to the stub. The run that starts these journeys exports
+// QUADER_E2E_NPMSTUB_HOST (deploy/dev/e2e.sh with QUADER_E2E_NPMSTUB=1, which the sets that run TestE1_11Journeys set).
 //
 // A mirror pass needs a process that claims the queue `mirror` (R-REPO-053); the journey of the panel does not wait for a
 // pass to end: it asserts the status, the pause and the resume, which the API answers whatever the worker does, and the
@@ -13,11 +13,11 @@ import { e2eProject, expect, expectAccessible, repositories, repositoryApi, sign
 
 function env(name: string): string {
   const v = process.env[name];
-  if (!v) throw new Error(`${name} is not set; the journey runs through TestE1_11Journeys with the npm test upstream deployed (TROVE_E2E_NPMSTUB=1)`);
+  if (!v) throw new Error(`${name} is not set; the journey runs through TestE1_11Journeys with the npm test upstream deployed (QUADER_E2E_NPMSTUB=1)`);
   return v;
 }
 
-const stubUrl = `https://${env('TROVE_E2E_NPMSTUB_HOST')}/`;
+const stubUrl = `https://${env('QUADER_E2E_NPMSTUB_HOST')}/`;
 const mirrorKey = unique('ui-mirror');
 const upstreamKey = unique('ui-upstream');
 const secret = `journey-secret-${Date.now().toString(36)}`;
@@ -83,7 +83,7 @@ test('R-REPO-059 R-UI-021 Q-UI-104 Q-UI-105 the status of a mirror, pause, resum
     await expect(page.getByTestId('mirror-bound')).toContainText('100.0 MiB');
     // The status sits above the settings.
     const status = await page.getByRole('heading', { name: 'Mirror status' }).boundingBox();
-    const settings = await page.locator('trove-mirror-settings').boundingBox();
+    const settings = await page.locator('quader-mirror-settings').boundingBox();
     expect(status!.y).toBeLessThan(settings!.y);
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });

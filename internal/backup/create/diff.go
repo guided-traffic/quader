@@ -12,8 +12,8 @@ import (
 	"io"
 	"math/rand/v2"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
 )
 
 // listResult is what the diff pass produced.

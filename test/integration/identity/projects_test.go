@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The project service accounts and the tokens an Owner of the project issues for them
@@ -471,7 +471,7 @@ func TestR_AUTHZ_026_OwnerServiceAccountsAndTokens(t *testing.T) {
 			t.Fatalf("%s", rp.Body)
 		}
 		want(t, s.call(post, path, wandaTok, map[string]any{"description": "fixed", "ttlSeconds": 3600, "selfRotatable": false}), 201, "")
-		// An administrator of trove still issues one (R-AUTH-030).
+		// An administrator of quader still issues one (R-AUTH-030).
 		want(t, s.call(post, path, fx.adminToken, map[string]any{"description": "renews itself", "ttlSeconds": 3600, "selfRotatable": true}), 201, "")
 	})
 	t.Run("Q-AUTHZ-177 the tokens of the project's accounts are seen and revoked, no others", func(t *testing.T) {

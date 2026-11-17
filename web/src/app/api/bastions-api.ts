@@ -5,7 +5,7 @@ import { Versioned } from './repositories-api';
 import { Schema } from './types';
 
 /*
- * The registrations of trove Bastions (R-BAS-004, R-BAS-007; docs/developer/bastion.md). The shapes
+ * The registrations of Quader Bastions (R-BAS-004, R-BAS-007; docs/developer/bastion.md). The shapes
  * are the generated ones. The list is one page (at most `bastions.max_registrations` exist) and
  * carries no tag; a registration read on its own carries the `ETag` a change needs (R-API-012), so a
  * switch to disabled or enabled reads the registration first.

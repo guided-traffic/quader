@@ -3,19 +3,20 @@ package v1
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The contract tests of the Bastion operations (R-BAS-004, R-BAS-008, R-BAS-009): the document, the
 // declaration form of the interface routes and the stubs that answer until their work packages fill them (the registration operations are built).
 
 // TestR_BAS_008_TheInterfaceOperationsAreTaggedAndVersioned: exactly the four interface routes carry the
-// permission form {bastion: true} and x-trove-bastion-interface equal to the interface version of this build.
+// permission form {bastion: true} and x-quader-bastion-interface equal to the interface version of this build.
 func TestR_BAS_008_TheInterfaceOperationsAreTaggedAndVersioned(t *testing.T) {
 	doc, err := LoadDocument(EmbeddedYAML())
 	if err != nil {
@@ -54,11 +55,15 @@ func TestR_BAS_008_TheInterfaceOperationsAreTaggedAndVersioned(t *testing.T) {
 // version of the interface is refused at load, so a version raised in one place only is found at start.
 func TestR_BAS_009_ADocumentedInterfaceVersionOtherThanTheCodesStopsTheLoad(t *testing.T) {
 	raw := string(EmbeddedYAML())
-	if _, err := LoadDocument([]byte(strings.Replace(raw, "x-trove-bastion-interface: 2", "x-trove-bastion-interface: 3", 1))); err == nil ||
-		!strings.Contains(err.Error(), "x-trove-bastion-interface") {
+	current := "x-quader-bastion-interface: " + strconv.Itoa(iface.InterfaceVersion)
+	if !strings.Contains(raw, current) {
+		t.Fatalf("the document names no operation with %q", current)
+	}
+	if _, err := LoadDocument([]byte(strings.Replace(raw, current, "x-quader-bastion-interface: "+strconv.Itoa(iface.InterfaceVersion+1), 1))); err == nil ||
+		!strings.Contains(err.Error(), "x-quader-bastion-interface") {
 		t.Fatalf("a document for another interface version loaded: %v", err)
 	}
-	if _, err := LoadDocument([]byte(strings.Replace(raw, "      x-trove-bastion-interface: 2\n      x-trove-permission:\n        bastion: true\n", "      x-trove-permission:\n        bastion: true\n", 1))); err == nil {
+	if _, err := LoadDocument([]byte(strings.Replace(raw, "      "+current+"\n      x-quader-permission:\n        bastion: true\n", "      x-quader-permission:\n        bastion: true\n", 1))); err == nil {
 		t.Fatal("a {bastion: true} operation without a version loaded")
 	}
 }

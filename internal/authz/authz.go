@@ -3,14 +3,14 @@ package authz
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // Action is a repository action (R-AUTHZ-006). No action implies another.
@@ -27,7 +27,7 @@ const (
 )
 
 // Capability is a system capability (R-AUTHZ-010). The same names are the system
-// scope items of R-AUTH-025 and the values of x-trove-permission.
+// scope items of R-AUTH-025 and the values of x-quader-permission.
 type Capability string
 
 // The capabilities of R-AUTHZ-010.
@@ -119,7 +119,7 @@ type Subject struct {
 	// CacheFill is the cache_fill setting of that endpoint (R-EP-019), set by the
 	// same conversion from the same endpoint: with Endpoint set and CacheFill
 	// false no subject passes the populate check (R-AUTHZ-008), so a request on
-	// an endpoint that does not fill caches never makes trove contact an
+	// an endpoint that does not fill caches never makes quader contact an
 	// upstream, also in a collapsed or fanned-out decision (Q-AUTHZ-153). A
 	// subject without an endpoint has no such ceiling.
 	CacheFill bool
@@ -136,7 +136,7 @@ type Subject struct {
 	// (R-BAS-008, Q-BAS-148); such a request never reads by the level internal. Set by edge.SubjectOf only, as Endpoint is;
 	// the architecture test refuses any other writer.
 	ViaBastion bool
-	// MinEpoch is the value of the Trove-Authz-Min-Epoch header (R-AUTHZ-032); zero
+	// MinEpoch is the value of the Quader-Authz-Min-Epoch header (R-AUTHZ-032); zero
 	// when absent.
 	MinEpoch int64
 }
@@ -186,7 +186,7 @@ const (
 	// DenyStale: 503 authz_stale with Retry-After (the grant index is not
 	// confirmed current).
 	DenyStale
-	// DenyEpochUnknown: 412 authz_epoch_unknown (Trove-Authz-Min-Epoch names an
+	// DenyEpochUnknown: 412 authz_epoch_unknown (Quader-Authz-Min-Epoch names an
 	// epoch the database has not reached, R-AUTHZ-032).
 	DenyEpochUnknown
 )
@@ -222,7 +222,7 @@ type Decision struct {
 // have no request to share an index with, use the [Authorizer] forms.
 type Decider interface {
 	// Begin returns the index a request decides on: it waits for a confirmed
-	// index or for the epoch of Trove-Authz-Min-Epoch, and first makes the keys
+	// index or for the epoch of Quader-Authz-Min-Epoch, and first makes the keys
 	// known (R-ARCH-011 step 2, R-API-052). The error is the refusal: 503
 	// authz_stale or 412 authz_epoch_unknown.
 	Begin(ctx context.Context, sub Subject, names ...qname.Repo) (*Index, error)

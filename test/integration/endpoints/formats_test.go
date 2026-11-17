@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // Package formats on an endpoint with exposure rules (R-EP-018): a format without the exposure
@@ -124,7 +124,7 @@ func TestR_EP_018_FormatsOnAnEndpointWithRules(t *testing.T) {
 	r := e.start("a")
 
 	t.Run("R-EP-018 the format is served on the default endpoint", func(t *testing.T) {
-		if a := e.send(r.def, "trove.test", "GET", "/api/opaque/it/opaque-local/left-pad", e.opsPAT, nil); a.Status != http.StatusOK {
+		if a := e.send(r.def, "quader.test", "GET", "/api/opaque/it/opaque-local/left-pad", e.opsPAT, nil); a.Status != http.StatusOK {
 			t.Fatalf("%d %s", a.Status, a.Body)
 		}
 	})
@@ -140,19 +140,19 @@ func TestR_EP_018_FormatsOnAnEndpointWithRules(t *testing.T) {
 		if ok.Status != http.StatusCreated {
 			t.Fatalf("%d %s", ok.Status, ok.Body)
 		}
-		epoch = ok.Header.Get("Trove-Authz-Epoch")
+		epoch = ok.Header.Get("Quader-Authz-Epoch")
 	})
 	t.Run("R-EP-018 every read route answers 404 on customers, byte-identical to a missing repository, for every subject", func(t *testing.T) {
 		for _, tok := range []string{e.acmeSAT, e.botAdminSAT} {
-			hidden := e.send(r.cust, customersHost, "GET", "/api/opaque/it/opaque-local/left-pad", tok, nil, "Trove-Authz-Min-Epoch", epoch)
-			missing := e.send(r.cust, customersHost, "GET", "/api/opaque/it/no-such-repo/left-pad", tok, nil, "Trove-Authz-Min-Epoch", epoch)
+			hidden := e.send(r.cust, customersHost, "GET", "/api/opaque/it/opaque-local/left-pad", tok, nil, "Quader-Authz-Min-Epoch", epoch)
+			missing := e.send(r.cust, customersHost, "GET", "/api/opaque/it/no-such-repo/left-pad", tok, nil, "Quader-Authz-Min-Epoch", epoch)
 			if hidden.Status != http.StatusNotFound || string(hidden.Body) != string(missing.Body) || strings.Contains(string(hidden.Body), "2.0.0-internal") {
 				t.Fatalf("hidden %d %s, missing %d %s", hidden.Status, hidden.Body, missing.Status, missing.Body)
 			}
 		}
 	})
 	t.Run("R-EP-018 R-EP-013 Q-EP-57 a write is the read-only refusal of every write on the endpoint", func(t *testing.T) {
-		a := e.send(r.cust, customersHost, "PUT", "/api/opaque/it/opaque-local/left-pad", e.botAdminSAT, []byte("{}"), "Trove-Authz-Min-Epoch", epoch)
+		a := e.send(r.cust, customersHost, "PUT", "/api/opaque/it/opaque-local/left-pad", e.botAdminSAT, []byte("{}"), "Quader-Authz-Min-Epoch", epoch)
 		if a.Status != http.StatusForbidden || !strings.Contains(string(a.Body), errs.CodeEndpointReadOnly) {
 			t.Fatalf("%d %s", a.Status, a.Body)
 		}
@@ -278,7 +278,7 @@ func TestR_EP_018_FormatsOnAnEndpointWithRules(t *testing.T) {
 		e.stack.Exec(`INSERT INTO npm_packages (package_id, repo_id, name_fold, dist_tags) VALUES (` + pkg + `, ` + repo + `, '@platform/sdk', '{"latest":"1.0.0"}')`)
 		// @acme/sdk, seeded above with versions and tags, is a package the caller may not read.
 		check := func(pkgName string) (versions, tags int, body string) {
-			a := e.send(r.def, "trove.test", "POST", "/api/v1/endpoints/customers/check-exposure", platPAT,
+			a := e.send(r.def, "quader.test", "POST", "/api/v1/endpoints/customers/check-exposure", platPAT,
 				[]byte(`{"repository":"it/npm-customers","package":"`+pkgName+`"}`))
 			var res struct {
 				Versions []json.RawMessage `json:"versions"`

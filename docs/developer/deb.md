@@ -8,7 +8,7 @@ routes, the files, the schema, an upload into a local repository, the build that
 client, the remote class, the mirror, the virtual class, a restore, the screens, the tests and the counting stub archive. The specification is [formats/debian.md](../spec/formats/debian.md); the plan and the cut into work packages are
 [apt-work-packages.md](../projektplan/apt-work-packages.md); the decisions for the contract are
 [ADR-170](../decisions.md#adr-170--apt-indexes-are-built-by-a-job-and-published-through-the-item-stores-publication-port-as-generated-items-also-in-virtual-repositories),
-[ADR-171](../decisions.md#adr-171--every-debian-local-and-virtual-repository-has-its-own-eddsalegacy-signing-key-generated-by-trove-and-sealed-with-the-stored-secret-key-ring-rotation-by-a-co-signing-next-key-the-journal-withholds-keys-and-never-erases-them)
+[ADR-171](../decisions.md#adr-171--every-debian-local-and-virtual-repository-has-its-own-eddsalegacy-signing-key-generated-by-quader-and-sealed-with-the-stored-secret-key-ring-rotation-by-a-co-signing-next-key-the-journal-withholds-keys-and-never-erases-them)
 and [ADR-172](../decisions.md#adr-172--the-format-contract-gains-the-remote-name-index-and-the-serve-facts-kinds-deb_local-and-deb_remote).
 The security views are [deb-signing.md](../security/deb-signing.md), [deb-index.md](../security/deb-index.md),
 [deb-remote.md](../security/deb-remote.md) and [deb-mirror.md](../security/deb-mirror.md); the manual pages are
@@ -90,7 +90,7 @@ deployment target by the dispatcher before the format sees it (Q-DEB-67).
 | [api/v1/deb_keys.go](../../internal/api/v1/deb_keys.go), [deb_index.go](../../internal/api/v1/deb_index.go), [reindex.go](../../internal/api/v1/reindex.go), [deb_coordinates.go](../../internal/api/v1/deb_coordinates.go) | The management operations: signing keys, index state, reindex, coordinates |
 | [app/wire_formats.go](../../internal/app/wire_formats.go), [wire_deb_api.go](../../internal/app/wire_deb_api.go), [wire_deb_index.go](../../internal/app/wire_deb_index.go), [wire_deb_remote.go](../../internal/app/wire_deb_remote.go) | The composition root: the create hook, the coordinates service (Q-DEB-48), the index builder and its metrics, the remote jobs' runtime (ADR-187) |
 | [audit/events_deb.go](../../internal/audit/events_deb.go) | The audit events; four are journaled |
-| [cmd/trove/admin_deb.go](../../cmd/trove/admin_deb.go) | `trove admin deb reinstate` |
+| [cmd/quader/admin_deb.go](../../cmd/quader/admin_deb.go) | `quader admin deb reinstate` |
 
 ## Tables, migrations and the sealed column
 
@@ -192,8 +192,8 @@ maps the index files to their SHA-256; retention ([index/retention.go](../../int
 paths the commit removes: the current generation, the superseded ones younger than `deb.by_hash_keep` and the three newest superseded ones stay
 (Q-DEB-51), and only a build removes (Q-DEB-33). `modified_at` of every item is the `Date`.
 
-**Metrics and the delay.** `Indexer.Observe` records `trove_deb_index_builds_total{class,outcome}`, `trove_deb_index_build_seconds` and
-`trove_deb_index_delay_seconds` ([wire_deb_index.go](../../internal/app/wire_deb_index.go)). The delay runs from `deb_suites.dirty_since` to the
+**Metrics and the delay.** `Indexer.Observe` records `quader_deb_index_builds_total{class,outcome}`, `quader_deb_index_build_seconds` and
+`quader_deb_index_delay_seconds` ([wire_deb_index.go](../../internal/app/wire_deb_index.go)). The delay runs from `deb_suites.dirty_since` to the
 commit. The composition root builds the indexer on a replica that claims jobs (`startDebIndexer`) and keeps it in the App; the integration tests reach the one of their replica through `App.DebIndexer()`.
 
 ### Publication, builds and the reindex
@@ -277,7 +277,7 @@ ignores signatures by other keys: the hash is SHA-256 or stronger; the signature
 signing key (primary key or a signing subkey) is valid now and at the signature's time, was created before the signature and is not revoked; and the
 signature is correct. A `Hash` armor header is checked only when present (a signature whose hash it does not name is ignored). The message is one
 cleartext message with nothing before or after it. A failure is a `*VerifyError`, which `errors.Is(err, ErrVerify)` matches and whose `Reason`
-(`openpgp.Reason(err)`) is the metric label of `trove_deb_upstream_signature_failures_total`: `bad_signature`, `key_invalid`, `signature_expired`,
+(`openpgp.Reason(err)`) is the metric label of `quader_deb_upstream_signature_failures_total`: `bad_signature`, `key_invalid`, `signature_expired`,
 `future`, `weak_hash`, `hash_header`, `unknown_key`, `malformed`, `no_signature` or `too_many`. The text `VerifyClear` returns is the dash-unescaped
 lines joined by newlines as the signature covers them: for an `InRelease` written by `gpg` that is the `Release` without its last line ending, for one
 written by `ClearSign` the `Release` itself.
@@ -290,7 +290,7 @@ keyring (9 certificates, 55,918 bytes binary, 75,803 armored) is a test fixture.
 
 **Verified with the real clients** (2026-11-08, `apt-get update --error-on=any` against `file:` repositories on `debian:13`, `debian:12`, `ubuntu:24.04`,
 `ubuntu:22.04`): `InRelease` and `Release.gpg` alone by one key; co-signed by two keys with a keyring of either; an imported key whose only
-self-signature is 30 s old, signing 29 s after it; a keyring with another key fails and APT names the missing key. The rotation table through trove's
+self-signature is 30 s old, signing 29 s after it; a keyring with another key fails and APT names the missing key. The rotation table through Quader's
 HTTP path is the e2e row `TestDebRotation` ([e2e.md](e2e.md#the-debian-tests)).
 
 ## Reads of a client
@@ -329,7 +329,7 @@ MD5Sum and SHA1 answer 404), a patch below a `*.diff` directory, or content. The
 | The digest of a by-hash file (its path) and of a package file (the newest parsed index) | `BeforeArtifactWith` ([remote_gate.go](../../internal/formats/deb/remote_gate.go)) with the serve facts `deb_remote` |
 | The shadowing check in the scope of a virtual repository | `ServesName` ([remote_names.go](../../internal/formats/deb/remote_names.go)) → `RemoteStore.ServesName`, `EnsureParsed`; the bridge is [formathost/name_servers.go](../../internal/formathost/name_servers.go) |
 | A release no key verifies is revalidated with a HEAD that says "moved", so the GET carries no validators | `RevalidationRequest` |
-| The metrics `trove_deb_release_rollbacks_total`, `trove_deb_upstream_signature_failures_total`, `trove_deb_unverified_fills_total` and the event `deb.upstream_signature_invalid` | [bind.go](../../internal/formats/deb/bind.go), [remote_audit.go](../../internal/formatdata/deb/remote_audit.go) |
+| The metrics `quader_deb_release_rollbacks_total`, `quader_deb_upstream_signature_failures_total`, `quader_deb_unverified_fills_total` and the event `deb.upstream_signature_invalid` | [bind.go](../../internal/formats/deb/bind.go), [remote_audit.go](../../internal/formatdata/deb/remote_audit.go) |
 
 **Rows** ([remote_store.go](../../internal/formatdata/deb/remote_store.go), [deb_remote.sql](../../internal/meta/postgres/queries/deb_remote.sql)):
 `deb_remote_releases` (the stored documents, `verified_by`, `floor_date`, the `absent` record), `deb_remote_files` (the files the current release lists
@@ -385,7 +385,7 @@ as generated items (R-DEB-025 to R-DEB-028, Q-STOR-180, Q-REPO-271). Nothing is 
 [handlers_keys.go](../../internal/formats/deb/handlers_keys.go)) after `virtualGate` ([virtual_gate.go](../../internal/formats/deb/virtual_gate.go)): `read` without package
 restriction on every active member, else 403 `deb_members_unreadable`. `members/<memberKey>/<path>` is `handleMember`
 ([handlers_virtual.go](../../internal/formats/deb/handlers_virtual.go)): the member must belong to the repository, `Resolver().Plan` applies the patterns, pin rules, claims and the
-caller's rights, and the file is served from the local member's items or the remote member's cache or fill (`Trove-Resolved-From`). `pool/<path>` is `handleVirtualPool`, the artifact
+caller's rights, and the file is served from the local member's items or the remote member's cache or fill (`Quader-Resolved-From`). `pool/<path>` is `handleVirtualPool`, the artifact
 tiers of R-REPO-019. A write is redirected by the dispatcher to the deploy target and needs no code of the format (Q-DEB-67).
 
 **The build** ([virtual_build.go](../../internal/formatdata/deb/virtual_build.go)). The job is `deb-index` under the key `index:<repository id>`, the same as for a local repository;
@@ -427,7 +427,7 @@ the delay bound with a 70,000-paragraph member index and `compression: ["xz"]` (
 
 - **Package files** ([journal_replay.go](../../internal/formatdata/deb/journal_replay.go)): a restore replays `deb.package.deleted` (the file is withheld by a
   mark in `deb_tombstones`, never deleted) and `deb.coordinates.removed` (the coordinates are removed again; a file left without any is withheld).
-  `trove admin deb reinstate <project>/<repository> <path>` ([cmd/trove/admin_deb.go](../../cmd/trove/admin_deb.go),
+  `quader admin deb reinstate <project>/<repository> <path>` ([cmd/quader/admin_deb.go](../../cmd/quader/admin_deb.go),
   [reinstate.go](../../internal/formatdata/deb/reinstate.go)) removes a mark while the file is stored with the digest the mark names and writes
   `deb.reinstate`.
 - **Signing keys** ([keys_journal.go](../../internal/formatdata/deb/keys_journal.go)): `deb.signing_key.promoted` and `deb.signing_key.retired` withhold
@@ -473,7 +473,7 @@ local part of the port ([twin_test.go](../../internal/formats/deb/twin_test.go))
 
 | Area | What it proves |
 |---|---|
-| [deblocal](../../test/integration/deblocal) | `local_test.go` and `replay_test.go` (upload, coordinates, deletion, replay), `index_test.go` (a published generation, retention, reindex, `waitFor`, fault injection, co-signing), `replicas_test.go` (three replicas: fifty parallel uploads, by-hash on every replica, a deleted by-hash item written again, identical full builds), `times_test.go` (twenty key changes in five seconds, a freshly bound imported key), `delay_test.go` (`TestR_DEB_010_DelayBound`, the p99 under `TROVE_PERF_GATE=1` in `make test-performance`), `actionmap_test.go` (`TestR_AUTHZ_007_DebActionMap`), `crafted_test.go` (R-DEB-034 over HTTP), `apt_test.go` (`apt-get update --error-on=any` and `apt-get install` in `debian:13` and `ubuntu:22.04`, also with xz; skipped without docker). The replicas run with the role `all`, because the builder is a job and the role `web` claims none; the stack seeds repositories by SQL, so a test creates and promotes a key where the creation hook would have. The stack runs without Valkey unless a test asks (`envOpts.valkey`) |
+| [deblocal](../../test/integration/deblocal) | `local_test.go` and `replay_test.go` (upload, coordinates, deletion, replay), `index_test.go` (a published generation, retention, reindex, `waitFor`, fault injection, co-signing), `replicas_test.go` (three replicas: fifty parallel uploads, by-hash on every replica, a deleted by-hash item written again, identical full builds), `times_test.go` (twenty key changes in five seconds, a freshly bound imported key), `delay_test.go` (`TestR_DEB_010_DelayBound`, the p99 under `QUADER_PERF_GATE=1` in `make test-performance`), `actionmap_test.go` (`TestR_AUTHZ_007_DebActionMap`), `crafted_test.go` (R-DEB-034 over HTTP), `apt_test.go` (`apt-get update --error-on=any` and `apt-get install` in `debian:13` and `ubuntu:22.04`, also with xz; skipped without docker). The replicas run with the role `all`, because the builder is a job and the role `web` claims none; the stack seeds repositories by SQL, so a test creates and promotes a key where the creation hook would have. The stack runs without Valkey unless a test asks (`envOpts.valkey`) |
 | [debkeys](../../test/integration/debkeys) | production composition root, repositories created through the API: the first key and its sealing, which repositories have keys, the import rules, the rotation with the signing path of the build, the permissions, concurrent changes, the sealed column's row binding, `signing-key.asc`, the replay in every case of the security page's table, and the reindex (`reindex_test.go`) |
 | [debremote](../../test/integration/debremote) | production composition root in the role `all` against [test/debstub](../../test/debstub) on loopback: the release and its verification cases, the pair, the absent suite, `signing-key.asc`, indexes as one snapshot, by-hash, the flat directory and the flat root, pool digests and the `require` policy, the parse rows and their follow-up by pdiff, the paragraph bound, the shadowing check, the key removal with its journal entry, the replay and the purge; the cases that wait for a period take a minute or two |
 | [debvirtual](../../test/integration/debvirtual) | the virtual class: the merge and its signature, the claim, the gate, the member paths, the upload through the deploy target, the shadowing check through a real virtual repository, the member rules, the bound of R-DEB-026, the action map, and real `apt-get` clients ([below](#the-virtual-class)) |
@@ -481,21 +481,21 @@ local part of the port ([twin_test.go](../../internal/formats/deb/twin_test.go))
 | [itempublish](../../test/integration/itempublish/publish_test.go), [coordination](../../test/integration/coordination/coalesce_test.go), [querybudget](../../test/integration/querybudget/deb_test.go), [postgres](../../test/integration/postgres/deb_test.go) | the publication port, the coalesce enqueue, the read budget of a download (one statement each), the schema and the sealed column |
 
 **Proven by hand.** `TestProofServer` and `TestProofMirrorServer` ([proof_test.go](../../test/integration/debremote/proof_test.go); set
-`TROVE_DEB_PROOF_DIR` to a directory) start the installation, a replica in the role `all` and the stub, and write the port, a token and the stub's key `a`
-into the directory; the mirror proof runs a pass and stops the stub. The clients are containers with the directory mounted and `trove.test` added to
+`QUADER_DEB_PROOF_DIR` to a directory) start the installation, a replica in the role `all` and the stub, and write the port, a token and the stub's key `a`
+into the directory; the mirror proof runs a pass and stops the stub. The clients are containers with the directory mounted and `quader.test` added to
 `/etc/hosts`: the container removes the image's sources, installs `key.asc` as `Signed-By`, writes `auth.conf` with the token and runs
 `apt-get update --error-on=any` and `apt-get install`. Run on 2026-11-09 against `debian:13` (APT 3.0.4, `sqv`) and `ubuntu:22.04` (APT 2.4.14,
 `gpgv`): the suite `stable main` of the keyed remote, the flat directory `binary/` and the flat root `./`, and the mirror with the stub stopped. The
-remote hands out the upstream's `InRelease` unchanged; the keyring on the client is the upstream's, never trove's.
+remote hands out the upstream's `InRelease` unchanged; the keyring on the client is the upstream's, never Quader's.
 
 **End to end.** The set `deb` with the real APT of Debian 13 and 12 and Ubuntu 24.04 and 22.04 on kind ([e2e.md](e2e.md#the-debian-tests)).
 
 ## test/debstub: the counting stub archive
 
-A deterministic APT archive that is not trove (R-DEB-035): it serves generated content over TLS only, counts every request, and fails on command.
+A deterministic APT archive that is not Quader (R-DEB-035): it serves generated content over TLS only, counts every request, and fails on command.
 Everything is generated in code (no recorded third-party data); two starts produce the same package, `Packages` and `Sources` bytes (only the `Release`
-`Date` and the signatures differ). The stub signs with the OpenPGP module directly and does not import `internal/openpgp` outside its tests, so trove's
-verifier is tested against an independent signer; its tests verify every document it serves with trove's verifier.
+`Date` and the signatures differ). The stub signs with the OpenPGP module directly and does not import `internal/openpgp` outside its tests, so Quader's
+verifier is tested against an independent signer; its tests verify every document it serves with Quader's verifier.
 
 | File | Responsibility |
 |---|---|
@@ -510,8 +510,8 @@ verifier is tested against an independent signer; its tests verify every documen
 | [control.go](../../test/debstub/control.go) | the control API below `/-/stub/` |
 | [tls.go](../../test/debstub/tls.go) | `Start` (TLS or nothing), a throwaway CA, a certificate reloaded when its files change |
 | [debgen](../../test/debstub/debgen) | `Build(Spec)`: an installable `.deb` (`ar` of `debian-binary`, `control.tar.gz`, `data.tar.gz` holding one script that prints a fixed line); `Hello(name, version, arch)` for the tests that upload |
-| [cmd/debstub](../../test/debstub/cmd/debstub), [Containerfile](../../test/debstub/Containerfile) | the binary and the image (`make deb-stub-image`, tag `DEB_STUB_IMAGE`, default `trove-e2e-debstub:dev`) |
-| [deploy/dev/debstub.yaml](../../deploy/dev/debstub.yaml) | the manifest for kind: Service `debstub`, a certificate of the dev CA, the control token in Secret `trove-debstub`; the e2e harness applies it for the set `deb` ([e2e.md](e2e.md#the-counting-debian-test-upstream-in-the-cluster)) |
+| [cmd/debstub](../../test/debstub/cmd/debstub), [Containerfile](../../test/debstub/Containerfile) | the binary and the image (`make deb-stub-image`, tag `DEB_STUB_IMAGE`, default `quader-e2e-debstub:dev`) |
+| [deploy/dev/debstub.yaml](../../deploy/dev/debstub.yaml) | the manifest for kind: Service `debstub`, a certificate of the dev CA, the control token in Secret `quader-debstub`; the e2e harness applies it for the set `deb` ([e2e.md](e2e.md#the-counting-debian-test-upstream-in-the-cluster)) |
 
 <details>
 <summary>What it serves, the packages, the test keys, the switches and the control API</summary>
@@ -521,16 +521,16 @@ All below one host.
 | Path | Content |
 |---|---|
 | `/debian/dists/stable/`, `/debian/dists/ratel/` | the suite `stable` (codename `ratel`, both names serve the same release): components `main` and `contrib`, `binary-amd64`, `binary-arm64`, `binary-all`, `main/source/` (`Sources`, one source package); `InRelease`, `Release`, `Release.gpg`; each index plain and `.gz`; `by-hash/{MD5Sum,SHA1,SHA256,SHA512}/` next to each |
-| `/debian/dists/testing/`, `/debian/dists/badger/` | the suite `testing` (codename `badger`) with newer versions and the package `trove-newpkg` |
+| `/debian/dists/testing/`, `/debian/dists/badger/` | the suite `testing` (codename `badger`) with newer versions and the package `quader-newpkg` |
 | `/debian/dists/bulk/` | one component, `binary-amd64`: `Config.BulkParagraphs` (70,000) synthetic paragraphs, about 24 MB plain, built on the first request; the files they name are not served |
 | `/debian/pool/<component>/<prefix>/<source>/` | the `.deb` files and the source files |
 | `/flat/binary/` | a flat repository with a directory: `deb <host>/flat binary/`; `Filename` is `binary/<file>`; `Suite` and `Codename` are `binary` |
 | `/flatroot/` | a flat repository with the root as directory: `deb <host>/flatroot ./`; APT asks for `/flatroot/./InRelease`, which the stub serves and counts as written; `Filename` is `<file>` |
 
-The packages (all `trove-hello` style: the installed script `/usr/bin/<name>` prints `hello from <name> <version> (<arch>)`): `trove-hello` (amd64,
-arm64; depends on `libtrove1 (>= 1.2)`), `trove-hello-doc` (all, source `trove-hello`), `trove-tools` (amd64, arm64; an alternative dependency),
-`trove-config` (all; provides `trove-config-default`), `libtrove1` (amd64, arm64; source `libtrove`), and in `contrib` `trove-extra` (amd64) and
-`trove-extra-data` (all). A generation adds `trove-zz-g<NNN>`. The flat repositories hold `trove-flat`. `Packages` paragraphs are the control file plus
+The packages (all `quader-hello` style: the installed script `/usr/bin/<name>` prints `hello from <name> <version> (<arch>)`): `quader-hello` (amd64,
+arm64; depends on `libquader1 (>= 1.2)`), `quader-hello-doc` (all, source `quader-hello`), `quader-tools` (amd64, arm64; an alternative dependency),
+`quader-config` (all; provides `quader-config-default`), `libquader1` (amd64, arm64; source `libquader`), and in `contrib` `quader-extra` (amd64) and
+`quader-extra-data` (all). A generation adds `quader-zz-g<NNN>`. The flat repositories hold `quader-flat`. `Packages` paragraphs are the control file plus
 `Filename`, `Size`, `MD5sum`, `SHA1`, `SHA256` and `SHA512`. Every file validates: `dpkg` installs a generated package (checked on `debian:13`), and
 the four client images read the stub's tree, install from it and run the script (Client and library behaviour in the spec).
 
@@ -550,12 +550,12 @@ paragraph (`Packages.diff/<date>.gz`, also by hash). `ResetAll` returns every ar
 
 | Key | Fingerprint | Created | Use |
 |---|---|---|---|
-| `a` | `744FA9DC6DDF29FCBBDCFC3F0F1B0C0EE2D15353` | 2026-01-01 | the archive's key; default signer |
-| `b` | `1740FB0FDF7BEDEAE568BFDFA14B934907B0A66E` | 2026-01-01 | a second key, for co-signing |
-| `c` | `112CAA63A6EDBB4E9727D9D67BF765B76B7E6242` | 2026-01-01 | a key nobody configured |
-| `d` | `AA0B4230C41119252C6CFF1C942F62DCF3C4BBE2` | 2024-01-01, one year | an expired key; its signatures are dated 2024-06-01 |
+| `a` | `92AC69F760CADB5275DE210678E6472D94F2F76D` | 2026-01-01 | the archive's key; default signer |
+| `b` | `E4AA038747A4192E6471205752EC00DCFEEB4CE1` | 2026-01-01 | a second key, for co-signing |
+| `c` | `02DDA0FC75F660D56563276AE130C8988DCC65DF` | 2026-01-01 | a key nobody configured |
+| `d` | `197086A595BB8316BB4BD87F2783E31DCA018F44` | 2024-01-01, one year | an expired key; its signatures are dated 2024-06-01 |
 
-`Server.Keyring("a", "b")`, `GET /-/stub/keyring?names=a,b` and `debstub keyring a` give the armored certificates for `deb.upstreamKeys`. trove refuses
+`Server.Keyring("a", "b")`, `GET /-/stub/keyring?names=a,b` and `debstub keyring a` give the armored certificates for `deb.upstreamKeys`. Quader refuses
 `d` as a configured key (it is expired); a verifier test hands its certificate over directly.
 
 **The switches** (`Mode`, `POST /-/stub/mode`, R-DEB-035):
@@ -595,9 +595,9 @@ make deb-stub-image            # the container image, tag $(DEB_STUB_IMAGE)
 ```
 
 In a Go test, `debstub.New(cfg)`, `stub.Start("127.0.0.1:0", ss.ServerConfig())` with `ss, _ := debstub.NewSelfSigned(debstub.LoopbackHosts...)`;
-`Running.URL` is `https://deb.localhost:<port>` and the name resolves through `Running.DialContext` or `Running.DialOverride()` (trove's
+`Running.URL` is `https://deb.localhost:<port>` and the name resolves through `Running.DialContext` or `Running.DialOverride()` (Quader's
 `outbound.WithDialOverride`), as with the other stubs. What it does not do: bzip2, LZMA, xz and zstd indexes, `Contents` and translation files, `dep11`
-and uploads; the xz handling of trove is tested with its own unit tests.
+and uploads; the xz handling of Quader is tested with its own unit tests.
 
 ## What is built and what is not
 
@@ -613,7 +613,7 @@ Not built, or not proven:
   are unit rules, not integration cases.
 - The nightly set `deb-long` (the delay bound of R-DEB-010 runs in `make test-performance`, Q-DEB-59; the bound of R-DEB-026 with `compression: ["xz"]` is
   an integration case of `debvirtual`) and the Debian pass beside clients and under a drain in the e2e sets.
-- The metric `trove_deb_remote_parse_total` of R-DEB-033.
+- The metric `quader_deb_remote_parse_total` of R-DEB-033.
 - What the spec defers ([Deferred](../spec/formats/debian.md#deferred)): source package uploads, snapshots, `.udeb`, `dput`, debug symbols, `Valid-Until`
-  on trove's own releases, an external key service, vulnerability matching, copy and move, endpoints with exposure rules, the Bastion and nested
+  on Quader's own releases, an external key service, vulnerability matching, copy and move, endpoints with exposure rules, the Bastion and nested
   virtual repositories.

@@ -3,8 +3,8 @@ package v1
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // KindIdempotencyCleanup is the job kind and task name that deletes the expired

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nugettest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nugettest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 )
 
 // ports is the DataPorts of a test: the twin under the format's ID.

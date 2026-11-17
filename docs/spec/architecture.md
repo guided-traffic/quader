@@ -2,7 +2,7 @@
 
 Status: specification — not implemented
 
-This page fixes the skeleton of trove. It covers:
+This page fixes the skeleton of Quader. It covers:
 - the components inside the single binary, the process roles and what each role runs;
 - the Go and Angular code layout;
 - the order in which components handle the shared request paths: local download, remote download
@@ -89,12 +89,12 @@ R-ARCH-027 are proposals, not measurements.
 ### R-ARCH-001 · One binary, identical replicas, process roles
 Priority: **MVP** · Covers: HA-001, HA-002, HA-009, HA-010, HA-015
 
-trove MUST build into one statically linked binary, `trove` (`CGO_ENABLED=0`). It contains the
+Quader MUST build into one statically linked binary, `quader` (`CGO_ENABLED=0`). It contains the
 management API, every package-format protocol, the embedded Angular build, the schema migrations
 and the background workers (INV-1, INV-2).
 
 **Status.** The binary knows the roles `api`, `packages`, `worker`, `web` and `all` (phase 6a, WP6a.1;
-[ADR-153](../decisions.md#adr-153--trove-is-cut-into-task-areas-roles-of-one-binary-network-seams-only-at-trust-or-load-boundaries),
+[ADR-153](../decisions.md#adr-153--quader-is-cut-into-task-areas-roles-of-one-binary-network-seams-only-at-trust-or-load-boundaries),
 [ADR-155](../decisions.md#adr-155--three-roles-api-packages-and-worker-variants-are-pools), Q-ARCH-294 to Q-ARCH-303): the
 tables below are the data of [internal/app/roles.go](../../internal/app/roles.go) and
 [steps.go](../../internal/app/steps.go), and a test holds them. The registry, the status screen, the content routes of `api` and the
@@ -104,12 +104,12 @@ Deployment per role (WP6a.3). What is left of phase 6a is its tests and the dev 
 
 | Invocation | Purpose |
 |---|---|
-| `trove serve --role api\|packages\|worker\|web\|all` | Runs one replica of a role. The flag overrides `process.role`. |
-| `trove serve --role bastion` | Runs one replica of the trove Bastion, deployed only by the chart `trove-bastion` ([bastion.md](bastion.md) R-BAS-001, phase 5b). |
-| `trove migrate [up\|status]` | Applies or lists the embedded migrations behind the compatibility gate (R-ARCH-026). |
-| `trove backup create\|list\|verify\|delete\|prune\|restore` | The `backup` role: creates a consistent backup into the configured S3 target, lists, verifies, deletes or prunes the backups there, or restores one into an empty installation, then exits (INV-19, [backup-and-restore.md](backup-and-restore.md) R-BAK-009, R-BAK-016, R-BAK-018 to R-BAK-021). It has no client listener and uses no Valkey. The chart runs `create` as a CronJob and `restore` as a Job. |
-| `trove admin …` | Bootstrap and recovery: break-glass administrator ([identity-and-authentication.md](identity-and-authentication.md)), `admin config validate` ([operations-and-observability.md](operations-and-observability.md)), `admin secrets status` (R-ARCH-021; the same status is served by `GET /api/v1/system/encryption`). The break-glass commands run in an `api` pod, the only role that mounts the break-glass secret. |
-| `trove --version` | Version, commit, build date. |
+| `quader serve --role api\|packages\|worker\|web\|all` | Runs one replica of a role. The flag overrides `process.role`. |
+| `quader serve --role bastion` | Runs one replica of the Quader Bastion, deployed only by the chart `quader-bastion` ([bastion.md](bastion.md) R-BAS-001, phase 5b). |
+| `quader migrate [up\|status]` | Applies or lists the embedded migrations behind the compatibility gate (R-ARCH-026). |
+| `quader backup create\|list\|verify\|delete\|prune\|restore` | The `backup` role: creates a consistent backup into the configured S3 target, lists, verifies, deletes or prunes the backups there, or restores one into an empty installation, then exits (INV-19, [backup-and-restore.md](backup-and-restore.md) R-BAK-009, R-BAK-016, R-BAK-018 to R-BAK-021). It has no client listener and uses no Valkey. The chart runs `create` as a CronJob and `restore` as a Job. |
+| `quader admin …` | Bootstrap and recovery: break-glass administrator ([identity-and-authentication.md](identity-and-authentication.md)), `admin config validate` ([operations-and-observability.md](operations-and-observability.md)), `admin secrets status` (R-ARCH-021; the same status is served by `GET /api/v1/system/encryption`). The break-glass commands run in an `api` pod, the only role that mounts the break-glass secret. |
+| `quader --version` | Version, commit, build date. |
 
 **Roles** (INV-2, Q-ARCH-294, Q-ARCH-295). A role is a set of enabled subsystems and wiring areas. Every replica of a
 role runs the same ones and is interchangeable with any other replica of that role:
@@ -121,7 +121,7 @@ role runs the same ones and is interchangeable with any other replica of that ro
 | `worker` | the job queue, its leases and the scheduler, the mirror's passes, the advisory sync; the queues it claims are configurable (R-ARCH-016) | the lease pool | `<fullname>-worker` and its pools by queue |
 | `web` | `api` and `packages` in one process: every family | everything `api` and `packages` hold | `<fullname>-web` only as the bridge of the upgrade across the cut (Q-ARCH-295, [ha-and-helm.md](ha-and-helm.md) R-HA-064) |
 | `all` | every role but `bastion` in one process | everything | never; a binary started outside the chart during development |
-| `backup`, `bastion` | unchanged: the `trove backup` subcommand (above), the Bastion's read flow ([bastion.md](bastion.md) R-BAS-001) | their own | the backup CronJob and restore Job; the chart `trove-bastion` |
+| `backup`, `bastion` | unchanged: the `quader backup` subcommand (above), the Bastion's read flow ([bastion.md](bastion.md) R-BAS-001) | their own | the backup CronJob and restore Job; the chart `quader-bastion` |
 
 | Subsystem | `api` | `packages` | `worker` | `backup` | `web`, `all` |
 |---|---|---|---|---|---|
@@ -192,7 +192,7 @@ routes read them. The areas of the client listener are split by route family:
   composition root's own tests and the drain fixture) is a role with the listeners and no
   infrastructure areas, and it is only reachable through the test options, never through
   configuration.
-- `process.role` has no default. `trove serve` without a role exits non-zero with
+- `process.role` has no default. `quader serve` without a role exits non-zero with
   `process.role must be api, packages, worker, web or all`. The chart deploys `api`, `packages` and `worker` as separate
   Deployments, each with its own replica count, autoscaler, disruption budget, ingress policy and topology spread
   ([ha-and-helm.md](ha-and-helm.md) R-HA-002).
@@ -272,7 +272,7 @@ routes read them. The areas of the client listener are split by route family:
     SeaweedFS (R-HA-051), so failovers can be exercised locally.
   - Production runs HA PostgreSQL, Valkey with Sentinel and S3 (INV-12).
   - The chart bundles no production database and no production Valkey.
-- Splitting roles is the trove form of separately scaled workloads (HA-015). The UI is never a
+- Splitting roles is the Quader form of separately scaled workloads (HA-015). The UI is never a
   separate workload because it is embedded (INV-1); it is served by `api`.
 
 ```yaml
@@ -282,9 +282,9 @@ process:
 ```
 
 Acceptance criteria:
-- On Linux, `file trove` reports a statically linked executable, and `go version -m trove`
+- On Linux, `file quader` reports a statically linked executable, and `go version -m quader`
   shows `CGO_ENABLED=0`.
-- `trove serve` without `--role` and without `process.role` exits non-zero and names
+- `quader serve` without `--role` and without `process.role` exits non-zero and names
   `process.role`.
 - **The role table is data and the architecture test holds it** (Q-ARCH-294). A test in `internal/app` compares
   `SubsystemsFor` of every role with the tables above: the areas of each role equal its column, in step order;
@@ -292,10 +292,10 @@ Acceptance criteria:
   `proxy-engine` nor `formathost`; `web` is the union of `api` and `packages`; and `planSteps` accepts every role.
 - A replica started with `--role worker` has no socket on `:8080` (`ss -ltn`). The instance ID of a
   replica started with `--role api` or `--role packages` never appears in `job.locked_by`, and `pg_stat_activity`
-  never shows a connection named `trove:<that replica>:lease`.
+  never shows a connection named `quader:<that replica>:lease`.
 - On a `packages` replica, `GET /ui/`, `GET /`, `GET /auth/oidc/corp/start`, `GET /api/v1/system/ping` and
   `POST /api/v1/auth/oidc/token` answer the problem of `GET /does-not-exist` (the `404` with a token or while `publicContent` is true, the same `401` `credentials_required` without a credential otherwise, Q-ARCH-302), and a request with a valid
-  `__Host-trv_session` cookie and no token to `GET /api/npm/web/npm-local/@acme%2fsdk` is treated as one without a
+  `__Host-qdr_session` cookie and no token to `GET /api/npm/web/npm-local/@acme%2fsdk` is treated as one without a
   credential (`401` `credentials_required` while the repository is not `public`); on an `api` replica,
   `GET /api/npm/web/npm-local/@acme%2fsdk`, `GET /files/web/generic-local/x` and `GET /v2/` answer that problem, and a test
   double of the upstream records no request from it while the e2e suite runs, except the upstream tests it sends.
@@ -320,7 +320,7 @@ flowchart LR
     CI["GitLab CI job"]
     PR["Prometheus, kubelet probes"]
   end
-  subgraph Replica["trove replica (one Go process)"]
+  subgraph Replica["quader replica (one Go process)"]
     direction TB
     HS["httpserver<br/>:8080 clients, :8081 ops"]
     AN["auth<br/>oidc, session, token, ciexchange"]
@@ -418,7 +418,7 @@ flowchart LR
 | cache | `internal/cache` | Bounded in-process caches and their invalidation hooks | R-ARCH-018 |
 | jobs | `internal/jobs` | Queue, workers, scheduler | R-ARCH-016 |
 | audit | `internal/audit` | Audit events | [operations-and-observability.md](operations-and-observability.md) |
-| backup | `internal/backup` | `trove backup` create, restore, list, verify and delete; the table registry (`tables`), the on-target format (`format`), the port of the target (`target`), the restore fix-ups (`fixup`) | [backup-and-restore.md](backup-and-restore.md) |
+| backup | `internal/backup` | `quader backup` create, restore, list, verify and delete; the table registry (`tables`), the on-target format (`format`), the port of the target (`target`), the restore fix-ups (`fixup`) | [backup-and-restore.md](backup-and-restore.md) |
 | sysstate | `internal/sysstate` | The banner and the read-only maintenance mode in `system_state` (R-OPS-024, R-OPS-025) | R-OPS-024 in [operations-and-observability.md](operations-and-observability.md) |
 | journal | `internal/journal` | The revocation journal: object, ports, replay handlers and the update rule | R-HA-054 in [ha-and-helm.md](ha-and-helm.md) |
 | observability | `internal/observability` | Logs, metrics, traces, health checks | [operations-and-observability.md](operations-and-observability.md) |
@@ -436,14 +436,14 @@ Normative rules:
   - There is no node-local file-system store, no cluster-replicated local store and no redundancy
     factor. Copies and durability are the object store's job (INV-4, INV-12).
   - The catalog leaves open which storage type a deployment gets by default. That choice does not
-    arise in trove, and no default can become unsafe when the replica count is raised.
+    arise in Quader, and no default can become unsafe when the replica count is raised.
   - Any store type added later MUST be shared by every replica. A store that is safe on one node
     only (STOR-008, P2 in [storage.md](storage.md)) MUST refuse to start while the replica registry
     shows another live replica.
 - Replicas never talk to each other. There are no peer addresses and no replica-to-replica HTTP.
   Configuration changes, cache invalidation, locks, counters and job hand-off go through PostgreSQL
   and Valkey, as R-ARCH-030 assigns each mechanism (INV-12). The catalog's per-node peer address
-  (HA-006) therefore does not exist in trove.
+  (HA-006) therefore does not exist in Quader.
 - Imports form layers:
   1. Edge: `httpserver`, `api/v1`, `api/edge`, `api/dispatch`, `webui`, `formats` (the contract and the format handlers), `formathost`.
   2. Domain: `repository`, `files`, `items`, `packages`, `proxy`, `virtual`, `formatdata`, `authz`, `auth`, `jobs`, `audit`, `backup`, `journal`.
@@ -526,7 +526,7 @@ connection through an edge proxy that balances per request.
   - long-running operations: job rows (R-ARCH-016);
   - chunked and resumable uploads (P1): the `upload_sessions` and `upload_session_parts` rows and
     one S3 multipart upload per session ([storage.md](storage.md) R-STOR-011, Q-STOR-11).
-- Neither trove nor the chart configures session affinity: Services keep `sessionAffinity: None`,
+- Neither Quader nor the chart configures session affinity: Services keep `sessionAffinity: None`,
   and the edge route sets no affinity cookie ([ha-and-helm.md](ha-and-helm.md)).
 - No volume is shared between pods (INV-13). A role that needed persistent local state would break
   this requirement first, so no role has any.
@@ -554,10 +554,10 @@ use it, it imports only the standard library and the Prometheus client, and it n
 or trust TLS material import it: `httpserver` (listeners), `meta/postgres`, `cluster` (Valkey), `outbound` (the trust
 stores, which the object-store client uses), and `app` for its metric families. The OTLP trace exporter reads its CA file
 directly, once ([H-69](../security/transport-encryption.md#h-69--tracingca_file-is-read-once-at-start)). The rules of
-[R-ARCH-035](#r-arch-035--tls-on-troves-listeners-and-reloadable-tls-material) apply to every importer.
+[R-ARCH-035](#r-arch-035--tls-on-quaders-listeners-and-reloadable-tls-material) apply to every importer.
 
 ### R-ARCH-003 · Go module and package layout
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The repository is one Go module. `go.mod` states `go 1.27.4`, which is the minimum and also the
 pin CI reads. Code generators are pinned once, and local builds and CI read the same pin:
@@ -569,8 +569,8 @@ pin CI reads. Code generators are pinned once, and local builds and CI read the 
   `web/src/app/api/generated/` (R-ARCH-004).
 
 ```text
-trove/
-├── cmd/trove/main.go          # subcommands serve, migrate, backup, admin; flag parsing only
+quader/
+├── cmd/quader/main.go          # subcommands serve, migrate, backup, admin; flag parsing only
 ├── api/openapi.yaml             # OpenAPI 3.1 source of truth, served as /api/v1/openapi.json (INV-6)
 ├── internal/
 │   ├── app/                     # composition root: builds components from config, start/stop order
@@ -630,9 +630,9 @@ trove/
 │   ├── cache/
 │   ├── jobs/
 │   ├── audit/
-│   ├── backup/                  # trove backup: create, restore (backup-and-restore.md)
+│   ├── backup/                  # quader backup: create, restore (backup-and-restore.md)
 │   │   └── tables/              # table registry: the export class of every table (leaf layer)
-│   ├── maintenance/             # the deletion pause: trove admin maintenance pause-deletions, resume-deletions (R-HA-025)
+│   ├── maintenance/             # the deletion pause: quader admin maintenance pause-deletions, resume-deletions (R-HA-025)
 │   ├── outbound/
 │   ├── secrets/
 │   ├── tlsfiles/                # TLS material read from PEM files and reloaded by content (leaf layer, R-ARCH-035)
@@ -644,14 +644,14 @@ trove/
 │   └── archtest/
 ├── docs/manual/                 # the manual's Markdown and embed.go, which embeds it (R-API-054, Q-UI-89)
 ├── web/                         # Angular workspace (R-ARCH-004)
-├── deploy/helm/trove/         # Helm chart (INV-13)
+├── deploy/helm/quader/         # Helm chart (INV-13)
 ├── test/
 │   ├── integration/             # real PostgreSQL, PgBouncer, Valkey with Sentinel and SeaweedFS (S3) in containers (R-HA-051)
 │   └── e2e/                     # kind + Helm + real clients (npm, pnpm, yarn, dotnet)
 └── perf/                        # load scripts, reference lockfiles (R-ARCH-027)
 ```
 
-- All Go code lives under `internal/`, so trove exposes no public Go API. A new format is a new
+- All Go code lives under `internal/`, so Quader exposes no public Go API. A new format is a new
   package in this repository (R-ARCH-010).
 - There is one package per bounded context. `util`, `common` and `helpers` packages are not
   allowed.
@@ -662,11 +662,11 @@ trove/
   not committed; `internal/webui/.gitignore` ignores them (Q-ARCH-20).
 
 Acceptance criteria:
-- `go build ./cmd/trove` succeeds on a clean checkout without Node.js installed.
+- `go build ./cmd/quader` succeeds on a clean checkout without Node.js installed.
 - `go generate ./... && git diff --exit-code` passes in CI.
 
 ### R-ARCH-004 · Angular workspace layout
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The technology baseline (standalone components, zoneless, `OnPush`, `httpResource()`, Signal Forms,
 CSP nonce, localized builds under `/ui/{locale}/`) and state management are specified in
@@ -732,9 +732,9 @@ Listeners (INV-6; Q-ARCH-11 keeps the layout and the ports as they are):
   pool, a `worker` process none.
 - An address without a host binds every interface on IPv4 and IPv6 (HA-020).
 - HTTP/1.1 is always on. Both listeners serve TLS when `server.tls` is set, and HTTP/2 is served over
-  TLS (R-ARCH-035). A reverse proxy or Ingress in front may end the client's TLS and connect to trove
+  TLS (R-ARCH-035). A reverse proxy or Ingress in front may end the client's TLS and connect to Quader
   over TLS again, which the chart wires (R-HA-063). TLS at the edge alone is no longer the design: plain
-  HTTP to trove is a chart choice, `tls.enabled: false` (H-38).
+  HTTP to Quader is a chart choice, `tls.enabled: false` (H-38).
 
 Top-level routes on the client listener (`net/http.ServeMux`, Q-ARCH-1). The `/api/v1/` operations
 are registered on the same ServeMux by the oapi-codegen `std-http-server` interface, and the
@@ -774,7 +774,7 @@ authorization declarations are looked up by the matched `http.Request.Pattern`
   `/api/<format>/<projectKey>/<repoKey>/` layout (Q-ARCH-11). The decided host-root routes:
   - **npm** ([formats/npm.md](formats/npm.md) Q-NPM-1). The only host-root route is
     `POST /-/npm/v1/oidc/token/exchange/package/{name...}`. npm builds the exchange URL against the
-    host root of the registry URL. trove owns that host root, because `server.base_url` is an origin
+    host root of the registry URL. Quader owns that host root, because `server.base_url` is an origin
     without a path ([operations-and-observability.md](operations-and-observability.md) R-OPS-005).
     - The registry-relative form of the same exchange,
       `/api/npm/<projectKey>/<repoKey>/-/npm/v1/oidc/token/exchange/package/{name}`, used by Yarn 4 and current
@@ -830,7 +830,7 @@ authorization declarations are looked up by the matched `http.Request.Pattern`
   `CleanPath` decodes percent-escapes exactly once and answers `400` with code `invalid_path` when a
   segment is `.`, `..` or empty, or contains NUL, `\` or a control character
   ([authorization.md](authorization.md)). ServeMux's own cleaning does not cover escaped dots
-  (`%2e%2e`), so trove does not rely on it.
+  (`%2e%2e`), so Quader does not rely on it.
 
 Middleware, outermost first:
 1. Panic recovery: `500` with code `internal`, and the stack goes to the log.
@@ -898,11 +898,11 @@ a replica admits is bounded by its memory as well as by `max_in_flight`:
     `proxy.merged_metadata_cache_bytes`, `proxy.query_cache_bytes`: 648 MiB with the defaults,
     Q-ARCH-243, Q-ARCH-270). A cache that is full takes what its budget says; one that is empty
     takes nothing. The growth of a cache after a request was admitted is the heap gate's (H-539).
-  - **Slots.** `trove_http_memory_slots` is (0.8 × `L` − the caches' bytes) ÷ the request bytes,
+  - **Slots.** `quader_http_memory_slots` is (0.8 × `L` − the caches' bytes) ÷ the request bytes,
     at least one, in downloads of a large object. With empty caches a 1 GiB container (`L` =
     870 MiB) has 1,114 slots, 256 MiB has 278, and the chart's 2 GiB 2,228; with the caches full
     (648 MiB) 1 GiB has 77 and 2 GiB 1,191, which is what the chart checks (R-HA-029, Q-HA-70).
-    `trove_http_memory_slots_in_use` is the charges in the same unit, rounded up.
+    `quader_http_memory_slots_in_use` is the charges in the same unit, rounded up.
   The charges bound a burst that arrives faster than a GC cycle can show it. An endpoint admits
   the smaller of its `max_in_flight` and what the replica has left.
 - **Heap gate.** Every 50 ms the guard reads the live heap of the last GC cycle plus the goroutine
@@ -910,8 +910,8 @@ a replica admits is bounded by its memory as well as by `max_in_flight`:
   gate bounds requests that hold more than a download, such as a document held in memory
   (R-ARCH-028). A closed gate that sees no GC cycle for 1 s runs one, so it opens once the load is
   gone ([Q-ARCH-242](#q-arch-242--a-closed-heap-gate-runs-a-gc-cycle-when-none-came-for-a-second)).
-- **Visibility.** Every refusal of step 4 counts in `trove_http_requests_shed_total{endpoint,reason}`
-  (`in_flight`, `memory_slots`, `heap`); `trove_http_memory_slots` is the number of slots in downloads of a large object
+- **Visibility.** Every refusal of step 4 counts in `quader_http_requests_shed_total{endpoint,reason}`
+  (`in_flight`, `memory_slots`, `heap`); `quader_http_memory_slots` is the number of slots in downloads of a large object
   ([operations-and-observability.md](operations-and-observability.md) R-OPS-008). The gate logs when it
   closes and when it opens.
 - Not bounded by the guard: connections that send no request (H-324), the growth of a cache after a request was admitted (H-539), memory a replica retains
@@ -1024,7 +1024,7 @@ Acceptance criteria:
   never changes the answer.
 
 ### R-ARCH-007 · One origin for UI and package content
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 In the MVP, the UI, the management API and the package endpoints share one origin: the host name
 and the listener of the default endpoint (INV-6). A further endpoint never serves the UI or the
@@ -1047,7 +1047,7 @@ Consequences, normative for every component:
   set without `Content-Disposition`: a client reads it as a response and does not save it as a file.
   This covers `/files/` and every format route of kind `Download`, `Metadata`, `Computed` or `Volatile`
   (R-ARCH-008). It also covers uploaded and cached README, license, icon and manifest files.
-  One exception: the HTML directory index of a folder `GET` under `/files/` is rendered by trove,
+  One exception: the HTML directory index of a folder `GET` under `/files/` is rendered by Quader,
   not stored content. For it the wrapper selects the header set of
   [storage.md](storage.md) R-STOR-017 (`nosniff`, `Cross-Origin-Resource-Policy: same-site`, the
   CSP without `sandbox`, no `Content-Disposition`); the handler cannot weaken that set either.
@@ -1083,7 +1083,7 @@ Acceptance criteria:
   `web/src/app/api/generated/`.
 
 ### R-ARCH-029 · Optional separate content origin
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 With `server.content_base_url` set, package content that a browser could render is served from a
 second origin. That origin never sees the UI's session cookie and is not the UI's origin. The header
@@ -1098,10 +1098,10 @@ Origin rules, checked at start-up. On a violation the process exits and names th
   ([endpoints.md](endpoints.md) R-EP-001). A different port on the same
   host is refused: browsers do not isolate cookies by port, so such an origin would receive the
   session cookie.
-- Recommended form: a separate registrable domain, such as `https://trove-content.example.net`.
-  - A subdomain of the UI's registrable domain is accepted. Every trove cookie carries the
+- Recommended form: a separate registrable domain, such as `https://quader-content.example.net`.
+  - A subdomain of the UI's registrable domain is accepted. Every Quader cookie carries the
     `__Host-` prefix ([identity-and-authentication.md](identity-and-authentication.md) Q-AUTH-2), so
-    it is host-only: the content host neither receives `__Host-trv_session` or `__Host-trv_csrf` nor
+    it is host-only: the content host neither receives `__Host-qdr_session` or `__Host-qdr_csrf` nor
     can it plant or shadow them.
   - Such a host is still same-site with the UI, so `SameSite` and `Sec-Fetch-Site` do not mark its
     requests as foreign. Start-up therefore logs a warning that names the registrable domain. The
@@ -1128,13 +1128,13 @@ Authentication on the content host:
   host, and a request without a credential reads what a `public` level admits ([authorization.md](authorization.md)
   R-AUTHZ-003).
 - A redirect for a session-cookie request carries a signed, short-lived grant in the query:
-  `trv_exp=<unix seconds>&trv_sid=<session row id>&trv_sig=v1.<key id>.<base64url HMAC-SHA-256>`.
-  - The MAC covers the content host, the escaped path, `trv_exp` and `trv_sid`.
+  `qdr_exp=<unix seconds>&qdr_sid=<session row id>&qdr_sig=v1.<key id>.<base64url HMAC-SHA-256>`.
+  - The MAC covers the content host, the escaped path, `qdr_exp` and `qdr_sid`.
   - The MAC key is derived with HKDF-SHA-256 from the stored-secret key `<key id>` of R-ARCH-021,
-    with info `trove content-url v1`. A key rotation therefore keeps outstanding URLs valid until
+    with info `quader content-url v1`. A key rotation therefore keeps outstanding URLs valid until
     they expire.
 - At use, the content host:
-  1. verifies the MAC and `trv_exp`;
+  1. verifies the MAC and `qdr_exp`;
   2. loads the session, which must still be valid;
   3. authorizes `read` for the session's user on the path, exactly as on the UI host. A grant
      removed after signing takes effect at once.
@@ -1156,19 +1156,19 @@ Further rules:
 ```yaml
 server:
   content_base_url: ""            # default (proposed): empty = one origin (R-ARCH-007)
-  # content_base_url: "https://trove-content.example.net"   # example
+  # content_base_url: "https://quader-content.example.net"   # example
   content_url_ttl: 300s           # default (proposed): lifetime of a signed content URL
 ```
 
 Acceptance criteria:
-- Set-up: `content_base_url: https://trove-content.example.net`, and a browser logged in to
-  `https://trove.example.com`.
-  - Opening `https://trove.example.com/files/web/generic-local/evil.svg` ends on the content host with
-    `trv_sig` in the URL, and the response carries the content headers.
+- Set-up: `content_base_url: https://quader-content.example.net`, and a browser logged in to
+  `https://quader.example.com`.
+  - Opening `https://quader.example.com/files/web/generic-local/evil.svg` ends on the content host with
+    `qdr_sig` in the URL, and the response carries the content headers.
   - The Playwright request log shows no request to the content host carrying
-    `__Host-trv_session` or `__Host-trv_csrf`, and the browser's cookie store holds no cookie for
+    `__Host-qdr_session` or `__Host-qdr_csrf`, and the browser's cookie store holds no cookie for
     the content host.
-- `curl -H "Authorization: Bearer $T" https://trove.example.com/files/web/generic-local/x.bin`
+- `curl -H "Authorization: Bearer $T" https://quader.example.com/files/web/generic-local/x.bin`
   answers `200` without a redirect. `npm ci` and `dotnet restore` against the UI host make no
   request to the content host.
 - A signed URL is a credential, so a failed check never falls back to anonymous access
@@ -1178,10 +1178,10 @@ Acceptance criteria:
     `content_url_invalid`;
   - used after the user's `read` grant is removed, it answers `404`
     ([authorization.md](authorization.md) R-AUTHZ-016).
-- `GET https://trove-content.example.net/api/v1/repositories` answers `404`.
-- `content_base_url: https://trove.example.com:8443` with `base_url: https://trove.example.com`
+- `GET https://quader-content.example.net/api/v1/repositories` answers `404`.
+- `content_base_url: https://quader.example.com:8443` with `base_url: https://quader.example.com`
   stops start-up with `content_base_url must use a host name other than base_url`.
-- `content_base_url: https://content.trove.example.com` starts and logs a warning that the content
+- `content_base_url: https://content.quader.example.com` starts and logs a warning that the content
   host shares the registrable domain `example.com` with the UI.
 
 ## Format plug-in contract
@@ -1316,7 +1316,7 @@ type Route struct {
 	Handler  HandlerFunc
 	PackageParam string // the placeholder of Params that holds the package name the route acts on ("name" for OCI), "" for none; the core reads the package through it
 	APIKey   bool     // the route accepts a credential in the format's API-key header besides Authorization (NuGet X-NuGet-ApiKey, R-NUGET-012); examined only there, first (Q-ARCH-266)
-	TokenScheme bool  // the route accepts "Authorization: Token <trove token>", the scheme the Galaxy clients send (R-ANS-006); examined only there, from the dispatcher's own match (Q-ANS-4, ADR-191)
+	TokenScheme bool  // the route accepts "Authorization: Token <quader token>", the scheme the Galaxy clients send (R-ANS-006); examined only there, from the dispatcher's own match (Q-ANS-4, ADR-191)
 	Wiki     bool     // the route serves only wiki content (R-AUTHZ-034): the dispatcher's coarse check decides it with the part wiki; kit check 15 requires the kind Metadata or Computed and the action read
 }
 
@@ -1388,7 +1388,7 @@ type PathKind uint8
 const (
 	Content      PathKind = iota + 1 // immutable once stored
 	PathMetadata                     // upstream document that expires after the metadata cache period
-	PathComputed                     // rendered by trove from stored rows, never fetched
+	PathComputed                     // rendered by quader from stored rows, never fetched
 	PathVolatile                     // passed through, never cached (search, advisory queries)
 )
 
@@ -1702,7 +1702,7 @@ type VulnerabilityData interface {
 	All(ctx context.Context, ecosystem string) ([]advisory.Advisory, error)
 	// InternalNames reports which names are internal names of the format (R-VULN-010), which an audit withholds.
 	InternalNames(ctx context.Context, format ID, names []string) (map[string]bool, error)
-	// CountAudit counts one audit in trove_vuln_audit_requests_total (R-VULN-024), so that a format imports no metric package.
+	// CountAudit counts one audit in quader_vuln_audit_requests_total (R-VULN-024), so that a format imports no metric package.
 	CountAudit(format ID, mode, outcome string)
 	// Enabled reports whether the installation's vulnerabilities.enabled is true, which an audit mode local needs (R-VULN-017).
 	// The composition root sets it explicitly (formathost.VulnPorts.Enabled); it is not derived from which ports are wired.
@@ -1930,7 +1930,7 @@ R-ARCH-025.
 Normative rules:
 - `Descriptor().Classes` is the single source of truth for the classes a format supports. Creating
   a repository with any other class is rejected ([repositories-and-proxy.md](repositories-and-proxy.md)).
-  - In the catalog, two lists of formats per class disagree (FMT-001). trove settles this by keeping
+  - In the catalog, two lists of formats per class disagree (FMT-001). Quader settles this by keeping
     no second list.
   - The per-class format sets of the OpenAPI document, the `classes` of `GET /api/v1/formats` and
     the formats the UI offers for a chosen class are all generated from `Classes` (R-ARCH-010).
@@ -2290,7 +2290,7 @@ own tests:
    attach the setup snippets of their section; every section has a known topic, a title, a unique ID,
    classes and clients of the descriptor and executes over `GuideData`; and the guide obeys the
    template rule in the code a reader copies: its fenced code blocks spell no credential except the
-   option names the fixture lists and the reference `${TROVE_TOKEN}`, and no section holds the shape of
+   option names the fixture lists and the reference `${QUADER_TOKEN}`, and no section holds the shape of
    a token. A format without clients has no guide.
 9. Every storage hook, and every route of kind `Upload`, `Delete` or `Admin` that changes package
    rows, leaves the affected package's `rev_seq` higher than before (R-ARCH-009), measured on the
@@ -2454,7 +2454,7 @@ Priority: **MVP** · Covers: ART-011, REPO-016, STOR-001
    flushed at shutdown (R-ARCH-024).
 
 Acceptance criteria:
-- `npm install @acme/lib@1.0.0 --registry https://trove.example.com/api/npm/web/npm-local/` succeeds.
+- `npm install @acme/lib@1.0.0 --registry https://quader.example.com/api/npm/web/npm-local/` succeeds.
 - A conditional request with the item's ETag answers `304`, and the object-store GET counter does
   not move.
 - With Valkey stopped and `cluster.epoch_poll_interval: 10s`, a repository created with
@@ -2476,7 +2476,7 @@ Priority: **MVP** · Covers: FMT-011
   with one indexed query, so a cached rendering can never outlive a commit, whether or not a
   notification has arrived. [formats/npm.md](formats/npm.md) and [formats/nuget.md](formats/nuget.md)
   apply this rule.
-  - The rendering settings are the format's `trove.yaml` keys that change the bytes and the serving
+  - The rendering settings are the format's `quader.yaml` keys that change the bytes and the serving
     repository's `config_version`. The render version is a constant of the format that a release
     increments whenever it changes the rendered bytes (npm: `npmRenderVersion`).
   - A cached rendering and the `ETag` computed for it use the same inputs, so a client never holds
@@ -2486,7 +2486,7 @@ Priority: **MVP** · Covers: FMT-011
 - Every change that reaches package rows through the storage hooks of R-ARCH-008 increments
   `rev_seq` in its own transaction. Those changes are: publish or upload, delete, trash restore,
   copy, move, import, retention removal and remote cache fill. The catalog lists deploy, delete,
-  copy and move as triggers (FMT-011); every such operation in trove goes through these hooks, so
+  copy and move as triggers (FMT-011); every such operation in Quader goes through these hooks, so
   none can bypass the metadata.
 - Clients never upload derived metadata. No `Upload` route accepts a write to a path that `Classify` marks
   `Computed`, and `Register` refuses a route table that has one. A change that only edits the rows a computed path is
@@ -2515,16 +2515,16 @@ Acceptance criteria, against three replicas, 50 iterations, no sleep, zero failu
 
 ```sh
 npm version patch --no-git-tag-version
-npm publish --registry https://trove.example.com/api/npm/web/npm-local/
+npm publish --registry https://quader.example.com/api/npm/web/npm-local/
 npm view "@acme/lib@$(node -p 'require("./package.json").version')" version \
-  --registry https://trove.example.com/api/npm/web/npm-all/
+  --registry https://quader.example.com/api/npm/web/npm-all/
 ```
 
 ```sh
 dotnet nuget push "Acme.Lib.1.0.$i.nupkg" --api-key "$TOKEN" \
-  --source https://trove.example.com/api/nuget/web/nuget-local/v3/index.json
+  --source https://quader.example.com/api/nuget/web/nuget-local/v3/index.json
 dotnet add package Acme.Lib --version "1.0.$i" \
-  --source https://trove.example.com/api/nuget/web/nuget-all/v3/index.json
+  --source https://quader.example.com/api/nuget/web/nuget-all/v3/index.json
 ```
 
 ### R-ARCH-013 · Request path: download through a remote repository
@@ -2614,10 +2614,10 @@ sequenceDiagram
     A->>A: snapshot, Match, CleanPath, authorize read
     A->>PG: cache entry?
     PG-->>A: none
-    A->>VK: GET trove:<ks>:neg:v1:<repo id>:<f>
+    A->>VK: GET quader:<ks>:neg:v1:<repo id>:<f>
     VK-->>A: nil
     A->>A: authorize population, single-flight join
-    A->>VK: SET trove:<ks>:lock:fetch:v1:<f> <token> NX PX 30000
+    A->>VK: SET quader:<ks>:lock:fetch:v1:<f> <token> NX PX 30000
     VK-->>A: OK
     A->>PG: re-check cache entry
     A->>U: GET (outbound client, egress policy)
@@ -2626,12 +2626,12 @@ sequenceDiagram
     A->>VK: SET … IFEQ <token> PX 30000 (every 10 s while transferring)
     A->>S3: HEAD, then PUT sha256/... if absent
     A->>PG: BEGIN, upsert cache entry, COMMIT
-    A->>VK: DELIFEQ trove:<ks>:lock:fetch:v1:<f> <token>, PUBLISH trove:<ks>:fill:v1:<f> stored
+    A->>VK: DELIFEQ quader:<ks>:lock:fetch:v1:<f> <token>, PUBLISH quader:<ks>:fill:v1:<f> stored
     A-->>C: tail
 ```
 
 Acceptance criteria (metric names per [operations-and-observability.md](operations-and-observability.md)):
-- On an empty remote, `npm cache clean --force && npm install lodash@4.17.21 --registry https://trove.example.com/api/npm/web/npm-remote/`
+- On an empty remote, `npm cache clean --force && npm install lodash@4.17.21 --registry https://quader.example.com/api/npm/web/npm-remote/`
   fetches from the upstream. A second run after `npm cache clean --force` makes no upstream request.
 - After the metadata cache period has passed and with the upstream unreachable,
   `npm install lodash@4.17.21` still succeeds from stale metadata and the cached tarball.
@@ -2716,7 +2716,7 @@ components act in this order:
      own. [formats/npm.md](formats/npm.md) states the same rule for npm.
    - One virtual metadata period governs every format: `mergedMetadataTtlSeconds` of
      [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-020. No format has a default of
-     its own. The catalog names two competing defaults (FMT-011, REPO-037); trove settles this with
+     its own. The catalog names two competing defaults (FMT-011, REPO-037); Quader settles this with
      the one period. Local member changes bypass the period (above), and a merged entry never
      outlives the remote entries it was built from.
 5. Links in the response point at the virtual repository. Writes go to the default deployment
@@ -2751,7 +2751,7 @@ delivery and data migrations. Its columns serve all three.
 CREATE TYPE job_state AS ENUM ('queued', 'running', 'succeeded', 'failed', 'cancelling', 'cancelled');
 
 CREATE TABLE job (
-    id             uuid        PRIMARY KEY,                 -- UUIDv7, generated by trove
+    id             uuid        PRIMARY KEY,                 -- UUIDv7, generated by Quader
     kind           text        NOT NULL,                    -- 'gc', 'index_rebuild', 'repository_deletion', ...
     queue          text        NOT NULL DEFAULT 'default',
     args           jsonb       NOT NULL DEFAULT '{}',
@@ -2834,7 +2834,7 @@ kind belongs to one queue, and
   stays unclaimed and a queue added in a later release is claimed by the main Deployment without a value
   ([ha-and-helm.md](ha-and-helm.md) R-HA-062).
 - **As an environment variable** a list-valued key is read the way the configuration loader reads every list (Q-ARCH-304):
-  one JSON (or YAML flow) list, `TROVE_JOBS_QUEUES='["index","vuln"]'` or `TROVE_JOBS_EXCLUDE_QUEUES='["index"]'`; a bare
+  one JSON (or YAML flow) list, `QUADER_JOBS_QUEUES='["index","vuln"]'` or `QUADER_JOBS_EXCLUDE_QUEUES='["index"]'`; a bare
   name or a comma-separated text is refused, naming the variable. The chart renders the JSON form.
 - A replica that claims only some queues still runs the reaper (it returns expired jobs of every queue) and may hold
   the `scheduler` lease (the scheduler enqueues into every queue), because both are cluster-wide and need no slot.
@@ -2912,7 +2912,7 @@ Normative rules:
   A released job does not count the interrupted attempt. Another worker claims it at its next poll
   or wake-up and resumes from `checkpoint`. A job in `cancelling` ends `cancelled` instead of being
   released. A drain therefore costs a job its progress since the last checkpoint, never an attempt
-  and never the job itself. A release counts in `trove_jobs_completed_total{outcome="released"}`
+  and never the job itself. A release counts in `quader_jobs_completed_total{outcome="released"}`
   ([operations-and-observability.md](operations-and-observability.md) R-OPS-008).
   - Before its job is released, a handler cancels its outstanding object-store calls and waits for
     them to return, so it sends nothing after the release. It may then run one short statement that
@@ -3073,14 +3073,14 @@ session and no `LISTEN` (Q-ARCH-15), and only replicas that run singleton work h
 connections (Q-ARCH-14).
 
 - **Lease pool.** Each replica of role `worker` (or `all`) keeps the lease pool: up to
-  `database.lease_pool_size` session-scoped connections named `trove:<replica>:lease`, opened
+  `database.lease_pool_size` session-scoped connections named `quader:<replica>:lease`, opened
   against the session host. That is `database.session_host` when the main pool goes through a
   transaction-mode pooler, and the database host otherwise ([ha-and-helm.md](ha-and-helm.md)
   R-HA-058). A `web` replica opens none (R-ARCH-001).
   - The `scheduler` lease and every fenced singleton lease of R-HA-006 is a session-level advisory
     lock held on one of these connections. The singleton's writes run on the same connection
     (fencing, R-HA-006).
-  - `trove migrate` and `trove backup` open their own session connection against the same endpoint
+  - `quader migrate` and `quader backup` open their own session connection against the same endpoint
     (R-ARCH-019).
 - The loop that checks the held leases is watched by liveness as `cluster.leases` (R-ARCH-016,
   [operations-and-observability.md](operations-and-observability.md) R-OPS-001).
@@ -3102,7 +3102,7 @@ connections (Q-ARCH-14).
 |---|---|---|---|
 | 1 | `lease` | registered lease number (`scheduler` = 1) | a lease-pool connection of a `worker` replica; session lock with fencing ([ha-and-helm.md](ha-and-helm.md) R-HA-006) |
 | 2 | `fetch` (retired) | — | Not used since 2026-10-28: the fetch lock lives in Valkey (R-ARCH-033, Q-ARCH-6). The number stays reserved and is never reused. |
-| 3 | `migration` | 0 | Session locks on the session host: `trove migrate`, exclusive (R-ARCH-026, [ha-and-helm.md](ha-and-helm.md) R-HA-019); the database phase of `trove backup create`, shared `pg_advisory_lock_shared(3, 0)` on the snapshot connection ([backup-and-restore.md](backup-and-restore.md) R-BAK-005); `trove backup restore`, exclusive, until it finishes (R-BAK-021) |
+| 3 | `migration` | 0 | Session locks on the session host: `quader migrate`, exclusive (R-ARCH-026, [ha-and-helm.md](ha-and-helm.md) R-HA-019); the database phase of `quader backup create`, shared `pg_advisory_lock_shared(3, 0)` on the snapshot connection ([backup-and-restore.md](backup-and-restore.md) R-BAK-005); `quader backup restore`, exclusive, until it finishes (R-BAK-021) |
 | 4 | `config` | registered object type (virtual membership = 1, configuration documents = 2, project creation = 3, Bastion registration creation = 4, automatic name claims of virtual members = 5) | `pg_advisory_xact_lock` inside configuration transactions; works through a transaction-mode pooler |
 
 - No category hashes its `objid`. New categories are added in `internal/cluster/locks.go`, never as
@@ -3115,18 +3115,18 @@ connections (Q-ARCH-14).
   end with their transaction.
 - The migration lock excludes backups and migrations from each other
   ([ha-and-helm.md](ha-and-helm.md) R-HA-019): a backup's database phase holds it shared, while
-  `trove migrate` and `trove backup restore` hold it exclusively. A restore holds it until it
+  `quader migrate` and `quader backup restore` hold it exclusively. A restore holds it until it
   finishes, and the migration runner it calls runs on that same connection (R-ARCH-026). Whether
   two backup runs may overlap is decided elsewhere ([backup-and-restore.md](backup-and-restore.md)
   R-BAK-010), not by this lock.
 - Not every serialisation needs a category. `audit_maintain_partitions()`
   ([operations-and-observability.md](operations-and-observability.md) R-OPS-015) is called by every
-  replica at start-up, by `trove migrate` and by the daily task. Concurrent calls serialise on a row
+  replica at start-up, by `quader migrate` and by the daily task. Concurrent calls serialise on a row
   lock of `audit_policy` (`SELECT … FOR UPDATE`) and take no advisory lock. The category test below
   is therefore unaffected.
 - `cluster.FlightLock` uses no PostgreSQL lock; R-ARCH-033 specifies it.
 - Session-scoped connections depend on session state, so a transaction-mode pooler breaks them.
-  Before a `worker` replica takes its first lease, and before `trove migrate` or `trove backup`
+  Before a `worker` replica takes its first lease, and before `quader migrate` or `quader backup`
   starts, the process runs `SELECT pg_backend_pid()` five times, outside a transaction, on its
   session connection. If the values differ, it exits with
   `session connection must keep session state; set database.session_host to a direct or session-mode endpoint`.
@@ -3147,10 +3147,10 @@ Acceptance criteria:
   `SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND objsubid = 2 AND classid = 1 AND objid = 1`
   returns 1. After the holder pod is deleted, another worker holds the lease within 15 s.
 - With six `web` and two `worker` replicas,
-  `SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'trove:%:lease'` never exceeds
+  `SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:%:lease'` never exceeds
   2 × `database.lease_pool_size`, and no row names a `web` replica.
 - With `database.session_host` pointing at PgBouncer in transaction mode, a `worker` replica and
-  `trove migrate` exit non-zero with the message above. A `web` replica whose database URL points
+  `quader migrate` exit non-zero with the message above. A `web` replica whose database URL points
   at the same PgBouncer starts and becomes ready.
 - A test over `internal/meta/postgres/queries/*.sql` and every Go source fails on any
   `pg_advisory*` or `pg_try_advisory*` call with one argument, or with a first argument that is not
@@ -3166,7 +3166,7 @@ Acceptance criteria:
 Priority: **MVP** · Covers: HA-006, RMT-026
 
 Each owning page decides what it caches. This page provides the mechanism every cache uses, and
-the rules for it. Since 2026-10-28 trove issues no `LISTEN` and no `NOTIFY` (Q-ARCH-15). A change
+the rules for it. Since 2026-10-28 Quader issues no `LISTEN` and no `NOTIFY` (Q-ARCH-15). A change
 reaches the other replicas through a change log in PostgreSQL, which carries correctness, and
 through Valkey, which carries speed.
 
@@ -3174,7 +3174,7 @@ Caches:
 - A cache is registered with `cache.Register(registry, name, Options{MaxBytes|MaxEntries, Weigh, SafetyTTL, Areas, OnChange, OnFlush})`,
   where `registry` is the process's `*cache.Registry`.
   `SafetyTTL` is mandatory and bounds staleness if an invalidation is ever missed. Every cache exports
-  `trove_cache_requests_total{cache,result}` and its size
+  `quader_cache_requests_total{cache,result}` and its size
   ([operations-and-observability.md](operations-and-observability.md)).
 - Keys that make an entry self-validating are preferred over change messages: a source digest, a
   `rev_seq`, or an epoch counter like the one in [authorization.md](authorization.md). Change
@@ -3234,7 +3234,7 @@ leaves:
      ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-060, [authorization.md](authorization.md) R-AUTHZ-028).
   2. After commit, the writer applies its own invalidation at once and publishes
      `{"a": <area>, "e": <epoch>, "v": <payload version>, "p": <payload>}` on the Valkey channel
-     `trove:<ks>:inv:v1` (R-ARCH-030).
+     `quader:<ks>:inv:v1` (R-ARCH-030).
   3. Every `web` and `worker` replica polls the change log every `cluster.epoch_poll_interval`,
      on its control connection (R-ARCH-019), so a request pool that is exhausted under load cannot
      stall the poll.
@@ -3261,7 +3261,7 @@ leaves:
      is lower, in each of these cases:
      - the rows above the last applied epoch, or the row at it, are no longer there, because
        `cluster-change-prune` (R-ARCH-016) removed them
-       (`trove_cache_flushes_total{reason="change_log_gap"}`). The replica cannot tell from a
+       (`quader_cache_flushes_total{reason="change_log_gap"}`). The replica cannot tell from a
        missing row whether its history still holds, so a missing row at the last applied epoch is
        handled like an epoch that went backwards;
      - a row carries a payload version the replica does not know (a rolling upgrade,
@@ -3293,11 +3293,11 @@ leaves:
   PostgreSQL.
   - After commit, the signal goes to the replica's coalescer; a rollback drops it. The coalescer
     publishes at most one message per area per `cluster.signal_coalesce_window` on
-    `trove:<ks>:sig:v1:<area>`, batching the payloads.
+    `quader:<ks>:sig:v1:<area>`, batching the payloads.
   - Delivery is at most once ([Pub/Sub](https://valkey.io/topics/pubsub/)). Every consumer of a
     signal area MUST stay correct without the signal, through self-validating keys, `SafetyTTL` or
     its own polling (`jobs.poll_interval`, the lock poll of R-ARCH-033). While Valkey is
-    unavailable, signals are dropped and counted in `trove_cluster_signals_dropped_total{area}`.
+    unavailable, signals are dropped and counted in `quader_cluster_signals_dropped_total{area}`.
   - The completion of a collapsed fetch is not an area. It uses the flight's own channel
     (R-ARCH-033).
 
@@ -3341,13 +3341,13 @@ Rules:
 - After the Valkey subscriber reconnects, the replica runs one change-log poll at once. Caches of
   signal areas are not flushed, because they never rely on signals for correctness.
 - Metrics ([operations-and-observability.md](operations-and-observability.md) R-OPS-008):
-  `trove_cluster_poll_last_success_timestamp_seconds`, whose age the `invalidation` check compares
-  with `cluster.epoch_max_staleness`; `trove_cluster_changes_applied_total{area,source}`, with
+  `quader_cluster_poll_last_success_timestamp_seconds`, whose age the `invalidation` check compares
+  with `cluster.epoch_max_staleness`; `quader_cluster_changes_applied_total{area,source}`, with
   `source` = `poll` for changes applied from the change log, `message` for early evictions from
-  Valkey and `local` for changes the replica applies to itself; `trove_cluster_changes_published_total{area}`,
-  `trove_cluster_changes_dropped_total{area}` and `trove_cluster_poll_errors_total` for the change
-  messages and the polls; `trove_cluster_signals_published_total{area}` and
-  `trove_cluster_signals_dropped_total{area}` for signals; and `trove_cache_flushes_total{cache,reason}` for
+  Valkey and `local` for changes the replica applies to itself; `quader_cluster_changes_published_total{area}`,
+  `quader_cluster_changes_dropped_total{area}` and `quader_cluster_poll_errors_total` for the change
+  messages and the polls; `quader_cluster_signals_published_total{area}` and
+  `quader_cluster_signals_dropped_total{area}` for signals; and `quader_cache_flushes_total{cache,reason}` for
   the flushes of change-area step 5.
 - A migration inserts the `cluster_epoch` row of a change area in the release that introduces the
   area (an expand step).
@@ -3378,9 +3378,9 @@ The owning page may move one of its areas to the other class. Until it does, thi
 | Area | Owner | Class | Purpose |
 |---|---|---|---|
 | `jobs` | this page | signal | Wake the workers of a queue; the payload names the queues |
-| `cache` | this page | change | System settings, and flush requests: the installation-wide cache flush of [operations-and-observability.md](operations-and-observability.md) R-OPS-047 (P1) writes the flush entries, counted as `trove_cache_flushes_total{reason="admin"}` |
+| `cache` | this page | change | System settings, and flush requests: the installation-wide cache flush of [operations-and-observability.md](operations-and-observability.md) R-OPS-047 (P1) writes the flush entries, counted as `quader_cache_flushes_total{reason="admin"}` |
 | `auth` | [identity-and-authentication.md](identity-and-authentication.md) | change | Token revocation and rotation, session end, principal status (disable, enable, delete), membership changes, runtime auth settings, and the break-glass rotation end. The payload carries the token ID with the hash of the ended credential, the session ID or the principal ID (R-AUTH-023). |
-| `authz` | [authorization.md](authorization.md) | change | Policies (entries, selectors, patterns), role bindings, projects and their members with their roles. Its epoch is the authorization epoch of R-AUTHZ-028 and of the `Trove-Authz-Epoch` header (R-AUTHZ-032); the grant index also rebuilds on `repo_config`. |
+| `authz` | [authorization.md](authorization.md) | change | Policies (entries, selectors, patterns), role bindings, projects and their members with their roles. Its epoch is the authorization epoch of R-AUTHZ-028 and of the `Quader-Authz-Epoch` header (R-AUTHZ-032); the grant index also rebuilds on `repo_config`. |
 | `repo_config`, `claims`, `cache_invalidation` | [repositories-and-proxy.md](repositories-and-proxy.md) | change | Repository snapshot, claims and pin rules, cache invalidation (RMT-026). `claims` is also written by the auto claim of a first publish and by the repository-delete job, `cache_invalidation` by the fold job (change-area step 1 above). |
 | `upstream_state` | [repositories-and-proxy.md](repositories-and-proxy.md) | change | Circuit state, the global offline switch (R-REPO-031) and the reload of one repository's gone packages (R-REPO-029). Moved from the hot-path class: its transitions are rare, and R-REPO-029's 2 s bound then holds without Valkey. |
 | `metadata_changed` | [repositories-and-proxy.md](repositories-and-proxy.md) | signal | Early merged-metadata eviction after a remote refresh; R-ARCH-015's `rev_seq` check keeps local members exact without it |
@@ -3391,7 +3391,7 @@ The owning page may move one of its areas to the other class. Until it does, thi
 | `ci_issuer_keys`, `ci_mappings` | [gitlab-ci-oidc.md](gitlab-ci-oidc.md) | change | Key-set reload, written only when a stored key set changes (R-CI-003). Issuer and mapping reload, written by every issuer, mapping and delegation write (R-CI-002, R-CI-009). A mapping disable revokes. The exchange does not depend on the timing of either: it re-reads the key row on an unknown `kid` (throttled per replica), and it re-reads the issuer row and checks its `version` and `mappings_version` (R-CI-007). |
 | `vuln_data` | [vulnerability-scanning.md](vulnerability-scanning.md) | change | From M4b: the state of the advisory data per source and ecosystem (complete, stale, data epoch), written once per sync run that changed records. It invalidates the caches `vuln_source_state` (`SafetyTTL` 60 s) and `vuln_nuget_page`, whose key carries the `vuln_data`, `claims` and `repo_config` epochs (R-VULN-018, R-VULN-027). |
 
-The channel `trove_proxy_fetch` of the earlier design no longer exists: fill completion uses the
+The channel `quader_proxy_fetch` of the earlier design no longer exists: fill completion uses the
 flight channel of R-ARCH-033.
 
 ```yaml
@@ -3411,22 +3411,22 @@ Acceptance criteria:
   trials), a request on replica B honours it. With Valkey stopped, the same holds within
   `cluster.epoch_poll_interval` plus 1 s.
 - With Valkey stopped, a token revoked through replica A is rejected by replica B within 2 s.
-- A fault-injection build drops every second message on `trove:<ks>:inv:v1` and injects forged messages
+- A fault-injection build drops every second message on `quader:<ks>:inv:v1` and injects forged messages
   with random epochs and payloads. Over 1,000 policy changes, no replica serves a decision older
   than `cluster.epoch_poll_interval` plus 1 s after the change committed, and the forged messages
   cause evictions only.
 - 1,000 transactions per second across three replicas, each enqueueing a job, cause at most
-  3 × 20 `PUBLISH` per second on `trove:<ks>:sig:v1:jobs` (Valkey `INFO commandstats`), and
+  3 × 20 `PUBLISH` per second on `quader:<ks>:sig:v1:jobs` (Valkey `INFO commandstats`), and
   `pg_stat_statements` shows no `NOTIFY`.
 - A test over `internal/meta/postgres/queries/*.sql` and every Go source fails on `LISTEN`,
   `NOTIFY` or `pg_notify`, and on a write to `cluster_epoch` or `cluster_change` outside
   `internal/cluster`.
 - A replica is paused for longer than `cluster.change_retention` while changes are made. After it
-  resumes, it flushes the affected areas (`trove_cache_flushes_total{reason="change_log_gap"}`) and
+  resumes, it flushes the affected areas (`quader_cache_flushes_total{reason="change_log_gap"}`) and
   serves current data.
 - A test lowers the epoch of area `repo_config` in `cluster_epoch` below the epoch the replicas
   have applied, as a failover with lost transactions or a point-in-time restore would. Every
-  replica flushes the area's caches (`trove_cache_flushes_total{reason="epoch_regressed"}`) and
+  replica flushes the area's caches (`quader_cache_flushes_total{reason="epoch_regressed"}`) and
   takes the lower epoch as its starting point, and the next change of the area takes effect on
   every replica within `cluster.epoch_poll_interval` plus 1 s, with Valkey stopped.
 - A reused epoch in area `auth`: token T1 is revoked through replica A as `auth` epoch `e`, and B
@@ -3435,7 +3435,7 @@ Acceptance criteria:
   the `auth` row of `cluster_epoch` to `e − 1` with its earlier `changed_at`. Token T2, which B
   holds in its token cache, is then revoked through A, which commits as epoch `e` again. When the
   hook is lifted, B flushes its `auth` caches within `cluster.epoch_poll_interval` plus 1 s
-  (`trove_cache_flushes_total{reason="epoch_regressed"}` rises), and B answers a request with T2
+  (`quader_cache_flushes_total{reason="epoch_regressed"}` rises), and B answers a request with T2
   with `401`.
 - With `cluster.epoch_max_staleness` at its default, a PostgreSQL switchover of 10 s makes no
   replica fail the `invalidation` check, and `/readyz` answers `200` on every replica throughout
@@ -3466,8 +3466,8 @@ Priority: **MVP** · Covers: HA-062
 |---|---|---|---|---|
 | `main` | `web`, `worker`, `all` | the database host ([ha-and-helm.md](ha-and-helm.md)); direct, session-mode or transaction-mode pooler. With a transaction-mode pooler, the control connection uses the control endpoint (below). | The request pool: every request-path transaction, job claims and completions, job handlers, the grant-index build. The control connection: the change-log poll, the `database` check, the registry heartbeat, the job heartbeats. | `database.pool.max_conns` per replica, one of them the control connection |
 | `lease` | `worker`, `all` | the session host: `database.session_host` with a transaction-mode pooler, the database host otherwise (R-HA-058); direct or session-mode only | Session-level advisory locks and the fenced writes of singleton work (R-ARCH-017, R-HA-006) | `database.lease_pool_size` per `worker` replica |
-| `migrate` | `trove migrate` | the session host | The migration lock and the migration steps (R-ARCH-026) | 1 |
-| `backup` | `trove backup` | the session host | The control, snapshot and export connections of a backup and the writes of a restore ([backup-and-restore.md](backup-and-restore.md) R-BAK-005, R-BAK-021) | as that page sets |
+| `migrate` | `quader migrate` | the session host | The migration lock and the migration steps (R-ARCH-026) | 1 |
+| `backup` | `quader backup` | the session host | The control, snapshot and export connections of a backup and the writes of a restore ([backup-and-restore.md](backup-and-restore.md) R-BAK-005, R-BAK-021) | as that page sets |
 
 - **Main-pool rules.** Work on the main pool keeps no state beyond its own transaction, so it works
   directly, through a session-mode pooler and through a transaction-mode pooler.
@@ -3511,13 +3511,13 @@ Priority: **MVP** · Covers: HA-062
     [authorization.md](authorization.md) R-AUTHZ-028 and its epoch reads run on the request pool,
     so authorization work never delays the poll, the checks or the heartbeats.
   - The control connection is an ordinary `main`-class connection: transaction-scoped, pooler-safe
-    and named `trove:<replica>:main`. The replica's total stays `database.pool.max_conns`, so the
+    and named `quader:<replica>:main`. The replica's total stays `database.pool.max_conns`, so the
     budget of R-HA-016 is unchanged. `database.pool.max_conns` must be at least 2; start-up refuses
     a smaller value and names the key.
-- Every connection sets `application_name` to `trove:<replica>:<class>`. `<replica>` is the pod
-  name; `trove migrate` and `trove backup` use their Job's pod name. PgBouncer tracks
+- Every connection sets `application_name` to `quader:<replica>:<class>`. `<replica>` is the pod
+  name; `quader migrate` and `quader backup` use their Job's pod name. PgBouncer tracks
   `application_name` as a startup parameter, so `pg_stat_activity` shows it on the server
-  connection while that connection serves trove. The lock diagnostics of
+  connection while that connection serves Quader. The lock diagnostics of
   [operations-and-observability.md](operations-and-observability.md) depend on it.
 - Transactions run at `READ COMMITTED`.
   - Three exceptions run at `REPEATABLE READ`. The first is the backup's snapshot and
@@ -3555,7 +3555,7 @@ Priority: **MVP** · Covers: HA-062
   - [ha-and-helm.md](ha-and-helm.md) R-HA-016 owns the formula, its keys and the chart check.
 - Transaction-mode poolers are supported for the `main` class from the MVP on. The session classes
   refuse to run behind them (R-ARCH-017). Statement-mode poolers are not supported for any class:
-  they refuse transactions of more than one statement, and trove's write paths run exactly such
+  they refuse transactions of more than one statement, and Quader's write paths run exactly such
   transactions (R-ARCH-009).
 
 Acceptance criteria:
@@ -3565,7 +3565,7 @@ Acceptance criteria:
   from 3 to 12 replicas under the reference load, the server connections of the `main` class never
   exceed 40.
 - Under a 500-connection load test,
-  `SELECT application_name, count(*) FROM pg_stat_activity WHERE application_name LIKE 'trove:%' GROUP BY 1`
+  `SELECT application_name, count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:%' GROUP BY 1`
   shows only the classes `main`, `lease`, `migrate` and `backup`, never more connections than the
   formula allows, and no `lease` connection of a `web` replica.
 - A test over `internal/meta/postgres/queries/*.sql` and every Go source fails:
@@ -3584,7 +3584,7 @@ Acceptance criteria:
   heartbeat was late.
 - In the pooler profile of [ha-and-helm.md](ha-and-helm.md) R-HA-058, a test build holds every
   server connection of the request pooler busy for 60 s. `/readyz` stays `200` on every replica
-  throughout, and `pg_stat_activity` shows each replica's `trove:<replica>:main` control queries
+  throughout, and `pg_stat_activity` shows each replica's `quader:<replica>:main` control queries
   on the control pooler's server connections.
 - A request-path query held up by an injected `pg_sleep(10)` returns `503` with code
   `database_timeout` after 5 s.
@@ -3606,24 +3606,24 @@ to PostgreSQL or Valkey, and fixes the keys, their lifetimes and what happens wh
 unavailable or loses its data. Two rules decide where a mechanism lives:
 1. State whose loss would cost correctness or data lives in PostgreSQL. That includes every mutual
    exclusion whose failure would corrupt data (INV-3).
-2. No content, metadata or credential that trove serves to a client, and no positive
+2. No content, metadata or credential that Quader serves to a client, and no positive
    authentication or authorization result, is read from Valkey (Q-ARCH-16). A value read from
-   Valkey can at most make trove refuse: a negative entry answers `404` for a remote path, and a
+   Valkey can at most make Quader refuse: a negative entry answers `404` for a remote path, and a
    counter answers `429`. A throttle exemption marker can only lift the throttle for one
    credential, which then costs one PostgreSQL lookup; it never accepts a credential. Valkey's
    content can therefore cost availability, never access or integrity (H-49).
 
-The keys are shown with the default prefix `trove:`.
+The keys are shown with the default prefix `quader:`.
 
 | Mechanism | Lives in | Keys and channels | Lifetime | Valkey unavailable | Valkey lost its data (failover, flush, restart) | Specified in |
 |---|---|---|---|---|---|---|
-| Collapsing of remote fetches | Valkey, behind the in-process single-flight | `trove:<ks>:lock:fetch:v1:<f>`; channel `trove:<ks>:fill:v1:<f>` | `cluster.flight_lock_ttl` (30 s), extended while the fetch runs | Single-flight per replica only: at most one upstream fetch per replica and flight | A second replica may fetch too; content addressing and the entry upsert rules make the duplicate harmless | R-ARCH-033, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-026 |
-| Negative cache of remote repositories | Valkey, behind a bounded per-replica L1 (`proxy.negative_l1_entries`, 100,000 entries per replica by default) | `trove:<ks>:neg:v1:<repo id>:<f>` → `{"s": 404 or 410, "c": <time the upstream request was sent, Unix ms, replica clock>}`; written by the flight's holder before it releases the flight; a malformed value is ignored and removed with a compare-and-delete (Q-ARCH-197) | the repository's `notFoundTtlSeconds` | L1 only: more upstream requests for missing paths | More upstream requests. An entry that an older primary brings back is ignored when a newer invalidation covers it | R-REPO-028, R-REPO-045 |
-| Rate-limit counters with cluster scope | Valkey | `trove:<ks>:rl:v1:<limiter>:<b>:<window>` | 2 × the window | Per-replica buckets at the configured values divided by the live replicas of the role | Counters restart: at most one extra window of budget | R-ARCH-034 |
-| Throttle exemption markers of recently validated credentials | Valkey | `trove:<ks>:tokseen:v1:<t>` | `auth.rate_limit.recent_token_window` (10 min) | Only the replica's own cache exempts | Colleagues behind a throttled address may get `429` until they are revalidated | R-AUTH-038 |
-| Change messages, the fast path of change areas | Valkey Pub/Sub; correctness lies in the PostgreSQL change log | channel `trove:<ks>:inv:v1` | none (Pub/Sub) | Changes apply at the next change-log poll | Lost messages: as unavailable | R-ARCH-018 |
-| Signals: job wake-ups, remote metadata refreshes, outbox wake-up | Valkey Pub/Sub only | channel `trove:<ks>:sig:v1:<area>` | none | Dropped; consumers poll | Lost; consumers poll | R-ARCH-018 |
-| Valkey health probe | Valkey | `trove:<ks>:probe:v1:<instance uid>` | 30 s | `valkey` reported as degraded | Recreated by the next probe | R-ARCH-031 |
+| Collapsing of remote fetches | Valkey, behind the in-process single-flight | `quader:<ks>:lock:fetch:v1:<f>`; channel `quader:<ks>:fill:v1:<f>` | `cluster.flight_lock_ttl` (30 s), extended while the fetch runs | Single-flight per replica only: at most one upstream fetch per replica and flight | A second replica may fetch too; content addressing and the entry upsert rules make the duplicate harmless | R-ARCH-033, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-026 |
+| Negative cache of remote repositories | Valkey, behind a bounded per-replica L1 (`proxy.negative_l1_entries`, 100,000 entries per replica by default) | `quader:<ks>:neg:v1:<repo id>:<f>` → `{"s": 404 or 410, "c": <time the upstream request was sent, Unix ms, replica clock>}`; written by the flight's holder before it releases the flight; a malformed value is ignored and removed with a compare-and-delete (Q-ARCH-197) | the repository's `notFoundTtlSeconds` | L1 only: more upstream requests for missing paths | More upstream requests. An entry that an older primary brings back is ignored when a newer invalidation covers it | R-REPO-028, R-REPO-045 |
+| Rate-limit counters with cluster scope | Valkey | `quader:<ks>:rl:v1:<limiter>:<b>:<window>` | 2 × the window | Per-replica buckets at the configured values divided by the live replicas of the role | Counters restart: at most one extra window of budget | R-ARCH-034 |
+| Throttle exemption markers of recently validated credentials | Valkey | `quader:<ks>:tokseen:v1:<t>` | `auth.rate_limit.recent_token_window` (10 min) | Only the replica's own cache exempts | Colleagues behind a throttled address may get `429` until they are revalidated | R-AUTH-038 |
+| Change messages, the fast path of change areas | Valkey Pub/Sub; correctness lies in the PostgreSQL change log | channel `quader:<ks>:inv:v1` | none (Pub/Sub) | Changes apply at the next change-log poll | Lost messages: as unavailable | R-ARCH-018 |
+| Signals: job wake-ups, remote metadata refreshes, outbox wake-up | Valkey Pub/Sub only | channel `quader:<ks>:sig:v1:<area>` | none | Dropped; consumers poll | Lost; consumers poll | R-ARCH-018 |
+| Valkey health probe | Valkey | `quader:<ks>:probe:v1:<instance uid>` | 30 s | `valkey` reported as degraded | Recreated by the next probe | R-ARCH-031 |
 | Cache entries and stale copies of remote repositories, upstream circuit state | PostgreSQL and S3 | — | — | Unaffected | Unaffected | R-REPO-026 to R-REPO-029 |
 | Rendered package documents, merged metadata | In-process only | — | Self-validating keys (R-ARCH-012, R-ARCH-015) | Unaffected | Unaffected | R-ARCH-018 |
 | Token, session, permission, CI-mapping and issuer-key caches | In-process only; Valkey carries only their change messages | — | The owner's `SafetyTTL` | Unaffected: the change-log poll keeps the bound | Unaffected | R-AUTH-023, R-AUTHZ-028, R-CI-003 |
@@ -3640,7 +3640,7 @@ SHA-256(`"tokseen"` ‖ 0x00 ‖ `secret_sha256`), where `secret_sha256` is the 
 credential ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-038).
 
 Normative rules:
-- **Prefix.** Every key and every channel starts with `valkey.key_prefix` (default `trove:`, which
+- **Prefix.** Every key and every channel starts with `valkey.key_prefix` (default `quader:`, which
   must end in `:`), followed by the keyspace and `:`. Installations that share one Valkey use
   different prefixes and different ACL users (R-ARCH-031).
 - **Keyspace.** A restore gives the installation a new keyspace ID (R-BAK-022). The restored
@@ -3671,8 +3671,8 @@ Normative rules:
   A part matches `^[A-Za-z0-9_-]{1,128}$`, so a dotted name such as `auth.credential_failures` is
   written with underscores. Other packages use `FlightLock`, the negative-cache store, the limiter
   and `Notify`.
-- **No persistence assumed.** trove treats every Valkey restart as a loss of all its data. AOF and
-  RDB persistence are the operator's choice. trove works under every `maxmemory-policy`: an
+- **No persistence assumed.** Quader treats every Valkey restart as a loss of all its data. AOF and
+  RDB persistence are the operator's choice. Quader works under every `maxmemory-policy`: an
   eviction counts as an expiry. A Valkey that refuses a write (`noeviction` at its memory limit, a
   demoted primary) counts as unavailable for that call.
 - **Primary only.** Every command goes to the primary. Replicas are never read, because their state
@@ -3683,7 +3683,7 @@ Normative rules:
 Acceptance criteria:
 - After the integration suite, `valkey-cli --scan` lists only keys that start with the prefix, and
   `TTL` returns a positive value for each of them. The integration stack's Valkey is shared with the Bastion's suites, whose
-  keys are a Bastion's own keyspace `trove-bastion:<prefix>:` ([bastion.md](bastion.md) R-BAS-034); they are admitted by the scan
+  keys are a Bastion's own keyspace `quader-bastion:<prefix>:` ([bastion.md](bastion.md) R-BAS-034); they are admitted by the scan
   and must carry a TTL too.
 - With Valkey stopped for the whole e2e client suite, the suite passes, and every replica stays
   ready with `"degraded":["valkey"]`.
@@ -3693,7 +3693,7 @@ Acceptance criteria:
   ignored, and the request reaches the upstream.
 
 ### R-ARCH-031 · Valkey client, Sentinel discovery, TLS, ACL and degradation
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 [ha-and-helm.md](ha-and-helm.md) R-HA-056 owns the keys of the `valkey` configuration section, the
 supported topologies and the server settings; R-HA-057 owns the degraded-mode contract, the circuit
@@ -3701,21 +3701,21 @@ breaker and the metrics. This requirement fixes the client that implements them 
 inside the process.
 
 - **Library.** valkey-go (Q-ARCH-13), pinned once in `go.mod`. Server-assisted client-side caching
-  is switched off (`DisableCache`), because trove's caches are its own (R-ARCH-018). trove uses no
+  is switched off (`DisableCache`), because Quader's caches are its own (R-ARCH-018). Quader uses no
   blocking command, so the client opens no blocking-pool connection. Only `internal/cluster` imports
   it (R-ARCH-002).
-- **Servers.** Valkey 9.0 and every later minor line (Q-ARCH-13). While trove is in development,
+- **Servers.** Valkey 9.0 and every later minor line (Q-ARCH-13). While Quader is in development,
   the integration tier tests the newest patch of the newest line only (9.1 today) and no older
   line is guaranteed (owner, 2026-10-29); the version check below still refuses every server
-  older than 9.0, because trove needs `DELIFEQ`. At connect, trove
+  older than 9.0, because Quader needs `DELIFEQ`. At connect, Quader
   reads the server version from the `HELLO` reply. Below 9.0 it logs
-  `valkey <version> is not supported; trove requires 9.0 or later` and treats Valkey as
+  `valkey <version> is not supported; quader requires 9.0 or later` and treats Valkey as
   unavailable. Valkey cluster mode and other servers are not supported.
 - **Sentinel protocol.** The client follows R-HA-056's discovery steps. It asks the Sentinels of
   `valkey.sentinel.addresses` for `valkey.sentinel.primary_name`, checks `ROLE` on the instance it
   connects to, and resolves again after every reconnection, timeout, closed connection and
   `READONLY` error. In addition, it reconciles with the Sentinels every
-  `valkey.sentinel.refresh_interval` (valkey-go's `TopologyRefreshInterval`). Trove's own Sentinel
+  `valkey.sentinel.refresh_interval` (valkey-go's `TopologyRefreshInterval`). Quader's own Sentinel
   loop probes every configured Sentinel once per interval on a short connection that it closes
   again, so the replica holds one connection to the current Sentinel and no more. A demoted primary can
   keep its connections open, and valkey-go's documentation states that a client which missed
@@ -3729,7 +3729,7 @@ inside the process.
 - **Primary only.** Every command goes to the primary. Replicas are never read (R-ARCH-030).
 - **Connections.** Per replica: four pipelined connections to the primary (valkey-go's default for
   Sentinel clients), one Pub/Sub connection and one connection to the current Sentinel, each named
-  `trove:<pod name>:<purpose>` (R-HA-056). Commands are pipelined automatically, so the count does
+  `quader:<pod name>:<purpose>` (R-HA-056). Commands are pipelined automatically, so the count does
   not grow with the request rate.
 - **Calls.** Every call carries `valkey.command_timeout` as its deadline, and no call runs inside a
   PostgreSQL transaction (R-ARCH-019). Every call passes the replica's circuit breaker of R-HA-057
@@ -3748,29 +3748,29 @@ inside the process.
   (R-HA-056) are read in `AuthCredentialsFn` on every connection attempt, and connections are
   recycled after `valkey.max_conn_lifetime`. A rotated Secret therefore takes effect without a
   restart. Passwords never appear in the configuration file, in logs or in metrics.
-- **Least privilege.** trove needs only these commands, on keys and channels under its prefix:
+- **Least privilege.** Quader needs only these commands, on keys and channels under its prefix:
   `GET`, `SET`, `DELIFEQ`, `INCR`, `EXPIRE`, `MULTI`, `EXEC`, `DISCARD`, `PUBLISH`,
   `SUBSCRIBE`, `UNSUBSCRIBE`, `SUNSUBSCRIBE`, `PUNSUBSCRIBE`, `PING`, `HELLO`, `ROLE`,
   `CLIENT SETNAME` and `CLIENT SETINFO`. `DISCARD`, `SUNSUBSCRIBE` and `PUNSUBSCRIBE` are sent by
-  the client library when it resets a Pub/Sub connection; trove issues no sharded or pattern
+  the client library when it resets a Pub/Sub connection; Quader issues no sharded or pattern
   subscription. It runs no scripts. An example ACL rule, which the integration tier and the dev
   profile use:
 
   ```text
-  user trove on >… resetkeys ~trove:* resetchannels &trove:* -@all +get +set +delifeq +incr +expire +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo
+  user quader on >… resetkeys ~quader:* resetchannels &quader:* -@all +get +set +delifeq +incr +expire +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo
   ```
 
-- **Metrics.** Those of R-HA-057 (`trove_valkey_available`, `trove_valkey_circuit_open`,
-  `trove_valkey_primary_changes_total`, `trove_valkey_errors_total{kind}`), plus
-  `trove_valkey_command_duration_seconds{command}`, per mechanism that ran its fallback
-  `trove_valkey_degraded_total{mechanism}`, `trove_valkey_pubsub_subscribed` (1 while the Pub/Sub
-  connection is subscribed on the current primary) and `trove_valkey_cache_lookups_total{cache,result}`
+- **Metrics.** Those of R-HA-057 (`quader_valkey_available`, `quader_valkey_circuit_open`,
+  `quader_valkey_primary_changes_total`, `quader_valkey_errors_total{kind}`), plus
+  `quader_valkey_command_duration_seconds{command}`, per mechanism that ran its fallback
+  `quader_valkey_degraded_total{mechanism}`, `quader_valkey_pubsub_subscribed` (1 while the Pub/Sub
+  connection is subscribed on the current primary) and `quader_valkey_cache_lookups_total{cache,result}`
   for lookups in Valkey after an L1 miss ([operations-and-observability.md](operations-and-observability.md)
   R-OPS-045).
 - **Logs.** The client logs one record per transition of the `valkey` check, `WARN` when it turns
   degraded and `INFO` when it recovers, and one `INFO` record per primary change with the old and
   the new address. It never logs one record per failed call; failed calls are counted in
-  `trove_valkey_errors_total{kind}`.
+  `quader_valkey_errors_total{kind}`.
 - **Configuration.** One key joins R-HA-056's `valkey` block (cross-page):
 
   ```yaml
@@ -3780,9 +3780,9 @@ inside the process.
   ```
 
 Acceptance criteria:
-- Against a Valkey 8.1 server, trove logs the unsupported-version message and runs degraded.
+- Against a Valkey 8.1 server, Quader logs the unsupported-version message and runs degraded.
 - With the example ACL rule in place, the integration suite passes and `ACL LOG` shows no denial.
-- A failover is forced while the Sentinels' Pub/Sub traffic to trove is blocked, so that no
+- A failover is forced while the Sentinels' Pub/Sub traffic to Quader is blocked, so that no
   `+switch-master` arrives and the old primary keeps its connections. Every replica writes to the
   new primary within `valkey.sentinel.refresh_interval` plus 1 s. Within the same bound,
   `CLIENT LIST TYPE pubsub` on the new primary shows every replica's Pub/Sub connection. With
@@ -3826,22 +3826,22 @@ func (h *FlightHold) Release(ctx context.Context, o Outcome, traceparent string)
 func (h *FlightHold) Lost() bool
 ```
 
-- **Acquire.** `SET trove:<ks>:lock:fetch:v1:<f> <token> NX PX <cluster.flight_lock_ttl>`. The token is
+- **Acquire.** `SET quader:<ks>:lock:fetch:v1:<f> <token> NX PX <cluster.flight_lock_ttl>`. The token is
   `<instance uid>.<16 random bytes, base64url>`, unique for each acquisition.
 - **Hold.** While the holder fetches, verifies and commits, the hold extends the lock every third
   of the TTL with `SET <key> <token> IFEQ <token> PX <ttl>`. If an extension finds the key gone or
   owned by another token, the holder carries on, because its fetch stays correct. It stops
-  extending, counts `trove_flight_lock_lost_total`, and never deletes the other holder's key.
+  extending, counts `quader_flight_lock_lost_total`, and never deletes the other holder's key.
 - **Release.** After the entry has committed, after an upstream `404` or `410` has been recorded
   as a negative entry, or after the fetch has failed, the hold runs `DELIFEQ <key> <token>` and then
-  `PUBLISH trove:<ks>:fill:v1:<f> <stored|failed>`, in that order, so a woken waiter finds the lock gone. A recorded
+  `PUBLISH quader:<ks>:fill:v1:<f> <stored|failed>`, in that order, so a woken waiter finds the lock gone. A recorded
   `404` or `410` is `stored`: the outcome says that an entry or a negative entry exists now (Q-ARCH-195). Both run even when the initiating client is gone,
   since R-REPO-026 runs the fetch detached. The outcome message may also carry the leader's
   `traceparent` after a space (`stored 00-…`), still under 1 KiB, so waiters on other replicas can add a span link
   ([operations-and-observability.md](operations-and-observability.md) R-OPS-018). On shutdown, a
   fetch still running 5 s before the deadline is cancelled and released with `failed`
   (R-ARCH-024 step 4; [storage.md](storage.md) R-STOR-004 step 8).
-- **Wait.** The waiter first subscribes to `trove:<ks>:fill:v1:<f>`, then checks that the lock key still
+- **Wait.** The waiter first subscribes to `quader:<ks>:fill:v1:<f>`, then checks that the lock key still
   exists, so a release between its failed `Acquire` and the subscription is not missed. It then
   waits for the outcome, for `proxy.lock_poll_interval_ms` (after which it checks the key again), for
   the re-subscription of the Pub/Sub connection after a primary change or a broken connection
@@ -3857,8 +3857,8 @@ func (h *FlightHold) Lost() bool
 - **Unavailable.** When the breaker is open or a call fails, `Acquire` and `Wait` return an error
   that wraps `ErrUnavailable` at once (Q-ARCH-196). A call that fails during the hold is retried at the next
   extension; the lock may expire meanwhile, and the next call that reaches Valkey then finds it gone. The proxy then fetches under its in-process single-flight only and
-  counts `trove_flight_lock_bypass_total{reason="valkey_unavailable"}`.
-- **Bypass reasons.** `trove_flight_lock_bypass_total{reason}` counts every fetch that goes on
+  counts `quader_flight_lock_bypass_total{reason="valkey_unavailable"}`.
+- **Bypass reasons.** `quader_flight_lock_bypass_total{reason}` counts every fetch that goes on
   without the cross-replica lock:
   - `valkey_unavailable`: above;
   - `wait_timeout`: the wait bound `proxy.fetch_wait_timeout_seconds` ended without a valid entry,
@@ -3886,7 +3886,7 @@ cluster:
 Acceptance criteria (two replicas, a counting stub upstream that delays every response by 2 s):
 - 100 concurrent requests for one uncached tarball, 50 per replica: the stub records exactly one
   `GET`, and all 100 responses are `200` with identical bytes. Meanwhile `pg_stat_activity` shows
-  no trove connection in state `idle in transaction`, and `pg_locks` shows no advisory lock.
+  no Quader connection in state `idle in transaction`, and `pg_locks` shows no advisory lock.
 - The stub streams a 200 MiB artifact slowly, and the holder's pod is killed with `SIGKILL`
   mid-transfer. A waiter on the other replica acquires the flight within `cluster.flight_lock_ttl`
   plus `proxy.lock_poll_interval_ms`, fetches, and completes every waiting request. No entry for a
@@ -3902,7 +3902,7 @@ Acceptance criteria (two replicas, a counting stub upstream that delays every re
   call.
 
 ### R-ARCH-034 · Cluster-wide rate-limit counters
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owning pages define the limit classes, their bucket keys and their values
 ([api-and-ui.md](api-and-ui.md) R-API-016,
@@ -3953,10 +3953,10 @@ The owning pages define the limit classes, their bucket keys and their values
   a limiter may still count its own set (`LimiterSet.NewLimiterShared`,
   [Q-ARCH-45](#q-arch-45--a-limiter-may-divide-its-fallback-share-by-its-own-count)). The
   cluster-wide budget thus stays close to the configured one. This is the per-replica degradation
-  INV-12 names; `trove_ratelimit_fallback{limiter}` is 1 while it lasts.
+  INV-12 names; `quader_ratelimit_fallback{limiter}` is 1 while it lasts.
 - A limiter never fails a request because Valkey failed, and its check waits at most
   `valkey.command_timeout` (R-ARCH-031).
-- Every decision counts in `trove_ratelimit_decisions_total{limiter,mode,outcome}`, with `mode` =
+- Every decision counts in `quader_ratelimit_decisions_total{limiter,mode,outcome}`, with `mode` =
   `cluster`, `fallback` or `replica` and `outcome` = `admitted` or `refused`
   ([operations-and-observability.md](operations-and-observability.md) R-OPS-008).
 - Further cluster-scoped limiters are registered by their owners, for example `webhook_test`, 10
@@ -3973,18 +3973,18 @@ Acceptance criteria:
   with one token, sent round robin over the replicas within 2 s, are admitted at most 300 times.
   The same test against one replica gives the same bound.
 - With Valkey stopped, the same test is admitted at most 300 times as well, and
-  `trove_ratelimit_fallback` is 1 on every replica.
+  `quader_ratelimit_fallback` is 1 on every replica.
 - With 1 s of latency injected in front of Valkey, the limiter adds at most `valkey.command_timeout`
   to at most `valkey.circuit_breaker.failure_threshold` checks per replica, and nothing once the breaker is
   open.
 
 ## Configuration, secrets and outbound connections
 
-### R-ARCH-035 · TLS on trove's listeners and reloadable TLS material
+### R-ARCH-035 · TLS on Quader's listeners and reloadable TLS material
 Priority: **MVP** · Covers: HA-018
 
-Every listener of trove serves TLS when `server.tls` is set, and every TLS material that trove presents
-or trusts can be replaced without a restart (INV-20, [ADR-127](../decisions.md#adr-127--transport-encryption-on-every-connection-troves-listeners-included)).
+Every listener of Quader serves TLS when `server.tls` is set, and every TLS material that Quader presents
+or trusts can be replaced without a restart (INV-20, [ADR-127](../decisions.md#adr-127--transport-encryption-on-every-connection-quaders-listeners-included)).
 
 Listener side:
 - `server.tls.certificates` is a list of `{cert_file, key_file}` pairs of PEM files, leaf first. The first
@@ -3998,7 +3998,7 @@ Listener side:
 - `server.tls.client_auth` is `none` (default: no certificate is requested), `verify_if_given` (a presented
   certificate must chain to `client_ca_file`; a client without one is admitted) or `require` (a client without a
   verifying certificate is refused in the handshake). A `client_auth` other than `none` needs `client_ca_file`,
-  and `client_ca_file` with `none` is refused. Mutual TLS lets a proxy connect to trove (Q-ARCH-32); it is off by default.
+  and `client_ca_file` with `none` is refused. Mutual TLS lets a proxy connect to Quader (Q-ARCH-32); it is off by default.
 - Minimum TLS 1.2 (default) or 1.3, TLS 1.3 preferred. TLS 1.2 is offered with ECDHE key exchange and AES-GCM or
   ChaCha20-Poly1305 only. HTTP/2 is negotiated over TLS with ALPN (`h2`, `http/1.1`).
 - A reloader checks both files every `server.tls.reload_interval` (default `10s`). It compares the
@@ -4009,20 +4009,20 @@ Listener side:
   (unreadable, an incomplete PEM block, a key that does not match its certificate, an expired leaf or one that is
   not valid yet) keeps the
   previous content in service, counts once per distinct content in
-  `trove_tls_reload_errors_total{kind,listener,name}`, and logs an error with the file names and the reason.
+  `quader_tls_reload_errors_total{kind,listener,name}`, and logs an error with the file names and the reason.
   Readiness does not change, and no other piece of the material is affected.
 - A pair that is missing or broken at start does not stop the process: the listener binds, the `tls` readiness
   check holds the first readiness until every listener's material has loaded, then clears without a restart. The
   client listener and an endpoint listener refuse handshakes until their pair loads. The ops listener answers with a
   temporary certificate meanwhile (in memory, ECDSA P-256, valid one hour, CN = the instance, never written to disk),
   so the kubelet's HTTPS probes, which do not verify, reach `/healthz` (200) and `/readyz` (503, check `tls`) instead
-  of failing and restarting the container; `trove_tls_temporary_certificate{listener="ops"}` is 1 while it serves
+  of failing and restarting the container; `quader_tls_temporary_certificate{listener="ops"}` is 1 while it serves
   ([Q-ARCH-36](#q-arch-36--the-ops-listener-before-its-certificate-loads)). A listener that asks for client
   certificates without a `client_ca_file` is refused at construction. Client-side material that is missing at start (PostgreSQL, Valkey, outbound CA bundles)
   fails the construction of that client, and the process ends ([tls.md](../developer/tls.md)).
-- The expiry of every served piece is `trove_tls_certificate_expiry_timestamp_seconds{kind,listener,name}`: the
+- The expiry of every served piece is `quader_tls_certificate_expiry_timestamp_seconds{kind,listener,name}`: the
   notAfter of a pair's leaf, or the earliest notAfter of a CA bundle, so an expiry alert needs no log parsing.
-  `trove_tls_reloads_total{kind,listener,name}` counts the swaps after the first load. The label values are
+  `quader_tls_reloads_total{kind,listener,name}` counts the swaps after the first load. The label values are
   fixed in [Q-EP-14](endpoints.md#q-ep-14--labels-of-the-tls-series-and-of-the-ops-series) for endpoint listeners.
 - **Endpoint listeners.** The listener of every further endpoint uses the same reloader, bound and
   failure rule for each pair of its certificate set, and chooses among its own pairs by the TLS
@@ -4030,7 +4030,7 @@ Listener side:
   `server.tls`. The TLS series of an endpoint listener carry `listener="client:<endpoint>"`
   ([endpoints.md](endpoints.md) R-EP-004, [Q-EP-14](endpoints.md#q-ep-14--labels-of-the-tls-series-and-of-the-ops-series)).
 
-Client side: every TLS material trove presents or trusts is re-read without a restart, and an error
+Client side: every TLS material Quader presents or trusts is re-read without a restart, and an error
 keeps the last good material in service:
 - PostgreSQL root CA, client certificate and key: read for each new connection
   ([ha-and-helm.md](ha-and-helm.md) R-HA-015).
@@ -4043,7 +4043,7 @@ Acceptance criteria:
 - Rotating the listener certificate under a constant k6 load (E0.15) produces no failed request, the new
   certificate is served within `server.tls.reload_interval` + 1 s, and the process start time does not change.
 - A new pair whose key does not match its certificate keeps the old pair in service, increments
-  `trove_tls_reload_errors_total`, and logs an error; the next valid pair is served.
+  `quader_tls_reload_errors_total`, and logs an error; the next valid pair is served.
 - A connection opened before a rotation keeps the old certificate until it closes; a connection opened after
   the bound sees the new certificate.
 - With `client_ca_file` set, a client certificate that does not chain to it is refused in the TLS handshake,
@@ -4055,7 +4055,7 @@ Acceptance criteria:
 Priority: **MVP** · Covers: OPS-040
 
 The file location, precedence, environment mapping, strict validation, secret companions
-(`<name>_file`) and `trove admin config validate` are specified in
+(`<name>_file`) and `quader admin config validate` are specified in
 [operations-and-observability.md](operations-and-observability.md). This page fixes how the
 schema is built and which data belongs in the file.
 
@@ -4077,19 +4077,19 @@ schema is built and which data belongs in the file.
 Acceptance criteria:
 - A unit test fails if two keys derive the same environment variable name, or if a struct field has
   no YAML tag.
-- `trove admin config validate` lists every key of this page with its source.
+- `quader admin config validate` lists every key of this page with its source.
 
 ### R-ARCH-021 · Encryption of stored secrets and the stored-secret key
 Priority: **MVP** · Covers: HA-016, IAM-045
 
-Secrets that trove stores in PostgreSQL to reach other systems are sealed by `internal/secrets`
+Secrets that Quader stores in PostgreSQL to reach other systems are sealed by `internal/secrets`
 before they are written. Examples are remote upstream credentials and webhook secrets (P1).
 [identity-and-authentication.md](identity-and-authentication.md) and
 [repositories-and-proxy.md](repositories-and-proxy.md) hand this key to this page.
 
 - Algorithm: AES-256-GCM with a random 96-bit nonce.
   - Ciphertext format: `v1:<key id>:<base64(nonce ‖ ciphertext ‖ tag)>`.
-  - The additional authenticated data is the number of primary-key parts, then the strings `trove/sealed/v1`,
+  - The additional authenticated data is the number of primary-key parts, then the strings `quader/sealed/v1`,
     the table, the column and each primary-key part, every string prefixed with its length (an unsigned
     varint). A composite key is registered as `repository_id,name` and passed as `secrets.Row(parts...)`; a
     row key whose part count differs from the registered key fails with `ErrRowKey`, and two row keys that
@@ -4106,7 +4106,7 @@ before they are written. Examples are remote upstream credentials and webhook se
   `internal/secrets`, with its table, primary key and column. The per-key counts of the status
   below and the `secrets-reencrypt` job walk this one registry. No second list of sealed columns
   exists.
-- Key-ring status. `trove admin secrets status` and `GET /api/v1/system/encryption`
+- Key-ring status. `quader admin secrets status` and `GET /api/v1/system/encryption`
   ([api-and-ui.md](api-and-ui.md) R-API-049, Q-API-8) share one implementation in
   `internal/secrets`. It reports:
   - the key IDs;
@@ -4122,7 +4122,7 @@ before they are written. Examples are remote upstream credentials and webhook se
 - Fingerprints: configuration-as-code diffs compare secrets by HMAC-SHA-256
   ([operations-and-observability.md](operations-and-observability.md)). The HMAC key is derived with
   HKDF-SHA-256 ([RFC 5869](https://www.rfc-editor.org/rfc/rfc5869)) from the active key, with info
-  `trove fingerprint v1`. After a key rotation, fingerprints change once, so the next diff reports
+  `quader fingerprint v1`. After a key rotation, fingerprints change once, so the next diff reports
   every secret as changed.
 - Rotation. Every replica must be able to decrypt with a key before any replica seals with it.
   Rotation therefore takes two roll-outs before the re-encryption; the chart side is in
@@ -4140,7 +4140,7 @@ before they are written. Examples are remote upstream credentials and webhook se
        incompatible, that is, while a live replica's ring lacks a key ID that is active anywhere or
        that a sealed value references. Running then would seal values that replica cannot open.
      - While a run is queued or running, the trigger answers `409` with that job.
-  4. When `trove admin secrets status` or `GET /api/v1/system/encryption` reports no values under
+  4. When `quader admin secrets status` or `GET /api/v1/system/encryption` reports no values under
      the old ID, remove its file and roll out again.
 
   HA-016 describes a single key without a rotation path. Key IDs from day one avoid that problem.
@@ -4150,7 +4150,7 @@ before they are written. Examples are remote upstream credentials and webhook se
   restore the key file.
 - Sealing is always on, and no administrator operation switches it (IAM-045).
   - There is no deactivate operation. The catalog leaves open whether secrets stay unsealed after a
-    deactivation or are sealed again on the next change. Neither state can arise in trove: no code
+    deactivation or are sealed again on the next change. Neither state can arise in Quader: no code
     path writes an unsealed secret value to PostgreSQL.
   - There is no activate operation and no generated key. The key ring comes from the operator, and
     sealing runs from the first start.
@@ -4163,7 +4163,7 @@ before they are written. Examples are remote upstream credentials and webhook se
     the key ring Secret in escrow, outside the cluster and outside the target's credential domain,
     including every retired key that a retained backup still lists
     ([backup-and-restore.md](backup-and-restore.md) R-BAK-028).
-  - `trove backup restore` opens the backup's canary rows with the configured key ring before it
+  - `quader backup restore` opens the backup's canary rows with the configured key ring before it
     loads anything, and refuses with `key ring does not match backup: missing key <id>`
     ([backup-and-restore.md](backup-and-restore.md) R-BAK-020 check 3). A database restored by
     other means without its key ring is refused by the start-up canary above, before any request is
@@ -4180,14 +4180,14 @@ CREATE TABLE secret_key_canary (
 ```yaml
 secrets:
   encryption_key_files:                          # example
-    - /var/run/secrets/trove/encryption/2026-10.key
+    - /var/run/secrets/quader/encryption/2026-10.key
   active_key_id: "2026-10"                       # example
 ```
 
 Acceptance criteria:
 - After a remote repository is created with an upstream password, every value in the sealed-secret
   column starts with `v1:2026-10:`.
-- After the rotation sequence, `trove admin secrets status` reports `0` values under `2026-10`, and
+- After the rotation sequence, `quader admin secrets status` reports `0` values under `2026-10`, and
   `GET /api/v1/system/encryption` reports `sealedValues: 0` for that key ID. After the old file is
   removed, every replica starts.
 - With one replica still on a ring that lacks the newly active key,
@@ -4226,7 +4226,7 @@ one of R-ARCH-035. The object store's CA trust follows Q-STOR-14 until it is sup
   Settings and defaults are in [repositories-and-proxy.md](repositories-and-proxy.md)
   (`proxy.outbound`) and [operations-and-observability.md](operations-and-observability.md) (webhook
   delivery and the upstream log).
-- Every client sends `User-Agent: trove/<version>`. No other component builds an `http.Client` or
+- Every client sends `User-Agent: quader/<version>`. No other component builds an `http.Client` or
   dials a socket (R-ARCH-002).
 
 Acceptance criteria:
@@ -4238,7 +4238,7 @@ Acceptance criteria:
 ## Errors, lifecycle and compatibility
 
 ### R-ARCH-023 · Error model
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The wire format on `/api/v1/`, `/auth` and `/files` is RFC 9457 problem details, as
 [api-and-ui.md](api-and-ui.md) specifies (`type`, `title`, `status`, `detail`, `instance`, and the
@@ -4299,12 +4299,12 @@ func (e *Error) Unwrap() error
   - A cancelled client context is not an error. It is logged with status `499`.
 
 Acceptance criteria:
-- `curl -s -D h.txt -H "Authorization: Bearer $T" https://trove.example.com/api/v1/projects/web/repositories/nope`
+- `curl -s -D h.txt -H "Authorization: Bearer $T" https://quader.example.com/api/v1/projects/web/repositories/nope`
   returns `404`, `application/problem+json` and `.code == "repository_not_found"`, and
   `.requestId` equals the `X-Request-Id` header in `h.txt`.
 - With PostgreSQL unreachable, API calls return `503` with code `database_unavailable` and
   `Retry-After`, and the body contains no SQL.
-- `npm view trove-nope-4711 --registry …/web/npm-local/` makes npm print its normal `404 Not Found`
+- `npm view quader-nope-4711 --registry …/web/npm-local/` makes npm print its normal `404 Not Found`
   message.
 
 ### R-ARCH-024 · Process lifecycle: start-up, readiness, graceful shutdown
@@ -4357,7 +4357,7 @@ hashed files of the build to the shared asset store in step 8, before the listen
 ([ha-and-helm.md](ha-and-helm.md) Q-HA-123).
 
 Shutdown on `SIGTERM`. Kubernetes removes the pod from the EndpointSlices at the same time as it
-sends the signal, and every proxy in front of trove (kube-proxy, the Ingress or Gateway controller)
+sends the signal, and every proxy in front of Quader (kube-proxy, the Ingress or Gateway controller)
 learns of the removal with a delay. The steps cover that delay first:
 1. Readiness fails at once (`draining`), and the registry row turns `draining`. The components that drain do so side by side
    and are waited for until the end of this step, `health.shutdown_drain_delay` for a `web` replica and 2 s for a `worker`,
@@ -4409,7 +4409,7 @@ learns of the removal with a delay. The steps cover that delay first:
    publish cut after its commit would be retried by its client and refused as an existing version
    (`409 npm_version_exists`, [formats/npm.md](formats/npm.md)), although it had succeeded. npm
    additionally acknowledges an identical retry by the same principal, with the same bytes and
-   dist-tag, within `npm.publish.retry_window`, which also covers answers lost outside trove; and a
+   dist-tag, within `npm.publish.retry_window`, which also covers answers lost outside Quader; and a
    revisioned unpublish or deprecation retried with a stale revision succeeds when it would change
    nothing ([formats/npm.md](formats/npm.md) R-NPM-007 step 4, R-NPM-009, Q-NPM-11).
    - A download cut this way is detectable by the client, because every response with a blob body
@@ -4427,7 +4427,7 @@ learns of the removal with a delay. The steps cover that delay first:
        to return, and releases its writer claim in one short transaction before the process exits
        ([storage.md](storage.md) R-STOR-004 step 8, R-STOR-011). The client then resumes on
        another replica at once, instead of meeting `416` until the claim expires.
-   - Each cut is counted in `trove_http_transfers_cut_total{direction}`. How long a single
+   - Each cut is counted in `quader_http_transfers_cut_total{direction}`. How long a single
      transfer may run without being cut is decided in Q-ARCH-18.
    - A request that finishes before the deadline is not finished when its handler returns: its last
      bytes may still sit in the replica's send queue, behind a slow reader. A connection that closes
@@ -4472,7 +4472,7 @@ are retried elsewhere (R-ARCH-032), its jobs are released or expire (R-ARCH-016)
 released, or end with their sessions if it is killed (R-ARCH-017), and its flight locks are
 released or expire (R-ARCH-033).
 
-The `backup` role serves no client. A `trove backup create` on a drained node exits `75`, and its
+The `backup` role serves no client. A `quader backup create` on a drained node exits `75`, and its
 Job retries it; a retried run copies only the blobs that are still missing
 ([backup-and-restore.md](backup-and-restore.md) R-BAK-013). Its garbage-collection hold counts only
 while the run's lease is valid, so it cannot outlive the run (R-BAK-007, R-BAK-010).
@@ -4486,7 +4486,7 @@ Acceptance criteria:
   Automated by the drain subtest of `TestNuGetHA` (`make e2e SET=nuget-ha`), whose load runs the four
   commands in parallel loops and is checked for at least these counts
   ([Q-HA-101](ha-and-helm.md#q-ha-101--how-r-arch-024s-drain-criterion-is-counted)).
-- `kubectl rollout restart deployment/trove-web` runs during a
+- `kubectl rollout restart deployment/quader-web` runs during a
   `curl --limit-rate 20M -o f.bin …/files/web/generic-local/400MiB.bin` (about 20 s). curl exits `0`,
   and `sha256sum f.bin` matches.
 - A `curl --limit-rate 2M -o f.bin …/files/web/generic-local/400MiB.bin` (about 200 s, longer than the
@@ -4509,7 +4509,7 @@ Acceptance criteria:
 Priority: **MVP** · Covers: OPS-072, EVT-072
 
 **Before the first stable release the promises of this requirement do not apply** (owner, 2026-11-06, `CLAUDE.md`,
-[Q-ARCH-340](#q-arch-340--no-backward-compatibility-until-the-first-stable-release)). trove is pre-alpha: it has no users and no running installations. The Management API, URLs,
+[Q-ARCH-340](#q-arch-340--no-backward-compatibility-until-the-first-stable-release)). Quader is pre-alpha: it has no users and no running installations. The Management API, URLs,
 configuration keys, Helm values, error codes, metric names, the database schema and stored formats change the way that
 is technically best, without a deprecation, an alias, a fallback or a migration path. The CI job that compares a change
 with the latest release is switched off, ready to be switched on at the first stable release ([the switches](../developer/releasing.md#switched-off-until-the-first-stable-release)). A release
@@ -4520,21 +4520,21 @@ describe the policy from the first stable release on.
 
 | Surface | Version scheme | Promise |
 |---|---|---|
-| trove release | [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html); image tag = version | Any later minor of the same major can be installed directly. Rolling upgrades with no downtime work from the previous minor (N-1 → N) and between patches (R-ARCH-026). The two latest minors receive security fixes (to be stated in `SECURITY.md`). |
+| Quader release | [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html); image tag = version | Any later minor of the same major can be installed directly. Rolling upgrades with no downtime work from the previous minor (N-1 → N) and between patches (R-ARCH-026). The two latest minors receive security fixes (to be stated in `SECURITY.md`). |
 | Management API | `/api/v1` | Additive changes only within v1. Deprecation headers ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745), [RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) and the support window are in [api-and-ui.md](api-and-ui.md). |
-| Package protocols | Ecosystem-defined (npm registry API, NuGet v3) | trove follows the protocol. A client-visible change in behaviour is a breaking trove change unless it fixes non-conformance. |
+| Package protocols | Ecosystem-defined (npm registry API, NuGet v3) | Quader follows the protocol. A client-visible change in behaviour is a breaking Quader change unless it fixes non-conformance. |
 | Error codes | snake_case strings | Stable within an API major |
 | Configuration file | Key paths | Keys are only added within a major. A renamed key keeps its old name as a deprecated alias, with a start-up warning, for at least 2 minors. Removal happens only in a major. |
-| Helm chart | Own SemVer; `appVersion` = trove version | Same alias rule for values ([ha-and-helm.md](ha-and-helm.md)) |
+| Helm chart | Own SemVer; `appVersion` = Quader version | Same alias rule for values ([ha-and-helm.md](ha-and-helm.md)) |
 | Database schema | Migration sequence | Not a public interface. N and N-1 run against one schema (INV-3, R-ARCH-026). |
-| Token formats | `trv_*_` prefixes (INV-8) | A prefix never changes meaning. New token types get new prefixes. |
+| Token formats | `qdr_*_` prefixes (INV-8) | A prefix never changes meaning. New token types get new prefixes. |
 | Metrics, log and audit fields | Names and labels | Stable within a major. A renamed metric is emitted under both names for at least 2 minors ([operations-and-observability.md](operations-and-observability.md)). |
-| Bastion interface | `bastion.InterfaceVersion`, an integer of its own, carried in `Trove-Bastion-Interface` ([bastion.md](bastion.md) R-BAS-009) | Main installation and Bastion talk only at the same version; every change of the interface raises it, guarded by its surface file; a release that raises it says so in its notes |
+| Bastion interface | `bastion.InterfaceVersion`, an integer of its own, carried in `Quader-Bastion-Interface` ([bastion.md](bastion.md) R-BAS-009) | Main installation and Bastion talk only at the same version; every change of the interface raises it, guarded by its surface file; a release that raises it says so in its notes |
 | Format contract | `formats.ContractVersion`, frozen since the end of M3 ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)), at 4 since the upstream presets ([ADR-198](../decisions.md#adr-198--the-format-catalog-names-a-formats-upstream-presets-and-the-contract-is-at-version-4)), at 3 since the upload sessions ([ADR-178](../decisions.md#adr-178--the-upload-sessions-finalize-takes-an-offset-and-reports-the-received-count-and-the-contract-is-at-version-3)), after 2 of the project model ([ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project)) | Internal and compile-time checked; no external promise. Every change is an ADR; the rule for changing it is below |
 
-**Major version 0.** trove releases stay on major version 0 until the owner decides otherwise
+**Major version 0.** Quader releases stay on major version 0 until the owner decides otherwise
 ([ADR-124](../decisions.md#adr-124--releases-stay-on-major-version-0)); Semantic Release sets each version from the
-conventional commits, and a phase closes with the release cut from its commits. Semantic Versioning would allow any change within 0.x; trove does
+conventional commits, and a phase closes with the release cut from its commits. Semantic Versioning would allow any change within 0.x; Quader does
 not use that latitude. The promises of the table apply between 0.x minors as they would within a
 major, and a breaking change in 0.x is announced in the release notes with its migration path.
 
@@ -4617,16 +4617,16 @@ Files:
   Until the first stable release this rule and its check are switched off ([Q-ARCH-340](#q-arch-340--no-backward-compatibility-until-the-first-stable-release)): a file may
   be edited, renamed or removed, and a database that applied an earlier version of an edited file
   fails step 3 below and is recreated.
-- A file starts with trove's header comments. While the expand/contract rules are switched off
+- A file starts with Quader's header comments. While the expand/contract rules are switched off
   (`EnforceMigrationPhases = false`), every one of them is optional:
-  - `-- trove:phase expand` or `-- trove:phase contract`, which is R-HA-018's class. With the rules
+  - `-- quader:phase expand` or `-- quader:phase contract`, which is R-HA-018's class. With the rules
     on every file has exactly one; with them off, a file without it is an expand step;
-  - `-- trove:no-transaction` on a step that cannot run in a transaction block, such as
+  - `-- quader:no-transaction` on a step that cannot run in a transaction block, such as
     `CREATE INDEX CONCURRENTLY`. Such a file holds exactly one statement (R-HA-018);
-  - on a contract step, `-- trove:requires-app >= <version>`, the oldest release allowed to serve
+  - on a contract step, `-- quader:requires-app >= <version>`, the oldest release allowed to serve
     once the step is applied. R-HA-018's `lastUsedBy` is the release before it, and `compat_floor`
     is the highest `requires-app` of the applied contract steps;
-  - on a contract step that removes what a background data migration converts, `-- trove:requires-background <name>`,
+  - on a contract step that removes what a background data migration converts, `-- quader:requires-background <name>`,
     once per migration ([ha-and-helm.md](ha-and-helm.md) R-HA-022, Q-HA-115).
 - Expand steps never break the previous minor: new tables, nullable or defaulted columns, indexes
   built `CONCURRENTLY`, new enum values (R-HA-018 lists the classes in full). Contract steps (drop,
@@ -4635,14 +4635,14 @@ Files:
   the phase does not restrict a step's statements: `DROP`, `RENAME` and `SET NOT NULL` may stand in
   an expand step.
 
-Runner. It is trove's own code in `internal/meta/postgres` on the native pgx API; no migration
-library and no `database/sql` are involved (Q-ARCH-3). `trove migrate up` runs these steps:
+Runner. It is Quader's own code in `internal/meta/postgres` on the native pgx API; no migration
+library and no `database/sql` are involved (Q-ARCH-3). `quader migrate up` runs these steps:
 1. Take `pg_advisory_lock(3, 0)` (category `migration`, R-ARCH-017) and run every later step on
    that same connection. A running backup's database phase holds the lock shared, and a running
    restore holds it exclusively, so the runner waits for either up to `migrate.advisory_lock_wait`
    ([ha-and-helm.md](ha-and-helm.md) R-HA-019).
 2. Refuse a half-restored database. While the schema carries a restore anchor
-   (`COMMENT ON SCHEMA <database.schema> IS 'trove-restore <backup-id>'`) or `system_state` holds
+   (`COMMENT ON SCHEMA <database.schema> IS 'quader-restore <backup-id>'`) or `system_state` holds
    `restore_in_progress` ([backup-and-restore.md](backup-and-restore.md) R-BAK-021), the runner
    exits with status `3`, applies nothing and names the backup ID. An interrupted restore is then
    resumed instead of being overtaken: steps applied beyond the backup's step before the load
@@ -4665,13 +4665,13 @@ library and no `database/sql` are involved (Q-ARCH-3). `trove migrate up` runs t
      backoff.
 6. Update `schema_state`, release the lock, and print the summary of R-HA-019.
 
-`trove migrate status` lists applied and pending steps and the background data migrations without taking the lock;
+`quader migrate status` lists applied and pending steps and the background data migrations without taking the lock;
 `GET /api/v1/system/migrations` answers the same report from the same code ([ha-and-helm.md](ha-and-helm.md) R-HA-018).
 
-Restore mode. The runner offers an internal "migrate up to step N" mode for `trove backup restore`
+Restore mode. The runner offers an internal "migrate up to step N" mode for `quader backup restore`
 alone, which loads a backup into exactly the schema it was exported from and then applies the
 remaining steps ([backup-and-restore.md](backup-and-restore.md) R-BAK-021, R-BAK-023, Q-BAK-8).
-`trove migrate` exposes no such flag.
+`quader migrate` exposes no such flag.
 - It runs on a connection that already holds `pg_advisory_lock(3, 0)`: the restore's session
   connection, which holds the lock from its first check to its finish. The runner neither takes
   nor releases the lock in this mode.
@@ -4693,19 +4693,19 @@ off before the first stable release (Q-ARCH-340), a file may be edited or remove
 restores an earlier backup only while the steps up to the backup's step are unchanged.
 
 Gates:
-- **Gate in `trove migrate`** (R-HA-018's contract guard). Before a contract step is applied, the
+- **Gate in `quader migrate`** (R-HA-018's contract guard). Before a contract step is applied, the
   runner reads the replica registry ([operations-and-observability.md](operations-and-observability.md)).
   If a live replica runs a version below the step's `requires-app`, it exits `3` without applying
   anything. It lists those replicas and the two ways forward of R-HA-021. There is no override flag:
   the downtime path is to scale the replicas to zero, so that the registry shows none. It also exits
-  `3` while a background migration the step names in `-- trove:requires-background` has not succeeded
+  `3` while a background migration the step names in `-- quader:requires-background` has not succeeded
   ([ha-and-helm.md](ha-and-helm.md) R-HA-021 step 4, Q-HA-115).
-- **Gate in `trove serve`**, through the `schema` readiness check, with R-HA-018's rule: a binary
+- **Gate in `quader serve`**, through the `schema` readiness check, with R-HA-018's rule: a binary
   of version V serves only if `schema_state.applied` is at least its `requiredSchema` and
   `compat_floor` is at most V.
   - Below `requiredSchema`, the replica stays unready. The Helm pre-upgrade Job normally migrates
     first.
-  - With `compat_floor` above V, the process exits with `schema requires trove >= <compat_floor>`.
+  - With `compat_floor` above V, the process exits with `schema requires Quader >= <compat_floor>`.
 - Data migrations that take minutes are R-HA-022's background migrations. Each runs as a job of
   kind `data_migration_<name>` (R-ARCH-016), is resumable and is visible in the job API. Code
   reads both the old and the new form until it has finished.
@@ -4717,14 +4717,14 @@ Acceptance criteria:
 - Three replicas on N-1 run a continuous `npm ci` plus `npm publish` loop. `helm upgrade` to N
   completes without a failed client operation.
 - A test contract migration whose `requires-app` is above a live replica's version makes
-  `trove migrate` exit `3` and name that replica.
-- An N-2 binary started against schema N exits with `schema requires trove >= …`.
-- `trove migrate` killed with `SIGKILL` inside a transactional step leaves neither the step's
+  `quader migrate` exit `3` and name that replica.
+- An N-2 binary started against schema N exits with `schema requires Quader >= …`.
+- `quader migrate` killed with `SIGKILL` inside a transactional step leaves neither the step's
   objects nor its `schema_migration` row, and the next run applies the step.
-- After an applied migration file is edited, `trove migrate up` exits non-zero, names the file and
+- After an applied migration file is edited, `quader migrate up` exits non-zero, names the file and
   applies nothing.
 - Against a database whose schema carries the restore anchor of backup `20261028T020000Z-7f3a`,
-  and once more against one whose `system_state` holds `restore_in_progress`, `trove migrate up`
+  and once more against one whose `system_state` holds `restore_in_progress`, `quader migrate up`
   exits `3`, names the backup ID and applies nothing. A restore of that backup then resumes and
   finishes (R-BAK-021).
 - A CI check compares the embedded migration files with those of the latest release of the same
@@ -4742,16 +4742,16 @@ Acceptance criteria:
   file, with the expand/contract rules on (`TestParseSteps` runs them on while the switch is off). With
   them off, `TestParseStepsRelaxed` accepts a file without any header as an expand step and those
   statements in any step, and still fails on an unknown or a second `phase` header, a contract step
-  without `requires-app`, `requires-app` without the contract phase and an unknown `trove:` header.
+  without `requires-app`, `requires-app` without the contract phase and an unknown `quader:` header.
   `requiredSchema` is the newest expand step with the rules on and the highest step with them off
   (`TestRequiredSchemaBothModes`).
-- `internal/archtest` fails if any trove package imports `database/sql` or
+- `internal/archtest` fails if any Quader package imports `database/sql` or
   `github.com/jackc/pgx/v5/stdlib`.
 
 ## Performance and robustness
 
 ### R-ARCH-027 · Performance targets
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Reference environment (proposed):
 - 3 `web` replicas and 2 `worker` replicas, each limited to 2 vCPU and 4 GiB;
@@ -4769,7 +4769,7 @@ Latencies are measured at the replica.
 | ID | Scenario | Target (proposed) |
 |---|---|---|
 | P-1 | Local or cached remote binary ≤ 1 MiB, time to first byte | p50 ≤ 25 ms, p99 ≤ 100 ms (one PostgreSQL lookup plus the object GET) |
-| P-2 | Same request, trove's own share without the object GET | p99 ≤ 10 ms |
+| P-2 | Same request, Quader's own share without the object GET | p99 ≤ 10 ms |
 | P-3 | Package document from the rendition cache (≤ 1 MiB, gzip) | p50 ≤ 5 ms, p99 ≤ 25 ms |
 | P-4 | Package document, rendition miss (1 MiB) | p99 ≤ 150 ms |
 | P-5 | Virtual merge, two cached members, merge not cached, 1 MiB result | p99 ≤ 200 ms |
@@ -4831,7 +4831,7 @@ Acceptance criteria:
   each with the statements it ran and the budget above.
 
 ### R-ARCH-028 · Resource limits for untrusted package content
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - Every upload and every upstream response is untrusted input.
 - `Inspect` reads only the archive entries it needs, in memory. Entry names are never used as
@@ -4881,7 +4881,7 @@ Acceptance criteria:
 
 | Catalog ID | Priority | One line |
 |---|---|---|
-| HA-011 | P2 | Active-passive warm standby: trove has only active-active replicas. |
+| HA-011 | P2 | Active-passive warm standby: Quader has only active-active replicas. |
 | HA-013 | Later | Internal service registry and health-gated routing: one process per replica, nothing to route internally. |
 | HA-014 | P2 | Availability-zone affinity for internal routing: replicas never call each other (R-ARCH-002). |
 | HA-018 | P2 | Internal TLS from a built-in certificate authority: `server.tls` or a service mesh covers the MVP. |
@@ -4931,18 +4931,18 @@ Acceptance criteria:
   areas: the PostgreSQL change log applies them on every replica within
   `cluster.epoch_poll_interval`, whatever Valkey does, and the `invalidation` readiness check takes a
   replica whose poll has stalled out of the Service (R-ARCH-018).
-- **Valkey is outside the trust path.** No content, metadata or credential that trove serves, no
+- **Valkey is outside the trust path.** No content, metadata or credential that Quader serves, no
   positive authentication or authorization result and no key material is read from Valkey
-  (R-ARCH-030, Q-ARCH-16); a Valkey value can at most make trove refuse with `404` or `429`, or,
+  (R-ARCH-030, Q-ARCH-16); a Valkey value can at most make Quader refuse with `404` or `429`, or,
   as a throttle exemption marker, cost one more PostgreSQL lookup for one credential. A message
   from Valkey can only evict early; it never advances a replica's applied change epoch, so a forged
   or suppressed message cannot hide a revocation (R-ARCH-018). Values read from Valkey are validated
   before use. What remains is availability: H-49.
-- **Valkey credentials and transport.** trove connects to Valkey and to the Sentinels with TLS by
+- **Valkey credentials and transport.** Quader connects to Valkey and to the Sentinels with TLS by
   default and verifies the server certificate, with its host name under the default `verify-full`
   and without it under `verify-ca`. There is no mode that encrypts without verifying; TLS can be
   switched off only as `valkey.tls.mode: disable` together with `valkey.allow_insecure: true`
-  ([ha-and-helm.md](ha-and-helm.md) R-HA-056). trove authenticates as an ACL user that can reach
+  ([ha-and-helm.md](ha-and-helm.md) R-HA-056). Quader authenticates as an ACL user that can reach
   only its own key and channel prefix and is denied scripting (R-ARCH-031). Passwords come from
   mounted files and are re-read on reconnection.
 - **No session state on the request path.** The `main` class keeps no state beyond its transaction
@@ -4993,7 +4993,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice is unchanged. trove no longer uses `LISTEN` (Q-ARCH-15), so `WaitForNotification` drops out of the rationale; pgx's exec modes now also let the `main` class run through a transaction-mode pooler (Q-ARCH-14).
+Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice is unchanged. Quader no longer uses `LISTEN` (Q-ARCH-15), so `WaitForNotification` drops out of the rationale; pgx's exec modes now also let the `main` class run through a transaction-mode pooler (Q-ARCH-14).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -5036,15 +5036,15 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) goose v3.29.0 Provider API | goose applies the embedded SQL files under trove's `migration` lock. R-HA-018's `schema_migration` table is written through a custom `database.Store`. | A tested apply loop and SQL parser. `embed.FS` sources. An *optional* locker, so trove's lock stays the only one (verified in its source). | Its version write carries only the version number (`InsertRequest{Version}`), so R-HA-018's row needs a custom `database.Store` under `DialectCustom` that follows goose's version-0 convention. Every file also needs `-- +goose Up` next to trove's headers. Brings `database/sql` and `pgx/v5/stdlib` into the binary for this one use. |
-| (b) golang-migrate v4.20.1 | The widely used migration library | Many drivers and a large user base | A failed migration leaves the version marked dirty and needs a manual `force` before the next deploy. It takes its own lock, outside trove's lock categories. Its version table cannot hold R-HA-018's columns. |
+| (a) goose v3.29.0 Provider API | goose applies the embedded SQL files under Quader's `migration` lock. R-HA-018's `schema_migration` table is written through a custom `database.Store`. | A tested apply loop and SQL parser. `embed.FS` sources. An *optional* locker, so Quader's lock stays the only one (verified in its source). | Its version write carries only the version number (`InsertRequest{Version}`), so R-HA-018's row needs a custom `database.Store` under `DialectCustom` that follows goose's version-0 convention. Every file also needs `-- +goose Up` next to Quader's headers. Brings `database/sql` and `pgx/v5/stdlib` into the binary for this one use. |
+| (b) golang-migrate v4.20.1 | The widely used migration library | Many drivers and a large user base | A failed migration leaves the version marked dirty and needs a manual `force` before the next deploy. It takes its own lock, outside Quader's lock categories. Its version table cannot hold R-HA-018's columns. |
 | (c) tern v2.4.3 | pgx-native migrator | Same author as pgx. Go and SQL migrations, a `disable-tx` magic comment, `fs.FS` sources ([README](https://github.com/jackc/tern)). | Takes `pg_advisory_lock(9628173550095224)` on every run: a fixed single-`bigint` key that R-ARCH-017 forbids, with no switch (verified in its source). Its version table holds one number. |
-| (d) A trove-owned runner on native pgx | A small runner (a few hundred lines, estimated) in `internal/meta/postgres`. Each embedded file runs as one argument-less `Exec` inside a transaction, together with its R-HA-018 row. | Writes R-HA-018's table directly, in the step's own transaction. PostgreSQL parses the SQL, because pgx sends an argument-less `Exec` through the simple protocol (verified), so trove needs no parser. One header dialect. No `database/sql`. | The apply loop is trove's own code and is exercised only by trove's tests |
+| (d) A Quader-owned runner on native pgx | A small runner (a few hundred lines, estimated) in `internal/meta/postgres`. Each embedded file runs as one argument-less `Exec` inside a transaction, together with its R-HA-018 row. | Writes R-HA-018's table directly, in the step's own transaction. PostgreSQL parses the SQL, because pgx sends an argument-less `Exec` through the simple protocol (verified), so Quader needs no parser. One header dialect. No `database/sql`. | The apply loop is Quader's own code and is exercised only by Quader's tests |
 
-**Choice:** (d) — a trove-owned runner on native pgx that applies each embedded file and its R-HA-018 `schema_migration` row in one transaction; this revises the earlier choice of goose.
+**Choice:** (d) — a Quader-owned runner on native pgx that applies each embedded file and its R-HA-018 `schema_migration` row in one transaction; this revises the earlier choice of goose.
 
 **Rationale:**
-- [ha-and-helm.md](ha-and-helm.md) R-HA-018 and R-HA-019 already make trove own the substance of
+- [ha-and-helm.md](ha-and-helm.md) R-HA-018 and R-HA-019 already make Quader own the substance of
   the upgrade path:
   - the version table with class, release, checksum and duration;
   - checksum verification;
@@ -5067,7 +5067,7 @@ Status: **Decided by the development agent** — selected from the options below
   - the crash and checksum criteria of R-ARCH-026.
 - The earlier choice of (a) assumed that goose's own version table could stand in for R-HA-018's.
   It cannot, and adapting goose to it costs what it saves.
-- Revisit if trove needs Go-code migrations inside the migration Job. R-HA-018 moves data changes to
+- Revisit if Quader needs Go-code migrations inside the migration Job. R-HA-018 moves data changes to
   background migrations, so none are planned.
 
 **Applied in the spec:**
@@ -5092,12 +5092,12 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) aws-sdk-go-v2 `service/s3` v1.114.6, trove-owned multipart | The AWS SDK's S3 client; trove uploads the spool file in parts through `io.SectionReader` | AWS S3 is a primary target. Workload identity through the default credential chain (INV-13). First-class presigning and KMS. A stable 1.x module. Every call [storage.md](storage.md) R-STOR-030 lists is directly available. | About 150 lines of multipart code owned by trove (estimated) |
-| (b) aws-sdk-go-v2 + `feature/s3/transfermanager` v0.5.1 | The SDK's new transfer helper | Ready-made multipart upload | Pre-1.0. The previous `feature/s3/manager` Uploader is already deprecated in its favour. A helper between trove and the part-level calls R-STOR-006 needs. |
-| (c) minio-go v7.4.1 | The MinIO client library | A stable major, tuned for S3-compatible stores | Implements its own credential providers. Each AWS mechanism trove relies on (workload identity, KMS) has to be re-checked against it. |
-| (d) A portable blob API (Go CDK `blob` with its S3 driver) | One API over S3, GCS and Azure | Other object stores without new code | Lowest common denominator. It exposes neither per-part checksums nor the multipart lifecycle (part size, part budget, listing and aborting incomplete uploads) that R-STOR-006 and the orphan sweep of R-STOR-026 require. The owner fixed S3, and trove's `BlobStore` interface is already the seam for other stores (STOR-007, P2). |
+| (a) aws-sdk-go-v2 `service/s3` v1.114.6, Quader-owned multipart | The AWS SDK's S3 client; Quader uploads the spool file in parts through `io.SectionReader` | AWS S3 is a primary target. Workload identity through the default credential chain (INV-13). First-class presigning and KMS. A stable 1.x module. Every call [storage.md](storage.md) R-STOR-030 lists is directly available. | About 150 lines of multipart code owned by Quader (estimated) |
+| (b) aws-sdk-go-v2 + `feature/s3/transfermanager` v0.5.1 | The SDK's new transfer helper | Ready-made multipart upload | Pre-1.0. The previous `feature/s3/manager` Uploader is already deprecated in its favour. A helper between Quader and the part-level calls R-STOR-006 needs. |
+| (c) minio-go v7.4.1 | The MinIO client library | A stable major, tuned for S3-compatible stores | Implements its own credential providers. Each AWS mechanism Quader relies on (workload identity, KMS) has to be re-checked against it. |
+| (d) A portable blob API (Go CDK `blob` with its S3 driver) | One API over S3, GCS and Azure | Other object stores without new code | Lowest common denominator. It exposes neither per-part checksums nor the multipart lifecycle (part size, part budget, listing and aborting incomplete uploads) that R-STOR-006 and the orphan sweep of R-STOR-026 require. The owner fixed S3, and Quader's `BlobStore` interface is already the seam for other stores (STOR-007, P2). |
 
-**Choice:** (a) — the stable `service/s3` client, with a trove-owned multipart upload that reads its parts straight from the spool file.
+**Choice:** (a) — the stable `service/s3` client, with a Quader-owned multipart upload that reads its parts straight from the spool file.
 
 **Rationale:**
 - R-STOR-006 needs control that the helpers do not give:
@@ -5108,7 +5108,7 @@ Status: **Decided by the development agent** — selected from the options below
   - `AbortMultipartUpload` on failure;
   - listing of incomplete uploads for the orphan sweep (R-STOR-026).
 
-  `service/s3` exposes every one of these calls. (b) and (d) put a helper between trove and them,
+  `service/s3` exposes every one of these calls. (b) and (d) put a helper between Quader and them,
   and (b) is pre-1.0 while its predecessor is already deprecated.
 - (a) and (c) are both stable majors. (a) wins on credentials: the AWS SDK's default chain covers
   workload identity (IRSA and similar, INV-13) as AWS maintains it, while minio-go's own providers
@@ -5117,7 +5117,7 @@ Status: **Decided by the development agent** — selected from the options below
   options set to "when required" (verified in the SDK source). [storage.md](storage.md) R-STOR-030
   exposes these settings.
 - Revisit, by switching to (c), only if the storage integration suite of R-STOR-030, with the store
-  set of [ha-and-helm.md](ha-and-helm.md) Q-HA-3, shows the AWS SDK failing on a store trove must
+  set of [ha-and-helm.md](ha-and-helm.md) Q-HA-3, shows the AWS SDK failing on a store Quader must
   support.
 
 **Applied in the spec:** No change; the requirement text already follows this option (R-ARCH-002, [storage.md](storage.md) R-STOR-006 and R-STOR-030).
@@ -5130,11 +5130,11 @@ Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, back
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The queue of R-ARCH-016 | One `job` table, claimed with `FOR UPDATE SKIP LOCKED`; migrations in trove's single migration path | Carries the operation columns of [api-and-ui.md](api-and-ui.md) and the task slots of [operations-and-observability.md](operations-and-observability.md). Rolling-upgrade safe through claiming by known kind. Claims are short transactions that work through a transaction-mode pooler (R-ARCH-019). | trove owns the reaper, backoff and scheduler code |
+| (a) The queue of R-ARCH-016 | One `job` table, claimed with `FOR UPDATE SKIP LOCKED`; migrations in Quader's single migration path | Carries the operation columns of [api-and-ui.md](api-and-ui.md) and the task slots of [operations-and-observability.md](operations-and-observability.md). Rolling-upgrade safe through claiming by known kind. Claims are short transactions that work through a transaction-mode pooler (R-ARCH-019). | Quader owns the reaper, backoff and scheduler code |
 | (b) River v0.50.0 | pgx-native queue library (MPL-2.0) | Mature features, an admin UI | Pre-1.0. It manages its own tables and migrations (`rivermigrate`), a second migration path next to INV-3's single one. Its schema does not hold the operation and task-slot columns. |
 | (c) A queue in Valkey (Streams with consumer groups) | Jobs are stream entries; workers read them through a consumer group and acknowledge them | Pushes jobs to workers without polling; takes the claim load off PostgreSQL | INV-3 puts the durable job queue in PostgreSQL: a Sentinel failover can lose acknowledged writes ([Sentinel](https://valkey.io/topics/sentinel/)), and a lost job is lost work. An enqueue could no longer commit atomically with the change that causes it. The operation and task-slot columns would need PostgreSQL anyway. |
 
-**Choice:** (a) — the PostgreSQL job table and claim query of R-ARCH-016, owned by trove.
+**Choice:** (a) — the PostgreSQL job table and claim query of R-ARCH-016, owned by Quader.
 
 **Rationale:**
 - INV-3 has one migration path, and the job row is shared by three consumers: maintenance tasks,
@@ -5190,7 +5190,7 @@ Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, back
 - (b) moves the cost into PostgreSQL writes on the hot path. (c) gives up P-12 exactly when the load
   needs many replicas.
 - `cluster.FlightLock` keeps the proxy independent of the mechanism, as before.
-- Revisit if `trove_flight_lock_lost_total` or the bypass counter rises under normal load, or if
+- Revisit if `quader_flight_lock_lost_total` or the bypass counter rises under normal load, or if
   container-layer remotes (P1) show waiters timing out behind killed holders; the TTL is then the
   first lever.
 
@@ -5215,11 +5215,11 @@ Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, back
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Two-key form, category `fetch` | `pg_try_advisory_lock(2, <first 4 bytes of SHA-256 of the flight key>)` | `pg_locks` shows `classid = 2`, so the lock-diagnostics view of [operations-and-observability.md](operations-and-observability.md) and any operator can name every lock. One key space for all of trove's locks. | 32-bit hash: a collision makes two unrelated fetches wait for each other. Needs the PostgreSQL lock that Q-ARCH-6 gave up. |
+| (a) Two-key form, category `fetch` | `pg_try_advisory_lock(2, <first 4 bytes of SHA-256 of the flight key>)` | `pg_locks` shows `classid = 2`, so the lock-diagnostics view of [operations-and-observability.md](operations-and-observability.md) and any operator can name every lock. One key space for all of Quader's locks. | 32-bit hash: a collision makes two unrelated fetches wait for each other. Needs the PostgreSQL lock that Q-ARCH-6 gave up. |
 | (b) Single 64-bit hash | `pg_try_advisory_lock(<bigint>)` | Collisions are practically impossible | Anonymous in `pg_locks`. A second key space next to the categories, which must never be mixed up with them. |
-| (c) Valkey key with the full hash | `trove:<ks>:lock:fetch:v1:<64 hex of SHA-256 of the flight key>` | No collisions to reason about; the key says what it locks; listed by `SCAN` on the prefix | Not visible in `pg_locks`; diagnostics read the Valkey prefix instead |
+| (c) Valkey key with the full hash | `quader:<ks>:lock:fetch:v1:<64 hex of SHA-256 of the flight key>` | No collisions to reason about; the key says what it locks; listed by `SCAN` on the prefix | Not visible in `pg_locks`; diagnostics read the Valkey prefix instead |
 
-**Choice:** (c) for the fetch lock — the Valkey key `trove:<ks>:lock:fetch:v1:<SHA-256 hex of the flight key>`; every remaining PostgreSQL advisory lock keeps (a)'s two-key form with a registered category.
+**Choice:** (c) for the fetch lock — the Valkey key `quader:<ks>:lock:fetch:v1:<SHA-256 hex of the flight key>`; every remaining PostgreSQL advisory lock keeps (a)'s two-key form with a registered category.
 
 **Rationale:**
 - The 32-bit hash was a concession to PostgreSQL's advisory-lock key width. A Valkey key has no such
@@ -5245,16 +5245,16 @@ Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, back
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice changed from (a), a post-commit coalescer that sends `NOTIFY`, to (d), the same coalescer publishing to Valkey. trove sends no `NOTIFY` at all now; administrative changes moved to the change log of Q-ARCH-15.
+Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice changed from (a), a post-commit coalescer that sends `NOTIFY`, to (d), the same coalescer publishing to Valkey. Quader sends no `NOTIFY` at all now; administrative changes moved to the change log of Q-ARCH-15.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Post-commit coalescer with `NOTIFY` | The earlier choice. Hot-path changes are handed to a per-replica coalescer after commit; it sends at most one `NOTIFY` per channel per 50 ms. | Delivery after commit; bounded notifying commits | Needs a `LISTEN` session on every replica: one direct session connection each, which a transaction-mode pooler cannot carry and which grows with the replica count (INV-12). Every coalescer `NOTIFY` still takes PostgreSQL's notify commit lock (`async.c`). |
 | (b) `NOTIFY` inside each writing transaction | The textbook pattern | Simplest; exactly one notification per change | PostgreSQL serializes the commits of notifying transactions on one lock (`async.c`), so upload and fill throughput becomes bound to that lock. Same `LISTEN` sessions as (a). |
 | (c) No notification for hot-path changes | Consumers only poll | No notification traffic | Adds up to one poll interval to every job pick-up and collapsed request |
-| (d) Post-commit coalescer publishing to Valkey | The coalescer of (a), but it publishes on `trove:<ks>:sig:v1:<area>`; fill completion uses the flight's own channel (R-ARCH-033) | No PostgreSQL work at all for a signal; no session connection; wake-ups in milliseconds; fan-out bounded by the coalescer | At-most-once delivery, and nothing while Valkey is unavailable. Every consumer already stays correct without the signal (self-validating keys, polling). |
+| (d) Post-commit coalescer publishing to Valkey | The coalescer of (a), but it publishes on `quader:<ks>:sig:v1:<area>`; fill completion uses the flight's own channel (R-ARCH-033) | No PostgreSQL work at all for a signal; no session connection; wake-ups in milliseconds; fan-out bounded by the coalescer | At-most-once delivery, and nothing while Valkey is unavailable. Every consumer already stays correct without the signal (self-validating keys, polling). |
 
-**Choice:** (d) — signals that client traffic produces leave through the per-replica coalescer to Valkey Pub/Sub after commit; trove issues no `NOTIFY`.
+**Choice:** (d) — signals that client traffic produces leave through the per-replica coalescer to Valkey Pub/Sub after commit; Quader issues no `NOTIFY`.
 
 **Rationale:**
 - The reason for (a) was PostgreSQL's notify lock. (d) removes the lock from the picture entirely
@@ -5275,7 +5275,7 @@ Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, back
 **Applied in the spec:**
 - R-ARCH-018: signal areas, the coalescer publishing to Valkey, at-most-once delivery and the rule
   that every consumer stays correct without the signal. The area table replaces the channel table,
-  `trove_proxy_fetch` is gone, `upstream_state` moves to the change class, and no code issues
+  `quader_proxy_fetch` is gone, `upstream_state` moves to the change class, and no code issues
   `LISTEN`, `NOTIFY` or `pg_notify` (with a test).
 - R-ARCH-009: `Host.Notify` takes an area, and its comment and the transaction rule say how each
   class leaves.
@@ -5331,7 +5331,7 @@ Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, back
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-H-3 records that the UI and package content share one origin. The question is whether trove should
+H-3 records that the UI and package content share one origin. The question is whether Quader should
 serve browser-renderable content from a separate, configurable content host: in the prototype,
 later, or never. Such content is raw files under `/files/`, and README, license, icon and other
 package files.
@@ -5351,7 +5351,7 @@ package files.
   `Content-Disposition: attachment`, CSP `sandbox` and `default-src 'none'`, and
   `Cross-Origin-Resource-Policy`. It calls a separate sandbox domain necessary only for content that
   has to render, or for a threat model that includes renderer compromise and Spectre-class attacks.
-  trove renders no package content in the MVP.
+  Quader renders no package content in the MVP.
 - `attachment` and CSP `sandbox` each stop script execution on their own in current browsers. The
   first prevents rendering; the second gives a rendered document an opaque origin without script.
   `nosniff` keeps a harmless declared type from being sniffed into an active one. The remaining
@@ -5366,7 +5366,7 @@ package files.
 - (a) would close the door on inline viewing, which needs a separate origin.
 - Cookies are isolated by host name, not by port or origin. R-ARCH-029 therefore requires a content
   host name that differs from the UI's.
-  - [identity-and-authentication.md](identity-and-authentication.md) Q-AUTH-2 gave every trove
+  - [identity-and-authentication.md](identity-and-authentication.md) Q-AUTH-2 gave every Quader
     cookie the `__Host-` prefix, so a subdomain content host can neither receive nor plant them.
   - Such a host is still same-site with the UI, so R-ARCH-029 accepts it with a start-up warning
     and recommends a separate registrable domain.
@@ -5383,7 +5383,7 @@ package files.
   - requires every browser-facing content link to come from `LinkBuilder` or `downloadUrl`;
   - points at P1 R-ARCH-029;
   - has acceptance criteria for the wrapper and for URL-building in the UI.
-- New R-ARCH-029 (P1, trove-only) specifies `server.content_base_url` and
+- New R-ARCH-029 (P1, quader-only) specifies `server.content_base_url` and
   `server.content_url_ttl`:
   - origin checks at start-up: an `https` origin, a host name other than the UI's (a different port
     is refused), and a warning for a host on the UI's registrable domain;
@@ -5404,9 +5404,9 @@ package files.
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Superseded in part by [Q-REPO-212](repositories-and-proxy.md#q-repo-212--a-repository-is-addressed-inside-its-project-and-no-repository-is-shared): the project key precedes the repository key, `/api/<format>/<projectKey>/<repoKey>/…`; the format segment, `/api/v1/` and the ports stay.
 
 A consistency review asked whether the package path layout `/api/<format>/<repoKey>/…` and the
-port pair 8080/8081 should change, so that trove does not look like existing repository managers.
+port pair 8080/8081 should change, so that Quader does not look like existing repository managers.
 The owner's white-label rule forbids naming other products; it does not forbid functional
-resemblance. The question is whether trove keeps INV-6 or adopts a distinct layout and ports.
+resemblance. The question is whether Quader keeps INV-6 or adopts a distinct layout and ports.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -5439,7 +5439,7 @@ resemblance. The question is whether trove keeps INV-6 or adopts a distinct layo
 - **Cost.** This argument is secondary. (b) and (c) would rewrite about 190 references in 15
   documents (counted on 2026-10-28) for a gain in clarity that (a) already gets by documenting
   `/api/v1/` as the only management API.
-- Revisit before the first external client is configured against a running trove, and only for
+- Revisit before the first external client is configured against a running Quader, and only for
   this reason: the owner finds the resemblance unacceptable for the white-label product at the
   walkthrough. Then (b) is the fallback. After clients exist, any change breaks every `.npmrc` and
   `nuget.config`.
@@ -5461,7 +5461,7 @@ The catalog computes format indexes asynchronously after a deploy, with delays f
 minute, and leaves open whether any format holds the publish response until its index is updated
 (FMT-011). npm and NuGet are settled: their per-package metadata is rendered per request
 (R-ARCH-012). Later formats have repository-wide indexes, such as Helm `index.yaml`, Debian
-`Packages` and Conda `repodata.json`. This question sets trove's rule for them.
+`Packages` and Conda `repodata.json`. This question sets Quader's rule for them.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -5511,7 +5511,7 @@ lock needs a script.
 |---|---|---|---|
 | (a) valkey-go v1.0.79, Valkey 9.0 and later | The Valkey project's Go client (Apache-2.0), against servers of the 9.0 line and later | Its Sentinel client checks `ROLE`, follows `+switch-master` and reconciles periodically. TLS and an ACL user for data nodes and for Sentinels. Credentials are read on every connection attempt. Builders for `SET … IFEQ` and `DELIFEQ` (all verified in its source). From 9.0, `DELIFEQ` exists, so the lock needs no script and the ACL user needs no scripting. | Frequent patch releases (v1.0.79). Client-side caching is on by default and has to be switched off. An installation on Valkey 8.x has to upgrade. |
 | (b) valkey-go, Valkey 8.1 and later | The same client, one more server line | Covers 8.1 installations (maintained until 2028-03-31) | 8.1 has `SET … IFEQ` but no `DELIFEQ`. The release then needs a script, so the ACL user must be allowed scripting, and two code paths exist until 8.1 is dropped. |
-| (c) go-redis v9.23.0 | Redis Inc.'s client (BSD-2-Clause) with `FailoverClient` for Sentinel | Large user base; Sentinel with an ACL user | Its supported servers are Redis CE 8.0 to 8.10, and other servers are "not officially supported". Its compare-and-delete helper targets Redis's `DELEX`, not Valkey's `DELIFEQ`. Divergence between the servers would surface in trove's tests, not upstream's. |
+| (c) go-redis v9.23.0 | Redis Inc.'s client (BSD-2-Clause) with `FailoverClient` for Sentinel | Large user base; Sentinel with an ACL user | Its supported servers are Redis CE 8.0 to 8.10, and other servers are "not officially supported". Its compare-and-delete helper targets Redis's `DELEX`, not Valkey's `DELIFEQ`. Divergence between the servers would surface in Quader's tests, not upstream's. |
 | (d) Valkey GLIDE for Go v2.5.3 | The Valkey project's multi-language client on a Rust core | Official Valkey client with one core across languages | Needs cgo, which R-ARCH-001's `CGO_ENABLED=0` static binary rules out. Its Go documentation names no Sentinel mode. |
 
 **Choice:** (a) — valkey-go, against Valkey 9.0 and every later minor line, in Sentinel mode for production.
@@ -5526,9 +5526,9 @@ lock needs a script.
 - Reading credentials on every connection attempt lets a rotated Secret take effect without a
   restart (R-ARCH-031).
 - Floor 9.0 rather than 8.1: the flight lock is the only place that needs compare-and-delete. With
-  `DELIFEQ` and `SET … IFEQ`, trove runs no scripts, so its ACL user can be denied scripting, which
-  narrows what a stolen trove credential can do inside Valkey. 9.0 is maintained until 2028-10-21
-  and 9.1 until 2029-05-19, which covers the prototype and the first releases. Valkey enters trove
+  `DELIFEQ` and `SET … IFEQ`, Quader runs no scripts, so its ACL user can be denied scripting, which
+  narrows what a stolen Quader credential can do inside Valkey. 9.0 is maintained until 2028-10-21
+  and 9.1 until 2029-05-19, which covers the prototype and the first releases. Valkey enters Quader
   with this change, so no installation is already bound to an older line.
 - Revisit if a target installation must run Valkey 8.1 (then (b), with a script for the release
   only), if valkey-go stops following Valkey releases, or if GLIDE ships a Go client without cgo
@@ -5558,11 +5558,11 @@ uses 20 `web` and 3 `worker` replicas plus one surge pod.
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Direct or session-mode only | The earlier model: every replica opens main, lease, lock pool and listener | Nothing to change; session features everywhere | 24 × 41 = 984 server connections in the example, growing by 41 per replica. Violates INV-12 at the scale the owner expects. |
-| (b) Split by class and role | The `main` class keeps no session state and may run through a transaction-mode pooler. Session connections exist only on `worker` replicas (the lease pool) and in `trove migrate` and `trove backup`. No listener (Q-ARCH-15), no lock pool (Q-ARCH-6). | With a pooler, the server sees the pooler's pool (for example 40) plus 4 × 4 lease connections plus the one-off ones, about 60 in the example, whatever the `web` count. Without a pooler, still 24 × 20 + 4 × 4 = 496 instead of 984. Fencing of singleton work is unchanged. | Two endpoints to configure where a pooler is used. Every request-path query must stay transaction-scoped, which a test enforces. |
+| (b) Split by class and role | The `main` class keeps no session state and may run through a transaction-mode pooler. Session connections exist only on `worker` replicas (the lease pool) and in `quader migrate` and `quader backup`. No listener (Q-ARCH-15), no lock pool (Q-ARCH-6). | With a pooler, the server sees the pooler's pool (for example 40) plus 4 × 4 lease connections plus the one-off ones, about 60 in the example, whatever the `web` count. Without a pooler, still 24 × 20 + 4 × 4 = 496 instead of 984. Fencing of singleton work is unchanged. | Two endpoints to configure where a pooler is used. Every request-path query must stay transaction-scoped, which a test enforces. |
 | (c) Everything through a transaction-mode pooler | (b), and leases become table rows with fencing tokens, so no session connection remains | Zero session connections | Gives up R-HA-006's fencing on the lease's own session and the immediate release on session end. `worker` replicas are few, so it saves a dozen connections. |
 | (d) (b) plus one `LISTEN` session per replica | Pooled main pool, but invalidation stays on `LISTEN/NOTIFY` | Delivery on commit as before | Still one direct session per replica, growing with the count; every `web` replica needs a direct endpoint, and readiness depends on that session |
 
-**Choice:** (b) — the `main` class is transaction-scoped and may run through a transaction-mode pooler from the MVP on; session connections exist only for the lease pool on `worker` replicas and for `trove migrate` and `trove backup`.
+**Choice:** (b) — the `main` class is transaction-scoped and may run through a transaction-mode pooler from the MVP on; session connections exist only for the lease pool on `worker` replicas and for `quader migrate` and `quader backup`.
 
 **Rationale:**
 - Only (b) and (c) keep server connections independent of the number of `web` replicas, which is
@@ -5704,7 +5704,7 @@ write to Valkey can change what a shared cache returns.
 **Choice:** (b) — Valkey holds coordination state and the negative cache; nothing served to a client and no positive authentication or authorization result is ever read from Valkey.
 
 **Rationale:**
-- The line follows the trust boundary. Under (b), a compromised Valkey can make trove slower or
+- The line follows the trust boundary. Under (b), a compromised Valkey can make Quader slower or
   make packages temporarily unavailable, but it cannot grant access or change what a client
   installs. Under (c), Valkey would become part of the supply chain.
 - The negative cache is the one cache whose entries are small, written on the hot path and
@@ -5798,7 +5798,7 @@ setup is sized for it.
   commit whose answer is lost turns the client's retry into a version conflict.
 - (b) trades a bounded drain for an unbounded one. (c) has its own security trade-offs and is P2.
 - Revisit when container-image or generic large-file repositories (P1) show transfers cut at
-  shutdown in `trove_http_transfers_cut_total`; (c) for those formats, or a longer grace period for
+  shutdown in `quader_http_transfers_cut_total`; (c) for those formats, or a longer grace period for
   a dedicated `web` Deployment that serves them, is then the next step.
 
 **Applied in the spec:**
@@ -5850,7 +5850,7 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (c) — the placeholder is committed, the locale directories are not, and a partially built
 UI fails at start-up.
 
-**Rationale:** R-ARCH-003 requires `go build ./cmd/trove` on a clean checkout without Node.js, and
+**Rationale:** R-ARCH-003 requires `go build ./cmd/quader` on a clean checkout without Node.js, and
 the release build must still embed the real UI. Ignoring the locale directories keeps the diffs
 generated by the build out of git. Failing when some locales are missing is the fail-fast choice:
 a UI that serves one language and 404s another is worse than a start-up error. The development agent
@@ -5902,7 +5902,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) Registry in the database | The list of sealed columns is a table | Editable at run time | The list would decide what is encrypted, so a row change could leave secrets in plaintext |
 
 Envelope: `v1:<key id>:<base64(nonce ‖ ciphertext ‖ tag)>`, AES-256-GCM, additional authenticated data
-`trove/sealed/v1` followed by the table, the primary key and the column name (chosen).
+`quader/sealed/v1` followed by the table, the primary key and the column name (chosen).
 
 **Choice:** (b) for the registry; the envelope as stated above.
 
@@ -5965,7 +5965,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Count a `READONLY` reply as a failure | The breaker opens on a demotion | One rule for every error | A demoted primary keeps the replica away from the new primary for `valkey.circuit_breaker.open_duration` on top of the refresh that finds it |
-| (b) Neutral for the breaker; counted as `trove_valkey_errors_total{kind="readonly"}`; the next probe or refresh marks Valkey degraded (chosen) | The client moves on at once | The demotion is visible in metrics, and the bound stays the refresh interval plus 1 s | A replica that cannot reach the new primary is not counted as failing until the probe runs |
+| (b) Neutral for the breaker; counted as `quader_valkey_errors_total{kind="readonly"}`; the next probe or refresh marks Valkey degraded (chosen) | The client moves on at once | The demotion is visible in metrics, and the bound stays the refresh interval plus 1 s | A replica that cannot reach the new primary is not counted as failing until the probe runs |
 | (c) Ignore `READONLY` entirely | No metric, no state change | Smallest code | Blind to a demotion |
 
 **Choice:** (b).
@@ -6009,7 +6009,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) One connection for commands and subscriptions | Pub/Sub shares the data connection | Fewest connections | A subscription holds a connection that commands need; a demotion is harder to follow |
-| (b) One dedicated Pub/Sub connection that follows the primary; a short probe connection per Sentinel at each refresh (chosen) | The data client is `valkey-go`; the Pub/Sub connection is named `trove:<instance>:pubsub` and re-subscribes after every primary change; trove's own Sentinel loop opens a short connection per Sentinel every `valkey.sentinel.refresh_interval` and closes it | The subscriber and the commands do not block each other; the connection count stays fixed | Two connections more than (a) |
+| (b) One dedicated Pub/Sub connection that follows the primary; a short probe connection per Sentinel at each refresh (chosen) | The data client is `valkey-go`; the Pub/Sub connection is named `quader:<instance>:pubsub` and re-subscribes after every primary change; Quader's own Sentinel loop opens a short connection per Sentinel every `valkey.sentinel.refresh_interval` and closes it | The subscriber and the commands do not block each other; the connection count stays fixed | Two connections more than (a) |
 | (c) A Pub/Sub connection per change area | Each area subscribes on its own connection | Isolation per area | The connection count grows with the areas, against the bound of R-ARCH-031 |
 
 **Choice:** (b).
@@ -6098,21 +6098,21 @@ the interval must be below one second, which would move the check to a watcher o
 
 **Applied in the spec:** R-ARCH-035 states the reloader and its bound.
 
-### Q-ARCH-32 · Client certificates on trove's client listener
+### Q-ARCH-32 · Client certificates on Quader's client listener
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Client certificates required on every connection | The listener refuses clients without a certificate | Strong authentication of the transport | Breaks every package client and browser, and the kubelet probes cannot present one |
-| (b) Optional: `server.tls.client_ca_file` set means verified, off by default (chosen) | Only an installation that sets the CA requires a certificate, typically for a proxy that connects to trove | Proxies can prove themselves; clients are unaffected by default | An operator must decide per installation |
-| (c) No client certificates | Verification is never offered | Smallest code | No way to pin a proxy to trove |
+| (b) Optional: `server.tls.client_ca_file` set means verified, off by default (chosen) | Only an installation that sets the CA requires a certificate, typically for a proxy that connects to Quader | Proxies can prove themselves; clients are unaffected by default | An operator must decide per installation |
+| (c) No client certificates | Verification is never offered | Smallest code | No way to pin a proxy to Quader |
 
 **Choice:** (b).
 
-**Rationale:** The owner needs trove to accept TLS from a reverse proxy. Client certificates are a stronger tie for that
+**Rationale:** The owner needs Quader to accept TLS from a reverse proxy. Client certificates are a stronger tie for that
 proxy, not for people, which is why the identity model (INV-7) stays with the external provider. The development agent
-would revisit this when a proxy-to-trove setup needs per-client identities, which the authentication work would carry.
+would revisit this when a proxy-to-Quader setup needs per-client identities, which the authentication work would carry.
 
 **Applied in the spec:** R-ARCH-035 states the switch and its default.
 
@@ -6192,14 +6192,14 @@ loop, although R-ARCH-035 says the replica stays unready and serves once the fil
 | (c) Probes over plain HTTP while the pair is missing | A second plain port | Simple | A plaintext switch the chart cannot express; against INV-20 |
 
 **Choice:** (b). The temporary certificate is never offered by the client or an endpoint listener. A client that verifies
-(a scraper with the CA) still fails, as it should. `trove_tls_temporary_certificate{listener}` and one warning log mark
+(a scraper with the CA) still fails, as it should. `quader_tls_temporary_certificate{listener}` and one warning log mark
 the state. A pair whose leaf is not valid yet (SA10) is refused like an expired one, the old pair stays, and the same
 content loads once its time has come.
 
 **Rationale:** A restart does not fix a missing file; unready does. The ops listener carries probes and metrics, no
 credentials. The development agent would revisit this if the ops listener ever carries an operator API.
 
-**Applied in the spec:** [R-ARCH-035](#r-arch-035--tls-on-troves-listeners-and-reloadable-tls-material).
+**Applied in the spec:** [R-ARCH-035](#r-arch-035--tls-on-quaders-listeners-and-reloadable-tls-material).
 
 ### Q-ARCH-37 · Who may build an endpoint, and what an endpoint answers outside its surface
 
@@ -6349,8 +6349,8 @@ Superseded by [Q-ARCH-206](#q-arch-206--the-files-transfer-is-three-packages-the
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 The session cookie is `SameSite=Lax` and `/files/` accepts it for `GET`. A browser sends such a cookie with a subresource
-request from any page of the same site, so a page on a sibling host (`wiki.example.com` next to `trove.example.com`) could
-embed `<img src="https://trove.example.com/files/private/…">` or `<script src=…>` and load a private file with its visitor's
+request from any page of the same site, so a page on a sibling host (`wiki.example.com` next to `quader.example.com`) could
+embed `<img src="https://quader.example.com/files/private/…">` or `<script src=…>` and load a private file with its visitor's
 rights; `Cross-Origin-Resource-Policy: same-site` lets it through.
 
 | Option | What it means | For | Against |
@@ -6363,7 +6363,7 @@ rights; `Cross-Origin-Resource-Policy: same-site` lets it through.
 **Choice:** (b).
 
 **Rationale:** the credential that makes an embedding dangerous is the ambient one, and only the session cookie is ambient.
-The development agent would revisit (c) if trove adds a route that serves package content to `fetch`.
+The development agent would revisit (c) if Quader adds a route that serves package content to `fetch`.
 
 **Applied in the spec:** R-ARCH-007 (the header list). R-STOR-017's directory index takes the same value.
 
@@ -6371,7 +6371,7 @@ The development agent would revisit (c) if trove adds a route that serves packag
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-ARCH-024's second criterion runs `kubectl rollout restart deployment/trove-web` during
+Context: R-ARCH-024's second criterion runs `kubectl rollout restart deployment/quader-web` during
 `curl --limit-rate 20M` of a 400 MiB file (about 20 s). The rollout replaces the three web pods one after the other and takes
 more than a minute, so at 20 MB/s the serving pod is replaced during the transfer in about one run of three: the criterion
 passes without the drain having been exercised.
@@ -6503,7 +6503,7 @@ Context: milestone M2 adds the remote cache, the virtual repositories with claim
 | (b) Each package ships its own migration | A migration next to the code that needs it | The table and its owner arrive together | Parallel packages collide on the version numbers and on `q/models.go`; a gap in the numbering is an error (`ParseSteps`) |
 | (c) One file for everything | `00014_m2.sql` | One step | One failure rolls back all of M2; the file mixes three owners |
 
-**Choice:** (a). Every file is `-- trove:phase expand` without `no-transaction` or `requires-app`: no `DROP`, `RENAME` or `SET NOT NULL`, no backfill (no remote or virtual repository can exist before M2, Q-REPO-16), and the new indexes are on empty tables. A v0.3.x replica never reads the new tables, so it keeps serving against schema 16 during the rolling upgrade; the M2 binary requires 16. `repositories.claims_version` is the one change to an existing table, a column with a default. The tables are data tables (R-BAK-004), registered in `internal/meta/postgres/tables_m2.go` until their owning packages exist; the one new revision column is registered with `meta.RegisterRevisionColumn`.
+**Choice:** (a). Every file is `-- quader:phase expand` without `no-transaction` or `requires-app`: no `DROP`, `RENAME` or `SET NOT NULL`, no backfill (no remote or virtual repository can exist before M2, Q-REPO-16), and the new indexes are on empty tables. A v0.3.x replica never reads the new tables, so it keeps serving against schema 16 during the rolling upgrade; the M2 binary requires 16. `repositories.claims_version` is the one change to an existing table, a column with a default. The tables are data tables (R-BAK-004), registered in `internal/meta/postgres/tables_m2.go` until their owning packages exist; the one new revision column is registered with `meta.RegisterRevisionColumn`.
 
 **Rationale:** The packages that follow depend on the schema, not on each other's code, and the migration test (`TestTableRegistry`, `TestRevisionColumns`, `TestBlobReferenceRules`, `TestM2Migrations`) can cover the constraints before an implementation exists. The development agent would revisit this when a package needs more than one follow-up step: then it merges those into one `00017`.
 
@@ -6613,13 +6613,13 @@ Context: R-ARCH-033 has the hold extend its lock every third of the TTL while th
 | (b) One loop per `FlightLock` | A single loop extends every live hold, in a pipeline | Fewest goroutines | A registry of holds to keep consistent with `Release`; one slow call delays every hold; no gain at the concurrency a replica has (tens of fetches) |
 | (c) The caller extends | `FlightHold.Extend` is called from the fetch loop | No goroutine | A path that forgets, or a transfer that does not return to the loop for a TTL, loses the lock: the failure is silent and in the proxy |
 
-**Choice:** (a). Every failed call, a breaker that is open and a missing keyspace included, returns an error that wraps `ErrUnavailable` (`errors.Is`), after counting `trove_valkey_degraded_total{mechanism="flight_lock"}`; a context that ended returns its own error; a flight key that was not formed with `NewFlightKey` is a programming error and is neither. A hold has no longest life of its own: the proxy ends it (a fetch that has not finished 5 s before the shutdown deadline is released with `failed`, R-ARCH-024 step 4), and closing the client ends every extension. The in-process single-flight group is not in `internal/cluster`: it shares the fetch result between requests of one replica and is part of the proxy engine (`internal/proxy`), in front of `Acquire`.
+**Choice:** (a). Every failed call, a breaker that is open and a missing keyspace included, returns an error that wraps `ErrUnavailable` (`errors.Is`), after counting `quader_valkey_degraded_total{mechanism="flight_lock"}`; a context that ended returns its own error; a flight key that was not formed with `NewFlightKey` is a programming error and is neither. A hold has no longest life of its own: the proxy ends it (a fetch that has not finished 5 s before the shutdown deadline is released with `failed`, R-ARCH-024 step 4), and closing the client ends every extension. The in-process single-flight group is not in `internal/cluster`: it shares the fetch result between requests of one replica and is part of the proxy engine (`internal/proxy`), in front of `Acquire`.
 
 **Rationale:**
 - A transient failure of an extension must not end the hold: the next tick may reach Valkey. If the key expired meanwhile, that tick finds it gone and the loss is counted once, which is the case R-ARCH-033 describes.
 - One rule for the caller keeps R-REPO-026's fallback in one place: anything that is not a context error and not `ok`, `Acquire` and `Wait` alike, means "fetch under the in-process single-flight and count `valkey_unavailable`". A Valkey reply the client does not classify (a type error) is also "go on without the lock"; the request never fails because of the lock.
 - The group is generic request plumbing (`golang.org/x/sync/singleflight`, R-REPO-026 step 2) whose result type belongs to the engine. The infrastructure layer would otherwise need to know entries and documents.
-- The development agent would revisit (b) when the per-replica fetch count rises into the thousands, and the lack of a longest life when a leaked hold shows up in `trove_flight_lock_lost_total` or in keys that stay for the maximum.
+- The development agent would revisit (b) when the per-replica fetch count rises into the thousands, and the lack of a longest life when a leaked hold shows up in `quader_flight_lock_lost_total` or in keys that stay for the maximum.
 
 **Applied in the spec:** R-ARCH-033 (unavailable bullet); the single-flight placement is stated in [../developer/valkey.md](../developer/valkey.md#flightlock).
 
@@ -6642,7 +6642,7 @@ Context: R-REPO-028 has readers validate an entry (`c` within the repository's c
 - The deletion of a value that was read, not of the key, is what the ACL allows (`DELIFEQ`, no `DEL`) and what is safe against a concurrent writer.
 - A refused entry is counted twice, as `hit` and as `rejected`: the ratio `hit ÷ (hit + miss)` of R-OPS-045 then overstates the saving by the refused entries, which are rare (they exist for the seconds after an invalidation). The development agent would revisit this if the ratio is used for alerts, and give the store a way to take back a `hit`.
 
-**Applied in the spec:** R-ARCH-030 (the negative-cache row), R-OPS-045 (`trove_valkey_cache_lookups_total` row).
+**Applied in the spec:** R-ARCH-030 (the negative-cache row), R-OPS-045 (`quader_valkey_cache_lookups_total` row).
 
 ### Q-ARCH-198 · Source-address binding of a remote's connections
 
@@ -6662,7 +6662,7 @@ Failure of the enumeration itself: the last good address is kept (a lister that 
 
 **Rationale:** The connection pool of a client outlives single requests, but a client is rebuilt whenever the remote's settings change, so a goroutine per client needs a close path that the factory does not have. The cost of (b) is bounded by the 60 s interval. Revisit if replicas show dial latency spikes at the interval, or if a lister can block for long: then (a) with an explicit `Close` on the cached client.
 
-**Applied in the spec:** R-REPO-024 `sourceNetwork` bullets name the lazy re-enumeration and the failing-lister rule; the engine (WP2.2-B) counts `trove_remote_source_network_unavailable_total` and rate-limits the log line where it sees `outbound.ErrSourceNetworkUnavailable`.
+**Applied in the spec:** R-REPO-024 `sourceNetwork` bullets name the lazy re-enumeration and the failing-lister rule; the engine (WP2.2-B) counts `quader_remote_source_network_unavailable_total` and rate-limits the log line where it sees `outbound.ErrSourceNetworkUnavailable`.
 
 ### Q-ARCH-199 · Where the credential decision of each hop is made
 
@@ -7167,12 +7167,12 @@ in the message path. The owner keeps that limit because the cluster is shared.
 |---|---|---|---|
 | (a) Keep the clock before the transaction | The sample holds the writer's transaction | Simple | It bounds PostgreSQL commit latency, which P-1 and the database budget bound, not P-13 |
 | (b) Clock at the return of `COMMIT`; the p99 bound stays per change | An After hook stamps the commit | Measures the leg P-13 states | Failed in CI again: a throttled runner stalls the process for a period of 100 ms and the p99 of 200 samples is the second largest |
-| (c) Per change: delivery and p50; the p99 bound in a nightly performance run (chosen) | The integration test asserts that every change reaches replica B and that the p50 stays within 20 ms; the p99 bound of 100 ms is enforced when `TROVE_PERF_GATE=1`, which the workflow Performance (nightly) sets | The per-change tier stays free of a tail that the runner's CPU limit makes; the bound is enforced exactly as before, where it is a statement about the system; the p50 and delivery still fail a message path that is lost, polled or slow | A regression of the tail alone shows up the next night, not on the change |
+| (c) Per change: delivery and p50; the p99 bound in a nightly performance run (chosen) | The integration test asserts that every change reaches replica B and that the p50 stays within 20 ms; the p99 bound of 100 ms is enforced when `QUADER_PERF_GATE=1`, which the workflow Performance (nightly) sets | The per-change tier stays free of a tail that the runner's CPU limit makes; the bound is enforced exactly as before, where it is a statement about the system; the p50 and delivery still fail a message path that is lost, polled or slow | A regression of the tail alone shows up the next night, not on the change |
 | (d) Remove the CPU limit from the runner pods | The p99 stays per change | Strictest | The cluster is shared; the owner keeps the limit |
 
 **Choice:** (c). `TestChangePropagation` (P-13 with Valkey) and `TestJobPickup` (P-14 with Valkey) always log p50, p99 and the maximum.
 Per change they fail when a change does not reach replica B within 10 s, when the p50 of the propagation exceeds 20 ms or the p50 of the
-pick-up exceeds 100 ms. The p99 bounds (100 ms and 1 s) fail the test only with `TROVE_PERF_GATE=1`; without it a p99 above the bound is
+pick-up exceeds 100 ms. The p99 bounds (100 ms and 1 s) fail the test only with `QUADER_PERF_GATE=1`; without it a p99 above the bound is
 logged. The bounds without Valkey (`epoch_poll_interval` + 1 s, `jobs.poll_interval` + 1 s) are not tail-sensitive and stay per change.
 
 **Rationale:** The numbers come from the measurements above. With the poll at 2 s (propagation) and 5 s (pick-up) a p50 of a few
@@ -7185,11 +7185,11 @@ that run the nightly job have no CPU limit (dedicated performance runners): then
 **Applied in the spec:** the P-13 and P-14 rows of R-ARCH-027; [docs/developer/coordination.md](../developer/coordination.md) ("Bounds P-13
 and P-14"); [docs/developer/releasing.md](../developer/releasing.md) ("Performance (nightly)"); [docs/developer/build-and-test.md](../developer/build-and-test.md).
 Applied on 2026-10-31 to the same bounds on kind: E0.6 (`TestE06Lease` in [e06_lease_test.go](../../test/e2e/e06_lease_test.go)) asserts delivery and the
-p50 bounds per change and the p99 bounds with `TROVE_PERF_GATE=1`, after a run on throttled runner pods measured P-14 p99 = 1395 ms with n = 24.
+p50 bounds per change and the p99 bounds with `QUADER_PERF_GATE=1`, after a run on throttled runner pods measured P-14 p99 = 1395 ms with n = 24.
 Applied on 2026-10-31 to two targets of the per-change integration tier that the runners missed by a few percent (Actions run 41218966825):
 R-NPM-010's 10 ms for a cached document of 1,000 versions (measured 14 ms; per change a hit must stay below half a miss) and R-API-014's 1.5 s
 for a concurrent duplicate (measured up to 1.59 s; per change at most 2.5 s, while the first request holds its row until the test ends). Both
-targets are enforced with `TROVE_PERF_GATE=1` by `make test-performance`, which runs them nightly.
+targets are enforced with `QUADER_PERF_GATE=1` by `make test-performance`, which runs them nightly.
 Changed for the p50 of P-14 by [Q-ARCH-468](#q-arch-468--the-per-change-check-of-p-14-is-that-the-notification-woke-the-job-and-the-p50-bound-moves-to-the-nightly-run): per change the pick-up asserts that the notification woke the jobs, and its p50 is enforced with the p99 in the nightly run.
 
 ### Q-ARCH-468 · The per-change check of P-14 is that the notification woke the job, and the p50 bound moves to the nightly run
@@ -7204,7 +7204,7 @@ Context: `TestJobPickup` with Valkey failed in Test and Release 42894886354 (sha
 | (b) Per change: at most one pick-up in ten takes a fifth of the poll or more; the p50 bound with the p99 bound in the nightly run (chosen) | A job the poll finds waited a uniform share of the poll period, so with the poll at 5 s a job that took 1 s or more was not woken; the test counts those | Fails a lost or unsubscribed wake-up at once and with certainty (four in five jobs, about 48 of 60, are over the window; measured without Valkey at a poll of 1 s: the median is 454 ms); a runner stall of a second hits the few jobs in flight, not six of sixty; no number to tune per runner | A wake-up that is late by 100 ms to 1 s but still works shows up only in the nightly run |
 | (c) Drop the p50 bound altogether | Delivery and p99 only | Simplest | The nightly run is the only guard of the median; the per-change tier would not know a slow path from a dead one |
 
-**Choice:** (b). `TestJobPickup` with Valkey logs the p50 and the p99, fails per change when more than one in ten pick-ups took `poll / 5` or longer (`checkWoken` in [latency_test.go](../../test/integration/coordination/latency_test.go)), and enforces the p50 of 100 ms together with the p99 of 1 s with `TROVE_PERF_GATE=1`. The propagation test of P-13 keeps its p50 bound per change (the poll there is 2 s and a message path that is polled misses it by a factor of a hundred); it is not changed here.
+**Choice:** (b). `TestJobPickup` with Valkey logs the p50 and the p99, fails per change when more than one in ten pick-ups took `poll / 5` or longer (`checkWoken` in [latency_test.go](../../test/integration/coordination/latency_test.go)), and enforces the p50 of 100 ms together with the p99 of 1 s with `QUADER_PERF_GATE=1`. The propagation test of P-13 keeps its p50 bound per change (the poll there is 2 s and a message path that is polled misses it by a factor of a hundred); it is not changed here.
 
 **Rationale:** Q-ARCH-220 kept a p50 bound per change on the argument that only the message can explain a few milliseconds. That argument holds for the structure, not for the number: the number is a statement about the machine the test runs on. The structure is what a regression of the path breaks, so the per-change tier asserts it; the numbers P-14 states are enforced where the machine is known (the nightly performance run). The development agent would revisit the choice when the nightly run has its own runners without a competing load: the p50 returns to every change.
 
@@ -7257,7 +7257,7 @@ Context: `TestChangePropagation` with Valkey kept a p50 bound of 20 ms per chang
 | (b) Per change: at most one change in ten takes a fifth of the poll (400 ms) or longer; the p50 bound with the p99 bound in the nightly run (chosen) | A change the poll finds waited a uniform share of the 2 s period, so four in five are over 400 ms when the message path is broken; `checkWoken`, shared with `TestJobPickup` | Fails a lost or unsubscribed message at once and with certainty (about 160 of 200); a runner stall hits the few changes in flight, not twenty of two hundred; no number to tune per runner | A message path that is late by 20 to 400 ms but works shows up only in the nightly run |
 | (c) Drop the p50 bound altogether | Delivery and p99 only | Simplest | The median has the nightly run as its only guard |
 
-**Choice:** (b). The mode with Valkey of `TestChangePropagation` calls `checkWoken` ([latency_test.go](../../test/integration/coordination/latency_test.go)) and enforces its p50 of 20 ms with the p99 of 100 ms under `TROVE_PERF_GATE=1`. The mode without Valkey keeps its p99 bound per change.
+**Choice:** (b). The mode with Valkey of `TestChangePropagation` calls `checkWoken` ([latency_test.go](../../test/integration/coordination/latency_test.go)) and enforces its p50 of 20 ms with the p99 of 100 ms under `QUADER_PERF_GATE=1`. The mode without Valkey keeps its p99 bound per change.
 
 **Rationale:** The structure is what a regression of the message path breaks; the numbers of P-13 are enforced where the machine is known. The development agent would revisit the choice when the nightly run has its own runners without a competing load: the p50 returns to every change.
 
@@ -7423,9 +7423,9 @@ import the format contract (edge). The management API refused a member named aft
 
 **Choice:** (a), with `github.com/santhosh-tekuri/jsonschema/v6`: the library `kin-openapi` already pulls in at the version `go.mod` pins, so the repository gains no second schema dependency
 (it is a direct requirement now, one version). The schema is compiled at `Register`, which panics on a schema that does not compile, whose root is no object, or whose root does not set
-`additionalProperties: false` (a misspelt setting would be dropped silently, R-REPO-008). A property may carry `x-trove-classes`, the classes it applies to: the service reports a setting of another
+`additionalProperties: false` (a misspelt setting would be dropped silently, R-REPO-008). A property may carry `x-quader-classes`, the classes it applies to: the service reports a setting of another
 class as `not_applicable`, the way R-REPO-004 treats the class sections. A violation is a field error at `/<format>/<json pointer>`, `invalid_value`; the list answers 422 `validation_failed`.
-`GET /api/v1/formats` serves the schema as `settingsSchema` (null for a format without settings). A property with an `enum` carries `x-trove-enum-titles`, the label of each value
+`GET /api/v1/formats` serves the schema as `settingsSchema` (null for a format without settings). A property with an `enum` carries `x-quader-enum-titles`, the label of each value
 that the settings form shows; validation ignores it ([api-and-ui.md](api-and-ui.md) R-UI-088, Q-UI-79).
 
 **Rationale:** the leaf already holds what the model and the decision point must agree on, and a schema is data. The development agent would revisit it for a setting whose validity depends on
@@ -7486,7 +7486,7 @@ Context: R-ARCH-012 said "No route accepts a write to a path that `Classify` mar
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The rule names `Upload` routes; `Register` refuses one whose example `Classify` marks `Computed` | A check in `checkRoutes` | The dist-tag is a write of rows, an `Admin` route; what the rule protects (a client storing a document that trove renders) is checked | The rule is about the route's kind |
+| (a) The rule names `Upload` routes; `Register` refuses one whose example `Classify` marks `Computed` | A check in `checkRoutes` | The dist-tag is a write of rows, an `Admin` route; what the rule protects (a client storing a document that Quader renders) is checked | The rule is about the route's kind |
 | (b) Keep the wording, move the dist-tag routes to a path that is not computed | Change npm's protocol | The words stay true | npm clients call `-/package/<name>/dist-tags/<tag>`; the protocol is not ours |
 | (c) Leave it unenforced | — | Nothing to build | A rule nobody checks |
 
@@ -7660,7 +7660,7 @@ Context: `TestR_EP_013_CeilingPerformance` (R-EP-013 "Performance", the 1 ms tar
 the development machine (20 cores, load average 15 to 60 from other work): the same test, run alone and unchanged, gave p99 of 0.95, 1.1 and 3.8 ms
 in three runs; with the matcher of Q-EP-64 (mean 20 µs per `Decide` for the literal rule shape, 140 µs for the wildcard shape) the wall-clock p99 was
 0.03 to 1.5 ms (literal) and 0.2 to 20 ms (wildcard) across eleven runs on the same loaded machine, with the median unchanged at 20 and 140 µs. Q-ARCH-220 (owner decision of 2026-10-30) already settles the policy for tails of milliseconds: a per-change test does not gate on a tail
-latency on shared CPU, the bound is enforced where it is a statement about the system, in the nightly run with `TROVE_PERF_GATE=1`. A bound of
+latency on shared CPU, the bound is enforced where it is a statement about the system, in the nightly run with `QUADER_PERF_GATE=1`. A bound of
 1 ms at the 99th percentile over 2,000 samples is the same kind of statement at a smaller scale: the 20 slowest samples decide, and one time slice
 of a loaded machine is longer than the whole call.
 
@@ -7668,12 +7668,12 @@ of a loaded machine is longer than the whole call.
 |---|---|---|---|
 | (a) Keep the p99 per change | The test fails when the wall-clock p99 is above 1 ms | Strictest | Fails on a loaded machine without a regression; the failure that prompted this block |
 | (b) Retry or raise the bound | Run again until green, or 5 ms | Quiet | A bound that says nothing; retrying hides a real regression |
-| (c) Per change: allocations and median; the p99 under `TROVE_PERF_GATE=1` (chosen) | The test fails per change when one `Decide` allocates more than 100 times or its median CPU time is above 1 ms; the p99 fails only with the gate, which `make test-performance` sets and the nightly workflow runs | The allocation count does not depend on the machine and catches the regression that mattered (16,042 allocations per decision); the median is 20 to 150 µs, so a factor 7 to 50 below the bound; the bound itself is enforced as before | A regression of the tail alone shows up the next night |
+| (c) Per change: allocations and median; the p99 under `QUADER_PERF_GATE=1` (chosen) | The test fails per change when one `Decide` allocates more than 100 times or its median CPU time is above 1 ms; the p99 fails only with the gate, which `make test-performance` sets and the nightly workflow runs | The allocation count does not depend on the machine and catches the regression that mattered (16,042 allocations per decision); the median is 20 to 150 µs, so a factor 7 to 50 below the bound; the bound itself is enforced as before | A regression of the tail alone shows up the next night |
 | (d) A benchmark outside the tests | No test, `go test -bench` by hand | No flakiness | Nothing fails; the target is no longer checked |
 
 **Choice:** (c). The test runs two rule shapes (a literal first segment, and a wildcard first segment, which every rule evaluates) with 1,000 rules each.
 The race detector enforces neither time, as before (its instrumentation slows a decision by an order of magnitude). `make test-performance` runs the
-test a second time after the integration latency tests, with `TROVE_PERF_GATE=1`, and the report goes to `.out/test-performance.json`.
+test a second time after the integration latency tests, with `QUADER_PERF_GATE=1`, and the report goes to `.out/test-performance.json`.
 
 **Rationale:** The decision follows Q-ARCH-220 and adds what it left open: a unit test, not an integration test. The measurement that backs the
 choice: 16,042 allocations and 194 KB per `Decide` before Q-EP-64, 42 allocations and 1.7 KB after; the allocation count is identical in every run. The
@@ -8050,11 +8050,11 @@ Context: R-ARCH-013 step 6 says that a `Volatile` path passes through without be
 | (b) The format owns its cache | A map or a registered cache inside `formats/nuget` | The format chooses the size | Every format repeats the egress, circuit and collapse logic or skips it; the format would need the upstream client, which the contract hides (R-ARCH-009) |
 | (c) `Exchange` plus a format cache | The existing `Exchange` sends the request outside the cache | No engine change | `Exchange` reads and moves no circuit and takes no slot by design (Q-NPM-62): a search storm would bypass R-REPO-040 and a dead upstream would never open the circuit |
 
-**Choice:** (a), with these rules. A current copy is served to any caller and in any offline mode, because it is the upstream's answer as received and what a caller may see of it is the format's to filter. Without a copy the engine contacts the upstream only when the repository is online, the request is not the cache view or `only-if-cached`, and the populate check allows it (R-AUTHZ-008, R-EP-019: a read-only endpoint's upstream contacts stay prevented and are counted in `trove_endpoint_cache_fill_refused_total`); otherwise it answers `ErrOffline`. The URL must be on the upstream's host or on an `extraHosts` entry (R-REPO-043), so a discovery document cannot steer a search to an arbitrary host, and the client's hop policy alone adds a credential. A 2xx counts toward the circuit as a success and a failure as a fetch's does; a 404 or 410 counts for nothing and writes no negative entry. An expired entry is not served stale. The period is cut to one hour, which is the cache's `SafetyTTL`. `proxy.query_cache_bytes` defaults to 8 MiB, `0` turns the cache off, and the budget is part of the cache budgets of the memory slots (R-ARCH-005, Q-ARCH-243), which moves their default sum from 640 to 648 MiB. The default is not the 32 MiB Q-NUGET-8 proposed: with 32 MiB a pool pod with a 1 GiB limit admits 38 concurrent requests, below the floor of 64 that the chart enforces (R-HA-029), and with 8 MiB it admits 77; the size is an operator key, and the development agent revisits the default with the measured size of a search page once NuGet's search runs against a real upstream. Metrics are the fetch's, with `kind="query"` on `trove_remote_cache_lookups_total`.
+**Choice:** (a), with these rules. A current copy is served to any caller and in any offline mode, because it is the upstream's answer as received and what a caller may see of it is the format's to filter. Without a copy the engine contacts the upstream only when the repository is online, the request is not the cache view or `only-if-cached`, and the populate check allows it (R-AUTHZ-008, R-EP-019: a read-only endpoint's upstream contacts stay prevented and are counted in `quader_endpoint_cache_fill_refused_total`); otherwise it answers `ErrOffline`. The URL must be on the upstream's host or on an `extraHosts` entry (R-REPO-043), so a discovery document cannot steer a search to an arbitrary host, and the client's hop policy alone adds a credential. A 2xx counts toward the circuit as a success and a failure as a fetch's does; a 404 or 410 counts for nothing and writes no negative entry. An expired entry is not served stale. The period is cut to one hour, which is the cache's `SafetyTTL`. `proxy.query_cache_bytes` defaults to 8 MiB, `0` turns the cache off, and the budget is part of the cache budgets of the memory slots (R-ARCH-005, Q-ARCH-243), which moves their default sum from 640 to 648 MiB. The default is not the 32 MiB Q-NUGET-8 proposed: with 32 MiB a pool pod with a 1 GiB limit admits 38 concurrent requests, below the floor of 64 that the chart enforces (R-HA-029), and with 8 MiB it admits 77; the size is an operator key, and the development agent revisits the default with the measured size of a search page once NuGet's search runs against a real upstream. Metrics are the fetch's, with `kind="query"` on `quader_remote_cache_lookups_total`.
 
 **Rationale:** the pass-through is the same act as a fetch, minus the store; building it beside the fetch keeps one set of rules for what may leave the replica. The development agent revisits this when a `Volatile` route needs a body (a POST search), which the key would have to include, or when the upstream rate-limits forwarded searches, which is Q-NUGET-8's condition.
 
-**Applied in the spec:** R-ARCH-013 step 6, R-ARCH-032 (the row of the pass-through answers), R-ARCH-005 (the budgets), R-REPO-025 (the bullet after the metadata bytes), R-NUGET-016, R-NUGET-028, R-OPS metrics (`kind`). Code: `internal/proxy/query.go`, `internal/formathost/query.go`, `internal/formats/remote.go`, `internal/config/outbound.go`, `internal/app/memory.go`, `deploy/helm/trove/templates/_validate.tpl`. Tests: `TestR_ARCH_013_Query*` in `test/integration/proxy`, `TestR_ARCH_013_QueryThroughTheHost`.
+**Applied in the spec:** R-ARCH-013 step 6, R-ARCH-032 (the row of the pass-through answers), R-ARCH-005 (the budgets), R-REPO-025 (the bullet after the metadata bytes), R-NUGET-016, R-NUGET-028, R-OPS metrics (`kind`). Code: `internal/proxy/query.go`, `internal/formathost/query.go`, `internal/formats/remote.go`, `internal/config/outbound.go`, `internal/app/memory.go`, `deploy/helm/quader/templates/_validate.tpl`. Tests: `TestR_ARCH_013_Query*` in `test/integration/proxy`, `TestR_ARCH_013_QueryThroughTheHost`.
 
 Amended by [Q-NUGET-94](formats/nuget.md#q-nuget-94--a-forwarded-answer-fetched-under-the-remotes-current-configuration-outlives-both-applications-of-a-change) (2026-11-02): a change of `repo_config` drops the copies of the repository's older configuration versions only (every copy on a deletion and on a payload without a version), and a fetched answer is stored with `Cache.Set`, without the fill rule's epoch check, because the key carries the configuration version.
 
@@ -8173,7 +8173,7 @@ set would have brought a cluster up to run nothing.
 
 **Rationale:** Verified in this change, without a cluster: `deploy/dev/e2e.sh nuget-ha` and `nuget-closing` log the notice and exit 0, and
 `deploy/dev/e2e.sh nuget` with a cluster name that does not exist stops at `require_cluster` before anything is applied. Verified by a read of the
-script only: `TROVE_E2E_RUN` set disables the flag, so an override is never an empty pass. A run that finds a test and runs none of it still fails
+script only: `QUADER_E2E_RUN` set disables the flag, so an override is never an empty pass. A run that finds a test and runs none of it still fails
 (the count of passed tests). Not verified: the flag path on a live cluster; the first nightly run of `nuget-ha` is the first one.
 The development agent revisits this when a third tier of empty sets appears (then a list instead of flags), or when a test of `test/e2e` is
 compiled under a name the source scan does not show (a generated name, a build tag that changes the file set).
@@ -8197,12 +8197,12 @@ all others of both workflows: 8080 and 8086 (`e2e`), 8082 to 8084 (`e2e-npm` and
 | (c) `nuget` and `nuget-ha` in one nightly job | One workflow for every NuGet leg | Fewer jobs | Removes the per-change gate that R-NUGET-027 requires for every change |
 | (d) `nuget-ha` in the closing matrix of Test and Release | The npm-ha-closing leg of before 2026-11-01 | One place for the closing run | The owner moved the HA legs out of Test and Release on 2026-11-01 |
 
-**Choice:** (a). Cluster names carry the set (`trove-nuget-<run id>`, `trove-nuget-closing-<run id>`, `trove-nuget-ha-<run id>`), so legs on one runner
+**Choice:** (a). Cluster names carry the set (`quader-nuget-<run id>`, `quader-nuget-closing-<run id>`, `quader-nuget-ha-<run id>`), so legs on one runner
 host do not collide, and the port is the only other value a leg needs.
 
 **Rationale:** the leg has the shape the other kind legs have, so a change to one of them is a change to the family. The first free ports keep the
 rule of the file ("the ports differ from the others so that the jobs can share a runner host") without a new scheme. Verified by a read of both
-workflow files: no other port or cluster name uses 8088 to 8090 or `trove-nuget-`. Not verified: the legs themselves, which need a kind cluster the
+workflow files: no other port or cluster name uses 8088 to 8090 or `quader-nuget-`. Not verified: the legs themselves, which need a kind cluster the
 development agent did not use.
 
 **Revisit:** when a NuGet set needs its own image set or timeout that the matrix cannot express (then a job of its own, option (b)), or when the owner
@@ -8466,7 +8466,7 @@ not depend on which process runs them.
 
 **Choice:** (c). The specification binds the passes to the queue, not to a Deployment.
 
-**Rationale:** a mirror pass is the longest-running work trove has, its throughput is bounded by the upstream, not by the process,
+**Rationale:** a mirror pass is the longest-running work Quader has, its throughput is bounded by the upstream, not by the process,
 and a named queue is the unit that a split of the service can assign. The development agent would revisit the default of 2
 when installations run more mirrors than claiming processes times two.
 
@@ -8660,12 +8660,12 @@ waiter polls every 100 ms (`flightLock.Wait`), finds the expired key and fetches
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Widen the fixed bounds | 2 s for the miss, a larger margin for the waiter | Smallest change | A number that is only right for one machine; the next loaded run exceeds it |
-| (b) Every target only with `TROVE_PERF_GATE=1`, nothing per change | The functional test checks status and content only | No flake | A rendering or a wake-up that regresses by orders of magnitude passes every change |
+| (b) Every target only with `QUADER_PERF_GATE=1`, nothing per change | The functional test checks status and content only | No flake | A rendering or a wake-up that regresses by orders of magnitude passes every change |
 | (c) Targets of the reference environment under the gate; per change a bound relative to the cost of the same work under the same load (chosen) | The 200 ms, 10 ms and 50 ms of R-NPM-010 only with the gate; per change a hit not slower than a miss and a miss under 200 ms plus 100 times the median `304` of the document (medians of 5 misses, each with a `304`); the waiter under the lock's life plus 1 s plus four times a cold fetch measured right after | Follows the load the way F-39 does; still fails on a cache that does not serve, a rendering that grows faster than its input, or a waiter woken by the wait bound | Two numbers (100, 4) that are tuned to measurements |
 | (d) Dedicated quiet runners for the integration tier | The fixed bounds stay | Strictest | The runners are shared (Q-ARCH-220) |
 
 **Choice:** (c). In `TestR_NPM_010_ThousandVersions` the miss (200 ms), the hit (10 ms; under half a miss) and the `304` (50 ms) are
-enforced with `TROVE_PERF_GATE=1`, which `make test-performance` sets; per change the hit may not be slower than the miss and the miss
+enforced with `QUADER_PERF_GATE=1`, which `make test-performance` sets; per change the hit may not be slower than the miss and the miss
 must be within `200 ms + 100 x` the median `304`; both sides are medians of 5 (misses on a revision moved each time, a `304` after each). In the "holder dies" case of `TestCollapse` the bound is `ttl + 1 s + 4 x` the time a cold
 fetch of a second path of the same size takes right after the waiter.
 
@@ -8737,7 +8737,7 @@ upgrade needs a moment in which a process serves every family behind the old Ser
 process is `web`; keeping it costs the union of two area lists and a Deployment the chart already renders. A small installation
 runs the three roles with one replica each and `highAvailability.enforce: false`, which keeps one shape for every size. The
 development agent would revisit this when the owner cuts a major release (ADR-124), which may remove the bridge, or when a
-release of trove no longer supports an upgrade from a release before the cut.
+release of Quader no longer supports an upgrade from a release before the cut.
 
 **Applied in the spec:** INV-2, R-ARCH-001 (the role `web`), [ha-and-helm.md](ha-and-helm.md) R-HA-002, R-HA-021, R-HA-031
 (`web.enabled`), R-HA-064 (new).
@@ -8778,7 +8778,7 @@ the criteria); [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-004
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-HA-062 gives a worker pool `TROVE_JOBS_QUEUES` and the main worker `TROVE_JOBS_EXCLUDE_QUEUES`, both lists. Verified
+Context: R-HA-062 gives a worker pool `QUADER_JOBS_QUEUES` and the main worker `QUADER_JOBS_EXCLUDE_QUEUES`, both lists. Verified
 in the code: [internal/config/value.go](../../internal/config/value.go) (`parseText`) decodes the text of an environment
 variable for a slice or map key as one YAML document into the key's type, so `["index","vuln"]` and `[index, vuln]` are lists
 and a bare `index` or a comma-separated `index,vuln` is refused with "want JSON", naming the key. The same rule holds for every
@@ -8786,9 +8786,9 @@ list key (for example `vulnerabilities.sources.osv.ecosystems`).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Keep the loader's form: one JSON list in the variable (chosen) | `TROVE_JOBS_QUEUES='["index"]'`; the chart renders it with `toJson` | No new rule; one form for every list key, also for lists of structures; a name with a comma cannot be misread | A hand-written variable needs the brackets and quotes |
-| (b) Accept a comma-separated text for lists of strings | `TROVE_JOBS_QUEUES=index,vuln` | Easier to type | A second form that only lists of strings have; the loader has to guess between the two; changes the meaning of text that is a valid YAML scalar today |
-| (c) One variable per element | `TROVE_JOBS_QUEUES_0=index` | Flat | Gaps and order rules; no other key works so |
+| (a) Keep the loader's form: one JSON list in the variable (chosen) | `QUADER_JOBS_QUEUES='["index"]'`; the chart renders it with `toJson` | No new rule; one form for every list key, also for lists of structures; a name with a comma cannot be misread | A hand-written variable needs the brackets and quotes |
+| (b) Accept a comma-separated text for lists of strings | `QUADER_JOBS_QUEUES=index,vuln` | Easier to type | A second form that only lists of strings have; the loader has to guess between the two; changes the meaning of text that is a valid YAML scalar today |
+| (c) One variable per element | `QUADER_JOBS_QUEUES_0=index` | Flat | Gaps and order rules; no other key works so |
 
 **Choice:** (a).
 
@@ -9279,7 +9279,7 @@ by the replicas that fill client misses (R-REPO-040). A worker is not one of the
 the pass's documents show hit rates that a larger cache would raise.
 
 **Applied in the spec:** R-REPO-055. Code: [internal/app/wire_mirror_host.go](../../internal/app/wire_mirror_host.go) (`backgroundProxyConfig`),
-[deploy/helm/trove/values.yaml](../../deploy/helm/trove/values.yaml) (the comment of the worker's resources). Test: `TestMirrorEngineArea`.
+[deploy/helm/quader/values.yaml](../../deploy/helm/quader/values.yaml) (the comment of the worker's resources). Test: `TestMirrorEngineArea`.
 
 ### Q-ARCH-318 · The job worker is quiesced before the engines, and a request the shutdown cancelled stops the pass
 
@@ -9469,13 +9469,13 @@ Context: The set `nuget-ha` now starts the npm client pods as well (the drain of
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The job builds both images in its own steps (`make npm-clients-image`, `make nuget-clients-image`) and sets `TROVE_E2E_NPM_CLIENTS_IMAGE_BUILD` and `TROVE_E2E_NUGET_CLIENTS_IMAGE_BUILD` to `0`, as the jobs `e2e-ci`, `e2e-bastion`, `e2e-vuln` and `e2e-mirror` of Test and Release do (chosen) | Named steps before the set; the set loads the images and builds none | The build has its own step and log, and its time is outside the set's 80-minute budget; one way for every job that loads both | Two more steps per job |
+| (a) The job builds both images in its own steps (`make npm-clients-image`, `make nuget-clients-image`) and sets `QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD` and `QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD` to `0`, as the jobs `e2e-ci`, `e2e-bastion`, `e2e-vuln` and `e2e-mirror` of Test and Release do (chosen) | Named steps before the set; the set loads the images and builds none | The build has its own step and log, and its time is outside the set's 80-minute budget; one way for every job that loads both | Two more steps per job |
 | (b) The set builds the images it needs (the status quo of the npm-only legs and of the nightly `e2e-nuget` before this change) | No steps, no flags | Fewer lines | The build runs inside the set's timeout and its log is mixed with the test's |
 | (c) One job builds the images and passes them to the legs as artifacts | One build for all legs | Builds happen once | The NuGet clients image (2.3 GB) would be uploaded and downloaded per leg; not measured, rejected for that transfer |
 
 **Choice:** (a) for the jobs that load both images (`e2e-nuget` and `e2e-upgrade` here). The npm-only legs keep (b): changing them is not needed for this change.
 
-**Rationale:** The same two steps and flags as the jobs of Test and Release mean that a reader finds the build in the same place in every job. Verified: the flags `TROVE_E2E_NPM_CLIENTS_IMAGE_BUILD` and `TROVE_E2E_NUGET_CLIENTS_IMAGE_BUILD` are the ones the Test and Release jobs set, and the targets `npm-clients-image` and `nuget-clients-image` exist in the Makefile (the Test and Release jobs run them). Not verified: that `nuget-ha` loads the npm pods without a rebuild, because the set's npm pod support is the other agents' change to deploy/dev/e2e.sh. Revisit when a leg needs an image on a runner that cannot hold it, or when the npm-only legs move to (a) with the next change of their job.
+**Rationale:** The same two steps and flags as the jobs of Test and Release mean that a reader finds the build in the same place in every job. Verified: the flags `QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD` and `QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD` are the ones the Test and Release jobs set, and the targets `npm-clients-image` and `nuget-clients-image` exist in the Makefile (the Test and Release jobs run them). Not verified: that `nuget-ha` loads the npm pods without a rebuild, because the set's npm pod support is the other agents' change to deploy/dev/e2e.sh. Revisit when a leg needs an image on a runner that cannot hold it, or when the npm-only legs move to (a) with the next change of their job.
 
 **Applied in the spec:** none (CI wiring). Code: [performance.yml](../../.github/workflows/performance.yml) (jobs `e2e-nuget` and `e2e-upgrade`). Elsewhere: [releasing.md](../developer/releasing.md#ha-and-performance-nightly).
 
@@ -9557,7 +9557,7 @@ A download of 1 to 5 MiB therefore holds 636 to 659 KiB whatever its size, again
 | (d) Keep the budgets, lower them in the dev profile | Configuration only | No code | The operator pays a fixed reservation for caches that are empty; the small-tarball cost stays at the worst case |
 | (e) Make every cache charge its growth to the guard | A cache asks before it inserts and gives back when it evicts | The sum of the charges is a promise again | Four caches in three packages and their eviction paths change; a refused insert is a cache miss on the next request. Not done: H-539 records what it would close |
 
-**Choice:** (a). The request bytes stay 640 KiB with the defaults and the overhead 128 KiB, since the measurement is within 3 % of them. `trove_http_memory_slots` and `trove_http_memory_slots_in_use` keep their names and become the byte accounting in units of the request bytes: slots are (0.8 × `L` − the caches' bytes) ÷ the request bytes, in use is the charges rounded up. The chart's check of 64 slots (R-HA-029, Q-HA-70) keeps computing with the full budgets: it is the floor for a replica whose caches are full. Without a known limit there is no guard, as before.
+**Choice:** (a). The request bytes stay 640 KiB with the defaults and the overhead 128 KiB, since the measurement is within 3 % of them. `quader_http_memory_slots` and `quader_http_memory_slots_in_use` keep their names and become the byte accounting in units of the request bytes: slots are (0.8 × `L` − the caches' bytes) ÷ the request bytes, in use is the charges rounded up. The chart's check of 64 slots (R-HA-029, Q-HA-70) keeps computing with the full budgets: it is the floor for a replica whose caches are full. Without a known limit there is no guard, as before.
 
 **Rationale:** The promise of R-ARCH-005, a replica sheds and is never killed, is kept by two numbers that fail in different ways: the charges bound what is admitted before any GC cycle can show it, and the heap gate bounds everything the charges do not see. With empty caches the charges are exact for downloads (measured above) and conservative for everything else; with full caches they leave what Q-ARCH-243 left. What changes is the case between: a cache that grows after requests were admitted can push the heap past 0.8 × `L` by what it grows, and the heap gate closes then (H-539). The margin to the container limit is the 15 % of R-HA-036 plus the 20 % above the high-water mark, 328 MiB on a 1 GiB container. The development agent revisits this when the heap gate closes in a run with filled caches (the growth is then real, and option (e) is due), or when a request kind other than a download is held long enough to need a settle of its own.
 
@@ -9645,13 +9645,13 @@ like every other area. Revisit if another role starts serving the UI.
 Status: **Decided by the owner on 2026-11-06.** Option (a). Supersedes [Q-ARCH-273](#q-arch-273--how-is-the-openapi-breaking-change-checker-pinned-and-run), [Q-ARCH-274](#q-arch-274--what-is-the-baseline-and-what-do-the-checks-accept) and
 [Q-ARCH-283](#q-arch-283--is-a-migration-on-main-immutable-and-what-does-the-check-hold-to) until the first stable release.
 
-Context: trove is pre-alpha: it has no users and no running installations. The owner's rule (`CLAUDE.md`) is that until the
+Context: Quader is pre-alpha: it has no users and no running installations. The owner's rule (`CLAUDE.md`) is that until the
 first stable release there is no backward compatibility: an API, a URL, a configuration key, the database schema or a stored
 format changes the way that is technically best, and nothing is added that only an older version or an existing client would
 need. The repository enforced compatibility. `make compat-check` (the job `compat`, `test/compat`) compared
 `api/openapi.yaml` with the latest `v0.*` tag through a pinned oasdiff, accepted only additions to the migration directory
 since that tag, and refused any change of a migration file that `main` had committed, and Semantic Release needed the job. The
-migration runner refused a file without a `-- trove:phase` header and a `DROP`, `RENAME` or `SET NOT NULL` in an expand step,
+migration runner refused a file without a `-- quader:phase` header and a `DROP`, `RENAME` or `SET NOT NULL` in an expand step,
 and `requiredSchema` was the newest expand step, so that a binary did not need the contract steps it shipped. The nightly e2e set
 `upgrade` upgraded the latest release to the commit, which fails once a migration the release applied is edited. Each of these
 blocks a change the rule asks for, or reports it as a failure.
@@ -9690,9 +9690,9 @@ Status: **Decided by the owner on 2026-11-06.** Built: (1) to (3) are cleaned up
 Context: with the compatibility checks switched off (Q-ARCH-340), four places keep a shape that only the rules of R-ARCH-025
 and R-HA-020 gave them: (1) the replica list reports roles through a closed enum and maps every role that serves client
 endpoints to `web` (`roleClass`, `internal/api/v1/roles.go`); (2) a list cursor carries a version that older releases decode
-(`cursorVersion`, `decodableCursorVersions`, `internal/api/edge/list.go`, R-API-010); (3) the npm audit answers from trove's data
+(`cursorVersion`, `decodableCursorVersions`, `internal/api/edge/list.go`, R-API-010); (3) the npm audit answers from Quader's data
 through an extra boolean, because `npm.audit.mode` was a frozen enum
-([Q-VULN-74](vulnerability-scanning.md#q-vuln-74--the-audit-answers-from-troves-data-through-a-new-boolean-because-npmauditmode-is-a-frozen-enum));
+([Q-VULN-74](vulnerability-scanning.md#q-vuln-74--the-audit-answers-from-quaders-data-through-a-new-boolean-because-npmauditmode-is-a-frozen-enum));
 (4) features and background migrations wait for the cluster minimum version (R-HA-020, R-HA-022).
 
 | Option | What it means | For | Against |
@@ -9730,13 +9730,13 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Applied:** R-ARCH-002, R-ARCH-032; `internal/archtest/layers.go` (`journal` in the domain layer, `backup/target` a leaf), `internal/archtest/state.go`.
 
-### Q-ARCH-344 · The runner's restore mode is a method of the restore session, not a flag of `trove migrate`
+### Q-ARCH-344 · The runner's restore mode is a method of the restore session, not a flag of `quader migrate`
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A hidden flag or option of `Migrate` | `Migrate` learns "up to step N" and "caller statements" | One entry point | `trove migrate` would carry code that only the restore may reach, and the half-restored refusal, the contract guard and the declared state would need switches |
+| (a) A hidden flag or option of `Migrate` | `Migrate` learns "up to step N" and "caller statements" | One entry point | `quader migrate` would carry code that only the restore may reach, and the half-restored refusal, the contract guard and the declared state would need switches |
 | (b) `RestoreSession.MigrateTo` over the shared step functions (chosen) | It parses and verifies the steps, plans, and applies each with the runner's `applyStep` (checksums, lock timeouts, retries); the caller's marker is inserted in the transaction of the last step it applies | The runner's code for a step is one function; nothing of the restore is reachable from the command line | The restore mode skips by construction what `Migrate` does around the steps |
 
 **Choice:** (b). `MigrateTo` skips the half-restored refusal, the contract guard, the audit policy, the backup role grant and the declared state; the migration Job of the final upgrade applies the last three. The marker is inserted with `ON CONFLICT DO NOTHING`, so a resumed restore keeps its phase.
@@ -9765,9 +9765,9 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) `app.RestoreItems(cfg, log)`: the item store and the storage hooks of every format over the restore's session (chosen) | Reuses `formatPorts`, `bindFormatPorts`, `formathost.NewHooks` and `items.New`, and nothing that serves, polls or publishes | The hooks that run in a restore are the ones that run in production; no listener, loop or connection is opened besides the session | The few collaborators it does not build are stand-ins that refuse (below) |
 | (c) A second implementation of the cache removal in the restore | SQL in the restore | No composition | The format hooks (index rows, `rev_seq`) would be written twice (R-BAK-008 wants the storage delete path) |
 
-**Choice:** (b), in `internal/app/wire_restore_items.go`. `cmd/trove/backup_restore.go` passes it as `restore.Deps.Items`.
+**Choice:** (b), in `internal/app/wire_restore_items.go`. `cmd/quader/backup_restore.go` passes it as `restore.Deps.Items`.
 **Rationale:** The restore pod must reach the format hooks without becoming a replica. Revisit when a second command needs the item store headless: the constructor would then move into a shared headless composition.
-**Applied:** R-BAK-008, R-BAK-021 step 7, R-BAK-022; `internal/app/wire_restore_items.go`, `wire_formats.go` (`formatPorts` takes the NuGet job interface), `cmd/trove/backup_restore.go`, `internal/backup/restore/restore.go`.
+**Applied:** R-BAK-008, R-BAK-021 step 7, R-BAK-022; `internal/app/wire_restore_items.go`, `wire_formats.go` (`formatPorts` takes the NuGet job interface), `cmd/quader/backup_restore.go`, `internal/backup/restore/restore.go`.
 
 
 ### Q-ARCH-348 · `jsonb` parameters are `json.RawMessage`, so that exec mode sends them as text
@@ -9779,7 +9779,7 @@ parameters without types and picks the encoding from the Go type; sqlc generates
 text (`\x7b…`). The first synchronization of the vulnerability data in the pooler profile failed with `invalid input syntax for type
 json (SQLSTATE 22P02)` on `VulnAdvisoryUpsert` and `VulnStateFailure`; the PostgreSQL log shows the parameter beginning with `\`.
 Every `$n::jsonb` parameter of the generated queries (about sixty) was affected. The integration tier did not see it: its pooled run
-is a switch (`TROVE_TEST_PG_POOLED=1`), and no suite covered these queries through the pooler.
+is a switch (`QUADER_TEST_PG_POOLED=1`), and no suite covered these queries through the pooler.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -9813,7 +9813,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: Triage of 742 job logs of 2026-11-08: the 504 responses of GitHub's release host are in 35 jobs of exactly two runs (42464736969, 21 jobs; 42465102401, 14 jobs; window 08:52 to 09:41 UTC), on both runner classes (the self-hosted pods with workspace `/home/runner/_work/trove` and the `large` runners with `/home/runner/work/trove`), and in none of the other 21 runs. The outage was on GitHub's side, so the fix is resilience of the downloads, not a change of the runners' network. Nightly run 42465102401 lost almost every kind leg in the step "Set up Docker Buildx" (`docker/setup-buildx-action` at `BUILDX_VERSION`). Test and Release run 42464736969 is reported by the development agent's verification to have failed seven jobs on release-asset downloads, among them buildx steps and a Go toolchain download (`actions/setup-go` is used 43 times in the workflows; its log was not read for this decision). The host answered 504 for seven attempts over about two minutes from the development agent's machine as well, so the fault is the release host, not the runners alone. Two defects were verified in the log of job `e2e on kind (failover)` of run 42465102401. (1) The buildx action restored its binary from the cache entry `buildx-dl-bin-0.38.1-linux-x64`, and tar failed to extract it: `Cannot mkdir: No such file or directory` for `../../../../home/runner/.docker/buildx/.bin/0.38.1/linux-x64`. The cause is in the entry, not in the runner: the cache writer stores paths relative to `GITHUB_WORKSPACE`. The entry 9706648188 on `refs/heads/main` was saved on 2026-10-29 by job `image (host architecture, no push)` of run 40893965854, on runner `guided-traffic-runner-dkpps-p9zxc` whose workspace is `/runner/_work/trove/trove`, four levels below `/`. From that workspace `/home/runner/.docker/...` is `../../../../home/runner/.docker/...`. The restoring runner `wds18-large-runner-x2cf9` has the workspace `/home/runner/_work/trove/trove`, five levels deep, where the same entries resolve to `/home/home/runner/...`. The cache key carries no runner identity and no workspace, so every ref and runner that restores it gets the same broken entry; the action logs `Failed to restore` as a warning and downloads instead. (2) The fallback download got 504 three times and the step failed. The action retries only a few times with 10 to 17 s waits, so a release-host outage of a minute fails the job. `setup-go` shows the same host dependency: in the same run its download of `go-1.27.3-linux-x64.tar.gz` got 504 twice (19 s waits) and succeeded on the third attempt. The runner `wds18-large-runner-x2cf9` already had buildx v0.38.1 at `/usr/local/lib/docker/cli-plugins/docker-buildx`, which the action ignored because `version` was set. The buildx extraction error (`Cannot mkdir`) is in 145 of the 742 jobs, all on the self-hosted `_work` runners and non-fatal, so the cache never restores there and those jobs download buildx every time. (3) The chart path of `make dev-up`: `deploy/dev/up.sh` pulls its charts through `chart_tgz` (`deploy/dev/lib.sh`), and the archives of haproxy-ingress 0.16.3 and cloudnative-pg 0.29.1 are GitHub release assets, which the chart indexes point to. `chart_tgz` had no retry: in one job the haproxy pull failed after about one minute, and the cloudnative-pg pull failed after about 4 min 55 s (run 42465102401). Both failures were fatal for the job. (4) The container scan of run 42464736969: the SARIF step of `release.yml` is `if: always()`, so after a failed Trivy install it ran `trivy-action` with no binary on PATH and added exit 127 beside the install's own failure. Other downloads checked: the kubectl and Helm installs of `azure/setup-kubectl` (dl.k8s.io) and `azure/setup-helm` (get.helm.sh) show no failure in that run; `deploy/dev/lib.sh` `check_tools` only checks the tools and prints install hints; the Makefile's `promtool` and `trivy` downloads are the release assets of github.com, the Trivy one now with the same retry window; `kind`, `golangci-lint`, `govulncheck`, `gocyclo`, `oasdiff` and `osv-scanner` come from `go install` through the module proxy. Not checked: the host that `actions/setup-node`, `aquasecurity/trivy-action`, `anchore/sbom-action` and `docker/scout-action` fetch from.
+Context: Triage of 742 job logs of 2026-11-08: the 504 responses of GitHub's release host are in 35 jobs of exactly two runs (42464736969, 21 jobs; 42465102401, 14 jobs; window 08:52 to 09:41 UTC), on both runner classes (the self-hosted pods with workspace `/home/runner/_work/quader` and the `large` runners with `/home/runner/work/quader`), and in none of the other 21 runs. The outage was on GitHub's side, so the fix is resilience of the downloads, not a change of the runners' network. Nightly run 42465102401 lost almost every kind leg in the step "Set up Docker Buildx" (`docker/setup-buildx-action` at `BUILDX_VERSION`). Test and Release run 42464736969 is reported by the development agent's verification to have failed seven jobs on release-asset downloads, among them buildx steps and a Go toolchain download (`actions/setup-go` is used 43 times in the workflows; its log was not read for this decision). The host answered 504 for seven attempts over about two minutes from the development agent's machine as well, so the fault is the release host, not the runners alone. Two defects were verified in the log of job `e2e on kind (failover)` of run 42465102401. (1) The buildx action restored its binary from the cache entry `buildx-dl-bin-0.38.1-linux-x64`, and tar failed to extract it: `Cannot mkdir: No such file or directory` for `../../../../home/runner/.docker/buildx/.bin/0.38.1/linux-x64`. The cause is in the entry, not in the runner: the cache writer stores paths relative to `GITHUB_WORKSPACE`. The entry 9706648188 on `refs/heads/main` was saved on 2026-10-29 by job `image (host architecture, no push)` of run 40893965854, on runner `guided-traffic-runner-dkpps-p9zxc` whose workspace is `/runner/_work/quader/quader`, four levels below `/`. From that workspace `/home/runner/.docker/...` is `../../../../home/runner/.docker/...`. The restoring runner `wds18-large-runner-x2cf9` has the workspace `/home/runner/_work/quader/quader`, five levels deep, where the same entries resolve to `/home/home/runner/...`. The cache key carries no runner identity and no workspace, so every ref and runner that restores it gets the same broken entry; the action logs `Failed to restore` as a warning and downloads instead. (2) The fallback download got 504 three times and the step failed. The action retries only a few times with 10 to 17 s waits, so a release-host outage of a minute fails the job. `setup-go` shows the same host dependency: in the same run its download of `go-1.27.3-linux-x64.tar.gz` got 504 twice (19 s waits) and succeeded on the third attempt. The runner `wds18-large-runner-x2cf9` already had buildx v0.38.1 at `/usr/local/lib/docker/cli-plugins/docker-buildx`, which the action ignored because `version` was set. The buildx extraction error (`Cannot mkdir`) is in 145 of the 742 jobs, all on the self-hosted `_work` runners and non-fatal, so the cache never restores there and those jobs download buildx every time. (3) The chart path of `make dev-up`: `deploy/dev/up.sh` pulls its charts through `chart_tgz` (`deploy/dev/lib.sh`), and the archives of haproxy-ingress 0.16.3 and cloudnative-pg 0.29.1 are GitHub release assets, which the chart indexes point to. `chart_tgz` had no retry: in one job the haproxy pull failed after about one minute, and the cloudnative-pg pull failed after about 4 min 55 s (run 42465102401). Both failures were fatal for the job. (4) The container scan of run 42464736969: the SARIF step of `release.yml` is `if: always()`, so after a failed Trivy install it ran `trivy-action` with no binary on PATH and added exit 127 beside the install's own failure. Other downloads checked: the kubectl and Helm installs of `azure/setup-kubectl` (dl.k8s.io) and `azure/setup-helm` (get.helm.sh) show no failure in that run; `deploy/dev/lib.sh` `check_tools` only checks the tools and prints install hints; the Makefile's `promtool` and `trivy` downloads are the release assets of github.com, the Trivy one now with the same retry window; `kind`, `golangci-lint`, `govulncheck`, `gocyclo`, `oasdiff` and `osv-scanner` come from `go install` through the module proxy. Not checked: the host that `actions/setup-node`, `aquasecurity/trivy-action`, `anchore/sbom-action` and `docker/scout-action` fetch from.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -9839,7 +9839,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 Context: On 2026-11-08 GitHub's release host timed out for unauthenticated requests, and GitHub reported an open incident for unauthenticated timeouts. Test and Release run 42472685769 on `main` went red (reported in the coordinator's triage) in `chart (E0.7)` (the promtool archive, `make promtool`: curl exit 28 after about six minutes of retries) and in `Container Scan` (the Trivy archive, `make trivy`). The development agent measured the same host on 2026-11-08 at about 11:00 UTC from the owner's machine: the unauthenticated request for the promtool archive `prometheus-3.15.1.linux-amd64.tar.gz` answered 503 after 39 seconds; the same URL with a bearer token answered 206 in 0.26 seconds, redirected to the storage host; the archive (111,690,181 bytes) downloaded in seconds through the authenticated path and matched the pinned SHA-256. A reviewer measured the release URL of `docker/buildx` v0.38.1 `checksums.txt` during the incident: without an Authorization header the request timed out or answered 503 after about 42 seconds; with `X-Foo: bar` it answered 503; with `Authorization: token ghs_000…` (a fake token of the installation-token shape), `Authorization: token not-a-token` and `Authorization: Bearer x` it answered 302 in 0.26 seconds. **github.com does not validate the Authorization header on this route**: any header of that name changed the answer, and the value did not matter. What the header changed is the routing of the request. The token is therefore not needed for the response; the decision keeps sending the real token, because the request is the same one `actions/setup-go` sends with its default token (`token ${token}` in its installer, verified in its source), and because the request keeps working if GitHub starts to check the header. `actions/setup-go` survived the same outage in the same runs.
 
-The downloads that are GitHub release assets are: the buildx archive of [install-buildx](../../.github/actions/install-buildx/action.yml), promtool and Trivy in the [Makefile](../../Makefile), and two chart archives of `make dev-up`, haproxy-ingress 0.16.3 (`n42-gateway/charts`) and cloudnative-pg 0.29.1 (`cloudnative-pg/charts`), which the chart indexes point to. The other charts (internal-secrets-operator, valkey-operator and the trove chart) are on GitHub Pages and cert-manager on its own host; they stay on `helm pull`.
+The downloads that are GitHub release assets are: the buildx archive of [install-buildx](../../.github/actions/install-buildx/action.yml), promtool and Trivy in the [Makefile](../../Makefile), and two chart archives of `make dev-up`, haproxy-ingress 0.16.3 (`n42-gateway/charts`) and cloudnative-pg 0.29.1 (`cloudnative-pg/charts`), which the chart indexes point to. The other charts (internal-secrets-operator, valkey-operator and the Quader chart) are on GitHub Pages and cert-manager on its own host; they stay on `helm pull`.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -9855,7 +9855,7 @@ The downloads that are GitHub release assets are: the buildx archive of [install
 
 **Revisit condition:** GitHub changes how it routes requests with an Authorization header on release URLs (a header that is checked and refused would show as a named HTTP error from the script; a switch to (c) is then the next step).
 
-**Applied:** [tools/github-download.sh](../../tools/github-download.sh) (new): the first request, with the token on stdin and `--max-redirs 0`, retries for 300 s; the second request to the redirect target, with `--retry-max-time 240`; a failed second request repeats the first, for a fresh redirect, up to three rounds; the whole download has a hard budget of 900 s (`TROVE_DOWNLOAD_BUDGET`), and before each curl call the time left sets its limits: the first request (headers only) gets attempts of at most 120 s and a retry window of at most 300 s, the last attempt reserved its time with the 20 s retry delay counted; the body request gets a retry window of at most 240 s (600 s unauthenticated) and at most half the time left, and its last attempt has the rest, so no attempt is capped below what the time left allows (a call with no retry window gets `--retry 0`, since curl reads `--retry-max-time 0` as no limit). `make dev-charts` shares one budget between its two archives. The download steps have a timeout of 16 minutes; the composite's step takes the budget as its input `download-budget` (900 s, and 600 s in `versions` and in the `chart` job, both 20 minutes long), so the named error comes before the job's timeout; the unauthenticated download keeps 600 s of retries within the same budget. [install-buildx](../../.github/actions/install-buildx/action.yml) and the Makefile rules of `promtool` and `trivy` call it. The token is given to the one step that downloads: the composite's install step (only when the runner's buildx is not the pinned file), a `make dev-charts` step before each `make dev-up` step, a `make promtool` step before the `make chart-test` step of [release.yml](../../.github/workflows/release.yml), and the `make trivy` step; the steps of `make dev-up` and `make chart-test` do not have it. [deploy/dev/lib.sh](../../deploy/dev/lib.sh) `haproxy_chart_tgz` and `cnpg_chart_tgz` fetch the two archives through `chart_release_tgz` and check the digest; [deploy/dev/charts.sh](../../deploy/dev/charts.sh) (`make dev-charts`) runs them; [deploy/dev/up.sh](../../deploy/dev/up.sh) uses the same functions, so an archive that is not in `.dev/charts` is still fetched there, unauthenticated. No permission is widened. The pre-flight step of the nightly and release jobs no longer checks the two GitHub Pages indexes that `up.sh` does not use. The security note is in [data-and-secret-flow.md](../security/data-and-secret-flow.md#the-release-pipelines-credentials) and the remaining exposure is [H-589](../security/data-and-secret-flow.md#h-589--release-downloads-send-the-job-token-to-githubcom-two-residuals).
+**Applied:** [tools/github-download.sh](../../tools/github-download.sh) (new): the first request, with the token on stdin and `--max-redirs 0`, retries for 300 s; the second request to the redirect target, with `--retry-max-time 240`; a failed second request repeats the first, for a fresh redirect, up to three rounds; the whole download has a hard budget of 900 s (`QUADER_DOWNLOAD_BUDGET`), and before each curl call the time left sets its limits: the first request (headers only) gets attempts of at most 120 s and a retry window of at most 300 s, the last attempt reserved its time with the 20 s retry delay counted; the body request gets a retry window of at most 240 s (600 s unauthenticated) and at most half the time left, and its last attempt has the rest, so no attempt is capped below what the time left allows (a call with no retry window gets `--retry 0`, since curl reads `--retry-max-time 0` as no limit). `make dev-charts` shares one budget between its two archives. The download steps have a timeout of 16 minutes; the composite's step takes the budget as its input `download-budget` (900 s, and 600 s in `versions` and in the `chart` job, both 20 minutes long), so the named error comes before the job's timeout; the unauthenticated download keeps 600 s of retries within the same budget. [install-buildx](../../.github/actions/install-buildx/action.yml) and the Makefile rules of `promtool` and `trivy` call it. The token is given to the one step that downloads: the composite's install step (only when the runner's buildx is not the pinned file), a `make dev-charts` step before each `make dev-up` step, a `make promtool` step before the `make chart-test` step of [release.yml](../../.github/workflows/release.yml), and the `make trivy` step; the steps of `make dev-up` and `make chart-test` do not have it. [deploy/dev/lib.sh](../../deploy/dev/lib.sh) `haproxy_chart_tgz` and `cnpg_chart_tgz` fetch the two archives through `chart_release_tgz` and check the digest; [deploy/dev/charts.sh](../../deploy/dev/charts.sh) (`make dev-charts`) runs them; [deploy/dev/up.sh](../../deploy/dev/up.sh) uses the same functions, so an archive that is not in `.dev/charts` is still fetched there, unauthenticated. No permission is widened. The pre-flight step of the nightly and release jobs no longer checks the two GitHub Pages indexes that `up.sh` does not use. The security note is in [data-and-secret-flow.md](../security/data-and-secret-flow.md#the-release-pipelines-credentials) and the remaining exposure is [H-589](../security/data-and-secret-flow.md#h-589--release-downloads-send-the-job-token-to-githubcom-two-residuals).
 
 **Digests:** [tools/versions.env](../../tools/versions.env) `DEV_HAPROXY_INGRESS_CHART_SHA256` and `CNPG_CHART_SHA256`. Both equal the digest the chart's own index lists for the pinned version (haproxy-ingress: the index of `haproxy-ingress.github.io/charts`; cloudnative-pg: the index of `cloudnative-pg.github.io/charts`, entry 0.29.1) and the digest GitHub reports for the release asset. The cloudnative-pg release also carries the helm provenance file `cloudnative-pg-0.29.1.tgz.prov` (uploaded by GitHub's Actions bot, like the archive); the haproxy-ingress 0.16.3 release has only the archive. The provenance file is not verified here (see H-589).
 
@@ -10032,7 +10032,7 @@ sends a second request on the same connection after the armed deadline has expir
 
 A vanished peer that sends no FIN or reset is noticed by TCP keepalive or by the next write. The listener uses Go's defaults, which
 on Linux with Go 1.27 are an idle time of 15 s, an interval of 15 s and 9 probes, so about 150 s, not 15 s. Behind an Ingress or a
-proxy the TCP peer is the proxy, so the probes check the hop to the proxy and the end client's departure reaches trove only as far as
+proxy the TCP peer is the proxy, so the probes check the hop to the proxy and the end client's departure reaches Quader only as far as
 the proxy passes it on. The development agent would revisit the decision if peers that vanish without closing the connection hold work
 for longer than that matters.
 
@@ -10184,7 +10184,7 @@ Context: the plan reserves 0.5 s of the margin for the ops listener and the trac
 | (b) A watchdog that exits the process at the exit deadline | A hard stop | Covers a cause nobody found | Exits 0.5 s before the kubelet's kill, a margin a loaded node can use up; hides the holder |
 | (c) Leave the tail bounded by the exit deadline | As before | No change | The defect |
 
-**Choice:** (a). The ops listener's reset connections are not counted as cut transfers (`trove_http_transfers_cut_total` counts clients' transfers).
+**Choice:** (a). The ops listener's reset connections are not counted as cut transfers (`quader_http_transfers_cut_total` counts clients' transfers).
 
 **Rationale:** The ops listener serves probes and scrapes whose answers are a few KiB, so 0.5 s is generous; the plan stays absolute (the tail never extends past `ExitBy`). Revisit if a tracer export to a healthy collector is seen cut at the bound.
 
@@ -10269,7 +10269,7 @@ expansion, and Go's memory safety rules out a class of exploits. Neither confine
 format. No sandbox is specified: no separate process, no seccomp profile, no reduced credentials
 for parsing.
 
-### H-2 · The upload spool is not encrypted by trove
+### H-2 · The upload spool is not encrypted by Quader
 
 Stage: the spool of the upload pipeline ([storage.md](storage.md)), used by R-ARCH-013 and
 R-ARCH-014.
@@ -10278,7 +10278,7 @@ Live for every upload and every cache fill, for the duration of the transfer. Af
 remains live until that replica starts again and empties its spool.
 
 The bytes of private packages rest unencrypted on the replica's spool volume. Their protection
-depends on the platform: node disk encryption, and access to the volume backing the pod. trove
+depends on the platform: node disk encryption, and access to the volume backing the pod. Quader
 neither encrypts the spool nor wipes spool files securely.
 
 ### H-3 · UI and package content share one origin
@@ -10301,18 +10301,18 @@ The defence on the UI's origin is a set of response headers:
 The core sets them in a writer wrapper that format handlers cannot bypass, and the conformance kit
 tests them (Q-ARCH-10). Uploaded content still becomes script running on the UI's origin in either
 case:
-- a proxy in front of trove strips the headers;
+- a proxy in front of Quader strips the headers;
 - a browser ignores both `attachment` and CSP `sandbox`.
 
 The content origin that removes the session cookie from that path is optional and P1 (R-ARCH-029,
 Q-ARCH-10). A content origin on the UI's registrable domain keeps the cookies out only because every
-trove cookie carries the `__Host-` prefix
+Quader cookie carries the `__Host-` prefix
 ([identity-and-authentication.md](identity-and-authentication.md) Q-AUTH-2). It also stays
 same-site with the UI, which R-ARCH-029 reports with a start-up warning.
 
 ### H-49 · Write access to Valkey denies service
 
-Stage: the keys and channels under trove's Valkey prefix (R-ARCH-030): negative entries, flight
+Stage: the keys and channels under Quader's Valkey prefix (R-ARCH-030): negative entries, flight
 locks, rate-limit counters, throttle exemption markers, change messages and signals.
 
 Live in the MVP for every installation, because Valkey is part of every production topology
@@ -10343,7 +10343,7 @@ from it (R-ARCH-030). It holds IDs and hashes only. The rate-limit bucket keys o
 are unkeyed SHA-256 hashes, so a reader can recover an address by enumerating the address space.
 
 What makes it real: a Valkey reachable from other workloads, without a NetworkPolicy that limits it
-to trove's pods and the Sentinels; an ACL user shared with other applications, or the `default`
+to Quader's pods and the Sentinels; an ACL user shared with other applications, or the `default`
 user; TLS switched off on a network an attacker can observe, which exposes the ACL password.
 
 ### H-55 · Key files of the stored-secret key ring are read once at start-up
@@ -10412,7 +10412,7 @@ OOM-killed instead.
 
 What makes it real: cache sizes (`proxy.metadata_cache_bytes`, `proxy.merged_metadata_cache_bytes`,
 the rendition cache) that together approach the memory limit. The operator sees it in
-`trove_http_requests_shed_total{reason="heap"}` and the gate's log line.
+`quader_http_requests_shed_total{reason="heap"}` and the gate's log line.
 
 ### H-324 · Connections that send no request are outside the memory guard
 
@@ -10469,7 +10469,7 @@ rules of the authentication stage, the preflight and stage 7 ask `Endpoint.Serve
 Live for every installation that runs the roles. Subjects and what each tells apart from `/does-not-exist`:
 
 - **The Bastion recognition, for the holder of a valid Bastion token.** On `packages`, an interface call to `/api/v1/bastion/…`
-  is recognised and answers the router's `404` with `Trove-Bastion-Interface`, where the same token in `Authorization` on
+  is recognised and answers the router's `404` with `Quader-Bastion-Interface`, where the same token in `Authorization` on
   `/does-not-exist` is a credential the authentication stage rejects (`401`). On `api`, a forward to `/files/…` or
   `/api/<format>/…` passes the forward backstop and reaches the authentication stage (`401` without a client credential), where
   a forward to `/does-not-exist` gets the backstop's `404`. Only a registered Bastion holds such a token, and its configuration
@@ -10495,4 +10495,4 @@ Live from the beta. The nightly run gates P-13 and P-14 (job `latency`) and repo
 (`TestNPMPerf`, on a kind cluster on a shared runner). Not verified, and this is the gap: P-2, P-4, P-6, P-9 to P-12 and P-15 to P-17,
 among them the scale-out from three to six `web` replicas (P-16) and the latency with Valkey down (P-17), and every target at the
 reference size. What makes it real: a fleet sized from a number nobody measured at that size. It closes with the first run on a
-reference environment with `TROVE_PERF_GATE=1` for P-1 to P-17.
+reference environment with `QUADER_PERF_GATE=1` for P-1 to P-17.

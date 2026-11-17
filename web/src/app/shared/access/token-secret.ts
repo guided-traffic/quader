@@ -8,7 +8,7 @@ import { Notifier } from '../../core/notifier';
  * copying happens on an explicit click only. The owner clears the value when `closed` fires.
  */
 @Component({
-  selector: 'trove-token-secret',
+  selector: 'quader-token-secret',
   imports: [],
   template: `
     <section class="secret" aria-labelledby="secret-heading" tabindex="-1">
@@ -51,41 +51,41 @@ import { Notifier } from '../../core/notifier';
   `,
   styles: `
     .secret {
-      margin-block: var(--trove-space-4);
-      padding: var(--trove-space-4);
-      border: 2px solid var(--trove-status-warn);
-      border-radius: var(--trove-radius-l);
+      margin-block: var(--quader-space-4);
+      padding: var(--quader-space-4);
+      border: 2px solid var(--quader-status-warn);
+      border-radius: var(--quader-radius-l);
     }
     h2 {
-      margin-block: 0 var(--trove-space-3);
-      font: var(--trove-type-title-medium);
+      margin-block: 0 var(--quader-space-3);
+      font: var(--quader-type-title-medium);
     }
     .warning {
       display: flex;
       align-items: flex-start;
-      gap: var(--trove-space-2);
-      margin-block: 0 var(--trove-space-3);
+      gap: var(--quader-space-2);
+      margin-block: 0 var(--quader-space-3);
       font-weight: 600;
     }
     .description {
-      margin-block: 0 var(--trove-space-3);
+      margin-block: 0 var(--quader-space-3);
     }
     .value {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--trove-space-2);
-      margin-block-end: var(--trove-space-3);
+      gap: var(--quader-space-2);
+      margin-block-end: var(--quader-space-3);
     }
     input {
       flex: 1 1 18rem;
       min-inline-size: 0;
-      padding: var(--trove-space-2);
+      padding: var(--quader-space-2);
       font-family: ui-monospace, monospace;
-      color: var(--trove-on-surface);
-      background: var(--trove-surface-container);
-      border: 1px solid var(--trove-border-strong);
-      border-radius: var(--trove-radius-s);
+      color: var(--quader-on-surface);
+      background: var(--quader-surface-container);
+      border: 1px solid var(--quader-border-strong);
+      border-radius: var(--quader-radius-s);
     }
     .visually-hidden {
       position: absolute;

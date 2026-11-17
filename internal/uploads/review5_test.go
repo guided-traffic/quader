@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The abort reads the session, a request records the first part (and with it the multipart upload) and the abort follows: the upload that

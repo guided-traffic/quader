@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The upstream's token handshake and its credential rule (R-REPO-033, R-REPO-033), and the revalidation by the format's own
@@ -31,7 +31,7 @@ var robotBasic = "Basic " + base64.StdEncoding.EncodeToString([]byte("robot:s3cr
 func hsReplicaOpts(ups ...*proxytest.Upstream) replicaOpts {
 	return replicaOpts{
 		ups: ups, secrets: bearerSource{},
-		env: func(k string) (string, bool) { return "s3cret", k == "TROVE_CAC_IT_QUERY_TOKEN" },
+		env: func(k string) (string, bool) { return "s3cret", k == "QUADER_CAC_IT_QUERY_TOKEN" },
 	}
 }
 
@@ -285,13 +285,13 @@ func TestR_REPO_027_HeadRevalidation(t *testing.T) {
 		}
 		time.Sleep(1200 * time.Millisecond)
 		s := r.metadata(rem, "pkg/same", withAdapter(a))
-		if s.status != 200 || string(s.body) != `{"v":1}` || s.cacheStatus() != "trove; fwd=stale; fwd-status=200" {
+		if s.status != 200 || string(s.body) != `{"v":1}` || s.cacheStatus() != "quader; fwd=stale; fwd-status=200" {
 			t.Fatalf("%d %q %q", s.status, s.body, s.cacheStatus())
 		}
 		if registry.Count("HEAD", "/pkg/same") != 1 || registry.Count("GET", "/pkg/same") != 1 || a.Revalidations() != 1 {
 			t.Fatalf("HEAD %d, GET %d, revalidation requests %d", registry.Count("HEAD", "/pkg/same"), registry.Count("GET", "/pkg/same"), a.Revalidations())
 		}
-		if s := r.metadata(rem, "pkg/same", withAdapter(a)); !strings.HasPrefix(s.cacheStatus(), "trove; hit; ttl=") {
+		if s := r.metadata(rem, "pkg/same", withAdapter(a)); !strings.HasPrefix(s.cacheStatus(), "quader; hit; ttl=") {
 			t.Fatalf("the document was not fresh after its revalidation: %q", s.cacheStatus())
 		}
 		if got := e.number("SELECT (expires_at > now())::int FROM remote_cache_entries WHERE path = 'pkg/same'"); got != 1 {
@@ -363,7 +363,7 @@ func TestR_REPO_027_HeadRevalidation(t *testing.T) {
 		rem := e.remote("rv-plain", registry, short)
 		_ = r.metadata(rem, "pkg/plain", withAdapter(a))
 		time.Sleep(1200 * time.Millisecond)
-		if s := r.metadata(rem, "pkg/plain", withAdapter(a)); s.cacheStatus() != "trove; fwd=stale; fwd-status=304" {
+		if s := r.metadata(rem, "pkg/plain", withAdapter(a)); s.cacheStatus() != "quader; fwd=stale; fwd-status=304" {
 			t.Fatalf("%q", s.cacheStatus())
 		}
 		if registry.Count("HEAD", "/pkg/plain") != 0 {
@@ -395,7 +395,7 @@ func TestR_REPO_027_HeadRevalidationRunsTheHandshake(t *testing.T) {
 	}
 	time.Sleep(1200 * time.Millisecond)
 	s := r.metadata(rem, "pkg/hs", withAdapter(a))
-	if s.status != 200 || s.cacheStatus() != "trove; fwd=stale; fwd-status=200" {
+	if s.status != 200 || s.cacheStatus() != "quader; fwd=stale; fwd-status=200" {
 		t.Fatalf("%d %q %v", s.status, s.cacheStatus(), s.err)
 	}
 	// The first request was challenged (GET, token, GET); the revalidation carries the token the remembered challenge names, fetched
@@ -465,7 +465,7 @@ func TestR_REPO_027_ARevalidationBuildsTheUpstreamRequestOnce(t *testing.T) {
 	_ = r.metadata(rem, "pkg/once", withAdapter(plain))
 	time.Sleep(1200 * time.Millisecond)
 	beforeReq, beforeTx := plain.Requests(), txs.Load()
-	if s := r.metadata(rem, "pkg/once", withAdapter(plain)); s.cacheStatus() != "trove; fwd=stale; fwd-status=304" {
+	if s := r.metadata(rem, "pkg/once", withAdapter(plain)); s.cacheStatus() != "quader; fwd=stale; fwd-status=304" {
 		t.Fatalf("%q", s.cacheStatus())
 	}
 	if got := plain.Requests() - beforeReq; got != 1 {

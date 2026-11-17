@@ -9,12 +9,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // callerStage is an authentication stage that accepts every credential as the user it names.
@@ -42,7 +42,7 @@ func TestR_BAS_008_TheCheckLeavesTheRequestLogLineOfTheRegistration(t *testing.T
 	router := httpserver.NewClientRouter()
 	router.HandleFunc("POST /api/v1/bastion/check", func(w http.ResponseWriter, r *http.Request) {
 		clone := r.Clone(r.Context())
-		clone.Header.Set("Authorization", "Bearer trv_pat_caller")
+		clone.Header.Set("Authorization", "Bearer qdr_pat_caller")
 		if p, err := check(clone); err != nil || p.Name != "checked-caller" {
 			t.Errorf("the check's stage: %+v %v", p, err)
 		}

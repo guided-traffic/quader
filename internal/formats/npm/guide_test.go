@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 func guideData(class formats.Class, client string, anonymous, rules bool) formats.GuideData {
@@ -22,7 +22,7 @@ func guideData(class formats.Class, client string, anonymous, rules bool) format
 		PublishTarget: map[formats.Class]string{formats.Local: "npm-all", formats.Virtual: "npm-local"}[class],
 		Anonymous:     anonymous,
 		ExposureRules: rules,
-		TokenEnvVar:   "TROVE_TOKEN",
+		TokenEnvVar:   "QUADER_TOKEN",
 	}
 }
 
@@ -63,9 +63,9 @@ func everyRendering(t *testing.T) map[string]string {
 
 var troubleshootingRow = regexp.MustCompile("(?m)^\\| (\\d{3}) \\| `([a-z_]+)` \\|")
 
-// TestR_UI_049_TheTroubleshootingCodesAreTroves: every row of the troubleshooting
-// table names a code of the problem catalog, under the status trove answers it with.
-func TestR_UI_049_TheTroubleshootingCodesAreTroves(t *testing.T) {
+// TestR_UI_049_TheTroubleshootingCodesAreQuaders: every row of the troubleshooting
+// table names a code of the problem catalog, under the status quader answers it with.
+func TestR_UI_049_TheTroubleshootingCodesAreQuaders(t *testing.T) {
 	text := renderGuide(t, guideData(formats.Virtual, "npm", false, false))["npm.troubleshooting"]
 	rows := troubleshootingRow.FindAllStringSubmatch(text, -1)
 	if len(rows) < 30 {
@@ -107,9 +107,9 @@ func TestR_UI_049_EveryCodeTheGuideNamesExists(t *testing.T) {
 	}
 }
 
-// TestR_NPM_041_TheGuideQuotesWhatTroveSends: the notices and refusals the guide quotes
+// TestR_NPM_041_TheGuideQuotesWhatQuaderSends: the notices and refusals the guide quotes
 // are the texts the handlers send.
-func TestR_NPM_041_TheGuideQuotesWhatTroveSends(t *testing.T) {
+func TestR_NPM_041_TheGuideQuotesWhatQuaderSends(t *testing.T) {
 	all := strings.Join(mapValues(everyRendering(t)), "\n")
 	for _, want := range []string{
 		fmt.Sprintf(latestKeptNotice, "<version>"),

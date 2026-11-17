@@ -7,8 +7,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // fakeMirror is the mirror part of the data port over fixed rows.

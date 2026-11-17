@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // TestR_VULN_021_OneViewOfTheSourceState (A6, Q-VULN-70): the sources operation and the system information share this

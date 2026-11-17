@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // controlPrefix is the path prefix of the control API; nothing below it is a package.

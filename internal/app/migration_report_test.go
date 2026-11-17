@@ -3,8 +3,8 @@ package app
 import (
 	"testing"
 
-	nugetdata "github.com/guided-traffic/trove/internal/formatdata/nuget"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	nugetdata "github.com/guided-traffic/quader/internal/formatdata/nuget"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 func TestBackgroundMigrations(t *testing.T) {

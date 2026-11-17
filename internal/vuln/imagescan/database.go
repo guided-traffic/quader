@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // The bounds of the database archive: only its two files are taken, each within a size limit (R-VULN-035).

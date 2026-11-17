@@ -1,32 +1,32 @@
 .intro {
   max-inline-size: 60ch;
-  margin-block: 0 var(--trove-space-4);
+  margin-block: 0 var(--quader-space-4);
 }
 
 .choices-panel {
   display: grid;
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
   max-inline-size: 48rem;
-  margin-block-end: var(--trove-space-3);
+  margin-block-end: var(--quader-space-3);
 
   fieldset {
     margin: 0;
-    padding: var(--trove-space-3) var(--trove-space-4);
-    border: 1px solid var(--trove-border);
-    border-radius: var(--trove-radius-m);
-    background: var(--trove-surface-raised);
+    padding: var(--quader-space-3) var(--quader-space-4);
+    border: 1px solid var(--quader-border);
+    border-radius: var(--quader-radius-m);
+    background: var(--quader-surface-raised);
   }
 
   legend {
-    padding-inline: var(--trove-space-1);
-    font: var(--trove-type-title-medium);
+    padding-inline: var(--quader-space-1);
+    font: var(--quader-type-title-medium);
   }
 }
 
 .choices {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2) var(--trove-space-4);
+  gap: var(--quader-space-2) var(--quader-space-4);
 
   &.vertical {
     flex-direction: column;
@@ -36,7 +36,7 @@
 .choice {
   display: flex;
   align-items: flex-start;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 }
 
 .choice-text {
@@ -45,30 +45,30 @@
 }
 
 .secondary {
-  color: var(--trove-text-muted);
-  font-size: var(--trove-text-muted-size);
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
 }
 
 .links {
-  margin-block: 0 var(--trove-space-4);
+  margin-block: 0 var(--quader-space-4);
 }
 
 .result-title {
-  margin-block: 0 var(--trove-space-3);
+  margin-block: 0 var(--quader-space-3);
 }
 
 .snippet {
-  margin-block: var(--trove-space-3);
+  margin-block: var(--quader-space-3);
 
   .target {
-    margin-block: 0 var(--trove-space-2);
+    margin-block: 0 var(--quader-space-2);
   }
 }
 
 .command {
   display: flex;
   align-items: flex-start;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 
   pre {
     flex: 1 1 auto;

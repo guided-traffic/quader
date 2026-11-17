@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The issuance records and the two retention tasks (R-CI-020, R-CI-018, R-CI-030, Q-CI-26), work package W5.
@@ -248,7 +248,7 @@ func (s *IssuanceStore) batches(ctx context.Context, del func(*q.Queries) (int64
 }
 
 // ActiveTokens counts the unexpired, unrevoked CI tokens per issuer, 0 for an issuer without one: the database
-// gauge trove_ci_tokens_active (R-CI-020, R-OPS-007), which every replica evaluates once per
+// gauge quader_ci_tokens_active (R-CI-020, R-OPS-007), which every replica evaluates once per
 // metrics.db_gauge_interval and dashboards aggregate with max.
 func ActiveTokens(ctx context.Context, db Database) (map[string]int64, error) {
 	out := map[string]int64{}

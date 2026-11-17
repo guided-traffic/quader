@@ -7,8 +7,8 @@
 // [NewLocal] is the implementation without Valkey: it works per replica, with the rates and thresholds divided
 // by the chart's replica count (bastion.replicas, Q-BAS-34), so the sum over replicas stays near the configured
 // value. Work package 6 adds the Valkey implementation behind the same interfaces with the key families of
-// R-BAS-034 (prefix trove-bastion:<valkey.key_prefix>:), degrading to a local one while Valkey is unavailable
-// (trove_valkey_available 0, R-ARCH-031), and owns the tests of both.
+// R-BAS-034 (prefix quader-bastion:<valkey.key_prefix>:), degrading to a local one while Valkey is unavailable
+// (quader_valkey_available 0, R-ARCH-031), and owns the tests of both.
 //
 // This package imports nothing of the main installation. The Valkey implementation may use the Valkey client
 // of internal/cluster; that package is on the allow-list of the archtest rule for it (R-BAS-001, Q-BAS-51).
@@ -67,7 +67,7 @@ type BlockList interface {
 	Set(ctx context.Context, addr string, d time.Duration, level int) error
 	// Level returns the level of the address's most recent block within 24 h, 0 for none.
 	Level(ctx context.Context, addr string) (int, error)
-	// Size is the number of addresses blocked now (trove_bastion_blocked_addresses).
+	// Size is the number of addresses blocked now (quader_bastion_blocked_addresses).
 	Size(ctx context.Context) (int, error)
 }
 

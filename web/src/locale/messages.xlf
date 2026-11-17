@@ -858,7 +858,7 @@
         <note category="location">src/app/core/http/problem-messages-access.ts:108</note>
       </notes>
       <segment>
-        <source>The outbound path of this repository is set by an administrator of trove.</source>
+        <source>The outbound path of this repository is set by an administrator of Quader.</source>
       </segment>
     </unit>
     <unit id="problem.backup.hold-lost">
@@ -882,7 +882,7 @@
         <note category="location">src/app/core/http/problem-messages-backup.ts:14</note>
       </notes>
       <segment>
-        <source>A blob of an earlier backup is missing in the target. Run trove backup verify.</source>
+        <source>A blob of an earlier backup is missing in the target. Run quader backup verify.</source>
       </segment>
     </unit>
     <unit id="problem.backup.invariant-violation">
@@ -890,7 +890,7 @@
         <note category="location">src/app/core/http/problem-messages-backup.ts:16</note>
       </notes>
       <segment>
-        <source>The exported data breaks a rule of trove&apos;s schema, so no backup was written.</source>
+        <source>The exported data breaks a rule of Quader&apos;s schema, so no backup was written.</source>
       </segment>
     </unit>
     <unit id="problem.backup.stalled">
@@ -1138,7 +1138,7 @@
         <note category="location">src/app/core/http/problem-messages-ci.ts:16</note>
       </notes>
       <segment>
-        <source>The issuer publishes no signing key that trove can use. Keys that are too weak or of an unknown type are ignored.</source>
+        <source>The issuer publishes no signing key that Quader can use. Keys that are too weak or of an unknown type are ignored.</source>
       </segment>
     </unit>
     <unit id="problem.ci.algorithms-not-offered">
@@ -1330,7 +1330,7 @@
         <note category="location">src/app/core/http/problem-messages-vulnerability.ts:11</note>
       </notes>
       <segment>
-        <source>This finding is resolved. trove resolves and re-detects findings itself; a person does not change one.</source>
+        <source>This finding is resolved. Quader resolves and re-detects findings itself; a person does not change one.</source>
       </segment>
     </unit>
     <unit id="problem.vuln.status-not-settable">
@@ -1338,7 +1338,7 @@
         <note category="location">src/app/core/http/problem-messages-vulnerability.ts:13</note>
       </notes>
       <segment>
-        <source>The status resolved is set by trove only.</source>
+        <source>The status resolved is set by Quader only.</source>
       </segment>
     </unit>
     <unit id="problem.vuln.export-too-large">
@@ -1394,7 +1394,7 @@
         <note category="location">src/app/core/http/problem-messages-vulnerability.ts:27</note>
       </notes>
       <segment>
-        <source>The new advisory archive holds far fewer records than the data trove has. The run was stopped and nothing was changed.</source>
+        <source>The new advisory archive holds far fewer records than the data Quader has. The run was stopped and nothing was changed.</source>
       </segment>
     </unit>
     <unit id="problem.vuln.mirror-invalid">
@@ -7337,7 +7337,7 @@
         <note category="location">src/app/features/ci/issuer-list.ts:31,34</note>
       </notes>
       <segment>
-        <source> A CI issuer is a GitLab instance whose jobs may exchange their ID token for a short-lived trove token. Mappings decide what a job receives. </source>
+        <source> A CI issuer is a GitLab instance whose jobs may exchange their ID token for a short-lived Quader token. Mappings decide what a job receives. </source>
       </segment>
     </unit>
     <unit id="ci.issuers.empty">
@@ -8350,7 +8350,7 @@
     </unit>
     <unit id="ci.project.test">
       <notes>
-        <note category="location">src/app/features/ci/project-ci.ts:23,25</note>
+        <note category="location">src/app/features/ci/project-ci.ts:23,24</note>
       </notes>
       <segment>
         <source>Test with claims</source>
@@ -8377,7 +8377,7 @@
         <note category="location">src/app/features/ci/project-ci.ts:35,37</note>
       </notes>
       <segment>
-        <source>Issuers are managed by the administrators of trove. A mapping names one of them.</source>
+        <source>Issuers are managed by the administrators of Quader. A mapping names one of them.</source>
       </segment>
     </unit>
     <unit id="ci.project.issuers-empty">
@@ -8385,7 +8385,7 @@
         <note category="location">src/app/features/ci/project-ci.ts:42,44</note>
       </notes>
       <segment>
-        <source>No issuer is registered yet. Ask an administrator of trove.</source>
+        <source>No issuer is registered yet. Ask an administrator of Quader.</source>
       </segment>
     </unit>
     <unit id="ci.project.mappings">
@@ -8911,7 +8911,7 @@
         <note category="location">src/app/features/endpoints/endpoint-list.ts:97</note>
       </notes>
       <segment>
-        <source>Which parts of trove this endpoint serves: the web interface, the management API, the CI token exchange, package clients and file downloads.</source>
+        <source>Which parts of Quader this endpoint serves: the web interface, the management API, the CI token exchange, package clients and file downloads.</source>
       </segment>
     </unit>
     <unit id="ep.help.mode">
@@ -10422,7 +10422,7 @@
         <note category="location">src/app/features/help/help-overview.ts:22,24</note>
       </notes>
       <segment>
-        <source> The manual of the trove version this installation runs, for the people who use it and the people who run it. </source>
+        <source> The manual of the Quader version this installation runs, for the people who use it and the people who run it. </source>
       </segment>
     </unit>
     <unit id="help.guides">
@@ -10447,7 +10447,7 @@
         <note category="location">src/app/features/help/help-overview.ts:71</note>
       </notes>
       <segment>
-        <source>For the people who run trove and manage its projects.</source>
+        <source>For the people who run Quader and manage its projects.</source>
       </segment>
     </unit>
     <unit id="help.contents">
@@ -10508,7 +10508,7 @@
     </unit>
     <unit id="loggedout.heading">
       <notes>
-        <note category="location">src/app/features/login/logged-out.ts:17,18</note>
+        <note category="location">src/app/features/login/logged-out.ts:18,19</note>
       </notes>
       <segment>
         <source>Signed out</source>
@@ -10516,7 +10516,7 @@
     </unit>
     <unit id="loggedout.text">
       <notes>
-        <note category="location">src/app/features/login/logged-out.ts:18,19</note>
+        <note category="location">src/app/features/login/logged-out.ts:19,20</note>
       </notes>
       <segment>
         <source>You have been signed out.</source>
@@ -10524,7 +10524,7 @@
     </unit>
     <unit id="loggedout.again">
       <notes>
-        <note category="location">src/app/features/login/logged-out.ts:20,24</note>
+        <note category="location">src/app/features/login/logged-out.ts:21,25</note>
       </notes>
       <segment>
         <source>Sign in again</source>
@@ -11071,7 +11071,7 @@
         <note category="location">src/app/features/packages/ansible-docs.html:118,119</note>
       </notes>
       <segment>
-        <source> Not every entry is listed: the documentation of this version is larger than trove keeps. </source>
+        <source> Not every entry is listed: the documentation of this version is larger than Quader keeps. </source>
       </segment>
     </unit>
     <unit id="docs.page.heading">
@@ -11111,7 +11111,7 @@
         <note category="location">src/app/features/packages/ansible-docs.html:153</note>
       </notes>
       <segment>
-        <source>Generated by trove from the archive</source>
+        <source>Generated by Quader from the archive</source>
       </segment>
     </unit>
     <unit id="docs.source.repository">
@@ -11218,7 +11218,7 @@
         <note category="location">src/app/features/packages/docs-model.ts:305</note>
       </notes>
       <segment>
-        <source>The documentation of this version is larger than trove keeps.</source>
+        <source>The documentation of this version is larger than Quader keeps.</source>
       </segment>
     </unit>
     <unit id="docs.unavailable.invalid">
@@ -11226,7 +11226,7 @@
         <note category="location">src/app/features/packages/docs-model.ts:307</note>
       </notes>
       <segment>
-        <source>The upstream sent a documentation document that trove cannot read.</source>
+        <source>The upstream sent a documentation document that Quader cannot read.</source>
       </segment>
     </unit>
     <unit id="docs.unavailable.unknown">
@@ -13771,7 +13771,7 @@
         <note category="location">src/app/features/profile/profile-avatar.html:8,10</note>
       </notes>
       <segment>
-        <source> Other users see this image next to your name. Without one, trove shows a generated robot that is yours alone. </source>
+        <source> Other users see this image next to your name. Without one, Quader shows a generated robot that is yours alone. </source>
       </segment>
     </unit>
     <unit id="avatar.choose">
@@ -15119,7 +15119,7 @@
         <note category="location">src/app/features/projects/project-settings.ts:103,106</note>
       </notes>
       <segment>
-        <source>Only an administrator of trove sets the visibility of a project.</source>
+        <source>Only an administrator of Quader sets the visibility of a project.</source>
       </segment>
     </unit>
     <unit id="project.details">
@@ -16575,7 +16575,7 @@
         <note category="location">src/app/features/repositories/deb-signing-keys.ts:50</note>
       </notes>
       <segment>
-        <source>This key is already known to trove, in this or another repository, in some state. A retired or withheld key cannot come back by import.</source>
+        <source>This key is already known to Quader, in this or another repository, in some state. A retired or withheld key cannot come back by import.</source>
       </segment>
     </unit>
     <unit id="deb.key.err.unsupported">
@@ -16583,7 +16583,7 @@
         <note category="location">src/app/features/repositories/deb-signing-keys.ts:52</note>
       </notes>
       <segment>
-        <source>trove cannot use this key. It needs an EdDSALegacy (Ed25519) or RSA primary key of at least 3072 bits that can sign, is not revoked, has no expiry, was not created in the future and has no signing subkeys.</source>
+        <source>Quader cannot use this key. It needs an EdDSALegacy (Ed25519) or RSA primary key of at least 3072 bits that can sign, is not revoked, has no expiry, was not created in the future and has no signing subkeys.</source>
       </segment>
     </unit>
     <unit id="deb.key.err.state">
@@ -16647,7 +16647,7 @@
         <note category="location">src/app/features/repositories/deb-signing-keys.ts:104,108</note>
       </notes>
       <segment>
-        <source>trove cannot know which clients replaced their key file. A client that holds only the old key fails to update after the promotion.</source>
+        <source>Quader cannot know which clients replaced their key file. A client that holds only the old key fails to update after the promotion.</source>
       </segment>
     </unit>
     <unit id="deb.keys.certificate">
@@ -18171,7 +18171,7 @@
         <note category="location">src/app/features/repositories/repository-class.ts:22</note>
       </notes>
       <segment>
-        <source>Holds content that is deployed to trove.</source>
+        <source>Holds content that is deployed to Quader.</source>
       </segment>
     </unit>
     <unit id="repo.class.remote.help">
@@ -20358,7 +20358,7 @@
         <note category="location">src/app/features/roles/role-bindings.html:67,70</note>
       </notes>
       <segment>
-        <source> Bindings with the source Configuration are declared in authz.role_bindings of the system configuration and applied when trove is installed or upgraded. Change or remove them there, not here. </source>
+        <source> Bindings with the source Configuration are declared in authz.role_bindings of the system configuration and applied when Quader is installed or upgraded. Change or remove them there, not here. </source>
       </segment>
     </unit>
     <unit id="roles.bind-principal">
@@ -22153,7 +22153,7 @@
         <note category="location">src/app/features/setup/client-setup.html:111,112</note>
       </notes>
       <segment>
-        <source>The snippets read your token from the variable TROVE_TOKEN.</source>
+        <source>The snippets read your token from the variable QUADER_TOKEN.</source>
       </segment>
     </unit>
     <unit id="setup.cred.env-link">
@@ -22201,7 +22201,7 @@
         <note category="location">src/app/features/setup/client-setup.html:135,136</note>
       </notes>
       <segment>
-        <source> The snippets read the token from the variable TROVE_TOKEN. No secret appears on this page. </source>
+        <source> The snippets read the token from the variable QUADER_TOKEN. No secret appears on this page. </source>
       </segment>
     </unit>
     <unit id="setup.cred.create">
@@ -22297,7 +22297,7 @@
         <note category="location">src/app/features/setup/client-setup.html:223,225</note>
       </notes>
       <segment>
-        <source>The value looks like a trove token. It is written into the snippets.</source>
+        <source>The value looks like a Quader token. It is written into the snippets.</source>
       </segment>
     </unit>
     <unit id="setup.paste.prefix">
@@ -22305,7 +22305,7 @@
         <note category="location">src/app/features/setup/client-setup.html:226,228</note>
       </notes>
       <segment>
-        <source>A trove token starts with trv_pat_, trv_sat_ or trv_cit_.</source>
+        <source>A Quader token starts with qdr_pat_, qdr_sat_ or qdr_cit_.</source>
       </segment>
     </unit>
     <unit id="setup.paste.length">
@@ -22313,7 +22313,7 @@
         <note category="location">src/app/features/setup/client-setup.html:229,231</note>
       </notes>
       <segment>
-        <source>A trove token has 57 characters. The value is shorter or longer, maybe cut off.</source>
+        <source>A Quader token has 57 characters. The value is shorter or longer, maybe cut off.</source>
       </segment>
     </unit>
     <unit id="setup.paste.alphabet">
@@ -22321,7 +22321,7 @@
         <note category="location">src/app/features/setup/client-setup.html:232,234</note>
       </notes>
       <segment>
-        <source>A trove token holds only letters and digits after its prefix.</source>
+        <source>A Quader token holds only letters and digits after its prefix.</source>
       </segment>
     </unit>
     <unit id="setup.paste.checksum">
@@ -22642,7 +22642,7 @@
         <note category="location">src/app/features/setup/clients.ts:74</note>
       </notes>
       <segment>
-        <source>For npm 10, pnpm 10 on npm 10 and Yarn 1. A pipeline step exchanges the job&apos;s ID token for a short-lived trove token and revokes it again as its last step.</source>
+        <source>For npm 10, pnpm 10 on npm 10 and Yarn 1. A pipeline step exchanges the job&apos;s ID token for a short-lived Quader token and revokes it again as its last step.</source>
       </segment>
     </unit>
     <unit id="setup.snippet.gitlab-native">
@@ -22714,7 +22714,7 @@
         <note category="location">src/app/features/setup/clients.ts:99</note>
       </notes>
       <segment>
-        <source>Paste this into the shell or the CI script that runs curl. It defines trove_curl, which hands curl the credential on standard input, so the token never appears on curl&apos;s command line.</source>
+        <source>Paste this into the shell or the CI script that runs curl. It defines quader_curl, which hands curl the credential on standard input, so the token never appears on curl&apos;s command line.</source>
       </segment>
     </unit>
     <unit id="setup.snippet.curl-install">
@@ -22722,7 +22722,7 @@
         <note category="location">src/app/features/setup/clients.ts:101</note>
       </notes>
       <segment>
-        <source>Downloads a file of this repository with trove_curl. Replace &lt;path&gt; with the path of the file in the repository.</source>
+        <source>Downloads a file of this repository with quader_curl. Replace &lt;path&gt; with the path of the file in the repository.</source>
       </segment>
     </unit>
     <unit id="setup.snippet.curl-publish">
@@ -22786,7 +22786,7 @@
         <note category="location">src/app/features/setup/clients.ts:122</note>
       </notes>
       <segment>
-        <source>For a remote repository without upstream keys: adds the repository as an APT source that is verified against the archive&apos;s own keyring, which Debian and Ubuntu install on every system. No key of trove&apos;s is installed, and verification stays on.</source>
+        <source>For a remote repository without upstream keys: adds the repository as an APT source that is verified against the archive&apos;s own keyring, which Debian and Ubuntu install on every system. No key of Quader&apos;s is installed, and verification stays on.</source>
       </segment>
     </unit>
     <unit id="setup.snippet.apt-list">
@@ -22818,7 +22818,7 @@
         <note category="location">src/app/features/setup/clients.ts:131</note>
       </notes>
       <segment>
-        <source>Save this as ansible.cfg next to your playbooks, or as ~/.ansible.cfg for the whole machine. It names this repository as the server trove. The token is not written into the file, because ansible.cfg does not expand variables: set it in the environment as shown below.</source>
+        <source>Save this as ansible.cfg next to your playbooks, or as ~/.ansible.cfg for the whole machine. It names this repository as the server quader. The token is not written into the file, because ansible.cfg does not expand variables: set it in the environment as shown below.</source>
       </segment>
     </unit>
     <unit id="setup.snippet.ansible-token-env">
@@ -22826,7 +22826,7 @@
         <note category="location">src/app/features/setup/clients.ts:135</note>
       </notes>
       <segment>
-        <source>ansible-galaxy reads the token of the server trove from this environment variable. Set it in the shell or the CI job that runs the command, and keep it out of version control.</source>
+        <source>ansible-galaxy reads the token of the server quader from this environment variable. Set it in the shell or the CI job that runs the command, and keep it out of version control.</source>
       </segment>
     </unit>
     <unit id="setup.snippet.ansible-netrc">
@@ -23399,7 +23399,7 @@
         <note category="location">src/app/features/system/backups/backups-page.html:257,258</note>
       </notes>
       <segment>
-        <source>trove version</source>
+        <source>Quader version</source>
       </segment>
     </unit>
     <unit id="backups.detail.target">
@@ -23480,7 +23480,7 @@
         <note category="location">src/app/features/system/backups/backups-page.html:305,306</note>
       </notes>
       <segment>
-        <source>Backups written or removed outside trove appear after the next run; <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">trove backup list</pc> reads the target itself.</source>
+        <source>Backups written or removed outside Quader appear after the next run; <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">quader backup list</pc> reads the target itself.</source>
       </segment>
     </unit>
     <unit id="backups.stored.empty">
@@ -23496,7 +23496,7 @@
         <note category="location">src/app/features/system/backups/backups-page.html:321,322</note>
       </notes>
       <segment>
-        <source>trove version</source>
+        <source>Quader version</source>
       </segment>
     </unit>
     <unit id="backups.stored.schema">
@@ -24716,7 +24716,7 @@
         <note category="location">src/app/features/system/system-status.html:259,265</note>
       </notes>
       <segment>
-        <source> This screen cannot see disruption budgets, free capacity on other nodes, or whether the remaining replicas carry the peak load, because trove holds no Kubernetes permissions. </source>
+        <source> This screen cannot see disruption budgets, free capacity on other nodes, or whether the remaining replicas carry the peak load, because Quader holds no Kubernetes permissions. </source>
       </segment>
     </unit>
     <unit id="system.valkey.heading">
@@ -28115,7 +28115,7 @@
         <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:105</note>
       </notes>
       <segment>
-        <source>Resolved by trove</source>
+        <source>Resolved by Quader</source>
       </segment>
     </unit>
     <unit id="vuln.history.redetected">
@@ -28131,7 +28131,7 @@
         <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:109</note>
       </notes>
       <segment>
-        <source>Reopened by trove</source>
+        <source>Reopened by Quader</source>
       </segment>
     </unit>
     <unit id="vuln.history.advisory">
@@ -28659,7 +28659,7 @@
       </notes>
       <segment>
         <source>
-      trove matches your stored versions against advisory data it keeps itself. This is where the data comes from and how fresh it is.
+      Quader matches your stored versions against advisory data it keeps itself. This is where the data comes from and how fresh it is.
     </source>
       </segment>
     </unit>
@@ -28886,7 +28886,7 @@
         <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:216</note>
       </notes>
       <segment>
-        <source>Affected ranges trove cannot compare with a version; a version they name is not flagged by them.</source>
+        <source>Affected ranges Quader cannot compare with a version; a version they name is not flagged by them.</source>
       </segment>
     </unit>
     <unit id="vuln.sources.col-next">
@@ -29164,7 +29164,7 @@
     </unit>
     <unit id="token-form.repositories-hint">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:117,120</note>
+        <note category="location">src/app/shared/access/token-form.ts:117,119</note>
       </notes>
       <segment>
         <source>One project/key or pattern per line, for example web/npm-internal or web/npm-team-*; or a class such as @any-local.</source>

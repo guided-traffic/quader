@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/buildinfo"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/observability/health"
+	"github.com/guided-traffic/quader/internal/buildinfo"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/observability/health"
 )
 
 // postgresComponent connects the pools and runs the schema compatibility check

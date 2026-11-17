@@ -12,7 +12,7 @@ import (
 var wikiSchemas = map[string]bool{"PackageReadme": true, "PackageVersionDocs": true, "PackageDocEntry": true, "PackageDocFile": true}
 
 // TestR_API_058_WikiOperationsAreMarked: every operation whose response holds a README or a documentation body carries
-// x-trove-part: wiki, and the marked ones are read into Operation.Part; the extension is refused on anything but a public GET.
+// x-quader-part: wiki, and the marked ones are read into Operation.Part; the extension is refused on anything but a public GET.
 func TestR_API_058_WikiOperationsAreMarked(t *testing.T) {
 	raw := EmbeddedYAML()
 	doc, err := LoadDocument(raw)
@@ -31,7 +31,7 @@ func TestR_API_058_WikiOperationsAreMarked(t *testing.T) {
 			for method, node := range methods {
 				var op struct {
 					ID        string         `yaml:"operationId"`
-					Part      string         `yaml:"x-trove-part"`
+					Part      string         `yaml:"x-quader-part"`
 					Responses map[string]any `yaml:"responses"`
 				}
 				if err := node.Decode(&op); err != nil || op.ID == "" {
@@ -42,7 +42,7 @@ func TestR_API_058_WikiOperationsAreMarked(t *testing.T) {
 						if strings.Contains(refsOf(r), "/schemas/"+name) {
 							seen++
 							if op.Part != "wiki" {
-								t.Errorf("%s %s (%s) returns %s and lacks x-trove-part: wiki", strings.ToUpper(method), pattern, op.ID, name)
+								t.Errorf("%s %s (%s) returns %s and lacks x-quader-part: wiki", strings.ToUpper(method), pattern, op.ID, name)
 							}
 						}
 					}
@@ -61,18 +61,18 @@ func TestR_API_058_WikiOperationsAreMarked(t *testing.T) {
 		}
 	})
 	t.Run("R-API-058 the extension on a PUT operation fails to load", func(t *testing.T) {
-		bad := strings.Replace(string(raw), "      operationId: replaceProject\n", "      operationId: replaceProject\n      x-trove-part: wiki\n", 1)
-		if _, err := LoadDocument([]byte(bad)); err == nil || !strings.Contains(err.Error(), "x-trove-part") {
+		bad := strings.Replace(string(raw), "      operationId: replaceProject\n", "      operationId: replaceProject\n      x-quader-part: wiki\n", 1)
+		if _, err := LoadDocument([]byte(bad)); err == nil || !strings.Contains(err.Error(), "x-quader-part") {
 			t.Fatalf("err = %v", err)
 		}
 	})
 	t.Run("R-API-058 the extension on a GET that is not public fails to load, and so does another value", func(t *testing.T) {
-		bad := strings.Replace(string(raw), "      operationId: getAuthSettings\n", "      operationId: getAuthSettings\n      x-trove-part: wiki\n", 1)
-		if _, err := LoadDocument([]byte(bad)); err == nil || !strings.Contains(err.Error(), "x-trove-part") {
+		bad := strings.Replace(string(raw), "      operationId: getAuthSettings\n", "      operationId: getAuthSettings\n      x-quader-part: wiki\n", 1)
+		if _, err := LoadDocument([]byte(bad)); err == nil || !strings.Contains(err.Error(), "x-quader-part") {
 			t.Fatalf("err = %v", err)
 		}
-		bad = strings.Replace(string(raw), "      x-trove-part: wiki\n", "      x-trove-part: artifacts\n", 1)
-		if _, err := LoadDocument([]byte(bad)); err == nil || !strings.Contains(err.Error(), "x-trove-part") {
+		bad = strings.Replace(string(raw), "      x-quader-part: wiki\n", "      x-quader-part: artifacts\n", 1)
+		if _, err := LoadDocument([]byte(bad)); err == nil || !strings.Contains(err.Error(), "x-quader-part") {
 			t.Fatalf("err = %v", err)
 		}
 	})

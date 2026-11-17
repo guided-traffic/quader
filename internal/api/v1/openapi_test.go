@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 func TestOpenAPIDocument(t *testing.T) {
@@ -50,7 +50,7 @@ paths:
 		if len(problems) != 1 || !strings.Contains(problems[0], `"me"`) {
 			t.Fatalf("%v", problems)
 		}
-		listed := strings.Replace(spec, "schema: {type: string}", "schema: {type: string, x-trove-reserved-names: [me]}", 1)
+		listed := strings.Replace(spec, "schema: {type: string}", "schema: {type: string, x-quader-reserved-names: [me]}", 1)
 		if problems, _ := apitest.ReservedNameProblems([]byte(listed)); len(problems) != 0 {
 			t.Fatalf("%v", problems)
 		}
@@ -96,8 +96,8 @@ func TestResponsesMatchTheDocument(t *testing.T) {
 		authn func(*http.Request) (httpserver.Principal, error)
 	}{{"anonymous", nil}, {"authenticated", authed}} {
 		facts := Facts{
-			Valkey:      gen.ValkeyFacts{Mode: gen.Sentinel, PrimaryName: "trove", Sentinels: 3, Tls: "verify-full", KeyPrefix: "trove:"},
-			ObjectStore: gen.ObjectStoreFacts{Endpoint: "https://s3.example.com", Bucket: "trove", Prefix: "blobs", CredentialSource: "static"},
+			Valkey:      gen.ValkeyFacts{Mode: gen.Sentinel, PrimaryName: "quader", Sentinels: 3, Tls: "verify-full", KeyPrefix: "quader:"},
+			ObjectStore: gen.ObjectStoreFacts{Endpoint: "https://s3.example.com", Bucket: "quader", Prefix: "blobs", CredentialSource: "static"},
 		}
 		s := newSetup(t, func(o *Options) { o.Facts = fakeFacts{facts} }, tc.authn)
 		h := val.Handler(t, s.handler)

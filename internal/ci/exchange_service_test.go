@@ -15,15 +15,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/ci/subject"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/subject"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The exchange without PostgreSQL: the order of R-CI-007 against fakes of the issuer service, the mapping store, the
@@ -80,7 +80,7 @@ func (f *fakeTokens) IssueCITx(_ context.Context, _ meta.Tx, r token.CITRequest)
 		return token.CITIssued{}, err
 	}
 	f.issued = append(f.issued, r)
-	return token.CITIssued{ID: "tok-" + fmt.Sprint(len(f.issued)), Secret: "trv_cit_secret", Hint: "trv_cit_…cret", ExpiresAt: time.Now().Add(r.TTL)}, nil
+	return token.CITIssued{ID: "tok-" + fmt.Sprint(len(f.issued)), Secret: "qdr_cit_secret", Hint: "qdr_cit_…cret", ExpiresAt: time.Now().Add(r.TTL)}, nil
 }
 
 // fakeQueries are the statements: every matched mapping unchanged unless changed names it.
@@ -183,7 +183,7 @@ func newTestExchange(t *testing.T) *testExchange {
 		t.Fatal(err)
 	}
 	is := Issuer{
-		ID: "i-1", Name: "gitlab-test", Kind: KindGitLab, Issuer: testIss, Enabled: true, AllowedAudiences: []string{"https://trove.test"},
+		ID: "i-1", Name: "gitlab-test", Kind: KindGitLab, Issuer: testIss, Enabled: true, AllowedAudiences: []string{"https://quader.test"},
 		ExclusiveAudience: true, AllowedAlgorithms: []string{"RS256"}, AllowedTyp: []string{"JWT"}, ClockSkewSeconds: 60,
 		PinClaims: []string{"project_id"}, Version: 3, MappingsVersion: 5,
 	}
@@ -205,7 +205,7 @@ func newTestExchange(t *testing.T) *testExchange {
 	s, err := NewExchange(ExchangeOptions{
 		DB: fakeRunner{}, Issuers: x.issuers, Mappings: x.mappings, Tokens: x.tokens,
 		Grants: GrantIndexFunc(func(*claims.Frozen) GrantIndex { return noIndex{} }), Recorder: x.rec, Metrics: metrics,
-		Config: cfg, BaseURL: "https://trove.test",
+		Config: cfg, BaseURL: "https://quader.test",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -219,7 +219,7 @@ func newTestExchange(t *testing.T) *testExchange {
 func (x *testExchange) sign(t *testing.T, over map[string]any) string {
 	t.Helper()
 	now := time.Now().Unix()
-	c := map[string]any{"iss": testIss, "aud": "https://trove.test", "iat": now, "nbf": now - 5, "exp": now + 3600, "jti": "j-" + fmt.Sprint(now), "project_id": "7", "job_id": "9"}
+	c := map[string]any{"iss": testIss, "aud": "https://quader.test", "iat": now, "nbf": now - 5, "exp": now + 3600, "jti": "j-" + fmt.Sprint(now), "project_id": "7", "job_id": "9"}
 	for k, v := range over {
 		c[k] = v
 	}
@@ -361,8 +361,8 @@ func TestR_CI_007_TheExchangeWithoutADatabase(t *testing.T) {
 		tok := x.sign(t, nil)
 		req := x.request(tok)
 		req.ActorToken = "actor-secret-value"
-		for _, s := range []string{req.String(), fmt.Sprint(req), fmt.Sprintf("%v", req), ExchangeResult{AccessToken: "trv_cit_abcdefghij"}.String()} {
-			if strings.Contains(s, tok[len(tok)-20:]) || strings.Contains(s, "actor-secret-value") || strings.Contains(s, "trv_cit_abcdefghij") {
+		for _, s := range []string{req.String(), fmt.Sprint(req), fmt.Sprintf("%v", req), ExchangeResult{AccessToken: "qdr_cit_abcdefghij"}.String()} {
+			if strings.Contains(s, tok[len(tok)-20:]) || strings.Contains(s, "actor-secret-value") || strings.Contains(s, "qdr_cit_abcdefghij") {
 				t.Errorf("printed a token: %s", s)
 			}
 		}

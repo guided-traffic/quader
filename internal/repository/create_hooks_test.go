@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 func TestCreateHooksRunForTheirFormatOnly(t *testing.T) {

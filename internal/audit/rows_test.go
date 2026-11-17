@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 func TestR_OPS_014_RegistryRules(t *testing.T) {

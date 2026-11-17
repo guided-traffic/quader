@@ -43,7 +43,7 @@ the page of the format as a whole is [ansible.md](ansible.md).
 | [handlers_virtual.go](../../internal/formats/ansible/handlers_virtual.go) | the handlers of the routes of the class: root, collection, versions, version, artifact; the paging; the weak validator |
 | [virtual_gate.go](../../internal/formats/ansible/virtual_gate.go) | the deploy target: the publish handed to the local class's handler, the task address rewrite, the import task lookup; `remoteMembers` |
 | [virtual_roles.go](../../internal/formats/ansible/virtual_roles.go) | role ids by member: lookup, versions, archive |
-| [virtual_metrics.go](../../internal/formats/ansible/virtual_metrics.go) | `trove_ansible_virtual_digest_conflicts_total`, bound through `registerBinder` ([bind.go](../../internal/formats/ansible/bind.go)) |
+| [virtual_metrics.go](../../internal/formats/ansible/virtual_metrics.go) | `quader_ansible_virtual_digest_conflicts_total`, bound through `registerBinder` ([bind.go](../../internal/formats/ansible/bind.go)) |
 | [merge/](../../internal/formats/ansible/merge) | the pure leaf: `MergeLists`, `Page`, `MergeCollection`, `Compare` |
 
 ## The merge

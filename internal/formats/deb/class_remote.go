@@ -1,6 +1,6 @@
 package deb
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // The remote class (R-DEB-001, R-DEB-019 to R-DEB-023): a pull-through cache of an APT archive, Debian, Ubuntu or any other, whose
 // release documents are passed through byte for byte and verified against deb.upstreamKeys when the repository has them. The class

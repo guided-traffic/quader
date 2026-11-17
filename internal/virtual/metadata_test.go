@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/proxy/invalidation"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/virtual"
-	vt "github.com/guided-traffic/trove/internal/virtual/virtualtest"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/proxy/invalidation"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/virtual"
+	vt "github.com/guided-traffic/quader/internal/virtual/virtualtest"
 )
 
 // entries is the number of entries in the merged-metadata cache of the world.
@@ -99,7 +99,7 @@ func TestR_REPO_020_MergedMetadata(t *testing.T) {
 		if n := w.merger.Merges.Load(); n != 1 {
 			t.Fatalf("Merge ran %d times", n)
 		}
-		if !strings.HasPrefix(second.CacheStatus, "trove; hit; ttl=") || first.CacheStatus != "trove; fwd=miss" || first.MergeFingerprint != second.MergeFingerprint {
+		if !strings.HasPrefix(second.CacheStatus, "quader; hit; ttl=") || first.CacheStatus != "quader; fwd=miss" || first.MergeFingerprint != second.MergeFingerprint {
 			t.Fatalf("status %q / %q", first.CacheStatus, second.CacheStatus)
 		}
 		if entries(w) != 1 {
@@ -221,7 +221,7 @@ func TestR_REPO_020_PartialMerge(t *testing.T) {
 		w.rows.Publish(idLocal, "lodash", "1.0.0")
 		w.remote.MetadataErr["npm-remote"] = errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "down")
 		m, err := w.metadata(alice, "lodash")
-		if v := versionsOf(t, m, err); len(v) != 1 || !m.Partial || m.CacheStatus != "trove; detail=partial" {
+		if v := versionsOf(t, m, err); len(v) != 1 || !m.Partial || m.CacheStatus != "quader; detail=partial" {
 			t.Fatalf("merged %v partial %v status %q", v, m.Partial, m.CacheStatus)
 		}
 		if entries(w) != 0 {

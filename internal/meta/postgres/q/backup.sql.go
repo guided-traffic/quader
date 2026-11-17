@@ -50,7 +50,7 @@ func (q *Queries) AbandonExpiredBackupRuns(ctx context.Context) ([]string, error
 }
 
 const activeBackupRuns = `-- name: ActiveBackupRuns :many
-SELECT id, operation, backup_id, state, hold, trigger, target, pod, trove_version, snapshot_at, progress, result, error, started_at, heartbeat_at, lease_expires_at, finished_at, job_name FROM backup_run
+SELECT id, operation, backup_id, state, hold, trigger, target, pod, quader_version, snapshot_at, progress, result, error, started_at, heartbeat_at, lease_expires_at, finished_at, job_name FROM backup_run
  WHERE state IN ('starting', 'snapshot', 'copying', 'finalizing', 'pruning')
  ORDER BY started_at DESC
 `
@@ -74,7 +74,7 @@ func (q *Queries) ActiveBackupRuns(ctx context.Context) ([]BackupRun, error) {
 			&i.Trigger,
 			&i.Target,
 			&i.Pod,
-			&i.TroveVersion,
+			&i.QuaderVersion,
 			&i.SnapshotAt,
 			&i.Progress,
 			&i.Result,
@@ -96,7 +96,7 @@ func (q *Queries) ActiveBackupRuns(ctx context.Context) ([]BackupRun, error) {
 }
 
 const activeTargetWritingRun = `-- name: ActiveTargetWritingRun :many
-SELECT id, operation, backup_id, state, hold, trigger, target, pod, trove_version, snapshot_at, progress, result, error, started_at, heartbeat_at, lease_expires_at, finished_at, job_name FROM backup_run
+SELECT id, operation, backup_id, state, hold, trigger, target, pod, quader_version, snapshot_at, progress, result, error, started_at, heartbeat_at, lease_expires_at, finished_at, job_name FROM backup_run
  WHERE operation IN ('create', 'delete') AND state IN ('starting', 'snapshot', 'copying', 'finalizing', 'pruning')
  LIMIT 1
 `
@@ -120,7 +120,7 @@ func (q *Queries) ActiveTargetWritingRun(ctx context.Context) ([]BackupRun, erro
 			&i.Trigger,
 			&i.Target,
 			&i.Pod,
-			&i.TroveVersion,
+			&i.QuaderVersion,
 			&i.SnapshotAt,
 			&i.Progress,
 			&i.Result,
@@ -161,7 +161,7 @@ const backupGlobalHoldValid = `-- name: BackupGlobalHoldValid :one
 SELECT EXISTS (SELECT 1 FROM backup_run WHERE hold = 'all' AND lease_expires_at > now()) AS held
 `
 
-// The early exit of a collection run (R-BAK-007, "Skipping a run") and the gauge trove_backup_gc_hold{mode="all"}.
+// The early exit of a collection run (R-BAK-007, "Skipping a run") and the gauge quader_backup_gc_hold{mode="all"}.
 func (q *Queries) BackupGlobalHoldValid(ctx context.Context) (bool, error) {
 	row := q.db.QueryRow(ctx, backupGlobalHoldValid)
 	var held bool
@@ -290,7 +290,7 @@ const countRevocationOutbox = `-- name: CountRevocationOutbox :one
 SELECT count(*)::bigint FROM revocation_outbox
 `
 
-// trove_revocation_journal_pending (R-HA-054): rows the shipper has not yet written and deleted.
+// quader_revocation_journal_pending (R-HA-054): rows the shipper has not yet written and deleted.
 func (q *Queries) CountRevocationOutbox(ctx context.Context) (int64, error) {
 	row := q.db.QueryRow(ctx, countRevocationOutbox)
 	var column_1 int64
@@ -421,7 +421,7 @@ func (q *Queries) FinishBackupRun(ctx context.Context, arg FinishBackupRunParams
 }
 
 const getBackupRun = `-- name: GetBackupRun :many
-SELECT id, operation, backup_id, state, hold, trigger, target, pod, trove_version, snapshot_at, progress, result, error, started_at, heartbeat_at, lease_expires_at, finished_at, job_name FROM backup_run WHERE id = $1::text::uuid
+SELECT id, operation, backup_id, state, hold, trigger, target, pod, quader_version, snapshot_at, progress, result, error, started_at, heartbeat_at, lease_expires_at, finished_at, job_name FROM backup_run WHERE id = $1::text::uuid
 `
 
 func (q *Queries) GetBackupRun(ctx context.Context, id string) ([]BackupRun, error) {
@@ -442,7 +442,7 @@ func (q *Queries) GetBackupRun(ctx context.Context, id string) ([]BackupRun, err
 			&i.Trigger,
 			&i.Target,
 			&i.Pod,
-			&i.TroveVersion,
+			&i.QuaderVersion,
 			&i.SnapshotAt,
 			&i.Progress,
 			&i.Result,
@@ -516,7 +516,7 @@ func (q *Queries) InsertBackupPins(ctx context.Context, arg InsertBackupPinsPara
 }
 
 const insertBackupRun = `-- name: InsertBackupRun :exec
-INSERT INTO backup_run (id, operation, backup_id, state, hold, trigger, target, pod, trove_version, job_name, lease_expires_at)
+INSERT INTO backup_run (id, operation, backup_id, state, hold, trigger, target, pod, quader_version, job_name, lease_expires_at)
 VALUES ($1::text::uuid, $2::text, NULLIF($3::text, ''), 'starting', 'none',
         $4::text, $5::text, $6::text, $7::text,
         NULLIF($8::text, ''),
@@ -524,15 +524,15 @@ VALUES ($1::text::uuid, $2::text, NULLIF($3::text, ''), 'starting', 'none',
 `
 
 type InsertBackupRunParams struct {
-	ID           string
-	Operation    string
-	BackupID     string
-	Trigger      string
-	Target       string
-	Pod          string
-	TroveVersion string
-	JobName      string
-	LeaseSecs    float64
+	ID            string
+	Operation     string
+	BackupID      string
+	Trigger       string
+	Target        string
+	Pod           string
+	QuaderVersion string
+	JobName       string
+	LeaseSecs     float64
 }
 
 // A unique violation on backup_run_one_active (SQLSTATE 23505) means another target-writing run holds the slot
@@ -545,7 +545,7 @@ func (q *Queries) InsertBackupRun(ctx context.Context, arg InsertBackupRunParams
 		arg.Trigger,
 		arg.Target,
 		arg.Pod,
-		arg.TroveVersion,
+		arg.QuaderVersion,
 		arg.JobName,
 		arg.LeaseSecs,
 	)
@@ -553,7 +553,7 @@ func (q *Queries) InsertBackupRun(ctx context.Context, arg InsertBackupRunParams
 }
 
 const lastBackupRunByOutcome = `-- name: LastBackupRunByOutcome :many
-SELECT id, operation, backup_id, state, hold, trigger, target, pod, trove_version, snapshot_at, progress, result, error, started_at, heartbeat_at, lease_expires_at, finished_at, job_name FROM backup_run
+SELECT id, operation, backup_id, state, hold, trigger, target, pod, quader_version, snapshot_at, progress, result, error, started_at, heartbeat_at, lease_expires_at, finished_at, job_name FROM backup_run
  WHERE operation = $1::text AND state = ANY($2::text[])
  ORDER BY finished_at DESC NULLS LAST, id DESC
  LIMIT 1
@@ -584,7 +584,7 @@ func (q *Queries) LastBackupRunByOutcome(ctx context.Context, arg LastBackupRunB
 			&i.Trigger,
 			&i.Target,
 			&i.Pod,
-			&i.TroveVersion,
+			&i.QuaderVersion,
 			&i.SnapshotAt,
 			&i.Progress,
 			&i.Result,
@@ -606,7 +606,7 @@ func (q *Queries) LastBackupRunByOutcome(ctx context.Context, arg LastBackupRunB
 }
 
 const listBackupRuns = `-- name: ListBackupRuns :many
-SELECT id, operation, backup_id, state, hold, trigger, target, pod, trove_version, snapshot_at, progress, result, error, started_at, heartbeat_at, lease_expires_at, finished_at, job_name FROM backup_run
+SELECT id, operation, backup_id, state, hold, trigger, target, pod, quader_version, snapshot_at, progress, result, error, started_at, heartbeat_at, lease_expires_at, finished_at, job_name FROM backup_run
  WHERE ($1::text = '' OR operation = $1::text)
    AND ($2::text = '' OR state = $2::text)
    AND ($3::text = '' OR trigger = $3::text)
@@ -658,7 +658,7 @@ func (q *Queries) ListBackupRuns(ctx context.Context, arg ListBackupRunsParams) 
 			&i.Trigger,
 			&i.Target,
 			&i.Pod,
-			&i.TroveVersion,
+			&i.QuaderVersion,
 			&i.SnapshotAt,
 			&i.Progress,
 			&i.Result,

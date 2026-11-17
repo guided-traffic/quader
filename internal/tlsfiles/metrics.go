@@ -12,18 +12,18 @@ import (
 const (
 	// FamilyExpiry is the notAfter of the served certificate of a pair, or the
 	// earliest notAfter of the certificates of a bundle, as a Unix timestamp.
-	FamilyExpiry = "trove_tls_certificate_expiry_timestamp_seconds"
+	FamilyExpiry = "quader_tls_certificate_expiry_timestamp_seconds"
 	// FamilyReloads counts content changes that were loaded and swapped in after
 	// the first load.
-	FamilyReloads = "trove_tls_reloads_total"
+	FamilyReloads = "quader_tls_reloads_total"
 	// FamilyReloadErrors counts content that did not load; the previous content of
 	// the piece stays in service. One distinct content counts once.
-	FamilyReloadErrors = "trove_tls_reload_errors_total"
+	FamilyReloadErrors = "quader_tls_reload_errors_total"
 	// FamilyTemporary is 1 while a listener answers handshakes with its temporary
 	// self-generated certificate because its configured pair has not loaded, and 0
 	// once the configured pair serves. Only a listener that may use one has the
 	// series (the ops listener, R-ARCH-035).
-	FamilyTemporary = "trove_tls_temporary_certificate"
+	FamilyTemporary = "quader_tls_temporary_certificate"
 )
 
 // Kinds of material: the value of the kind label. A listener's material also

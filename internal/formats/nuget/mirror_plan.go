@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/formats/nuget/remote"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // MirrorPlan fills the documents of an ID that a restore reads, through the remote engine, and returns the .nupkg of

@@ -36,7 +36,7 @@ const SORTS: readonly ItemSort[] = ['name', '-name', 'updatedAt', '-updatedAt', 
  * the repository are in its menu, and where it fetches from or resolves from is its Details.
  */
 @Component({
-  selector: 'trove-repository-content',
+  selector: 'quader-repository-content',
   imports: [FormatIconView, VisibilityIcon,
     CdkMenu,
     CdkMenuItem,

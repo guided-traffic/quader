@@ -3,7 +3,7 @@ package authz
 import (
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // PatternLists is the include and exclude list of one dimension of a resource

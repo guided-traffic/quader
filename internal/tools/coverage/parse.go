@@ -18,7 +18,7 @@ const (
 	prioLater = "Later"
 	prioOut   = "Out of scope"
 
-	troveOnly = "trove-only"
+	quaderOnly = "quader-only"
 )
 
 func priorities() []string { return []string{prioMVP, prioP1, prioP2, prioLater, prioOut} }
@@ -237,17 +237,17 @@ func parseSpec(docs string, c *corpus) error {
 			}
 			for _, tok := range tokens {
 				switch {
-				case tok == troveOnly:
+				case tok == quaderOnly:
 				case !catalogID.MatchString(tok):
-					c.errorf("%s: %s Covers token is neither a catalog ID nor '%s': %q", where, m[1], troveOnly, tok)
+					c.errorf("%s: %s Covers token is neither a catalog ID nor '%s': %q", where, m[1], quaderOnly, tok)
 				case contains(covers, tok):
 					c.errorf("%s: %s lists %s twice in Covers", where, m[1], tok)
 				default:
 					covers = append(covers, tok)
 				}
 			}
-			if contains(tokens, troveOnly) && len(tokens) > 1 {
-				c.errorf("%s: %s mixes '%s' with catalog IDs", where, m[1], troveOnly)
+			if contains(tokens, quaderOnly) && len(tokens) > 1 {
+				c.errorf("%s: %s mixes '%s' with catalog IDs", where, m[1], quaderOnly)
 			}
 			c.Reqs = append(c.Reqs, requirement{
 				ID: m[1], Title: m[2], Priority: p[1], Covers: covers, Page: rel, Line: idx + 1,

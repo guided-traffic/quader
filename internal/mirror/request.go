@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // call sends one request of the pass through the window (R-REPO-054): it waits while a wait is in force and while the window

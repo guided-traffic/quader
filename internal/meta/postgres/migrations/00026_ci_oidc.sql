@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- GitLab CI OIDC federation (R-CI-001, R-CI-003, R-CI-009, R-CI-018, R-CI-020), beta phase 5, expand
 -- class (R-HA-018). The tables are new and empty, so they take their keys and indexes inline. The one

@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The runtime role reads the migration bookkeeping and never writes it. The
 -- default privileges of the first migration give it INSERT, UPDATE and DELETE on
@@ -14,8 +14,8 @@
 
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trove_app') THEN
-        EXECUTE format('REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON %I.schema_migration, %I.schema_state FROM trove_app',
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'quader_app') THEN
+        EXECUTE format('REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON %I.schema_migration, %I.schema_state FROM quader_app',
                        current_schema(), current_schema());
     END IF;
 END $$;

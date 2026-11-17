@@ -16,7 +16,7 @@ project's objects inside it. It does not repeat the model of permissions ([permi
 
 | Party | Trusted with | Not trusted with |
 |---|---|---|
-| Administrator of trove (`admin`; `projects:write`, `repositories:write-config`) | Creating and deleting projects, the members of every project (the first Owner among them), removing the last Owner, moving any repository | — |
+| Administrator of Quader (`admin`; `projects:write`, `repositories:write-config`) | Creating and deleting projects, the members of every project (the first Owner among them), removing the last Owner, moving any repository | — |
 | Owner (user, or member of a group with the role) | Every action on every repository of the project; the project's members, policies, service accounts, CI mappings, settings; moving a repository to another project it owns | Anything outside the project; system roles; global policies, users and groups; `anonymous` and `authenticated` grants; removing or demoting the last Owner |
 | Maintainer | Every action on every repository of the project (`manage` included) | The administration of the project |
 | Developer | `read`, `annotate`, `deploy` on every repository of the project | `overwrite`, `delete`, `manage`; the administration |
@@ -25,7 +25,7 @@ project's objects inside it. It does not repeat the model of permissions ([permi
 | `auditor`, `security-admin`, `repository-admin` (`projects:read`) | Reading every project and its members | Changing one |
 
 ```
- administrator of trove ── creates, names the first Owner ──▶ project ◀── members: users and groups with a role
+ administrator of Quader ── creates, names the first Owner ──▶ project ◀── members: users and groups with a role
                                                                │          (reader < developer < maintainer < owner)
                                                                ├── repositories (key unique in the project)
    global policies ─────────────── union ─────────────────────┤
@@ -73,7 +73,7 @@ project's objects inside it. It does not repeat the model of permissions ([permi
 
 - The writes run under the project's row lock ([members.go](../../internal/project/members.go), `lockProject`). A write that would take
   the role `owner` from the last membership with it (a group counts as one, whatever its members) answers 409 `last_owner` unless the
-  caller holds `projects:write` ([Q-AUTHZ-217](../spec/authorization.md#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-trove)).
+  caller holds `projects:write` ([Q-AUTHZ-217](../spec/authorization.md#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-quader)).
   Two Owners who remove each other at once run one after the other: one removal commits and one Owner remains. The second request
   is refused as what its caller then is: 409 `last_owner` while the index it is decided on still holds the caller's role, the 404
   of a non-member once its own removal is in force there. The member write does not read the caller's role again under the lock,
@@ -145,7 +145,7 @@ Q-REPO-193. The checks belong to the repository service's write path ([delegated
 write: the create, the replace and the patch of a repository and the unsaved upstream test. The management API decides who is held
 to them ([repositories_api.go](../../internal/api/v1/repositories_api.go), `writeCaller`): a caller that does not hold
 `repositories:write-config` and is admitted by the role Owner alone is `Restricted`, and `MayWeakenVulnerabilities` is set for a holder of
-`vulnerabilities:triage` ([Q-VULN-69](../spec/vulnerability-scanning.md#q-vuln-69--weakening-the-vulnerabilities-member-needs-the-triage-capability-or-repositoriesWrite-config)). An administrator of trove,
+`vulnerabilities:triage` ([Q-VULN-69](../spec/vulnerability-scanning.md#q-vuln-69--weakening-the-vulnerabilities-member-needs-the-triage-capability-or-repositoriesWrite-config)). An administrator of Quader,
 who holds the capability, is bound by none of the rules; the Owner's answers are 422 `secret_value_required`,
 `outbound_path_restricted` and `mirror_restricted`, and 403 `vulnerability_weakening_refused`. The integration test
 `TestR_AUTHZ_026_AnOwnerWritesRemoteRepositoriesWithinTheRules` ([owner_repositories_test.go](../../test/integration/projects/owner_repositories_test.go))
@@ -172,13 +172,13 @@ The gaps of these mechanisms recorded on the spec pages are linked here; the one
 
 ### H-403 · What a project administrator still reaches of an upstream an administrator configured
 
-Stage: a remote repository an administrator of trove created in a project or moved into it. Subject: the upstream credentials,
+Stage: a remote repository an administrator of Quader created in a project or moved into it. Subject: the upstream credentials,
 references and outbound path an administrator configured for such a repository, and the partner networks they open.
 
 - **Live, by design of the move and of the roles.** While `url` and the credential hosts stay, an Owner or a Maintainer causes fetches
   with the stored credential, the stored reference and the stored outbound path, and reads the status of the answer; an Owner reads the
   full document, which names a reference by name (`{"secretRef": {"file": "partner-token"}}`), so it learns the file names under
-  `secrets_dir` and the `TROVE_CAC_` variable names its repositories use, not their content. What makes it real: an administrator who
+  `secrets_dir` and the `QUADER_CAC_` variable names its repositories use, not their content. What makes it real: an administrator who
   puts a repository into a project whose members are not meant to use its upstream credential; keep it in another project, or move the
   credential to a repository outside the project.
 

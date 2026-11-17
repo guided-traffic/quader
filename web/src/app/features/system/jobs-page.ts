@@ -29,10 +29,10 @@ export const JOBS_REFRESH_MS = 5_000;
  * paused.
  */
 @Component({
-  selector: 'trove-jobs-page',
+  selector: 'quader-jobs-page',
   imports: [PageHeader, ErrorNotice, JobTable],
   template: `
-    <trove-page-header heading="Jobs" i18n-heading="@@jobs.heading">
+    <quader-page-header heading="Jobs" i18n-heading="@@jobs.heading">
       <button actions class="btn btn-default"
         type="button"
         [attr.aria-pressed]="paused()"
@@ -45,7 +45,7 @@ export const JOBS_REFRESH_MS = 5_000;
         }
       </button>
       <button actions class="btn btn-default" type="button" (click)="load()" i18n="@@system.refresh">Refresh now</button>
-    </trove-page-header>
+    </quader-page-header>
 
     <form class="toolbar" role="search" (submit)="apply($event)">
       <div class="field">
@@ -78,13 +78,13 @@ export const JOBS_REFRESH_MS = 5_000;
     </form>
 
     @if (list.error(); as f) {
-      <trove-error-notice [error]="f" (retry)="load()" />
+      <quader-error-notice [error]="f" (retry)="load()" />
     }
     @if (list.loaded()) {
       @if (list.items().length === 0) {
         <p class="empty" i18n="@@jobs.empty">No job matches the filters.</p>
       } @else {
-        <trove-job-table
+        <quader-job-table
           [jobs]="list.items()"
           [caption]="caption"
           (cancelRequested)="cancel($event)"
@@ -110,7 +110,7 @@ export const JOBS_REFRESH_MS = 5_000;
     .states {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-3);
+      gap: var(--quader-space-3);
       margin: 0;
       padding: 0;
       border: 0;

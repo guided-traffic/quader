@@ -6,11 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/dispatch"
-	"github.com/guided-traffic/trove/internal/api/registry"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/dispatch"
+	"github.com/guided-traffic/quader/internal/api/registry"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // R-OCI-004 step 1 (unit level): the generic challenge of authz.Unauthenticated, which a caller without a credential meets for a private
@@ -40,8 +40,8 @@ func TestABareChallengeBelowV2BecomesTheRegistrys(t *testing.T) {
 		t.Fatal(err)
 	}
 	for path, want := range map[string]string{
-		"/v2/web/docker-local/app/manifests/1":    `Bearer realm="https://trove.test/v2/_token",service="trove.test",scope="repository:web/docker-local/app:pull"`,
-		"/v2/web/docker-local/app/blobs/uploads/": `Bearer realm="https://trove.test/v2/_token",service="trove.test",scope="repository:web/docker-local/app:push"`,
+		"/v2/web/docker-local/app/manifests/1":    `Bearer realm="https://quader.test/v2/_token",service="quader.test",scope="repository:web/docker-local/app:pull"`,
+		"/v2/web/docker-local/app/blobs/uploads/": `Bearer realm="https://quader.test/v2/_token",service="quader.test",scope="repository:web/docker-local/app:push"`,
 	} {
 		method := http.MethodGet
 		if path == "/v2/web/docker-local/app/blobs/uploads/" {

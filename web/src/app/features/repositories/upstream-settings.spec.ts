@@ -202,14 +202,14 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
     it('R-UI-021 F-54 the form of a remote shows the upstream settings with the preset URL and the defaults of the format; nothing is written while they stay', async () => {
       const r = await remoteStep([GENERIC_FORMAT, NPM], 'npm');
       const fake = r.get(RepositoriesApi) as FakeRepositoriesApi;
-      expect(r.root.querySelector('trove-upstream-settings')).not.toBeNull();
+      expect(r.root.querySelector('quader-upstream-settings')).not.toBeNull();
       expect(control(r.root, 'f-remote-url').value).toBe('https://registry.npmjs.org/');
       expect(text(r.root.querySelector('#d-remote-url')!)).toContain('well-known registry');
       expect(control(r.root, 'f-remote-authMode').value).toBe('none');
       expect(r.root.querySelector('#f-remote-password')).toBeNull();
       expect(control(r.root, 'f-remote-cache-metadataTtlSeconds').value).toBe('7200');
       expect(control(r.root, 'f-remote-cache-notFoundTtlSeconds').value).toBe('1800');
-      expect(r.root.querySelector('trove-upstream-settings')!.textContent).not.toContain('Default:');
+      expect(r.root.querySelector('quader-upstream-settings')!.textContent).not.toContain('Default:');
       // Offline is not offered at creation (R-UI-083).
       expect(r.root.querySelector('#f-remote-availability-mode')).toBeNull();
 
@@ -350,8 +350,8 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
 
     it('R-UI-021 a remote of a format that cannot mirror has the upstream settings and no Mirror section', async () => {
       const r = await remoteStep([GENERIC_FORMAT, NUGET], 'nuget');
-      expect(r.root.querySelector('trove-upstream-settings')).not.toBeNull();
-      expect(r.root.querySelector('trove-mirror-settings')).toBeNull();
+      expect(r.root.querySelector('quader-upstream-settings')).not.toBeNull();
+      expect(r.root.querySelector('quader-mirror-settings')).toBeNull();
     });
 
     it('R-UI-021 Q-UI-122 the mirror bound notice follows the URL entered: the well-known upstream is refused, another one is saved with a warning', async () => {
@@ -669,7 +669,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
           fake.repositories.push({ key: 'npm-local', project: 'web', class: 'local', format: 'npm' });
         },
       });
-      expect(local.root.querySelector('trove-upstream-settings')).toBeNull();
+      expect(local.root.querySelector('quader-upstream-settings')).toBeNull();
     });
 
     it('R-REPO-033 the stored password is never read into the field: it is empty, the page says one is stored, and no value of it exists anywhere', async () => {

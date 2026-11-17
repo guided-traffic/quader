@@ -10,14 +10,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/vuln/match"
-	vmetrics "github.com/guided-traffic/trove/internal/vuln/metrics"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/vuln/match"
+	vmetrics "github.com/guided-traffic/quader/internal/vuln/metrics"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 type stubDB struct{}

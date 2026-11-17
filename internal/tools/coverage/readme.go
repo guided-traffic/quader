@@ -29,7 +29,7 @@ func audiences() []audience {
 			".NET team", "publishes and restores NuGet packages from workstations and GitLab CI",
 			append([]string{"formats/nuget.md"}, shared...),
 		},
-		{"platform/ops team", "runs trove on Kubernetes and administers it", []string{
+		{"platform/ops team", "runs Quader on Kubernetes and administers it", []string{
 			"ha-and-deployment.md", "operations-and-monitoring.md", "storage-and-blobs.md",
 			"retention-and-cleanup.md", "repositories.md", "remote-repositories.md",
 			"identity-and-access.md", "authentication-providers.md", "access-tokens.md",
@@ -81,7 +81,7 @@ func blockHeadline(m *model) []string {
 			scope = append(scope, f)
 		}
 	}
-	only := m.troveOnlyReqs()
+	only := m.quaderOnlyReqs()
 	rp := map[string]int{}
 	pages := map[string]bool{}
 	for _, r := range m.Reqs {
@@ -119,7 +119,7 @@ func blockHeadline(m *model) []string {
 			"measured from spec headings",
 		},
 		{
-			"Requirements covering no catalog feature", fmt.Sprintf("%d (`%s`)", len(only), troveOnly),
+			"Requirements covering no catalog feature", fmt.Sprintf("%d (`%s`)", len(only), quaderOnly),
 			"measured from `Covers:` lines",
 		},
 	}

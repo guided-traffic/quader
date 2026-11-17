@@ -29,7 +29,7 @@ const toLines = (text: string): string[] => splitValues(text.replace(/,/g, '\n')
  * name and as the notice of the form.
  */
 @Component({
-  selector: 'trove-ci-issuer-form',
+  selector: 'quader-ci-issuer-form',
   imports: [Checkbox, ErrorNotice, Disclosure, TextField],
   template: `
     @if (configured()) {
@@ -52,32 +52,32 @@ const toLines = (text: string): string[] => splitValues(text.replace(/,/g, '\n')
     @if (readonly()) {
       @if (issuer(); as i) {
         <div class="readonly-fields">
-          <trove-text-field width="name" i18n-label="@@ci.form.name" label="Name" name="ro-name" [value]="i.name" [readonly]="true" />
-          <trove-text-field width="name" i18n-label="@@ci.form.kind" label="Kind" name="ro-kind" [value]="i.kind" [readonly]="true" />
-          <trove-text-field width="full" i18n-label="@@ci.form.issuer" label="Issuer URL" name="ro-issuer" [value]="i.issuer" [readonly]="true" />
-          <trove-text-field width="full" i18n-label="@@ci.form.description" label="Description" name="ro-description" [value]="i.description || '–'" [readonly]="true" />
-          <trove-text-field width="name" i18n-label="@@ci.form.enabled" label="Enabled" name="ro-enabled" [value]="i.enabled ? yes : no" [readonly]="true" />
-          <trove-text-field width="full" i18n-label="@@ci.form.audiences" label="Accepted audiences" name="ro-audiences" [value]="i.allowedAudiences.join(', ')" [readonly]="true" />
-          <trove-text-field width="name" i18n-label="@@ci.form.exclusive" label="Only these audiences" name="ro-exclusive" [value]="i.exclusiveAudience ? yes : no" [readonly]="true" />
-          <trove-text-field width="name" i18n-label="@@ci.form.algorithms" label="Signing algorithms" name="ro-algorithms" [value]="i.allowedAlgorithms.join(', ')" [readonly]="true" />
-          <trove-text-field width="name" i18n-label="@@ci.form.public" label="Public issuer" name="ro-public" [value]="i.publicIssuer ? yes : no" [readonly]="true" />
-          <trove-text-field width="full" i18n-label="@@ci.form.pin-claims" label="Pin claims" name="ro-pinClaims" [value]="i.pinClaims.join(', ')" [readonly]="true" />
-          <trove-text-field width="full" i18n-label="@@ci.form.required-claims" label="Required claims" name="ro-requiredClaims" [value]="i.requiredClaims.join(', ')" [readonly]="true" />
-          <trove-text-field width="duration" i18n-label="@@ci.form.skew" label="Clock skew (seconds)" name="ro-skew" [value]="'' + i.clockSkewSeconds" [readonly]="true" />
-          <trove-text-field width="duration" i18n-label="@@ci.form.max-ttl" label="Maximum token lifetime (seconds)" name="ro-maxTtl" [value]="i.maxTtlSeconds === null || i.maxTtlSeconds === undefined ? '–' : '' + i.maxTtlSeconds" [readonly]="true" />
-          <trove-text-field width="full" i18n-label="@@ci.form.discovery" label="Discovery document" name="ro-discovery" [value]="i.discoveryUrl ?? '–'" [readonly]="true" />
-          <trove-text-field width="full" i18n-label="@@ci.form.jwks" label="Key set URL" name="ro-jwks" [value]="i.jwksUri ?? '–'" [readonly]="true" />
-          <trove-text-field width="name" i18n-label="@@ci.form.ca" label="CA bundle" name="ro-ca" [value]="i.caBundleRef ?? '–'" [readonly]="true" />
-          <trove-text-field width="full" i18n-label="@@ci.form.proxy" label="Outbound proxy" name="ro-proxy" [value]="i.useOutboundProxy ? yes : no" [readonly]="true" />
+          <quader-text-field width="name" i18n-label="@@ci.form.name" label="Name" name="ro-name" [value]="i.name" [readonly]="true" />
+          <quader-text-field width="name" i18n-label="@@ci.form.kind" label="Kind" name="ro-kind" [value]="i.kind" [readonly]="true" />
+          <quader-text-field width="full" i18n-label="@@ci.form.issuer" label="Issuer URL" name="ro-issuer" [value]="i.issuer" [readonly]="true" />
+          <quader-text-field width="full" i18n-label="@@ci.form.description" label="Description" name="ro-description" [value]="i.description || '–'" [readonly]="true" />
+          <quader-text-field width="name" i18n-label="@@ci.form.enabled" label="Enabled" name="ro-enabled" [value]="i.enabled ? yes : no" [readonly]="true" />
+          <quader-text-field width="full" i18n-label="@@ci.form.audiences" label="Accepted audiences" name="ro-audiences" [value]="i.allowedAudiences.join(', ')" [readonly]="true" />
+          <quader-text-field width="name" i18n-label="@@ci.form.exclusive" label="Only these audiences" name="ro-exclusive" [value]="i.exclusiveAudience ? yes : no" [readonly]="true" />
+          <quader-text-field width="name" i18n-label="@@ci.form.algorithms" label="Signing algorithms" name="ro-algorithms" [value]="i.allowedAlgorithms.join(', ')" [readonly]="true" />
+          <quader-text-field width="name" i18n-label="@@ci.form.public" label="Public issuer" name="ro-public" [value]="i.publicIssuer ? yes : no" [readonly]="true" />
+          <quader-text-field width="full" i18n-label="@@ci.form.pin-claims" label="Pin claims" name="ro-pinClaims" [value]="i.pinClaims.join(', ')" [readonly]="true" />
+          <quader-text-field width="full" i18n-label="@@ci.form.required-claims" label="Required claims" name="ro-requiredClaims" [value]="i.requiredClaims.join(', ')" [readonly]="true" />
+          <quader-text-field width="duration" i18n-label="@@ci.form.skew" label="Clock skew (seconds)" name="ro-skew" [value]="'' + i.clockSkewSeconds" [readonly]="true" />
+          <quader-text-field width="duration" i18n-label="@@ci.form.max-ttl" label="Maximum token lifetime (seconds)" name="ro-maxTtl" [value]="i.maxTtlSeconds === null || i.maxTtlSeconds === undefined ? '–' : '' + i.maxTtlSeconds" [readonly]="true" />
+          <quader-text-field width="full" i18n-label="@@ci.form.discovery" label="Discovery document" name="ro-discovery" [value]="i.discoveryUrl ?? '–'" [readonly]="true" />
+          <quader-text-field width="full" i18n-label="@@ci.form.jwks" label="Key set URL" name="ro-jwks" [value]="i.jwksUri ?? '–'" [readonly]="true" />
+          <quader-text-field width="name" i18n-label="@@ci.form.ca" label="CA bundle" name="ro-ca" [value]="i.caBundleRef ?? '–'" [readonly]="true" />
+          <quader-text-field width="full" i18n-label="@@ci.form.proxy" label="Outbound proxy" name="ro-proxy" [value]="i.useOutboundProxy ? yes : no" [readonly]="true" />
         </div>
       }
     } @else {
       @if (error(); as e) {
-        <trove-error-notice [error]="e" />
+        <quader-error-notice [error]="e" />
       }
       <form class="form-grid" (submit)="submit($event)" novalidate>
         @if (isNew()) {
-          <trove-text-field
+          <quader-text-field
             width="name"
             i18n-label="@@ci.form.name"
             label="Name"
@@ -90,7 +90,7 @@ const toLines = (text: string): string[] => splitValues(text.replace(/,/g, '\n')
           />
           <p class="muted" i18n="@@ci.form.kind-note">Kind: GitLab. GitHub Actions and generic OpenID Connect issuers are not available yet.</p>
         }
-        <trove-text-field
+        <quader-text-field
           width="full"
           i18n-label="@@ci.form.issuer"
           label="Issuer URL"
@@ -103,9 +103,9 @@ const toLines = (text: string): string[] => splitValues(text.replace(/,/g, '\n')
           i18n-hint="@@ci.form.issuer-hint"
           hint="The base URL of the GitLab instance, https only. It must match the iss claim exactly."
         />
-        <trove-text-field width="full" i18n-label="@@ci.form.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
-        <trove-checkbox [checked]="enabled()" (checkedChange)="enabled.set($event)" i18n="@@ci.form.enabled-check">Enabled (disabling revokes the tokens issued through this issuer)</trove-checkbox>
-        <trove-text-field
+        <quader-text-field width="full" i18n-label="@@ci.form.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
+        <quader-checkbox [checked]="enabled()" (checkedChange)="enabled.set($event)" i18n="@@ci.form.enabled-check">Enabled (disabling revokes the tokens issued through this issuer)</quader-checkbox>
+        <quader-text-field
           width="full"
           i18n-label="@@ci.form.audiences-lines"
           label="Accepted audiences"
@@ -116,11 +116,11 @@ const toLines = (text: string): string[] => splitValues(text.replace(/,/g, '\n')
           i18n-hint="@@ci.form.audiences-hint"
           hint="One per line. Empty: the base URL of this server and npm:host."
         />
-        <trove-checkbox [checked]="publicIssuer()" (checkedChange)="publicIssuer.set($event)" i18n="@@ci.form.public-check">Public issuer (anyone can obtain tokens from it, such as GitLab.com): mappings must pin a project or namespace ID</trove-checkbox>
+        <quader-checkbox [checked]="publicIssuer()" (checkedChange)="publicIssuer.set($event)" i18n="@@ci.form.public-check">Public issuer (anyone can obtain tokens from it, such as GitLab.com): mappings must pin a project or namespace ID</quader-checkbox>
         @if (fieldError('/publicIssuer'); as text) {
           <p class="field-error">{{ text }}</p>
         }
-        <trove-text-field
+        <quader-text-field
           width="full"
           i18n-label="@@ci.form.pin-lines"
           label="Pin claims"
@@ -132,34 +132,34 @@ const toLines = (text: string): string[] => splitValues(text.replace(/,/g, '\n')
           hint="One per line. Immutable ID claims only. Empty: project_id, namespace_id, job_project_id and job_namespace_id."
         />
 
-        <trove-disclosure
+        <quader-disclosure
           i18n-heading="@@ci.form.advanced"
           heading="More settings"
           i18n-hint="@@ci.form.advanced-hint"
           hint="Discovery, algorithms, claims, lifetimes and the connection to the issuer."
         >
-          <trove-text-field width="full" i18n-label="@@ci.form.discovery" label="Discovery document" name="discoveryUrl" [(value)]="discoveryUrl" [error]="fieldError('/discoveryUrl')" i18n-hint="@@ci.form.discovery-hint" hint="Empty: the issuer URL followed by /.well-known/openid-configuration" />
-          <trove-text-field width="full" i18n-label="@@ci.form.jwks" label="Key set URL" name="jwksUri" [(value)]="jwksUri" [error]="fieldError('/jwksUri')" i18n-hint="@@ci.form.jwks-hint" hint="Empty: the jwks_uri of the discovery document" />
+          <quader-text-field width="full" i18n-label="@@ci.form.discovery" label="Discovery document" name="discoveryUrl" [(value)]="discoveryUrl" [error]="fieldError('/discoveryUrl')" i18n-hint="@@ci.form.discovery-hint" hint="Empty: the issuer URL followed by /.well-known/openid-configuration" />
+          <quader-text-field width="full" i18n-label="@@ci.form.jwks" label="Key set URL" name="jwksUri" [(value)]="jwksUri" [error]="fieldError('/jwksUri')" i18n-hint="@@ci.form.jwks-hint" hint="Empty: the jwks_uri of the discovery document" />
           <fieldset class="algorithms">
             <legend i18n="@@ci.form.algorithms">Signing algorithms</legend>
             @for (a of algorithms; track a) {
-              <trove-checkbox [checked]="algorithmSet().includes(a)" (checkedChange)="toggleAlgorithm(a, $event)">{{ a }}</trove-checkbox>
+              <quader-checkbox [checked]="algorithmSet().includes(a)" (checkedChange)="toggleAlgorithm(a, $event)">{{ a }}</quader-checkbox>
             }
             @if (fieldError('/allowedAlgorithms'); as text) {
               <p class="field-error">{{ text }}</p>
             }
           </fieldset>
-          <trove-checkbox [checked]="exclusiveAudience()" (checkedChange)="exclusiveAudience.set($event)" i18n="@@ci.form.exclusive-check">Accept only tokens whose audience is in the list above</trove-checkbox>
-          <trove-text-field width="full" i18n-label="@@ci.form.required-lines" label="Required claims" name="requiredClaims" type="textarea" [(value)]="requiredClaims" [error]="fieldError('/requiredClaims')" i18n-hint="@@ci.form.required-hint" hint="One per line. Empty: the preset of the kind." />
-          <trove-text-field width="duration" i18n-label="@@ci.form.skew" label="Clock skew (seconds)" name="clockSkewSeconds" type="number" [(value)]="clockSkew" [error]="fieldError('/clockSkewSeconds')" i18n-hint="@@ci.form.skew-hint" hint="0 to 300" />
-          <trove-text-field width="duration" i18n-label="@@ci.form.max-ttl" label="Maximum token lifetime (seconds)" name="maxTtlSeconds" type="number" [(value)]="maxTtl" [error]="fieldError('/maxTtlSeconds')" i18n-hint="@@ci.form.max-ttl-hint" hint="Empty: only the global maximum applies" />
-          <trove-checkbox [checked]="singleUse()" (checkedChange)="singleUse.set($event)" i18n="@@ci.form.single-use">Reject a second exchange of the same ID token</trove-checkbox>
-          <trove-checkbox [checked]="useOutboundProxy()" (checkedChange)="useOutboundProxy.set($event)" i18n="@@ci.form.proxy-check">Fetch discovery and keys through the outbound proxy</trove-checkbox>
-          <trove-text-field width="name" i18n-label="@@ci.form.ca" label="CA bundle" name="caBundleRef" [(value)]="caBundleRef" [error]="fieldError('/caBundleRef')" i18n-hint="@@ci.form.ca-hint" hint="A reference such as file:/path or env:NAME, for an instance behind a private CA" />
-        </trove-disclosure>
+          <quader-checkbox [checked]="exclusiveAudience()" (checkedChange)="exclusiveAudience.set($event)" i18n="@@ci.form.exclusive-check">Accept only tokens whose audience is in the list above</quader-checkbox>
+          <quader-text-field width="full" i18n-label="@@ci.form.required-lines" label="Required claims" name="requiredClaims" type="textarea" [(value)]="requiredClaims" [error]="fieldError('/requiredClaims')" i18n-hint="@@ci.form.required-hint" hint="One per line. Empty: the preset of the kind." />
+          <quader-text-field width="duration" i18n-label="@@ci.form.skew" label="Clock skew (seconds)" name="clockSkewSeconds" type="number" [(value)]="clockSkew" [error]="fieldError('/clockSkewSeconds')" i18n-hint="@@ci.form.skew-hint" hint="0 to 300" />
+          <quader-text-field width="duration" i18n-label="@@ci.form.max-ttl" label="Maximum token lifetime (seconds)" name="maxTtlSeconds" type="number" [(value)]="maxTtl" [error]="fieldError('/maxTtlSeconds')" i18n-hint="@@ci.form.max-ttl-hint" hint="Empty: only the global maximum applies" />
+          <quader-checkbox [checked]="singleUse()" (checkedChange)="singleUse.set($event)" i18n="@@ci.form.single-use">Reject a second exchange of the same ID token</quader-checkbox>
+          <quader-checkbox [checked]="useOutboundProxy()" (checkedChange)="useOutboundProxy.set($event)" i18n="@@ci.form.proxy-check">Fetch discovery and keys through the outbound proxy</quader-checkbox>
+          <quader-text-field width="name" i18n-label="@@ci.form.ca" label="CA bundle" name="caBundleRef" [(value)]="caBundleRef" [error]="fieldError('/caBundleRef')" i18n-hint="@@ci.form.ca-hint" hint="A reference such as file:/path or env:NAME, for an instance behind a private CA" />
+        </quader-disclosure>
 
         @if (isNew()) {
-          <trove-checkbox [checked]="validate()" (checkedChange)="validate.set($event)" i18n="@@ci.form.validate">Check the discovery document and the keys before saving</trove-checkbox>
+          <quader-checkbox [checked]="validate()" (checkedChange)="validate.set($event)" i18n="@@ci.form.validate">Check the discovery document and the keys before saving</quader-checkbox>
         }
         <div class="row-actions">
           <button class="btn btn-confirm" type="submit" [disabled]="busy()">
@@ -177,19 +177,19 @@ const toLines = (text: string): string[] => splitValues(text.replace(/,/g, '\n')
   styles: `
     .source-note {
       display: flex;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       align-items: flex-start;
-      margin-block: var(--trove-space-2);
-      color: var(--trove-text-muted);
+      margin-block: var(--quader-space-2);
+      color: var(--quader-text-muted);
     }
     .source-note.warn .material-icons {
-      color: var(--trove-status-warn);
+      color: var(--quader-status-warn);
     }
     .algorithms {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-1) var(--trove-space-3);
-      margin: var(--trove-space-2) 0;
+      gap: var(--quader-space-1) var(--quader-space-3);
+      margin: var(--quader-space-2) 0;
       border: 0;
       padding: 0;
     }

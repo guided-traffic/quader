@@ -5,9 +5,9 @@ package vulnapi
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/scope"
 )
 
 // TestR_VULN_019_TheRepositoryFilterExpandsOnlyAVirtualRepositoryTheCallerReads (Q-VULN-71): a caller who reads npm-local but not
@@ -19,7 +19,7 @@ func TestR_VULN_019_TheRepositoryFilterExpandsOnlyAVirtualRepositoryTheCallerRea
 	erin := e.st.User("erin")
 	e.st.Policy("local-readers", []string{"read"}, []string{"npm-local"}, erin)
 	tok := e.st.Token(erin, scope.Default())
-	web2 := e.st.Start(t, testenv.ReplicaOptions{Name: "web2", Env: []string{"TROVE_API_RATE_LIMITS_ENABLED=false"}}) // loads the policy
+	web2 := e.st.Start(t, testenv.ReplicaOptions{Name: "web2", Env: []string{"QUADER_API_RATE_LIMITS_ENABLED=false"}}) // loads the policy
 
 	if got := e.list(web2, tok, q("repository", "it/npm-local")).packages(); len(got) != 1 {
 		t.Fatalf("the member: %v", got)

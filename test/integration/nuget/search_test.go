@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/formats/nuget/search"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/formats/nuget/search"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The search of a local repository (R-NUGET-010, R-AUTHZ-016) against PostgreSQL: the ranking,

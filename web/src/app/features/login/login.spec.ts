@@ -57,7 +57,7 @@ describe('Sign-in screen', () => {
       const { root, assign } = await open('/login?returnTo=%2Fadmin%2Fusers');
       (root.querySelector('main button') as HTMLButtonElement).click();
       expect(assign).toHaveBeenCalledTimes(1);
-      const target = new URL(assign.mock.calls[0]?.[0] ?? '', 'https://trove.test');
+      const target = new URL(assign.mock.calls[0]?.[0] ?? '', 'https://quader.test');
       expect(target.pathname).toBe('/auth/oidc/corp/start');
       expect(target.searchParams.get('return_to')).toBe('/ui/en/admin/users');
     } finally {
@@ -70,7 +70,7 @@ describe('Sign-in screen', () => {
     try {
       const { root, assign } = await open('/login?returnTo=%2Fadmin%2Fusers');
       (root.querySelector('main button') as HTMLButtonElement).click();
-      const target = new URL(assign.mock.calls[0]?.[0] ?? '', 'https://trove.test');
+      const target = new URL(assign.mock.calls[0]?.[0] ?? '', 'https://quader.test');
       expect(target.searchParams.get('return_to')).toBe('/ui/admin/users');
     } finally {
       done();
@@ -86,7 +86,7 @@ describe('Sign-in screen', () => {
         expect(new URL(document.baseURI).pathname).toBe('/ui/de/');
         const { root, assign } = await open('/login?returnTo=%2Fadmin%2Fusers');
         (root.querySelector('main button') as HTMLButtonElement).click();
-        const target = new URL(assign.mock.calls[0]?.[0] ?? '', 'https://trove.test');
+        const target = new URL(assign.mock.calls[0]?.[0] ?? '', 'https://quader.test');
         expect(target.searchParams.get('return_to'), href).toBe('/ui/de/admin/users');
       } finally {
         done();
@@ -99,7 +99,7 @@ describe('Sign-in screen', () => {
     try {
       const { root, assign } = await open('/login?returnTo=https%3A%2F%2Fevil.test%2F');
       (root.querySelector('main button') as HTMLButtonElement).click();
-      const target = new URL(assign.mock.calls[0]?.[0] ?? '', 'https://trove.test');
+      const target = new URL(assign.mock.calls[0]?.[0] ?? '', 'https://quader.test');
       expect(target.searchParams.get('return_to')).toBe('/ui/en/');
     } finally {
       done();
@@ -139,7 +139,7 @@ describe('Sign-in screen', () => {
   it('R-UI-004 purpose=reauth is passed on when the screen was opened for re-authentication', async () => {
     const { root, assign } = await open('/login?returnTo=%2Fprofile%2Ftokens&reauth=1');
     (root.querySelector('main button') as HTMLButtonElement).click();
-    const target = new URL(assign.mock.calls[0]?.[0] ?? '', 'https://trove.test');
+    const target = new URL(assign.mock.calls[0]?.[0] ?? '', 'https://quader.test');
     expect(target.searchParams.get('purpose')).toBe('reauth');
   });
 

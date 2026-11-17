@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func TestR_ARCH_021_DerivedKeysPerPurpose(t *testing.T) {
@@ -26,12 +26,12 @@ func TestR_ARCH_021_DerivedKeysPerPurpose(t *testing.T) {
 	}
 
 	t.Run("the derivation is HKDF-SHA-256 of the key file with the purpose as info and no salt", func(t *testing.T) {
-		d, err := r1.Derive("trove registry token v1", 32)
+		d, err := r1.Derive("quader registry token v1", 32)
 		if err != nil {
 			t.Fatal(err)
 		}
 		raw, _ := base64.StdEncoding.DecodeString(string(bytes.TrimSpace(mustRead(t, files[0]))))
-		want, _ := hkdf.Key(sha256.New, raw, nil, "trove registry token v1", 32)
+		want, _ := hkdf.Key(sha256.New, raw, nil, "quader registry token v1", 32)
 		id, got := d.Active()
 		if id != "k1" || !bytes.Equal(got, want) {
 			t.Fatalf("active %s, key equal %v", id, bytes.Equal(got, want))

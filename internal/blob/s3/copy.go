@@ -9,7 +9,7 @@ import (
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 const (

@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/registry"
-	"github.com/guided-traffic/trove/internal/api/registry/route"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/api/registry"
+	"github.com/guided-traffic/quader/internal/api/registry/route"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // BoundHost is a host of the endpoint whose root is bound to a repository of the format (R-OCI-029, R-EP-006).
@@ -47,8 +47,8 @@ type Walk struct {
 	// Repo is the repository the examples of the format's routes address (registry.RepositoryRoutes' base,
 	// "/v2/<project>/<key>/").
 	Repo qname.Repo
-	// Mint signs a registry token with the grant for a live trove token of the endpoint (registrytoken.Signer.Issue with the
-	// trove token's binding, or a token request to the token service); Walk sends it as Authorization: Bearer.
+	// Mint signs a registry token with the grant for a live quader token of the endpoint (registrytoken.Signer.Issue with the
+	// quader token's binding, or a token request to the token service); Walk sends it as Authorization: Bearer.
 	Mint func(registrytoken.Grant) string
 	// Prepare, when set, completes each request (the Host of the endpoint, a client address).
 	Prepare func(*http.Request)

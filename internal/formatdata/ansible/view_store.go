@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // viewStore is the group of the data port that the package screens read (R-ANS-026, R-EP-016). The statements are in

@@ -7,7 +7,7 @@ The contract is [api/openapi.yaml](../../api/openapi.yaml) (OpenAPI 3.1, R-API-0
 ## Workflow
 
 1. Edit `api/openapi.yaml`. Every operation needs `operationId` (lowerCamelCase verb + noun), `tags`,
-   `x-trove-permission` in a form the authorization step enforces (see below), and at least one problem
+   `x-quader-permission` in a form the authorization step enforces (see below), and at least one problem
    response (`$ref` to the shared responses).
 2. `go generate ./internal/api/...` (or `make generate`) does two things: it copies the document to
    `internal/api/v1/openapi.yaml`, which the binary embeds (`go:embed` cannot reach `../`), and it runs
@@ -35,7 +35,7 @@ The contract is [api/openapi.yaml](../../api/openapi.yaml) (OpenAPI 3.1, R-API-0
 | Authorization table | `Document.Operations()` maps the route pattern to the declarations, each decoded into an `Operation.Requirement` at load |
 | Registration | `Server.Register(router)` registers through `httpserver.Router` behind `authorizingMux`, which wraps every handler in the check of the operation its pattern names; the composition root then calls `Document.CheckRoutes(router.Patterns())` |
 
-`x-trove-permission` forms the step enforces until the authz area extends it (R-API-008), and nothing else (`LoadDocument` refuses any other form,
+`x-quader-permission` forms the step enforces until the authz area extends it (R-API-008), and nothing else (`LoadDocument` refuses any other form,
 so start-up stops before an operation can run with a declaration nobody checks):
 
 | Declaration | Check | M0 operations |
@@ -101,7 +101,7 @@ an endpoint whose host check fails answers `421` `misdirected_request` before ro
 
 ## Operations
 
-| Operation | Path | Access (`x-trove-permission`) |
+| Operation | Path | Access (`x-quader-permission`) |
 |---|---|---|
 | `getPing` | `GET /api/v1/system/ping` | public; `200 OK` while the replica serves (ready, or draining after it was ready, Q-OPS-30), `503 UNAVAILABLE` otherwise |
 | `getVersion` | `GET /api/v1/system/version` | authenticated, or anonymous with `system.public_version` |
@@ -116,7 +116,7 @@ an endpoint whose host check fails answers `421` `misdirected_request` before ro
 | `listTasks` | `GET /api/v1/system/tasks` | `settings:read` |
 | `runTask` | `POST /api/v1/system/tasks/{name}/run` | `settings:write`; optional `Idempotency-Key`; `202` with the job, `409` with the running job |
 | `getEncryptionStatus` | `GET /api/v1/system/encryption` | `settings:read` |
-| `getMigrationStatus` | `GET /api/v1/system/migrations` | `settings:read`; the report of `trove migrate status` from the same code (`postgres.Report` on the replica's pool, [database.md](database.md#the-migration-report-postgresreport-trove-migrate-status-get-apiv1systemmigrations)), for the answering replica's binary; `503` without a database |
+| `getMigrationStatus` | `GET /api/v1/system/migrations` | `settings:read`; the report of `quader migrate status` from the same code (`postgres.Report` on the replica's pool, [database.md](database.md#the-migration-report-postgresreport-quader-migrate-status-get-apiv1systemmigrations)), for the answering replica's binary; `503` without a database |
 | `listFormats` | `GET /api/v1/formats` | public; 401 for an anonymous caller while no `public` level opens anything ([repositories.md](repositories.md#http-operations)); each format with its `upstreamPresets` (R-REPO-062) |
 | `getRepositoryDefaults` | `GET /api/v1/projects/{projectKey}/repository-defaults?format=&class=` | `repositories:write-config`, or an Owner of the project (`projectRole: owner`); the defaults of a new repository and a free key (R-REPO-063); [repository_defaults_api.go](../../internal/api/v1/repository_defaults_api.go) renders the service's document without its key |
 | `listRepositories`, `listProjectRepositories`, `getRepository` | `GET /api/v1/repositories` (every project, `project` filter), `GET /api/v1/projects/{projectKey}/repositories`, `…/{repoKey}` | public; the handler decides what the caller sees (R-AUTHZ-016) |
@@ -125,8 +125,8 @@ an endpoint whose host check fails answers `421` `misdirected_request` before ro
 | `getRepositoryGuide` | `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/guide` | `{action: read, repository: path.repoKey, project: path.projectKey}` ([The guides of the formats](#the-guides-of-the-formats-r-api-053)) |
 | `getFormatGuide` | `GET /api/v1/formats/{format}/guide` | public; 401 for an anonymous caller while no `public` level opens anything, like `listFormats` |
 | `createProjectRepository`, `replaceRepository`, `updateRepository`, `deleteRepository` | `POST /api/v1/projects/{projectKey}/repositories`, `PUT`, `PATCH`, `DELETE` on `…/{repoKey}` | `repositories:write-config`, or an Owner of the project (`projectRole: owner`) |
-| `moveRepository` | `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/move` | `repositories:write-config` or an Owner of the source project, recent authentication; the handler asks the second half, `checkMoveTarget`: an Owner of the source must own the target as well (a target it is no member of answers 404, a lower role 403); the project service refuses with `repository_in_use` and `already_exists`; answers 200 with the document at the new address, `ETag`, `Location` and `Trove-Authz-Epoch` |
-| `listProjectMembers`, `setProjectMember`, `removeProjectMember` | `GET /api/v1/projects/{projectKey}/members`, `PUT`, `DELETE …/members/{principalRef}` | `projects:read` or a member (`reader`); the writes `projects:write` or an Owner, recent authentication; the handlers map the body and the status (201 added, 200 role set, `Trove-Authz-Epoch`); the last-Owner rule (409 `last_owner`) is the project service's and `bypassLastOwner` is the caller's `projects:write` (Q-AUTHZ-217); `PUT` needs no `If-Match` (the pair is the identity) |
+| `moveRepository` | `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/move` | `repositories:write-config` or an Owner of the source project, recent authentication; the handler asks the second half, `checkMoveTarget`: an Owner of the source must own the target as well (a target it is no member of answers 404, a lower role 403); the project service refuses with `repository_in_use` and `already_exists`; answers 200 with the document at the new address, `ETag`, `Location` and `Quader-Authz-Epoch` |
+| `listProjectMembers`, `setProjectMember`, `removeProjectMember` | `GET /api/v1/projects/{projectKey}/members`, `PUT`, `DELETE …/members/{principalRef}` | `projects:read` or a member (`reader`); the writes `projects:write` or an Owner, recent authentication; the handlers map the body and the status (201 added, 200 role set, `Quader-Authz-Epoch`); the last-Owner rule (409 `last_owner`) is the project service's and `bypassLastOwner` is the caller's `projects:write` (Q-AUTHZ-217); `PUT` needs no `If-Match` (the pair is the identity) |
 | `listProjectPermissionPolicies` and the item operations | `/api/v1/projects/{projectKey}/policies[/{name}]` | `policies:read`/`policies:write` or an Owner. The API names a project's policy within its project; the policy store addresses it as `<projectKey>/<name>`. `storedPolicyName`, `storedPolicy` and `viewPolicy` ([project_policies_api.go](../../internal/api/v1/project_policies_api.go)) are the whole mapping; the instance-wide list shows the same view with `project` set |
 | `validatePermissionPolicy` | `POST /api/v1/authz/validate-policy` | `authenticated: true`, decided in the handler (`mayValidate`): `policies:read`, or for a body that names a `project` an Owner of it (a project the caller is no member of answers 404) |
 | the project service-account operations | `/api/v1/projects/{projectKey}/service-accounts[/{name}[/disable\|/enable\|/tokens]]` | `identities:read`/`identities:write` or an Owner; the token create is `authenticated: true` and decided in the handler: an administrator, an Owner (delegated token, Q-AUTHZ-177) or a token of the account itself; the name in the route is the name within the project, the principal's stored name is `<projectKey>/<name>` |
@@ -235,7 +235,7 @@ keeps a 400 that lists fields; `errs.Unprocessable` (422 without fields) and `er
 
 ### One mechanism for `If-Match` (Q-API-28, Q-API-42)
 
-- A `PUT` or `PATCH` that needs the header declares `x-trove-if-match: required` and references the shared parameter
+- A `PUT` or `PATCH` that needs the header declares `x-quader-if-match: required` and references the shared parameter
   `#/components/parameters/IfMatch` (required) and no other `If-Match`; a `DELETE` references `IfMatchOptional`. The generated
   binder refuses a request without a required header before the handler, `bindError` turns that into the 428 of R-API-012,
   and a handler never checks the header again: it reads `expectedRevision(pre)` (the revision, `errs.AnyRevision` for `*`,
@@ -251,7 +251,7 @@ keeps a 400 that lists fields; `errs.Unprocessable` (422 without fields) and `er
 
 ### Recent authentication (R-API-007, Q-API-40)
 
-`x-trove-recent-auth: true` on an operation is read into `Operation.RecentAuth` when the document loads (any other value stops
+`x-quader-recent-auth: true` on an operation is read into `Operation.RecentAuth` when the document loads (any other value stops
 start-up). `Server.authorize` ([authorize.go](../../internal/api/v1/authorize.go)) calls `requireRecentAuth` once `decide`
 allowed the caller, so a caller who may not act gets 403 and not an invitation to sign in again. It looks the session up
 (`SessionService.Validate`), compares `authenticated_at` with `auth.sessions.recent_auth_window` and answers 401
@@ -261,7 +261,7 @@ operations that declare it are listed in `recentAuthOperations` in
 
 ### Operations on the caller's own account (R-API-021, Q-API-214)
 
-`x-trove-owner-rights: required` on an operation is read into `Operation.OwnerRights` (`parseOwnerRights`; any other value, or the
+`x-quader-owner-rights: required` on an operation is read into `Operation.OwnerRights` (`parseOwnerRights`; any other value, or the
 attribute on a declaration other than `authenticated: true`, stops start-up). `Server.authorize` calls `ownerRightsGate` once `decide`
 admitted the caller, before the recent-authentication check: a token whose scope does not inherit its owner's rights
 (`Credential.Scope != nil && !Scope.Inherit`, `narrowedToken`) gets 403 `forbidden` and the handler does not run; a session, the
@@ -307,7 +307,7 @@ transaction of its own. With it:
    back and stores nothing.
 7. A response with a secret sets `Outcome.SecretID`: the body is sent to this client and never stored; a replay calls
    `IdempotentOp.SecretReplay` (the identity area answers 409 `token_already_issued` with `tokenId`).
-8. A value that exists only after the commit hooks ran, such as the epoch of a write (`Trove-Authz-Epoch`, raised by the change
+8. A value that exists only after the commit hooks ran, such as the epoch of a write (`Quader-Authz-Epoch`, raised by the change
    log just before `COMMIT`), is set by `Outcome.Finish`. `Do` registers it as a `Before` hook after the ones `Run` registered, so
    it sees their results, and the stored outcome, and with it every replay, carries the value.
 
@@ -327,24 +327,24 @@ they call `pre.Require()` themselves, where a resource behind the generated wrap
    (below). Identifiers and times travel as text and are cast in SQL; a filter that is not sent is an empty array, never a
    nil slice (a nil slice is SQL `NULL` and matches nothing).
 3. **Document.** Add the paths and schemas in your `>>> M1 <area>` markers of [api/openapi.yaml](../../api/openapi.yaml):
-   - every operation: `operationId`, `tags`, `x-trove-permission`, the success response with an example, and the problem
+   - every operation: `operationId`, `tags`, `x-quader-permission`, the success response with an example, and the problem
      responses it can produce: `$ref: "#/components/responses/…"` for `BadRequest`, `Unauthenticated`, `Forbidden`,
      `NotFound`, `Conflict`, `PreconditionFailed`, `PreconditionRequired`, `Unprocessable`, `PayloadTooLarge`,
      `UnsupportedMediaType`, `Internal`, `Unavailable`, and **`TooManyRequests` on every operation** (the rate-limit stage can
      answer 429 anywhere; `TestEveryOperationCanBeRateLimited` fails otherwise);
    - lists: parameters `$ref: "#/components/parameters/Limit"` and `Cursor`, the filters and `sort`, response header `Link`,
      and a list schema `{items: [...], nextCursor: [string, "null"]}` (copy `JobList`);
-   - `PUT`/`PATCH`: `x-trove-if-match: required`, the shared parameter `IfMatch` (no inline `If-Match`), responses 412 and 428 (a
+   - `PUT`/`PATCH`: `x-quader-if-match: required`, the shared parameter `IfMatch` (no inline `If-Match`), responses 412 and 428 (a
      missing header is answered 428 by `bindError`, because the generated wrapper rejects a missing required header before the
      handler runs; `TestR_API_012_OneMechanismForAMissingIfMatch` checks the declaration); `DELETE` references `IfMatchOptional`;
      the `GET` and the write answer the `ETag` header (`#/components/headers/ETag`); `PATCH` takes `application/merge-patch+json`;
-   - an operation that mints a credential or widens permissions adds `x-trove-recent-auth: true` (the shared step enforces it);
+   - an operation that mints a credential or widens permissions adds `x-quader-recent-auth: true` (the shared step enforces it);
    - an `authenticated: true` operation that changes the caller's own account (profile, preferences, sessions) adds
-     `x-trove-owner-rights: required`; any other unsafe `authenticated: true` operation goes into `ownerRightsExempt` of
+     `x-quader-owner-rights: required`; any other unsafe `authenticated: true` operation goes into `ownerRightsExempt` of
      [owner_rights_test.go](../../internal/api/v1/owner_rights_test.go) with the rule that bounds a narrowed token there;
-   - creating `POST` and `DELETE` with 202: `x-trove-idempotency-key: optional`, parameter `IdempotencyKey`, response header
+   - creating `POST` and `DELETE` with 202: `x-quader-idempotency-key: optional`, parameter `IdempotencyKey`, response header
      `Idempotency-Replayed`, and `Location` on 201/202;
-   - a collection whose key sits next to a literal route (`/users/me`): list the literals as `x-trove-reserved-names` in the
+   - a collection whose key sits next to a literal route (`/users/me`): list the literals as `x-quader-reserved-names` in the
      key schema; `TestOpenAPIDocument` derives them from the paths and fails on a missing one.
    Run `make generate`.
 4. **Handlers** in `internal/api/v1/<resource>_api.go` (they implement the generated method; the authorization step has run):
@@ -402,7 +402,7 @@ they call `pre.Require()` themselves, where a resource behind the generated wrap
 | `Validator.Check`, `Recorder` | Validate one answer. |
 | `Validator.Uncovered(ids...)` | The operations no answer reached; a test that owns operations asserts it is empty. |
 | `Resource.RevisionMember` | The member that grows with every write (default `revision`); the suite does not count it as a change when it checks that a PUT or a patch left the other members alone. |
-| `ReservedNameProblems(spec)` | The R-API-004 check on `x-trove-reserved-names`. |
+| `ReservedNameProblems(spec)` | The R-API-004 check on `x-quader-reserved-names`. |
 | `RunContract(t, Resource)` | The convention tests on any collection (E1.6): create/Location, strict members, `limit=1` traversal, cursors, ETag/304, `If-Match` 428/412/200/`*`, merge patch, PUT round trip, idempotency replay. A resource whose owning page names other codes sets `MalformedCode` (unknown member) and `ImmutableCode` (immutable member), and `AltPatch` when a patch that changes nothing writes nothing (the repository resource, Q-REPO-21). |
 
 `TestResponsesMatchTheDocument` ([openapi_test.go](../../internal/api/v1/openapi_test.go)) sends every `GET` operation of the
@@ -424,7 +424,7 @@ share one database and one Valkey.
   tasks) is held. A `web` replica only enqueues; the integration test `TestGarbageCollectionTrigger` shows the run on the
   `worker`.
 - **Key-ring status** ([encryption_api.go](../../internal/api/v1/encryption_api.go)): `secrets.KeyRing.StatusWithCounts` (shared with
-  `trove admin secrets status`) for the answering replica, the sealed counts from
+  `quader admin secrets status`) for the answering replica, the sealed counts from
   [listq](../../internal/meta/postgres/listq/sealed.go) over the registered columns, the rings of the other replicas from
   the replica registry, and the canary rows of `secret_key_canary`. `RingsCompatible` is the rule; the trigger of
   `secrets-reencrypt` refuses with `409 key_ring_incompatible` while it is false.
@@ -467,9 +467,9 @@ against PostgreSQL `TestR_OPS_004_OverviewStatements` ([overview_test.go](../../
 
 ## The Bastion interface (R-BAS-008)
 
-The four operations with the tag `bastion` are `x-trove-permission: {bastion: true}` and `x-trove-bastion-interface: <n>`; the document refuses a version other than the
+The four operations with the tag `bastion` are `x-quader-permission: {bastion: true}` and `x-quader-bastion-interface: <n>`; the document refuses a version other than the
 build's. They are not part of the v1 promise but of the interface version, their bodies are the types of [internal/bastion/iface](../../internal/bastion/iface), and every
-answer carries `Trove-Bastion-Interface`. The shared authorization step admits them on the recognition alone; their handlers are
+answer carries `Quader-Bastion-Interface`. The shared authorization step admits them on the recognition alone; their handlers are
 [bastion_handshake_api.go](../../internal/api/v1/bastion_handshake_api.go), [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go),
 [bastion_feed_api.go](../../internal/api/v1/bastion_feed_api.go) and [bastion_downloads_api.go](../../internal/api/v1/bastion_downloads_api.go); the services they take are
 `v1.BastionServices` (a nil member answers `503`). The registration of the caller of the stage is a principal of the kind `bastion` and the general limits charge it
@@ -497,12 +497,12 @@ repository the index holds with artifacts that are not `public` (a key it does n
 PostgreSQL first), so the challenge a NuGet client draws before it sends
 its credentials costs no budget (Q-API-290). The class an endpoint applies on top is [endpoints.md](endpoints.md). The mechanism is [the cluster limiter](valkey.md#rate-limit-counters). Every answer on a limited
 route that a class charged carries `RateLimit-Policy` and `RateLimit`; a refusal is `429 rate_limited` with `Retry-After` and counts in
-`trove_api_rate_limited_total{class}`. Enabling `api.rate_limits.exempt_admins` needs the authz area's `content:bypass`
+`quader_api_rate_limited_total{class}`. Enabling `api.rate_limits.exempt_admins` needs the authz area's `content:bypass`
 check (`IsAdmin` in `RateLimitOptions`); without the authorizer nobody is exempt.
 
 **Consequence for tests and the development profile.** The defaults apply to anonymous callers too (5 requests per second
 per client address, burst 20). A test or script that polls `/api/v1/system/replicas` through `system.bootstrap_anonymous_read`
-faster than that gets `429`; set `api.rate_limits.enabled: false` (`TROVE_API_RATE_LIMITS_ENABLED=false`) in such an
+faster than that gets `429`; set `api.rate_limits.enabled: false` (`QUADER_API_RATE_LIMITS_ENABLED=false`) in such an
 environment.
 
 ## Not yet in M1

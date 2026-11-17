@@ -3,7 +3,7 @@
 package e2e
 
 // The blocks of the vulnerability scanning through drain variant D of R-HA-059 (E5.13): an instance of the request pooler on the
-// drained node. The set `vuln-pooler` runs the cluster in the pooler profile (TROVE_POOLER=1, deploy/dev/pooler.yaml,
+// drained node. The set `vuln-pooler` runs the cluster in the pooler profile (QUADER_POOLER=1, deploy/dev/pooler.yaml,
 // values-pooler.yaml, R-HA-058); the harness that picks the node and drains it is drain_variants_test.go.
 
 import (
@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	poolerRW      = "trove-db-pooler-rw"
-	poolerControl = "trove-db-pooler-control"
+	poolerRW      = "quader-db-pooler-rw"
+	poolerControl = "quader-db-pooler-control"
 )
 
 // poolerSel selects the pods of one Pooler by the label the operator puts on them.
@@ -36,15 +36,15 @@ func nodeNames(m map[string]bool) []string {
 // pooler meets rule 5 of R-HA-059: two ready instances on two nodes and PgBouncer 1.23 or later.
 func requirePoolerProfile(t *testing.T) {
 	t.Helper()
-	conf := kn(t, "get", "configmap", "trove-config", "-o", "jsonpath={.data.trove\\.yaml}")
+	conf := kn(t, "get", "configmap", "quader-config", "-o", "jsonpath={.data.quader\\.yaml}")
 	for _, want := range []string{
 		`mode: transaction`,
 		`host: ` + poolerRW + `.` + cfg.namespace + `.svc`,
 		`control_host: ` + poolerControl + `.` + cfg.namespace + `.svc`,
-		`session_host: trove-db-rw.` + cfg.namespace + `.svc`,
+		`session_host: quader-db-rw.` + cfg.namespace + `.svc`,
 	} {
 		if !regexp.MustCompile(`(?m)^\s+` + regexp.QuoteMeta(want) + `\s*$`).MatchString(strings.ReplaceAll(conf, `"`, "")) {
-			t.Fatalf("the release is not in the pooler profile: %q is not in the trove ConfigMap (start the cluster with TROVE_POOLER=1):\n%s", want, conf)
+			t.Fatalf("the release is not in the pooler profile: %q is not in the quader ConfigMap (start the cluster with QUADER_POOLER=1):\n%s", want, conf)
 		}
 	}
 	for _, name := range []string{poolerRW, poolerControl} {
@@ -80,7 +80,7 @@ func requirePoolerProfile(t *testing.T) {
 // TestVulnPooler_R_VULN_015_BlockHoldsThroughDrainVariantD is E5.13's "a malicious version stays blocked on every replica
 // throughout drain variants A to E" for D: four versions (npm and NuGet, blocked in triage and malicious) are requested through the
 // edge by four loops while a node that hosts an instance of the request pooler is drained (drain.sh --also pooler). The pooler's
-// instance stops gracefully: its preStop sleep of 90 s waits until trove's pooled connections have aged out (60 s + 15 s lifetime and
+// instance stops gracefully: its preStop sleep of 90 s waits until quader's pooled connections have aged out (60 s + 15 s lifetime and
 // jitter + 5 s health check = 80 s, grace period 120 s, R-HA-058), so every answer must be the refusal of R-VULN-016 from a replica, and the replacement must refuse from its first request.
 // The variant has no condition of its own beyond R-HA-059's: no SIGKILL, nothing Pending for more than 60 s, the drain within 10 minutes.
 func TestVulnPooler_R_VULN_015_BlockHoldsThroughDrainVariantD(t *testing.T) {
@@ -89,11 +89,11 @@ func TestVulnPooler_R_VULN_015_BlockHoldsThroughDrainVariantD(t *testing.T) {
 	probes := e.blockedPathsLabeled(t, "poolerd")
 
 	t.Run("R-HA-059 R-HA-058 R-VULN-015 R-VULN-027 E5.13 drain variant D (an instance of the request pooler on the node): every replica refuses, the replacement from its first request", func(t *testing.T) {
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		d := prepareVariantDrain(t, variantD)
 		// the pick may have moved the PostgreSQL and the Valkey primary: the replicas are unready for a few seconds after that,
 		// and the probes are the drain's, not the pick's
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		start := time.Now()
 		tally := probeDuring(t, probes, 20*time.Second, 40*time.Second, func() { d.Run(t) })
 		t.Logf("the probes ran %s, the drain included", time.Since(start).Round(time.Second))

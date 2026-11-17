@@ -11,8 +11,8 @@ import (
 
 	"github.com/ulikunitz/xz"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/control"
-	"github.com/guided-traffic/trove/test/debstub"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
+	"github.com/guided-traffic/quader/test/debstub"
 )
 
 // R-DEB-026, the delay bound: with a remote member whose index holds 70,000 paragraphs and deb.compression ["xz"], a package published to

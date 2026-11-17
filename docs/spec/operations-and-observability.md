@@ -2,7 +2,7 @@
 
 Status: specification — not implemented
 
-This page specifies how trove is run, watched and automated from outside. It covers:
+This page specifies how Quader is run, watched and automated from outside. It covers:
 
 - Health and readiness semantics per process role (`web`, `worker`) on the operations listener,
   including the degraded state while Valkey or object storage is unavailable; ping, version and
@@ -53,7 +53,7 @@ Covers: features from [operations-and-monitoring.md](../features/operations-and-
 - **Schedules.** Five-field cron expressions evaluated in UTC, with the fields, names and macros
   of [Kubernetes CronJobs](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#schedule-syntax)
   (`@yearly`, `@annually`, `@monthly`, `@weekly`, `@daily`, `@midnight`, `@hourly`). Every
-  schedule in trove goes through one parser (Q-OPS-7). The normative dialect, its parser tests and
+  schedule in Quader goes through one parser (Q-OPS-7). The normative dialect, its parser tests and
   the rejected forms are in [storage.md](storage.md) R-STOR-025: among others six-field
   expressions, `?`, the day-of-week value `7`, `@every`, and `TZ=` or `CRON_TZ=` prefixes, each
   rejected with an error that names the key. The backup CronJob's schedule is the one that
@@ -65,7 +65,7 @@ Covers: features from [operations-and-monitoring.md](../features/operations-and-
   and `worker` replica. `backup` pods, the restore Job and the migration Job are not replicas: they
   have no probes and no registry row ([ha-and-helm.md](ha-and-helm.md) R-HA-003, R-HA-060).
 - **Cross-replica propagation** follows [architecture.md](architecture.md) R-ARCH-018 (INV-3,
-  INV-12). trove issues no `LISTEN` and no `NOTIFY`. A change that other replicas must apply within
+  INV-12). Quader issues no `LISTEN` and no `NOTIFY`. A change that other replicas must apply within
   a bound goes to a *change area*: the writing transaction advances the area's epoch in PostgreSQL,
   every replica polls the change log every `cluster.epoch_poll_interval`, and a Valkey message sent
   after commit only makes it faster. A wake-up that nothing depends on goes to a *signal area*,
@@ -163,7 +163,7 @@ their `degraded` state.
 | `invalidation` | The last successful change-log poll is younger than `cluster.epoch_max_staleness` ([architecture.md](architecture.md) R-ARCH-018) | gating | A replica that cannot poll the change log cannot bound how stale its revocations and policies are (INV-8, INV-9). The check depends on PostgreSQL only, never on Valkey. The poll runs on the replica's reserved control connection ([architecture.md](architecture.md) R-ARCH-019), so a saturated request pool does not fail it. Its evaluations start failing only once the poll has been stale for `cluster.epoch_max_staleness`, and it is debounced like `database`, so for the same outage it never turns a replica unready sooner than `database` does ([ha-and-helm.md](ha-and-helm.md) R-HA-008) |
 | `objectStore` | A `HEAD` request on the bucket (or on a sentinel object under the configured prefix) succeeds within the timeout | gating until the replica is first ready, then reported; gating throughout with `health.require_object_store: true` (Q-OPS-2) | The first readiness also requires the object-store startup check of [storage.md](storage.md) R-STOR-035, so a release with a wrong bucket never replaces working pods |
 | `valkey` | The Valkey health probe ([architecture.md](architecture.md) R-ARCH-030: a `SET` of the replica's probe key with its expiry) succeeds within `valkey.command_timeout`, and the replica's Valkey circuit is closed ([ha-and-helm.md](ha-and-helm.md) R-HA-057) | reported; before the replica is first ready it gates on a *configuration error* only (Q-HA-13) | Valkey holds shared ephemeral state only (INV-3). While it is unavailable every mechanism runs its fallback, so the replica still answers correctly and stays in the Service (INV-12) |
-| `tls` | Every TLS material of the listeners that this process serves has loaded at least once (the pairs and the client CA of each listener; [architecture.md](architecture.md) R-ARCH-035). A rotation that does not load keeps the previous material and does not change the check | gating until the replica is first ready, then never again | A replica whose listeners cannot serve a handshake does not enter the Service; a later broken rotation is counted in `trove_tls_reload_errors_total` and does not make the replica unready |
+| `tls` | Every TLS material of the listeners that this process serves has loaded at least once (the pairs and the client CA of each listener; [architecture.md](architecture.md) R-ARCH-035). A rotation that does not load keeps the previous material and does not change the check | gating until the replica is first ready, then never again | A replica whose listeners cannot serve a handshake does not enter the Service; a later broken rotation is counted in `quader_tls_reload_errors_total` and does not make the replica unready |
 | `configBootstrap` | Startup configuration documents were applied (R-OPS-031); passes trivially when none are configured | gating | An invalid document stalls a rollout instead of breaking the service |
 | `draining` | No termination signal was received | gating | Removes a `web` replica from the Service and stops a `worker` from claiming before either stops |
 
@@ -189,7 +189,7 @@ configuration error (a rotation mistake) counts as unavailability and is reporte
 ([ha-and-helm.md](ha-and-helm.md) R-HA-007). The running replicas stay ready, but every pod that
 starts while the error lasts stays unready: a drain's replacement pods and the autoscaler's new
 pods add no capacity, so `kubectl drain` waits on the disruption budget instead of causing an
-outage, until the Secret or the ACL is corrected. `TroveValkeyUnavailable` (R-OPS-046) fires,
+outage, until the Secret or the ACL is corrected. `QuaderValkeyUnavailable` (R-OPS-046) fires,
 because every running replica reports the error as `degraded`.
 
 **Gating and reported checks** (Q-OPS-2, [ha-and-helm.md](ha-and-helm.md) Q-HA-13). Once the
@@ -197,8 +197,8 @@ replica has been ready, two checks are reported instead of gating: `objectStore`
 `health.require_object_store: true`) and `valkey` (always). While one of them fails:
 
 - `/readyz` answers `200` with the check under `degraded`, for example `"degraded":["valkey"]`;
-- the replica registry (R-OPS-003) and `trove_health_check_passing{name}` show the failure, and so
-  does `trove_valkey_available` for Valkey (R-OPS-045); the alerts of R-OPS-046 fire;
+- the replica registry (R-OPS-003) and `quader_health_check_passing{name}` show the failure, and so
+  does `quader_valkey_available` for Valkey (R-OPS-045); the alerts of R-OPS-046 fire;
 - `objectStore`: blob requests fail one by one with a retryable `503` through the circuit breaker
   ([storage.md](storage.md) R-STOR-033, R-STOR-036);
 - `valkey`: no request fails because of it. Fetch collapse and the negative cache work per replica,
@@ -256,7 +256,7 @@ GET /healthz             → 200 {"status":"alive"} | 503 {"status":"stuck","stu
 ```json
 {
   "status": "ready",
-  "replica": "trove-web-6f9c7d8b5-x2v4q",
+  "replica": "quader-web-6f9c7d8b5-x2v4q",
   "role": "web",
   "checkedAt": "2026-10-28T12:00:05.120Z",
   "degraded": ["valkey"],
@@ -275,7 +275,7 @@ GET /healthz             → 200 {"status":"alive"} | 503 {"status":"stuck","stu
 
 A check's `status` is `pass`, `fail` (gating) or `degraded` (reported). The `valkey` check's
 `reason` uses the vocabulary of the registry's Valkey view (R-OPS-003): an error kind of
-`trove_valkey_errors_total` (`timeout`, `connection`, `readonly`, `auth`, `tls`, `oom`),
+`quader_valkey_errors_total` (`timeout`, `connection`, `readonly`, `auth`, `tls`, `oom`),
 `no_primary` (every reachable Sentinel answers that it does not know the primary name) or
 `unsupported_version`. A configuration error is `auth`, `tls` or `no_primary` before the replica
 was first ready, with `status: fail` and `"configError": true`; afterwards the same reasons are
@@ -302,27 +302,27 @@ health:
 
 **Acceptance criteria:**
 
-- `kubectl -n trove port-forward pod/<web replica> 8081:8081` followed by
+- `kubectl -n quader port-forward pod/<web replica> 8081:8081` followed by
   `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8081/readyz` prints `200`. The same
   path on port 8080 returns `404`. On a `worker` pod, `/readyz` on 8081 prints `200` and nothing
   listens on 8080.
 - Switch PostgreSQL over (`kubectl cnpg promote`, a 10 to 15 s outage). `/readyz` answers `200` on every
   replica throughout, with `"degraded"` containing `database` while the outage lasts, and no replica
   leaves the Service.
-- Apply a NetworkPolicy that denies egress from the trove pods to PostgreSQL. Once the outage has lasted
+- Apply a NetworkPolicy that denies egress from the Quader pods to PostgreSQL. Once the outage has lasted
   `health.database_outage_grace` (20 s) plus one check interval, `/readyz` answers `503` on `web` and
   `worker` pods with `"failing"` containing `database`, while `/healthz` keeps answering `200`. While the policy is in
   place, no `worker` replica's instance ID appears in `job.locked_by` of a newly claimed job.
   Remove the policy, and `/readyz` returns to `200` within 5 s.
-- Run `npm ci --registry https://trove.example.com/api/npm/web/npm-all/` in a loop while
-  `kubectl -n trove rollout restart deploy/trove-api deploy/trove-packages deploy/trove-worker` runs (before phase 6a:
-  `deploy/trove-web deploy/trove-worker`). No iteration fails.
+- Run `npm ci --registry https://quader.example.com/api/npm/web/npm-all/` in a loop while
+  `kubectl -n quader rollout restart deploy/quader-api deploy/quader-packages deploy/quader-worker` runs (before phase 6a:
+  `deploy/quader-web deploy/quader-worker`). No iteration fails.
 - Kill the Valkey Pub/Sub connection of one replica (`CLIENT KILL TYPE pubsub` on the primary),
   then revoke a token through another replica. The token is rejected on the first replica within
   `cluster.epoch_poll_interval` plus 1 s, and its `/readyz` answers `200` throughout.
 - Scale the Valkey data nodes and Sentinels to 0 for 3 minutes, and delete one `web` pod meanwhile.
   Every replica answers `/readyz` with `200` and `"degraded":["valkey"]`, no pod leaves the
-  Service's endpoints, `trove_health_check_passing{name="valkey"}` is `0`, the replacement pod
+  Service's endpoints, `quader_health_check_passing{name="valkey"}` is `0`, the replacement pod
   becomes ready, and the e2e client suite passes. After Valkey returns, `degraded` clears within
   `valkey.circuit_breaker.open_duration` plus `valkey.health_check_interval` plus 5 s.
 - A new `web` pod started with a wrong Valkey password stays unready with `"failing":["valkey"]`,
@@ -338,7 +338,7 @@ health:
 - 1,000 denied pushes are sent at random over three `web` replicas, and one of them is deleted
   during the burst. Afterwards the sum of `details.count` over the `authz.denied` events of that
   principal is 1,000 (R-OPS-015).
-- Apply a NetworkPolicy that denies egress from every trove pod to the object store for 3 minutes.
+- Apply a NetworkPolicy that denies egress from every Quader pod to the object store for 3 minutes.
   `/readyz` keeps answering `200` with `"degraded":["objectStore"]`, no pod leaves the Service's
   endpoints, `npm view @acme/ui --registry …/web/npm-local/` succeeds, and downloading its tarball
   answers `503` with `Retry-After`. A replica started while the policy is in place does not become
@@ -380,7 +380,7 @@ Invalid credentials yield `401` in either mode.
 ```
 
 Every client-listener response MUST carry `X-Request-Id` with the request's trace ID
-(R-OPS-018). `X-Trove-Replica` with the replica name is sent according to
+(R-OPS-018). `X-Quader-Replica` with the replica name is sent according to
 `server.replica_header`: `authenticated` (default) sends it only to authenticated callers,
 `always` sends it to everyone, `never` suppresses it. A further endpoint has its own
 `replica_header`, `never` by default ([endpoints.md](endpoints.md) R-EP-009). No response carries
@@ -395,14 +395,14 @@ server:
 
 **Acceptance criteria:**
 
-- `curl -s https://trove.example.com/api/v1/system/ping` prints `OK`.
-- `curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer trv_pat_<revoked>' …/ping`
+- `curl -s https://quader.example.com/api/v1/system/ping` prints `OK`.
+- `curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer qdr_pat_<revoked>' …/ping`
   prints `401`.
 - Send `SIGTERM` to a `web` replica and call `/api/v1/system/ping` on it every 20 ms during
   `health.shutdown_drain_delay`: every answer is `200 OK` while `/readyz` on the ops listener answers
   `503` with `"failing":["draining"]`.
 - An anonymous call to `/api/v1/system/version` gets `401`. The same call with a valid token gets
-  `200`, and the response has an `X-Trove-Replica` header that the anonymous response lacks.
+  `200`, and the response has an `X-Quader-Replica` header that the anonymous response lacks.
 
 ### R-OPS-003 · Replica registry and service status
 Priority: **MVP** · Covers: OPS-008
@@ -424,7 +424,7 @@ migration Job never register ([ha-and-helm.md](ha-and-helm.md) R-HA-003).
 Besides the HA mechanisms of [ha-and-helm.md](ha-and-helm.md) R-HA-003, four things on other
 pages count the live replicas of a role here: the per-replica fallback of cluster-scoped rate
 limits ([architecture.md](architecture.md) R-ARCH-034), the support bundle, which waits for one
-part per live replica (R-OPS-027), the gauge `trove_valkey_primary_views` (R-OPS-045), and the
+part per live replica (R-OPS-027), the gauge `quader_valkey_primary_views` (R-OPS-045), and the
 proxy's fetch shares ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-040), which
 divide a remote repository's `maxConcurrentFetches` by the count of live replicas that fill client misses
 (`packages` and `web`, their pools included, or `all` in the local profile; [architecture.md](architecture.md)
@@ -433,21 +433,21 @@ and `all` replicas of that pool ([internal/app/replica_count.go](../../internal/
 today). None of them needs Valkey.
 
 **Node.** Each row names the Kubernetes node the replica runs on: `spec.nodeName`, which the
-downward API offers only as an environment variable, passed by the chart as `TROVE_NODE_NAME`
-(R-OPS-028); `NULL` outside Kubernetes. The instance name, which is not the node name, comes from `TROVE_POD_NAME`, then `POD_NAME`, then
+downward API offers only as an environment variable, passed by the chart as `QUADER_NODE_NAME`
+(R-OPS-028); `NULL` outside Kubernetes. The instance name, which is not the node name, comes from `QUADER_POD_NAME`, then `POD_NAME`, then
 `HOSTNAME` inside Kubernetes, and otherwise `<hostname>-<pid>` (Q-OPS-28). The
 number of distinct nodes per role tells whether a role survives the drain of one node (INV-12,
 [ha-and-helm.md](ha-and-helm.md) R-HA-059); system information reports it (R-OPS-004).
 
 **Valkey view.** Each heartbeat also writes the replica's view of Valkey. This page owns its shape,
 and [api-and-ui.md](api-and-ui.md) R-API-038 publishes it unchanged (cross-page): `state`
-(`available` or `degraded`), `reason` (`null`, an error kind of `trove_valkey_errors_total` or
+(`available` or `degraded`), `reason` (`null`, an error kind of `quader_valkey_errors_total` or
 `unsupported_version`, as in the `valkey` check of R-OPS-001), `circuit`, the `primary` address
 its client currently uses (host and port; `null` while it has none), `sentinelsReachable`,
 `sentinelsConfigured`, `serverVersion` and `lastPrimaryChangeAt`. No credential, ACL user name or key appears. A replica
 whose client stayed bound to a demoted primary ([architecture.md](architecture.md) R-ARCH-031)
 shows up here as a disagreement with the others. `sentinelsReachable` is the replica's
-`trove_valkey_sentinels_reachable` (R-OPS-008) at the heartbeat, refreshed with every heartbeat
+`quader_valkey_sentinels_reachable` (R-OPS-008) at the heartbeat, refreshed with every heartbeat
 like the rest of the view. The fields that [api-and-ui.md](api-and-ui.md) R-API-038 and R-UI-038
 name `valkeyPrimary`, `valkeyPrimarySince` and `valkeySentinelsReachable` are `valkey.primary`,
 `valkey.lastPrimaryChangeAt` and `valkey.sentinelsReachable` of this view (cross-page).
@@ -473,7 +473,7 @@ state, not a history: trends stay with the metrics of R-OPS-008.
 
 **Pool.** With the endpoint pools of [endpoints.md](endpoints.md) R-EP-008 (MVP) and the further
 splits of [ha-and-helm.md](ha-and-helm.md) R-HA-062 (P1), the column `pool` names the pool of the
-replica's Deployment, from the variable `TROVE_POOL_NAME` that the
+replica's Deployment, from the variable `QUADER_POOL_NAME` that the
 chart sets on each pool Deployment (R-OPS-028); it is `NULL` for a role's main Deployment and
 outside the chart (cross-page to R-HA-030 and R-HA-062).
 
@@ -489,7 +489,7 @@ start while they are not.
 CREATE TABLE replica (
   instance_uid  uuid        PRIMARY KEY,          -- random per process start
   -- runtime    jsonb       NOT NULL DEFAULT '{}' (Q-OPS-175, migration 00044), the runtime snapshot above
-  name          text        NOT NULL,             -- pod name (TROVE_POD_NAME), else host name
+  name          text        NOT NULL,             -- pod name (QUADER_POD_NAME), else host name
   version       text        NOT NULL,
   revision      text        NOT NULL,
   roles         text[]      NOT NULL,             -- {api}, {packages}, {worker}; {web} for the upgrade bridge and the releases before the cut; {all} for the development role (INV-2, Q-OPS-161)
@@ -498,9 +498,9 @@ CREATE TABLE replica (
   leases        jsonb       NOT NULL DEFAULT '[]',-- [{"name":"scheduler","since":"…"}]; worker role only
   secret_key_ids       text[] NOT NULL,           -- key IDs of the replica's stored-secret key ring (R-ARCH-021); IDs only
   active_secret_key_id text   NOT NULL,           -- the replica's secrets.active_key_id; ID only
-  node          text,                             -- Kubernetes node name (TROVE_NODE_NAME); NULL outside Kubernetes
+  node          text,                             -- Kubernetes node name (QUADER_NODE_NAME); NULL outside Kubernetes
   valkey        jsonb       NOT NULL DEFAULT '{}',-- the replica's view of Valkey (shape above), sentinelsReachable included; no credentials
-  pool          text,                             -- endpoint pool (MVP) or R-HA-062 pool (P1), from TROVE_POOL_NAME; NULL for a role's main Deployment
+  pool          text,                             -- endpoint pool (MVP) or R-HA-062 pool (P1), from QUADER_POOL_NAME; NULL for a role's main Deployment
   started_at    timestamptz NOT NULL,
   heartbeat_at  timestamptz NOT NULL
 );
@@ -515,7 +515,7 @@ API: `GET /api/v1/system/replicas` → `200`. Requires `system.read`.
 {
   "items": [
     {
-      "name": "trove-packages-6f9c7d8b5-x2v4q",
+      "name": "quader-packages-6f9c7d8b5-x2v4q",
       "instanceUid": "8a0b…",
       "version": "0.3.0",
       "revision": "4f1c2a9e0d7b…",
@@ -535,7 +535,7 @@ API: `GET /api/v1/system/replicas` → `200`. Requires `system.read`.
                  "lastPrimaryChangeAt": "2026-10-28T11:20:03.511Z"}
     },
     {
-      "name": "trove-worker-7c4d9f6b8-m3k8p",
+      "name": "quader-worker-7c4d9f6b8-m3k8p",
       "instanceUid": "c19e…",
       "version": "0.3.0",
       "revision": "4f1c2a9e0d7b…",
@@ -585,7 +585,7 @@ system:
 - With three Sentinels configured and two of them stopped, every entry's
   `valkey.sentinelsReachable` is 1 within `valkey.sentinel.refresh_interval` plus
   `system.heartbeat_interval`, while `checks.valkey.status` stays `pass`.
-- After `SENTINEL FAILOVER trove`, every entry's `valkey.primary` names the new primary within
+- After `SENTINEL FAILOVER quader`, every entry's `valkey.primary` names the new primary within
   `valkey.sentinel.refresh_interval` plus `system.heartbeat_interval`.
 - While a backup Job and the migration Job run, the list contains no entry for their pods.
 
@@ -602,9 +602,9 @@ replica registry (R-OPS-003) holds the per-replica view of every replica.
 {
   "installationId": "0b7c3f5e-…",
   "incarnation": "5d10e2a4-…",
-  "answeredBy": {"replica": "trove-api-6f9c7d8b5-x2v4q", "role": "api"},
+  "answeredBy": {"replica": "quader-api-6f9c7d8b5-x2v4q", "role": "api"},
   "version": {"version": "0.3.0", "revision": "4f1c2a9e0d7b…", "goVersion": "go1.27.4"},
-  "baseUrl": "https://trove.example.com",
+  "baseUrl": "https://quader.example.com",
   "baseUrlSource": "config",
   "maintenanceMode": "normal",
   "replicas": {
@@ -629,16 +629,16 @@ replica registry (R-OPS-003) holds the per-replica view of every replica.
   },
   "valkey": {
     "mode": "sentinel",
-    "primaryName": "trove",
+    "primaryName": "quader",
     "sentinels": 3,
     "tls": "verify-full",
-    "keyPrefix": "trove:",
+    "keyPrefix": "quader:",
     "keyspace": "5f2a9c0b13de",
     "degradedReplicas": 0
   },
   "objectStore": {
     "endpoint": "https://s3.eu-central-1.amazonaws.com",
-    "bucket": "trove-prod",
+    "bucket": "quader-prod",
     "prefix": "blobs",
     "credentialSource": "workload-identity"
   },
@@ -674,7 +674,7 @@ replica registry (R-OPS-003) holds the per-replica view of every replica.
   `backup.expected_interval` in seconds; the unit is part of the name, as
   [api-and-ui.md](api-and-ui.md) R-API-003 requires for durations. `overdue` follows the rule of
   [api-and-ui.md](api-and-ui.md) R-API-050: it is true when `lastSuccessAt` is older than
-  1.5 × `backup.expected_interval`, the condition on which `TroveBackupStale` fires (R-OPS-046),
+  1.5 × `backup.expected_interval`, the condition on which `QuaderBackupStale` fires (R-OPS-046),
   so this block, the backup summary and the alert agree. With no successful run at all,
   `lastSuccessAt` and `overdue` are `null`.
 - `database.pools` are the answering replica's. The Valkey block holds installation facts only;
@@ -697,7 +697,7 @@ static queries and reuses the result for `cacheSeconds` (30), so a dashboard tha
 not count again on every request.
 
 **Acceptance criteria:** the response contains no field whose value is a password, key, token or
-presigned URL. `grep -iE 'secret|password|trv_'` over the response finds only key names, never
+presigned URL. `grep -iE 'secret|password|qdr_'` over the response finds only key names, never
 values and no Sentinel address. With Valkey stopped, the call answers `200` and
 `valkey.degradedReplicas` equals `replicas.live`. With three `packages` replicas on one node,
 `replicas.roles.packages.nodes` is `1`. `replicas.roles` has a key per role with a live replica, `web` included while
@@ -706,16 +706,16 @@ the bridge of [ha-and-helm.md](ha-and-helm.md) R-HA-064 or a replica of a releas
 ### R-OPS-005 · External base URL and forwarded hosts
 Priority: **MVP** · Covers: OPS-051, OPS-052, ADMAPI-071
 
-`server.base_url` is the canonical external URL. Every absolute URL that trove generates MUST be
+`server.base_url` is the canonical external URL. Every absolute URL that Quader generates MUST be
 built from it: npm tarball URLs, NuGet service-index resources, the OIDC redirect URI, UI links,
 `Location` headers, webhook `source` (R-OPS-036) and links in mail.
 
 - **An origin, never a path below one.** `server.base_url` MUST be an origin: scheme `http` or
   `https`, a host and an optional port. Its path is empty or `/`, and it has no query, no fragment
   and no user information. Every `server.additional_base_urls` entry follows the same rule. A value
-  that breaks it stops startup with an error that names the key and the offending part. trove owns
+  that breaks it stops startup with an error that names the key and the offending part. Quader owns
   the host it runs on: INV-6's host-root routes (the npm token exchange of
-  [formats/npm.md](formats/npm.md) Q-NPM-1, `/v2/` reserved for OCI), the `__Host-trv_session`
+  [formats/npm.md](formats/npm.md) Q-NPM-1, `/v2/` reserved for OCI), the `__Host-qdr_session`
   cookie with `Path=/` ([identity-and-authentication.md](identity-and-authentication.md) Q-AUTH-2)
   and `GET /{$}` all assume it. Below a path prefix of a shared host, npm would post GitLab ID
   tokens to that host's root, and the session cookie would reach every service on it.
@@ -754,7 +754,7 @@ built from it: npm tarball URLs, NuGet service-index resources, the OIDC redirec
 
 ```yaml
 server:
-  base_url: https://trove.example.com              # example; required in production
+  base_url: https://quader.example.com              # example; required in production
   trusted_proxies: []                                # default (proposed); example ["10.0.0.0/8"]
   additional_base_urls: []                           # default (proposed); example ["https://npm.example.com"]
 ```
@@ -762,17 +762,17 @@ server:
 **Acceptance criteria:**
 
 - With `base_url` set and no trusted proxies, `curl -H 'X-Forwarded-Host: evil.example' …/api/npm/web/npm-all/lodash`
-  returns tarball URLs on `trove.example.com`.
+  returns tarball URLs on `quader.example.com`.
 - With the ingress controller's pod CIDR trusted and `https://npm.example.com` listed,
   `npm view lodash dist.tarball --registry https://npm.example.com/api/npm/web/npm-all/` prints a URL on
   `npm.example.com`. An unlisted host falls back to `base_url`.
-- Each of `base_url: https://shared.example.com/trove`, `base_url: https://trove.example.com/?x=1`,
-  `base_url: https://user@trove.example.com` and
-  `additional_base_urls: ["https://npm.example.com/registry"]` stops `trove serve` with a non-zero
-  exit and an error that names the key. `base_url: https://trove.example.com/` and
-  `base_url: https://trove.example.com:8443` start.
-- (P1) With `content_base_url: https://trove-content.example.net`,
-  `additional_base_urls: ["https://trove-content.example.net"]` stops startup.
+- Each of `base_url: https://shared.example.com/quader`, `base_url: https://quader.example.com/?x=1`,
+  `base_url: https://user@quader.example.com` and
+  `additional_base_urls: ["https://npm.example.com/registry"]` stops `quader serve` with a non-zero
+  exit and an error that names the key. `base_url: https://quader.example.com/` and
+  `base_url: https://quader.example.com:8443` start.
+- (P1) With `content_base_url: https://quader-content.example.net`,
+  `additional_base_urls: ["https://quader-content.example.net"]` stops startup.
 
 ## Metrics
 
@@ -791,10 +791,10 @@ the request's `Accept` header asks for `application/openmetrics-text`, it uses t
   need is also a gauge on the replicas, read from PostgreSQL, because a finished Job cannot be
   scraped.
 - **Role and pool of a series** (Q-OPS-13, Q-OPS-161). The process reports its role in
-  `trove_build_info{role}`, one of `api`, `packages`, `worker`, `web` and `all`. Every other series gets `role` and, for the pools of
+  `quader_build_info{role}`, one of `api`, `packages`, `worker`, `web` and `all`. Every other series gets `role` and, for the pools of
   [ha-and-helm.md](ha-and-helm.md) R-HA-062, `pool` as *target labels*: the chart's ServiceMonitor
   copies them from the pod's labels by relabeling. The process does not add them itself. On
-  `trove_build_info` the exposed `role` and the target label collide; with `honor_labels: false`,
+  `quader_build_info` the exposed `role` and the target label collide; with `honor_labels: false`,
   the ServiceMonitor default, Prometheus keeps the target label and stores the exposed one as
   `exported_role` ([scrape configuration](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config)).
   Both carry the same value on chart-deployed pods.
@@ -803,7 +803,7 @@ the request's `Accept` header asks for `application/openmetrics-text`, it uses t
 - `metrics.auth: none` (default) relies on the NetworkPolicy of INV-13 to keep the listener
   cluster-internal (H-41). `metrics.auth: static` requires `Authorization: Bearer <value>`, where the
   value is read from `metrics.bearer_token_file` and compared in constant time.
-- Scraping deliberately does not use trove tokens (TOK-014). Validating one needs PostgreSQL, and
+- Scraping deliberately does not use Quader tokens (TOK-014). Validating one needs PostgreSQL, and
   metrics must stay readable during exactly the database outage they are needed for.
 - Metrics are not offered on the client listener.
 - **On by default.** With the shipped defaults (`metrics.enabled: true`) every family of R-OPS-008
@@ -813,13 +813,13 @@ the request's `Accept` header asks for `application/openmetrics-text`, it uses t
 - **Plain exposition.** Samples carry no timestamps, and the output contains no comment lines
   other than those of the format (`# HELP`, `# TYPE`, and in OpenMetrics `# UNIT` and `# EOF`).
 - The default Go runtime and process collectors (`go_*`, `process_*`) are exposed unchanged. These
-  are the only families without the `trove_` prefix.
+  are the only families without the `quader_` prefix.
 
 ```yaml
 metrics:
   enabled: true                   # default (proposed)
   auth: none                      # default (proposed); none | static
-  bearer_token_file: ""           # example /var/run/secrets/trove/metrics-token
+  bearer_token_file: ""           # example /var/run/secrets/quader/metrics-token
 ```
 
 **Acceptance criteria:**
@@ -830,8 +830,8 @@ metrics:
   prints `# EOF`.
 - With `auth: static`, a scrape without the bearer value gets `401`. Scrapes keep succeeding while
   PostgreSQL is unreachable, and while Valkey is unreachable.
-- In a Prometheus scraping through the chart's ServiceMonitor, `count by (role) (trove_build_info)`
-  returns the replica count of each Deployment, and `trove_db_pool_connections` carries the target
+- In a Prometheus scraping through the chart's ServiceMonitor, `count by (role) (quader_build_info)`
+  returns the replica count of each Deployment, and `quader_db_pool_connections` carries the target
   label `role` with the values `web` and `worker`.
 
 ### R-OPS-007 · Metric naming, labels and cardinality
@@ -840,10 +840,10 @@ Priority: **MVP** · Covers: OPS-012
 Rules for every metric family, including families that format pages and other spec pages add:
 
 - **Names** follow the [Prometheus naming practices](https://prometheus.io/docs/practices/naming/):
-  - prefix `trove_`, then the subsystem;
+  - prefix `quader_`, then the subsystem;
   - base units in the name (`_seconds`, `_bytes`);
   - `_total` on counters;
-  - format-specific families are named `trove_<format>_…`.
+  - format-specific families are named `quader_<format>_…`.
 - **Types** match semantics. Counters are monotonic. Values read from PostgreSQL are gauges.
   Durations are histograms. A total never becomes a gauge and a median never becomes a counter.
 - **Allowed labels.** These are the only labels permitted. Each has a bounded value set, defined by
@@ -871,7 +871,7 @@ Rules for every metric family, including families that format pages and other sp
   | `limiter` | Registered rate limiters ([architecture.md](architecture.md) R-ARCH-034) |
   | `key_id` | Key IDs of the stored-secret key ring and key IDs that sealed values still reference ([architecture.md](architecture.md) R-ARCH-021); bounded by configuration |
   | `ecosystem`, `severity` | From M4b ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-024): the OSV ecosystem names of the formats with the vulnerability adapter (`npm`, `NuGet`), `""` for a source without ecosystems; the severity levels `critical`, `high`, `medium`, `low`, `none`, `unknown` |
-  | `version`, `revision`, `goversion`, `role` | Only on `trove_build_info` |
+  | `version`, `revision`, `goversion`, `role` | Only on `quader_build_info` |
 
   Target labels that the scraper attaches (`role`, `pool`, `namespace`, `pod`, Q-OPS-13) are
   outside this list: the process never emits them on other families.
@@ -893,7 +893,7 @@ Rules for every metric family, including families that format pages and other sp
   keyed by the repository name and does not delete its series is a defect. A mirror pass that still runs for a moved repository
   records nothing more under its old name (Q-OPS-176). The same
   rule applies to `subscription`, in subscription creation order. Each overflow increments
-  `trove_metrics_label_overflow_total{family,label}`. Requests reach replicas at random
+  `quader_metrics_label_overflow_total{family,label}`. Requests reach replicas at random
   (INV-12), so a selection made per replica, for example by first observation, would give each
   replica a different set and make `sum by (repo)` across replicas wrong.
 - **Budget.** With default settings, 500 repositories and 50 subscriptions, one replica SHOULD
@@ -901,20 +901,20 @@ Rules for every metric family, including families that format pages and other sp
   count; an installation that scales `web` far out lowers `metrics.label_limits.repository` or
   narrows `repository_label_include` (Q-OPS-10).
 - **Values read from PostgreSQL** (Q-OPS-18). Inventory, queue, backup-run and registry gauges, and
-  the CI gauges `trove_ci_tokens_active{issuer}` and `trove_ci_signing_keys_age_seconds{issuer}`
+  the CI gauges `quader_ci_tokens_active{issuer}` and `quader_ci_signing_keys_age_seconds{issuer}`
   ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-020), are
   read from PostgreSQL by every `web` and `worker` replica, so every replica reports the same value.
   Dashboards and alerts aggregate them with `max`, not `sum`, and their help text says so. A replica
   evaluates them in the background once per `metrics.db_gauge_interval`, on its request pool and
   with a deadline, and a scrape returns the last evaluated values without touching PostgreSQL.
-  `trove_metrics_db_gauges_last_success_timestamp_seconds` tells their age. The database load of
+  `quader_metrics_db_gauges_last_success_timestamp_seconds` tells their age. The database load of
   these gauges thus depends on the replica count and the interval, never on the scrape rate or on
   how many Prometheus servers scrape.
 - **Absent, not zero.** A family that describes a subsystem a role does not run
   ([architecture.md](architecture.md) R-ARCH-001) is absent on that role: the client-listener
   families on `worker`; on `web`, the families that count this process's own job work
-  (`trove_jobs_running`, `trove_jobs_completed_total`, `trove_jobs_duration_seconds`,
-  `trove_lease_held`, `trove_lease_lost_total`, `trove_webhook_deliveries_total` and the two
+  (`quader_jobs_running`, `quader_jobs_completed_total`, `quader_jobs_duration_seconds`,
+  `quader_lease_held`, `quader_lease_lost_total`, `quader_webhook_deliveries_total` and the two
   webhook duration histograms). Gauges read from PostgreSQL
   describe the installation, not the process, and both roles export them.
 
@@ -932,17 +932,17 @@ metrics:
 **Acceptance criteria:**
 
 - A load test against 600 repositories, sent at random over three `web` replicas, yields on every
-  replica the same 500 distinct `repo` values plus `_other` in `trove_repository_requests_total`,
+  replica the same 500 distinct `repo` values plus `_other` in `quader_repository_requests_total`,
   and a non-zero overflow counter.
 - With a scrape every second for 5 minutes from two Prometheus servers, `pg_stat_statements` shows
   the gauge queries of each replica at most once per `metrics.db_gauge_interval`.
-- `curl -s …/metrics | grep -c '^trove_'` stays below 25,000 in the reference load test.
+- `curl -s …/metrics | grep -c '^quader_'` stays below 25,000 in the reference load test.
 - A unit test over the registry rejects any family with a label outside the allowed list.
 
 ### R-OPS-008 · Metrics catalog
 Priority: **MVP** · Covers: OPS-012, OPS-013
 
-trove MUST expose the families below. Other spec pages MAY add families under R-OPS-007, and
+Quader MUST expose the families below. Other spec pages MAY add families under R-OPS-007, and
 SHOULD list them on their own pages.
 
 HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10,
@@ -953,175 +953,175 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 
 | Family | Type | Labels | Meaning |
 |---|---|---|---|
-| `trove_build_info` | gauge (=1) | `version`, `revision`, `goversion`, `role` | Build and process role (`web`, `worker`, `all`) of the running binary (Q-OPS-13) |
-| `trove_ready` | gauge | — | 1 while `/readyz` answers `200`, degraded included (R-OPS-001) |
-| `trove_http_requests_total` | counter | `listener`, `endpoint` (client listener), `handler`, `method`, `code` | Completed requests |
-| `trove_http_request_duration_seconds` | histogram | `listener`, `endpoint` (client listener), `handler`, `method`, `code_class` | Time from first byte received to last byte sent |
-| `trove_http_requests_in_flight` | gauge | `listener`, `endpoint` (client listener) | Requests in progress |
-| `trove_http_requests_shed_total` | counter | `endpoint`, `reason` (`in_flight`, `memory_slots`, `heap`) | Requests step 4 of the chain answered `503 server_busy`: beyond the endpoint's `max_in_flight`, beyond the replica's memory slots, or while the heap gate was closed ([architecture.md](architecture.md) R-ARCH-005, Q-ARCH-240) |
-| `trove_http_memory_slots` | gauge | — | Downloads of a large object the replica's memory admits beside the bytes its caches hold now, in units of the request bytes (R-ARCH-005, Q-ARCH-328); `0` when no memory limit is known |
-| `trove_http_memory_slots_in_use` | gauge | — | What admitted requests are charged now, in the same unit and rounded up; only present while the replica knows a memory limit (R-ARCH-005) |
-| `trove_http_received_bytes_total` | counter | `handler` | Request body bytes |
-| `trove_http_sent_bytes_total` | counter | `handler` | Response body bytes |
-| `trove_http_transfers_cut_total` | counter | `direction` | Transfers cut at the shutdown deadline ([architecture.md](architecture.md) R-ARCH-024, Q-ARCH-18) |
-| `trove_repository_requests_total` | counter | `repo`, `format`, `class`, `operation` (download, upload, metadata, delete, search), `outcome` (success, not_found, denied, error) | Package-protocol and raw-file operations per repository |
-| `trove_repository_transferred_bytes_total` | counter | `repo`, `format`, `class`, `direction` (in, out) | Bytes per repository |
-| `trove_remote_cache_lookups_total` | counter | `repo`, `kind` (metadata, artifact, query), `result` (hit, miss, stale, negative_hit) | Pull-through cache outcomes (INV-11) |
-| `trove_remote_upstream_requests_total` | counter | `repo`, `code` (status code or `error`) | Requests sent to an upstream |
-| `trove_remote_upstream_request_duration_seconds` | histogram | `repo` | Upstream response time including body |
-| `trove_remote_upstream_up` | gauge | `repo` | 1 while the upstream counts as reachable, 0 while it is treated as unreachable ([repositories-and-proxy.md](repositories-and-proxy.md)) |
-| `trove_remote_collapsed_requests_total` | counter | `repo` | Cache misses that waited for an in-flight fetch instead of fetching themselves, whether the fetch ran on this replica or on another one (INV-11) |
-| `trove_remote_source_network_unavailable_total` | counter | `repo` | Fetches answered `502` `source_network_unavailable` because this replica has no interface address inside the remote's `sourceNetwork` prefix ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-024, R-REPO-047, Q-REPO-9); a non-zero rate on some replicas only means their pods sit outside the prefix |
-| `trove_flight_lock_bypass_total` | counter | `reason` (`valkey_unavailable`, `wait_timeout`, `draining`) | Fetches that went ahead without the cross-replica lock ([architecture.md](architecture.md) R-ARCH-033, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-026, R-REPO-047) |
-| `trove_flight_lock_lost_total` | counter | — | Holds whose lock key was gone or taken when extended (R-ARCH-033) |
-| `trove_shadow_checks_total` | counter | `repo` (the local repository), `outcome` (`no-exposure`, `clear`, `shadowing-approved`, `refused`, `undetermined-approved`, `unavailable`) | Shadowing checks on first publishes of a name ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-048) |
-| `trove_blobstore_operations_total` | counter | `operation` (put, get, head, delete, list, multipart), `outcome` | Object-storage calls |
-| `trove_blobstore_operation_duration_seconds` | histogram | `operation` | Object-storage latency |
-| `trove_blobstore_transferred_bytes_total` | counter | `direction` | Bytes to and from object storage |
-| `trove_blobstore_dedup_hits_total` | counter | — | Uploads whose content address already existed (INV-4) |
-| `trove_spool_used_bytes`, `trove_spool_free_bytes` | gauge | — | Local temporary upload spool: the budget that running uploads hold (R-STOR-004), and the free space of the spool volume, read at every reservation and release ([ha-and-helm.md](ha-and-helm.md) R-HA-045 `TroveSpoolNearlyFull`) |
-| `trove_storage_blobs`, `trove_storage_blob_bytes`, `trove_storage_logical_bytes` | gauge | — | From the storage summary (R-OPS-023); same value on every replica |
-| `trove_repository_files`, `trove_repository_bytes` | gauge | `repo`, `format`, `class` | From the storage summary |
-| `trove_repositories` | gauge | `format`, `class` | Number of repositories |
-| `trove_storage_summary_age_seconds` | gauge | — | Age of the cached storage summary |
-| `trove_storage_blobs_damaged_total` | counter | `status` (`missing`, `corrupt`) | Damaged blobs detected by the scrub or by download verification ([storage.md](storage.md) R-STOR-013, R-STOR-027) |
-| `trove_storage_blobs_damaged` | gauge | `status` (`missing`, `corrupt`) | Current number of damaged blobs, from the latest storage summary (R-OPS-023, [storage.md](storage.md) R-STOR-028); same value on every replica |
-| `trove_gc_runs_total` | counter | `outcome` | Garbage-collection runs of the tasks `gc` and `gc-full` ([storage.md](storage.md) R-STOR-025) |
-| `trove_gc_deleted_blobs_total`, `trove_gc_reclaimed_bytes_total` | counter | — | Garbage-collection effect |
-| `trove_gc_candidates_kept_total` | counter | — | Candidates kept because the reference check found a reference ([storage.md](storage.md) R-STOR-024) |
-| `trove_gc_deleting_rows` | gauge | — | Blob rows in state `deleting` (from PostgreSQL); a value that does not fall back to zero means interrupted deletions are not finishing (R-STOR-024) |
-| `trove_gc_last_success_timestamp_seconds` | gauge | — | End of the last run of this replica that ended without error and was neither paused nor a dry run; no series until there was one ([ha-and-helm.md](ha-and-helm.md) R-HA-045 `TroveGCStale`, with `max`) |
-| `trove_gc_candidates_held_total` | counter | — | Collection candidates kept by a backup's hold ([backup-and-restore.md](backup-and-restore.md) R-BAK-007) |
-| `trove_secrets_sealed_values` | gauge | `key_id` | Sealed values per key ID over every sealed column (from PostgreSQL; [api-and-ui.md](api-and-ui.md) R-API-049); a non-zero value under a retired key ID means re-encryption has not finished |
-| `trove_secrets_key_rings_compatible` | gauge | — | 1 while every live replica's ring holds every key ID that is active on any live replica or referenced by a sealed value, else 0 (from the replica registry, R-OPS-003; R-API-049) |
-| `trove_db_pool_connections` | gauge | `db_pool`, `state` (acquired, idle, constructing) | Connection state per pool of this replica; `db_pool` is `request` and `control` on every replica and `lease` on `worker` ([architecture.md](architecture.md) R-ARCH-019). Summed by the target label `role`, it shows the connections each role holds (Q-OPS-13) |
-| `trove_db_pool_max_connections` | gauge | `db_pool` | Pool size |
-| `trove_db_pool_acquire_duration_seconds` | histogram | `db_pool` | Wait for a connection (pgxpool `AcquireTracer`, failed acquisitions included); for `control` it is the headroom of the readiness-critical loops (Q-HA-20). The bounds 0.1 s and 1 s of the alerts are bucket bounds |
-| `trove_db_pool_empty_acquires_total` | counter | `db_pool` | Acquisitions that had to wait (pgxpool `EmptyAcquireCount`) |
-| `trove_db_pool_canceled_acquires_total` | counter | `db_pool` | Acquisitions given up because the caller's deadline ended (pgxpool `CanceledAcquireCount`); the precursor of `503` `database_timeout` |
-| `trove_db_pool_connections_opened_total` | counter | `db_pool` | New connections (pgxpool `NewConnsCount`); a jump after a failover or a credential rotation is a reconnect storm |
-| `trove_db_retries_total` | counter | `kind` (`connection`, `shutdown`, `read_only`, `serialization`, `too_many_connections`) | Repeats of a transaction or read after a retryable error, one per repeat ([ha-and-helm.md](ha-and-helm.md) R-HA-009) |
-| `trove_db_pool_resets_total`, `trove_db_commit_unknown_total` | counter | — | Pool resets and commits with unknown outcome (R-HA-009) |
-| `trove_db_slow_queries_total` | counter | `query` (name of the query in code) | Statements slower than `metrics.slow_query_threshold` on any pool of the replica, a failed one included, timed from the start of the statement until its result is closed (a streamed cursor counts while it is read); `0` counts none. A statement written inline in code is `unnamed`, pgx's own transaction statements are `begin`, `commit` and `rollback`, a pipeline's batch `pipeline`; `COPY` bypasses the tracer (Q-OPS-188) |
-| `trove_db_query_duration_seconds` | histogram | `query` | Only with `metrics.db_query_histograms: true`, which registers the family; buckets 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10 and 30 s (Q-OPS-188) |
-| `trove_jobs_queued` | gauge | `kind` | Queued jobs (from PostgreSQL) |
-| `trove_jobs_oldest_queued_age_seconds` | gauge | `kind` | Age of the oldest queued job that is due (`run_at` has passed; a back-off or delayed start is not waiting); the primary alerting signal for a stuck queue. Read from PostgreSQL by `web` replicas too, so it keeps reporting while no `worker` runs |
-| `trove_jobs_running` | gauge | `kind` | Jobs this replica executes (`worker`) |
-| `trove_jobs_completed_total` | counter | `kind`, `outcome` (succeeded, failed, retried, cancelled, released) | Job executions; `released` counts jobs handed back at shutdown without counting the attempt (R-ARCH-016) |
-| `trove_jobs_duration_seconds` | histogram | `kind` | Job execution time |
-| `trove_task_last_success_timestamp_seconds` | gauge | `task` | Last successful run of a scheduled task (R-OPS-019) |
-| `trove_lease_held` | gauge | `name` | 1 on the `worker` replica that holds a singleton lease (INV-12) |
-| `trove_lease_lost_total` | counter | `task` | Leases lost while held ([ha-and-helm.md](ha-and-helm.md) R-HA-006) |
-| `trove_health_check_passing` | gauge | `name` (check name) | 1 while the check passes, gating or reported (R-OPS-001); `valkey` and `objectStore` at 0 mean degraded, not unready |
-| `trove_cluster_poll_last_success_timestamp_seconds` | gauge | — | End of the last successful change-log poll; the `invalidation` check compares its age with `cluster.epoch_max_staleness` ([architecture.md](architecture.md) R-ARCH-018) |
-| `trove_cluster_changes_applied_total` | counter | `area`, `source` (`poll`, `message`) | Changes applied from the change log, and early evictions from Valkey messages; a `message` count near the `poll` count shows the fast path working |
-| `trove_cluster_signals_published_total`, `trove_cluster_signals_dropped_total` | counter | `area` | Signals sent to Valkey after the coalescer, and signals dropped while Valkey is unavailable (R-ARCH-018) |
-| `trove_cache_requests_total` | counter | `cache`, `result` (hit, miss) | In-process caches ([architecture.md](architecture.md)) |
-| `trove_cache_entries` | gauge | `cache` | Entries per in-process cache |
-| `trove_cache_flushes_total` | counter | `cache`, `reason` (`change`, `change_log_gap`, `unknown_payload`, `epoch_regressed`, `admin`, `size`) | Cache flushes: a change-area entry, a gap in the change log, a payload version this binary does not know, an epoch that went backwards after a failover or restore (R-ARCH-018, [ha-and-helm.md](ha-and-helm.md) R-HA-004), the cache flush of R-OPS-047, the size bound |
-| `trove_valkey_available` | gauge | — | 1 while the `valkey` check passes on this replica ([ha-and-helm.md](ha-and-helm.md) R-HA-057, R-OPS-045) |
-| `trove_valkey_circuit_open` | gauge | — | 1 while this replica's Valkey circuit is open (R-HA-057) |
-| `trove_valkey_sentinels_reachable` | gauge | — | Sentinels that answered this replica's last query (R-HA-057) |
-| `trove_valkey_primary_changes_total` | counter | — | Primary changes this replica's client followed: failovers seen (R-HA-057) |
-| `trove_valkey_pubsub_subscribed` | gauge | — | 1 while the Pub/Sub connection is subscribed on the current primary (R-OPS-045) |
-| `trove_valkey_primary_views` | gauge | — | Distinct non-null `valkey.primary` values over the live replicas of the registry (from PostgreSQL, R-OPS-003; live is `system.heartbeat_stale_after`); above 1 for longer than a reconciliation means replicas write to different primaries (R-OPS-045) |
-| `trove_valkey_command_duration_seconds` | histogram | `command` | Round trip of a Valkey command or pipeline ([architecture.md](architecture.md) R-ARCH-031) |
-| `trove_valkey_errors_total` | counter | `kind` (`timeout`, `connection`, `readonly`, `auth`, `tls`, `oom`, `no_primary`) | Failed Valkey calls (R-HA-057); `no_primary` counts Sentinel queries that named no primary for `valkey.sentinel.primary_name` (cross-page to R-HA-057) |
-| `trove_valkey_degraded_total` | counter | `mechanism` | Calls that ran their fallback instead of Valkey (R-ARCH-031) |
-| `trove_valkey_cache_lookups_total` | counter | `cache` (`negative`), `result` (`hit`, `miss`, `rejected`, `unavailable`) | Lookups in Valkey after an L1 miss; `rejected` counts entries that were malformed (the store deletes them) and entries that reader validation refused (such an entry is counted as `hit` first: the store cannot know the reader's window) ([architecture.md](architecture.md) R-ARCH-030). The L1 is counted in `trove_cache_requests_total{cache="negative_l1"}` (R-OPS-045) |
-| `trove_ratelimit_decisions_total` | counter | `limiter`, `mode` (`cluster`, `fallback`, `replica`), `outcome` (`admitted`, `refused`) | Rate-limit checks of the limiter of [architecture.md](architecture.md) R-ARCH-034 |
-| `trove_ratelimit_fallback` | gauge | `limiter` | 1 while a cluster-scoped limiter answers from per-replica shares (R-ARCH-034) |
-| `trove_auth_attempts_total` | counter | `auth_method` (bearer, basic, nuget_apikey, session, oidc_login, ci_exchange), `outcome` (success, invalid, expired, revoked, denied) | Authentication outcomes |
-| `trove_auth_cache_bypassed_total` | counter | `reason` (`changes_stale`) | Credential lookups sent to PostgreSQL instead of the in-process caches because the replica's last change-log poll is older than `auth.revocation_bound` ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-023); a rate without a database incident means a replica's poll lags |
-| `trove_auth_throttle_exempt_total` | counter | `via` (`cache`, `marker`) | Requests of recently validated credentials exempted from the credential-failure throttle, by the replica's own cache or by a Valkey exemption marker ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-038); a marker only lets a credential be validated, never authenticates it |
-| `trove_auth_lastused_flush_failures_total` | counter | — | Flushes of the token last-used buffer that failed; the batch is dropped and the next use records the token again ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-031, Q-AUTH-178) |
-| `trove_auth_session_touch_failures_total` | counter | — | Session `last_seen_at` writes that failed; they never fail the request ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-010, R-AUTH-041) |
-| `trove_auth_ratelimited_total` | counter | `limit` (`credential_failures`, `flow_starts`, `device_code_failures`, `break_glass_lockout`, `break_glass_verifications`, `pending_flows`) | Authentication requests refused by one of the limits of [identity-and-authentication.md](identity-and-authentication.md) (R-AUTH-014, R-AUTH-038) |
-| `trove_authz_decisions_total` | counter | `outcome` (allow, deny), `reason` (the reason codes of [authorization.md](authorization.md) R-AUTHZ-029), `action` | Authorization decisions (INV-9); every answer counts, also those whose audit event is deduplicated |
-| `trove_authz_epoch` | gauge | — | `authz` epoch of the grant index this replica has installed ([authorization.md](authorization.md) R-AUTHZ-028); it never decreases on a replica |
-| `trove_authz_index_staleness_seconds` | gauge | — | Time since the installed grant index was last confirmed by a change-log poll or its own build (R-AUTHZ-028); it never grows because Valkey is unavailable |
-| `trove_authz_index_rebuilds_total` | counter | `trigger` (`startup`, `poll`, `message`, `flush`, `safety`, `min_epoch`) | Grant-index builds and why they ran (R-AUTHZ-028, R-AUTHZ-032); forged Valkey messages do not raise `message` |
-| `trove_authz_stale_waits_total` | counter | `outcome` (`decided`, `refused`) | Decisions that waited for a fresh grant index, and those that ended `503` `authz_stale` (R-AUTHZ-028) |
-| `trove_authz_min_epoch_total` | counter | `outcome` (`current`, `waited`, `unknown`, `timeout`) | Requests that named a minimum `authz` epoch, by how they were served ([authorization.md](authorization.md) R-AUTHZ-032) |
-| `trove_audit_events_total` | counter | `kind` (category), `outcome` | Audit events recorded |
-| `trove_audit_events_dropped_total` | counter | — | Access events lost to a full buffer (R-OPS-015) |
-| `trove_webhook_deliveries_total` | counter | `subscription`, `outcome` (succeeded, failed, retrying, abandoned) | Delivery attempts, on `worker` replicas |
-| `trove_webhook_delivery_duration_seconds` | histogram | — | Receiver response time |
-| `trove_webhook_render_duration_seconds` | histogram | — | Time to prepare a request (template, signing) |
-| `trove_webhook_pending_deliveries` | gauge | — | Deliveries waiting or retrying (from PostgreSQL) |
-| `trove_events_undispatched` | gauge | — | Outbox rows not yet dispatched (R-OPS-035) |
-| `trove_tracing_spans_dropped_total` | counter | — | Spans lost to a full export queue |
-| `trove_outbound_requests_total` | counter | `kind` (purpose), `code` | Requests sent to other systems, by purpose and result code (Q-OPS-26) |
-| `trove_outbound_egress_denied_total` | counter | `kind` (purpose) | Connections refused by the egress address policy ([security/egress.md](../security/egress.md)) |
-| `trove_tls_certificate_expiry_timestamp_seconds` | gauge | `kind` (`listener`, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`, `client:<endpoint>`, `ops`, or empty for a client), `name` (the configured file) | notAfter of the served leaf of a pair, or the earliest of a CA bundle ([security/transport-encryption.md](../security/transport-encryption.md)) |
-| `trove_tls_reloads_total` | counter | `kind`, `listener`, `name` | Changed TLS material that loaded and replaced the previous one; the first load is not counted |
-| `trove_tls_reload_errors_total` | counter | `kind`, `listener`, `name` | TLS material that did not load; counted once per distinct content, exported at 0 from the start |
-| `trove_endpoint_listener_up` | gauge | `endpoint` | 1 while this replica's listener of the endpoint accepts connections ([endpoints.md](endpoints.md) R-EP-009) |
-| `trove_endpoint_misdirected_total` | counter | `endpoint` | `421` answers of the host check |
-| `trove_endpoint_forwarded_host_ignored_total` | counter | `endpoint` | Forwarded hosts outside the endpoint's host set |
-| `trove_outbound_request_duration_seconds` | histogram | `kind` (purpose) | Time of an outbound request including the body, by purpose |
-| `trove_outbound_egress_denied_total` | counter | `kind` (purpose) | Connections refused by the egress address policy, by purpose |
-| `trove_metrics_label_overflow_total` | counter | `family`, `label` | Values folded into `_other` |
-| `trove_metrics_db_gauges_last_success_timestamp_seconds` | gauge | — | End of the last successful evaluation of the gauges read from PostgreSQL (Q-OPS-18) |
-| `trove_maintenance_mode` | gauge | `mode` | 1 for the current mode (R-OPS-024) |
-| `trove_backup_last_success_timestamp_seconds`, `trove_backup_last_failure_timestamp_seconds`, `trove_backup_expected_interval_seconds`, `trove_backup_last_duration_seconds`, `trove_backup_last_database_bytes`, `trove_backup_last_blob_bytes`, `trove_backup_last_copied_bytes`, `trove_backup_running_seconds`, `trove_backup_pinned_blobs`, `trove_backup_snapshot_open_seconds`, `trove_backup_source_blobs_damaged`, `trove_backup_last_verify_timestamp_seconds`, `trove_backup_last_verify_findings` | gauge | — | Backup runs, read from `backup_run` by every `web` and `worker` replica under the rule of R-OPS-007; [backup-and-restore.md](backup-and-restore.md) R-BAK-014 owns their semantics. `trove_backup_expected_interval_seconds` is `backup.expected_interval` from the replica's configuration, the threshold source of `TroveBackupStale` |
-| `trove_backup_running` | gauge | `operation` (`create`, `delete`), `state` | 1 for the operation and state of the active run with a valid lease, if any (R-BAK-014) |
-| `trove_backup_gc_hold` | gauge | `mode` (`all`, `pinned`) | 1 while a valid garbage-collection hold of that kind exists (R-BAK-007, R-BAK-014) |
-| `trove_backup_copied_objects_total`, `trove_backup_copied_bytes_total` | counter | `mode` | Exported by the backup pod while its run lasts (R-BAK-014) |
-| `trove_backup_check_ok` | gauge | `check` | Result of the platform backup checks ([ha-and-helm.md](ha-and-helm.md) R-HA-023), written by the `backup-check` task |
-| `trove_revocation_journal_pending` | gauge | — | Revocation-journal backlog ([ha-and-helm.md](ha-and-helm.md) R-HA-054) |
-| `trove_revocation_journal_quarantined_total` | counter | — | Outbox rows that could not be encoded and were set aside in `system_state.journal_quarantined`; any increase means a change is missing from the journal (R-HA-054, `TroveRevocationJournalQuarantined`) |
-| `trove_oci_sweep_blobs_removed_total` | counter | — | Blob items removed by the task `oci-sweep` ([formats/oci.md](formats/oci.md) R-OCI-019, R-OCI-034, Q-OCI-71); exported by the `worker` replicas |
-| `trove_nuget_push_replayed_total` | counter | `repo` | Pushes of the identical bytes of a stored NuGet version, answered as accepted without a new event ([formats/nuget.md](formats/nuget.md) R-NUGET-006, R-NUGET-028, Q-NUGET-6; that page's label `repository` is `repo` here) |
-| `trove_nuget_remote_unparseable_packages_total` | counter | `repo` | Packages a NuGet remote repository cached that could not be read as a NuGet package and were served without NuGet rows ([formats/nuget.md](formats/nuget.md) R-NUGET-015, R-NUGET-028, Q-NUGET-53; that page's label `repository` is `repo` here) |
-| `trove_nuget_search_withheld_total` | counter | `repo` | Searches a NuGet remote repository answered from its cache because a name of the query is protected by an exclude pattern, a claim or a pin rule ([formats/nuget.md](formats/nuget.md) R-NUGET-016, R-NUGET-028, Q-NUGET-80; that page's label `repository` is `repo` here) |
-| `trove_nuget_search_forward_failures_total` | counter | `repo` | Forwarded searches of a NuGet remote repository that failed upstream (a failure, an open circuit, no search resource, an answer that is no search document) and were answered from the cache ([formats/nuget.md](formats/nuget.md) R-NUGET-016, R-NUGET-028, Q-NUGET-79; that page's label `repository` is `repo` here) |
-| `trove_nuget_symbol_index_lag_seconds` (P1) | gauge | — | Age of the oldest symbol package not yet indexed (R-NUGET-021, R-NUGET-028) |
-| `trove_nuget_symbol_index_failures_total` (P1) | counter | `repo`, `reason` | Symbol packages whose indexing ended with an error (R-NUGET-021, R-NUGET-028) |
-| `trove_vuln_source_last_success_timestamp_seconds` (M4b) | gauge | `source`, `ecosystem` | Last sync run of the advisory source that ended changed or unchanged; read from PostgreSQL ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-024) |
-| `trove_vuln_source_records` (M4b) | gauge | `source`, `ecosystem` | Stored advisory records; read from PostgreSQL (R-VULN-024) |
-| `trove_vuln_source_consecutive_failures` (M4b) | gauge | `source`, `ecosystem` | Consecutive failed sync runs (`vuln_source_state.failures`); read from PostgreSQL (R-VULN-024) |
-| `trove_vuln_sync_runs_total` (M4b) | counter | `source`, `ecosystem`, `kind` (`full`, `incremental`), `outcome` (`changed`, `unchanged`, `failed`, `cancelled`) | Advisory sync runs (R-VULN-004, Q-VULN-80) |
-| `trove_vuln_sync_records_total` (M4b) | counter | `source`, `ecosystem`, `result` (`written`, `skipped`, `rejected`, `deleted`) | Advisory records per sync result (R-VULN-004) |
-| `trove_vuln_unevaluable_ranges_total` (M4b) | counter | `ecosystem` | Advisory ranges the format's version order cannot evaluate (R-VULN-009) |
-| `trove_vuln_evaluations_total` (M4b) | counter | `trigger` (`publish`, `fill`, `miss`, `advisory`, `full`, `rescan`) | Evaluations of stored versions (R-VULN-011) |
-| `trove_vuln_evaluation_duration_seconds` (M4b) | histogram | `trigger` | Duration of an evaluation (R-VULN-011) |
-| `trove_vuln_findings` (M4b) | gauge | `severity`, `status`, `kind` | Findings; read from PostgreSQL (R-VULN-012) |
-| `trove_vuln_downloads_blocked_total` (M4b) | counter | `format`, `reason` (`malicious`, `triage`, `missing_data`), `mode` (`enforce`, `report`) | Downloads refused, or counted only in report mode (R-VULN-015) |
-| `trove_vuln_audit_requests_total` (M4b) | counter | `format`, `mode`, `outcome` | Client audits answered (R-VULN-017, R-VULN-018) |
-| `trove_vuln_claimed_name_matches` (M4b) | gauge | `ecosystem`, `kind` | Public advisories for claimed names; read from PostgreSQL (R-VULN-010) |
-| `trove_mirror_passes_total` (6b) | counter | `repo`, `kind` (`full`, `incremental`), `outcome` (`complete`, `partial`, `bound_reached`, `offline`, `stopped`, `failed`, `deferred`) | Pass attempts of mirrored remotes by how they ended ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-057); exported by the process that runs the pass |
-| `trove_mirror_items_total` (6b) | counter | `repo`, `result` (`stored`, `present`, `bounded`, `failed`, `preempted`, `refused`) | Artifacts of the passes' plans (R-REPO-057) |
-| `trove_mirror_bytes_total` (6b) | counter | `repo` | Bytes the passes stored (R-REPO-057) |
-| `trove_mirror_rate_limited_total` (6b) | counter | `repo`, `reason` (`too_many_requests`, `slow_down`, `retry_after`, `quota_header`) | Rate-limit answers to the passes (R-REPO-054) |
-| `trove_mirror_rate_limit_wait_seconds_total` (6b) | counter | `repo` | Seconds the passes waited for rate limits (R-REPO-054) |
-| `trove_mirror_concurrency` (6b) | gauge | `repo` | The running pass's window in the process that runs it (R-REPO-054) |
-| `trove_mirror_preempted_total` (6b) | counter | `repo` | Background fetches pre-empted by clients (R-REPO-055) |
-| `trove_mirror_pending_packages` (6b) | gauge | `repo` | Pending names of the pass in progress; read from PostgreSQL (R-REPO-057) |
-| `trove_mirror_last_complete_pass_timestamp_seconds` (6b) | gauge | `repo` | End of the last complete pass; read from PostgreSQL (R-REPO-057) |
-| `trove_mirror_interval_seconds` (6b) | gauge | `repo` | The configured `remote.mirror.intervalSeconds`; read from the repository snapshot (R-REPO-057) |
-| `trove_mirror_consecutive_failures` (6b) | gauge | `repo` | Failed pass attempts in a row; read from PostgreSQL; none for a paused mirror (R-REPO-057, Q-OPS-171) |
-| `trove_mirror_next_pass_timestamp_seconds` (6b) | gauge | `repo` | When the mirror next acts (a due pass, or the last write of the pass in progress); read from PostgreSQL; none for a paused mirror (R-REPO-057, Q-OPS-171) |
+| `quader_build_info` | gauge (=1) | `version`, `revision`, `goversion`, `role` | Build and process role (`web`, `worker`, `all`) of the running binary (Q-OPS-13) |
+| `quader_ready` | gauge | — | 1 while `/readyz` answers `200`, degraded included (R-OPS-001) |
+| `quader_http_requests_total` | counter | `listener`, `endpoint` (client listener), `handler`, `method`, `code` | Completed requests |
+| `quader_http_request_duration_seconds` | histogram | `listener`, `endpoint` (client listener), `handler`, `method`, `code_class` | Time from first byte received to last byte sent |
+| `quader_http_requests_in_flight` | gauge | `listener`, `endpoint` (client listener) | Requests in progress |
+| `quader_http_requests_shed_total` | counter | `endpoint`, `reason` (`in_flight`, `memory_slots`, `heap`) | Requests step 4 of the chain answered `503 server_busy`: beyond the endpoint's `max_in_flight`, beyond the replica's memory slots, or while the heap gate was closed ([architecture.md](architecture.md) R-ARCH-005, Q-ARCH-240) |
+| `quader_http_memory_slots` | gauge | — | Downloads of a large object the replica's memory admits beside the bytes its caches hold now, in units of the request bytes (R-ARCH-005, Q-ARCH-328); `0` when no memory limit is known |
+| `quader_http_memory_slots_in_use` | gauge | — | What admitted requests are charged now, in the same unit and rounded up; only present while the replica knows a memory limit (R-ARCH-005) |
+| `quader_http_received_bytes_total` | counter | `handler` | Request body bytes |
+| `quader_http_sent_bytes_total` | counter | `handler` | Response body bytes |
+| `quader_http_transfers_cut_total` | counter | `direction` | Transfers cut at the shutdown deadline ([architecture.md](architecture.md) R-ARCH-024, Q-ARCH-18) |
+| `quader_repository_requests_total` | counter | `repo`, `format`, `class`, `operation` (download, upload, metadata, delete, search), `outcome` (success, not_found, denied, error) | Package-protocol and raw-file operations per repository |
+| `quader_repository_transferred_bytes_total` | counter | `repo`, `format`, `class`, `direction` (in, out) | Bytes per repository |
+| `quader_remote_cache_lookups_total` | counter | `repo`, `kind` (metadata, artifact, query), `result` (hit, miss, stale, negative_hit) | Pull-through cache outcomes (INV-11) |
+| `quader_remote_upstream_requests_total` | counter | `repo`, `code` (status code or `error`) | Requests sent to an upstream |
+| `quader_remote_upstream_request_duration_seconds` | histogram | `repo` | Upstream response time including body |
+| `quader_remote_upstream_up` | gauge | `repo` | 1 while the upstream counts as reachable, 0 while it is treated as unreachable ([repositories-and-proxy.md](repositories-and-proxy.md)) |
+| `quader_remote_collapsed_requests_total` | counter | `repo` | Cache misses that waited for an in-flight fetch instead of fetching themselves, whether the fetch ran on this replica or on another one (INV-11) |
+| `quader_remote_source_network_unavailable_total` | counter | `repo` | Fetches answered `502` `source_network_unavailable` because this replica has no interface address inside the remote's `sourceNetwork` prefix ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-024, R-REPO-047, Q-REPO-9); a non-zero rate on some replicas only means their pods sit outside the prefix |
+| `quader_flight_lock_bypass_total` | counter | `reason` (`valkey_unavailable`, `wait_timeout`, `draining`) | Fetches that went ahead without the cross-replica lock ([architecture.md](architecture.md) R-ARCH-033, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-026, R-REPO-047) |
+| `quader_flight_lock_lost_total` | counter | — | Holds whose lock key was gone or taken when extended (R-ARCH-033) |
+| `quader_shadow_checks_total` | counter | `repo` (the local repository), `outcome` (`no-exposure`, `clear`, `shadowing-approved`, `refused`, `undetermined-approved`, `unavailable`) | Shadowing checks on first publishes of a name ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-048) |
+| `quader_blobstore_operations_total` | counter | `operation` (put, get, head, delete, list, multipart), `outcome` | Object-storage calls |
+| `quader_blobstore_operation_duration_seconds` | histogram | `operation` | Object-storage latency |
+| `quader_blobstore_transferred_bytes_total` | counter | `direction` | Bytes to and from object storage |
+| `quader_blobstore_dedup_hits_total` | counter | — | Uploads whose content address already existed (INV-4) |
+| `quader_spool_used_bytes`, `quader_spool_free_bytes` | gauge | — | Local temporary upload spool: the budget that running uploads hold (R-STOR-004), and the free space of the spool volume, read at every reservation and release ([ha-and-helm.md](ha-and-helm.md) R-HA-045 `QuaderSpoolNearlyFull`) |
+| `quader_storage_blobs`, `quader_storage_blob_bytes`, `quader_storage_logical_bytes` | gauge | — | From the storage summary (R-OPS-023); same value on every replica |
+| `quader_repository_files`, `quader_repository_bytes` | gauge | `repo`, `format`, `class` | From the storage summary |
+| `quader_repositories` | gauge | `format`, `class` | Number of repositories |
+| `quader_storage_summary_age_seconds` | gauge | — | Age of the cached storage summary |
+| `quader_storage_blobs_damaged_total` | counter | `status` (`missing`, `corrupt`) | Damaged blobs detected by the scrub or by download verification ([storage.md](storage.md) R-STOR-013, R-STOR-027) |
+| `quader_storage_blobs_damaged` | gauge | `status` (`missing`, `corrupt`) | Current number of damaged blobs, from the latest storage summary (R-OPS-023, [storage.md](storage.md) R-STOR-028); same value on every replica |
+| `quader_gc_runs_total` | counter | `outcome` | Garbage-collection runs of the tasks `gc` and `gc-full` ([storage.md](storage.md) R-STOR-025) |
+| `quader_gc_deleted_blobs_total`, `quader_gc_reclaimed_bytes_total` | counter | — | Garbage-collection effect |
+| `quader_gc_candidates_kept_total` | counter | — | Candidates kept because the reference check found a reference ([storage.md](storage.md) R-STOR-024) |
+| `quader_gc_deleting_rows` | gauge | — | Blob rows in state `deleting` (from PostgreSQL); a value that does not fall back to zero means interrupted deletions are not finishing (R-STOR-024) |
+| `quader_gc_last_success_timestamp_seconds` | gauge | — | End of the last run of this replica that ended without error and was neither paused nor a dry run; no series until there was one ([ha-and-helm.md](ha-and-helm.md) R-HA-045 `QuaderGCStale`, with `max`) |
+| `quader_gc_candidates_held_total` | counter | — | Collection candidates kept by a backup's hold ([backup-and-restore.md](backup-and-restore.md) R-BAK-007) |
+| `quader_secrets_sealed_values` | gauge | `key_id` | Sealed values per key ID over every sealed column (from PostgreSQL; [api-and-ui.md](api-and-ui.md) R-API-049); a non-zero value under a retired key ID means re-encryption has not finished |
+| `quader_secrets_key_rings_compatible` | gauge | — | 1 while every live replica's ring holds every key ID that is active on any live replica or referenced by a sealed value, else 0 (from the replica registry, R-OPS-003; R-API-049) |
+| `quader_db_pool_connections` | gauge | `db_pool`, `state` (acquired, idle, constructing) | Connection state per pool of this replica; `db_pool` is `request` and `control` on every replica and `lease` on `worker` ([architecture.md](architecture.md) R-ARCH-019). Summed by the target label `role`, it shows the connections each role holds (Q-OPS-13) |
+| `quader_db_pool_max_connections` | gauge | `db_pool` | Pool size |
+| `quader_db_pool_acquire_duration_seconds` | histogram | `db_pool` | Wait for a connection (pgxpool `AcquireTracer`, failed acquisitions included); for `control` it is the headroom of the readiness-critical loops (Q-HA-20). The bounds 0.1 s and 1 s of the alerts are bucket bounds |
+| `quader_db_pool_empty_acquires_total` | counter | `db_pool` | Acquisitions that had to wait (pgxpool `EmptyAcquireCount`) |
+| `quader_db_pool_canceled_acquires_total` | counter | `db_pool` | Acquisitions given up because the caller's deadline ended (pgxpool `CanceledAcquireCount`); the precursor of `503` `database_timeout` |
+| `quader_db_pool_connections_opened_total` | counter | `db_pool` | New connections (pgxpool `NewConnsCount`); a jump after a failover or a credential rotation is a reconnect storm |
+| `quader_db_retries_total` | counter | `kind` (`connection`, `shutdown`, `read_only`, `serialization`, `too_many_connections`) | Repeats of a transaction or read after a retryable error, one per repeat ([ha-and-helm.md](ha-and-helm.md) R-HA-009) |
+| `quader_db_pool_resets_total`, `quader_db_commit_unknown_total` | counter | — | Pool resets and commits with unknown outcome (R-HA-009) |
+| `quader_db_slow_queries_total` | counter | `query` (name of the query in code) | Statements slower than `metrics.slow_query_threshold` on any pool of the replica, a failed one included, timed from the start of the statement until its result is closed (a streamed cursor counts while it is read); `0` counts none. A statement written inline in code is `unnamed`, pgx's own transaction statements are `begin`, `commit` and `rollback`, a pipeline's batch `pipeline`; `COPY` bypasses the tracer (Q-OPS-188) |
+| `quader_db_query_duration_seconds` | histogram | `query` | Only with `metrics.db_query_histograms: true`, which registers the family; buckets 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10 and 30 s (Q-OPS-188) |
+| `quader_jobs_queued` | gauge | `kind` | Queued jobs (from PostgreSQL) |
+| `quader_jobs_oldest_queued_age_seconds` | gauge | `kind` | Age of the oldest queued job that is due (`run_at` has passed; a back-off or delayed start is not waiting); the primary alerting signal for a stuck queue. Read from PostgreSQL by `web` replicas too, so it keeps reporting while no `worker` runs |
+| `quader_jobs_running` | gauge | `kind` | Jobs this replica executes (`worker`) |
+| `quader_jobs_completed_total` | counter | `kind`, `outcome` (succeeded, failed, retried, cancelled, released) | Job executions; `released` counts jobs handed back at shutdown without counting the attempt (R-ARCH-016) |
+| `quader_jobs_duration_seconds` | histogram | `kind` | Job execution time |
+| `quader_task_last_success_timestamp_seconds` | gauge | `task` | Last successful run of a scheduled task (R-OPS-019) |
+| `quader_lease_held` | gauge | `name` | 1 on the `worker` replica that holds a singleton lease (INV-12) |
+| `quader_lease_lost_total` | counter | `task` | Leases lost while held ([ha-and-helm.md](ha-and-helm.md) R-HA-006) |
+| `quader_health_check_passing` | gauge | `name` (check name) | 1 while the check passes, gating or reported (R-OPS-001); `valkey` and `objectStore` at 0 mean degraded, not unready |
+| `quader_cluster_poll_last_success_timestamp_seconds` | gauge | — | End of the last successful change-log poll; the `invalidation` check compares its age with `cluster.epoch_max_staleness` ([architecture.md](architecture.md) R-ARCH-018) |
+| `quader_cluster_changes_applied_total` | counter | `area`, `source` (`poll`, `message`) | Changes applied from the change log, and early evictions from Valkey messages; a `message` count near the `poll` count shows the fast path working |
+| `quader_cluster_signals_published_total`, `quader_cluster_signals_dropped_total` | counter | `area` | Signals sent to Valkey after the coalescer, and signals dropped while Valkey is unavailable (R-ARCH-018) |
+| `quader_cache_requests_total` | counter | `cache`, `result` (hit, miss) | In-process caches ([architecture.md](architecture.md)) |
+| `quader_cache_entries` | gauge | `cache` | Entries per in-process cache |
+| `quader_cache_flushes_total` | counter | `cache`, `reason` (`change`, `change_log_gap`, `unknown_payload`, `epoch_regressed`, `admin`, `size`) | Cache flushes: a change-area entry, a gap in the change log, a payload version this binary does not know, an epoch that went backwards after a failover or restore (R-ARCH-018, [ha-and-helm.md](ha-and-helm.md) R-HA-004), the cache flush of R-OPS-047, the size bound |
+| `quader_valkey_available` | gauge | — | 1 while the `valkey` check passes on this replica ([ha-and-helm.md](ha-and-helm.md) R-HA-057, R-OPS-045) |
+| `quader_valkey_circuit_open` | gauge | — | 1 while this replica's Valkey circuit is open (R-HA-057) |
+| `quader_valkey_sentinels_reachable` | gauge | — | Sentinels that answered this replica's last query (R-HA-057) |
+| `quader_valkey_primary_changes_total` | counter | — | Primary changes this replica's client followed: failovers seen (R-HA-057) |
+| `quader_valkey_pubsub_subscribed` | gauge | — | 1 while the Pub/Sub connection is subscribed on the current primary (R-OPS-045) |
+| `quader_valkey_primary_views` | gauge | — | Distinct non-null `valkey.primary` values over the live replicas of the registry (from PostgreSQL, R-OPS-003; live is `system.heartbeat_stale_after`); above 1 for longer than a reconciliation means replicas write to different primaries (R-OPS-045) |
+| `quader_valkey_command_duration_seconds` | histogram | `command` | Round trip of a Valkey command or pipeline ([architecture.md](architecture.md) R-ARCH-031) |
+| `quader_valkey_errors_total` | counter | `kind` (`timeout`, `connection`, `readonly`, `auth`, `tls`, `oom`, `no_primary`) | Failed Valkey calls (R-HA-057); `no_primary` counts Sentinel queries that named no primary for `valkey.sentinel.primary_name` (cross-page to R-HA-057) |
+| `quader_valkey_degraded_total` | counter | `mechanism` | Calls that ran their fallback instead of Valkey (R-ARCH-031) |
+| `quader_valkey_cache_lookups_total` | counter | `cache` (`negative`), `result` (`hit`, `miss`, `rejected`, `unavailable`) | Lookups in Valkey after an L1 miss; `rejected` counts entries that were malformed (the store deletes them) and entries that reader validation refused (such an entry is counted as `hit` first: the store cannot know the reader's window) ([architecture.md](architecture.md) R-ARCH-030). The L1 is counted in `quader_cache_requests_total{cache="negative_l1"}` (R-OPS-045) |
+| `quader_ratelimit_decisions_total` | counter | `limiter`, `mode` (`cluster`, `fallback`, `replica`), `outcome` (`admitted`, `refused`) | Rate-limit checks of the limiter of [architecture.md](architecture.md) R-ARCH-034 |
+| `quader_ratelimit_fallback` | gauge | `limiter` | 1 while a cluster-scoped limiter answers from per-replica shares (R-ARCH-034) |
+| `quader_auth_attempts_total` | counter | `auth_method` (bearer, basic, nuget_apikey, session, oidc_login, ci_exchange), `outcome` (success, invalid, expired, revoked, denied) | Authentication outcomes |
+| `quader_auth_cache_bypassed_total` | counter | `reason` (`changes_stale`) | Credential lookups sent to PostgreSQL instead of the in-process caches because the replica's last change-log poll is older than `auth.revocation_bound` ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-023); a rate without a database incident means a replica's poll lags |
+| `quader_auth_throttle_exempt_total` | counter | `via` (`cache`, `marker`) | Requests of recently validated credentials exempted from the credential-failure throttle, by the replica's own cache or by a Valkey exemption marker ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-038); a marker only lets a credential be validated, never authenticates it |
+| `quader_auth_lastused_flush_failures_total` | counter | — | Flushes of the token last-used buffer that failed; the batch is dropped and the next use records the token again ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-031, Q-AUTH-178) |
+| `quader_auth_session_touch_failures_total` | counter | — | Session `last_seen_at` writes that failed; they never fail the request ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-010, R-AUTH-041) |
+| `quader_auth_ratelimited_total` | counter | `limit` (`credential_failures`, `flow_starts`, `device_code_failures`, `break_glass_lockout`, `break_glass_verifications`, `pending_flows`) | Authentication requests refused by one of the limits of [identity-and-authentication.md](identity-and-authentication.md) (R-AUTH-014, R-AUTH-038) |
+| `quader_authz_decisions_total` | counter | `outcome` (allow, deny), `reason` (the reason codes of [authorization.md](authorization.md) R-AUTHZ-029), `action` | Authorization decisions (INV-9); every answer counts, also those whose audit event is deduplicated |
+| `quader_authz_epoch` | gauge | — | `authz` epoch of the grant index this replica has installed ([authorization.md](authorization.md) R-AUTHZ-028); it never decreases on a replica |
+| `quader_authz_index_staleness_seconds` | gauge | — | Time since the installed grant index was last confirmed by a change-log poll or its own build (R-AUTHZ-028); it never grows because Valkey is unavailable |
+| `quader_authz_index_rebuilds_total` | counter | `trigger` (`startup`, `poll`, `message`, `flush`, `safety`, `min_epoch`) | Grant-index builds and why they ran (R-AUTHZ-028, R-AUTHZ-032); forged Valkey messages do not raise `message` |
+| `quader_authz_stale_waits_total` | counter | `outcome` (`decided`, `refused`) | Decisions that waited for a fresh grant index, and those that ended `503` `authz_stale` (R-AUTHZ-028) |
+| `quader_authz_min_epoch_total` | counter | `outcome` (`current`, `waited`, `unknown`, `timeout`) | Requests that named a minimum `authz` epoch, by how they were served ([authorization.md](authorization.md) R-AUTHZ-032) |
+| `quader_audit_events_total` | counter | `kind` (category), `outcome` | Audit events recorded |
+| `quader_audit_events_dropped_total` | counter | — | Access events lost to a full buffer (R-OPS-015) |
+| `quader_webhook_deliveries_total` | counter | `subscription`, `outcome` (succeeded, failed, retrying, abandoned) | Delivery attempts, on `worker` replicas |
+| `quader_webhook_delivery_duration_seconds` | histogram | — | Receiver response time |
+| `quader_webhook_render_duration_seconds` | histogram | — | Time to prepare a request (template, signing) |
+| `quader_webhook_pending_deliveries` | gauge | — | Deliveries waiting or retrying (from PostgreSQL) |
+| `quader_events_undispatched` | gauge | — | Outbox rows not yet dispatched (R-OPS-035) |
+| `quader_tracing_spans_dropped_total` | counter | — | Spans lost to a full export queue |
+| `quader_outbound_requests_total` | counter | `kind` (purpose), `code` | Requests sent to other systems, by purpose and result code (Q-OPS-26) |
+| `quader_outbound_egress_denied_total` | counter | `kind` (purpose) | Connections refused by the egress address policy ([security/egress.md](../security/egress.md)) |
+| `quader_tls_certificate_expiry_timestamp_seconds` | gauge | `kind` (`listener`, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`, `client:<endpoint>`, `ops`, or empty for a client), `name` (the configured file) | notAfter of the served leaf of a pair, or the earliest of a CA bundle ([security/transport-encryption.md](../security/transport-encryption.md)) |
+| `quader_tls_reloads_total` | counter | `kind`, `listener`, `name` | Changed TLS material that loaded and replaced the previous one; the first load is not counted |
+| `quader_tls_reload_errors_total` | counter | `kind`, `listener`, `name` | TLS material that did not load; counted once per distinct content, exported at 0 from the start |
+| `quader_endpoint_listener_up` | gauge | `endpoint` | 1 while this replica's listener of the endpoint accepts connections ([endpoints.md](endpoints.md) R-EP-009) |
+| `quader_endpoint_misdirected_total` | counter | `endpoint` | `421` answers of the host check |
+| `quader_endpoint_forwarded_host_ignored_total` | counter | `endpoint` | Forwarded hosts outside the endpoint's host set |
+| `quader_outbound_request_duration_seconds` | histogram | `kind` (purpose) | Time of an outbound request including the body, by purpose |
+| `quader_outbound_egress_denied_total` | counter | `kind` (purpose) | Connections refused by the egress address policy, by purpose |
+| `quader_metrics_label_overflow_total` | counter | `family`, `label` | Values folded into `_other` |
+| `quader_metrics_db_gauges_last_success_timestamp_seconds` | gauge | — | End of the last successful evaluation of the gauges read from PostgreSQL (Q-OPS-18) |
+| `quader_maintenance_mode` | gauge | `mode` | 1 for the current mode (R-OPS-024) |
+| `quader_backup_last_success_timestamp_seconds`, `quader_backup_last_failure_timestamp_seconds`, `quader_backup_expected_interval_seconds`, `quader_backup_last_duration_seconds`, `quader_backup_last_database_bytes`, `quader_backup_last_blob_bytes`, `quader_backup_last_copied_bytes`, `quader_backup_running_seconds`, `quader_backup_pinned_blobs`, `quader_backup_snapshot_open_seconds`, `quader_backup_source_blobs_damaged`, `quader_backup_last_verify_timestamp_seconds`, `quader_backup_last_verify_findings` | gauge | — | Backup runs, read from `backup_run` by every `web` and `worker` replica under the rule of R-OPS-007; [backup-and-restore.md](backup-and-restore.md) R-BAK-014 owns their semantics. `quader_backup_expected_interval_seconds` is `backup.expected_interval` from the replica's configuration, the threshold source of `QuaderBackupStale` |
+| `quader_backup_running` | gauge | `operation` (`create`, `delete`), `state` | 1 for the operation and state of the active run with a valid lease, if any (R-BAK-014) |
+| `quader_backup_gc_hold` | gauge | `mode` (`all`, `pinned`) | 1 while a valid garbage-collection hold of that kind exists (R-BAK-007, R-BAK-014) |
+| `quader_backup_copied_objects_total`, `quader_backup_copied_bytes_total` | counter | `mode` | Exported by the backup pod while its run lasts (R-BAK-014) |
+| `quader_backup_check_ok` | gauge | `check` | Result of the platform backup checks ([ha-and-helm.md](ha-and-helm.md) R-HA-023), written by the `backup-check` task |
+| `quader_revocation_journal_pending` | gauge | — | Revocation-journal backlog ([ha-and-helm.md](ha-and-helm.md) R-HA-054) |
+| `quader_revocation_journal_quarantined_total` | counter | — | Outbox rows that could not be encoded and were set aside in `system_state.journal_quarantined`; any increase means a change is missing from the journal (R-HA-054, `QuaderRevocationJournalQuarantined`) |
+| `quader_oci_sweep_blobs_removed_total` | counter | — | Blob items removed by the task `oci-sweep` ([formats/oci.md](formats/oci.md) R-OCI-019, R-OCI-034, Q-OCI-71); exported by the `worker` replicas |
+| `quader_nuget_push_replayed_total` | counter | `repo` | Pushes of the identical bytes of a stored NuGet version, answered as accepted without a new event ([formats/nuget.md](formats/nuget.md) R-NUGET-006, R-NUGET-028, Q-NUGET-6; that page's label `repository` is `repo` here) |
+| `quader_nuget_remote_unparseable_packages_total` | counter | `repo` | Packages a NuGet remote repository cached that could not be read as a NuGet package and were served without NuGet rows ([formats/nuget.md](formats/nuget.md) R-NUGET-015, R-NUGET-028, Q-NUGET-53; that page's label `repository` is `repo` here) |
+| `quader_nuget_search_withheld_total` | counter | `repo` | Searches a NuGet remote repository answered from its cache because a name of the query is protected by an exclude pattern, a claim or a pin rule ([formats/nuget.md](formats/nuget.md) R-NUGET-016, R-NUGET-028, Q-NUGET-80; that page's label `repository` is `repo` here) |
+| `quader_nuget_search_forward_failures_total` | counter | `repo` | Forwarded searches of a NuGet remote repository that failed upstream (a failure, an open circuit, no search resource, an answer that is no search document) and were answered from the cache ([formats/nuget.md](formats/nuget.md) R-NUGET-016, R-NUGET-028, Q-NUGET-79; that page's label `repository` is `repo` here) |
+| `quader_nuget_symbol_index_lag_seconds` (P1) | gauge | — | Age of the oldest symbol package not yet indexed (R-NUGET-021, R-NUGET-028) |
+| `quader_nuget_symbol_index_failures_total` (P1) | counter | `repo`, `reason` | Symbol packages whose indexing ended with an error (R-NUGET-021, R-NUGET-028) |
+| `quader_vuln_source_last_success_timestamp_seconds` (M4b) | gauge | `source`, `ecosystem` | Last sync run of the advisory source that ended changed or unchanged; read from PostgreSQL ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-024) |
+| `quader_vuln_source_records` (M4b) | gauge | `source`, `ecosystem` | Stored advisory records; read from PostgreSQL (R-VULN-024) |
+| `quader_vuln_source_consecutive_failures` (M4b) | gauge | `source`, `ecosystem` | Consecutive failed sync runs (`vuln_source_state.failures`); read from PostgreSQL (R-VULN-024) |
+| `quader_vuln_sync_runs_total` (M4b) | counter | `source`, `ecosystem`, `kind` (`full`, `incremental`), `outcome` (`changed`, `unchanged`, `failed`, `cancelled`) | Advisory sync runs (R-VULN-004, Q-VULN-80) |
+| `quader_vuln_sync_records_total` (M4b) | counter | `source`, `ecosystem`, `result` (`written`, `skipped`, `rejected`, `deleted`) | Advisory records per sync result (R-VULN-004) |
+| `quader_vuln_unevaluable_ranges_total` (M4b) | counter | `ecosystem` | Advisory ranges the format's version order cannot evaluate (R-VULN-009) |
+| `quader_vuln_evaluations_total` (M4b) | counter | `trigger` (`publish`, `fill`, `miss`, `advisory`, `full`, `rescan`) | Evaluations of stored versions (R-VULN-011) |
+| `quader_vuln_evaluation_duration_seconds` (M4b) | histogram | `trigger` | Duration of an evaluation (R-VULN-011) |
+| `quader_vuln_findings` (M4b) | gauge | `severity`, `status`, `kind` | Findings; read from PostgreSQL (R-VULN-012) |
+| `quader_vuln_downloads_blocked_total` (M4b) | counter | `format`, `reason` (`malicious`, `triage`, `missing_data`), `mode` (`enforce`, `report`) | Downloads refused, or counted only in report mode (R-VULN-015) |
+| `quader_vuln_audit_requests_total` (M4b) | counter | `format`, `mode`, `outcome` | Client audits answered (R-VULN-017, R-VULN-018) |
+| `quader_vuln_claimed_name_matches` (M4b) | gauge | `ecosystem`, `kind` | Public advisories for claimed names; read from PostgreSQL (R-VULN-010) |
+| `quader_mirror_passes_total` (6b) | counter | `repo`, `kind` (`full`, `incremental`), `outcome` (`complete`, `partial`, `bound_reached`, `offline`, `stopped`, `failed`, `deferred`) | Pass attempts of mirrored remotes by how they ended ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-057); exported by the process that runs the pass |
+| `quader_mirror_items_total` (6b) | counter | `repo`, `result` (`stored`, `present`, `bounded`, `failed`, `preempted`, `refused`) | Artifacts of the passes' plans (R-REPO-057) |
+| `quader_mirror_bytes_total` (6b) | counter | `repo` | Bytes the passes stored (R-REPO-057) |
+| `quader_mirror_rate_limited_total` (6b) | counter | `repo`, `reason` (`too_many_requests`, `slow_down`, `retry_after`, `quota_header`) | Rate-limit answers to the passes (R-REPO-054) |
+| `quader_mirror_rate_limit_wait_seconds_total` (6b) | counter | `repo` | Seconds the passes waited for rate limits (R-REPO-054) |
+| `quader_mirror_concurrency` (6b) | gauge | `repo` | The running pass's window in the process that runs it (R-REPO-054) |
+| `quader_mirror_preempted_total` (6b) | counter | `repo` | Background fetches pre-empted by clients (R-REPO-055) |
+| `quader_mirror_pending_packages` (6b) | gauge | `repo` | Pending names of the pass in progress; read from PostgreSQL (R-REPO-057) |
+| `quader_mirror_last_complete_pass_timestamp_seconds` (6b) | gauge | `repo` | End of the last complete pass; read from PostgreSQL (R-REPO-057) |
+| `quader_mirror_interval_seconds` (6b) | gauge | `repo` | The configured `remote.mirror.intervalSeconds`; read from the repository snapshot (R-REPO-057) |
+| `quader_mirror_consecutive_failures` (6b) | gauge | `repo` | Failed pass attempts in a row; read from PostgreSQL; none for a paused mirror (R-REPO-057, Q-OPS-171) |
+| `quader_mirror_next_pass_timestamp_seconds` (6b) | gauge | `repo` | When the mirror next acts (a due pass, or the last write of the pass in progress); read from PostgreSQL; none for a paused mirror (R-REPO-057, Q-OPS-171) |
 
 </details>
 
 **Acceptance criteria:**
 
-- After a cold `npm install express --registry https://trove.example.com/api/npm/web/npm-all/`,
-  `trove_remote_cache_lookups_total{repo="web/npm-remote",kind="artifact",result="miss"}` is greater
+- After a cold `npm install express --registry https://quader.example.com/api/npm/web/npm-all/`,
+  `quader_remote_cache_lookups_total{repo="web/npm-remote",kind="artifact",result="miss"}` is greater
   than zero.
 - After `npm cache clean --force` and a second install in a fresh directory, the `result="hit"`
   series of the same family grows instead.
-- `trove_jobs_oldest_queued_age_seconds` rises on the `web` replicas when the `worker` Deployment is
+- `quader_jobs_oldest_queued_age_seconds` rises on the `web` replicas when the `worker` Deployment is
   scaled to 0 and a task is triggered.
-- With Valkey stopped, `trove_valkey_available` is 0, `trove_ratelimit_fallback` is 1 for every
-  cluster-scoped limiter and `trove_valkey_degraded_total` grows on every replica, while
-  `trove_ready` stays 1.
+- With Valkey stopped, `quader_valkey_available` is 0, `quader_ratelimit_fallback` is 1 for every
+  cluster-scoped limiter and `quader_valkey_degraded_total` grows on every replica, while
+  `quader_ready` stays 1.
 - A unit test over the registry fails on a family of this table that a role exports although the
   role does not run the subsystem (R-OPS-007, "absent, not zero").
 
 ### R-OPS-045 · Valkey and coordination observability
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Valkey is part of every production topology (INV-12), and its outage must be visible although it
 never makes a replica unready. [ha-and-helm.md](ha-and-helm.md) R-HA-057 owns the degraded-mode
@@ -1130,21 +1130,21 @@ an operator sees of them. The families are in R-OPS-008.
 
 | Question | Signal |
 |---|---|
-| Can this replica use Valkey? | `trove_valkey_available`, `trove_valkey_circuit_open`, the `valkey` check (R-OPS-001) |
-| How fast is it? | `trove_valkey_command_duration_seconds{command}`, with the buckets 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25 and 0.5 s, because no call waits longer than `valkey.command_timeout` (500 ms by default) |
-| What fails? | `trove_valkey_errors_total{kind}` |
-| Which failovers did it follow? | `trove_valkey_primary_changes_total`; the registry's `valkey.primary` and `trove_valkey_primary_views` (R-OPS-003) |
-| Is the fast path of the change log up? | `trove_valkey_pubsub_subscribed`, `trove_cluster_changes_applied_total{source="message"}` |
-| What does the degradation cost? | `trove_valkey_degraded_total{mechanism}`, `trove_flight_lock_bypass_total`, `trove_ratelimit_fallback`, `trove_cluster_signals_dropped_total`, and the upstream request rate in `trove_remote_upstream_requests_total` |
-| Does the shared negative cache pay off? | `trove_valkey_cache_lookups_total{cache="negative"}` |
-| Can the Sentinels still fail over? | `trove_valkey_sentinels_reachable` |
+| Can this replica use Valkey? | `quader_valkey_available`, `quader_valkey_circuit_open`, the `valkey` check (R-OPS-001) |
+| How fast is it? | `quader_valkey_command_duration_seconds{command}`, with the buckets 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25 and 0.5 s, because no call waits longer than `valkey.command_timeout` (500 ms by default) |
+| What fails? | `quader_valkey_errors_total{kind}` |
+| Which failovers did it follow? | `quader_valkey_primary_changes_total`; the registry's `valkey.primary` and `quader_valkey_primary_views` (R-OPS-003) |
+| Is the fast path of the change log up? | `quader_valkey_pubsub_subscribed`, `quader_cluster_changes_applied_total{source="message"}` |
+| What does the degradation cost? | `quader_valkey_degraded_total{mechanism}`, `quader_flight_lock_bypass_total`, `quader_ratelimit_fallback`, `quader_cluster_signals_dropped_total`, and the upstream request rate in `quader_remote_upstream_requests_total` |
+| Does the shared negative cache pay off? | `quader_valkey_cache_lookups_total{cache="negative"}` |
+| Can the Sentinels still fail over? | `quader_valkey_sentinels_reachable` |
 
 - **Hit ratio.**
-  `sum(rate(trove_valkey_cache_lookups_total{cache="negative",result="hit"}[5m])) / sum(rate(trove_valkey_cache_lookups_total{cache="negative",result=~"hit|miss"}[5m]))`
+  `sum(rate(quader_valkey_cache_lookups_total{cache="negative",result="hit"}[5m])) / sum(rate(quader_valkey_cache_lookups_total{cache="negative",result=~"hit|miss"}[5m]))`
   is the share of L1 misses that Valkey answered. `rejected` counts entries that reader validation
   refused: a creation time outside the window, or a newer covering invalidation
   ([architecture.md](architecture.md) R-ARCH-030). A steady `rejected` rate without recent
-  invalidations points at writes from outside trove (H-49).
+  invalidations points at writes from outside Quader (H-49).
 - **Transitions are logged, failed calls are counted.** One `WARN` record (`component: cluster`)
   when the `valkey` check turns degraded, with the reason, and one `INFO` record when it passes
   again, with the duration. One `INFO` record per primary change, with the old and the new address,
@@ -1152,39 +1152,39 @@ an operator sees of them. The families are in R-OPS-008.
   for a configuration error (R-OPS-001). A failed call writes no record, so an outage adds two
   records per replica to the log, not one per request.
 - **No audit events.** Valkey availability is operational state, not an actor's action.
-- **The server side is not trove's view.** trove's ACL user may run only the commands of
-  [architecture.md](architecture.md) R-ARCH-031, which exclude `INFO`, so trove reports what its
+- **The server side is not Quader's view.** Quader's ACL user may run only the commands of
+  [architecture.md](architecture.md) R-ARCH-031, which exclude `INFO`, so Quader reports what its
   client sees. Memory, evictions, replication offsets and Sentinel state come from an exporter
   that whoever runs Valkey runs next to it, for example the Prometheus exporter for Valkey and Redis
   ([redis_exporter](https://github.com/oliver006/redis_exporter)).
   [ha-and-helm.md](ha-and-helm.md) R-HA-056 names the server settings worth watching (`maxmemory`,
   the eviction policy).
-- **Deleting trove's keys is always safe.** Every key under `valkey.key_prefix` is disposable
+- **Deleting Quader's keys is always safe.** Every key under `valkey.key_prefix` is disposable
   (INV-3, R-ARCH-030). An operator who suspects poisoned entries may delete the keys of the current
   keyspace (`<key_prefix><keyspace>:*`, the keyspace from R-OPS-004) with an administrative
   credential, or flush the database where no other application or installation shares it
-  (R-ARCH-030's shared prefixes); trove only loses cache warmth. trove itself never deletes keys by
+  (R-ARCH-030's shared prefixes); Quader only loses cache warmth. Quader itself never deletes keys by
   pattern (R-OPS-047, Q-OPS-16).
 
 Acceptance criteria, under the load of [ha-and-helm.md](ha-and-helm.md) R-HA-052 on the local
 profile:
 
-- `SENTINEL FAILOVER trove`: `trove_valkey_primary_changes_total` rises by one on every replica;
+- `SENTINEL FAILOVER quader`: `quader_valkey_primary_changes_total` rises by one on every replica;
   each replica writes one `INFO` record that names the old and the new primary;
-  `trove_valkey_pubsub_subscribed` is 1 again within `valkey.sentinel.refresh_interval` plus 1 s;
-  `trove_valkey_primary_views` is back to 1 within `system.heartbeat_interval` plus
+  `quader_valkey_pubsub_subscribed` is 1 again within `valkey.sentinel.refresh_interval` plus 1 s;
+  `quader_valkey_primary_views` is back to 1 within `system.heartbeat_interval` plus
   `metrics.db_gauge_interval`.
-- Valkey scaled to 0 for 5 minutes: `trove_valkey_available` is 0 on every replica,
-  `trove_valkey_degraded_total` grows for `flight_lock`, `negative_cache` and `rate_limit`, and each
+- Valkey scaled to 0 for 5 minutes: `quader_valkey_available` is 0 on every replica,
+  `quader_valkey_degraded_total` grows for `flight_lock`, `negative_cache` and `rate_limit`, and each
   replica writes exactly one `WARN` record and, after the return, one `INFO` record for the
   transition.
-- A fault proxy delays every Valkey command by 2 s: `trove_valkey_errors_total{kind="timeout"}`
-  grows, the circuit opens, and no observation of `trove_valkey_command_duration_seconds` exceeds
+- A fault proxy delays every Valkey command by 2 s: `quader_valkey_errors_total{kind="timeout"}`
+  grows, the circuit opens, and no observation of `quader_valkey_command_duration_seconds` exceeds
   `valkey.command_timeout` plus 50 ms.
 - After an upstream `404` for one path of a remote repository, requests for that path on the other
-  replicas increment `trove_valkey_cache_lookups_total{result="hit"}`. A negative entry written into
+  replicas increment `quader_valkey_cache_lookups_total{result="hit"}`. A negative entry written into
   Valkey with a creation time in the future increments `result="rejected"`.
-- `valkey-cli --scan --pattern 'trove:<keyspace>:*' | xargs valkey-cli del`, run with an
+- `valkey-cli --scan --pattern 'quader:<keyspace>:*' | xargs valkey-cli del`, run with an
   administrative credential in the middle of the load, makes no client request fail.
 
 The failover, outage and slow-Valkey criteria run in the profile `alerts` as metric assertions (`TestAlerts_R_OPS_046_ValkeyFailoverFlapping`,
@@ -1192,10 +1192,10 @@ The failover, outage and slow-Valkey criteria run in the profile `alerts` as met
 `CLIENT PAUSE` and not a fault proxy, and the 50 ms bound is not read from the histogram ([Q-OPS-197](#q-ops-197--the-slow-valkey-criterion-of-r-ops-045-is-injected-with-client-pause-and-asserts-the-timeout-counter-and-the-circuit-not-the-50-ms-bound)).
 
 ### R-OPS-046 · Operational signals for availability, horizontal scale and backup
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's constraints (HA PostgreSQL, HA Valkey with Sentinel and S3; load beyond one replica;
-node drains without outage; a backup job) each name a way trove can fail. This requirement maps
+node drains without outage; a backup job) each name a way Quader can fail. This requirement maps
 each of them to the signal that shows it and the alert that reports it.
 [ha-and-helm.md](ha-and-helm.md) R-HA-045 renders the alerts as a PrometheusRule; this page owns
 the metrics they read, and [backup-and-restore.md](backup-and-restore.md) R-BAK-014 owns the
@@ -1203,33 +1203,33 @@ backup alerts' expressions.
 
 | Constraint | What goes wrong | Signal | Alert (R-HA-045) |
 |---|---|---|---|
-| HA PostgreSQL | Primary unreachable beyond the retry budget | `trove_db_retries_total{kind="connection"}`, `trove_health_check_passing{name="database"}` | `TroveDatabaseUnreachable` |
-| HA PostgreSQL | Change log stalled on a replica | `trove_cluster_poll_last_success_timestamp_seconds`, the `invalidation` check | `TroveReplicasNotReady` once a role is short |
-| Load beyond one replica | Request pool saturated | `trove_db_pool_acquire_duration_seconds{db_pool="request"}`, `trove_db_pool_canceled_acquires_total` | `TroveDatabasePoolSaturated`; its expression selects `db_pool="request"`, so the control connection's waits stay with the next row (cross-page R-HA-045) |
-| Load beyond one replica | Readiness-critical loops wait for the control connection ([ha-and-helm.md](ha-and-helm.md) Q-HA-20) | `trove_db_pool_acquire_duration_seconds{db_pool="control"}` | `TroveControlConnectionWaits` (new): p95 above 1 s for 5 minutes, before the `invalidation` and `database` checks start failing on every replica |
-| Load beyond one replica | Connections growing with the replica count (INV-12) | `sum by (role, db_pool) (trove_db_pool_connections)` against the budget of [ha-and-helm.md](ha-and-helm.md) R-HA-016 | none: the migration Job's budget check refuses a deployment that would exceed it |
-| Load beyond one replica | Job queue falling behind | `trove_jobs_oldest_queued_age_seconds` | `TroveJobsStuck` |
-| HA Valkey with Sentinel | Valkey unavailable for every replica | `trove_valkey_available` | `TroveValkeyUnavailable` |
-| HA Valkey with Sentinel | Valkey unavailable for one replica | `trove_valkey_available` | `TroveValkeyUnavailableSingleReplica` |
-| HA Valkey with Sentinel | Sentinel majority lost | `trove_valkey_sentinels_reachable` | `TroveValkeySentinelsDegraded` |
-| HA Valkey with Sentinel | Failovers repeating (Q-OPS-15) | `trove_valkey_primary_changes_total` | `TroveValkeyFailoverFlapping` (new): `max(max_over_time(trove_valkey_primary_changes_total[1h]) - min_over_time(trove_valkey_primary_changes_total[1h])) > 2` |
-| HA Valkey with Sentinel | Replicas writing to different primaries (Q-OPS-15) | `trove_valkey_primary_views` | `TroveValkeyPrimaryDisagreement` (new): `max(trove_valkey_primary_views) > 1` for 5 minutes |
-| HA S3 | Store unreachable | `trove_storage_s3_circuit_open` | `TroveObjectStoreUnreachable`, `TroveObjectStoreUnreachableSingleReplica` |
-| Drain without outage | A role below two ready replicas | kube-state-metrics, `trove_ready` | `TroveReplicasNotReady` |
-| Drain without outage | Transfers cut at shutdown | `trove_http_transfers_cut_total` | none: the revisit trigger of [architecture.md](architecture.md) Q-ARCH-18 |
-| Drain without outage | Jobs handed back at shutdown | `trove_jobs_completed_total{outcome="released"}` | none: a release is the designed drain path |
-| Backup job | Last run failed | `trove_backup_last_failure_timestamp_seconds` | `TroveBackupFailed` |
-| Backup job | Backup overdue: its age exceeds the expected interval | `time() - max(trove_backup_last_success_timestamp_seconds)` against `trove_backup_expected_interval_seconds` | `TroveBackupStale` (R-BAK-014) |
-| Backup job | A run hangs | `trove_backup_running_seconds` | `TroveBackupRunningLong` |
-| Backup job | Garbage collection held by a run | `trove_backup_gc_hold{mode="all"}` | `TroveBackupGlobalHoldLong` |
-| Backup job | Platform protection missing | `trove_backup_check_ok` | `TroveBackupCheckFailed` |
-| Backup job | A backup is complete but not whole: its snapshot references blobs that were missing or corrupt in the source | `trove_backup_source_blobs_damaged` | `TroveBackupSourceDamage` (R-BAK-014) |
-| Backup job | A stored backup no longer matches its manifest | `trove_backup_last_verify_findings` | `TroveBackupVerifyFindings` (R-BAK-014) |
-| Mirror mode (phase 6b) | A mirror's passes fail again and again ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-053) | `trove_mirror_consecutive_failures` | `TroveMirrorFailing` (new, Q-OPS-160, Q-OPS-171): `max by (repo) (trove_mirror_consecutive_failures) >= 3`, the threshold of the status's `failing` |
-| Mirror mode (phase 6b) | A mirror is behind its schedule (no process claims the queue `mirror`, a pass stuck behind rate limits, a lost job, a mirror that never completed a pass) | `trove_mirror_next_pass_timestamp_seconds` | `TroveMirrorStale` (new, Q-OPS-160, Q-OPS-171): `time() - max by (repo) (trove_mirror_next_pass_timestamp_seconds) > 3600` for 30 minutes |
+| HA PostgreSQL | Primary unreachable beyond the retry budget | `quader_db_retries_total{kind="connection"}`, `quader_health_check_passing{name="database"}` | `QuaderDatabaseUnreachable` |
+| HA PostgreSQL | Change log stalled on a replica | `quader_cluster_poll_last_success_timestamp_seconds`, the `invalidation` check | `QuaderReplicasNotReady` once a role is short |
+| Load beyond one replica | Request pool saturated | `quader_db_pool_acquire_duration_seconds{db_pool="request"}`, `quader_db_pool_canceled_acquires_total` | `QuaderDatabasePoolSaturated`; its expression selects `db_pool="request"`, so the control connection's waits stay with the next row (cross-page R-HA-045) |
+| Load beyond one replica | Readiness-critical loops wait for the control connection ([ha-and-helm.md](ha-and-helm.md) Q-HA-20) | `quader_db_pool_acquire_duration_seconds{db_pool="control"}` | `QuaderControlConnectionWaits` (new): p95 above 1 s for 5 minutes, before the `invalidation` and `database` checks start failing on every replica |
+| Load beyond one replica | Connections growing with the replica count (INV-12) | `sum by (role, db_pool) (quader_db_pool_connections)` against the budget of [ha-and-helm.md](ha-and-helm.md) R-HA-016 | none: the migration Job's budget check refuses a deployment that would exceed it |
+| Load beyond one replica | Job queue falling behind | `quader_jobs_oldest_queued_age_seconds` | `QuaderJobsStuck` |
+| HA Valkey with Sentinel | Valkey unavailable for every replica | `quader_valkey_available` | `QuaderValkeyUnavailable` |
+| HA Valkey with Sentinel | Valkey unavailable for one replica | `quader_valkey_available` | `QuaderValkeyUnavailableSingleReplica` |
+| HA Valkey with Sentinel | Sentinel majority lost | `quader_valkey_sentinels_reachable` | `QuaderValkeySentinelsDegraded` |
+| HA Valkey with Sentinel | Failovers repeating (Q-OPS-15) | `quader_valkey_primary_changes_total` | `QuaderValkeyFailoverFlapping` (new): `max(max_over_time(quader_valkey_primary_changes_total[1h]) - min_over_time(quader_valkey_primary_changes_total[1h])) > 2` |
+| HA Valkey with Sentinel | Replicas writing to different primaries (Q-OPS-15) | `quader_valkey_primary_views` | `QuaderValkeyPrimaryDisagreement` (new): `max(quader_valkey_primary_views) > 1` for 5 minutes |
+| HA S3 | Store unreachable | `quader_storage_s3_circuit_open` | `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica` |
+| Drain without outage | A role below two ready replicas | kube-state-metrics, `quader_ready` | `QuaderReplicasNotReady` |
+| Drain without outage | Transfers cut at shutdown | `quader_http_transfers_cut_total` | none: the revisit trigger of [architecture.md](architecture.md) Q-ARCH-18 |
+| Drain without outage | Jobs handed back at shutdown | `quader_jobs_completed_total{outcome="released"}` | none: a release is the designed drain path |
+| Backup job | Last run failed | `quader_backup_last_failure_timestamp_seconds` | `QuaderBackupFailed` |
+| Backup job | Backup overdue: its age exceeds the expected interval | `time() - max(quader_backup_last_success_timestamp_seconds)` against `quader_backup_expected_interval_seconds` | `QuaderBackupStale` (R-BAK-014) |
+| Backup job | A run hangs | `quader_backup_running_seconds` | `QuaderBackupRunningLong` |
+| Backup job | Garbage collection held by a run | `quader_backup_gc_hold{mode="all"}` | `QuaderBackupGlobalHoldLong` |
+| Backup job | Platform protection missing | `quader_backup_check_ok` | `QuaderBackupCheckFailed` |
+| Backup job | A backup is complete but not whole: its snapshot references blobs that were missing or corrupt in the source | `quader_backup_source_blobs_damaged` | `QuaderBackupSourceDamage` (R-BAK-014) |
+| Backup job | A stored backup no longer matches its manifest | `quader_backup_last_verify_findings` | `QuaderBackupVerifyFindings` (R-BAK-014) |
+| Mirror mode (phase 6b) | A mirror's passes fail again and again ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-053) | `quader_mirror_consecutive_failures` | `QuaderMirrorFailing` (new, Q-OPS-160, Q-OPS-171): `max by (repo) (quader_mirror_consecutive_failures) >= 3`, the threshold of the status's `failing` |
+| Mirror mode (phase 6b) | A mirror is behind its schedule (no process claims the queue `mirror`, a pass stuck behind rate limits, a lost job, a mirror that never completed a pass) | `quader_mirror_next_pass_timestamp_seconds` | `QuaderMirrorStale` (new, Q-OPS-160, Q-OPS-171): `time() - max by (repo) (quader_mirror_next_pass_timestamp_seconds) > 3600` for 30 minutes |
 
 - **Metrics only.** Every alert reads families of R-OPS-008, families of the owning pages (the
-  object-store circuit `trove_storage_s3_circuit_open` of [storage.md](storage.md)), or
+  object-store circuit `quader_storage_s3_circuit_open` of [storage.md](storage.md)), or
   kube-state-metrics where the row says so. No alert parses logs.
 - **`max` over gauges read from PostgreSQL** (R-OPS-007), so the alert does not change with the
   replica count.
@@ -1237,11 +1237,11 @@ backup alerts' expressions.
   [ha-and-helm.md](ha-and-helm.md) R-HA-059 (variants A to E), a planned Valkey failover, a backup
   run interrupted by a drain (R-BAK-012), and a rolling upgrade. The `for` durations are chosen for
   that; Valkey degradation during an unplanned failover lasts `down-after-milliseconds` plus a few
-  seconds, below `TroveValkeyUnavailable`'s 2 minutes.
+  seconds, below `QuaderValkeyUnavailable`'s 2 minutes.
 - **One name and one threshold for the backup age.** This page uses R-BAK-014's alert
-  `TroveBackupStale` with its threshold of 1.5 × `backup.expected_interval`, and
+  `QuaderBackupStale` with its threshold of 1.5 × `backup.expected_interval`, and
   [ha-and-helm.md](ha-and-helm.md) R-HA-045 lists it the same way. Its earlier name
-  `TroveBackupTooOld`, with 1.1 ×, is retired.
+  `QuaderBackupTooOld`, with 1.1 ×, is retired.
 
 Acceptance criteria:
 
@@ -1255,17 +1255,17 @@ Acceptance criteria:
 
 Evidence: the set `alerts` ([alerts_test.go](../../test/e2e/alerts_test.go), `TestAlerts_R_OPS_046_...`) runs the drain variants A, B, C and E, the planned failover
 and the rolling restarts with a Prometheus that scrapes through the ServiceMonitor and requires no firing alert in the window, and fires
-`TroveValkeyUnavailable`, `TroveValkeyUnavailableSingleReplica`, `TroveValkeyFailoverFlapping`, `TroveDatabaseUnreachable`, `TroveReplicasNotReady`,
-`TroveBackupFailed` and `TroveBackupStale`. The failed backup is a run killed with kill -9, not one that exits `1`, and the interval is a minute, not an
+`QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeyFailoverFlapping`, `QuaderDatabaseUnreachable`, `QuaderReplicasNotReady`,
+`QuaderBackupFailed` and `QuaderBackupStale`. The failed backup is a run killed with kill -9, not one that exits `1`, and the interval is a minute, not an
 hour ([Q-OPS-196](#q-ops-196--the-failed-backup-scenario-kills-the-runs-process-with-kill--9-the-run-is-left-abandoned-which-the-gauge-counts-as-a-failure)).
-`TroveValkeyPrimaryDisagreement` and `TroveControlConnectionWaits` are tested by their rule tests only, and drain variant D (the pooler) is not part of the quiet scenario ([H-798](ha-and-helm.md#h-798--a-drained-api-or-packages-pod-can-run-its-whole-grace-period-before-it-is-killed)).
+`QuaderValkeyPrimaryDisagreement` and `QuaderControlConnectionWaits` are tested by their rule tests only, and drain variant D (the pooler) is not part of the quiet scenario ([H-798](ha-and-helm.md#h-798--a-drained-api-or-packages-pod-can-run-its-whole-grace-period-before-it-is-killed)).
 
 ## Logs
 
 ### R-OPS-009 · Log stream and record format
 Priority: **MVP** · Covers: OPS-017, OPS-018
 
-trove MUST write logs only to standard output, one JSON object per line, through Go's
+Quader MUST write logs only to standard output, one JSON object per line, through Go's
 [`log/slog`](https://pkg.go.dev/log/slog) (INV-16). It writes no log files, so it does no rotation
 and no archiving: collecting, rotating and shipping logs is the platform's job (HA-055,
 [ha-and-helm.md](ha-and-helm.md)). The field `log` separates four record streams in the one
@@ -1288,7 +1288,7 @@ Fields present in every record:
 | `log` | Stream, see above |
 | `component` | Registered component name (R-OPS-012) |
 | `replica` | Pod name: the replica, or the pod of a backup, restore or migration Job |
-| `role` | `web`, `worker` or `all` for `trove serve`; `backup` for `trove backup`; `migrate` and `admin` for those commands |
+| `role` | `web`, `worker` or `all` for `quader serve`; `backup` for `quader backup`; `migrate` and `admin` for those commands |
 | `trace_id`, `span_id` | Present whenever the record belongs to a request, a job or a backup run (R-OPS-018) |
 | `error` | Error text, when the record reports an error |
 | `source` | `file:line`, only with `log.add_source: true` |
@@ -1303,7 +1303,7 @@ Fields present in every record:
   `{"ring_truncated":true,"original_bytes":N,"head":"…"}`, so the line stays valid JSON and the bundle shows
   where the cut was. Standard output carries the whole record, which is
   [H-70](../security/data-and-secret-flow.md#h-70--the-standard-output-log-carries-every-record-in-full).
-  Support bundles (R-OPS-027) take their logs from the ring, because trove itself
+  Support bundles (R-OPS-027) take their logs from the ring, because Quader itself
   holds no log files. The buffer dies with its pod; a drained or deleted replica's records exist
   only in the platform's log stack from then on.
 
@@ -1317,8 +1317,8 @@ log:
   ring_buffer_bytes: 8MiB         # default (proposed); the bytes the ring holds at most
 ```
 
-**Acceptance criteria:** `kubectl -n trove logs deploy/trove-packages | jq -e 'has("time") and has("level") and has("log") and has("replica") and has("role")'`
-succeeds for every line, and so does the same check over `deploy/trove-worker` and over the pod of
+**Acceptance criteria:** `kubectl -n quader logs deploy/quader-packages | jq -e 'has("time") and has("level") and has("log") and has("replica") and has("role")'`
+succeeds for every line, and so does the same check over `deploy/quader-worker` and over the pod of
 a completed backup Job, whose records carry `"role":"backup"`.
 
 ### R-OPS-010 · Request log
@@ -1383,7 +1383,7 @@ log:
 
 **Acceptance criteria:**
 
-- `npm view express version --registry https://trove.example.com/api/npm/web/npm-all/` produces a
+- `npm view express version --registry https://quader.example.com/api/npm/web/npm-all/` produces a
   record with `"handler":"npm.packument"`, `"project":"web"`, `"repo":"web/npm-all"` and `"status":200`.
 - A `dotnet nuget push … --api-key <token>` produces a record whose `token_id` is set and which
   does not contain the token.
@@ -1391,7 +1391,7 @@ log:
 ### R-OPS-011 · Upstream request log
 Priority: **MVP** · Covers: OPS-020
 
-Every request trove sends to another system MUST produce one `log: upstream` record when it
+Every request Quader sends to another system MUST produce one `log: upstream` record when it
 completes or fails. The same conventions as R-OPS-010 apply.
 
 | Field | Content |
@@ -1408,7 +1408,7 @@ completes or fails. The same conventions as R-OPS-010 apply.
 | `duration_ms` | Total time including body; a `304` or `404` has none, so its record ends when the fetch closes the response, before it writes the renewal or the negative entry |
 | `attempt` | Attempt number for retried calls, else `1` |
 | `on_behalf_of` | Principal whose request caused the call, or `system` for jobs |
-| `collapsed_waiters` | Number of concurrent misses on this replica that this fetch served (INV-11). Waiters on other replicas wait through the Valkey flight lock ([architecture.md](architecture.md) R-ARCH-033) and are not counted here; they send no upstream request, answer with the `collapsed` parameter of `Cache-Status` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-047) and count in `trove_remote_collapsed_requests_total` on their own replica |
+| `collapsed_waiters` | Number of concurrent misses on this replica that this fetch served (INV-11). Waiters on other replicas wait through the Valkey flight lock ([architecture.md](architecture.md) R-ARCH-033) and are not counted here; they send no upstream request, answer with the `collapsed` parameter of `Cache-Status` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-047) and count in `quader_remote_collapsed_requests_total` on their own replica |
 
 [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-047 adds the fields `flight_role`,
 `cache_status` and `slot_wait_ms` (the wait for the fetch slot before the request was sent, Q-REPO-236) to records with
@@ -1452,14 +1452,14 @@ API:
 | `DELETE /api/v1/system/log-levels/override` | — | `204` | system administrator |
 
 - **One override at a time.** A new override replaces the active one. Unlike the catalog
-  behaviour, trove does not require clearing it first.
+  behaviour, Quader does not require clearing it first.
 - **Validation.** An unknown component or level yields `400`, so a typo is never accepted
   silently. The duration must lie between `1m` and `log.override_max_duration`.
 - **Propagation.** The override is stored in `system_state` (R-OPS-024) and written to the change
   area `system_state` ([architecture.md](architecture.md) R-ARCH-018), so it is in force on every
   `web` and `worker` replica within `cluster.epoch_poll_interval` plus 1 s, with or without Valkey.
   A replica that starts later reads it at start-up, and each replica reverts it locally at
-  `expiresAt`, so no timer needs coordinating. `trove backup` and `trove migrate` use the configured
+  `expiresAt`, so no timer needs coordinating. `quader backup` and `quader migrate` use the configured
   levels.
 - **Audit.** Each set and clear writes `system.log_levels_changed`.
 - **Redaction.** Debug output follows R-OPS-013 like every other level.
@@ -1475,7 +1475,7 @@ appear on all five within 5 s, also with Valkey stopped. They stop after 2 min w
 calls.
 
 ### R-OPS-013 · Secret redaction
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 No secret may leave the process through a log record, an audit record, a span, a support bundle, a
 delivery-log entry or an error message. These rules are mandatory, and code review checks them
@@ -1491,8 +1491,8 @@ delivery-log entry or an error message. These rules are mandatory, and code revi
    `private_key` or `credential` (case-insensitive). The ID fields `token_id` and `token_type` are
    exempt.
 3. **Pattern scrubbing** of string values:
-   - trove token formats (`trv_pat_`, `trv_sat_`, `trv_cit_` followed by the token body,
-     INV-8) become `trv_<type>_[REDACTED]`;
+   - Quader token formats (`qdr_pat_`, `qdr_sat_`, `qdr_cit_` followed by the token body,
+     INV-8) become `qdr_<type>_[REDACTED]`;
    - `Bearer <value>` becomes `Bearer [REDACTED]`;
    - user information in URLs becomes `user:[REDACTED]@`;
    - query parameters on the redaction list are redacted;
@@ -1511,14 +1511,14 @@ delivery-log entry or an error message. These rules are mandatory, and code revi
 
 **Acceptance criteria:** a test suite logs in, publishes with `npm publish` and with
 `dotnet nuget push --api-key "$TOKEN"`, creates a templated webhook with a secret, and creates a
-support bundle. Afterwards, `grep -E 'trv_(pat|sat|cit)_[0-9A-Za-z]{10,}'` over the collected log
+support bundle. Afterwards, `grep -E 'qdr_(pat|sat|cit)_[0-9A-Za-z]{10,}'` over the collected log
 output, the audit export, the exported spans, the support bundle and the delivery log finds
 nothing.
 
 ## Audit
 
 ### R-OPS-014 · Event registry
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Audit events and webhook event types share one registry in code. Every entry declares:
 
@@ -1546,7 +1546,7 @@ producer of an event keeps to it. Templated webhooks rely on that bound (R-OPS-0
 
 **Journal flag** (Q-HA-9 on [ha-and-helm.md](ha-and-helm.md)). MVP since 2026-10-28: the
 revocation journal of [ha-and-helm.md](ha-and-helm.md) R-HA-054 is MVP, because every restore of a
-trove backup replays it ([backup-and-restore.md](backup-and-restore.md) R-BAK-024, INV-19), and
+Quader backup replays it ([backup-and-restore.md](backup-and-restore.md) R-BAK-024, INV-19), and
 NuGet relies on it for version numbers from the MVP on ([formats/nuget.md](formats/nuget.md)
 R-NUGET-033). An entry declares `journal: revocation` when its event does one of these:
 
@@ -1599,7 +1599,7 @@ Audit events are stored in PostgreSQL and copied to the log stream (INV-16).
 - **Asynchronous events** record access: logins, denials, rejected tokens, failed CI exchanges.
   They go through a bounded in-process buffer (`audit.async_buffer`), written in batches every
   second or every 500 events. When the buffer is full, the event is still written to the log
-  stream, and `trove_audit_events_dropped_total` is incremented. A burst of denials can
+  stream, and `quader_audit_events_dropped_total` is incremented. A burst of denials can
   therefore never block request handling. On `SIGTERM` the replica flushes the buffer before it
   exits (step 4 of the shutdown in R-OPS-001, which is step 6 of
   [architecture.md](architecture.md) R-ARCH-024), so a drain or a rollout loses no event while
@@ -1696,7 +1696,7 @@ CREATE INDEX audit_event_trace_idx      ON audit_event (trace_id) WHERE trace_id
 
 Partitions use [declarative partitioning](https://www.postgresql.org/docs/current/ddl-partitioning.html).
 
-**Append-only rows and partition maintenance** (Q-OPS-4). trove's runtime role can insert and read
+**Append-only rows and partition maintenance** (Q-OPS-4). Quader's runtime role can insert and read
 audit events, but it can neither change nor delete them, and it cannot shorten their retention.
 
 - **Privileges.** The migration revokes `UPDATE`, `DELETE` and `TRUNCATE` on `audit_event` from the
@@ -1742,10 +1742,10 @@ audit events, but it can neither change nor delete them, and it cannot shorten t
     transaction between them (R-OPS-017), so the backup's snapshot transaction is the only long
     reader the function has to wait out.
 - **Retention is owner data.** `audit_policy` is owned by the schema owner and only readable by the
-  runtime role. `trove migrate` writes `audit.retention_days` into it on every run, so a
+  runtime role. `quader migrate` writes `audit.retention_days` into it on every run, so a
   compromised replica cannot shorten retention. A replica whose configured value differs from the
-  stored one logs a warning that names `trove migrate`.
-- **When it runs.** `trove migrate` calls the function after writing `audit_policy`. Every replica
+  stored one logs a warning that names `quader migrate`.
+- **When it runs.** `quader migrate` calls the function after writing `audit_policy`. Every replica
   calls it at startup, and the `startup` readiness check (R-OPS-001) passes only when partitions
   for the current and the next month exist. The `audit-retention` task calls it daily
   (R-OPS-019). An insert therefore never finds a missing partition, even when the scheduler has
@@ -1771,17 +1771,17 @@ CREATE TABLE audit_policy (
 
 -- Run by the migration as the schema owner. Schema and role names: R-HA-014 (example values).
 CREATE FUNCTION audit_maintain_partitions() RETURNS void
-  LANGUAGE plpgsql SECURITY DEFINER SET search_path = trove, pg_temp SET lock_timeout = '2s'
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = quader, pg_temp SET lock_timeout = '2s'
   AS $$ … $$;
 REVOKE ALL ON FUNCTION audit_maintain_partitions() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION audit_maintain_partitions() TO trove_app;
+GRANT EXECUTE ON FUNCTION audit_maintain_partitions() TO quader_app;
 -- Owner only: creates the partitions a restore needs (R-BAK-021 step 4); drops nothing.
 CREATE FUNCTION audit_create_partitions(range_from timestamptz, range_to timestamptz) RETURNS void
-  LANGUAGE plpgsql SECURITY DEFINER SET search_path = trove, pg_temp SET lock_timeout = '2s'
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = quader, pg_temp SET lock_timeout = '2s'
   AS $$ … $$;
 REVOKE ALL ON FUNCTION audit_create_partitions(timestamptz, timestamptz) FROM PUBLIC;
-REVOKE UPDATE, DELETE, TRUNCATE ON audit_event FROM trove_app;
-REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON audit_policy FROM trove_app;
+REVOKE UPDATE, DELETE, TRUNCATE ON audit_event FROM quader_app;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON audit_policy FROM quader_app;
 ```
 
 ```yaml
@@ -1795,7 +1795,7 @@ audit:
 
 **Acceptance criteria:**
 
-- `dotnet nuget push Acme.Lib.1.0.0.nupkg --source https://trove.example.com/api/nuget/web/nuget-local/v3/index.json --api-key "$TOKEN"`
+- `dotnet nuget push Acme.Lib.1.0.0.nupkg --source https://quader.example.com/api/nuget/web/nuget-local/v3/index.json --api-key "$TOKEN"`
   yields one `package.published` event with outcome `success`, the token's `token_id` and
   project `web` and repository `web/nuget-local`. The same event appears in `kubectl logs` as `"log":"audit"`.
 - A repository update whose audit insert is forced to fail (fault injection) leaves the repository
@@ -1810,10 +1810,10 @@ audit:
   `details.count` = 9 and `details.repeat_of` naming the first.
 - The same ten pushes sent at random over three `web` replicas yield at most six `authz.denied`
   events, and their `details.count` values sum to 10.
-- In two-role mode, `psql -U trove_app_a -c 'DELETE FROM trove.audit_event'` and
-  `psql -U trove_app_a -c "UPDATE trove.audit_event SET outcome = 'success'"` fail with `42501`
+- In two-role mode, `psql -U quader_app_a -c 'DELETE FROM quader.audit_event'` and
+  `psql -U quader_app_a -c "UPDATE quader.audit_event SET outcome = 'success'"` fail with `42501`
   (insufficient privilege), and so does the same `DELETE` against one partition. So does an
-  `UPDATE` of `trove.audit_policy`.
+  `UPDATE` of `quader.audit_policy`.
 - After a replica starts, `pg_inherits` lists partitions of `audit_event` for the current month and
   the next three months.
 - While a second session holds an open transaction that has read `audit_event` (as the snapshot
@@ -1821,7 +1821,7 @@ audit:
   expired partition to drop returns within 3 s without dropping it, and repository updates issued
   meanwhile commit without waiting for it.
 - `SELECT audit_create_partitions('2025-01-15Z', '2025-04-02Z')` as the schema owner creates the
-  partitions for January to April 2025 and drops none; the same call as `trove_app_a` fails with
+  partitions for January to April 2025 and drops none; the same call as `quader_app_a` fails with
   `42501`.
 - A long audit export read with `curl --limit-rate` leaves no `idle in transaction` session, and a
   partition drop due meanwhile succeeds on its first call.
@@ -1845,9 +1845,9 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `auth.login.failed` | A | — | Login failed | `reason` (`oidc_error`, `state_mismatch`, `user_disabled`, `breakglass_disabled`, `bad_credentials`) |
 | `auth.logout` | A | — | Session ended by the user | `session_id` |
 | `ci.exchange.succeeded`, `.denied`, `.replayed`, `.repeated` | T, A, A, A | — | A CI token exchange (INV-10): issued, refused, a used single-use `jti`, a `jti` exchanged more often than `ci.replay.warn_after_exchanges`; the full table is [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-020 (it replaces the earlier `auth.ci_exchange_denied`) | `issuer`, `reason`, `token_id`, `mappings`, the claim snapshot after verification |
-| `token.rejected` | A | — | A well-formed trove token (valid checksum) was unknown, revoked or expired | `token_id` if known, `token_type`, `reason`, `count`, `repeat_of` (summaries only) |
+| `token.rejected` | A | — | A well-formed Quader token (valid checksum) was unknown, revoked or expired | `token_id` if known, `token_type`, `reason`, `count`, `repeat_of` (summaries only) |
 | `auth.registry_token.denied` | A | — | The OCI token service refused a token request with 401 ([formats/oci.md](formats/oci.md) R-OCI-034); the endpoint in the event's column; deduplicated per client address, endpoint, reason and credential | `reason`, `credential`, `count`, `repeat_of` (summaries only) |
-| `token.created` | T | — | Any trove token was issued, including CI exchanges | `token_type`, `scope`, `expires_at`, `ci_mapping`, `ci_claims` |
+| `token.created` | T | — | Any Quader token was issued, including CI exchanges | `token_type`, `scope`, `expires_at`, `ci_mapping`, `ci_claims` |
 | `token.revoked` | T | — | A token was revoked | `token_type`, `revoked_by` |
 | `auth.session.ended` | T | — | An administrator ended another user's session (`details.reason` `admin`); the sessions the end withdrew after they had ended are named apart, as `withdrawn_ids` and `withdrawn_count` (Q-AUTHZ-262) | `session_id`, `reason`, `withdrawn_ids` |
 | `user.created` | T | — | A user was created (just in time from ID-token claims, or by an administrator) | `source` (`jit`, `api`) |
@@ -1885,8 +1885,8 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `package.published` | T | yes | A package version was accepted (npm publish, NuGet push). Journal flag with `journal_entry: optional` (R-OPS-014): journaled for local NuGet repositories only ([formats/nuget.md](formats/nuget.md) R-NUGET-033) | `package`, `version`, `files` |
 | `package.deleted` | T | yes | A package version was deleted or unpublished. Journal flag with `journal_entry: optional`, as for `package.published` | `package`, `version` |
 | `oci.manifest.deleted` | T | yes | A manifest of an OCI image name was deleted, with the cascade of [formats/oci.md](formats/oci.md) R-OCI-018. Journal flag with a required entry `{"repository", "name", "digest", "actorId"}`, so a restore withholds the image (R-OCI-033, Q-OCI-30); written for every manifest a deletion or its cascade removes, by the system actor `removal` when no principal asked for it | `name`, `digest`, `deleted` |
-| `oci.reinstate` | T | — | `trove admin oci reinstate` put back a manifest that a journal replay had withheld ([formats/oci.md](formats/oci.md) R-OCI-033); not journaled, because it restores access rather than removing it | `name`, `digest` |
-| `npm.reinstate` | T | — | `trove admin npm reinstate` put back a version that a journal replay had withheld ([formats/npm.md](formats/npm.md) R-NPM-044, R-NPM-047); not journaled, because it restores access rather than removing it | `package`, `version`, `integrity`, `journal_entry` (the entry that withheld it) |
+| `oci.reinstate` | T | — | `quader admin oci reinstate` put back a manifest that a journal replay had withheld ([formats/oci.md](formats/oci.md) R-OCI-033); not journaled, because it restores access rather than removing it | `name`, `digest` |
+| `npm.reinstate` | T | — | `quader admin npm reinstate` put back a version that a journal replay had withheld ([formats/npm.md](formats/npm.md) R-NPM-044, R-NPM-047); not journaled, because it restores access rather than removing it | `package`, `version`, `integrity`, `journal_entry` (the entry that withheld it) |
 | `package.metadata_changed` | T | yes | Deprecate, undeprecate, unlist, relist, dist-tag set or removed | `package`, `version`, `change` |
 | `artifact.deployed` | T | yes | A file was stored in a local repository by any upload path | `path`, `sha256`, `size`, `overwritten` |
 | `artifact.deleted` | T | yes | A file was removed | `path`, `sha256`, `size` |
@@ -1900,21 +1900,21 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `system.task_triggered` | T | — | Manual task run, garbage collection, reindex, storage-summary refresh | `task`, `job_id`, `parameters` |
 | `system.support_bundle_created`, `system.support_bundle_downloaded`, `system.support_bundle_deleted` | T | — | R-OPS-027 | `bundle_id`, `include` |
 | `system.caches_flushed` | T | — | R-OPS-047 (P1) | `inProcess`, `negativeRepositories` |
-| `system.backup.completed` | T | — | A `trove backup create` run ended `completed` or `completed_with_warnings` ([backup-and-restore.md](backup-and-restore.md) R-BAK-014); actor `system:backup`, `replica` = the backup pod | `backupId`, `outcome`, `databaseBytes`, `blobsCopied`, `damaged` |
+| `system.backup.completed` | T | — | A `quader backup create` run ended `completed` or `completed_with_warnings` ([backup-and-restore.md](backup-and-restore.md) R-BAK-014); actor `system:backup`, `replica` = the backup pod | `backupId`, `outcome`, `databaseBytes`, `blobsCopied`, `damaged` |
 | `system.backup.failed` | T | — | A create run ended `failed` (R-BAK-014); an `interrupted` run writes none; actor `system:backup` | `backupId`, `code` |
-| `system.backup.deleted` | T | — | A backup was deleted by retention or by `trove backup delete` (R-BAK-016); actor `system:backup` | `backupId`, `reason` (`retention`, `manual`) |
+| `system.backup.deleted` | T | — | A backup was deleted by retention or by `quader backup delete` (R-BAK-016); actor `system:backup` | `backupId`, `reason` (`retention`, `manual`) |
 | `system.backup.target_adopted` | T | — | A run adopted a target of an earlier incarnation (R-BAK-002); actor `system:backup` | `previousIncarnation` |
 | `system.restored` | T | — | A restore finished; written into the restored database ([backup-and-restore.md](backup-and-restore.md) R-BAK-021, [ha-and-helm.md](ha-and-helm.md) R-HA-025 for a point-in-time restore) | `source` (`backup`, `pitr`), `backupId`, `snapshotAt`, `journal` (`replayed`, or `skipped` with `--skip-revocation-journal`) |
 | `system.restore.journal_replayed` | T | — | The revocation journal was replayed after a restore (R-BAK-024, [ha-and-helm.md](ha-and-helm.md) R-HA-054) | counts per outcome |
-| `system.deletions_paused` | T | — | The deletion pause was set by hand with `trove admin maintenance pause-deletions` ([ha-and-helm.md](ha-and-helm.md) R-HA-025, Q-HA-271); actor `system:admin`; none when it was already set | `reason` |
-| `system.deletions_resumed` | T | — | The deletion pause was cleared with `trove admin maintenance resume-deletions` (R-HA-025 step 7); actor `system:admin`; none when it was not set | `pausedAt`, `reason` |
-| `system.storage.versions_restored` | T | — | `trove admin storage restore-versions` removed delete markers from the blob bucket (R-HA-025 step 5, Q-HA-270); actor `system:admin`; none for a dry run or a run that removed nothing | `before`, `markersRemoved`, `restored`, `remaining` |
+| `system.deletions_paused` | T | — | The deletion pause was set by hand with `quader admin maintenance pause-deletions` ([ha-and-helm.md](ha-and-helm.md) R-HA-025, Q-HA-271); actor `system:admin`; none when it was already set | `reason` |
+| `system.deletions_resumed` | T | — | The deletion pause was cleared with `quader admin maintenance resume-deletions` (R-HA-025 step 7); actor `system:admin`; none when it was not set | `pausedAt`, `reason` |
+| `system.storage.versions_restored` | T | — | `quader admin storage restore-versions` removed delete markers from the blob bucket (R-HA-025 step 5, Q-HA-270); actor `system:admin`; none for a dry run or a run that removed nothing | `before`, `markersRemoved`, `restored`, `remaining` |
 | `audit.exported` | T | — | R-OPS-017 | `from`, `to`, `filters`, `format` |
 | `webhook.created`, `webhook.updated`, `webhook.deleted` | T | — | R-OPS-038 | `changes` |
 | `webhook.secret_rotated`, `webhook.tested`, `webhook.redelivered` | T | — | R-OPS-040, R-OPS-041, R-OPS-043, R-OPS-044 | `secret_name` |
 | `webhook.disabled_by_receiver`, `webhook.suspended` | T | — | R-OPS-042, R-OPS-039 | `status`, `reason` |
 | `vulnerability.finding.status_changed` | T | — | From M4b: a triager changed a finding's status ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-013); a change that sets or lifts a download block carries `block` | `finding`, `package`, `version`, `advisory`, `from`, `to`, `reason`, `bulk`, `block` |
-| `vulnerability.finding.reopened` | T | — | From M4b: trove returned a dismissed finding to `needs_triage` on a material advisory change (R-VULN-012) | `finding`, `advisory`, `change`, `block` |
+| `vulnerability.finding.reopened` | T | — | From M4b: Quader returned a dismissed finding to `needs_triage` on a material advisory change (R-VULN-012) | `finding`, `advisory`, `change`, `block` |
 | `vulnerability.download_blocked` | A | — | From M4b, security event: a download was refused, or counted in report mode (R-VULN-015, R-VULN-016); at most once a minute per repository, version and client address | `package`, `version`, `advisory`, `reason`, `enforced`, `stored` |
 | `vulnerability.claimed_name_match` | A | — | From M4b, security event: a public advisory names a claimed internal name, once per advisory and name (R-VULN-010) | `package`, `advisory`, `kind`, `claimRepository` |
 | `vulnerability.source.failed` | A | — | From M4b: an advisory sync run failed; at most once an hour per source and ecosystem (R-VULN-004) | `source`, `ecosystem`, `code` |
@@ -1952,7 +1952,7 @@ API (requires `audit:read`, the capability of R-AUTHZ-010; a system administrato
   "actor": {"type": "ci", "id": "5f0e…", "name": "ci:gitlab-internal/acme-publish", "tokenId": "c41d…", "authMethod": "bearer"},
   "source": {"ip": "10.12.4.7", "userAgent": "npm/11.6.0 node/v24.11.0 linux x64 workspaces/false"},
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-  "replica": "trove-web-6f9c7d8b5-x2v4q",
+  "replica": "quader-web-6f9c7d8b5-x2v4q",
   "resource": {"type": "package", "id": "web/npm-local/@acme/ui@2.4.0"},
   "project": "web",
   "repository": "web/npm-local",
@@ -1979,12 +1979,12 @@ API (requires `audit:read`, the capability of R-AUTHZ-010; a system administrato
 - **Retention.** The `audit-retention` task calls `audit_maintain_partitions()` (R-OPS-015), which
   drops whole partitions whose newest possible timestamp is older than the stored
   `audit.retention_days`. `0` keeps events for ever. Values below 90 log a warning at startup. A
-  changed value takes effect after the next `trove migrate`, which the chart runs on every upgrade.
-- **Restore.** Audit events live in PostgreSQL with the backup export class `data`, so a trove
+  changed value takes effect after the next `quader migrate`, which the chart runs on every upgrade.
+- **Restore.** Audit events live in PostgreSQL with the backup export class `data`, so a Quader
   backup and a point-in-time restore bring them back as of their snapshot
   ([backup-and-restore.md](backup-and-restore.md) R-BAK-001, [ha-and-helm.md](ha-and-helm.md)
   R-HA-025). Events written after the snapshot exist only in the `log: audit` stream, which is one
-  more reason to ship it outside trove (H-39).
+  more reason to ship it outside Quader (H-39).
 - **UI.** The UI offers an audit view backed by this API ([api-and-ui.md](api-and-ui.md)).
 
 ```yaml
@@ -1994,7 +1994,7 @@ audit:
 
 **Acceptance criteria:**
 
-- `curl -s -H "Authorization: Bearer $AUDITOR_TOKEN" 'https://trove.example.com/api/v1/audit/events/export?from=2026-10-01T00:00:00Z&to=2026-11-01T00:00:00Z' | jq -c .action | sort | uniq -c`
+- `curl -s -H "Authorization: Bearer $AUDITOR_TOKEN" 'https://quader.example.com/api/v1/audit/events/export?from=2026-10-01T00:00:00Z&to=2026-11-01T00:00:00Z' | jq -c .action | sort | uniq -c`
   lists the month's actions. The export itself appears as `audit.exported`.
 - An export of 200,000 events read with `curl --limit-rate 200K` is cut by deleting the serving
   pod. A second request with `from` set to the last complete line's `occurredAt`, with the IDs
@@ -2008,7 +2008,7 @@ audit:
 ## Tracing
 
 ### R-OPS-018 · Trace context and OpenTelemetry export
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 **Trace IDs always exist.** Every request and every job has a
 [W3C Trace Context](https://www.w3.org/TR/trace-context/) trace ID, whether or not export is
@@ -2034,14 +2034,14 @@ choosing the ID that the request carries.
 **Export** (`tracing.enabled: true`). Spans go over OTLP (gRPC or HTTP/protobuf) through a bounded
 queue of the process (Q-OPS-25). The collector endpoint is `https://` (INV-20); an `http://` endpoint, or
 `OTEL_EXPORTER_OTLP_INSECURE=true`, is refused at load unless `tracing.allow_insecure: true`, and `tracing.ca_file` is
-refused next to an `http://` endpoint, where it would have no effect ([Q-OPS-35](#q-ops-35--tls-to-the-span-collector)). When the trove keys are unset, the standard `OTEL_EXPORTER_OTLP_*` variables of the
+refused next to an `http://` endpoint, where it would have no effect ([Q-OPS-35](#q-ops-35--tls-to-the-span-collector)). When the Quader keys are unset, the standard `OTEL_EXPORTER_OTLP_*` variables of the
 [OTLP exporter specification](https://opentelemetry.io/docs/specs/otel/protocol/exporter/) apply.
 Resource attributes:
 
-- `service.name=trove`;
+- `service.name=quader`;
 - `service.version`;
 - `service.instance.id` = pod name;
-- `trove.role` = the process role (`web`, `worker`, `all`, `backup`);
+- `quader.role` = the process role (`web`, `worker`, `all`, `backup`);
 - Kubernetes attributes, where the downward API provides them.
 
 **Spans:**
@@ -2060,15 +2060,15 @@ Resource attributes:
 - **Collapsed cache misses.** A waiter on the same replica adds a span link to the leader's trace.
   A waiter on another replica adds one when the flight's outcome message carries the leader's trace
   context ([architecture.md](architecture.md) R-ARCH-033, cross-page); it always carries the
-  attribute `trove.flight.role`.
+  attribute `quader.flight.role`.
 - Job spans link to the trace that enqueued the job, whose `traceparent` is stored with the job, so a
   job run on a `worker` replica links to the `web` request that started it.
 - Webhook deliveries get a span per attempt.
-- A `trove backup` run is one trace, with the run ID as `trove.backup.run_id`.
+- A `quader backup` run is one trace, with the run ID as `quader.backup.run_id`.
 
-**Attributes.** trove-specific attributes use the `trove.` namespace:
-`trove.repository.key`, `trove.repository.format`, `trove.repository.class`,
-`trove.cache.result`, `trove.principal.type`. User names, e-mail addresses and tokens are never
+**Attributes.** Quader-specific attributes use the `quader.` namespace:
+`quader.repository.key`, `quader.repository.format`, `quader.repository.class`,
+`quader.cache.result`, `quader.principal.type`. User names, e-mail addresses and tokens are never
 span attributes (R-OPS-013).
 
 **Outgoing context.** Context is not propagated to remote upstreams or webhook receivers unless
@@ -2082,7 +2082,7 @@ favoured in head sampling; tail sampling belongs in the collector.
 OpenMetrics exemplar.
 
 **Dropped spans.** A full export queue drops spans and increments
-`trove_tracing_spans_dropped_total`. Request handling never waits for export.
+`quader_tracing_spans_dropped_total`. Request handling never waits for export.
 
 ```yaml
 tracing:
@@ -2090,8 +2090,8 @@ tracing:
   endpoint: ""                           # example https://otel-collector.observability:4318
   allow_insecure: false                  # default (proposed); true accepts an http:// endpoint and OTEL_EXPORTER_OTLP_INSECURE
   protocol: http/protobuf                # default (proposed); grpc | http/protobuf
-  ca_file: ""                            # example /etc/trove/tls/otel-ca.pem
-  headers_file: ""                       # example /var/run/secrets/trove/otel-headers (one "Name: value" per line)
+  ca_file: ""                            # example /etc/quader/tls/otel-ca.pem
+  headers_file: ""                       # example /var/run/secrets/quader/otel-headers (one "Name: value" per line)
   sample_ratio: 0.1                      # default (proposed)
   incoming_context: trusted_peers        # default (proposed); trusted_peers | all | none
   trusted_peers: []                      # default (proposed); example ["10.42.0.0/24"] (a mesh sidecar's range)
@@ -2101,8 +2101,8 @@ tracing:
 
 **Acceptance criteria:**
 
-- With an OpenTelemetry Collector using the `debug` exporter, `TROVE_TRACING_ENABLED=true`,
-  `TROVE_TRACING_ENDPOINT=https://otel-collector:4318` and `TROVE_TRACING_SAMPLE_RATIO=1`, a
+- With an OpenTelemetry Collector using the `debug` exporter, `QUADER_TRACING_ENABLED=true`,
+  `QUADER_TRACING_ENDPOINT=https://otel-collector:4318` and `QUADER_TRACING_SAMPLE_RATIO=1`, a
   cold `npm install lodash --registry …/web/npm-all/` yields one trace containing:
   - a server span with `http.route`;
   - database spans;
@@ -2110,7 +2110,7 @@ tracing:
   - a Valkey span for the flight lock (`SET`), without a key attribute;
   - a client span to the npm upstream.
 - The trace ID equals the response's `X-Request-Id` and the request log's `trace_id`.
-- No exported attribute matches `trv_`.
+- No exported attribute matches `qdr_`.
 - A request sent directly from outside the trusted proxies with a forged `traceparent` gets a new
   trace ID.
 
@@ -2143,7 +2143,7 @@ another `worker` within `cluster.lease_retry_interval`. Leases that fence a runn
 stay with that job until it ends or is released ([ha-and-helm.md](ha-and-helm.md) R-HA-006). The
 `(task, scheduled_for)` key below keeps the hand-over from enqueuing a slot twice.
 
-**Backups are not a task.** `trove backup create` runs as the Kubernetes CronJob of
+**Backups are not a task.** `quader backup create` runs as the Kubernetes CronJob of
 [ha-and-helm.md](ha-and-helm.md) R-HA-060, in the `backup` role: it needs the backup target's
 credentials, which `web` and `worker` replicas never hold
 ([backup-and-restore.md](backup-and-restore.md) R-BAK-015), and its schedule is evaluated by
@@ -2194,7 +2194,7 @@ shared key is offered again on the next scheduler tick, so it is postponed, neve
 | `secrets-reencrypt` | [architecture.md](architecture.md) R-ARCH-021: re-seals every stored secret with the active key; its job kind has the same name ([api-and-ui.md](api-and-ui.md) R-API-049) | manual only; precondition: the key rings of all live replicas are compatible (R-OPS-003), else `409` `key_ring_incompatible` |
 | `cluster-change-prune` | [architecture.md](architecture.md) R-ARCH-016 and R-ARCH-018: deletes change-log rows older than `cluster.change_retention` | `*/10 * * * *` (proposed, architecture.md) |
 | `proxy-invalidation-fold` | [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-045: folds the cache invalidations into the metadata entries and deletes the rows that no reader needs any more (Q-OPS-153); one run at a time | `*/5 * * * *` (proposed) |
-| `backup-check` | [ha-and-helm.md](ha-and-helm.md) R-HA-023: the checks of `trove admin backup check`, exported as `trove_backup_check_ok{check}`; the task name is proposed here | `40 5 * * *` (proposed) |
+| `backup-check` | [ha-and-helm.md](ha-and-helm.md) R-HA-023: the checks of `quader admin backup check`, exported as `quader_backup_check_ok{check}`; the task name is proposed here | `40 5 * * *` (proposed) |
 | `vuln-sync-osv` | From M4b, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-004, R-VULN-005: incremental advisory sync per ecosystem, full when the state requires it; dedup key `vuln-sync-osv`; task parameter `{"acceptShrink": true}` for a manual run | `*/15 * * * *` (proposed, vulnerability-scanning.md) |
 | `vuln-sync-osv-full` | From M4b, R-VULN-004: full advisory sync, which also removes records the source no longer has; shares the dedup key `vuln-sync-osv` | `17 3 * * 0` (proposed, vulnerability-scanning.md) |
 | `vuln-sync-kev` | From M4b, R-VULN-008: the known-exploited catalog | `41 */6 * * *` (proposed, vulnerability-scanning.md) |
@@ -2275,10 +2275,10 @@ maintenance:
   slot of a task scheduled `* * * * *` is enqueued exactly once.
 - `GET /api/v1/system/tasks` lists `secrets-reencrypt` with `"schedule": null` and
   `"nextRunAt": null`. Setting `maintenance.tasks.secrets-reencrypt` stops startup with an error
-  that names the key. While `trove_secrets_key_rings_compatible` is `0`,
+  that names the key. While `quader_secrets_key_rings_compatible` is `0`,
   `POST …/tasks/secrets-reencrypt/run` answers `409` with code `key_ring_incompatible` and no job is
   enqueued.
-- Deleting the pod that holds the `scheduler` lease moves `trove_lease_held{name="scheduler"}`
+- Deleting the pod that holds the `scheduler` lease moves `quader_lease_held{name="scheduler"}`
   to another `worker` replica within `cluster.lease_retry_interval` plus 1 s, with no duplicate
   runs.
 - `POST …/tasks/storage-summary/run` twice in a row returns `202`, then `409` with the same job ID.
@@ -2298,7 +2298,7 @@ page specifies how it is started and observed.
 - **Result.** The job result carries the fields of [storage.md](storage.md) R-STOR-025:
   `dryRun`, `trashPurged`, `candidates`, `kept`, `deleted`, `bytesReclaimed` and `errors`. In a
   dry run, `deleted` and `bytesReclaimed` count what a real run would delete. These figures feed
-  the `trove_gc_*` families (R-OPS-008).
+  the `quader_gc_*` families (R-OPS-008).
 - **Observation and stop.** Runs are listed through `GET /api/v1/system/jobs?kind=gc` and
   `?kind=gc-full` and stopped through `POST /api/v1/system/jobs/{id}/cancel`, after the current
   batch.
@@ -2311,7 +2311,7 @@ page specifies how it is started and observed.
   wait for the grace period ([storage.md](storage.md)), then run `POST …/tasks/gc/run` with
   `{"dryRun":true}`. The job result shows `"dryRun": true` and counts the blob in `deleted`, and
   the object still exists in the bucket (`aws s3api head-object --bucket … --key <prefix>/sha256/…`
-  succeeds). A real run then removes it, and `trove_gc_deleted_blobs_total` grows.
+  succeeds). A real run then removes it, and `quader_gc_deleted_blobs_total` grows.
 - `POST …/tasks/gc-full/run` while a `gc` run is queued or running answers `409` with the `gc`
   job's ID.
 
@@ -2353,7 +2353,7 @@ a wrong or forged negative entry short without a Valkey credential (H-49).
 - **Negative entries in Valkey are not deleted.** Their keys are hashes and cannot be found by
   prefix, and a deleted key could come back from a primary that missed the delete (R-HA-057 rule 2).
   Readers ignore every negative entry older than a covering invalidation (R-ARCH-030), so the call
-  works while Valkey is unavailable and needs no Valkey permission beyond trove's own.
+  works while Valkey is unavailable and needs no Valkey permission beyond Quader's own.
 - Response: `200 {"invalidated": 12}`. The count covers metadata entries only: the covered
   metadata entries in PostgreSQL at the time of the call. Negative entries in Valkey are not
   counted, because counting them would need a scan of the keyspace; the scope `negative` therefore
@@ -2365,16 +2365,16 @@ a wrong or forged negative entry short without a Valkey credential (H-49).
 **Acceptance criteria:**
 
 - After
-  `curl -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"path":"left-pad"}' https://trove.example.com/api/v1/projects/web/repositories/npm-remote/cache/invalidate`,
+  `curl -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"path":"left-pad"}' https://quader.example.com/api/v1/projects/web/repositories/npm-remote/cache/invalidate`,
   the next `npm view left-pad --registry …/web/npm-remote/` produces a `"purpose":"remote"` upstream
   record. A second view within the metadata cache period produces none.
 - With Valkey stopped, an invalidation with scope `negative` through one replica makes a request
   for a negatively cached path reach the upstream on every replica within
   `cluster.epoch_poll_interval` plus 1 s. After Valkey returns with the old negative entry still
-  present, the entry is ignored (`trove_valkey_cache_lookups_total{result="rejected"}` grows).
+  present, the entry is ignored (`quader_valkey_cache_lookups_total{result="rejected"}` grows).
 
 ### R-OPS-047 · Installation-wide cache flush
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 An administrator drops every cache that could hold a wrong answer, on every replica, in one call:
 after a direct database repair, while diagnosing a suspected cache bug, or after an operator
@@ -2389,7 +2389,7 @@ closed a path that let someone write into Valkey (H-49). It never deletes Valkey
 - **`inProcess`** (default `true`): writes a flush entry to the change area `cache`
   ([architecture.md](architecture.md) R-ARCH-018). Every `web` and `worker` replica flushes every
   registered in-process cache through its `OnFlush` hook within `cluster.epoch_poll_interval` plus
-  1 s, with or without Valkey, and counts `trove_cache_flushes_total{reason="admin"}`.
+  1 s, with or without Valkey, and counts `quader_cache_flushes_total{reason="admin"}`.
 - **`negative`** (default `true`): inserts, in one transaction, one invalidation with an empty prefix
   and scope `negative` for every remote repository ([repositories-and-proxy.md](repositories-and-proxy.md)
   R-REPO-045). Readers then ignore every negative entry written before it (R-ARCH-030); the keys
@@ -2405,11 +2405,11 @@ closed a path that let someone write into Valkey (H-49). It never deletes Valkey
 **Acceptance criteria:**
 
 - With three `web` and two `worker` replicas, a flush through one replica raises
-  `trove_cache_flushes_total{reason="admin"}` on all five within `cluster.epoch_poll_interval`
+  `quader_cache_flushes_total{reason="admin"}` on all five within `cluster.epoch_poll_interval`
   plus 1 s, also with Valkey stopped.
 - A negative entry for `left-pad` is written into Valkey with a valid creation time before the
   flush. After the flush, `npm view left-pad --registry …/web/npm-remote/` reaches the upstream, and
-  `valkey-cli EXISTS` still finds the key: trove deleted nothing in Valkey.
+  `valkey-cli EXISTS` still finds the key: Quader deleted nothing in Valkey.
 - `MONITOR` on the Valkey primary during the flush shows no `SCAN`, `KEYS` or `DEL`.
 
 ### R-OPS-022 · Metadata reindex
@@ -2497,16 +2497,16 @@ CREATE TABLE storage_summary (
 member is defined in R-STOR-028: `deduplicationRatio` is `blobs.bytes / logical.bytes`,
 `quota.usedRatio` is `blobs.bytes / capacityBytes` (`null` without a configured capacity), and
 `shareOfLogicalBytes` is a repository's share of `logical.bytes` as a ratio from 0 to 1. The
-`damaged` counts also feed the gauge `trove_storage_blobs_damaged{status}` (R-OPS-008).
+`damaged` counts also feed the gauge `quader_storage_blobs_damaged{status}` (R-OPS-008).
 
 **Acceptance criteria:** after publishing a 1 MiB package to `npm-local` and running
 `POST /api/v1/system/tasks/storage-summary/run`, the `npm-local` entry's `bytes` in
-`GET /api/v1/storage/summary` grows by the tarball size. `trove_storage_summary_age_seconds`
+`GET /api/v1/storage/summary` grows by the tarball size. `quader_storage_summary_age_seconds`
 drops below 60, and a token without `storage.read` gets `403`. The OpenAPI document contains
 neither `/api/v1/system/storage/summary` nor a `…/summary/refresh` path.
 
 ### R-OPS-024 · Read-only maintenance mode
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 A system-wide mode stops content and configuration writes while reads keep working, for example
 during a storage migration, an incident, or a contract migration (INV-3).
@@ -2562,7 +2562,7 @@ In `read_only` mode:
   - this endpoint, log-level overrides, support bundles, remote cache invalidation (R-OPS-021) and
     the cache flush (R-OPS-047);
   - audit writes and webhook delivery state.
-- **Backups continue.** `trove backup create` runs normally: it changes no content, its writes are
+- **Backups continue.** `quader backup create` runs normally: it changes no content, its writes are
   its own run records, pins and audit events ([backup-and-restore.md](backup-and-restore.md)
   R-BAK-009), and a backup right before a maintenance window is a common reason to switch the
   mode on.
@@ -2592,7 +2592,7 @@ after verifying the restore. The restore's own verification runs before any repl
 - `npm install` through `npm-all` succeeds, a new personal access token can be created, and an
   existing one revoked.
 - All replicas enforce the mode within 2 s of the `PUT`, also with Valkey stopped.
-- A `trove backup create` started in `read_only` mode completes.
+- A `quader backup create` started in `read_only` mode completes.
 
 ### R-OPS-025 · System banner
 Priority: **P1** · Covers: OPS-055
@@ -2627,7 +2627,7 @@ Priority: **P1** · Covers: ADMAPI-078, OPS-009
 
 `GET /api/v1/system/locks?category=` (requires `system.read`) shows the PostgreSQL
 [advisory locks](https://www.postgresql.org/docs/current/explicit-locking.html#ADVISORY-LOCKS) held
-or awaited by trove, so stuck leases, a waiting migration or a contended configuration apply can be
+or awaited by Quader, so stuck leases, a waiting migration or a contended configuration apply can be
 diagnosed without database access. Since 2026-10-28 these are mutual exclusions whose failure
 would corrupt data (INV-3); the cross-replica fetch lock lives in Valkey and is not part of this
 view (Q-OPS-17).
@@ -2638,7 +2638,7 @@ view (Q-OPS-17).
   transaction-mode pooler. It does not fan out to other replicas.
 - **Requirements on [architecture.md](architecture.md)** (R-ARCH-017, R-ARCH-019), already
   specified there:
-  - every trove connection sets `application_name` to `trove:<replica>:<class>`, which maps a
+  - every Quader connection sets `application_name` to `quader:<replica>:<class>`, which maps a
     lock to its replica and connection class;
   - advisory locks use the two-key form, with the first key naming a registered category
     (`lease`, `migration`, `config`). Category 2 (`fetch`) is retired and its number stays
@@ -2655,8 +2655,8 @@ view (Q-OPS-17).
   migration Job, the restore Job or a backup run in its database phase
   ([backup-and-restore.md](backup-and-restore.md) R-BAK-005), and `config` locks only for the
   length of one transaction.
-- **Collapsed fetches** are observed through `trove_remote_collapsed_requests_total`, the
-  `trove_flight_lock_*` families (R-OPS-008), the leader's upstream record with `flight_role` and
+- **Collapsed fetches** are observed through `quader_remote_collapsed_requests_total`, the
+  `quader_flight_lock_*` families (R-OPS-008), the leader's upstream record with `flight_role` and
   `collapsed_waiters` and its trace (R-OPS-011), and the `collapsed` parameter of `Cache-Status`
   on the waiters' responses ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-047).
 - **Limits.** The result is a point-in-time snapshot and not atomic.
@@ -2665,27 +2665,27 @@ view (Q-OPS-17).
 {
   "snapshotAt": "2026-10-28T12:01:00.000Z",
   "items": [
-    {"category": "lease", "key": "scheduler", "replica": "trove-worker-7c4d9f6b8-m3k8p", "class": "lease", "pid": 4211, "granted": true, "heldSince": "2026-10-28T08:01:15.880Z", "waitStart": null},
-    {"category": "migration", "key": "0", "replica": "trove-backup-29361600-q7x2d", "class": "backup", "pid": 4310, "granted": true, "heldSince": null, "waitStart": null}
+    {"category": "lease", "key": "scheduler", "replica": "quader-worker-7c4d9f6b8-m3k8p", "class": "lease", "pid": 4211, "granted": true, "heldSince": "2026-10-28T08:01:15.880Z", "waitStart": null},
+    {"category": "migration", "key": "0", "replica": "quader-backup-29361600-q7x2d", "class": "backup", "pid": 4310, "granted": true, "heldSince": null, "waitStart": null}
   ]
 }
 ```
 
 **Acceptance criteria:**
 
-- The `scheduler` lease appears exactly once, with the `worker` replica that `trove_lease_held`
+- The `scheduler` lease appears exactly once, with the `worker` replica that `quader_lease_held`
   names, and no item names a `web` replica with class `lease`.
 - While a backup run is in its database phase, its shared migration lock appears with class
   `backup`.
 - Ten parallel cold `npm install` runs of the same package show no `fetch` item; the upstream log
   holds one record with `"flight_role":"leader"` for the tarball, and
-  `trove_remote_collapsed_requests_total` grows.
+  `quader_remote_collapsed_requests_total` grows.
 
 ### R-OPS-027 · Support bundle
 Priority: **P1** · Covers: OPS-031, ADMAPI-081
 
 A support bundle collects diagnostics from every live replica into one downloadable archive.
-trove has no log files, so logs come from each replica's ring buffer (R-OPS-009). Anything older
+Quader has no log files, so logs come from each replica's ring buffer (R-OPS-009). Anything older
 must be fetched from the platform's log stack.
 
 | Method and path | Request / response | Permission |
@@ -2745,7 +2745,7 @@ must be fetched from the platform's log stack.
    - the backup runs of the last 30 days from `backup_run`, with their target as stored (bucket,
      prefix and endpoint host, no credentials; [backup-and-restore.md](backup-and-restore.md)
      R-BAK-009);
-   - schema version, table sizes and trove's sessions from `pg_stat_activity`;
+   - schema version, table sizes and Quader's sessions from `pg_stat_activity`;
    - with `slowQueries`, the top 20 statements from
      [`pg_stat_statements`](https://www.postgresql.org/docs/current/pgstatstatements.html) where
      that extension is installed.
@@ -2799,7 +2799,7 @@ support:
 - With three `web` and two `worker` replicas, a bundle reaches `ready` and its tar contains
   `MANIFEST.json`, `cluster.tar.gz` and five `replica/<name>.tar.gz` parts, also with Valkey
   stopped.
-- `tar -xOf bundle.tar | grep -aE 'trv_(pat|sat|cit)_[0-9A-Za-z]{10,}'` finds nothing.
+- `tar -xOf bundle.tar | grep -aE 'qdr_(pat|sat|cit)_[0-9A-Za-z]{10,}'` finds nothing.
 - Eight days later the bundle is gone, and after the grace period its blobs are gone too.
 
 ## Configuration
@@ -2807,54 +2807,54 @@ support:
 ### R-OPS-028 · Configuration file and environment mapping
 Priority: **MVP** · Covers: OPS-040, HA-036
 
-trove reads one YAML file at startup (INV-15). The default path is `/etc/trove/trove.yaml`.
-The `--config` flag or the reserved variable `TROVE_CONFIG_FILE` overrides it.
+Quader reads one YAML file at startup (INV-15). The default path is `/etc/quader/quader.yaml`.
+The `--config` flag or the reserved variable `QUADER_CONFIG_FILE` overrides it.
 
 **Precedence**, from lowest to highest:
 
 1. built-in defaults;
 2. the file;
 3. environment variables;
-4. the few command-line flags (`--config`, `--log-level`, and `--role` of `trove serve`, which
+4. the few command-line flags (`--config`, `--log-level`, and `--role` of `quader serve`, which
    overrides `process.role`; [architecture.md](architecture.md) R-ARCH-001).
 
 One file serves every role: the chart renders one configuration for the `web` and `worker`
 Deployments, the backup CronJob and the restore Job. Only the invocation differs: `--role` of
-`trove serve` for the Deployments, the `trove backup` subcommand for the Jobs
+`quader serve` for the Deployments, the `quader backup` subcommand for the Jobs
 ([ha-and-helm.md](ha-and-helm.md) R-HA-002, R-HA-060). Every role validates the syntax of every key, but
 opens only the secret files of the keys it uses: `web` and `worker` replicas never open the backup
 target's credential files, which the chart mounts into backup and restore pods only
 ([backup-and-restore.md](backup-and-restore.md) R-BAK-011).
 
-**Environment mapping.** Every key has exactly one variable: `TROVE_` followed by the key path,
+**Environment mapping.** Every key has exactly one variable: `QUADER_` followed by the key path,
 upper-cased, with path segments joined by `_`. Example: `log.request.enabled` maps to
-`TROVE_LOG_REQUEST_ENABLED`.
+`QUADER_LOG_REQUEST_ENABLED`.
 
 - **Ambiguity.** Keys contain underscores themselves, so a variable is never split naively. The
   names are generated from the configuration schema and matched exactly.
-- **Value types.** Lists and maps in variables are JSON (`TROVE_LOG_LEVELS='{"proxy":"debug"}'`),
+- **Value types.** Lists and maps in variables are JSON (`QUADER_LOG_LEVELS='{"proxy":"debug"}'`),
   booleans are `true`/`false`, durations are Go durations.
 - **Values that differ per Deployment or Job.** The file is shared, so the few values that differ
   between the `web` and `worker` Deployments, their pools and the Jobs arrive as ordinary mapped
   variables that the chart sets ([ha-and-helm.md](ha-and-helm.md) R-HA-030): per Deployment
-  `TROVE_RUNTIME_MEMORY_LIMIT_BYTES`, `TROVE_RUNTIME_TERMINATION_GRACE_PERIOD` and
-  `TROVE_STORAGE_SPOOL_MAX_BYTES` (`storage.spool.max_bytes`, derived from the role's spool size
+  `QUADER_RUNTIME_MEMORY_LIMIT_BYTES`, `QUADER_RUNTIME_TERMINATION_GRACE_PERIOD` and
+  `QUADER_STORAGE_SPOOL_MAX_BYTES` (`storage.spool.max_bytes`, derived from the role's spool size
   unless `config.storage.spool.max_bytes` is set, R-HA-035); for the migration Job
-  `TROVE_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS` and
-  `TROVE_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS` (`database.preflight.expected_web_replicas`
+  `QUADER_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS` and
+  `QUADER_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS` (`database.preflight.expected_web_replicas`
   and `database.preflight.expected_worker_replicas`, the connection budget check of
   [ha-and-helm.md](ha-and-helm.md) R-HA-016). They are schema keys like any other and pass strict
   validation.
 
-**Strict validation.** An unknown key in the file or an unknown `TROVE_` variable stops startup
+**Strict validation.** An unknown key in the file or an unknown `QUADER_` variable stops startup
 with an error that names it and the closest valid key. So does a type or range error. Every error
 is reported in one pass. A mistyped override therefore fails loudly instead of being dropped. The
-only exempt variables are the reserved ones: `TROVE_CONFIG_FILE`; `TROVE_CAC_*` for
-configuration-as-code secret references (R-OPS-029); `TROVE_POD_NAME`, `TROVE_POD_NAMESPACE`
-and `TROVE_NODE_NAME`, which the chart sets in every trove pod from the downward API
+only exempt variables are the reserved ones: `QUADER_CONFIG_FILE`; `QUADER_CAC_*` for
+configuration-as-code secret references (R-OPS-029); `QUADER_POD_NAME`, `QUADER_POD_NAMESPACE`
+and `QUADER_NODE_NAME`, which the chart sets in every Quader pod from the downward API
 (`metadata.name`, `metadata.namespace`, `spec.nodeName`) for the replica registry, the `replica`
 field of every log record and the trace resource (R-OPS-003, R-OPS-009, R-OPS-018); and
-`TROVE_POOL_NAME`, which the chart sets on each pool Deployment: from the MVP on the endpoint
+`QUADER_POOL_NAME`, which the chart sets on each pool Deployment: from the MVP on the endpoint
 pools of [endpoints.md](endpoints.md) R-EP-008, whose processes open only the listeners of their
 endpoints (R-EP-002), and from P1 the pools of [ha-and-helm.md](ha-and-helm.md) R-HA-062; it also
 fills the registry's `pool` column (R-OPS-003). Without
@@ -2875,10 +2875,10 @@ configuration change is a rolling restart without outage (R-HA-059).
 
 **Commands and API:**
 
-- `trove admin config validate [--config <file>]` validates the file plus the environment and
+- `quader admin config validate [--config <file>]` validates the file plus the environment and
   prints the effective configuration, redacted, with each value's source.
 - `GET /api/v1/system/config` returns the same data (`system.read`):
-  `{"values": {"log.level": {"value": "info", "source": "default"}, "mail.password": {"value": "[REDACTED]", "source": "file:/var/run/secrets/trove/smtp"}}}`.
+  `{"values": {"log.level": {"value": "info", "source": "default"}, "mail.password": {"value": "[REDACTED]", "source": "file:/var/run/secrets/quader/smtp"}}}`.
 
 **Sections and their owners.** Each owner page lists its own keys. This page lists the keys of the
 sections it owns, in the requirements above and below.
@@ -2904,7 +2904,7 @@ sections it owns, in the requirements above and below.
 
 ```yaml
 server:
-  base_url: https://trove.example.com            # example
+  base_url: https://quader.example.com            # example
   trusted_proxies: ["10.42.0.0/16"]                # example
   additional_base_urls: []                         # default (proposed)
   replica_header: authenticated                    # default (proposed)
@@ -2962,16 +2962,16 @@ support:
   bundle_retention_days: 7                         # default (proposed)
   collect_timeout: 2m                              # default (proposed)
 config_as_code:
-  files: []                                        # default (proposed); example ["/etc/trove/config.d/*.yaml"]
+  files: []                                        # default (proposed); example ["/etc/quader/config.d/*.yaml"]
   mode: apply                                      # default (proposed); apply | create_only
-  secrets_dir: /etc/trove/cac-secrets            # default (proposed)
+  secrets_dir: /etc/quader/cac-secrets            # default (proposed)
   lock_managed_objects: true                       # default (proposed)
 webhooks:
   enabled: true                                    # default (proposed); see R-OPS-042 for the rest
 mail:
   enabled: false                                   # default (proposed)
   host: smtp.example.com                           # example
-  password_file: /var/run/secrets/trove/smtp     # example
+  password_file: /var/run/secrets/quader/smtp     # example
 content_types:
   overrides: {}                                    # default (proposed)
 ```
@@ -2980,11 +2980,11 @@ content_types:
 
 **Acceptance criteria:**
 
-- `TROVE_LOG_LEVL=debug trove serve` exits non-zero with a message naming `TROVE_LOG_LEVL`
-  and suggesting `TROVE_LOG_LEVEL`.
+- `QUADER_LOG_LEVL=debug quader serve` exits non-zero with a message naming `QUADER_LOG_LEVL`
+  and suggesting `QUADER_LOG_LEVEL`.
 - `mail.password: hunter2` in the file stops startup with an error that names `mail.password_file`
-  and `TROVE_MAIL_PASSWORD`.
-- `TROVE_METRICS_LABEL_LIMITS_REPOSITORY=50` is reported by `GET /api/v1/system/config` with
+  and `QUADER_MAIL_PASSWORD`.
+- `QUADER_METRICS_LABEL_LIMITS_REPOSITORY=50` is reported by `GET /api/v1/system/config` with
   source `env`.
 
 ### R-OPS-029 · Configuration-as-code document
@@ -2994,7 +2994,7 @@ A configuration document declares the desired state of database-held configurati
 can be applied through the API (R-OPS-030), through the CLI, or at startup (R-OPS-031).
 
 ```yaml
-apiVersion: trove/v1
+apiVersion: quader/v1
 kind: Configuration
 metadata:
   name: platform-baseline          # document identity; owns every object it declares
@@ -3006,7 +3006,7 @@ spec:
   ciIssuers:                       # trusted issuers for the CI exchange (gitlab-ci-oidc.md); not login providers
     - name: gitlab
       issuer: https://gitlab.example.com
-      audiences: ["https://trove.example.com"]
+      audiences: ["https://quader.example.com"]
   groups:                          # group records only; claim-to-group rules live in the configuration file
     - name: developers
       description: All developers
@@ -3103,11 +3103,11 @@ convention: an object is deleted by removing it from a document that has `prune:
   is not affected.
 
 **Secrets.** A secret field takes `{"secretRef": {"file": "<name>"}}` or
-`{"secretRef": {"env": "TROVE_CAC_<NAME>"}}`, resolved on the server.
+`{"secretRef": {"env": "QUADER_CAC_<NAME>"}}`, resolved on the server.
 
 - **Where files may live.** A file must lie directly under `config_as_code.secrets_dir`. No path
   separators and no `..`.
-- **Which variables may be read.** Only those with the `TROVE_CAC_` prefix. trove's own secrets
+- **Which variables may be read.** Only those with the `QUADER_CAC_` prefix. Quader's own secrets
   (database password, object-store key) can therefore never be routed into, say, a remote
   repository's upstream credentials and sent to a host of the author's choice.
 - **Inline values.** A literal `{"value": "…"}` is accepted only through the API (R-OPS-030) and
@@ -3137,7 +3137,7 @@ anyone with database read access guess short secrets offline.
 
 **Acceptance criteria:** the document above validates against the JSON Schema generated from the
 OpenAPI document. A document with `secretRef: {file: ../db-password}` or
-`secretRef: {env: TROVE_DATABASE_PASSWORD}` is rejected with `422`, and the error names the
+`secretRef: {env: QUADER_DATABASE_PASSWORD}` is rejected with `422`, and the error names the
 field. So is a document with a `spec.loginProviders` key, or with `claimValues` on a group.
 With the default lock, `PUT /api/v1/projects/web/repositories/npm-local` with the current `If-Match` on a
 repository owned by `platform-baseline` answers `409`, and the problem names the document.
@@ -3202,7 +3202,7 @@ returns `412` instead of applying an unreviewed plan.
 **Audit.** Every apply writes one `system.config_applied` event with the summary and digest, plus
 the per-object events of R-OPS-016.
 
-**CLI.** `trove admin config diff -f <file>` and `trove admin config apply -f <file> [--adopt]
+**CLI.** `quader admin config diff -f <file>` and `quader admin config apply -f <file> [--adopt]
 [--allow-destructive] [--plan-hash <hash>]` work in two modes:
 
 - with `--server <url> --token-file <path>`, through this API;
@@ -3213,7 +3213,7 @@ the per-object events of R-OPS-016.
 
 **Acceptance criteria:**
 
-- `curl -s -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/yaml' --data-binary @baseline.yaml https://trove.example.com/api/v1/config/diff | jq .summary`
+- `curl -s -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/yaml' --data-binary @baseline.yaml https://quader.example.com/api/v1/config/diff | jq .summary`
   shows the expected counts. Applying with the returned `planHash` succeeds, and a second diff
   shows only `unchanged`.
 - Diff and apply with `adopt=true`. Changing, through the UI, a repository that the document
@@ -3283,12 +3283,12 @@ Audit: `system.config_exported`.
 - Export from an installation configured through the UI, then apply the export to an empty
   installation with matching secret files and `adopt=true`.
 - A diff between the two installations' exports is empty.
-- `grep -E 'trv_|BEGIN .*PRIVATE KEY'` over the export finds nothing.
+- `grep -E 'qdr_|BEGIN .*PRIVATE KEY'` over the export finds nothing.
 
 ### R-OPS-033 · Outgoing mail
 Priority: **P1** · Covers: OPS-060
 
-trove sends mail through one SMTP relay for features that declare mail notifications. Token
+Quader sends mail through one SMTP relay for features that declare mail notifications. Token
 expiry notices (TOK-023) are one example.
 
 - **TLS.** Connections use STARTTLS by default. `tls: none` is accepted only together with
@@ -3305,10 +3305,10 @@ mail:
   port: 587                       # default (proposed)
   tls: starttls                   # default (proposed); starttls | implicit | none
   allow_insecure: false           # default (proposed)
-  username: trove               # example
-  password_file: /var/run/secrets/trove/smtp   # example (or TROVE_MAIL_PASSWORD)
-  from: "trove <trove@example.com>"          # example
-  subject_prefix: "[trove] "    # default (proposed)
+  username: quader               # example
+  password_file: /var/run/secrets/quader/smtp   # example (or QUADER_MAIL_PASSWORD)
+  from: "quader <quader@example.com>"          # example
+  subject_prefix: "[quader] "    # default (proposed)
 ```
 
 **Acceptance criteria:** against a test SMTP server (for example Mailpit) with STARTTLS, the test
@@ -3324,7 +3324,7 @@ Raw file downloads (`/files/<projectKey>/<repoKey>/<path>`, INV-6) and the UI's 
 **Building the table.** The table is built in this order:
 
 1. Go's [`mime`](https://pkg.go.dev/mime) package built-ins;
-2. trove's additions (`.tgz` → `application/gzip`, `.nupkg` and `.snupkg` → `application/zip`,
+2. Quader's additions (`.tgz` → `application/gzip`, `.nupkg` and `.snupkg` → `application/zip`,
    `.nuspec` → `application/xml`, …);
 3. `content_types.overrides` from the configuration file (restart required).
 
@@ -3453,15 +3453,15 @@ SDK.
 {
   "specversion": "1.0",
   "id": "01933b1e-7c2a-7f4e-9d1b-6a2f0c9e8b11",
-  "source": "https://trove.example.com",
-  "type": "trove.package.published",
+  "source": "https://quader.example.com",
+  "type": "quader.package.published",
   "subject": "web/npm-local/@acme/ui@2.4.0",
   "time": "2026-10-28T11:58:02.417Z",
   "datacontenttype": "application/json",
-  "dataschema": "https://trove.example.com/api/v1/webhooks/event-types/package.published/schema",
-  "trovesubscription": "gitlab-trigger-npm",
-  "trovereplica": "trove-web-6f9c7d8b5-x2v4q",
-  "trovetest": false,
+  "dataschema": "https://quader.example.com/api/v1/webhooks/event-types/package.published/schema",
+  "quadersubscription": "gitlab-trigger-npm",
+  "quaderreplica": "quader-web-6f9c7d8b5-x2v4q",
+  "quadertest": false,
   "data": {
     "repository": {"project": "web", "key": "npm-local", "format": "npm", "class": "local"},
     "package": {"name": "@acme/ui", "version": "2.4.0"},
@@ -3484,13 +3484,13 @@ SDK.
   omits `source`.
 - **Standard attributes.**
   - `source` is `server.base_url`.
-  - `type` is `trove.` followed by the registry name. The prefix is fixed from the first release
+  - `type` is `quader.` followed by the registry name. The prefix is fixed from the first release
     that ships webhooks (Q-OPS-5).
   - `subject` is `<projectKey>/<repoKey>/<path or package@version>`.
 - **Extension attributes** (lower-case, as CloudEvents requires):
-  - `trovesubscription`: the matching subscription;
-  - `trovereplica`: the replica that committed the change, not the `worker` that delivers it;
-  - `trovetest`: `true` only for test deliveries (R-OPS-043).
+  - `quadersubscription`: the matching subscription;
+  - `quaderreplica`: the replica that committed the change, not the `worker` that delivers it;
+  - `quadertest`: `true` only for test deliveries (R-OPS-043).
 - **Actor.** `data.actor` names who caused the event: principal type, ID, name, whether a token
   was used, and the authentication method. For CI principals it adds the issuer and selected,
   non-secret claims of the exchanged ID token (INV-10). E-mail addresses and token IDs are not
@@ -3543,7 +3543,7 @@ selects them.
       "domain": "package",
       "filter": "repository",
       "types": [
-        {"type": "package.published", "cloudEventsType": "trove.package.published", "schema": "/api/v1/webhooks/event-types/package.published/schema"}
+        {"type": "package.published", "cloudEventsType": "quader.package.published", "schema": "/api/v1/webhooks/event-types/package.published/schema"}
       ]
     }
   ]
@@ -3592,7 +3592,7 @@ handler.
   `/api/v1/webhooks/deliveries` and `/api/v1/webhooks/event-types` sit in the `{key}` position. A
   create with one of them, through the API or a configuration document (R-OPS-029), is rejected
   with `422` `reserved_name`. The key schema in the OpenAPI document lists them as
-  `x-trove-reserved-names`, so R-API-004's CI check covers any literal sibling added later.
+  `x-quader-reserved-names`, so R-API-004's CI check covers any literal sibling added later.
 - **`enabled`** MUST be present on create, because subscriptions have no implicit default.
 - **Filter.**
   - Repository selection is the union of `repositories`, qualified names `<projectKey>/<repoKey>`, and the
@@ -3695,7 +3695,7 @@ The **standard handler** POSTs the envelope unchanged:
 ```json
 "handler": {
   "kind": "standard",
-  "url": "https://hooks.example.com/trove",
+  "url": "https://hooks.example.com/quader",
   "proxy": null,
   "headers": [{"name": "X-Team", "value": "platform"}],
   "signing": {"enabled": true}
@@ -3713,21 +3713,21 @@ both handler kinds, so receivers can use its reference libraries.
 - **Replay.** The timestamp lets receivers reject replays. Five minutes of tolerance is the
   recommended receiver setting.
 - **Secret format.** A signing secret is 32 random bytes, base64-encoded, prefixed `whsec_`.
-- **Creation.** On create with `signing.enabled` and no supplied secret, trove generates one and
+- **Creation.** On create with `signing.enabled` and no supplied secret, Quader generates one and
   returns it once, in the `201` response (`"signingSecret": "whsec_…"`). Later reads show only
   `{"signing": {"enabled": true, "secretSet": true, "rotatedAt": "…"}}`.
 - **Rotation.** `POST /api/v1/webhooks/{key}/signing-secret/rotate` returns a new secret once. For
   `webhooks.signing_rotation_overlap`, deliveries carry two signatures separated by a space (new
   and old), so receivers can switch without downtime.
 
-Unlike the catalog's unsigned mode, trove never sends a shared secret in a header by itself. A
+Unlike the catalog's unsigned mode, Quader never sends a shared secret in a header by itself. A
 receiver that needs a static token gets it through a templated header from a handler secret
 (R-OPS-041).
 
-**Headers trove always sets:**
+**Headers Quader always sets:**
 
 - `Content-Type: application/cloudevents+json; charset=utf-8` (standard handler);
-- `User-Agent: trove-webhooks/<version>`;
+- `User-Agent: quader-webhooks/<version>`;
 - the three signature headers when signing is on.
 
 **Reserved headers.** Custom headers cannot set `Host`, `Content-Length`, `Transfer-Encoding`,
@@ -3858,7 +3858,7 @@ CREATE TABLE webhook_secret (
   [`repository_dispatch`](https://docs.github.com/en/rest/repos/repos#create-a-repository-dispatch-event).
   `POST https://api.github.com/repos/acme/deploy/dispatches` with headers
   `Accept: application/vnd.github+json` and `Authorization: Bearer {{ .secrets.gh_token }}`, and the
-  body `{"event_type":"trove-package","client_payload":{"package":{{ json .data.package }}}}`,
+  body `{"event_type":"quader-package","client_payload":{"package":{{ json .data.package }}}}`,
   starts a workflow that declares `on: repository_dispatch`.
 - **Chat incoming webhook.** With `urlSecret`, a Slack-compatible incoming-webhook URL receives
   `{"text": {{ printf "%s published %s" .actor.name .event.subject | json }}}`.
@@ -3960,7 +3960,7 @@ at-least-once delivery allows (R-OPS-035).
   subscription is stored. A blocked target is refused with `422`.
 - **Outbound proxy.** A handler MAY name an outbound proxy defined in
   [repositories-and-proxy.md](repositories-and-proxy.md) (`"proxy": "<proxy key>"`). Through a
-  proxy, trove checks the target name's resolution itself before sending, but the proxy connects
+  proxy, Quader checks the target name's resolution itself before sending, but the proxy connects
   on its own (H-40).
 
 **Read-only mode.** Deliveries continue in read-only mode (R-OPS-024).
@@ -3978,7 +3978,7 @@ webhooks:
   require_https: true                   # default (proposed)
   allow_private_targets: false          # default (proposed)
   allowed_private_cidrs: []             # default (proposed); example ["10.20.30.0/24"]
-  ca_file: ""                           # example /etc/trove/tls/internal-ca.pem
+  ca_file: ""                           # example /etc/quader/tls/internal-ca.pem
   signing_rotation_overlap: 24h         # default (proposed)
   outbox_retention_days: 7              # default (proposed)
 ```
@@ -4006,8 +4006,8 @@ Priority: **P1** · Covers: EVT-031, API-154
 | `POST /api/v1/webhooks/{key}/test` | optional `{"eventType":"package.published"}` | owner with `webhooks.manage`, or system administrator |
 | `POST /api/v1/webhooks/test` | a full, unsaved subscription definition (secrets inline), plus optional `eventType` | `webhooks.manage` within R-OPS-039 limits |
 
-**The test event.** trove builds a synthetic event of the given type (default: the first
-subscribed type) from the type's sample data, with `trovetest: true`. It renders, signs and sends
+**The test event.** Quader builds a synthetic event of the given type (default: the first
+subscribed type) from the type's sample data, with `quadertest: true`. It renders, signs and sends
 the event once, with the same address checks and timeout as a real delivery and without retries.
 
 **The response** is `200`, whatever the receiver answered:
@@ -4174,7 +4174,7 @@ webhooks:
 
 - A failing receiver produces one record with an attempt list that grows per retry, and every
   attempt raises its `change_seq`.
-- `curl -N -H "Authorization: Bearer $TOKEN" 'https://trove.example.com/api/v1/webhooks/deliveries?follow=true&subscription=gitlab-trigger-npm'`
+- `curl -N -H "Authorization: Bearer $TOKEN" 'https://quader.example.com/api/v1/webhooks/deliveries?follow=true&subscription=gitlab-trigger-npm'`
   shows a `delivery` event within 2 s of a publish, and within
   `webhooks.delivery_log.follow_poll_interval` plus 2 s with Valkey stopped.
 - A test hook holds one delivery-record transaction open for 2 s after it drew its `change_seq`,
@@ -4190,7 +4190,7 @@ webhooks:
 
 ## Backup and restore
 
-trove's own backup (INV-19) belongs to [backup-and-restore.md](backup-and-restore.md): the
+Quader's own backup (INV-19) belongs to [backup-and-restore.md](backup-and-restore.md): the
 `backup` role's commands, the format in S3, consistency with garbage collection, restore into an
 empty installation and the run visibility of R-BAK-014. [ha-and-helm.md](ha-and-helm.md) renders
 the CronJob and the restore Job (R-HA-060) and owns the platform layer under it: point-in-time
@@ -4241,7 +4241,7 @@ MVP and P1 features of the catalog pages above that this page does not specify:
 | Catalog ID | Feature | Owner |
 |---|---|---|
 | OPS-032, OPS-034, OPS-035, OPS-039 | Scheduled backups, system export and import as the backup format and restore, instance migration by restore; MVP by INV-19 | [backup-and-restore.md](backup-and-restore.md); this page carries their metrics and audit events (R-OPS-008, R-OPS-016) |
-| OPS-033 | Component backup and disaster recovery | Split: [backup-and-restore.md](backup-and-restore.md) owns trove's own backup and restore (R-BAK-001 to R-BAK-029); [ha-and-helm.md](ha-and-helm.md) owns point-in-time recovery, bucket versioning and cross-site disaster recovery (R-HA-023 to R-HA-026) and the chart side, the backup CronJob and the restore Job (R-HA-060) |
+| OPS-033 | Component backup and disaster recovery | Split: [backup-and-restore.md](backup-and-restore.md) owns Quader's own backup and restore (R-BAK-001 to R-BAK-029); [ha-and-helm.md](ha-and-helm.md) owns point-in-time recovery, bucket versioning and cross-site disaster recovery (R-HA-023 to R-HA-026) and the chart side, the backup CronJob and the restore Job (R-HA-060) |
 | OPS-057 | General repository-manager settings: global offline mode (RMT-031) to [repositories-and-proxy.md](repositories-and-proxy.md); trash can to [storage.md](storage.md); UI upload size limit and items per page to [api-and-ui.md](api-and-ui.md) | split as listed |
 | OPS-062 | Container registry addressing method | The Docker/OCI format page (P1), with [ha-and-helm.md](ha-and-helm.md) for ingress routing |
 | OPS-063 | Reverse proxy deployment rules | [ha-and-helm.md](ha-and-helm.md); this page contributes R-OPS-005 |
@@ -4264,7 +4264,7 @@ MVP and P1 features of the catalog pages above that this page does not specify:
 | OPS-010 | P2 | Administrative outbound connection test; remote repositories have their own test ([repositories-and-proxy.md](repositories-and-proxy.md)) |
 | OPS-014 | Later | Federation metric families, with federation itself |
 | OPS-015 | P2 | Metrics written to log files; not planned, Prometheus scraping covers it |
-| OPS-021 | P2 | Front router access log; trove has no internal router, and the ingress controller logs its own access |
+| OPS-021 | P2 | Front router access log; Quader has no internal router, and the ingress controller logs its own access |
 | OPS-024 | P2 | Log rotation and archiving; not applicable, logs go to standard output |
 | OPS-027, OPS-028 | P2 | Log viewer screen and live log API; the platform log stack and the support-bundle ring buffer cover the need |
 | OPS-029, OPS-030 | P2 | Syslog and log analytics integrations; done by the platform's log shipper on standard output |
@@ -4279,7 +4279,7 @@ MVP and P1 features of the catalog pages above that this page does not specify:
 | OPS-071 | P2 | Maven index calculation, with the Maven format |
 | OPS-075 | P2 | Migration tool from another repository manager |
 | OPS-098 | P2 | Global read access to build information |
-| EVT-008 | P2 | User lockout event; trove has no passwords, so a `user.disabled` event type would be the equivalent |
+| EVT-008 | P2 | User lockout event; Quader has no passwords, so a `user.disabled` event type would be the equivalent |
 | EVT-009 to EVT-016, EVT-021 | Later | Release-set, distribution, curation, scan-status and application-lifecycle events and their filters |
 | EVT-022 | P2 | Project-scoped subscriptions managed by a project's Owner; subscriptions are instance-wide |
 | EVT-036 | P2 | Chat and incident-tool recipes beyond the one in R-OPS-041 |
@@ -4330,7 +4330,7 @@ MVP and P1 features of the catalog pages above that this page does not specify:
   compromised replica cannot erase its traces. The records are still not tamper-evident against
   the schema owner or a superuser (H-39).
 - **Configuration documents can name secrets only inside an allow-list.** Files under
-  `secrets_dir`, variables prefixed `TROVE_CAC_`. Without that limit, an administrator's document
+  `secrets_dir`, variables prefixed `QUADER_CAC_`. Without that limit, an administrator's document
   could copy the database password into a remote repository's credentials and send it to any host.
 - **Webhooks:**
   - they are bounded by the owner's current read permission (R-OPS-039);
@@ -4364,10 +4364,10 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) Never couple; liveness checks only that the HTTP server answers and the check loop runs | The previous default, without any coupling knob | Simple; no dependency outage can restart a replica | A deadlocked worker, scheduler or `LISTEN` loop leaves a replica alive but useless until a human notices |
 | (b) Couple after a grace period for every check | Liveness fails once readiness has failed for a set time; the catalog's default (OPS-004), and the previous draft's opt-in knob `health.liveness_unready_grace` | Self-heals a replica that stays unready | A shared outage of PostgreSQL restarts every replica together; contradicts R-HA-008's MUST; restarts discard caches and add connection load at the worst moment |
 | (c) Couple only for internal checks (`startup`, `notify`) after a grace period | A per-check coupling policy | Restarts a replica whose `LISTEN` session never recovers | `notify` also fails for shared causes (connection exhaustion, a transaction-mode pooler), so it still restarts all replicas together; per-check policy for little gain |
-| (d) Never couple to check results; liveness is a watchdog over trove's own loops | Each long-running loop records progress per iteration, failed iterations included; `/healthz` fails only when a loop has not finished an iteration within its bound, and the chart's liveness probe restarts the pod | Detects deadlocks and hung calls, the faults a restart actually repairs; a dependency outage only produces failed iterations, never a restart; the restart goes through Kubernetes, so the pod drains and the probe thresholds of R-HA-034 apply | Every call in a watched loop needs a deadline, which a test per loop has to enforce |
-| (e) Same watchdog, but the process exits itself | A stalled loop makes trove write a goroutine dump and call `os.Exit`; Kubernetes restarts the container | No dependence on probe settings; the evidence is written at the moment of the stall | An exit drops every in-flight request and upload at once, where a failed liveness probe still sends `SIGTERM` and lets the replica drain; operators can neither tune nor disable it through the chart's probe settings |
+| (d) Never couple to check results; liveness is a watchdog over Quader's own loops | Each long-running loop records progress per iteration, failed iterations included; `/healthz` fails only when a loop has not finished an iteration within its bound, and the chart's liveness probe restarts the pod | Detects deadlocks and hung calls, the faults a restart actually repairs; a dependency outage only produces failed iterations, never a restart; the restart goes through Kubernetes, so the pod drains and the probe thresholds of R-HA-034 apply | Every call in a watched loop needs a deadline, which a test per loop has to enforce |
+| (e) Same watchdog, but the process exits itself | A stalled loop makes Quader write a goroutine dump and call `os.Exit`; Kubernetes restarts the container | No dependence on probe settings; the evidence is written at the moment of the stall | An exit drops every in-flight request and upload at once, where a failed liveness probe still sends `SIGTERM` and lets the replica drain; operators can neither tune nor disable it through the chart's probe settings |
 
-**Choice:** (d) — liveness never reads readiness or any check result, and fails only when one of trove's own loops stops making progress; (e)'s goroutine dump is adopted, its self-exit is not.
+**Choice:** (d) — liveness never reads readiness or any check result, and fails only when one of Quader's own loops stops making progress; (e)'s goroutine dump is adopted, its self-exit is not.
 
 **Rationale:** The deciding question is what a restart repairs. It repairs process-local faults (a deadlock, a goroutine blocked on a call without a deadline), and it never repairs a shared dependency. (b) and (c) infer a local fault from dependency symptoms, so during a shared outage they restart every replica at once, which R-HA-008 forbids. The previous opt-in knob put that failure one setting away, so it is removed rather than kept as an option. (a) is safe but blind to the stuck-loop case. (d) measures progress directly: a loop that keeps retrying an unreachable PostgreSQL is progressing, and the deadline rule turns a blackholed network into failed iterations rather than a hang. (e) detects the same faults but restarts without draining. Its one real advantage, evidence of the deadlock, is taken over: the watchdog logs a goroutine dump when it first reports a loop stuck. One trap of a watchdog is excluded explicitly: the claim loop counts as progressing while all workers are busy, otherwise one long garbage-collection job on the single maintenance worker would restart the replica. The extra cost is one timestamp per loop and the deadline test. The development agent would revisit this if production shows replicas stuck unready while every loop progresses; that symptom would get a targeted rule, not a generic coupling.
 
@@ -4389,7 +4389,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Rationale:** Readiness exists to route traffic from a broken replica to healthy ones. With one shared bucket there is no healthy replica to route to, so continuous gating turns a partial outage into a total one. The first-readiness gate keeps the one thing gating does well: it stops a misconfigured release before it replaces working pods. (b) gives that up, (c) keeps (a)'s total outage as the default, and (e) buys precision with coordination that the existing alerts make unnecessary. A request that hits a degraded replica gets a retryable `503`, and a retry is likely to land on another replica. The price is paid only during a long shared outage: pods replaced meanwhile stay unready (R-STOR-035's startup check keeps retrying and never exits on a transient outage), but the running replicas are not touched, and the PodDisruptionBudget keeps voluntary evictions of ready pods within its budget. Under (a) the same outage removes every replica at once, so for a shared outage (d) is never worse than (a). This matches the rule recorded in [ha-and-helm.md](ha-and-helm.md) R-HA-008 (Q-HA-1) and [storage.md](storage.md) R-STOR-036 (Q-STOR-1). It changes INV-12, which ties readiness to object-storage reachability. The development agent would revisit (e) if replicas losing only their own S3 path turn out to be frequent in production.
 
-**Applied in the spec:** R-OPS-001: the `objectStore` row states first-readiness gating. A new "Gating and reported checks" paragraph adds the `degraded` response and the opt-in. `health.require_object_store` now defaults to `false`. An acceptance criterion with a 3-minute object-store block was added. R-OPS-008: new gauge `trove_health_check_passing{name}`. R-OPS-028: the example file follows. INV-12 in [README.md](README.md) needs the edit listed as a cross-page consequence.
+**Applied in the spec:** R-OPS-001: the `objectStore` row states first-readiness gating. A new "Gating and reported checks" paragraph adds the `degraded` response and the opt-in. `health.require_object_store` now defaults to `false`. An acceptance criterion with a 3-minute object-store block was added. R-OPS-008: new gauge `quader_health_check_passing{name}`. R-OPS-028: the example file follows. INV-12 in [README.md](README.md) needs the edit listed as a cross-page consequence.
 
 ### Q-OPS-3 · Anonymous access to the version endpoint
 
@@ -4413,16 +4413,16 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) External shipping only | trove's runtime role keeps full rights on audit rows. Integrity comes from shipping the `log: audit` stream to an append-only store | No extra mechanism | A SQL injection or a compromised replica can rewrite or delete history. Under two-role mode the runtime role cannot even drop partitions, so retention as drafted would not work there |
+| (a) External shipping only | Quader's runtime role keeps full rights on audit rows. Integrity comes from shipping the `log: audit` stream to an append-only store | No extra mechanism | A SQL injection or a compromised replica can rewrite or delete history. Under two-role mode the runtime role cannot even drop partitions, so retention as drafted would not work there |
 | (b) Hash-chain every row in PostgreSQL and verify on export | Each row stores the hash of its predecessor | Detects edits in the middle of the chain | Serialises every transactional write on one chain head. The role that writes the chain can recompute it, so without an external anchor it proves nothing against that role |
 | (c) Append-only for the runtime role, plus external shipping | The runtime role may only `INSERT` and `SELECT`. Partitions are created and dropped by an owner function (`SECURITY DEFINER`) that applies a retention the owner stores. Shipping covers the owner and superusers | Stops a compromised replica from erasing its traces. Fixes partition maintenance under two-role mode. Costs a few lines of migration SQL and no write contention | No protection in single-role mode or against the owner. Deduplicated denials can no longer be counted up in place |
 | (d) (c) plus sealed checkpoints | A job hashes each new batch of rows, chains it to the previous seal and writes the seal to the log stream as an external anchor; the export verifies | Makes edits by the owner detectable, given the shipped seals | A sealing job, a verification path and seal storage, for a threat that log shipping already covers when it is in place |
 
-**Choice:** (c) — audit rows are append-only for trove's runtime role, and partitions and retention are handled by an owner-held function.
+**Choice:** (c) — audit rows are append-only for Quader's runtime role, and partitions and retention are handled by an owner-held function.
 
 **Rationale:** The realistic attacker is a compromised replica or a SQL injection, both acting as the runtime role. (c) is the cheapest option that stops that attacker from rewriting history. It also repairs a real defect: under the two-role setup of [ha-and-helm.md](ha-and-helm.md) R-HA-014, the runtime role has no DDL rights, so the drafted retention task could neither create nor drop partitions. After two months every transactional write would have failed for want of a partition. (b) costs write throughput and still trusts the writer. (d) adds a verification system whose value depends on the same external log shipping that (c) already relies on. Deduplication now writes a first event and one summary event, so no row is ever updated. Moving partition DDL into a function that every replica calls creates one hazard of its own, which the spec closes: `CREATE TABLE … PARTITION OF` and `DROP TABLE` take `ACCESS EXCLUSIVE` on the parent, so a call that waits for a long reader of `audit_event` to finish, such as a backup's snapshot transaction (exports read in short batches, R-OPS-017), would make every transactional write queue up behind it. The function therefore attaches new partitions (`SHARE UPDATE EXCLUSIVE`, which inserts do not wait for), runs under a 2-second `lock_timeout`, and leaves a drop it cannot lock to the next call. The development agent would revisit (d) when an installation needs verifiable completeness of the database copy itself, for example for an external audit.
 
-**Applied in the spec:** R-OPS-015: new section "Append-only rows and partition maintenance" with privileges, `audit_maintain_partitions()` (serialised by a row lock on `audit_policy`, short locks through `ATTACH PARTITION` and `lock_timeout`), the owner-written `audit_policy`, calls from `trove migrate`, at startup and daily, and single-role behavior. Deduplication rewritten without updates (`repeat_of`). New acceptance criteria for `42501` on update and delete, for the partitions present after startup, for the denial summary, and for a maintenance call that does not block writes behind an open reader of `audit_event` (since 2026-10-28 a backup's snapshot transaction; exports hold no transaction between batches, R-OPS-017). R-OPS-016: `repeat_of` added to `authz.denied` and `auth.token_rejected`. R-OPS-017: retention runs through the function and changes take effect with `trove migrate`. R-OPS-001: the `startup` check requires partitions for the current and the next month. R-OPS-019: `audit-retention` row. Security notes and H-39 narrowed to the owner, superusers and single-role mode.
+**Applied in the spec:** R-OPS-015: new section "Append-only rows and partition maintenance" with privileges, `audit_maintain_partitions()` (serialised by a row lock on `audit_policy`, short locks through `ATTACH PARTITION` and `lock_timeout`), the owner-written `audit_policy`, calls from `quader migrate`, at startup and daily, and single-role behavior. Deduplication rewritten without updates (`repeat_of`). New acceptance criteria for `42501` on update and delete, for the partitions present after startup, for the denial summary, and for a maintenance call that does not block writes behind an open reader of `audit_event` (since 2026-10-28 a backup's snapshot transaction; exports hold no transaction between batches, R-OPS-017). R-OPS-016: `repeat_of` added to `authz.denied` and `auth.token_rejected`. R-OPS-017: retention runs through the function and changes take effect with `quader migrate`. R-OPS-001: the `startup` check requires partitions for the current and the next month. R-OPS-019: `audit-retention` row. Security notes and H-39 narrowed to the owner, superusers and single-role mode.
 
 ### Q-OPS-5 · CloudEvents `type` prefix
 
@@ -4430,14 +4430,14 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `trove.` | `trove.package.published` | Short, readable, identical on every installation, already specified | Deviates from the CloudEvents recommendation that `type` SHOULD carry a reverse-DNS prefix ([spec, `type`](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md#type)) |
-| (b) Reverse DNS of a domain the project registers | For example `org.<project-domain>.trove.` | Follows the recommendation | No such domain exists today. A later change of domain breaks every receiver's filters |
-| (c) Reverse DNS of the code-hosting namespace | For example `io.github.<org>.trove.` | Follows the recommendation with a name that exists today | Ties a permanent public contract to a hosting account and its name, which the project may rename or leave; long and noisy in filters |
-| (d) Per-installation prefix from the base URL host | For example `com.example.trove.` | Unique per producer | Receivers become installation-specific, and one receiver cannot serve two installations with the same filter |
+| (a) `quader.` | `quader.package.published` | Short, readable, identical on every installation, already specified | Deviates from the CloudEvents recommendation that `type` SHOULD carry a reverse-DNS prefix ([spec, `type`](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md#type)) |
+| (b) Reverse DNS of a domain the project registers | For example `org.<project-domain>.quader.` | Follows the recommendation | No such domain exists today. A later change of domain breaks every receiver's filters |
+| (c) Reverse DNS of the code-hosting namespace | For example `io.github.<org>.quader.` | Follows the recommendation with a name that exists today | Ties a permanent public contract to a hosting account and its name, which the project may rename or leave; long and noisy in filters |
+| (d) Per-installation prefix from the base URL host | For example `com.example.quader.` | Unique per producer | Receivers become installation-specific, and one receiver cannot serve two installations with the same filter |
 
-**Choice:** (a) — `type` is `trove.` followed by the registry name, frozen from the first release that ships webhooks.
+**Choice:** (a) — `type` is `quader.` followed by the registry name, frozen from the first release that ships webhooks.
 
-**Rationale:** Receivers match `type` literally, so it must be short, stable and the same on every installation. (c) and (d) fail stability or uniformity, and (b) depends on a domain that does not exist. The reverse-DNS recommendation is a SHOULD that exists to name who defines the event's semantics. The registry names already do that within trove, and `source` (the base URL) identifies the producing installation. The development agent would revisit this only if the project registers a domain before the first release that ships webhooks (P1); afterwards the prefix is frozen.
+**Rationale:** Receivers match `type` literally, so it must be short, stable and the same on every installation. (c) and (d) fail stability or uniformity, and (b) depends on a domain that does not exist. The reverse-DNS recommendation is a SHOULD that exists to name who defines the event's semantics. The registry names already do that within Quader, and `source` (the base URL) identifies the producing installation. The development agent would revisit this only if the project registers a domain before the first release that ships webhooks (P1); afterwards the prefix is frozen.
 
 **Applied in the spec:** R-OPS-036: the `type` bullet states that the prefix is fixed from the first release that ships webhooks.
 
@@ -4447,7 +4447,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Configuration file only | Login providers are keys of `trove.yaml`, the client secret comes from a file | Login works before any administrator or document exists. A bad document apply cannot lock everyone out. The client secret never enters the database | Changing a provider needs a rollout |
+| (a) Configuration file only | Login providers are keys of `quader.yaml`, the client secret comes from a file | Login works before any administrator or document exists. A bad document apply cannot lock everyone out. The client secret never enters the database | Changing a provider needs a rollout |
 | (b) Also a `spec.loginProviders` kind in configuration documents | Login providers held in PostgreSQL, declared like repositories | One GitOps path for all configuration | A broken apply can remove the only working login. The client secret must be stored encrypted. Two places would define the same thing |
 | (c) Connection and secret in the file, claim-to-group rules in documents | Documents declare which claim values lead into which group (`claimValues` on a group); the file keeps issuer, client and secret | The part that changes when teams change is applied without a rollout, and documents in Git are reviewed too | One provider is defined in two places. An apply that drops the administrator group's rule locks every OIDC administrator out, and documents can also be applied through the API without a Git review. Contradicts Q-AUTH-1, which keeps group rules in the file |
 
@@ -4461,22 +4461,22 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice now states its scope. Every schedule that trove's scheduler evaluates stays a five-field UTC expression (a). The backup job is a Kubernetes CronJob ([ha-and-helm.md](ha-and-helm.md) R-HA-060), whose schedule Kubernetes evaluates in the CronJob's `timeZone`; option (e) was added for it and chosen: the chart validates the backup schedule against the same rejected forms, and `backup.timeZone` defaults to `Etc/UTC`.
+Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice now states its scope. Every schedule that Quader's scheduler evaluates stays a five-field UTC expression (a). The backup job is a Kubernetes CronJob ([ha-and-helm.md](ha-and-helm.md) R-HA-060), whose schedule Kubernetes evaluates in the CronJob's `timeZone`; option (e) was added for it and chosen: the chart validates the backup schedule against the same rejected forms, and `backup.timeZone` defaults to `Etc/UTC`.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Five-field Kubernetes CronJob syntax with its macros, in UTC, other dialects' forms rejected | `30 3 * * *`, `@daily`; `?`, `7` and six-field forms fail loudly | Operators know it from Kubernetes. No trove task needs second precision. UTC has no daylight-saving gaps or repeats. A pasted expression from a dialect that counts Sunday as 1 fails instead of running on the wrong day | Maintenance windows in local time have to be converted to UTC by hand |
+| (a) Five-field Kubernetes CronJob syntax with its macros, in UTC, other dialects' forms rejected | `30 3 * * *`, `@daily`; `?`, `7` and six-field forms fail loudly | Operators know it from Kubernetes. No Quader task needs second precision. UTC has no daylight-saving gaps or repeats. A pasted expression from a dialect that counts Sunday as 1 fails instead of running on the wrong day | Maintenance windows in local time have to be converted to UTC by hand |
 | (b) Six-field syntax with seconds | The catalog's syntax (OPS-044) | Matches the reference behavior | No task needs seconds. Six fields read differently from every Kubernetes schedule in the same chart, a certain source of off-by-one-field errors |
 | (c) Five-field syntax plus an optional IANA time zone per schedule | Like the `timeZone` field of Kubernetes CronJobs | Local maintenance windows | Jobs at 02:30 local time are skipped or doubled on daylight-saving change days; more test surface for a need nobody has stated |
 | (d) Accept five and six fields, dialect chosen by field count | Kubernetes syntax for five fields, the catalog's dialect for six | Expressions from either world paste unchanged | The dialects number weekdays differently (1 is Monday in one and Sunday in the other), so a pasted expression silently runs on the wrong day; two parsers to test |
-| (e) (a) for trove's scheduler; the backup CronJob validated against (a)'s rules, with the CronJob's own `timeZone` as a chart value defaulting to `Etc/UTC` | Kubernetes evaluates the backup schedule; `helm template` fails on `?`, `7`, six fields, `@every`, `TZ=` and `CRON_TZ=` in `backup.schedule` | One syntax for every schedule an operator writes. The default keeps UTC everywhere. A local-time backup is possible where the CronJob API offers it ([time zones](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#time-zones)) | A backup scheduled in a local zone between 01:00 and 03:00 can be skipped or run twice on a daylight-saving change day |
-| (f) (a) for trove's scheduler; the backup CronJob fixed to UTC | No `backup.timeZone` value | Exactly one time base | The CronJob field exists for this and costs nothing to pass through; operators convert by hand |
+| (e) (a) for Quader's scheduler; the backup CronJob validated against (a)'s rules, with the CronJob's own `timeZone` as a chart value defaulting to `Etc/UTC` | Kubernetes evaluates the backup schedule; `helm template` fails on `?`, `7`, six fields, `@every`, `TZ=` and `CRON_TZ=` in `backup.schedule` | One syntax for every schedule an operator writes. The default keeps UTC everywhere. A local-time backup is possible where the CronJob API offers it ([time zones](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#time-zones)) | A backup scheduled in a local zone between 01:00 and 03:00 can be skipped or run twice on a daylight-saving change day |
+| (f) (a) for Quader's scheduler; the backup CronJob fixed to UTC | No `backup.timeZone` value | Exactly one time base | The CronJob field exists for this and costs nothing to pass through; operators convert by hand |
 
-**Choice:** (a) for every schedule trove's scheduler evaluates — a five-field expression with the Kubernetes CronJob fields and macros, evaluated in UTC, through the one parser that [storage.md](storage.md) R-STOR-025 specifies — and (e) for the backup CronJob: the same rejected forms, checked by the chart, and a `timeZone` that defaults to `Etc/UTC`.
+**Choice:** (a) for every schedule Quader's scheduler evaluates — a five-field expression with the Kubernetes CronJob fields and macros, evaluated in UTC, through the one parser that [storage.md](storage.md) R-STOR-025 specifies — and (e) for the backup CronJob: the same rejected forms, checked by the chart, and a `timeZone` that defaults to `Etc/UTC`.
 
-**Rationale:** One syntax across the product and its chart removes a class of configuration errors, and UTC removes daylight-saving edge cases from the scheduler's exactly-once guarantee (R-ARCH-016). Kubernetes itself rejects `TZ=` and `CRON_TZ=` inside a schedule ([CronJob docs](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#unsupported-timezone-specification)), so trove rejects them too. Kubernetes accepts `?` as `*`, but trove rejects it, together with `7` and six-field forms, so that an expression from a dialect that counts Sunday as 1 fails loudly (the same decision as Q-STOR-4 in storage.md). That is also why (d)'s convenience is rejected: it turns exactly this case into a cleanup on the wrong day. The backup job cannot be a task of trove's scheduler, because it needs credentials that the replicas never hold ([backup-and-restore.md](backup-and-restore.md) R-BAK-015); its schedule is therefore Kubernetes', and the only lever left is the chart's validation, which (e) uses. A duplicated backup run on a change day is serialized by the run row (R-BAK-010) and harmless; a skipped one is caught by `TroveBackupStale` (R-OPS-046). (f) removes a field that costs nothing and helps operators who plan backups in local time. The development agent would revisit this if operators ask for local-time windows for trove's own tasks; an optional time-zone field (c) can be added later without breaking existing schedules.
+**Rationale:** One syntax across the product and its chart removes a class of configuration errors, and UTC removes daylight-saving edge cases from the scheduler's exactly-once guarantee (R-ARCH-016). Kubernetes itself rejects `TZ=` and `CRON_TZ=` inside a schedule ([CronJob docs](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#unsupported-timezone-specification)), so Quader rejects them too. Kubernetes accepts `?` as `*`, but Quader rejects it, together with `7` and six-field forms, so that an expression from a dialect that counts Sunday as 1 fails loudly (the same decision as Q-STOR-4 in storage.md). That is also why (d)'s convenience is rejected: it turns exactly this case into a cleanup on the wrong day. The backup job cannot be a task of Quader's scheduler, because it needs credentials that the replicas never hold ([backup-and-restore.md](backup-and-restore.md) R-BAK-015); its schedule is therefore Kubernetes', and the only lever left is the chart's validation, which (e) uses. A duplicated backup run on a change day is serialized by the run row (R-BAK-010) and harmless; a skipped one is caught by `QuaderBackupStale` (R-OPS-046). (f) removes a field that costs nothing and helps operators who plan backups in local time. The development agent would revisit this if operators ask for local-time windows for Quader's own tasks; an optional time-zone field (c) can be added later without breaking existing schedules.
 
-**Applied in the spec:** Conventions: the "Schedules" bullet lists the Kubernetes macro set, names the main rejected forms, points to the normative dialect in [storage.md](storage.md) R-STOR-025, which every schedule of trove's scheduler uses, and names the backup CronJob as the schedule Kubernetes evaluates. R-OPS-019: "Backups are not a task". Cross-page: [ha-and-helm.md](ha-and-helm.md) R-HA-029 rejects those forms in `backup.schedule`.
+**Applied in the spec:** Conventions: the "Schedules" bullet lists the Kubernetes macro set, names the main rejected forms, points to the normative dialect in [storage.md](storage.md) R-STOR-025, which every schedule of Quader's scheduler uses, and names the backup CronJob as the schedule Kubernetes evaluates. R-OPS-019: "Backups are not a task". Cross-page: [ha-and-helm.md](ha-and-helm.md) R-HA-029 rejects those forms in `backup.schedule`.
 
 ### Q-OPS-8 · Locking objects managed by configuration documents
 
@@ -4537,9 +4537,9 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Minimal subset | Field substitution and pipelines into a fixed function set (`json`, `yaml`, `urlquery`, `base64`, `default`, `printf`); no `if`, no `range` | Trivially bounded; can be extended later without breaking templates | No conditional text (for example on `overwritten` or `trovetest`) and no per-file lines in human-readable messages; the validator still has to walk the parse tree to reject the rest |
+| (a) Minimal subset | Field substitution and pipelines into a fixed function set (`json`, `yaml`, `urlquery`, `base64`, `default`, `printf`); no `if`, no `range` | Trivially bounded; can be extended later without breaking templates | No conditional text (for example on `overwritten` or `quadertest`) and no per-file lines in human-readable messages; the validator still has to walk the parse tree to reject the rest |
 | (b) Restricted `text/template` | `if`, `else`, `with`, variables and non-nested `range` over event fields (at most 16 per template); the built-ins except `call`, with number-aware comparisons, plus `json`, `yaml`, `base64`, `default`. Rejected on save: `define`, `template`, `block`, nested `range`, `range` over literals, function results or variables. Data is passed as JSON with `json.Number` numbers | Covers conditional text and file lists. No new dependency (the YAML encoder is the configuration loader's). Work per render is bounded by schema-capped arrays and the loop count. Numbers print exactly | A parse-tree validator, the `json.Number` decoding and six replacement comparison functions to implement and test |
-| (c) `text/template` with a large third-party function library | String, date, crypto and collection helpers | Rich templates | Larger contract and attack surface: such libraries include functions that read the process environment, which would expose trove's own secrets; unbounded loops stay possible |
+| (c) `text/template` with a large third-party function library | String, date, crypto and collection helpers | Rich templates | Larger contract and attack surface: such libraries include functions that read the process environment, which would expose Quader's own secrets; unbounded loops stay possible |
 | (d) A different language (CEL expressions inside a JSON skeleton, or Jsonnet) | Cost-limited evaluation | Built-in evaluation limits | Unfamiliar to receiver authors; awkward for form-encoded and plain-text bodies; departs from the template model the subscription API exposes |
 
 **Choice:** (b) — templates use `text/template` with conditionals, at most 16 non-nested `range` actions over event data and a fixed function set with number-aware comparisons, and everything that could recurse or count without bound is rejected when the template is stored.
@@ -4593,11 +4593,11 @@ connections each role holds.
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Constant `role` label on every series, set by the process | The process knows its role and adds it everywhere | Works with any scraper | The pool is a chart concept the process does not know; Prometheus' guidance for exporters says not to apply the same label to every metric ([writing exporters](https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels)); a scrape configuration that also adds `role` collides |
-| (b) Target labels from the scrape, plus the role in the info metric | The ServiceMonitor copies `role` and `pool` from the pod's labels by relabeling; the process reports its role only in `trove_build_info{role}` | Follows the guidance, which allows machine roles as target labels; the pool comes from where it is defined; every series of a pod carries both | A scraper outside the chart gets the labels only if it relabels the same way; otherwise it joins `trove_build_info` |
-| (c) Info metric only | Queries join `* on (instance) group_left (role) trove_build_info` | No scrape configuration | Every dashboard and alert needs the join, and a forgotten join silently mixes roles |
-| (d) Metric names per role | `trove_web_…`, `trove_worker_…` | No labels at all | Twice the catalog; a further split of a role (R-HA-062) renames series |
+| (b) Target labels from the scrape, plus the role in the info metric | The ServiceMonitor copies `role` and `pool` from the pod's labels by relabeling; the process reports its role only in `quader_build_info{role}` | Follows the guidance, which allows machine roles as target labels; the pool comes from where it is defined; every series of a pod carries both | A scraper outside the chart gets the labels only if it relabels the same way; otherwise it joins `quader_build_info` |
+| (c) Info metric only | Queries join `* on (instance) group_left (role) quader_build_info` | No scrape configuration | Every dashboard and alert needs the join, and a forgotten join silently mixes roles |
+| (d) Metric names per role | `quader_web_…`, `quader_worker_…` | No labels at all | Twice the catalog; a further split of a role (R-HA-062) renames series |
 
-**Choice:** (b) — `role` and `pool` are target labels that the chart's ServiceMonitor attaches from the pod's labels, and the process reports its role in `trove_build_info{role}` for scrapers that do not relabel.
+**Choice:** (b) — `role` and `pool` are target labels that the chart's ServiceMonitor attaches from the pod's labels, and the process reports its role in `quader_build_info{role}` for scrapers that do not relabel.
 
 **Rationale:** The role and the pool describe where a process runs, which is what target labels
 are for, and the pool exists only in the chart's values. (a) would need the process to learn a
@@ -4610,8 +4610,8 @@ the name `role` is plain Prometheus relabeling. The development agent would revi
 supported scrape path can neither relabel nor join, which would justify (a) behind a switch.
 
 **Applied in the spec:** R-OPS-006: the "Role and pool of a series" bullet and an acceptance
-criterion. R-OPS-007: `role` only on `trove_build_info`; target labels are outside the label list.
-R-OPS-008: `trove_build_info{role}`. Cross-page: [ha-and-helm.md](ha-and-helm.md) R-HA-045 (the
+criterion. R-OPS-007: `role` only on `quader_build_info`; target labels are outside the label list.
+R-OPS-008: `quader_build_info{role}`. Cross-page: [ha-and-helm.md](ha-and-helm.md) R-HA-045 (the
 ServiceMonitor's relabelings for `role` and `pool`).
 
 ### Q-OPS-14 · Audit deduplication across replicas
@@ -4647,21 +4647,21 @@ and the deduplication windows as per-replica state, and R-ARCH-024 shutdown step
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-A Sentinel failover is the designed way Valkey stays available. trove runs degraded for about
+A Sentinel failover is the designed way Valkey stays available. Quader runs degraded for about
 `down-after-milliseconds` and recovers by itself (R-HA-057). The question is which part of it
 deserves an alert.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) No failover alert | Failovers on dashboards only; outages are covered by `TroveValkeyUnavailable` | No noise | A Valkey that fails over every few minutes, through a flapping network or a `down-after-milliseconds` that is too short, stays unnoticed while every failover costs collapse and rate-limit precision |
-| (b) An alert on every failover | `increase(trove_valkey_primary_changes_total[5m]) > 0` | Every failover is seen | Fires on every planned failover and every drain of the primary's node (R-HA-059 variant B), which teaches people to ignore it |
-| (c) Alerts on repetition and on disagreement | `TroveValkeyFailoverFlapping`: more than two primary changes seen by any replica within an hour; `TroveValkeyPrimaryDisagreement`: replicas name different primaries for 5 minutes | Silent during maintenance; catches the two failure modes a single failover hides: flapping, and a replica that stayed bound to a demoted primary ([architecture.md](architecture.md) R-ARCH-031) | Needs the registry's primary view and one gauge read from PostgreSQL |
-| (d) Alert on Sentinel events | trove subscribes to `+sdown`, `+odown` and `+switch-master` and alerts on them | Earliest signal | Sentinel's own state belongs to the exporter run with Valkey; trove would alert on the infrastructure instead of on what it experiences |
+| (a) No failover alert | Failovers on dashboards only; outages are covered by `QuaderValkeyUnavailable` | No noise | A Valkey that fails over every few minutes, through a flapping network or a `down-after-milliseconds` that is too short, stays unnoticed while every failover costs collapse and rate-limit precision |
+| (b) An alert on every failover | `increase(quader_valkey_primary_changes_total[5m]) > 0` | Every failover is seen | Fires on every planned failover and every drain of the primary's node (R-HA-059 variant B), which teaches people to ignore it |
+| (c) Alerts on repetition and on disagreement | `QuaderValkeyFailoverFlapping`: more than two primary changes seen by any replica within an hour; `QuaderValkeyPrimaryDisagreement`: replicas name different primaries for 5 minutes | Silent during maintenance; catches the two failure modes a single failover hides: flapping, and a replica that stayed bound to a demoted primary ([architecture.md](architecture.md) R-ARCH-031) | Needs the registry's primary view and one gauge read from PostgreSQL |
+| (d) Alert on Sentinel events | Quader subscribes to `+sdown`, `+odown` and `+switch-master` and alerts on them | Earliest signal | Sentinel's own state belongs to the exporter run with Valkey; Quader would alert on the infrastructure instead of on what it experiences |
 
 **Choice:** (c) — no alert for a single failover; alerts for repeated failovers and for replicas that disagree about the primary.
 
 **Rationale:** A single failover is normal operation and stays visible in the counter and in one
-log record per replica (R-OPS-045). What harms trove is a failover that keeps happening, or one that
+log record per replica (R-OPS-045). What harms Quader is a failover that keeps happening, or one that
 some replicas did not follow: Sentinel does not guarantee that acknowledged writes survive a
 failover ([Sentinel](https://valkey.io/topics/sentinel/)), and a replica that writes to the old
 primary loses its flight locks and counters for as long as it stays there. Both are invisible in
@@ -4671,7 +4671,7 @@ disagreement alert fires during normal failovers in the runs of Test and Release
 reconciliation of R-ARCH-031 takes longer than its bound.
 
 **Applied in the spec:** R-OPS-003: the replica's view of Valkey in the registry, including its primary.
-R-OPS-008: `trove_valkey_primary_views`. R-OPS-045: the transition and failover log records.
+R-OPS-008: `quader_valkey_primary_views`. R-OPS-045: the transition and failover log records.
 R-OPS-046: the two alert rows. Cross-page: [ha-and-helm.md](ha-and-helm.md) R-HA-045 (the two
 alerts).
 
@@ -4685,12 +4685,12 @@ R-ARCH-018 already carries flush requests, but no operation produced them.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) No operation; document that deleting trove's keys is safe | Operators flush Valkey with an administrative credential; in-process caches end by `SafetyTTL` | No new endpoint | Needs a Valkey administrator during an incident; does not reach in-process caches before their TTL |
+| (a) No operation; document that deleting Quader's keys is safe | Operators flush Valkey with an administrative credential; in-process caches end by `SafetyTTL` | No new endpoint | Needs a Valkey administrator during an incident; does not reach in-process caches before their TTL |
 | (b) An endpoint that flushes in-process caches through the change area and invalidates negative entries in PostgreSQL | `POST /api/v1/system/caches/flush`; Valkey keys stay and are ignored by reader validation | Works while Valkey is unavailable; needs no extra Valkey command; a resurrected key from a stale primary is ignored too (R-HA-057 rule 2) | Flushed negative entries take memory until they expire |
-| (c) (b) plus deleting the keyspace's keys | `SCAN` and `DEL` over `trove:<ks>:*` | Memory freed at once | Widens the ACL of [architecture.md](architecture.md) R-ARCH-031 by `SCAN` and `DEL`, which a stolen credential could then use; a key deleted on a primary that loses the write comes back anyway, so the reader validation is needed regardless |
+| (c) (b) plus deleting the keyspace's keys | `SCAN` and `DEL` over `quader:<ks>:*` | Memory freed at once | Widens the ACL of [architecture.md](architecture.md) R-ARCH-031 by `SCAN` and `DEL`, which a stolen credential could then use; a key deleted on a primary that loses the write comes back anyway, so the reader validation is needed regardless |
 | (d) Rotate the keyspace at runtime | A new `keyspace_id`, as a restore writes | Every key orphaned in one step | Contradicts R-ARCH-030, under which a replica reads the keyspace once at start-up; replicas would disagree on the keyspace during the switch, which splits flight locks and counters |
 
-**Choice:** (b) as P1 (R-OPS-047), and (a)'s statement as an MVP fact of R-OPS-045: deleting trove's keys is always safe.
+**Choice:** (b) as P1 (R-OPS-047), and (a)'s statement as an MVP fact of R-OPS-045: deleting Quader's keys is always safe.
 
 **Rationale:** The flush must work in exactly the situations where Valkey is suspect, so it cannot
 depend on deleting Valkey keys; reader validation against an invalidation time in PostgreSQL makes
@@ -4701,9 +4701,9 @@ repository, Valkey content loss is harmless by design, and in-process caches hav
 `SafetyTTL`. The development agent would revisit the priority if incident reviews of the prototype
 show a need for an installation-wide flush before P1.
 
-**Applied in the spec:** New R-OPS-047. R-OPS-045: "Deleting trove's keys is always safe".
+**Applied in the spec:** New R-OPS-047. R-OPS-045: "Deleting Quader's keys is always safe".
 R-OPS-016: `system.caches_flushed`. R-OPS-024: allowed in read-only mode. R-OPS-008: the `admin`
-reason of `trove_cache_flushes_total`.
+reason of `quader_cache_flushes_total`.
 
 ### Q-OPS-17 · Flight locks in the lock diagnostics
 
@@ -4716,16 +4716,16 @@ category. Architecture left open whether R-OPS-026 shows flight locks from Valke
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Not at all | The view shows PostgreSQL advisory locks only; collapsed fetches are observed through metrics and the upstream log | No new access path; the view keeps one source and one meaning: exclusions whose failure would corrupt data | No list of fetches in progress |
-| (b) `SCAN` the keyspace | List `trove:<ks>:lock:fetch:v1:*` with their TTLs | A live list | Needs `SCAN` in the ACL; keys are hashes ([architecture.md](architecture.md) R-ARCH-030), so the list cannot name a package anyway; O(keyspace) per call |
+| (b) `SCAN` the keyspace | List `quader:<ks>:lock:fetch:v1:*` with their TTLs | A live list | Needs `SCAN` in the ACL; keys are hashes ([architecture.md](architecture.md) R-ARCH-030), so the list cannot name a package anyway; O(keyspace) per call |
 | (c) Each replica publishes its held flights in its registry row | A bounded list per heartbeat | No Valkey access | Writes per heartbeat for a diagnostic that is stale by the time it is read; the flights are seconds long |
 | (d) Flights in the support bundle | Each replica's part lists its current and recent flights | Available when someone investigates | Same staleness; already covered by the upstream log in the ring buffer |
 
-**Choice:** (a) — the lock view shows PostgreSQL advisory locks only; collapsed fetches are diagnosed through `trove_remote_collapsed_requests_total`, the `trove_flight_lock_*` families, the leader's upstream record and the `collapsed` parameter of `Cache-Status`.
+**Choice:** (a) — the lock view shows PostgreSQL advisory locks only; collapsed fetches are diagnosed through `quader_remote_collapsed_requests_total`, the `quader_flight_lock_*` families, the leader's upstream record and the `collapsed` parameter of `Cache-Status`.
 
 **Rationale:** The view's question was "what is everyone waiting for". For fetches, the upstream
 log answers it better: the leader's record carries its trace and its `flight_role` (R-OPS-011),
 and the waiters' responses carry the `collapsed` parameter of `Cache-Status` and count in
-`trove_remote_collapsed_requests_total` (R-REPO-047). (b) would widen the ACL to
+`quader_remote_collapsed_requests_total` (R-REPO-047). (b) would widen the ACL to
 list hashes that name nothing. (c) and (d) record state that lives for seconds. Keeping the view to
 PostgreSQL also keeps its meaning sharp: what it shows are the exclusions INV-3 keeps in
 PostgreSQL. The development agent would revisit this if operators need to see a stuck flight that
@@ -4746,14 +4746,14 @@ Prometheus pair scrapes every replica twice.
 |---|---|---|---|
 | (a) Every replica queries on every scrape | The earlier, unstated behaviour | Values are fresh at scrape time | Database load grows with replicas × scrape rate × Prometheus servers; a scrape waits for PostgreSQL and fails during exactly the outage it should report |
 | (b) Every `web` and `worker` replica evaluates in the background once per interval | `metrics.db_gauge_interval` (30 s); a scrape returns the last values; an age gauge tells their age | Load depends on replicas and interval only; scrapes never touch PostgreSQL; the same 30 s rule as [backup-and-restore.md](backup-and-restore.md) R-BAK-014 | Values up to one interval old; still n queries per interval |
-| (c) Only `worker` replicas export them | Fewer readers | Load independent of the `web` count | The series vanish when no `worker` runs, exactly when `TroveJobsStuck` and `TroveBackupStale` must fire |
+| (c) Only `worker` replicas export them | Fewer readers | Load independent of the `web` count | The series vanish when no `worker` runs, exactly when `QuaderJobsStuck` and `QuaderBackupStale` must fire |
 | (d) One replica under a lease exports them | A `metrics` lease | One reader | A lease for metrics; series jump between pods on every hand-over; a new singleton to drain |
 
 **Choice:** (b) — every `web` and `worker` replica evaluates the gauges read from PostgreSQL in the background once per `metrics.db_gauge_interval`, and scrapes return the last values.
 
 **Rationale:** The alerts that matter most read these gauges, so they must survive the loss of a
 whole role, which rules out (c) and makes (d) a single point of reporting. (a) ties database load to
-how Prometheus is deployed, which trove does not control. Under (b), 100 replicas at 30 s run each
+how Prometheus is deployed, which Quader does not control. Under (b), 100 replicas at 30 s run each
 gauge query about three times per second, a few dozen small indexed queries per second for the
 whole set, independent of scrapers. The values are at most one interval old,
 which no alert threshold notices. The development agent would revisit this if the gauge queries show
@@ -4762,7 +4762,7 @@ gauges first.
 
 **Applied in the spec:** R-OPS-007: the "Values read from PostgreSQL" bullet, the "Absent, not zero"
 bullet, `metrics.db_gauge_interval` and an acceptance criterion with two Prometheus servers.
-R-OPS-008: `trove_metrics_db_gauges_last_success_timestamp_seconds`. R-OPS-006: scrapes touch
+R-OPS-008: `quader_metrics_db_gauges_last_success_timestamp_seconds`. R-OPS-006: scrapes touch
 neither PostgreSQL nor Valkey. R-OPS-028: the example file.
 
 ### Q-OPS-19 · Per-subscription delivery limit across `worker` replicas
@@ -4786,7 +4786,7 @@ deliveries spread over n `worker` replicas, the limit needs a mechanism that hol
 **Rationale:** The limit exists to protect a receiver, so it must hold exactly whatever the
 `worker` replica count, and it must not depend on state whose loss the design accepts. (a) is what
 the page said before and is not a limit under concurrency. (d) loses the count in exactly the
-failover the owner requires trove to survive. (c) is exact but duplicates the job lease. (e) is
+failover the owner requires Quader to survive. (c) is exact but duplicates the job lease. (e) is
 the approximation R-ARCH-034 tolerates only while Valkey is down, made permanent. (b) reuses what
 the job framework already has, a short transaction on the main pool, and the subscription row is
 the natural point of serialisation; `SKIP LOCKED` keeps a busy subscription from making other
@@ -4856,7 +4856,7 @@ delivery-record transaction is shorter than the window, which R-ARCH-019 already
 transaction on the main pool, and an acceptance criterion holds one open for 2 s. (a) cannot
 promise it across a failover. (c) is exact, but turns the delivery path into a single serial
 point, which the owner's load constraint rules out. (d) is exact in steady state and fragile in
-exactly the platform operations (restores, logical upgrades) the owner requires trove to survive.
+exactly the platform operations (restores, logical upgrades) the owner requires Quader to survive.
 The price of (b) is bounded duplicates after a reconnect, identifiable by record and version.
 R-API-051's acceptance criterion expects no duplicate per record and version after a reconnect;
 under (b) that holds once the client drops repeated versions, as the event data allows
@@ -4906,8 +4906,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A missing file is always an error | Start-up stops unless `/etc/trove/trove.yaml` exists | One rule | A replica that runs on defaults and the environment (the normal development case) cannot start |
-| (b) The default file may be absent; a file named by `--config` or `TROVE_CONFIG_FILE` must exist (chosen) | The default path is looked up and skipped when missing. An explicit path that is missing fails the command. | Defaults and environment are enough to run; a typo in an explicit path is never silent | Two rules for one file setting |
+| (a) A missing file is always an error | Start-up stops unless `/etc/quader/quader.yaml` exists | One rule | A replica that runs on defaults and the environment (the normal development case) cannot start |
+| (b) The default file may be absent; a file named by `--config` or `QUADER_CONFIG_FILE` must exist (chosen) | The default path is looked up and skipped when missing. An explicit path that is missing fails the command. | Defaults and environment are enough to run; a typo in an explicit path is never silent | Two rules for one file setting |
 | (c) Environment only, no file | The file is not read at all | Smallest surface | The chart's ConfigMap cannot be used |
 
 **Choice:** (b).
@@ -4929,8 +4929,8 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Required keys per command (chosen) | `config.Command` names the keys each command requires. `migrate` needs the database only. `admin config validate` applies the `serve` checks except that the role may be unset. | Each command fails for what it uses | A rule per command to keep in step |
 | (c) No command-dependent checks | Each command loads what it is given | Simple | A bad configuration reaches the first use |
 
-Reserved names (chosen with (b)): environment variables with the prefixes `TROVE_CAC_` and `TROVE_TEST_`,
-and `TROVE_CONFIG_FILE`, `TROVE_POD_NAME`, `TROVE_POD_NAMESPACE`, `TROVE_NODE_NAME` and `TROVE_POOL_NAME`,
+Reserved names (chosen with (b)): environment variables with the prefixes `QUADER_CAC_` and `QUADER_TEST_`,
+and `QUADER_CONFIG_FILE`, `QUADER_POD_NAME`, `QUADER_POD_NAMESPACE`, `QUADER_NODE_NAME` and `QUADER_POOL_NAME`,
 are not configuration keys, so the strict environment validation ignores them. Source labels that
 `admin config validate` prints for each value: `default`, `file`, `env`, `flag:--role` (or the flag
 name), and `file:<secret path>` for a value read from a secret file.
@@ -4952,7 +4952,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The SDK's batch span processor | Spans are batched and dropped without a count | Standard component | A dropped span is invisible; the drop counter of R-OPS-018 cannot be kept |
-| (b) An own bounded queue in front of the SDK's OTLP exporter (chosen) | `queueProcessor` holds up to a fixed number of ended spans. A full queue drops the span and increments `trove_tracing_spans_dropped_total`. Request handling never waits. | The drop is counted, and the queue size is fixed | Own code that the SDK's processor would otherwise provide |
+| (b) An own bounded queue in front of the SDK's OTLP exporter (chosen) | `queueProcessor` holds up to a fixed number of ended spans. A full queue drops the span and increments `quader_tracing_spans_dropped_total`. Request handling never waits. | The drop is counted, and the queue size is fixed | Own code that the SDK's processor would otherwise provide |
 | (c) Synchronous export per span | Each request waits for its spans | No queue | Request latency depends on the collector |
 
 Transport (chosen with (b)): the OTLP exporter of the OpenTelemetry SDK sends the spans. It does not go
@@ -4967,7 +4967,7 @@ wait for an exporter. The development agent would revisit the own queue if the S
 drop counter, which would let the code go back to the standard component.
 
 **Applied in the spec:** R-OPS-018: the export paragraph names the bounded queue of the process
-(Q-OPS-25); the metrics table has `trove_tracing_spans_dropped_total` as before.
+(Q-OPS-25); the metrics table has `quader_tracing_spans_dropped_total` as before.
 
 ### Q-OPS-26 · Metric label names of the outbound and the object-store metrics
 
@@ -4975,9 +4975,9 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `purpose` on the outbound families | `trove_outbound_*{purpose}` | Names what the value is | Differs from the object-store family's label; a rename of a family that is not released yet |
-| (b) `kind` for the purpose on the outbound families (chosen) | `trove_outbound_requests_total{kind,code}`, `trove_outbound_request_duration_seconds{kind}`, `trove_outbound_egress_denied_total{kind}` | Matches the code; the families are in R-OPS-008 | The name `kind` is generic |
-| (c) `operation` for the object-store families, `op` as in R-STOR-033 | `trove_storage_s3_requests_total{op,...}` | Matches the text of R-STOR-033 | `op` is not the label R-OPS-007 allows; the code uses `operation` |
+| (a) `purpose` on the outbound families | `quader_outbound_*{purpose}` | Names what the value is | Differs from the object-store family's label; a rename of a family that is not released yet |
+| (b) `kind` for the purpose on the outbound families (chosen) | `quader_outbound_requests_total{kind,code}`, `quader_outbound_request_duration_seconds{kind}`, `quader_outbound_egress_denied_total{kind}` | Matches the code; the families are in R-OPS-008 | The name `kind` is generic |
+| (c) `operation` for the object-store families, `op` as in R-STOR-033 | `quader_storage_s3_requests_total{op,...}` | Matches the text of R-STOR-033 | `op` is not the label R-OPS-007 allows; the code uses `operation` |
 
 **Choice:** (b) for the outbound families, and `operation` (not `op`) for the object-store families.
 
@@ -4985,7 +4985,7 @@ Status: **Decided by the development agent** — selected from the options below
 outbound families name their purpose `kind` in code and in the catalog. The development agent would
 revisit the outbound name if an operator dashboard needs one label name across both families.
 
-**Applied in the spec:** R-OPS-008 lists the three `trove_outbound_*` families; R-STOR-033 names the label
+**Applied in the spec:** R-OPS-008 lists the three `quader_outbound_*` families; R-STOR-033 names the label
 `operation` (see [storage.md](storage.md)).
 
 ### Q-OPS-27 · Secret values in configuration dumps and logs
@@ -5013,19 +5013,19 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The host name only | `os.Hostname()` | Simple | In Kubernetes every pod of a Deployment may share one name on a node, and two processes on one machine collide |
-| (b) `TROVE_POD_NAME`, then `POD_NAME`, then `HOSTNAME` inside Kubernetes (`KUBERNETES_SERVICE_HOST` set), otherwise `<hostname>-<pid>` (chosen) | The name is the pod name where one exists, and unique otherwise | Names unique per process and readable in `/api/v1/system/replicas` | Two sources to document |
+| (b) `QUADER_POD_NAME`, then `POD_NAME`, then `HOSTNAME` inside Kubernetes (`KUBERNETES_SERVICE_HOST` set), otherwise `<hostname>-<pid>` (chosen) | The name is the pod name where one exists, and unique otherwise | Names unique per process and readable in `/api/v1/system/replicas` | Two sources to document |
 | (c) A random name | A UUID | Always unique | Unreadable in the replica registry |
 
 **Choice:** (b).
 
 **Rationale:** The replica registry shows the instance name to operators, so it must name the pod. Outside
-Kubernetes, the process ID keeps two processes apart. Open item in the code, not in this page: `trove migrate`
-has its own instance-name function (`cmd/trove/migrate.go`) that reads `TROVE_POD_NAME` and then falls back to
+Kubernetes, the process ID keeps two processes apart. Open item in the code, not in this page: `quader migrate`
+has its own instance-name function (`cmd/quader/migrate.go`) that reads `QUADER_POD_NAME` and then falls back to
 `<hostname>-<pid>`; the order of (b) is not applied there yet. The development agent would revisit this if the
 instance name must be stable across restarts of one pod.
 
 **Applied in the spec:** R-OPS-003 states the order (sentence on the pod name); the column comment in its table
-still says "pod name (`TROVE_POD_NAME`), else host name".
+still says "pod name (`QUADER_POD_NAME`), else host name".
 
 ### Q-OPS-29 · A replica started on a database that is not yet migrated
 
@@ -5216,7 +5216,7 @@ rows for the login, logout, token-rejection and session events.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-R-OPS-015 has `trove migrate` write `audit.retention_days` into `audit_policy` and call
+R-OPS-015 has `quader migrate` write `audit.retention_days` into `audit_policy` and call
 `audit_maintain_partitions()`. The migration runner takes the database section of the configuration
 only (`postgres.Migrate`), not the `audit` section, and an insert into `audit_event` fails without a
 partition for its month.
@@ -5244,19 +5244,19 @@ gives it from the first migration. A runtime role that is not the owner (two-rol
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-R-OPS-015 has `trove migrate` write `audit.retention_days` into `audit_policy` on every run, every
+R-OPS-015 has `quader migrate` write `audit.retention_days` into `audit_policy` on every run, every
 replica call `audit_maintain_partitions()` at start-up, and the `audit-retention` task call it daily.
 Q-OPS-38 left the runner's write open because the runner had no `audit` configuration. In two-role
 mode the runtime role holds only SELECT on `audit_policy`, so only the owner can write it.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The migrate Job writes it (chosen) | `MigrateOptions.AuditRetentionDays` carries `audit.retention_days`; after the steps (or when none was pending) the runner updates the row when the value differs and calls the function, under the migration lock, as the schema owner | The only party that holds the privilege writes the row, so a compromised replica cannot shorten retention; the chart already runs the Job on every upgrade | A changed value waits for the next `trove migrate` |
+| (a) The migrate Job writes it (chosen) | `MigrateOptions.AuditRetentionDays` carries `audit.retention_days`; after the steps (or when none was pending) the runner updates the row when the value differs and calls the function, under the migration lock, as the schema owner | The only party that holds the privilege writes the row, so a compromised replica cannot shorten retention; the chart already runs the Job on every upgrade | A changed value waits for the next `quader migrate` |
 | (b) Every replica writes it at start-up | The runtime login updates the row | A changed value applies at the next rollout without a Job | Impossible in two-role mode (`42501`), and in single-role mode it makes retention a runtime decision |
 | (c) A worker task writes it | The `audit-retention` task reconciles the row | No dependency on the Job | Same privilege problem as (b): a task that runs as the runtime role cannot write |
 
 **Choice:** (a) for the write, plus a reconciliation at start-up that never needs a privilege to
-succeed: `Store.SyncRetention` reads the stored value, warns naming `trove migrate` when it differs
+succeed: `Store.SyncRetention` reads the stored value, warns naming `quader migrate` when it differs
 from the configuration, and writes it only when the login may (single-role mode, H-39). The
 `audit-retention` task only calls the function. The migrate Job and a replica both warn for a value
 below 90. `audit.retention_days: 0` (keep for ever) is a valid value, so the configuration's lower
@@ -5572,7 +5572,7 @@ Context: R-REPO-045 says the inserting transaction calls `cluster.Notify("cache_
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-REPO-032 lets a holder of `repositories:read-config` or of `manage` on the repository list the cache entries. The declaration `x-trove-permission` of R-API-008 has one form per operation (a capability, a role or an action) and no "either".
+Context: R-REPO-032 lets a holder of `repositories:read-config` or of `manage` on the repository list the cache entries. The declaration `x-quader-permission` of R-API-008 has one form per operation (a capability, a role or an action) and no "either".
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -5680,7 +5680,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `TroveMirrorFailing` (three failed attempts in 6 h and no complete pass) and `TroveMirrorStale` (no complete pass for three intervals plus an hour) (chosen) | From the counters and two gauges | Catches a broken upstream and a mirror that never finishes (no process claims its queue, endless rate limits) without firing on one bad night | A bound that holds a mirror does not alert; the status shows it |
+| (a) `QuaderMirrorFailing` (three failed attempts in 6 h and no complete pass) and `QuaderMirrorStale` (no complete pass for three intervals plus an hour) (chosen) | From the counters and two gauges | Catches a broken upstream and a mirror that never finishes (no process claims its queue, endless rate limits) without firing on one bad night | A bound that holds a mirror does not alert; the status shows it |
 | (b) Also an alert on every rate-limit wait | Loud | Visible | Throttling is the designed path; it would fire on every busy upstream |
 | (c) No alerts | The status only | Quiet | A dead mirror goes unnoticed until a build needs it with the upstream down |
 
@@ -5713,7 +5713,7 @@ development agent would revisit this if a dashboard the chart ships depends on `
 renders no dashboard).
 
 **Applied in the spec:** R-OPS-003 (the `roles` column, the example, the criteria, the counts of the fetch shares), R-OPS-004
-(`replicas.roles`), R-OPS-006 (`trove_build_info{role}`); [ha-and-helm.md](ha-and-helm.md) R-HA-045;
+(`replicas.roles`), R-OPS-006 (`quader_build_info{role}`); [ha-and-helm.md](ha-and-helm.md) R-HA-045;
 [api-and-ui.md](api-and-ui.md) R-UI-038.
 
 ### Q-OPS-165 · The fetch share's count is a component of its own, over the registry
@@ -5765,7 +5765,7 @@ never opens secrets is added.
 **Applied in the spec:** R-OPS-003 (the roles), R-API-049's rule through `opensSecrets`. Code: `cluster.ValidRole`,
 `internal/api/v1/encryption_api.go`. Tests: `TestR_OPS_003_RegistryRefusesAnUnknownRole`, `TestR_OPS_004_RingsOfEveryRole`.
 
-### Q-OPS-167 · TroveMirrorFailing reads "no complete pass" with `unless`, not with `== 0`
+### Q-OPS-167 · QuaderMirrorFailing reads "no complete pass" with `unless`, not with `== 0`
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -5781,13 +5781,13 @@ The rule of R-OPS-046 is `increase(failed) >= 3 and increase(complete|partial) =
 
 **Rationale:** the alert is for a mirror that does not work. The development agent would revisit it if the families change.
 
-**Applied in the spec:** R-OPS-046 (the row). Chart: [_rules.tpl](../../deploy/helm/trove/templates/_rules.tpl), promtool tests in [rules_test.yaml](../../deploy/helm/trove/tests/rules_test.yaml).
+**Applied in the spec:** R-OPS-046 (the row). Chart: [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl), promtool tests in [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml).
 
 ### Q-OPS-168 · The series of a repository exist at 0 from the first pass attempt
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-`increase()` of a counter that first appears with the value 1 is 0 for that first sample, so the first failure of a new mirror would be invisible to `TroveMirrorFailing`.
+`increase()` of a counter that first appears with the value 1 is 0 for that first sample, so the first failure of a new mirror would be invisible to `QuaderMirrorFailing`.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -5795,7 +5795,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Create them when the mirror mode is turned on | Earlier | Series before the first attempt | The process that sees the change is not the process that runs the pass |
 | (c) Create on first use | Nothing to do | Fewest series | The first failure is lost for `increase()` |
 
-**Choice:** (a). `trove_mirror_last_complete_pass_timestamp_seconds` counts the end of the last pass that ended `complete`, `partial` or `bound_reached`, so that a mirror held by its bound is not stale (Q-OPS-160).
+**Choice:** (a). `quader_mirror_last_complete_pass_timestamp_seconds` counts the end of the last pass that ended `complete`, `partial` or `bound_reached`, so that a mirror held by its bound is not stale (Q-OPS-160).
 
 **Rationale:** cardinality stays one series per mirrored repository and label value (Q-OPS-158). The development agent would revisit it if the families grow.
 
@@ -5841,19 +5841,19 @@ Q-OPS-159 fixes the four asynchronous types; what their details and their actor 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Two reviews showed that the alerts of Q-OPS-160 do not fire where they should: `TroveMirrorFailing` cleared after about seven hours while a mirror kept failing, because the back-off spaces the attempts six hours apart and the window was six hours; `TroveMirrorStale` read a series that does not exist for a mirror that never completed a pass, for a queue that nobody claims (only the processes that claim it exported the gauges), for a deferral that lasts hours, and after a stopped or offline end overwrote the summary.
+Two reviews showed that the alerts of Q-OPS-160 do not fire where they should: `QuaderMirrorFailing` cleared after about seven hours while a mirror kept failing, because the back-off spaces the attempts six hours apart and the window was six hours; `QuaderMirrorStale` read a series that does not exist for a mirror that never completed a pass, for a queue that nobody claims (only the processes that claim it exported the gauges), for a deferral that lasts hours, and after a stopped or offline end overwrote the summary.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `trove_mirror_consecutive_failures` and `trove_mirror_next_pass_timestamp_seconds` from `mirror_state` through the database gauge source, exported by every role; Failing is `max(consecutive failures) >= 3`, the status's rule; Stale is `time() - next pass > 3600` for 30 minutes; no series for a paused or disabled mirror (chosen) | The same figure in the status and the alert; present from the first dispatch; independent of who claims the queue; a pass worked on moves its time forward | Two more families; a deferral longer than an hour is not stale because its next pass lies ahead | The time of a pass in progress is "its last write", a definition to learn |
+| (a) `quader_mirror_consecutive_failures` and `quader_mirror_next_pass_timestamp_seconds` from `mirror_state` through the database gauge source, exported by every role; Failing is `max(consecutive failures) >= 3`, the status's rule; Stale is `time() - next pass > 3600` for 30 minutes; no series for a paused or disabled mirror (chosen) | The same figure in the status and the alert; present from the first dispatch; independent of who claims the queue; a pass worked on moves its time forward | Two more families; a deferral longer than an hour is not stale because its next pass lies ahead | The time of a pass in progress is "its last write", a definition to learn |
 | (b) A longer window and a gauge for the last complete pass only | Smaller change | Few new families | Never fires for a mirror that never completed, nor for an unclaimed queue |
 | (c) Alerts from the job table | Sees a dead queue | No gauge | The job table is not in the metric families of R-OPS-008 |
 
-**Choice:** (a). `trove_mirror_last_complete_pass_timestamp_seconds` stays, from `last_complete_pass_at` (Q-OPS-172), and `trove_mirror_interval_seconds` stays; neither is read by an alert any more.
+**Choice:** (a). `quader_mirror_last_complete_pass_timestamp_seconds` stays, from `last_complete_pass_at` (Q-OPS-172), and `quader_mirror_interval_seconds` stays; neither is read by an alert any more.
 
 **Rationale:** an alert must read what the status reads. The development agent would revisit the hour if mirrors with a very short interval are in use.
 
-**Applied in the spec:** R-REPO-057 (the table), R-OPS-008, R-OPS-046 (the two rows), Q-OPS-160, Q-OPS-167 (superseded). Chart: [_rules.tpl](../../deploy/helm/trove/templates/_rules.tpl), [rules_test.yaml](../../deploy/helm/trove/tests/rules_test.yaml). Code: `metrics.go` (`GaugeSource`), `queries/mirror.sql` (`MirrorGauges`). Test: `TestR_REPO_057_TheGaugesCarryFailuresAndTheNextPassOfAMirrorInService`, integration `TestR_REPO_057_TheGaugeRowsCarryWhatTheAlertsRead`.
+**Applied in the spec:** R-REPO-057 (the table), R-OPS-008, R-OPS-046 (the two rows), Q-OPS-160, Q-OPS-167 (superseded). Chart: [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl), [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml). Code: `metrics.go` (`GaugeSource`), `queries/mirror.sql` (`MirrorGauges`). Test: `TestR_REPO_057_TheGaugesCarryFailuresAndTheNextPassOfAMirrorInService`, integration `TestR_REPO_057_TheGaugeRowsCarryWhatTheAlertsRead`.
 
 ### Q-OPS-172 · The last complete pass is a column of its own, set by the outcomes complete, partial and bound_reached
 
@@ -5921,7 +5921,7 @@ R-OPS-004 had the replicas and the configuration, but no latency, no load, no ch
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Each replica measures itself over its heartbeat period and writes a small snapshot into the registry with its heartbeat; the API publishes it with the replica, the UI sums per role (chosen) | Current state everywhere | Works in every installation with what it already has; no replica asks another (R-OPS-003); one value per heartbeat interval; one added column | The current state only, no history |
-| (b) trove queries a configured Prometheus | Time series | Graphs and trends | Only where a Prometheus runs and is reachable; new configuration (address, credential, TLS) and a dependency |
+| (b) Quader queries a configured Prometheus | Time series | Graphs and trends | Only where a Prometheus runs and is reachable; new configuration (address, credential, TLS) and a dependency |
 | (c) Both | Snapshot, plus graphs where Prometheus is configured | Most complete | Twice the work |
 
 **Choice:** (a). The snapshot (`replica.runtime`, an added jsonb column) holds the requests finished on the client
@@ -5961,10 +5961,10 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Always export, 0 for never | The gauges start at 0 | A value always exists | `time() - 0` fires `TroveBackupStale` the moment a new installation starts, before its first backup is due; `0` is a timestamp in 1970 |
-| (b) No series until the first success or failure (chosen) | `trove_backup_last_success_timestamp_seconds` and `trove_backup_last_failure_timestamp_seconds` are gauge vectors without a label; a replica sets them when a run of that outcome exists | The `absent` clause of `TroveBackupStale` (R-BAK-014) means what it says; the rule for a first backup is the expected interval, not zero | A rule must handle the absent series: `TroveBackupFailed` reads `max(last_failure) > (max(last_success) or vector(0))` |
+| (a) Always export, 0 for never | The gauges start at 0 | A value always exists | `time() - 0` fires `QuaderBackupStale` the moment a new installation starts, before its first backup is due; `0` is a timestamp in 1970 |
+| (b) No series until the first success or failure (chosen) | `quader_backup_last_success_timestamp_seconds` and `quader_backup_last_failure_timestamp_seconds` are gauge vectors without a label; a replica sets them when a run of that outcome exists | The `absent` clause of `QuaderBackupStale` (R-BAK-014) means what it says; the rule for a first backup is the expected interval, not zero | A rule must handle the absent series: `QuaderBackupFailed` reads `max(last_failure) > (max(last_success) or vector(0))` |
 
-**Choice:** (b). The other backup gauges are plain gauges; `trove_revocation_journal_pending` is registered by `journal.NewMetrics`, the others by `backup.NewMetrics`.
+**Choice:** (b). The other backup gauges are plain gauges; `quader_revocation_journal_pending` is registered by `journal.NewMetrics`, the others by `backup.NewMetrics`.
 
 **Rationale:** R-BAK-014 already contains the absent clause, which only makes sense for a gauge that can be absent. The development agent would revisit this if a dashboard needs a zero.
 
@@ -5976,7 +5976,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Const metrics returned by the gauge source | Like `trove_jobs_queued`: the source builds `MustNewConstMetric` values per evaluation | Same shape as the other database gauges; no series survives its row | The families are already contracts in `backup.Metrics` (Q-OPS-180: gauge vectors without a series until the event happened) and the backup pod sets the same fields |
+| (a) Const metrics returned by the gauge source | Like `quader_jobs_queued`: the source builds `MustNewConstMetric` values per evaluation | Same shape as the other database gauges; no series survives its row | The families are already contracts in `backup.Metrics` (Q-OPS-180: gauge vectors without a series until the event happened) and the backup pod sets the same fields |
 | (b) Registered families, set by the source (chosen) | `registerBackupGauges` builds the families once (`laneMetrics`), and the source `backup` calls `gauges.Collector.Refresh`, which resets and sets the gauges; it returns no metric of its own | One definition of the names for the pod and the replicas; the reuse floor of 30 s lives in the collector | A failed evaluation leaves the previous values, like every database gauge source |
 
 **Choice:** (b). The wiring is `internal/app/wire_backup_gauges.go`, called from `registerGauges`, so it covers every role that registers database gauges. The expected-interval gauge is set at registration, before the first evaluation.
@@ -5992,7 +5992,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The worker that ran the task sets the gauge | The family lives in that process | No stored state | Only one replica exports it; a restart of that worker drops the series until the next daily run, and `min()` over the replicas that report would read a gap as health |
-| (b) The task stores its report in `system_state` (`backup_check`) and every replica sets `trove_backup_check_ok` from it in the database gauges (chosen) | The same path as the other gauges of the lane (R-BAK-014) | Every replica reports the same value; `max`/`min` are safe; the series survives a restart | One cheap read per gauge evaluation |
+| (b) The task stores its report in `system_state` (`backup_check`) and every replica sets `quader_backup_check_ok` from it in the database gauges (chosen) | The same path as the other gauges of the lane (R-BAK-014) | Every replica reports the same value; `max`/`min` are safe; the series survives a restart | One cheap read per gauge evaluation |
 
 **Choice:** (b).
 
@@ -6000,7 +6000,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Applied:** R-OPS-008, R-HA-023; `internal/backup/platform`, `internal/app/wire_backup_check.go`, `internal/app/wire_backup_gauges.go`.
 
-### Q-OPS-182 · The clause of `TroveBackupStale` for a backup that never succeeded reads its window from the chart
+### Q-OPS-182 · The clause of `QuaderBackupStale` for a backup that never succeeded reads its window from the chart
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -6014,7 +6014,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Rationale:** The clause is the one of R-BAK-014 ("absent for longer than `expected_interval`"). The development agent would revisit this if the replicas gain an installation-age metric for another reason.
 
-**Applied:** R-BAK-014, R-HA-045; `deploy/helm/trove/templates/_rules.tpl`, `deploy/helm/trove/tests/rules_test.yaml`.
+**Applied:** R-BAK-014, R-HA-045; `deploy/helm/quader/templates/_rules.tpl`, `deploy/helm/quader/tests/rules_test.yaml`.
 
 ### Q-OPS-186 · The `error` of a job is a declared object of `code`, `detail` and `attempt`
 
@@ -6062,7 +6062,7 @@ follow it. The development agent would revisit this if a kind needs a result tha
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: `trove_db_slow_queries_total{query}` and `trove_db_query_duration_seconds{query}` are in the catalog of R-OPS-008, and
+Context: `quader_db_slow_queries_total{query}` and `quader_db_query_duration_seconds{query}` are in the catalog of R-OPS-008, and
 `metrics.slow_query_threshold` and `metrics.db_query_histograms` exist in the configuration, but no code exported the families. The catalog says
 "name of the query in code" and leaves open what a statement without a name is, how a pipeline's batch is timed, the buckets, whether the
 histogram family exists while the flag is off, and what a threshold of `0` means.
@@ -6080,10 +6080,10 @@ histogram family exists while the flag is off, and what a threshold of `0` means
   is `unnamed`. The backup's referenced-blob cursor, which stays open for the whole stream, is named `BackupReferencedBlobs`.
 - A statement is timed from the tracer's start to its end, which for a query is the close of its result: a streamed cursor counts for as long
   as it is read. `CopyFrom` and `COPY` bypass the tracer and are not recorded.
-- A statement counts in `trove_db_slow_queries_total` when it ran longer than `metrics.slow_query_threshold` from the tracer's start to its end,
+- A statement counts in `quader_db_slow_queries_total` when it ran longer than `metrics.slow_query_threshold` from the tracer's start to its end,
   whether it succeeded or failed (a statement cut by `statement_timeout` is the slowest one). A threshold of `0` counts none; the validation
   `min=0s` leaves it open and a counter of every statement is what the histogram is for.
-- `trove_db_query_duration_seconds` is registered only with `metrics.db_query_histograms: true`, so a replica without the flag exposes no
+- `quader_db_query_duration_seconds` is registered only with `metrics.db_query_histograms: true`, so a replica without the flag exposes no
   series and no family. Its buckets run from a key lookup to the statement timeout: 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5,
   5, 10 and 30 s.
 - A pipeline ([internal/meta/postgres/q/pipeline.go](../../internal/meta/postgres/q/pipeline.go)) is one round trip: the tracer times the
@@ -6104,15 +6104,15 @@ Tests: `TestR_OPS_008_TheStatementMetricsCountByTheNameOfTheQuery` (unit), `Test
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-OPS-046's acceptance criterion names "a backup run that exits `1`". Verified in this repository: [R-BAK-014](backup-and-restore.md) defines `trove_backup_last_failure_timestamp_seconds` as the newest `finished_at` of a `failed` or `abandoned` create run and the `lease_expires_at` of an active run with an expired lease; the exit code `1` (`ExitFailed`) is reached through `hold_lost`, `superseded`, `pool_damaged` or a store error after retries, none of which the suite can cause without damaging the installation or a defect.
+Context: R-OPS-046's acceptance criterion names "a backup run that exits `1`". Verified in this repository: [R-BAK-014](backup-and-restore.md) defines `quader_backup_last_failure_timestamp_seconds` as the newest `finished_at` of a `failed` or `abandoned` create run and the `lease_expires_at` of an active run with an expired lease; the exit code `1` (`ExitFailed`) is reached through `hold_lost`, `superseded`, `pool_damaged` or a store error after retries, none of which the suite can cause without damaging the installation or a defect.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Damage the pool so that the run exits 1 | A removed object of the pool | The exact exit code | The installation is damaged and the repair is the test's business; other alerts (`TroveBlobMissing`) fire too |
+| (a) Damage the pool so that the run exits 1 | A removed object of the pool | The exact exit code | The installation is damaged and the repair is the test's business; other alerts (`QuaderBlobMissing`) fire too |
 | (b) Kill the process with kill -9 from the node during the copy, with a lease of 20 s and no retry (chosen) | The run stays active with an expired lease and the Job ends Failed | The failure the gauge counts. A force-deleted pod is not enough: its process gets a termination signal first and records the run `interrupted`, which is no failure (measured: the run of the first attempt was `interrupted`) | The run does not exit 1; the alert's path is the lease clause |
 | (c) A run with a wrong target | A usage or foreign-target error | Exits non-zero | Exits 2 or 4, and may write no run row |
 
-**Choice:** (b). `TroveBackupFailed` fires, a later successful run resolves it, and the same test then lowers `config.backup.expected_interval` to its minimum of a minute with the CronJob suspended and sees `TroveBackupStale` fire; the profile with its own interval resolves it.
+**Choice:** (b). `QuaderBackupFailed` fires, a later successful run resolves it, and the same test then lowers `config.backup.expected_interval` to its minimum of a minute with the CronJob suspended and sees `QuaderBackupStale` fire; the profile with its own interval resolves it.
 
 **Rationale:** the alert reads the gauge, and the gauge counts abandoned runs as failures, so the scenario shows the alert for the failure a crashed pod produces, which is the failure operators meet. The development agent would revisit it if a harmless way to make a run end `failed` with exit 1 appears (a test hook of the backup command).
 
@@ -6122,7 +6122,7 @@ Context: R-OPS-046's acceptance criterion names "a backup run that exits `1`". V
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-OPS-045 asks for a fault proxy that delays every Valkey command by 2 s, `trove_valkey_errors_total{kind="timeout"}` growing, the circuit opening, and no observation of `trove_valkey_command_duration_seconds` above `valkey.command_timeout` plus 50 ms. The dev stack has no fault proxy; E1.8 holds the commands with `CLIENT PAUSE`. The histogram's last bucket is 0.5 s, so an observation of 0.52 s lies in `+Inf`, as one of 5 s does: the bound cannot be read from the buckets.
+Context: R-OPS-045 asks for a fault proxy that delays every Valkey command by 2 s, `quader_valkey_errors_total{kind="timeout"}` growing, the circuit opening, and no observation of `quader_valkey_command_duration_seconds` above `valkey.command_timeout` plus 50 ms. The dev stack has no fault proxy; E1.8 holds the commands with `CLIENT PAUSE`. The histogram's last bucket is 0.5 s, so an observation of 0.52 s lies in `+Inf`, as one of 5 s does: the bound cannot be read from the buckets.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -6135,7 +6135,7 @@ Context: R-OPS-045 asks for a fault proxy that delays every Valkey command by 2 
 
 **Applied in the spec:** R-OPS-045 (acceptance criteria). Code: [alerts_test.go](../../test/e2e/alerts_test.go).
 
-### Q-OPS-198 · TroveValkeyFailoverFlapping counts the changes within the hour instead of extrapolating them
+### Q-OPS-198 · QuaderValkeyFailoverFlapping counts the changes within the hour instead of extrapolating them
 
 Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -6146,7 +6146,7 @@ Context: the alert means "more than two primary changes within an hour" (Q-OPS-1
 | (a) Keep `increase()` and let the test tolerate two changes | The test's condition widens | No rule change | The alert fires on what its own definition excludes, in production as well |
 | (b) Count: `max_over_time - min_over_time` of the counter over the hour (chosen) | The exact number of changes a replica saw | The alert says what it is defined to say | A replica that restarts inside the hour starts its count again; the other replicas still count |
 
-**Choice:** (b). **Rationale:** a false page during planned maintenance is the failure this alert must not have. The development agent would revisit it if replicas restart so often that no replica sees a whole hour. **Applied:** [_rules.tpl](../../deploy/helm/trove/templates/_rules.tpl), R-OPS-046's table, the alert table of [ha-and-helm.md](ha-and-helm.md), `TestAlerts_R_OPS_046_MaintenanceStaysQuiet`.
+**Choice:** (b). **Rationale:** a false page during planned maintenance is the failure this alert must not have. The development agent would revisit it if replicas restart so often that no replica sees a whole hour. **Applied:** [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl), R-OPS-046's table, the alert table of [ha-and-helm.md](ha-and-helm.md), `TestAlerts_R_OPS_046_MaintenanceStaysQuiet`.
 
 ### Q-OPS-207 · The banner and the maintenance mode propagate through the change area `cache`, and no migration adds an area
 
@@ -6175,22 +6175,22 @@ Context: R-OPS-024 lists what is refused and what still works. The writes enter 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A list of the refused operations | Each write declares that it is refused | Nothing new is refused by accident | A new write is allowed until someone remembers; the mode fails open |
-| (b) A list of the allowed operations (chosen) | `x-trove-maintenance: allowed` on the operations the spec lists; every other write is refused | A new write is refused until it is added on purpose; the default is the safe one | A new credential operation must be declared |
+| (b) A list of the allowed operations (chosen) | `x-quader-maintenance: allowed` on the operations the spec lists; every other write is refused | A new write is refused until it is added on purpose; the default is the safe one | A new credential operation must be declared |
 | (c) One middleware on the method | Every non-safe method is refused except a path list | One place | The evaluating POSTs of the API (policy validation, permission checks) and the Bastion probes would need a path list that duplicates the document |
 
 **Choice:** (b).
 
-- **Management API.** `x-trove-maintenance: allowed` is parsed with the other declarations ([document.go](../../internal/api/v1/document.go)) and is accepted on a method that is refused only. `maintenanceGate` in the shared step runs after the permission was decided and the owner-rights gate, so a caller who may not write is told 401 or 403 and learns nothing from the mode. The allowed operations are those the spec names (minting, rotating and revoking tokens of users, service accounts and Bastions, ending sessions, the CI token exchange, `PUT /system/maintenance`, the invalidation of a remote cache) and those that only evaluate (policy validation, permission check, exposure and mapping evaluation, upstream tests, the Bastion probes); `TestR_OPS_024_OperationsAllowedInMaintenanceMode` pins the list. `PUT /system/banner` is not listed by R-OPS-024 and is refused like every configuration write; an administrator who wants to change the banner switches the mode off first.
+- **Management API.** `x-quader-maintenance: allowed` is parsed with the other declarations ([document.go](../../internal/api/v1/document.go)) and is accepted on a method that is refused only. `maintenanceGate` in the shared step runs after the permission was decided and the owner-rights gate, so a caller who may not write is told 401 or 403 and learns nothing from the mode. The allowed operations are those the spec names (minting, rotating and revoking tokens of users, service accounts and Bastions, ending sessions, the CI token exchange, `PUT /system/maintenance`, the invalidation of a remote cache) and those that only evaluate (policy validation, permission check, exposure and mapping evaluation, upstream tests, the Bastion probes); `TestR_OPS_024_OperationsAllowedInMaintenanceMode` pins the list. `PUT /system/banner` is not listed by R-OPS-024 and is refused like every configuration write; an administrator who wants to change the banner switches the mode off first.
 - **Format dispatcher.** After the coarse check, a route of kind Upload, Delete or Admin is refused in the format's own error shape ([dispatcher.go](../../internal/api/dispatch/dispatcher.go)).
 - **Files service.** `Deploy` and `Delete` refuse after the decision and before the body is read ([files.go](../../internal/files/files.go)).
 - **Scheduler.** A task with `Mutating` (`gc`, `gc-full`, the OCI sweep, the fold of cache invalidations) and every schedule a cleanup policy supplies is not enqueued; the slot is missed, not caught up. Runs in progress finish. The tasks of the sign-in, the audit retention and the advisory sync write their own data and continue.
 - **Refusal.** `503 unavailable`, `Retry-After` from `retryAfterSeconds` (default 300), the operator's message as the detail (a default text when it is empty). A failure to read the mode refuses the write (fail closed); the scheduler treats it as "not read-only".
 - **`cacheFill: false`.** The proxy engines take a `GlobalOffline` function that is true when the configured global offline mode is on or the mode is read-only without cache filling.
-- **Not the deletion pause.** `trove admin maintenance pause-deletions` (R-HA-025, `internal/maintenance`) stops garbage collection only and is set by a restore; it is a different flag with a different key and is not shown here.
+- **Not the deletion pause.** `quader admin maintenance pause-deletions` (R-HA-025, `internal/maintenance`) stops garbage collection only and is set by a restore; it is a different flag with a different key and is not shown here.
 
 **Rationale:** the safe default is the reason for the list of the allowed. The development agent would revisit the banner exception if operators ask to post a notice while the mode is on, and the list when a write path appears that none of the four doors sees ([security/api-edge.md](../security/api-edge.md), H-809).
 
-**Applied in the spec:** R-OPS-024 (the four doors, the fail-closed read), R-API-008 (the declaration), the OpenAPI document (`x-trove-maintenance`, the `info` text). Code: [system_state_api.go](../../internal/api/v1/system_state_api.go), [authorize.go](../../internal/api/v1/authorize.go), [scheduler.go](../../internal/jobs/scheduler.go), [wire_keys.go](../../internal/app/wire_keys.go). Tests: `TestR_OPS_024_ReadOnlyMaintenanceMode` (integration, three web replicas and a worker, Valkey stopped).
+**Applied in the spec:** R-OPS-024 (the four doors, the fail-closed read), R-API-008 (the declaration), the OpenAPI document (`x-quader-maintenance`, the `info` text). Code: [system_state_api.go](../../internal/api/v1/system_state_api.go), [authorize.go](../../internal/api/v1/authorize.go), [scheduler.go](../../internal/jobs/scheduler.go), [wire_keys.go](../../internal/app/wire_keys.go). Tests: `TestR_OPS_024_ReadOnlyMaintenanceMode` (integration, three web replicas and a worker, Valkey stopped).
 
 ### Q-OPS-209 · The settings answer 422 with the member that is wrong, take no `If-Match` and report `maintenanceMode` from the store
 
@@ -6226,7 +6226,7 @@ With `proxy.outbound.proxy_from_environment` on, that is every client of the out
 go direct: the remote repositories, the advisory sources of the vulnerability scanning, the CI issuers'
 discovery and keys and the login's identity providers (a Bastion's link to its main installation goes
 direct). A webhook handler that names an outbound proxy (R-OPS-042) would add its own; webhooks are not
-built. trove can only check its own resolution of the name before sending (`checkedProxy` in
+built. Quader can only check its own resolution of the name before sending (`checkedProxy` in
 [factory.go](../../internal/outbound/factory.go)), so a name that resolves differently for the proxy, or
 changes in between, reaches whatever address the proxy chooses. Proxy-side egress rules are the only full
 control. The gap is live only for installations that route outbound traffic through a proxy. The object
@@ -6236,7 +6236,7 @@ store's proxy is outside it, because no address check applies to the object stor
 
 ### H-41 · Ingress enforcement is verified on one CNI only
 
-With the default `metrics.auth: none`, any pod that can reach port 8081 of a trove replica (`api`, `packages` and `worker`,
+With the default `metrics.auth: none`, any pod that can reach port 8081 of a Quader replica (`api`, `packages` and `worker`,
 and `web` while the bridge of the upgrade across the cut runs) reads metrics: repository keys, request and byte volumes, queue depth, backup run state. It
 also reads verbose readiness: dependency latency, schema version, whether Valkey is reachable. The chart ships an
 ingress NetworkPolicy, enabled by default, that admits port 8081 only from the monitoring namespace and the probe

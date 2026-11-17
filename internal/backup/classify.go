@@ -7,8 +7,8 @@ import (
 	"net"
 	"syscall"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // Classify gives an error from a dependency the exit code of R-BAK-013: an error that already carries a code, and the

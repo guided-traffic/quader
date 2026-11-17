@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	_ "github.com/guided-traffic/trove/internal/formats/all"
-	"github.com/guided-traffic/trove/test/integration/stack"
+	"github.com/guided-traffic/quader/internal/authz"
+	_ "github.com/guided-traffic/quader/internal/formats/all"
+	"github.com/guided-traffic/quader/test/integration/stack"
 )
 
 const settingsPath = "/api/v1/settings/visibility"
@@ -88,7 +88,7 @@ func TestR_AUTHZ_033_TheLevelOfAProject(t *testing.T) {
 			t.Error("only the lowered repository takes a new configuration version")
 		}
 		if r.Epoch() != epoch+1 || f.epoch() != r.Epoch() {
-			t.Errorf("Trove-Authz-Epoch %d, database %d, before %d: one write advances the epoch once (R-AUTHZ-028)", r.Epoch(), f.epoch(), epoch)
+			t.Errorf("Quader-Authz-Epoch %d, database %d, before %d: one write advances the epoch once (R-AUTHZ-028)", r.Epoch(), f.epoch(), epoch)
 		}
 		if f.repoEpoch() <= repoEpoch {
 			t.Error("the lowered repository did not notify repo_config")

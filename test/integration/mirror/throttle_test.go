@@ -15,8 +15,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // The engine against the throttling stub (E6b.4; R-REPO-054, R-REPO-059): the answers of a registry that rate-limits a client, with
@@ -148,7 +148,7 @@ func within(t *testing.T, what string, got, lo, hi time.Duration) {
 
 func TestR_REPO_054_RetryAfterSecondsPausesThePassAndHalvesItsWindow(t *testing.T) {
 	r, run, web := throttleRig(t, 20, 4, npmstub.Throttle{Kind: npmstub.Throttle429, Class: npmstub.KindTarball, From: 11, RetryAfterSeconds: 7}, nil)
-	window := r.sample(run, "trove_mirror_concurrency")
+	window := r.sample(run, "quader_mirror_concurrency")
 	// A client read before the pass: the client-serving replica has touched the repository, so it exports its upstream gauge.
 	if a := r.get(web, throttleScope+"%2fp000"); a.Status != http.StatusOK {
 		t.Fatalf("GET %s/p000: %d %s", throttleScope, a.Status, a.Body)
@@ -177,8 +177,8 @@ func TestR_REPO_054_RetryAfterSecondsPausesThePassAndHalvesItsWindow(t *testing.
 			t.Errorf("a client read of a stored version reached the upstream while the pass waits: %+v", hits)
 		}
 		for _, rep := range []*testenv.Replica{web, run} {
-			if v := testenv.MetricValue(rep.Metrics(t), series("trove_remote_upstream_up")); v != 1 {
-				t.Errorf("trove_remote_upstream_up on %s is %v while the upstream throttles the pass, want 1", rep.Name, v)
+			if v := testenv.MetricValue(rep.Metrics(t), series("quader_remote_upstream_up")); v != 1 {
+				t.Errorf("quader_remote_upstream_up on %s is %v while the upstream throttles the pass, want 1", rep.Name, v)
 			}
 		}
 	})
@@ -199,7 +199,7 @@ func TestR_REPO_054_RetryAfterSecondsPausesThePassAndHalvesItsWindow(t *testing.
 		}
 	})
 
-	t.Run("R-REPO-054 trove_mirror_concurrency is at most half of its value before the answer while the pass waits", func(t *testing.T) {
+	t.Run("R-REPO-054 quader_mirror_concurrency is at most half of its value before the answer while the pass waits", func(t *testing.T) {
 		before := maxOf(window.between(t0, hit11.Add(100*time.Millisecond)))
 		during := window.between(hit11.Add(time.Second), hit11.Add(6*time.Second))
 		if before < 2 || len(during) == 0 {
@@ -208,11 +208,11 @@ func TestR_REPO_054_RetryAfterSecondsPausesThePassAndHalvesItsWindow(t *testing.
 		if m := maxOf(during); m > before/2 {
 			t.Errorf("the window during the wait is %v, before the answer it was %v: want at most half", m, before)
 		}
-		if got := r.metric(run, "trove_mirror_rate_limited_total", "reason", "too_many_requests"); got < 1 {
-			t.Errorf("trove_mirror_rate_limited_total{reason=too_many_requests} = %v", got)
+		if got := r.metric(run, "quader_mirror_rate_limited_total", "reason", "too_many_requests"); got < 1 {
+			t.Errorf("quader_mirror_rate_limited_total{reason=too_many_requests} = %v", got)
 		}
-		if got := r.metric(run, "trove_mirror_rate_limit_wait_seconds_total"); got < 6.5 || got > 7.5 {
-			t.Errorf("trove_mirror_rate_limit_wait_seconds_total = %v, want 7", got)
+		if got := r.metric(run, "quader_mirror_rate_limit_wait_seconds_total"); got < 6.5 || got > 7.5 {
+			t.Errorf("quader_mirror_rate_limit_wait_seconds_total = %v, want 7", got)
 		}
 	})
 
@@ -290,11 +290,11 @@ func TestR_REPO_054_SlowDownWithoutAHintBacksOffExponentially(t *testing.T) {
 		if n := len(r.tarballTimes()); n != 8+3 {
 			t.Errorf("the stub received %d tarball requests, want the 8 and the 3 it refused", n)
 		}
-		if got := r.metric(run, "trove_mirror_rate_limited_total", "reason", "slow_down"); got != 3 {
-			t.Errorf("trove_mirror_rate_limited_total{reason=slow_down} = %v, want 3", got)
+		if got := r.metric(run, "quader_mirror_rate_limited_total", "reason", "slow_down"); got != 3 {
+			t.Errorf("quader_mirror_rate_limited_total{reason=slow_down} = %v, want 3", got)
 		}
-		if got := r.metric(run, "trove_mirror_items_total", "result", "stored"); got != 8 {
-			t.Errorf("trove_mirror_items_total{result=stored} = %v, want 8", got)
+		if got := r.metric(run, "quader_mirror_items_total", "result", "stored"); got != 8 {
+			t.Errorf("quader_mirror_items_total{result=stored} = %v, want 8", got)
 		}
 	})
 }
@@ -307,8 +307,8 @@ func TestR_REPO_054_AQuotaHeaderNamesTheWait(t *testing.T) {
 	t.Run("R-REPO-054 a 403 with X-RateLimit-Remaining 0 and a reset 4 s ahead pauses the pass for about 4 s", func(t *testing.T) {
 		// X-RateLimit-Reset is whole seconds since the epoch: the reset is cut down, so the wait is 3 to 4 s.
 		within(t, "the pause after the quota answer", r.resumeAfter(hit), 2700*time.Millisecond, 5*time.Second)
-		if got := r.metric(run, "trove_mirror_rate_limited_total", "reason", "quota_header"); got < 1 {
-			t.Errorf("trove_mirror_rate_limited_total{reason=quota_header} = %v", got)
+		if got := r.metric(run, "quader_mirror_rate_limited_total", "reason", "quota_header"); got < 1 {
+			t.Errorf("quader_mirror_rate_limited_total{reason=quota_header} = %v", got)
 		}
 		if n := r.storedItems(); n != 10 {
 			t.Errorf("%d tarballs stored", n)

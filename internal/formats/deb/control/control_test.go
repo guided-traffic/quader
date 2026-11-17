@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 const hello = "Package: hello\nVersion: 2.10-3\nArchitecture: amd64\nMaintainer: A B <a@example.org>\nDescription: the greeter\n A longer text.\n .\n Second paragraph of the text.\nHomepage: https://example.org/\n"

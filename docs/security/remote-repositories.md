@@ -9,7 +9,7 @@ client certificates (R-REPO-034), custom upstream headers (R-REPO-036) and named
 The runtime switch of the global offline mode
 (`/api/v1/system/proxy-offline`, R-REPO-031) is not built; the configuration key `proxy.global_offline` is.
 
-This page describes what the engine lets a caller, an upstream and a writer of Valkey make trove do: when trove asks an upstream, what it
+This page describes what the engine lets a caller, an upstream and a writer of Valkey make Quader do: when Quader asks an upstream, what it
 stores of the answer, what it remembers as missing, how concurrent requests share one fetch, what a failing or offline upstream costs, and
 what one repository or one caller can take of the fetch slots. The rules it relies on are on other pages: the address policy every
 connection passes on [egress.md](egress.md) (which hosts receive the credential, the addresses taken from upstream documents, the upstream
@@ -26,9 +26,9 @@ passes of the mirror mode on [mirror.md](mirror.md), and the gate that evaluates
 | Party | What it can make the engine do | What bounds it |
 |---|---|---|
 | A caller with `read` on the remote | be served what the cache holds, an expired document included | nothing reaches the upstream for it unless it also passes the populate check |
-| A caller who may populate (`read` plus the action of `cacheFillAction`) | make trove ask the upstream for any path the patterns and claims admit, and store the answer | the fetch slots, the circuit, the negative cache, the size limits; nothing per caller (below) |
-| The upstream | decide which bytes and documents trove stores, which paths are missing, which hosts its documents name, how fast it answers | the digest check, the content-type block, the size limits, the format's checks, the host rules of the client, the stall bound |
-| A writer under trove's Valkey prefix | write negative entries and hold flight locks | a negative entry can only refuse, and a held lock only delays, by at most `proxy.fetch_wait_timeout_seconds` ([H-49](../spec/architecture.md#h-49--write-access-to-valkey-denies-service)) |
+| A caller who may populate (`read` plus the action of `cacheFillAction`) | make Quader ask the upstream for any path the patterns and claims admit, and store the answer | the fetch slots, the circuit, the negative cache, the size limits; nothing per caller (below) |
+| The upstream | decide which bytes and documents Quader stores, which paths are missing, which hosts its documents name, how fast it answers | the digest check, the content-type block, the size limits, the format's checks, the host rules of the client, the stall bound |
+| A writer under Quader's Valkey prefix | write negative entries and hold flight locks | a negative entry can only refuse, and a held lock only delays, by at most `proxy.fetch_wait_timeout_seconds` ([H-49](../spec/architecture.md#h-49--write-access-to-valkey-denies-service)) |
 | A holder of `repositories:write-config`, or the role `owner` of the repository's project (R-AUTHZ-026) | choose the upstream, its timeouts, its limits and its fetch budget | the address policy; an Owner cannot move a stored credential, the outbound path or the mirror mode ([delegated.go](../../internal/repository/delegated.go)); nothing bounds the budget it sets against other repositories ([H-582](#h-582--one-remote-repository-can-hold-every-fetch-slot-of-a-replica)) |
 
 The engine knows no format and no permission: the dispatcher decides steps 1 to 3 of R-REPO-025 (the repository is enabled, the patterns and
@@ -37,7 +37,7 @@ marks and names the digests the upstream announced for an artifact, and the engi
 `proxy.Populate` that the format host implements over the decision point ([types.go](../../internal/proxy/types.go),
 [formathost/remote.go](../../internal/formathost/remote.go) `Artifact`, `populate`).
 
-## When trove asks the upstream
+## When Quader asks the upstream
 
 A request for an artifact passes these checks in this order before anything is sent ([artifact.go](../../internal/proxy/artifact.go)
 `Artifact`; a metadata document the same in [metadata.go](../../internal/proxy/metadata.go) `metadata` and `beforeFetch`):
@@ -49,7 +49,7 @@ A request for an artifact passes these checks in this order before anything is s
 | 5 | the cache view `<key>~cache`, or `Cache-Control: only-if-cached` | the stored entry, else `404`, or `504 not_cached_only_if_cached` |
 | 6 | `availability.mode: offline`, or `proxy.global_offline` | the stored entry (an expired document as stale), else `404 not_cached_offline` |
 | 7 | the circuit is open | a stored document as stale within `cache.maxStaleSeconds`, else `503 upstream_assumed_offline` with `Retry-After` |
-| 8 | a valid negative entry | `404`, `Cache-Status: trove; hit; detail=negative` |
+| 8 | a valid negative entry | `404`, `Cache-Status: quader; hit; detail=negative` |
 | 9 | the populate check ([R-AUTHZ-008](../spec/authorization.md#r-authz-008--remote-repositories-who-may-populate-the-cache)) | a stored document as stale, else `403 populate_not_permitted`, audited as `deny.populate`; no negative entry is written |
 | scan | the version the path maps to is blocked (R-VULN-015, `Enforce.GateMiss`) | the refusal of the scanning; nothing is fetched |
 | 10 | the collapsing protocol, then the fetch | below |
@@ -58,7 +58,7 @@ Around these steps:
 
 - A request authenticated by the session cookie never populates, so a link or an image in a page cannot make a browser bring a package into
   the cache; a request on an endpoint with `cache_fill: false` never populates either, and the refusal is counted in
-  `trove_endpoint_cache_fill_refused_total{endpoint}` ([endpoints-and-exposure.md](endpoints-and-exposure.md#upstream-contact-from-an-endpoint)).
+  `quader_endpoint_cache_fill_refused_total{endpoint}` ([endpoints-and-exposure.md](endpoints-and-exposure.md#upstream-contact-from-an-endpoint)).
 - A `HEAD` for an uncached artifact passes the same steps and then asks the upstream with `HEAD`, storing nothing (`head`).
 - A format whose addressing follows a discovery document (NuGet's service index) resolves that document as an ordinary metadata entry of the
   repository under the caller's populate check before the fetch; a caller who may not populate gets the stored one or the refusal
@@ -68,7 +68,7 @@ A fetch that stores something writes the allowed populate event and the event `a
 entry, so no fill exists without its event; a request that joined another request's fetch writes none
 ([artifact.go](../../internal/proxy/artifact.go) `artifactEntry`).
 
-## The request trove sends
+## The request Quader sends
 
 | Rule | Where | Effect |
 |---|---|---|
@@ -99,7 +99,7 @@ Nothing of an answer is stored or completed to a client before these checks ([fe
 | The format's check of status and headers (`AcceptResponse`) | its refusal; nothing stored |
 | A media type of `proxy.blocked_content_types` (`text/html`, `application/xhtml+xml` by default) while `integrity.blockUnexpectedContentTypes` is on (the default), unless the format expects the type or the repository allows it | `502 upstream_content_type_blocked`; counts toward the circuit |
 | An announced length above the effective limit (`limits.maxArtifactBytes`, else `proxy.max_artifact_bytes`, 10 GiB by default; for a document `limits.maxMetadataBytes`, else `proxy.max_metadata_bytes`, 256 MiB by default, and a format's bound below both), or a body that crosses it | `502 upstream_item_too_large`; no negative entry, so a raised limit applies at once |
-| The announced digests against those computed while spooling, under `verify-if-available` (the default) and `require`; under `ignore` and `pass-through` only for a format whose descriptor sets `VerifyAnnouncedDigests`, which neither npm nor NuGet does today, so an npm remote with `ignore` stores a tarball whatever `dist.integrity` says | `502 upstream_integrity_mismatch`, the event `proxy.integrity_mismatch`, `trove_remote_integrity_failures_total`; nothing stored, no negative entry |
+| The announced digests against those computed while spooling, under `verify-if-available` (the default) and `require`; under `ignore` and `pass-through` only for a format whose descriptor sets `VerifyAnnouncedDigests`, which neither npm nor NuGet does today, so an npm remote with `ignore` stores a tarball whatever `dist.integrity` says | `502 upstream_integrity_mismatch`, the event `proxy.integrity_mismatch`, `quader_remote_integrity_failures_total`; nothing stored, no negative entry |
 | A metadata document: the format's validation outside any transaction (`PrepareFill`) | the previous entry stays |
 | An artifact the format inspects (`InspectFill`, NuGet's identity check) | `502` to every request of the fetch; nothing stored; no byte reached a client before the hook ran |
 | The cache entry already holds another digest for the path (a duplicate fetch on another replica committed first) | the committed artifact is served to everyone; the leader's own client is aborted; the event `proxy.upstream_digest_changed` |
@@ -259,12 +259,12 @@ trust, before a byte is sent:
 | The request to the token service runs in a goroutine of its own, ended by the engine's shutdown or after 30 s; a caller that leaves gets `503 unavailable` and counts toward no circuit; a panic of the format is the request's failure | `tokenOnce`, `leadToken` | a stuck or panicking format cannot hold a call forever |
 | One request to the token service for the concurrent requests of a replica that need the same token | `tokenOnce` | a burst of pulls is one request to the service |
 | `authMode: bearer` runs no handshake: the stored secret is the token | `token` | the secret is sent to the origin as it is |
-| The upstream test applies the same two checks before its login at the token service: `Allowed` (a foreign realm is `foreign_host_denied` and is not asked) and the hop policy (the credential goes only to the origin or a `sendCredentials` entry); it sends one scope-less request with the Basic credential, reads at most 64 KiB and keeps no token | [upstream/probe.go](../../internal/proxy/upstream/probe.go) `tokenCheck` (R-REPO-064) | a test reaches no host a pull could not reach; what it tells the caller is [H-971](egress.md#h-971--the-upstream-test-tells-its-caller-whether-a-credential-is-accepted-from-troves-address) |
-| A failure of the token service is the answer of the request and counts toward no circuit; an egress or TLS refusal at its host writes `proxy.egress_denied` or `proxy.tls_untrusted` naming that host and counts `trove_remote_egress_denied_total`; for a mirror's request a `429` is the rate limit of R-REPO-054 | [classify.go](../../internal/proxy/classify.go) `classifyError` | see [H-612](#h-612--a-failing-token-service-is-asked-by-every-request) |
+| The upstream test applies the same two checks before its login at the token service: `Allowed` (a foreign realm is `foreign_host_denied` and is not asked) and the hop policy (the credential goes only to the origin or a `sendCredentials` entry); it sends one scope-less request with the Basic credential, reads at most 64 KiB and keeps no token | [upstream/probe.go](../../internal/proxy/upstream/probe.go) `tokenCheck` (R-REPO-064) | a test reaches no host a pull could not reach; what it tells the caller is [H-971](egress.md#h-971--the-upstream-test-tells-its-caller-whether-a-credential-is-accepted-from-quaders-address) |
+| A failure of the token service is the answer of the request and counts toward no circuit; an egress or TLS refusal at its host writes `proxy.egress_denied` or `proxy.tls_untrusted` naming that host and counts `quader_remote_egress_denied_total`; for a mirror's request a `429` is the rate limit of R-REPO-054 | [classify.go](../../internal/proxy/classify.go) `classifyError` | see [H-612](#h-612--a-failing-token-service-is-asked-by-every-request) |
 
-**What an upstream can make trove send where.** It can name any host on the repository's own list as the token service, so the repository's
+**What an upstream can make Quader send where.** It can name any host on the repository's own list as the token service, so the repository's
 credential can be sent to every `extraHosts` entry that has `sendCredentials: true` and to the origin, and to no other host
-([H-610](#h-610--a-hostile-upstream-can-direct-the-credential-to-every-sendcredentials-host)). It cannot make trove send the credential or
+([H-610](#h-610--a-hostile-upstream-can-direct-the-credential-to-every-sendcredentials-host)). It cannot make Quader send the credential or
 the token to a host the repository does not list, to a cleartext address of an `https` upstream, or to the host of a redirect of the token service (also with `forwardAuthOnRedirect`) or of the registry (the token never follows a redirect). The format
 builds the token request from the challenge's service and scope, so those strings come from the upstream as well; what the format does with
 them is on its own page.
@@ -288,7 +288,7 @@ freshness without a body or makes the engine fetch ([Q-OCI-81](../spec/formats/o
 - [H-4](../spec/repositories-and-proxy.md#h-4--malicious-content-from-a-legitimate-upstream): verification proves only that the bytes are what the upstream announced; a malicious package of a legitimate upstream is fetched and stored like any other.
 - [H-5](../spec/repositories-and-proxy.md#h-5--version-removals-reach-cached-artifacts-only-where-the-format-tracks-versions): a version withdrawn from a package that stays upstream remains reachable by exact path where the format does not track versions.
 - [H-6](../spec/repositories-and-proxy.md#h-6--remote-repositories-reach-private-networks): a remote repository can be pointed at an internal service, whose answers then come back through the cache.
-- [H-11](../spec/storage.md#h-11--object-store-principals-bypass-troves-authorization-and-integrity-checks): cached artifacts and documents are blobs that a principal of the bucket can read or replace past every check above.
+- [H-11](../spec/storage.md#h-11--object-store-principals-bypass-quaders-authorization-and-integrity-checks): cached artifacts and documents are blobs that a principal of the bucket can read or replace past every check above.
 - [H-49](../spec/architecture.md#h-49--write-access-to-valkey-denies-service): a writer on Valkey can hide paths with forged negative entries and delay fetches with held flight locks.
 - [H-282](egress.md#h-282--the-upstream-test-tells-a-holder-of-repositorieswrite-config-what-it-sees-of-an-address): the upstream test reports what the probing replica sees of an address.
 - [H-353](nuget-remote.md#h-353--forwarded-searches-share-the-remotes-circuit-and-fetch-slots-with-its-downloads): pass-through queries share the circuit and the fetch slots of the downloads.
@@ -352,8 +352,8 @@ listed with `sendCredentials: true`.
 
 Live today in the engine, for a remote whose adapter implements the handshake (the OCI format, [oci-remote.md](oci-remote.md)). The upstream's `401` names the realm;
 the engine sends the token request there with the repository's credential when the realm is the origin or a `sendCredentials` entry.
-A hostile or compromised upstream can therefore make trove send the credential to any of those hosts, with a path and a query of the
-upstream's choosing, as often as it can make trove ask (once per token). Hosts without `sendCredentials`, and every host not on the list,
+A hostile or compromised upstream can therefore make Quader send the credential to any of those hosts, with a path and a query of the
+upstream's choosing, as often as it can make Quader ask (once per token). Hosts without `sendCredentials`, and every host not on the list,
 get no credential.
 
 What makes it real: an operator who lists more than one `sendCredentials` host for an upstream, one of which is not run by the upstream's
@@ -374,7 +374,7 @@ live, with the rights the repository's credential gave them at the upstream. The
 credential does not have, but it outlives a revocation of the credential at the upstream by its remaining lifetime.
 
 What makes it real: a credential revoked at the upstream and a token issued just before; the token is then valid at the upstream for up to the
-rest of its lifetime. A rotation on trove's side does not reach it: the credential in effect is part of the key, so the old token is unreachable at
+rest of its lifetime. A rotation on Quader's side does not reach it: the credential in effect is part of the key, so the old token is unreachable at
 once (on a replica within the 10 s a changed secret file takes), and so is the token of an older configuration version after a change; an
 unreachable token stays in memory until it expires or the cache evicts it, also one that was stored after the change handler had run.
 

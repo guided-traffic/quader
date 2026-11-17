@@ -1,14 +1,14 @@
 // Not encapsulated: the HTML is bound at run time, so its elements carry no Angular scope
 // attribute, and every rule is scoped by the component's element instead.
-trove-package-readme {
+quader-package-readme {
   display: block;
 
   .readme-note {
-    margin-block: 0 var(--trove-space-3);
-    padding: var(--trove-space-2) var(--trove-space-3);
-    border: 1px solid var(--trove-border);
-    border-radius: var(--trove-radius-m);
-    background: var(--trove-surface-raised);
+    margin-block: 0 var(--quader-space-3);
+    padding: var(--quader-space-2) var(--quader-space-3);
+    border: 1px solid var(--quader-border);
+    border-radius: var(--quader-radius-m);
+    background: var(--quader-surface-raised);
   }
 
   .readme {
@@ -18,7 +18,7 @@ trove-package-readme {
     line-height: 1.5;
 
     :is(h1, h2, h3, h4, h5, h6) {
-      margin-block: var(--trove-space-4) var(--trove-space-2);
+      margin-block: var(--quader-space-4) var(--quader-space-2);
       line-height: 1.25;
     }
 
@@ -31,22 +31,22 @@ trove-package-readme {
     // from the page in the dark one.
     pre {
       overflow-x: auto;
-      padding: var(--trove-space-3);
-      border: 1px solid var(--trove-border);
-      border-radius: var(--trove-radius-m);
-      background: var(--trove-table-head-bg);
+      padding: var(--quader-space-3);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-m);
+      background: var(--quader-table-head-bg);
     }
 
     :not(pre) > code {
-      padding: 0 var(--trove-space-1);
-      border-radius: var(--trove-radius-s);
-      background: var(--trove-table-head-bg);
+      padding: 0 var(--quader-space-1);
+      border-radius: var(--quader-radius-s);
+      background: var(--quader-table-head-bg);
     }
 
     blockquote {
       margin-inline: 0;
-      padding-inline-start: var(--trove-space-3);
-      border-inline-start: 3px solid var(--trove-border);
+      padding-inline-start: var(--quader-space-3);
+      border-inline-start: 3px solid var(--quader-border);
     }
 
     img {
@@ -58,11 +58,11 @@ trove-package-readme {
     // that is wider, so the columns keep the width of their longest word.
     .readme-table {
       max-inline-size: 100%;
-      margin-block: var(--trove-space-3);
+      margin-block: var(--quader-space-3);
       overflow-x: auto;
 
       &:focus-visible {
-        outline: var(--trove-focus-ring);
+        outline: var(--quader-focus-ring);
         outline-offset: 2px;
       }
     }
@@ -79,8 +79,8 @@ trove-package-readme {
     }
 
     :is(th, td) {
-      padding: var(--trove-space-1) var(--trove-space-3);
-      border: 1px solid var(--trove-border);
+      padding: var(--quader-space-1) var(--quader-space-3);
+      border: 1px solid var(--quader-border);
       overflow-wrap: normal;
       word-break: normal;
       text-align: start;
@@ -107,14 +107,14 @@ trove-package-readme {
 
 // The prose of a documentation entry (R-UI-061) is a run of paragraphs: the first and the last sit flush, so that a table cell and a
 // section keep their own spacing.
-trove-doc-prose {
+quader-doc-prose {
   display: block;
 
-  trove-package-readme .readme > :is(p, ul, ol):first-child {
+  quader-package-readme .readme > :is(p, ul, ol):first-child {
     margin-block-start: 0;
   }
 
-  trove-package-readme:last-child .readme > :is(p, ul, ol):last-child {
+  quader-package-readme:last-child .readme > :is(p, ul, ol):last-child {
     margin-block-end: 0;
   }
 }

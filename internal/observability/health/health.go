@@ -23,7 +23,7 @@
 // gate until it has lasted the grace; after that it gates like any other. The
 // first readiness never gets a grace.
 //
-// Liveness is a watchdog over trove's own loops (Q-OPS-1): each loop records
+// Liveness is a watchdog over quader's own loops (Q-OPS-1): each loop records
 // progress at the end of every iteration, and /healthz fails only when one has
 // not finished an iteration within its bound. Liveness never reads a readiness
 // result.
@@ -40,7 +40,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // Status is the state of one check as /readyz?verbose=1 and the replica
@@ -80,7 +80,7 @@ const dumpLimit = 256 << 10
 type CheckFunc func(ctx context.Context) error
 
 // Observer is told after every evaluation of a check; it feeds the gauge
-// trove_health_check_passing{name}. passing is false for a failing check,
+// quader_health_check_passing{name}. passing is false for a failing check,
 // whatever its kind.
 type Observer func(name string, passing bool)
 
@@ -183,7 +183,7 @@ func WithIdentity(replica, role string) Option {
 // WithClock replaces time.Now; tests use it to age a loop's progress.
 func WithClock(now func() time.Time) Option { return func(h *Health) { h.now = now } }
 
-// WithObserver registers the callback behind trove_health_check_passing.
+// WithObserver registers the callback behind quader_health_check_passing.
 func WithObserver(o Observer) Option { return func(h *Health) { h.observer = o } }
 
 // New returns an empty registry. A registry without checks is ready.

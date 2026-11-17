@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/test/integration/idapi"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/test/integration/idapi"
 )
 
 // The HTTP side of the identity tests: a replica serves the real management API
@@ -27,7 +27,7 @@ import (
 // the decision point read the replica's own caches, and the handlers read
 // PostgreSQL (R-API-052).
 
-const baseURL = "http://trove.test"
+const baseURL = "http://quader.test"
 
 // bindAdmin gives a user the role admin. It runs before the replicas serve: the
 // decision point builds its index from PostgreSQL when it starts.

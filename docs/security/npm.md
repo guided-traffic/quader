@@ -7,7 +7,7 @@ audit forward of R-NPM-038, and the journal entry a restore replays. The local a
 Not built: the trusted-publishing exchange of R-NPM-022, deprecation (R-NPM-018) and the signing keys and attestations of an npm
 registry (below).
 
-This page describes what a caller can do to an npm repository through the protocol, what an upstream registry can make trove store and
+This page describes what a caller can do to an npm repository through the protocol, what an upstream registry can make Quader store and
 serve, and what stops either from doing more. The authorization it relies on is on [permissions.md](permissions.md), the credentials on
 [tokens-and-credentials.md](tokens-and-credentials.md), the raw `/files/` roads on [file-transfer.md](file-transfer.md), the generic
 remote engine (freshness, negative cache, collapsing, circuit, offline modes) on [remote-repositories.md](remote-repositories.md), the
@@ -39,7 +39,7 @@ and the restore on [backup-and-restore.md](backup-and-restore.md). The requireme
 
 A `PUT {name}` whose body carries no attachment is no publish: after steps 1 to 3 it ends in `metadataUpdate`
 ([handlers_deprecate.go](../../internal/formats/npm/handlers_deprecate.go)) and changes nothing. A body without `versions` (the partial update
-of `npm owner`) is 400 `npm_bad_publish`, because maintainer lists are not supported and ownership is managed in trove; a body with
+of `npm owner`) is 400 `npm_bad_publish`, because maintainer lists are not supported and ownership is managed in Quader; a body with
 `versions` (`npm deprecate`, R-NPM-018, P1) is 404 "Deprecating a version is not available yet", the answer R-NPM-043 prescribes for an
 unimplemented `PUT`, which npm does not retry.
 
@@ -50,7 +50,7 @@ decided before the body costs the replica anything (step 2); only a grant that d
 What is stored is the request's manifest with every server-controlled field replaced ([manifest/stored.go](../../internal/formats/npm/manifest/stored.go)
 `Stored`): every `_`-prefixed key except `_id`, `_nodeVersion` and `_npmVersion` is removed, `dist.tarball`, `dist.signatures` and
 `dist.attestations` are removed, and `_npmUser` (the principal's name, no e-mail), `dist.integrity`, `dist.shasum`, `dist.fileCount`,
-`dist.unpackedSize`, `_hasShrinkwrap` and `hasInstallScript` are set by trove from the validated tarball. A publishing client therefore
+`dist.unpackedSize`, `_hasShrinkwrap` and `hasInstallScript` are set by Quader from the validated tarball. A publishing client therefore
 cannot forge trust evidence that pnpm's trust policy reads ([R-NPM-027](../spec/formats/npm.md#r-npm-027--signatures-attestations-and-publisher-fields)).
 
 **`manifest_consistency: warn`.** In the default `reject` mode a request manifest whose dependency, binary, engine, platform or
@@ -73,7 +73,7 @@ A name and version once published to a local repository is never accepted again 
   publish, identical bytes included (409 `npm_version_unpublished`), and the serve check refuses the file of a tombstoned version on
   every route, the npm tarball route, `/files/` and a virtual repository's tiers alike ([servecheck.go](../../internal/formats/npm/servecheck.go)).
 - **Nothing removes a tombstone** except the restore of the same bytes from the trash can (P1, `OnItemsRestored`, which clears the
-  tombstone only when it holds the integrity of the restored version), `trove admin npm reinstate` for a version a restore's replay
+  tombstone only when it holds the integrity of the restored version), `quader admin npm reinstate` for a version a restore's replay
   withheld ([reinstate.go](../../internal/formatdata/npm/reinstate.go), only a tombstone of source `journal` and only while the version is
   stored with the integrity the tombstone holds), and the deletion of the repository.
 - **The acknowledged retry** (Q-NPM-11): a publish whose answer was lost and that the client repeats is answered 201 and changes nothing,
@@ -127,7 +127,7 @@ A virtual repository merges the members' tags ([R-NPM-031](../spec/formats/npm.m
 default, `highest-semver`, `newest-published`); a tag pointing to a version absent from the merge is dropped. Each version entry of the
 merged document comes whole from the one member tier resolution picks for it, never combined from two
 ([R-NPM-030](../spec/formats/npm.md#r-npm-030--merged-package-document)), and a version two members hold with different integrity is
-counted in `trove_npm_virtual_version_conflicts_total`. With automatic namespace claims (`local.autoClaim`), a name a local member holds
+counted in `quader_npm_virtual_version_conflicts_total`. With automatic namespace claims (`local.autoClaim`), a name a local member holds
 never mixes with upstream versions ([repository-model.md](repository-model.md#virtual-repositories-members-claims-and-pin-rules)), so a
 public version of an internal name cannot become its `latest`.
 
@@ -169,14 +169,14 @@ publish is decided by the identity mappings.
   `dist.attestations`, and `_npmUser` names the publishing principal (above).
 - **Remote repositories** pass `dist.signatures`, `dist.attestations` with its `url`, `_npmUser` with `trustedPublisher` and `approver`,
   `deprecated` and every other member except `dist.tarball` through unchanged ([remote/rewrite.go](../../internal/formats/npm/remote/rewrite.go)
-  `Entry`, [R-NPM-027](../spec/formats/npm.md#r-npm-027--signatures-attestations-and-publisher-fields)). trove does not check any of
+  `Entry`, [R-NPM-027](../spec/formats/npm.md#r-npm-027--signatures-attestations-and-publisher-fields)). Quader does not check any of
   them cryptographically.
-- trove serves no signing keys and no attestations: `GET -/npm/v1/keys` and `GET -/npm/v1/attestations/…` answer 404 (R-NPM-043), so
-  `npm audit signatures` against trove verifies nothing (H-32).
+- Quader serves no signing keys and no attestations: `GET -/npm/v1/keys` and `GET -/npm/v1/attestations/…` answer 404 (R-NPM-043), so
+  `npm audit signatures` against Quader verifies nothing (H-32).
 
 ## What an upstream registry can make an npm remote store and serve
 
-The upstream is a party trove does not trust. The engine's request path, freshness, negative cache, collapsing and circuit are on
+The upstream is a party Quader does not trust. The engine's request path, freshness, negative cache, collapsing and circuit are on
 [remote-repositories.md](remote-repositories.md); what npm adds is in [remote.go](../../internal/formats/npm/remote.go) and
 [internal/formats/npm/remote](../../internal/formats/npm/remote).
 
@@ -199,7 +199,7 @@ document is rendered within 128 MiB held in memory (`MaxDocumentBytes`), else 50
 mark) are written in the transaction that stores the document, under the lock of the package's record
 ([internal/formatdata/npm/remote.go](../../internal/formatdata/npm/remote.go) `ApplyFill`). A document whose `time.modified` is older than
 the stored one is a stale copy (a lagging edge): it replaces nothing, marks no version removed, and counts in
-`trove_npm_stale_upstream_documents_total`. The stored `time.modified` is capped at PostgreSQL's clock in that transaction
+`quader_npm_stale_upstream_documents_total`. The stored `time.modified` is capped at PostgreSQL's clock in that transaction
 (`npm_remote.sql`, `LEAST(…, clock_timestamp())`), so a document dated in the future cannot block every later refresh.
 
 **What a client is served.** Every `dist.tarball` is rewritten to the serving repository's registry URL, built from the response base URL
@@ -228,7 +228,7 @@ cannot be reached the stored marks decide (H-33). The cache view never contacts 
 `POST -/npm/v1/security/advisories/bulk` ([R-NPM-038](../spec/formats/npm.md#r-npm-038--security-audit-endpoints),
 [handlers_audit.go](../../internal/formats/npm/handlers_audit.go)) is answered by mode, `npm.audit.mode` of the repository document:
 
-- **`local`** answers from trove's own advisory data and sends nothing out ([vulnerability-scanning.md](vulnerability-scanning.md#client-audits)).
+- **`local`** answers from Quader's own advisory data and sends nothing out ([vulnerability-scanning.md](vulnerability-scanning.md#client-audits)).
   A document that leaves the mode out is `local` when `vulnerabilities.enabled` is on and the OSV source is not off; otherwise it is
   `forward` for a remote or virtual repository and `disabled` for a local one, and `forward` on a local repository is `disabled`
   ([handlers_audit_local.go](../../internal/formats/npm/handlers_audit_local.go) `auditModeOf`).
@@ -261,7 +261,7 @@ The state changes are written in the transaction of the change ([R-NPM-044](../s
 | `npm.publish.manifest_mismatch` (asynchronous; outcome `failure` in `reject` mode) | step 7 of a publish | no |
 | `npm.unpublish` | the removal of a version by any road | yes: `{"repositoryId", "package", "version", "integrity", "actorId"}`, identifiers and a digest, no secret |
 | `npm.dist_tag.set`, `npm.dist_tag.delete` (with the previous version) | a tag write | no |
-| `npm.reinstate` | `trove admin npm reinstate` | no |
+| `npm.reinstate` | `quader admin npm reinstate` | no |
 | `npm.remote.version_removed` | a fill that unlists a version | no |
 
 A restore's replay of an `npm.unpublish` entry ([journal_replay.go](../../internal/formatdata/npm/journal_replay.go),
@@ -274,7 +274,7 @@ is on [backup-and-restore.md](backup-and-restore.md#the-revocation-journal).
 ## What this does not cover
 
 - [H-31](../spec/formats/npm.md#h-31--trusted-publishing-widens-the-set-of-credentials-that-can-publish): trusted publishing widens the set of credentials that can publish; dormant while the exchange of R-NPM-022 is not built.
-- [H-32](../spec/formats/npm.md#h-32--registry-signatures-and-provenance-cannot-be-verified-through-trove): registry signatures and provenance cannot be verified through trove.
+- [H-32](../spec/formats/npm.md#h-32--registry-signatures-and-provenance-cannot-be-verified-through-quader): registry signatures and provenance cannot be verified through Quader.
 - [H-33](../spec/formats/npm.md#h-33--takedown-delay-and-earlier-downloads): a takedown takes effect after the metadata period, and earlier downloads stay.
 - [H-34](../spec/formats/npm.md#h-34--audit-forwarding-discloses-the-dependency-set): audit forwarding discloses the dependency set.
 - [H-51](../spec/formats/npm.md#h-51--a-restore-reverts-npm-metadata-changes-made-after-the-backups-snapshot): a restore reverts npm metadata changes made after the backup's snapshot.

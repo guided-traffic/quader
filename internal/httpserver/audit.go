@@ -3,7 +3,7 @@ package httpserver
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/audit"
+	"github.com/guided-traffic/quader/internal/audit"
 )
 
 // SourceFrom is the source of an audit event for the request in ctx: the client

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // validation collects the violations of one document, so that a request reports

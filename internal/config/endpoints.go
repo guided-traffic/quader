@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Endpoint names and limits (R-EP-001).

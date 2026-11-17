@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/debstub"
+	"github.com/guided-traffic/quader/test/debstub"
 )
 
 func TestR_DEB_019_TheInReleaseIsPassedThroughByteForByteAndServedFromTheCache(t *testing.T) {
@@ -118,7 +118,7 @@ func TestR_DEB_019_AnOlderReleaseDoesNotReplaceAVerifiedOneButReplacesAnUnverifi
 	if a := e.get(rFast, suitePath+"InRelease"); a.Status != http.StatusOK || sum(a.Body) != sum(first[rFast]) {
 		t.Errorf("the keyed remote served another release than the verified one: %d", a.Status)
 	}
-	if !strings.Contains(e.r.Metrics(t), "trove_deb_release_rollbacks_total") {
+	if !strings.Contains(e.r.Metrics(t), "quader_deb_release_rollbacks_total") {
 		t.Error("the rollback was not counted")
 	}
 }

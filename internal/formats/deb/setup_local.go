@@ -1,6 +1,6 @@
 package deb
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // The client ID (R-DEB-029): apt and apt-get read one source format, so they are one client.
 const ClientAPT = "apt"
@@ -14,14 +14,14 @@ func clients() []formats.Client {
 // The names the snippets derive from the repository: the keyring file, the source file and the credential file, per project and
 // repository so that two repositories of one host never share one (R-DEB-029, R-DEB-018). The project and the key are the SetupData's.
 const (
-	tplName    = `trove-{{or .Project "<project>"}}-{{or .Key "<repository>"}}`
+	tplName    = `quader-{{or .Project "<project>"}}-{{or .Key "<repository>"}}`
 	tplKeyFile = `/etc/apt/keyrings/` + tplName + `.asc`
 	tplSources = `/etc/apt/sources.list.d/` + tplName + `.sources`
 	tplAuth    = `/etc/apt/auth.conf.d/` + tplName + `.conf`
 	tplSuite   = `{{if .Variant}}{{.Variant}}{{else}}stable{{end}}`
 	// tplSuiteArg is the suite as a template argument of printf.
 	tplSuiteArg = `(or .Variant "stable")`
-	tplUser     = `{{if .Username}}{{shell .Username}}{{else}}trove{{end}}`
+	tplUser     = `{{if .Username}}{{shell .Username}}{{else}}quader{{end}}`
 	tplKeyURL   = `{{shell (printf "%ssigning-key.asc" .RegistryURL)}}`
 )
 

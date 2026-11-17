@@ -9,7 +9,7 @@ import (
 	dto "github.com/prometheus/client_model/go"
 )
 
-// TestR_REPO_029_TheUpstreamGaugeCarriesTheQualifiedName: trove_remote_upstream_up is labelled with the
+// TestR_REPO_029_TheUpstreamGaugeCarriesTheQualifiedName: quader_remote_upstream_up is labelled with the
 // repository's qualified name <projectKey>/<repoKey> (R-REPO-002, R-OPS-007), so the same key in two
 // projects has two series, and publishing it for a repository the engine remembered by name never panics.
 func TestR_REPO_029_TheUpstreamGaugeCarriesTheQualifiedName(t *testing.T) {

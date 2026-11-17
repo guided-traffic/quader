@@ -40,8 +40,8 @@ func (fx *ciFixture) nugetJob(t testing.TB, pod int, name string, claims *ciClai
 // noSecrets fails when the job's log holds a CI token or the ID token (R-CI-028, E4.1).
 func noSecrets(t testing.TB, what string, r ciJobResult) {
 	t.Helper()
-	if strings.Contains(r.Out, "trv_cit_") {
-		t.Errorf("%s: the job log holds a trv_cit_ value:\n%s", what, tailLines(r.Out, 40))
+	if strings.Contains(r.Out, "qdr_cit_") {
+		t.Errorf("%s: the job log holds a qdr_cit_ value:\n%s", what, tailLines(r.Out, 40))
 	}
 	for _, p := range append(strings.Split(r.IDToken, "."), r.IDToken) {
 		if len(p) > 20 && strings.Contains(r.Out, p) {
@@ -162,7 +162,7 @@ func TestCIPipeline(t *testing.T) {
 			if rec.Active || rec.RevokedAt == nil || !rec.RevokedAt.Before(rec.ExpiresAt) {
 				t.Errorf("%s: the token of a finished job is still active: %+v", what, rec)
 			}
-			if !strings.HasPrefix(r.Token, "trv_cit_") {
+			if !strings.HasPrefix(r.Token, "qdr_cit_") {
 				t.Fatalf("%s: the harness did not capture the job's CI token", what)
 			}
 			if got := fx.tokenGets(t, r.Token, npmAddr(ciNpmAll)+"/-/whoami"); got != 401 {

@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 func newSpool(t *testing.T, mutate func(*config.StorageSpool), opts ...SpoolOption) *Spool {

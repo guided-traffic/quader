@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const everyVersionRange = `[{"type":"SEMVER","events":[{"introduced":"0"}]}]`
@@ -61,14 +61,14 @@ func TestR_VULN_010_AlwaysMatchesAndItsClaimsDoNotWithholdTheNameElsewhere(t *te
 	e := newEnv(t)
 	e.setComplete("npm", true)
 	e.addAdvisory("npm", "GHSA-aaaa-aaaa-0001", "", "vulnerability", "high")
-	e.addAffected("npm", "GHSA-aaaa-aaaa-0001", 0, "trove-test-vuln", everyVersionRange, nil, true, nil)
-	e.publish("npm-vendor", "trove-test-vuln", "1.0.0") // an auto claim of a repository with always
-	e.addVersion("npm-remote", "trove-test-vuln", "1.0.0")
+	e.addAffected("npm", "GHSA-aaaa-aaaa-0001", 0, "quader-test-vuln", everyVersionRange, nil, true, nil)
+	e.publish("npm-vendor", "quader-test-vuln", "1.0.0") // an auto claim of a repository with always
+	e.addVersion("npm-remote", "quader-test-vuln", "1.0.0")
 	e.rescan("npm-remote")
-	if got := e.findings("npm-vendor", "trove-test-vuln", "1.0.0", ""); got != 1 {
+	if got := e.findings("npm-vendor", "quader-test-vuln", "1.0.0", ""); got != 1 {
 		t.Errorf("npm-vendor: %d findings", got)
 	}
-	if got := e.findings("npm-remote", "trove-test-vuln", "1.0.0", ""); got != 1 {
+	if got := e.findings("npm-remote", "quader-test-vuln", "1.0.0", ""); got != 1 {
 		t.Errorf("npm-remote: %d findings", got)
 	}
 	if got := e.st.Number(`SELECT count(*) FROM vuln_claimed_match`); got != 0 {
@@ -115,21 +115,21 @@ func TestR_VULN_009_AnUnevaluableRangeMatchesNothingAndVersionsStillDo(t *testin
 	e := newEnv(t)
 	e.setComplete("npm", true)
 	e.addAdvisory("npm", "GHSA-aaaa-aaaa-0007", "", "vulnerability", "medium")
-	e.addAffected("npm", "GHSA-aaaa-aaaa-0007", 0, "trove-test-badfix", fixedRange("SEMVER", "not-a-version"), []string{"1.0.0"}, false, nil)
-	e.publish("npm-vendor", "trove-test-badfix", "1.0.0")
-	e.publish("npm-vendor", "trove-test-badfix", "1.0.2")
-	if got := e.findings("npm-vendor", "trove-test-badfix", "1.0.0", ""); got != 1 {
+	e.addAffected("npm", "GHSA-aaaa-aaaa-0007", 0, "quader-test-badfix", fixedRange("SEMVER", "not-a-version"), []string{"1.0.0"}, false, nil)
+	e.publish("npm-vendor", "quader-test-badfix", "1.0.0")
+	e.publish("npm-vendor", "quader-test-badfix", "1.0.2")
+	if got := e.findings("npm-vendor", "quader-test-badfix", "1.0.0", ""); got != 1 {
 		t.Errorf("versions[] gave %d findings, want 1", got)
 	}
-	if got := e.findings("npm-vendor", "trove-test-badfix", "1.0.2", ""); got != 0 {
+	if got := e.findings("npm-vendor", "quader-test-badfix", "1.0.2", ""); got != 0 {
 		t.Errorf("the unevaluable range matched: %d findings", got)
 	}
 	m := e.rep.Metrics(t)
-	if v := testenv.MetricValue(m, `trove_vuln_unevaluable_ranges_total{ecosystem="npm"}`); v < 2 {
-		t.Errorf("trove_vuln_unevaluable_ranges_total = %v, want at least 2\n%s", v, grepLines(m, "trove_vuln_"))
+	if v := testenv.MetricValue(m, `quader_vuln_unevaluable_ranges_total{ecosystem="npm"}`); v < 2 {
+		t.Errorf("quader_vuln_unevaluable_ranges_total = %v, want at least 2\n%s", v, grepLines(m, "quader_vuln_"))
 	}
-	if v := testenv.MetricValue(m, `trove_vuln_evaluations_total{trigger="publish"}`); v < 2 {
-		t.Errorf("trove_vuln_evaluations_total{publish} = %v, want at least 2", v)
+	if v := testenv.MetricValue(m, `quader_vuln_evaluations_total{trigger="publish"}`); v < 2 {
+		t.Errorf("quader_vuln_evaluations_total{publish} = %v, want at least 2", v)
 	}
 }
 
@@ -143,13 +143,13 @@ func TestR_VULN_006_AnAliasGroupIsOneFindingWithTheCanonicalIdentifier(t *testin
 	e.addAdvisory("npm", "CVE-2026-0001", "GHSA-aaaa-bbbb-cccc", "vulnerability", "high")
 	e.st.Exec(`UPDATE vuln_advisory SET modified = '2026-01-01T00:00:00Z'`) // one modification time for the group
 	for i, id := range []string{"GHSA-aaaa-bbbb-cccc", "CVE-2026-0001"} {
-		e.addAffected("npm", id, i, "trove-test-alias", fixedRange("SEMVER", "2.1.0"), nil, false, []string{"2.1.0"})
+		e.addAffected("npm", id, i, "quader-test-alias", fixedRange("SEMVER", "2.1.0"), nil, false, []string{"2.1.0"})
 	}
-	e.publish("npm-vendor", "trove-test-alias", "2.0.0")
-	if got := e.findings("npm-vendor", "trove-test-alias", "2.0.0", ""); got != 1 {
+	e.publish("npm-vendor", "quader-test-alias", "2.0.0")
+	if got := e.findings("npm-vendor", "quader-test-alias", "2.0.0", ""); got != 1 {
 		t.Fatalf("%d findings, want one for the group", got)
 	}
-	if got := e.findings("npm-vendor", "trove-test-alias", "2.0.0", "GHSA-aaaa-bbbb-cccc"); got != 1 {
+	if got := e.findings("npm-vendor", "quader-test-alias", "2.0.0", "GHSA-aaaa-bbbb-cccc"); got != 1 {
 		t.Errorf("the finding does not carry the canonical identifier")
 	}
 
@@ -166,7 +166,7 @@ func TestR_VULN_006_AnAliasGroupIsOneFindingWithTheCanonicalIdentifier(t *testin
 	if got := e.st.Number(`SELECT count(*) FROM vuln_finding`); got != 1 {
 		t.Errorf("%d findings after the re-key", got)
 	}
-	if got := e.history("npm-vendor", "trove-test-alias", "2.0.0"); got != "detected,advisory_changed" {
+	if got := e.history("npm-vendor", "quader-test-alias", "2.0.0"); got != "detected,advisory_changed" {
 		t.Errorf("history %q", got)
 	}
 }

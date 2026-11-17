@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: trove management API
+  title: Quader management API
   version: 1.0.0
-  summary: Management API of the trove artifact repository manager.
+  summary: Management API of the Quader artifact repository manager.
   description: |
     Every endpoint lives under `/api/v1/`; the major version in the path is the only version
     selector. Errors are `application/problem+json` (RFC 9457). Package-manager protocol endpoints
@@ -28,7 +28,7 @@ info:
     a project (a global policy, a token scope, an exposure rule) is `<projectGlob>/<keyGlob>[:<format>]` or
     `@any…[:<format>]` for all projects; a bare key there is `422` (R-AUTHZ-004).
 
-    The declaration `x-trove-permission` of an operation is one of: `public: true`; `authenticated: true`; `role`;
+    The declaration `x-quader-permission` of an operation is one of: `public: true`; `authenticated: true`; `role`;
     `permission: <capability>`, which admits the holders of the capability and, with `projectRole`, the members of a
     project: `projectRole: reader` admits a member of the project named by `project` (a value expression,
     `path.projectKey` or `query.project`) with at least the role Reader, `owner` one with the role Owner who may
@@ -39,7 +39,7 @@ info:
 
     While the installation is in read-only maintenance mode (`PUT /api/v1/system/maintenance`, R-OPS-024) every operation
     with a method other than GET, HEAD and OPTIONS answers `503 unavailable` with `Retry-After` and the operator's message
-    after the permission was decided, unless it declares `x-trove-maintenance: allowed`. The operations that declare it
+    after the permission was decided, unless it declares `x-quader-maintenance: allowed`. The operations that declare it
     keep the installation usable: minting, rotating and revoking credentials, ending sessions, the CI token exchange,
     the invalidation of a remote cache, this switch itself, and the operations that only evaluate (policy validation,
     permission checks, exposure and mapping evaluation, upstream tests, the Bastion probes).
@@ -47,7 +47,7 @@ info:
     name: Apache-2.0
     identifier: Apache-2.0
 servers:
-  - url: https://trove.example.com
+  - url: https://quader.example.com
     description: The public base URL (`server.base_url`); the server replaces this entry.
 tags:
   - name: system
@@ -155,18 +155,18 @@ tags:
   #
   # >>> M2 manual
   - name: manual
-    description: The trove manual of the running version, for the help area of the UI (R-API-054, R-UI-050).
+    description: The Quader manual of the running version, for the help area of the UI (R-API-054, R-UI-050).
   # <<< M2 manual
   # >>> M13 bastion
   - name: bastions
     description: |
-      Registrations of trove Bastions on the main installation and their tokens (R-BAS-004): the principal of the kind
+      Registrations of Quader Bastions on the main installation and their tokens (R-BAS-004): the principal of the kind
       `bastion`, its `bst` tokens and the last contact of each replica.
   - name: bastion
     description: |
       The Bastion interface of the main installation (R-BAS-008 to R-BAS-016): handshake, credential and read check,
       revocation feed and download intake. The operations are called by a Bastion with its token, carry the interface
-      version in `x-trove-bastion-interface` and are not part of the management API's v1 promise but of the interface
+      version in `x-quader-bastion-interface` and are not part of the management API's v1 promise but of the interface
       version (R-ARCH-025, R-BAS-009).
   # <<< M13 bastion
   #
@@ -201,7 +201,7 @@ paths:
       security:
         - {}
         - bearerAuth: []
-      x-trove-permission:
+      x-quader-permission:
         public: true
       responses:
         "200":
@@ -244,7 +244,7 @@ paths:
       security:
         - {}
         - bearerAuth: []
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
         publicSwitch: system.public_version
       responses:
@@ -276,7 +276,7 @@ paths:
         to anonymous callers, because the sign-in page shows it; it holds no secret. The message is plain text with links
         in Markdown inline syntax `[text](https://...)`: a client renders text and `https` links only, never HTML, and shows any
         other link as plain text. Read from PostgreSQL, so an answer shows a change another replica committed (R-API-052).
-      x-trove-permission:
+      x-quader-permission:
         public: true
       responses:
         "200":
@@ -301,7 +301,7 @@ paths:
         120; the severity defaults to `info`. A disabled banner keeps its text. Writes `system.banner_changed`, and only
         when the banner changed. Every replica returns the new banner within `cluster.epoch_poll_interval` plus 1 s, also
         while Valkey is stopped. Refused in read-only maintenance mode like every other write.
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:write
       requestBody:
         required: true
@@ -342,9 +342,9 @@ paths:
       description: |
         The read-only maintenance mode (R-OPS-024): `normal`, or `read_only` with the operator's message, the time it was
         switched on and who did it. Any authenticated caller reads it, because a client that is refused a write wants to
-        know why. Read from PostgreSQL (R-API-052). This is not the deletion pause of `trove admin maintenance
+        know why. Read from PostgreSQL (R-API-052). This is not the deletion pause of `quader admin maintenance
         pause-deletions` (R-HA-025), which stops garbage collection only.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       responses:
         "200":
@@ -369,13 +369,13 @@ paths:
       description: |
         Sets the mode (R-OPS-024). In `read_only` mode every write of content and configuration answers `503 unavailable`
         with `Retry-After` (`retryAfterSeconds`, default 300) and the message: publishes, pushes, deletes and
-        every mutating operation of this API that does not declare `x-trove-maintenance: allowed`. Downloads, metadata reads,
+        every mutating operation of this API that does not declare `x-quader-maintenance: allowed`. Downloads, metadata reads,
         sign-in, credential creation and revocation, and this operation continue. With `cacheFill: false` remote repositories
         serve only what they already cache. The scheduler enqueues no mutating task while the mode is on. Setting the mode that is
         stored changes nothing and writes no event; otherwise it writes `system.maintenance_mode_changed`. All replicas enforce
         the change within `cluster.epoch_poll_interval` plus 1 s, also while Valkey is stopped.
-      x-trove-maintenance: allowed
-      x-trove-permission:
+      x-quader-maintenance: allowed
+      x-quader-permission:
         permission: settings:write
       requestBody:
         required: true
@@ -418,7 +418,7 @@ paths:
         Cluster-wide facts come from PostgreSQL; `answeredBy` and the pools describe the replica
         that answered, because requests reach replicas at random and replicas never ask each other.
         A block whose source is not available on this replica is `null`.
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:read
       responses:
         "200":
@@ -445,7 +445,7 @@ paths:
       description: |
         Every replica with its roles, node, state, heartbeat, readiness checks and its own view of
         Valkey. A replica whose heartbeat is older than `system.heartbeat_stale_after` is `lost`.
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:read
       responses:
         "200":
@@ -473,10 +473,10 @@ paths:
         The upgrade verification of R-HA-020 and step 4 of the upgrade preparation of R-HA-021: the schema state, the
         answering replica's binary, the steps that binary embeds and the database has not applied (`pending`, with what the
         contract guard checks before a contract step), every applied step, and the background data migrations the binary
-        declares with their states (R-HA-022). `trove migrate status` prints the same report from the same code. During a
+        declares with their states (R-HA-022). `quader migrate status` prints the same report from the same code. During a
         rolling upgrade, replicas of both releases answer, each for its own binary (`binary.version`; the replica is named in
-        `X-Trove-Replica`).
-      x-trove-permission:
+        `X-Quader-Replica`).
+      x-quader-permission:
         permission: settings:read
       responses:
         "200":
@@ -505,7 +505,7 @@ paths:
         tokens, projects, endpoints and Bastions exist, how much content the object store holds as the metadata records
         it, and the state of the job queue. Counted from PostgreSQL by the replica that answers and cached there for
         `cacheSeconds`, so a dashboard that refreshes does not count again on every request.
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:read
       responses:
         "200":
@@ -531,7 +531,7 @@ paths:
       summary: This document as JSON
       security:
         - {}
-      x-trove-permission:
+      x-quader-permission:
         public: true
       responses:
         "200":
@@ -554,7 +554,7 @@ paths:
       summary: This document as YAML
       security:
         - {}
-      x-trove-permission:
+      x-quader-permission:
         public: true
       responses:
         "200":
@@ -580,7 +580,7 @@ paths:
         to a description. The registry is embedded, so the URI resolves on every installation.
       security:
         - {}
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - name: code
@@ -615,7 +615,7 @@ paths:
         cursor is valid on every replica and no page holds a transaction. Without `from` the range is
         the last 24 hours; `to` is exclusive. `action` is an exact name or a prefix ending in `.*`
         (`authz.*`). `actor` is a principal ID or a name. `limit` is at most 1000 (default 100).
-      x-trove-permission:
+      x-quader-permission:
         permission: audit:read
       parameters:
         - name: from
@@ -696,7 +696,7 @@ paths:
                     actor: {type: user, id: 5f0e6c3a-6b1d-4c1e-8f43-0d7c3d1c9a10, name: sec-alice, tokenId: null, authMethod: null}
                     source: {ip: 10.12.4.7, userAgent: curl/8.7.1}
                     traceId: 4bf92f3577b34da6a3ce929d0e0e4736
-                    replica: trove-web-6f9c7d8b5-x2v4q
+                    replica: quader-web-6f9c7d8b5-x2v4q
                     endpoint: default
                     resource: {type: permission_policy, id: 8c0d2f4e-1f64-4b7a-9d0e-3b5c7a9e1f20}
                     repository: null
@@ -731,7 +731,7 @@ paths:
         `from` set to the `occurredAt` of the last complete line, dropping the IDs already received.
         The event `audit.exported` is written before the first byte; if it cannot be written nothing is
         streamed.
-      x-trove-permission:
+      x-quader-permission:
         permission: audit:read
       parameters:
         - name: from
@@ -823,7 +823,7 @@ paths:
       tags: [audit]
       summary: Read one audit event
       description: One event by its ID (a UUIDv7). An ID that does not exist, or is not an event ID, answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         permission: audit:read
       parameters:
         - name: id
@@ -831,7 +831,7 @@ paths:
           required: true
           schema:
             type: string
-            x-trove-reserved-names: [export]
+            x-quader-reserved-names: [export]
       responses:
         "200":
           description: The event.
@@ -866,7 +866,7 @@ paths:
         holds `settings:read` sees all jobs; any other authenticated caller sees only the jobs it
         started. A garbage-collection run is `?kind=gc` or `?kind=gc-full`. Cursor pagination
         (R-API-010) over `(enqueuedAt, id)`: the cursor is valid on every replica.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - name: kind
@@ -910,7 +910,7 @@ paths:
                   - id: 01933b2a-7c41-7d1e-9a52-3f0e4b8c2d11
                     kind: gc
                     state: succeeded
-                    replica: trove-worker-7d4b9c6f8-q8n2m
+                    replica: quader-worker-7d4b9c6f8-q8n2m
                     enqueuedAt: "2026-10-28T12:40:00.000Z"
                     startedAt: "2026-10-28T12:40:01.200Z"
                     finishedAt: "2026-10-28T12:40:02.118Z"
@@ -943,7 +943,7 @@ paths:
         jobs it started; any other job answers `404`, like a missing one. While the job is queued,
         running or cancelling, the answer carries `Retry-After` with a suggested polling interval
         (R-API-015).
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - $ref: "#/components/parameters/JobId"
@@ -981,7 +981,7 @@ paths:
         (R-API-015); for anyone else the job does not exist. The one who started it cancels through a session or a
         token that inherits its rights; a token whose scope does not inherit them answers `403` unless the scope
         holds `settings:write` (Q-API-215). A finished job answers `409`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - $ref: "#/components/parameters/JobId"
@@ -1019,7 +1019,7 @@ paths:
         the next scheduled run, whether a run is going on, and the last run (R-OPS-019). A manual-only
         task such as `secrets-reencrypt` has `schedule` and `nextRunAt` `null`. Ordered by name; cursor
         pagination as everywhere (R-API-010).
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:read
       parameters:
         - $ref: "#/components/parameters/Limit"
@@ -1059,9 +1059,9 @@ paths:
         `409` with the code of the precondition (`key_ring_incompatible` for `secrets-reencrypt`) and
         enqueues nothing. The optional body holds the task's parameters, for example
         `{"dryRun": true}` for garbage collection. Starting a run is audited as `system.task_triggered`.
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:write
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - name: name
           in: path
@@ -1121,7 +1121,7 @@ paths:
         replica holds, and the last re-encryption (R-API-049). `activeKeyId` and `keys[].canary` are
         the answering replica's view, named by `answeredBy`; the other replicas are in `replicas`.
         The answer carries key IDs only, never key material, fingerprints, ciphertext or plaintext.
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:read
       responses:
         "200":
@@ -1152,7 +1152,7 @@ paths:
         Users ordered by username (R-AUTH-016). `status=locked` lists the break-glass account while its lockout is
         in force (R-AUTH-038); `admin=true` keeps the users that hold the role `admin` directly or through a group;
         `external=true` keeps the users flagged external (R-AUTH-044). Cursor pagination (R-API-010) over `username`.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:read
       parameters:
         - name: q
@@ -1223,9 +1223,9 @@ paths:
         (R-AUTH-044). A pending identity link (`subject: null`) is completed by the user's first
         login at that provider (R-AUTH-007). A username that is reserved, such as `me` or the break-glass account's,
         answers `422 reserved_name`; an existing one `409`. Optional `Idempotency-Key`.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1275,7 +1275,7 @@ paths:
       description: |
         The record of the signed-in user, or of the owner of a personal access token (R-AUTH-016, R-AUTH-017).
         A service account answers `403`: it has no user record.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       responses:
         "200":
@@ -1309,10 +1309,10 @@ paths:
         pixels alone, so metadata and anything appended are gone (R-API-055). The answer is the user record, whose
         `avatarUrl` names the new image. A request with a session cookie needs the CSRF header (R-API-006). Service accounts
         and CI tokens have no avatar and answer `403`, and so does a token whose scope does not inherit its owner's rights
-        (`x-trove-owner-rights`, R-API-021).
-      x-trove-permission:
+        (`x-quader-owner-rights`, R-API-021).
+      x-quader-permission:
         authenticated: true
-      x-trove-owner-rights: required
+      x-quader-owner-rights: required
       requestBody:
         required: true
         content:
@@ -1359,10 +1359,10 @@ paths:
       summary: Remove the caller's avatar
       description: |
         The user shows the generated fallback image again. A user without an avatar answers `204` as well (R-API-055).
-        A token whose scope does not inherit its owner's rights answers `403` (`x-trove-owner-rights`, R-API-021).
-      x-trove-permission:
+        A token whose scope does not inherit its owner's rights answers `403` (`x-quader-owner-rights`, R-API-021).
+      x-quader-permission:
         authenticated: true
-      x-trove-owner-rights: required
+      x-quader-owner-rights: required
       responses:
         "204":
           description: The caller has no avatar.
@@ -1385,7 +1385,7 @@ paths:
       description: |
         Moderation: an administrator removes the avatar of another user (R-API-055). Nobody sets another user's avatar. A
         user without an avatar answers `204`.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
       parameters:
         - name: username
@@ -1394,7 +1394,7 @@ paths:
           description: The username. `me` is reserved and addresses the caller where the path has a `me` form.
           schema:
             type: string
-            x-trove-reserved-names: [me]
+            x-quader-reserved-names: [me]
       responses:
         "204":
           description: The user has no avatar.
@@ -1421,7 +1421,7 @@ paths:
         this path, and a replaced avatar has a new URL (R-API-055). The answer is `image/png` with `nosniff`, a CSP of
         `default-src 'none'; sandbox`, `Content-Disposition: inline` and a private immutable cache, not the `no-store` of the
         JSON answers. Any authenticated caller reads it; a digest that is no user's avatar answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -1465,7 +1465,7 @@ paths:
       summary: Read a user
       description: |
         One user with its identity links, groups and administrator flags (R-AUTH-016).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:read
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -1475,7 +1475,7 @@ paths:
           description: The username. `me` is reserved and addresses the caller where the path has a `me` form.
           schema:
             type: string
-            x-trove-reserved-names: [me]
+            x-quader-reserved-names: [me]
       responses:
         "200":
           description: The user.
@@ -1510,9 +1510,9 @@ paths:
         authentication (`401 reauthentication_required`), writes `user.external_changed` and answers `409` for the break-glass
         account. The body is a JSON merge patch; the read-only members of the user
         record are accepted and ignored, so a body obtained by `GET` can be sent back.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
         - name: username
@@ -1521,7 +1521,7 @@ paths:
           description: The username. `me` is reserved and addresses the caller where the path has a `me` form.
           schema:
             type: string
-            x-trove-reserved-names: [me]
+            x-quader-reserved-names: [me]
       requestBody:
         required: true
         content:
@@ -1570,7 +1570,7 @@ paths:
         Ends the user's sessions and deletes its tokens, identity links and memberships; role bindings go with it
         (R-AUTH-016). A later login of the same identity creates a new user with a new `id`. The break-glass account
         cannot be deleted (`409 break_glass_immutable`).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
       parameters:
         - name: username
@@ -1579,7 +1579,7 @@ paths:
           description: The username. `me` is reserved and addresses the caller where the path has a `me` form.
           schema:
             type: string
-            x-trove-reserved-names: [me]
+            x-quader-reserved-names: [me]
       responses:
         "204":
           description: The user is deleted.
@@ -1607,7 +1607,7 @@ paths:
         Ends all sessions of the user and makes every token of the user fail with `401 principal_disabled`. With
         `revokeTokens: true` (the default) the tokens are also revoked with reason `principal_disabled`; enabling the
         user again does not bring them back (R-AUTH-016). The break-glass account answers `409 break_glass_immutable`.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
       parameters:
         - name: username
@@ -1616,7 +1616,7 @@ paths:
           description: The username. `me` is reserved and addresses the caller where the path has a `me` form.
           schema:
             type: string
-            x-trove-reserved-names: [me]
+            x-quader-reserved-names: [me]
       requestBody:
         required: false
         content:
@@ -1654,7 +1654,7 @@ paths:
       summary: Enable a user
       description: |
         Enables a disabled user. Tokens revoked by the disable stay revoked (R-AUTH-016).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
       parameters:
         - name: username
@@ -1663,7 +1663,7 @@ paths:
           description: The username. `me` is reserved and addresses the caller where the path has a `me` form.
           schema:
             type: string
-            x-trove-reserved-names: [me]
+            x-quader-reserved-names: [me]
       responses:
         "204":
           description: The user is enabled.
@@ -1689,7 +1689,7 @@ paths:
         Changes the `manual` memberships only; a membership with another source (`oidc:<provider>`, `auto`, `scim`)
         is not touched (R-AUTH-016, R-AUTH-018). An unknown user or group answers `404` and nothing is applied. The
         answer lists the user's memberships afterwards.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
       parameters:
         - name: username
@@ -1698,7 +1698,7 @@ paths:
           description: The username. `me` is reserved and addresses the caller where the path has a `me` form.
           schema:
             type: string
-            x-trove-reserved-names: [me]
+            x-quader-reserved-names: [me]
       requestBody:
         required: true
         content:
@@ -1742,7 +1742,7 @@ paths:
         Clears a lockout of the break-glass account at once on every replica (R-AUTH-014, R-AUTH-038) and writes
         `auth.breakglass.unlocked` with severity `high`. Any other username answers `404`. The answer is `204`
         whether or not a lock was in force.
-      x-trove-permission:
+      x-quader-permission:
         role: admin
       parameters:
         - name: username
@@ -1751,7 +1751,7 @@ paths:
           description: The username. `me` is reserved and addresses the caller where the path has a `me` form.
           schema:
             type: string
-            x-trove-reserved-names: [me]
+            x-quader-reserved-names: [me]
       responses:
         "204":
           description: The account is unlocked.
@@ -1775,7 +1775,7 @@ paths:
       summary: List groups
       description: |
         Groups ordered by name, with member counts (R-AUTH-018). Cursor pagination (R-API-010) over `name`.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:read
       parameters:
         - name: q
@@ -1825,9 +1825,9 @@ paths:
       description: |
         Creates a group with origin `admin`. Members are usernames and `sa:<name>`; all get a `manual` membership. An
         unknown member answers `404` and nothing is created (R-AUTH-018). Optional `Idempotency-Key`.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1878,7 +1878,7 @@ paths:
       summary: Read a group
       description: |
         One group with the system roles bound to it, read only (R-AUTH-018).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:read
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -1922,9 +1922,9 @@ paths:
         `409 managed_by_scim`; auto-join on a group with an administration role binding answers
         `409 auto_join_admin_conflict` (R-AUTH-018, R-AUTH-019); auto-join on a group that is a member of a project answers
         `409 auto_join_member_conflict` and names the projects (R-AUTHZ-026). JSON merge patch; read-only members are ignored.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
         - name: name
@@ -1980,7 +1980,7 @@ paths:
       summary: Delete a group
       description: |
         Deletes the group with its memberships and role bindings. A SCIM-owned group answers `409 managed_by_scim` (R-AUTH-018).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
       parameters:
         - name: name
@@ -2015,7 +2015,7 @@ paths:
         Users and service accounts, ordered by kind and name, each with all its sources (`manual`, `auto`,
         `oidc:<provider>`, `scim`). `source` keeps the members that hold that source (R-AUTH-018). Cursor pagination
         (R-API-010).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:read
       parameters:
         - name: name
@@ -2064,7 +2064,7 @@ paths:
         remaining sources (R-AUTH-018). An unknown member answers
         `404` and nothing is applied. A SCIM-owned group answers `409 managed_by_scim`. The answer lists the members
         the request named.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
       parameters:
         - name: name
@@ -2117,7 +2117,7 @@ paths:
         `null` for an instance-wide account; the same `name` may appear for several projects and once instance-wide. The
         `project` parameter keeps the accounts of one project. The accounts of one project are managed under
         `/api/v1/projects/{projectKey}/service-accounts`.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:read
       parameters:
         - name: q
@@ -2169,9 +2169,9 @@ paths:
         among the instance-wide accounts. It has no login, session or UI access. Binding the role `admin` to it is an
         operation of the authorization API. An account of a project is created under
         `/api/v1/projects/{projectKey}/service-accounts`. Optional `Idempotency-Key`.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -2224,7 +2224,7 @@ paths:
         (R-AUTH-020, Q-AUTHZ-209). The names are unique within the project, so `name` is the name inside it; the
         principal reference is `sa:<project>/<name>`. An Owner of the project, or a holder of `identities:read`, may call
         it; a project the caller cannot see answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:read
         project: path.projectKey
         projectRole: owner
@@ -2276,11 +2276,11 @@ paths:
         Its name is unique within the project: the same name may exist in another project and as an instance-wide
         account (`409 already_exists` when the project has it). An Owner of the project, or a holder of
         `identities:write`, creates it. Optional `Idempotency-Key`.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
         project: path.projectKey
         projectRole: owner
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -2332,7 +2332,7 @@ paths:
       description: |
         One instance-wide service account (R-AUTH-020). The name of a project's account answers `404` here; read it under the
         project.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:read
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -2371,9 +2371,9 @@ paths:
       summary: Change a service account
       description: |
         Changes the description (R-AUTH-020; owners are P1). JSON merge patch; read-only members are ignored.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
         - name: name
@@ -2427,7 +2427,7 @@ paths:
       summary: Delete a service account
       description: |
         Deletes the account with its tokens and memberships (R-AUTH-020).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
       parameters:
         - name: name
@@ -2460,7 +2460,7 @@ paths:
       description: |
         One service account of the project (R-AUTH-020). An account of another project, or an instance-wide one, answers
         `404` here.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:read
         project: path.projectKey
         projectRole: owner
@@ -2501,11 +2501,11 @@ paths:
       summary: Change a service account of a project
       description: |
         Changes the description (R-AUTH-020). JSON merge patch; read-only members are ignored.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
         project: path.projectKey
         projectRole: owner
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
         - name: name
@@ -2559,7 +2559,7 @@ paths:
       summary: Delete a service account of a project
       description: |
         Deletes the account with its tokens (R-AUTH-020).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
         project: path.projectKey
         projectRole: owner
@@ -2593,7 +2593,7 @@ paths:
       description: |
         Every token of the account fails with `401 principal_disabled` (R-AUTH-020). With `revokeTokens: true` they are
         also revoked; the default is `false`, so enabling the account again restores its tokens (Q-AUTH-41).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
       parameters:
         - name: name
@@ -2638,7 +2638,7 @@ paths:
       description: |
         Every token of the account fails with `401 principal_disabled` (R-AUTH-020). With `revokeTokens: true` they are
         also revoked; the default is `false`, so enabling the account again restores its tokens (Q-AUTH-41).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
         project: path.projectKey
         projectRole: owner
@@ -2683,7 +2683,7 @@ paths:
       summary: Enable a service account
       description: |
         Enables the account (R-AUTH-020).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
       parameters:
         - name: name
@@ -2715,7 +2715,7 @@ paths:
       summary: Enable a service account of a project
       description: |
         Enables the account (R-AUTH-020).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
         project: path.projectKey
         projectRole: owner
@@ -2744,7 +2744,7 @@ paths:
   /api/v1/tokens:
     post:
       operationId: createToken
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Create a personal access token
       description: |
@@ -2757,10 +2757,10 @@ paths:
         The token value is in this answer only; no other operation returns it. The answer is never cached
         (`Cache-Control: no-store`). A retry with the same `Idempotency-Key` answers `409 token_already_issued` with
         the `tokenId`, because the value is not stored.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         authenticated: true
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -2816,7 +2816,7 @@ paths:
         `owner=sa:<project>/<name>` (R-AUTHZ-026, Q-AUTHZ-177). Through a token whose scope does not inherit its
         owner's rights, the own tokens are that token and the tokens derived from it (Q-AUTH-199). The state defaults to `active`. Neither the value nor its hash is ever returned. Cursor pagination
         (R-API-010) over the token `id`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - name: owner
@@ -2881,9 +2881,9 @@ paths:
       summary: Read the token that authenticates the request
       description: |
         The token's expiry and scope (R-AUTH-028). A session answers `404 not_a_token`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
-      x-trove-ci: admitted
+      x-quader-ci: admitted
       responses:
         "200":
           description: The token.
@@ -2903,15 +2903,15 @@ paths:
           $ref: "#/components/responses/Unavailable"
     delete:
       operationId: revokeCurrentToken
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Revoke the token that authenticates the request
       description: |
         Revokes the presenting token of any type, a CI token included, with reason `owner` (R-AUTH-029). Tokens derived
         from it are revoked with it. A session answers `404 not_a_token`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
-      x-trove-ci: admitted
+      x-quader-ci: admitted
       responses:
         "204":
           description: The token is revoked.
@@ -2929,13 +2929,13 @@ paths:
   /api/v1/tokens/current/rotate:
     post:
       operationId: rotateCurrentToken
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Rotate the token that authenticates the request
       description: |
         Only a token created with `selfRotatable: true` may do this (`403 forbidden` otherwise). The answer holds the
         new value and is never cached (R-AUTH-030).
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       requestBody:
         required: false
@@ -2984,7 +2984,7 @@ paths:
   /api/v1/tokens/revoke:
     post:
       operationId: revokeTokenByValue
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Revoke a token by its value
       description: |
@@ -2993,7 +2993,7 @@ paths:
         follows `derived_from` and `rotated_from`. The answer does not tell whether the token existed, except to an
         administrator, who receives `200` with the token's `id` and `owner`. A value that fails the syntax check
         answers `400`. Rate-limited per R-AUTH-038.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       requestBody:
         required: true
@@ -3032,7 +3032,7 @@ paths:
         One token (R-AUTH-028). A token the caller may not see answers `404`, like a missing one; an administrator
         of a project sees the tokens of its project's service accounts (Q-AUTHZ-177). A token whose scope does not
         inherit its owner's rights sees of its owner's tokens only itself and the tokens derived from it (Q-AUTH-199).
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - name: id
@@ -3040,7 +3040,7 @@ paths:
           required: true
           schema:
             type: string
-            x-trove-reserved-names: [current, revoke]
+            x-quader-reserved-names: [current, revoke]
       responses:
         "200":
           description: The token.
@@ -3060,7 +3060,7 @@ paths:
           $ref: "#/components/responses/Unavailable"
     delete:
       operationId: revokeToken
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Revoke a token
       description: |
@@ -3070,7 +3070,7 @@ paths:
         rights reaches only itself and the tokens derived from it; another token of its owner answers `404` like any
         token it may not see, unless the scope holds `tokens:revoke` (Q-AUTH-199). A CI token answers `403
         ci_token_restricted`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - name: id
@@ -3078,7 +3078,7 @@ paths:
           required: true
           schema:
             type: string
-            x-trove-reserved-names: [current, revoke]
+            x-quader-reserved-names: [current, revoke]
       responses:
         "204":
           description: The token is revoked.
@@ -3098,7 +3098,7 @@ paths:
   /api/v1/tokens/{id}/rotate:
     post:
       operationId: rotateToken
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Rotate a token
       description: |
@@ -3109,17 +3109,17 @@ paths:
         when the scope's `tokens:read` lets it see it (Q-AUTH-199). `overlapSeconds` keeps the
         old value valid for that long (0 revokes it with reason `rotated`). The answer holds the new value and is never
         cached.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         authenticated: true
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: string
-            x-trove-reserved-names: [current, revoke]
+            x-quader-reserved-names: [current, revoke]
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: false
@@ -3170,15 +3170,15 @@ paths:
   /api/v1/users/me/tokens:
     delete:
       operationId: revokeOwnTokens
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Revoke all own tokens
       description: |
         Revokes every active token of the caller with reason `owner` (R-AUTH-029). A session or a token that inherits the
-        owner's rights may; a token whose scope does not answers `403` (`x-trove-owner-rights`, R-API-021).
-      x-trove-permission:
+        owner's rights may; a token whose scope does not answers `403` (`x-quader-owner-rights`, R-API-021).
+      x-quader-permission:
         authenticated: true
-      x-trove-owner-rights: required
+      x-quader-owner-rights: required
       responses:
         "204":
           description: The tokens are revoked.
@@ -3196,12 +3196,12 @@ paths:
   /api/v1/users/{username}/tokens:
     delete:
       operationId: revokeUserTokens
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Revoke all tokens of a user
       description: |
         Revokes every active token of the user with reason `admin` (R-AUTH-029).
-      x-trove-permission:
+      x-quader-permission:
         permission: tokens:revoke
       parameters:
         - name: username
@@ -3210,7 +3210,7 @@ paths:
           description: The username. `me` is reserved and addresses the caller where the path has a `me` form.
           schema:
             type: string
-            x-trove-reserved-names: [me]
+            x-quader-reserved-names: [me]
       responses:
         "204":
           description: The tokens are revoked.
@@ -3230,7 +3230,7 @@ paths:
   /api/v1/service-accounts/{name}/tokens:
     post:
       operationId: createServiceAccountToken
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Create a service-account token
       description: |
@@ -3239,10 +3239,10 @@ paths:
         token (`ttlSeconds: 0`) needs the administrator and `auth.tokens.sat.allow_non_expiring`. The value is in this answer
         only and the answer is never cached. The tokens of a project's account are created under
         `/api/v1/projects/{projectKey}/service-accounts/{name}/tokens`.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         authenticated: true
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - name: name
           in: path
@@ -3297,12 +3297,12 @@ paths:
           $ref: "#/components/responses/Unavailable"
     delete:
       operationId: revokeServiceAccountTokens
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Revoke all tokens of a service account
       description: |
         Revokes every active token of an instance-wide service account with reason `admin` (R-AUTH-029).
-      x-trove-permission:
+      x-quader-permission:
         permission: tokens:revoke
       parameters:
         - name: name
@@ -3330,20 +3330,20 @@ paths:
       - $ref: "#/components/parameters/ProjectKey"
     post:
       operationId: createProjectServiceAccountToken
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Create a token of a project service account
       description: |
         Creates a SAT of a service account of the project (R-AUTH-027, Q-AUTHZ-177). The caller is an Owner of the
         project acting with a session (with recent authentication) or a token with `admin: true`, or an administrator
-        of trove. A non-expiring token (`ttlSeconds: 0`) needs an administrator of trove and
+        of Quader. A non-expiring token (`ttlSeconds: 0`) needs an administrator of Quader and
         `auth.tokens.sat.allow_non_expiring`. A token an Owner creates is never non-expiring, lives at most
         `auth.tokens.sat` maximum lifetime, names no `system` item and has `admin: false` (`422 invalid_scope`); an
         `endpoints` binding is allowed. The value is in this answer only and the answer is never cached.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         authenticated: true
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - name: name
           in: path
@@ -3398,12 +3398,12 @@ paths:
           $ref: "#/components/responses/Unavailable"
     delete:
       operationId: revokeProjectServiceAccountTokens
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [tokens]
       summary: Revoke all tokens of a project service account
       description: |
         Revokes every active token of the account with reason `admin` (R-AUTH-029).
-      x-trove-permission:
+      x-quader-permission:
         permission: tokens:revoke
         project: path.projectKey
         projectRole: owner
@@ -3440,7 +3440,7 @@ paths:
         (R-AUTH-040). `ETag` is the tag for `PATCH`: the revision of the settings and a digest of the read-only status, which
         can change without a write (a lockout, a provider's discovery), so `If-None-Match` is never answered `304` for a
         status that moved. A write takes only the revision out of the tag (Q-API-185).
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:read
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -3472,10 +3472,10 @@ paths:
         JSON merge patch of `newUsersExternal` and the token lifetimes (R-AUTH-040). Each value must be at most its YAML
         ceiling (`400 exceeds_ceiling`) and each default at most its maximum (`400 default_above_maximum`). A session needs a recent authentication (`401 reauthentication_required`). The change is in force on
         every replica within the revocation bound and writes `settings.auth.changed`.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: settings:write
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -3526,7 +3526,7 @@ paths:
       description: |
         The installation's default level, whether `public` can be set, and the objects whose artifacts are `public`
         (R-API-056, R-AUTHZ-033). `ETag` is the tag for `PATCH`.
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:read
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -3563,10 +3563,10 @@ paths:
         so a body obtained by `GET` can be sent back. A session needs a recent authentication
         (`401 reauthentication_required`). Writes `settings.visibility.changed` with the default before and after; the change
         decides only objects created later and is not journaled.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: security-settings:write
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -3624,7 +3624,7 @@ paths:
         the local break-glass form is offered, whether some repository's artifacts are `public` (`publicContent`), and the provider
         to redirect to at once.
         It names no issuer, client ID or error detail.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       responses:
         "200":
@@ -3650,7 +3650,7 @@ paths:
         is `pat`, `sat`, `cit` or `session`; `tokenId`, `scope` and `expiresAt` describe a token and are
         `null` for a session. An anonymous caller answers `401`, so the UI learns whether to start the application or
         the sign-in.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       responses:
         "200":
@@ -3676,11 +3676,11 @@ paths:
       description: |
         The live UI sessions of the caller, newest first, `current` marking the one that made this request
         (R-AUTH-010). At most `auth.sessions.max_per_user` exist, so the list is one page. A service account or CI
-        token answers `403`, and so does a token whose scope does not inherit its owner's rights (`x-trove-owner-rights`,
+        token answers `403`, and so does a token whose scope does not inherit its owner's rights (`x-quader-owner-rights`,
         R-API-021).
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
-      x-trove-owner-rights: required
+      x-quader-owner-rights: required
       responses:
         "200":
           description: The sessions.
@@ -3700,17 +3700,17 @@ paths:
           $ref: "#/components/responses/Unavailable"
     delete:
       operationId: endOwnSessions
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [sessions]
       summary: End all of the caller's sessions
       description: |
         Ends every session of the caller, or with `keepCurrent=true` every one but the session of this request (R-AUTH-010). Sessions
         that had ended already, the ones the current session replaced by a sign-in or a re-authentication included, are withdrawn, so
         that no delete job queued with one of them goes on (Q-AUTHZ-262).
-        A token whose scope does not inherit its owner's rights answers `403` (`x-trove-owner-rights`, R-API-021).
-      x-trove-permission:
+        A token whose scope does not inherit its owner's rights answers `403` (`x-quader-owner-rights`, R-API-021).
+      x-quader-permission:
         authenticated: true
-      x-trove-owner-rights: required
+      x-quader-owner-rights: required
       parameters:
         - name: keepCurrent
           in: query
@@ -3736,17 +3736,17 @@ paths:
   /api/v1/users/me/sessions/{id}:
     delete:
       operationId: endOwnSession
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [sessions]
       summary: End one of the caller's sessions
       description: |
         Ends a session of the caller. A session of the caller that had ended already by its deadlines, the session limit or a
         re-authentication is withdrawn and answers `204` too, so that a delete job it queued stops (Q-AUTHZ-262); a repeated request
         for it then answers `404`, as do another user's session, a session already withdrawn and an unknown ID (R-AUTH-010).
-        A token whose scope does not inherit its owner's rights answers `403` (`x-trove-owner-rights`, R-API-021).
-      x-trove-permission:
+        A token whose scope does not inherit its owner's rights answers `403` (`x-quader-owner-rights`, R-API-021).
+      x-quader-permission:
         authenticated: true
-      x-trove-owner-rights: required
+      x-quader-owner-rights: required
       parameters:
         - name: id
           in: path
@@ -3777,7 +3777,7 @@ paths:
       summary: List a user's active sessions
       description: |
         The live UI sessions of a user, newest first (R-AUTH-010).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:read
       parameters:
         - name: username
@@ -3786,7 +3786,7 @@ paths:
           description: The username.
           schema:
             type: string
-            x-trove-reserved-names: [me]
+            x-quader-reserved-names: [me]
       responses:
         "200":
           description: The sessions.
@@ -3808,12 +3808,12 @@ paths:
           $ref: "#/components/responses/Unavailable"
     delete:
       operationId: endUserSessions
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [sessions]
       summary: End all sessions of a user
       description: |
         Ends every session of the user with reason `revoked` and writes `auth.session.ended` (R-AUTH-010).
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:write
       parameters:
         - name: username
@@ -3822,7 +3822,7 @@ paths:
           description: The username.
           schema:
             type: string
-            x-trove-reserved-names: [me]
+            x-quader-reserved-names: [me]
       responses:
         "204":
           description: The sessions are ended.
@@ -3847,7 +3847,7 @@ paths:
       description: |
         A user who never saved preferences has the defaults at revision 1 (R-API-021). `ETag` is the revision. Service
         accounts and CI tokens answer `403`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -3877,12 +3877,12 @@ paths:
       summary: Change the caller's UI preferences
       description: |
         JSON merge patch with `If-Match` (R-API-012, R-API-013); `null` resets a member to its default. A token whose scope
-        does not inherit its owner's rights answers `403`, before `If-Match` is looked at (`x-trove-owner-rights`,
+        does not inherit its owner's rights answers `403`, before `If-Match` is looked at (`x-quader-owner-rights`,
         R-API-021).
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
-      x-trove-owner-rights: required
-      x-trove-if-match: required
+      x-quader-owner-rights: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -3940,7 +3940,7 @@ paths:
         does not exist answers `422`. The list is read from PostgreSQL on every call (R-API-052). `project=<key>` keeps the
         policies of a project; every item shows its project in `project`, `null` for an instance-wide policy (Q-AUTHZ-209). The
         policies of one project are managed under `/api/v1/projects/{projectKey}/policies`.
-      x-trove-permission:
+      x-quader-permission:
         permission: policies:read
       parameters:
         - name: principal
@@ -4027,17 +4027,17 @@ paths:
         Validates the policy (R-AUTHZ-021), stores it as an instance-wide policy and notifies the `authz` change area in one
         transaction with the audit event `authz.policy.created`. Its selectors are qualified: `<projectGlob>/<keyGlob>`,
         `@any…` (a bare key is `422 invalid_pattern`). The name is unique among the instance-wide policies: `409
-        already_exists`. The answer carries the epoch the write produced in `Trove-Authz-Epoch` and the policy's `ETag`.
+        already_exists`. The answer carries the epoch the write produced in `Quader-Authz-Epoch` and the policy's `ETag`.
         Warnings do not block saving; a rule that fails answers `422` with the code of the first problem and every problem in
         `errors` (`unknown_principal`, `unknown_repository`, `unknown_format`, `invalid_pattern`, `invalid_action`,
         `duplicate_principal`, `virtual_action_not_applicable`, `action_not_allowed`, `principal_outside_project`). An entry
         for `anonymous` or `authenticated` answers `422 principal_not_allowed`: a visibility level opens content to everyone
         or to every internal user (R-AUTHZ-003, R-AUTHZ-033). A policy of a project is created
         under `/api/v1/projects/{projectKey}/policies`.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: policies:write
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -4064,9 +4064,9 @@ paths:
               $ref: "#/components/headers/ETag"
             Idempotency-Replayed:
               $ref: "#/components/headers/IdempotencyReplayed"
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               description: >-
-                The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+                The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
                 request to see the change on whichever replica answers (R-AUTHZ-032).
               schema:
                 type: integer
@@ -4110,7 +4110,7 @@ paths:
         unique within the project. Filters `principal` and `expandGroups` act as on `GET /api/v1/permission-policies`;
         `repository` is a bare key of the project. An Owner of the project, or a holder of `policies:read`, may call
         it; a project the caller cannot see answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         permission: policies:read
         project: path.projectKey
         projectRole: owner
@@ -4199,15 +4199,15 @@ paths:
         The selectors name repositories of the project by bare key (`422 repository_outside_project` for another
         project's); the entries grant to users, groups, global service accounts, CI mappings and the project's own
         service accounts (`422 principal_outside_project` for another's). The answer carries the epoch the write
-        produced in `Trove-Authz-Epoch` and the policy's `ETag`. Warnings do not block saving; a rule that fails
+        produced in `Quader-Authz-Epoch` and the policy's `ETag`. Warnings do not block saving; a rule that fails
         answers `422` with the code of the first problem and every problem in `errors`. An Owner of the project,
         or a holder of `policies:write`, creates it.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: policies:write
         project: path.projectKey
         projectRole: owner
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -4234,9 +4234,9 @@ paths:
               $ref: "#/components/headers/ETag"
             Idempotency-Replayed:
               $ref: "#/components/headers/IdempotencyReplayed"
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               description: >-
-                The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+                The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
                 request to see the change on whichever replica answers (R-AUTHZ-032).
               schema:
                 type: integer
@@ -4286,7 +4286,7 @@ paths:
       description: |
         Answers the instance-wide policy with its warnings and its `ETag` (the version, R-API-012). The name of a project's
         policy answers `404` here; read it under the project.
-      x-trove-permission:
+      x-quader-permission:
         permission: policies:read
       responses:
         "200":
@@ -4324,13 +4324,13 @@ paths:
         Replaces the whole policy (R-AUTHZ-021); the name is immutable. `If-Match` is required: a
         missing header answers `428`, a version that is not current `412` with `currentEtag`, and
         `If-Match: *` is the deliberate blind write. The read-only members of a body obtained by GET
-        are ignored. The answer carries the new `ETag` and `Trove-Authz-Epoch`. The audit event
+        are ignored. The answer carries the new `ETag` and `Quader-Authz-Epoch`. The audit event
         `authz.policy.updated` records the access-bearing state before and after and is journaled
         (R-AUTHZ-031).
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: policies:write
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -4345,9 +4345,9 @@ paths:
           headers:
             ETag:
               $ref: "#/components/headers/ETag"
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               description: >-
-                The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+                The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
                 request to see the change on whichever replica answers (R-AUTHZ-032).
               schema:
                 type: integer
@@ -4390,10 +4390,10 @@ paths:
         `entries` is replaced as a whole. The result is validated and written exactly like a
         replacement, so the rules, `If-Match` and the epoch header of `PUT` apply. `null` resets
         `description` to the empty string. `name` is immutable: a different value answers `422`.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: policies:write
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -4410,9 +4410,9 @@ paths:
           headers:
             ETag:
               $ref: "#/components/headers/ETag"
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               description: >-
-                The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+                The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
                 request to see the change on whichever replica answers (R-AUTHZ-032).
               schema:
                 type: integer
@@ -4452,10 +4452,10 @@ paths:
       summary: Delete a permission policy
       description: |
         Removes the policy with its selectors, patterns and entries. `If-Match` is optional here; when
-        sent, a version that is not current answers `412`. The answer carries `Trove-Authz-Epoch`. The
+        sent, a version that is not current answers `412`. The answer carries `Quader-Authz-Epoch`. The
         audit event `authz.policy.deleted` is journaled (R-AUTHZ-031).
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: policies:write
       parameters:
         - $ref: "#/components/parameters/IfMatchOptional"
@@ -4463,9 +4463,9 @@ paths:
         "204":
           description: The policy was deleted.
           headers:
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               description: >-
-                The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+                The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
                 request to see the change on whichever replica answers (R-AUTHZ-032).
               schema:
                 type: integer
@@ -4504,7 +4504,7 @@ paths:
       description: |
         Answers the policy of the project with its warnings and its `ETag` (the version, R-API-012). A global policy, or
         one of another project, answers `404` here.
-      x-trove-permission:
+      x-quader-permission:
         permission: policies:read
         project: path.projectKey
         projectRole: owner
@@ -4543,14 +4543,14 @@ paths:
       description: |
         Replaces the whole policy (R-AUTHZ-021); the name is immutable. `If-Match` is required: a missing header answers
         `428`, a version that is not current `412` with `currentEtag`, and `If-Match: *` is the deliberate blind
-        write. The answer carries the new `ETag` and `Trove-Authz-Epoch`. The audit event `authz.policy.updated` is
+        write. The answer carries the new `ETag` and `Quader-Authz-Epoch`. The audit event `authz.policy.updated` is
         journaled (R-AUTHZ-031).
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: policies:write
         project: path.projectKey
         projectRole: owner
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -4565,9 +4565,9 @@ paths:
           headers:
             ETag:
               $ref: "#/components/headers/ETag"
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               description: >-
-                The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+                The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
                 request to see the change on whichever replica answers (R-AUTHZ-032).
               schema:
                 type: integer
@@ -4608,12 +4608,12 @@ paths:
       description: |
         A JSON merge patch (RFC 7396, R-API-013) applied to the current policy; the result is validated and written
         exactly like a replacement. `name` is immutable.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: policies:write
         project: path.projectKey
         projectRole: owner
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -4630,9 +4630,9 @@ paths:
           headers:
             ETag:
               $ref: "#/components/headers/ETag"
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               description: >-
-                The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+                The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
                 request to see the change on whichever replica answers (R-AUTHZ-032).
               schema:
                 type: integer
@@ -4673,8 +4673,8 @@ paths:
       description: |
         Removes the policy with its selectors, patterns and entries. `If-Match` is optional; when sent, a version that is
         not current answers `412`. The audit event `authz.policy.deleted` is journaled (R-AUTHZ-031).
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: policies:write
         project: path.projectKey
         projectRole: owner
@@ -4684,9 +4684,9 @@ paths:
         "204":
           description: The policy was deleted.
           headers:
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               description: >-
-                The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+                The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
                 request to see the change on whichever replica answers (R-AUTHZ-032).
               schema:
                 type: integer
@@ -4711,7 +4711,7 @@ paths:
   /api/v1/authz/validate-policy:
     post:
       operationId: validatePermissionPolicy
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [permissions]
       summary: Validate a permission policy without storing it
       description: |
@@ -4721,7 +4721,7 @@ paths:
         validated as a policy of that project (bare keys, the name within the project); the caller holds `policies:read` or is
         an Owner of the project, and a project the caller cannot see answers `404`. Without `project` the policy is validated
         as an instance-wide policy (qualified selectors; `policies:read`).
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       requestBody:
         required: true
@@ -4765,9 +4765,9 @@ paths:
       tags: [permissions]
       summary: List the system roles
       description: |
-        The fixed set of system roles and the capabilities each bundles (R-AUTHZ-010). Trove has no
+        The fixed set of system roles and the capabilities each bundles (R-AUTHZ-010). Quader has no
         custom roles, so the list is not paginated and `nextCursor` is always `null`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       responses:
         "200":
@@ -4798,7 +4798,7 @@ paths:
         principal, with cursor pagination. Filters: `role` and `principal` (a reference such as
         `group:platform-admins`). Each binding carries its `source`: `configuration` for the bindings
         `authz.role_bindings` declares (R-AUTHZ-010, Q-AUTHZ-170).
-      x-trove-permission:
+      x-quader-permission:
         permission: roles:read
       parameters:
         - name: role
@@ -4873,17 +4873,17 @@ paths:
         its `source`, so a binding the configuration declares answers `200` and stays `configuration`
         (Q-AUTHZ-171). Roles bind to users, groups and service accounts only (`422 role_not_allowed`); a role
         on an auto-join group is `409 auto_join_admin_conflict`. A new binding writes `authz.role.bound` and
-        carries `Trove-Authz-Epoch`; for an existing one the header is the current epoch.
-      x-trove-recent-auth: true
-      x-trove-permission:
+        carries `Quader-Authz-Epoch`; for an existing one the header is the current epoch.
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: roles:write
       responses:
         "200":
           description: The binding existed.
           headers:
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               description: >-
-                The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+                The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
                 request to see the change on whichever replica answers (R-AUTHZ-032).
               schema:
                 type: integer
@@ -4896,9 +4896,9 @@ paths:
         "201":
           description: The binding was created.
           headers:
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               description: >-
-                The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+                The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
                 request to see the change on whichever replica answers (R-AUTHZ-032).
               schema:
                 type: integer
@@ -4936,16 +4936,16 @@ paths:
         `authz.role_bindings` of the system configuration declares answers `409
         role_binding_managed_by_configuration` (R-AUTHZ-010, Q-AUTHZ-170); a binding that does not
         exist answers `404`.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: roles:write
       responses:
         "204":
           description: The binding was removed.
           headers:
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               description: >-
-                The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+                The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
                 request to see the change on whichever replica answers (R-AUTHZ-032).
               schema:
                 type: integer
@@ -4983,7 +4983,7 @@ paths:
         in force (`memberships`, R-AUTHZ-026, Q-AUTHZ-207) and a summary of the credential's scope, which
         is a ceiling (R-AUTHZ-013). The answer says nothing about other principals. `epoch` is the
         epoch of the index that answered.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       responses:
         "200":
@@ -5014,7 +5014,7 @@ paths:
   /api/v1/authz/check:
     post:
       operationId: checkPermissions
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [permissions]
       summary: Check repository actions for the caller
       description: |
@@ -5022,7 +5022,7 @@ paths:
         checks are decided on one index. A repository the caller cannot see answers `allowed: false`,
         exactly as a missing one. Nothing is audited. The UI hides controls whose check fails; the
         server enforces every operation regardless.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       requestBody:
         required: true
@@ -5077,7 +5077,7 @@ paths:
         for the create form: a class that is not listed answers `422 unsupported_class`. The answer also
         carries the `baseUrl` of the endpoint the request arrived on. Any caller; an anonymous caller
         only while some repository's artifacts are `public` (`publicContent`, R-AUTH-037), else `401`.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       responses:
         "200":
@@ -5105,7 +5105,7 @@ paths:
                     mirror: false
                     wiki: false
                     settingsSchema: null
-                baseUrl: https://trove.example.com
+                baseUrl: https://quader.example.com
         "401":
           $ref: "#/components/responses/Unauthenticated"
         "429":
@@ -5129,7 +5129,7 @@ paths:
         internal subject, `public` for everyone) is listed without a role (R-AUTHZ-035 rule 8); `membership=true` keeps the
         projects the caller is a member of. The operation is open to every caller and decides here; a caller without a credential
         gets `401` while no repository's artifacts are `public`.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - name: q
@@ -5208,9 +5208,9 @@ paths:
         (R-AUTHZ-033); a level above `private` needs recent authentication and, for `public`, an anonymous door
         (`409 public_not_allowed`). The write notifies the `authz` change area and records `authz.project.created`.
         Optional `Idempotency-Key`.
-      x-trove-permission:
+      x-quader-permission:
         permission: projects:write
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -5233,7 +5233,7 @@ paths:
               $ref: "#/components/headers/ETag"
             Idempotency-Replayed:
               $ref: "#/components/headers/IdempotencyReplayed"
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               $ref: "#/components/headers/AuthzEpoch"
           content:
             application/json:
@@ -5282,7 +5282,7 @@ paths:
         request, R-AUTHZ-035 rule 8); any other caller, also for a project that does not exist, gets `404`. The `ETag` is the version of the
         fields `PUT` replaces; the body also holds members and counts, which do not move it (Q-AUTHZ-185), so the read ignores
         `If-None-Match` and always answers the whole body (Q-AUTHZ-202). Send the tag as `If-Match` on `PUT` and `DELETE`.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       responses:
         "200":
@@ -5317,12 +5317,12 @@ paths:
         `If-Match` is required: without it `428` and nothing changes, `*` is the deliberate blind write, a stale tag answers
         `412` with `currentEtag`. The version moves with these two fields only, not with members or repositories
         (Q-AUTHZ-185). An Owner of the project, or a holder of `projects:write`, may call it. Records `authz.project.updated`.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: projects:write
         project: path.projectKey
         projectRole: owner
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -5337,7 +5337,7 @@ paths:
           headers:
             ETag:
               $ref: "#/components/headers/ETag"
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               $ref: "#/components/headers/AuthzEpoch"
           content:
             application/json:
@@ -5376,8 +5376,8 @@ paths:
         member entries. A project with a repository, in any lifecycle state, a service account or a CI mapping is not empty:
         `409 project_not_empty`. Only a holder of `projects:write` deletes a project. `If-Match` is optional; a stale one
         answers `412` (Q-AUTHZ-185).
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: projects:write
       parameters:
         - $ref: "#/components/parameters/IfMatchOptional"
@@ -5385,7 +5385,7 @@ paths:
         "204":
           description: The project was deleted.
           headers:
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               $ref: "#/components/headers/AuthzEpoch"
         "400":
           $ref: "#/components/responses/BadRequest"
@@ -5416,7 +5416,7 @@ paths:
         The users and groups that are members of the project, each with its role (Q-AUTHZ-207, Q-AUTHZ-208), ordered by
         kind and name. A member of the project, a holder of `projects:read`, and nobody else may read it; a project the
         caller cannot see answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         permission: projects:read
         project: path.projectKey
         projectRole: reader
@@ -5463,11 +5463,11 @@ paths:
         (Q-AUTHZ-207, Q-AUTHZ-208). Idempotent: `201` when the member was added, `200` when it already was one (also with
         the same role); the pair needs no `If-Match`. A user or group that does not exist answers `404`. An Owner of the
         project, or a holder of `projects:write`, may call it. The last Owner of a project cannot be demoted:
-        `409 last_owner`, unless the caller holds `projects:write` (an administrator of trove may). Granting or removing
+        `409 last_owner`, unless the caller holds `projects:write` (an administrator of Quader may). Granting or removing
         a role is effective on every replica at once. Records `authz.project.member_added` when the member was added and `authz.project.member_changed` when its role
         changed (journaled, R-AUTHZ-031; a change to a lower role narrows), the latter with the previous and the new role.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: projects:write
         project: path.projectKey
         projectRole: owner
@@ -5483,7 +5483,7 @@ paths:
         "201":
           description: The member was added.
           headers:
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               $ref: "#/components/headers/AuthzEpoch"
           content:
             application/json:
@@ -5492,7 +5492,7 @@ paths:
         "200":
           description: The principal already was a member; its role is the one of the body now.
           headers:
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               $ref: "#/components/headers/AuthzEpoch"
           content:
             application/json:
@@ -5528,8 +5528,8 @@ paths:
         Removes the member at once on every replica. A principal that is no member answers `404`. The last Owner of a
         project cannot be removed: `409 last_owner`, unless the caller holds `projects:write`. An Owner may remove
         itself while another Owner remains. Records `authz.project.member_removed`, journaled (R-AUTHZ-031).
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: projects:write
         project: path.projectKey
         projectRole: owner
@@ -5537,7 +5537,7 @@ paths:
         "204":
           description: The member was removed.
           headers:
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               $ref: "#/components/headers/AuthzEpoch"
         "400":
           $ref: "#/components/responses/BadRequest"
@@ -5568,11 +5568,11 @@ paths:
         names them with their levels before. Raising it raises nothing. A holder of `projects:write` calls it; a project's
         Owner does not (`403`). `If-Match` carries the project's `ETag`. `409 public_not_allowed` while the default endpoint
         admits no request without a credential. Records `authz.project.visibility_changed` and, for each lowered repository,
-        `authz.settings.changed`; the answer carries `Trove-Authz-Epoch`.
-      x-trove-recent-auth: true
-      x-trove-permission:
+        `authz.settings.changed`; the answer carries `Quader-Authz-Epoch`.
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: projects:write
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -5587,7 +5587,7 @@ paths:
           headers:
             ETag:
               $ref: "#/components/headers/ETag"
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               $ref: "#/components/headers/AuthzEpoch"
           content:
             application/json:
@@ -5639,7 +5639,7 @@ paths:
         project policies (Q-AUTHZ-182): the active users and groups whose name starts with `q` (at least 2 characters), at
         most 20, by kind and name. The answer holds the kind and the name and nothing else: no e-mail address, no
         membership. Needs the capability, or the role Owner of the project.
-      x-trove-permission:
+      x-quader-permission:
         permission: identities:read
         project: path.projectKey
         projectRole: owner
@@ -5712,7 +5712,7 @@ paths:
         project, by its key (`404` is never answered: an unknown key selects none). A repository of a project the caller can
         neither see nor read is not listed. `visibility` keeps the repositories whose artifacts level is one of the listed levels
         (R-API-057). An anonymous caller sees what a `public` level admits, or gets `401` while nothing is `public`.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - name: class
@@ -5796,7 +5796,7 @@ paths:
                     class: local
                     format: generic
                     description: Installers and build outputs
-                    addresses: [https://trove.example.net/files/web/generic-local/]
+                    addresses: [https://quader.example.net/files/web/generic-local/]
                     disabled: false
                     visibility: {artifacts: private, wiki: private}
                     lastActivityAt: "2026-10-28T09:14:03.117Z"
@@ -5827,7 +5827,7 @@ paths:
         (R-REPO-063): the values the creation form shows in its fields. It writes nothing and records no audit event. An unknown
         format and a class the format lacks answer the `422` of a create (`unknown_format` at `/format`, `unsupported_class` at
         `/class`); a project that does not exist answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         permission: repositories:write-config
         project: path.projectKey
         projectRole: owner
@@ -5902,7 +5902,7 @@ paths:
         not exist: a caller sees a project when it holds `projects:read` or `repositories:read-config`, is a member
         of it, or reads one of its repositories whatever the filters and the cursor (R-AUTHZ-016). A project it sees
         answers `200`, an empty page included.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - name: class
@@ -5968,7 +5968,7 @@ paths:
                     class: local
                     format: generic
                     description: Installers and build outputs
-                    addresses: [https://trove.example.net/files/web/generic-local/]
+                    addresses: [https://quader.example.net/files/web/generic-local/]
                     disabled: false
                     visibility: {artifacts: private, wiki: private}
                     lastActivityAt: "2026-10-28T09:14:03.117Z"
@@ -6010,11 +6010,11 @@ paths:
         An Owner's create whose member `vulnerabilities` is weaker than the defaults (`enabled: false`,
         `matchPublicAdvisories: never`, `blockMalicious: false`) answers `403 vulnerability_weakening_refused` unless the
         caller also holds `vulnerabilities:triage` (R-VULN-002, Q-VULN-69).
-      x-trove-permission:
+      x-quader-permission:
         permission: repositories:write-config
         project: path.projectKey
         projectRole: owner
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -6081,7 +6081,7 @@ paths:
         it, a caller on a repository that does not exist, and a caller who cannot see the project receive the same `404`
         (R-AUTHZ-016). Secrets are never returned. The answer comes from PostgreSQL, so a write that committed on another
         replica shows at once (R-API-052).
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -6138,11 +6138,11 @@ paths:
         An Owner's replace that weakens the member `vulnerabilities`, which includes leaving out a member that sets
         stricter values than the defaults, answers `403 vulnerability_weakening_refused` unless the caller also holds
         `vulnerabilities:triage` (R-VULN-002, Q-VULN-69).
-      x-trove-permission:
+      x-quader-permission:
         permission: repositories:write-config
         project: path.projectKey
         projectRole: owner
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -6199,11 +6199,11 @@ paths:
         An Owner's patch that weakens the member `vulnerabilities` (`enabled` to false, fewer public advisories
         matched, `blockMalicious` to false, `onMissingData` from `block` to `allow`) answers `403 vulnerability_weakening_refused`
         unless the caller also holds `vulnerabilities:triage` (R-VULN-002, Q-VULN-69).
-      x-trove-permission:
+      x-quader-permission:
         permission: repositories:write-config
         project: path.projectKey
         projectRole: owner
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -6265,12 +6265,12 @@ paths:
         or a pin-rule member answers `409 repository_referenced` naming those repositories; with
         `detach=true` the references are removed in the same transaction (R-REPO-013). The key is free in the
         project again once the job has removed the row.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: repositories:write-config
         project: path.projectKey
         projectRole: owner
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - name: detach
           in: query
@@ -6336,14 +6336,14 @@ paths:
         global policy its name); remove them, then move. A caller without `repositories:write-config`, an Owner of
         both projects, is refused as well while a key selector of a global policy names the repository (kind
         `global_policy`, Q-REPO-232): that grant is held by the repository's ID and would follow it into the target
-        project, whose other Owners cannot remove it; an administrator of trove moves it or removes the selector. It is refused with `409 already_exists` when the target project has a repository with the key,
+        project, whose other Owners cannot remove it; an administrator of Quader moves it or removes the selector. It is refused with `409 already_exists` when the target project has a repository with the key,
         also one being deleted. A target equal to the source changes nothing and answers `200` with the repository as it is. The move needs no
         `If-Match`: the path names the source. It records `repository.moved` in the source project and `repository.moved_in` in the target project (Q-REPO-233), notifies `authz`
         and `repo_config`, and moves the repository's `ETag`. The caller holds `repositories:write-config`, or is an
         Owner of both projects: a target project the caller is no member of answers `404`, one where its role is
         below Owner `403`.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: repositories:write-config
         project: path.projectKey
         projectRole: owner
@@ -6363,7 +6363,7 @@ paths:
               $ref: "#/components/headers/ETag"
             Location:
               $ref: "#/components/headers/Location"
-            Trove-Authz-Epoch:
+            Quader-Authz-Epoch:
               $ref: "#/components/headers/AuthzEpoch"
           content:
             application/json:
@@ -6402,7 +6402,7 @@ paths:
       description: |
         The trusted CI issuers with their mapping count and key status, ordered by name (R-CI-002). An issuer with
         `source: configuration` is declared in `ci.issuers` of the system configuration and read-only here (Q-CI-16).
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
       responses:
         "200":
@@ -6431,8 +6431,8 @@ paths:
         `no_usable_keys`, `algorithms_not_offered`) when the issuer would not be usable. `pin_claim_not_immutable`,
         `public_issuer_required` and `kind_not_available` are the other 422 codes. A name or issuer URL that exists answers
         `409`. Records `ci.issuer.created` and notifies the change area `ci_mappings`.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: ci:write
       requestBody:
         required: true
@@ -6487,7 +6487,7 @@ paths:
       summary: Read a CI issuer
       description: |
         The issuer with its mapping count and key summary. The `ETag` is the issuer's `version` (R-CI-002).
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
       responses:
         "200":
@@ -6524,10 +6524,10 @@ paths:
         `409 mappings_unpinned` with the names in `mappings` while a mapping of the issuer would fail the pin rules of a save; a
         changed `jwksUri` or `discoveryUrl` replaces the stored key set with the fail-closed placeholder in the same transaction and
         fetches from the new location after the commit (Q-CI-50).
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: ci:write
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -6580,8 +6580,8 @@ paths:
         Refuses with `409` while the issuer has mappings unless `cascade=true`, which deletes the mappings and their
         principals in the same transaction. Revokes the unexpired tokens issued through the issuer. A configuration issuer is
         deletable only once it is `removedFromConfiguration`. `If-Match` is optional.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: ci:write
       parameters:
         - name: cascade
@@ -6629,7 +6629,7 @@ paths:
         The key IDs, types and algorithms of the stored key set, the fetch time, the next refresh and the last error
         (R-CI-002, R-CI-003). It makes no request to the issuer. The error names the failure class, the HTTP status and the
         host, never bytes of a response body.
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
       responses:
         "200":
@@ -6667,7 +6667,7 @@ paths:
         Fetches on the replica that serves the request, outside any database transaction, and stores the key set under the
         write rule of R-CI-003. Answers `502` when the issuer is unreachable. Records `ci.keys.refreshed` or
         `ci.keys.refresh_failed`.
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:write
       responses:
         "200":
@@ -6705,7 +6705,7 @@ paths:
       summary: List the mappings of a CI issuer
       description: |
         In evaluation order: tier, then ascending priority (R-CI-009, R-CI-019).
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
       responses:
         "200":
@@ -6736,8 +6736,8 @@ paths:
         `unprotected_write`, `unpinned_write`, `action_not_allowed`, `empty_grant`, `template_invalid`, `template_unanchored`,
         `condition_invalid`); a priority that is taken in the tier answers `409 priority_taken`. The answer carries the
         `warnings` of the save (R-CI-010, R-CI-011).
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: ci:write
       requestBody:
         required: true
@@ -6801,7 +6801,7 @@ paths:
       summary: Read a mapping
       description: |
         The mapping with its resolved defaults. The `ETag` is the mapping's `version`.
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
       responses:
         "200":
@@ -6833,10 +6833,10 @@ paths:
         Replaces the full representation; `name` is immutable. `If-Match` is required: a stale `PUT` must not restore
         conditions or grants another administrator narrowed (R-CI-002). One event is recorded, chosen by `enabled`. Disabling
         revokes the mapping's unexpired tokens and sets its principal `disabled`; editing does not revoke (R-CI-017).
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: ci:write
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -6887,8 +6887,8 @@ paths:
       summary: Delete a mapping
       description: |
         Deletes the mapping and its principal and revokes its unexpired tokens (R-CI-009, R-CI-017). `If-Match` is optional.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: ci:write
       parameters:
         - $ref: "#/components/parameters/IfMatchOptional"
@@ -6922,14 +6922,14 @@ paths:
           pattern: "^[a-z0-9][a-z0-9._-]{1,63}$"
     post:
       operationId: evaluateCiMappings
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [ci]
       summary: Dry-run the mappings of a CI issuer against a claim set
       description: |
         The request carries a claim set, never a token, so nobody has to paste a live credential (R-CI-019, R-UI-036). The
         answer is the decision trace: every mapping looked at with its first failed leaf and every leaf's expected and actual
         value, the selected mappings, the rendered grants and the lifetime. It issues nothing and records no `jti`.
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
       requestBody:
         required: true
@@ -6988,7 +6988,7 @@ paths:
         A `.gitlab-ci.yml` fragment for a mapping of the issuer: the `id_tokens:` block with the issuer's audience, the
         exchange call and the client configuration for npm or NuGet, ending in the self-revocation of the token (R-API-035,
         R-UI-035, R-CI-027). It holds no secret.
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
       parameters:
         - name: mapping
@@ -7035,7 +7035,7 @@ paths:
       description: |
         The issuance records, newest first, with cursor pagination (R-CI-020). A record links a CI token to the verified job
         identity it was issued to and holds an allowlisted claim snapshot, never a token or a hash.
-      x-trove-permission:
+      x-quader-permission:
         permission: tokens:read
       parameters:
         - {name: issuer, in: query, description: The CI issuer name., schema: {type: string}}
@@ -7077,14 +7077,14 @@ paths:
         schema:
           type: string
           format: uuid
-          x-trove-reserved-names: [revoke]
+          x-quader-reserved-names: [revoke]
     get:
       operationId: getCiIssuance
       tags: [ci]
       summary: Read one issuance record with its usage
       description: |
         The record plus a usage summary from the audit store: the request count, the last use and the packages deployed (R-CI-020).
-      x-trove-permission:
+      x-quader-permission:
         permission: tokens:read
       responses:
         "200":
@@ -7110,13 +7110,13 @@ paths:
   /api/v1/ci/issuances/revoke:
     post:
       operationId: revokeCiIssuances
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [ci]
       summary: Revoke the unexpired CI tokens that match a filter
       description: |
         `issuer` is required and at least one of `projectId`, `pipelineId`, `jobId`, `mapping`. One transaction; records
         `ci.token.revoked` (R-CI-020).
-      x-trove-permission:
+      x-quader-permission:
         permission: tokens:revoke
       requestBody:
         required: true
@@ -7154,17 +7154,17 @@ paths:
   /api/v1/auth/oidc/token:
     post:
       operationId: exchangeCiToken
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [ci]
       summary: Exchange a CI ID token for a short-lived CI token
       description: |
-        OAuth 2.0 Token Exchange (RFC 8693, R-CI-007): the subject token, the ID token a GitLab job requested for trove's
-        audience, is the credential. The endpoint requires no trove credential and ignores a session and a CSRF token.
+        OAuth 2.0 Token Exchange (RFC 8693, R-CI-007): the subject token, the ID token a GitLab job requested for Quader's
+        audience, is the credential. The endpoint requires no Quader credential and ignores a session and a CSRF token.
         The body is `application/x-www-form-urlencoded` (normative) or `application/json` with the same parameter names
         (string values; `ttl` may be a number); a parameter sent twice answers `400 malformed_request`, a parameter the
         exchange does not know is ignored, a parameter without a value counts as omitted (RFC 6749 section 3.1). Answers
         carry `Cache-Control: no-store` and `Pragma: no-cache`. Errors are the OAuth error response of RFC 6749 section
-        5.2 with trove's members `reason` and `requestId`, not problem details (R-CI-008); a rejected subject token
+        5.2 with Quader's members `reason` and `requestId`, not problem details (R-CI-008); a rejected subject token
         answers `400 invalid_request` (Q-CI-8). The parameters keep the OAuth names of the RFC. The general API rate
         limit does not apply: the limiters `ci_exchange_address` and `ci_exchange_subject` of R-CI-021 do.
 
@@ -7172,7 +7172,7 @@ paths:
         method other than `POST` answers `405 method_not_allowed` (problem details) with `Allow: POST`, as every route of
         the API does (R-API-004).
       security: []
-      x-trove-permission:
+      x-quader-permission:
         public: true
       requestBody:
         required: true
@@ -7273,7 +7273,7 @@ paths:
       summary: List the CI issuers an Owner of a project can choose from
       description: |
         Read-only: name, kind, issuer URL and `publicIssuer` of every issuer (Q-CI-26). Issuers are written by system administrators and the Helm values only. An Owner of this project may call it; a project the caller cannot see answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
         project: path.projectKey
         projectRole: owner
@@ -7313,7 +7313,7 @@ paths:
       summary: List the CI mappings of a project
       description: |
         The project's mappings of every issuer, tier `project:<key>` (Q-CI-26, R-CI-009). An Owner of the project sees these and no other tier.
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
         project: path.projectKey
         projectRole: owner
@@ -7342,8 +7342,8 @@ paths:
       summary: Create a CI mapping of a project
       description: |
         The body names the `issuer`. The mapping takes the tier `project:<key>`; its name is unique within the project and stored and referenced as `<key>/<name>` (principal `ci:<issuer>/<key>/<name>`, Q-AUTHZ-209); it grants through policies of the project and inline grants over the project's repositories (`@any` means every repository of the project; repositories are named by their bare keys), never `groups` (`422 groups_not_allowed_in_project`) and never `manage`. Every save-time rule of R-CI-010 and R-CI-011 applies. Notifies `ci_mappings` and records `ci.mapping.created` with the project.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: ci:write
         project: path.projectKey
         projectRole: owner
@@ -7418,7 +7418,7 @@ paths:
       summary: Read a CI mapping of a project
       description: |
         A mapping of another tier answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
         project: path.projectKey
         projectRole: owner
@@ -7450,12 +7450,12 @@ paths:
       summary: Replace a CI mapping of a project
       description: |
         As `replaceCiMapping`, within the bounds of a project mapping. `If-Match` is required.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: ci:write
         project: path.projectKey
         projectRole: owner
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -7506,8 +7506,8 @@ paths:
       summary: Delete a CI mapping of a project
       description: |
         Deletes the mapping and its principal and revokes its unexpired tokens. `If-Match` is optional.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: ci:write
         project: path.projectKey
         projectRole: owner
@@ -7552,12 +7552,12 @@ paths:
           pattern: "^[a-z0-9][a-z0-9._-]{1,63}$"
     post:
       operationId: evaluateProjectCiMappings
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [ci]
       summary: Dry-run the project's mappings against a claim set
       description: |
         As `evaluateCiMappings`, over the project's tier only: the trace shows nothing of the system tier or of another project (Q-CI-26).
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
         project: path.projectKey
         projectRole: owner
@@ -7626,7 +7626,7 @@ paths:
       description: |
         As `getCiSnippet`, for a mapping of the project's tier only: a mapping of another tier answers `404`. A project
         administrator who writes a mapping needs the pipeline that uses it (R-API-035, R-UI-035, Q-CI-26). It holds no secret.
-      x-trove-permission:
+      x-quader-permission:
         permission: ci:read
         project: path.projectKey
         projectRole: owner
@@ -7684,7 +7684,7 @@ paths:
       summary: List the CI tokens issued through a project's mappings
       description: |
         The issuance records of tokens whose mappings include a mapping of this project, newest first, cursor pagination (Q-CI-26). A record names the project's mappings only.
-      x-trove-permission:
+      x-quader-permission:
         permission: tokens:read
         project: path.projectKey
         projectRole: owner
@@ -7744,7 +7744,7 @@ paths:
         listing, and no children. Needs `read` on the path; a path the caller may not read answers
         `404`, like a missing one. A repository that is disabled is described as well; the items that
         its include and exclude patterns leave out are visible here (R-GENERIC-007).
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -7774,9 +7774,9 @@ paths:
                 contentStatus: ok
                 package: null
                 upstreamUrl: null
-                downloadUrl: https://trove.example.com/files/web/generic-local/tools/widget/2.3/widget-2.3.bin
+                downloadUrl: https://quader.example.com/files/web/generic-local/tools/widget/2.3/widget-2.3.bin
                 contentUrl: /api/v1/repositories/generic-local/content/tools/widget/2.3/widget-2.3.bin
-                itemUrl: https://trove.example.com/api/v1/repositories/generic-local/items?path=tools%2Fwidget%2F2.3%2Fwidget-2.3.bin
+                itemUrl: https://quader.example.com/api/v1/repositories/generic-local/items?path=tools%2Fwidget%2F2.3%2Fwidget-2.3.bin
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -7807,7 +7807,7 @@ paths:
         removed at once (`204`); a larger one by a background job (`202` with the job to poll). Items
         are deleted permanently; their blobs are collected later. The root of the repository cannot be
         deleted here (`400 invalid_path`): delete the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: delete
         repository: path.repoKey
         project: path.projectKey
@@ -7853,7 +7853,7 @@ paths:
         the general limits of the other lists). The cursor is the path of the last row the page
         scanned, so a page can be shorter than `limit` while more entries follow: continue while
         `nextCursor` is not null.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -7942,7 +7942,7 @@ paths:
         are those PostgreSQL holds; each replica writes its buffer every `storage.stats.flush_interval`
         and at shutdown, so a download shows within that interval. `HEAD`, `304` and `?stats=false`
         do not count. A folder has no statistics (`404`). Needs `read` on the path.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -8019,7 +8019,7 @@ paths:
         trailing slash, and the repository root, answer the directory index (R-STOR-017): HTML for
         `Accept: text/html`, JSON otherwise. A path outside the repository's include and exclude
         patterns answers `404`. Needs `read`; a hidden file is the same `404` as a missing one.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -8112,7 +8112,7 @@ paths:
       tags: [files]
       summary: Read the headers of a file
       description: Answers the headers of `GET`, from PostgreSQL alone, without a body.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -8171,7 +8171,7 @@ paths:
         an existing folder). A path names a file or a folder, never both (`409 path_conflict`). The
         answer is the item description, sent only after the object is durable in the object store and
         the item committed.
-      x-trove-permission:
+      x-quader-permission:
         action: deploy
         repository: path.repoKey
         project: path.projectKey
@@ -8256,7 +8256,7 @@ paths:
         `204`, or `202` with the job of a large subtree, the ownership of the packages it removes
         checked as there. A path outside the repository's include and exclude patterns answers `404`
         for every caller.
-      x-trove-permission:
+      x-quader-permission:
         action: delete
         repository: path.repoKey
         project: path.projectKey
@@ -8316,7 +8316,7 @@ paths:
         `/files/` and the package protocols. A caller without `read` gets the same `404` as there. The path is
         looked up in the stored items only; a path that is not stored answers `404` without contacting an upstream,
         also in a remote repository.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -8409,7 +8409,7 @@ paths:
       tags: [files]
       summary: Read the headers of a file for the UI
       description: Answers the headers of `GET` on the content route, from PostgreSQL alone, without a body.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -8461,7 +8461,7 @@ paths:
         not authenticate answers `404` like an unknown path. A body larger than `ui.deploy.max_upload_bytes` (when it
         is not 0) answers `413` before it is spooled: at once for a declared `Content-Length` above the limit, when
         the limit is crossed for a body of unknown length.
-      x-trove-permission:
+      x-quader-permission:
         action: deploy
         repository: path.repoKey
         project: path.projectKey
@@ -8550,7 +8550,7 @@ paths:
         configuration as the file holds it after the defaults (R-EP-001) and its rule counts, read
         from PostgreSQL. A name that is no longer configured but still has exposure rules follows
         with `inert: true` and `configuration: null` (H-58): its rules can be read and deleted.
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:read
       parameters:
         - $ref: "#/components/parameters/Limit"
@@ -8574,8 +8574,8 @@ paths:
                     configuration:
                       default: true
                       port: 8080
-                      baseUrl: https://trove.example.com
-                      hosts: [trove.example.com]
+                      baseUrl: https://quader.example.com
+                      hosts: [quader.example.com]
                       wildcardHost: null
                       hostRoots: {}
                       pool: null
@@ -8624,7 +8624,7 @@ paths:
       description: |
         One configured endpoint, or an inert name that still has exposure rules. Any other name
         answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:read
       parameters:
         - name: endpoint
@@ -8663,7 +8663,7 @@ paths:
         selects the rules of one repository, `package` the rules whose package patterns admit the
         name (with the format's case rule), `enabled` the enabled or the disabled rules. Cursor
         pagination as everywhere (R-API-010).
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:read
       parameters:
         - name: endpoint
@@ -8726,17 +8726,17 @@ paths:
       summary: Create an exposure rule
       description: |
         Stores a rule on a configured endpoint (R-EP-012). The rule takes effect on every replica
-        within the bound of R-AUTHZ-028; a request that sends the returned `Trove-Authz-Epoch` in
-        `Trove-Authz-Min-Epoch` sees it at once. Validation answers `422` with the code of the first
+        within the bound of R-AUTHZ-028; a request that sends the returned `Quader-Authz-Epoch` in
+        `Quader-Authz-Min-Epoch` sees it at once. Validation answers `422` with the code of the first
         problem (`unknown_repository`, `invalid_pattern`, `invalid_version_range`,
         `dimension_not_supported`, `format_not_exposable`) and every problem as a field error. A rule
         on an endpoint in mode `all` is saved with the warning `endpoint_not_in_rules_mode`. At most
         1,000 rules per endpoint (`409 exposure_rule_limit_reached`); an inert endpoint takes no new
         rule (`409 endpoint_not_configured`). Audited as `endpoint.exposure.created`.
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:write
-      x-trove-recent-auth: true
-      x-trove-idempotency-key: optional
+      x-quader-recent-auth: true
+      x-quader-idempotency-key: optional
       parameters:
         - name: endpoint
           in: path
@@ -8770,8 +8770,8 @@ paths:
               $ref: "#/components/headers/Location"
             ETag:
               $ref: "#/components/headers/ETag"
-            Trove-Authz-Epoch:
-              description: The authorization epoch of the write (R-AUTHZ-032); send it as `Trove-Authz-Min-Epoch` to read the change at once on any replica.
+            Quader-Authz-Epoch:
+              description: The authorization epoch of the write (R-AUTHZ-032); send it as `Quader-Authz-Min-Epoch` to read the change at once on any replica.
               schema:
                 type: string
                 pattern: "^[0-9]+$"
@@ -8809,7 +8809,7 @@ paths:
       tags: [endpoints]
       summary: Read an exposure rule
       description: The rule with its `ETag`, the quoted `revision` (R-API-012); `If-None-Match` answers `304`.
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:read
       parameters:
         - name: endpoint
@@ -8864,10 +8864,10 @@ paths:
         are ignored. `If-Match` is required (`428` without it, `412` with `currentEtag` for a stale
         one). `name` and `repository` are immutable (`422`). Audited as `endpoint.exposure.updated`
         with the states before and after, which the revocation journal carries (R-EP-020).
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:write
-      x-trove-recent-auth: true
-      x-trove-if-match: required
+      x-quader-recent-auth: true
+      x-quader-if-match: required
       parameters:
         - name: endpoint
           in: path
@@ -8896,8 +8896,8 @@ paths:
           headers:
             ETag:
               $ref: "#/components/headers/ETag"
-            Trove-Authz-Epoch:
-              description: The authorization epoch of the write (R-AUTHZ-032); send it as `Trove-Authz-Min-Epoch` to read the change at once on any replica.
+            Quader-Authz-Epoch:
+              description: The authorization epoch of the write (R-AUTHZ-032); send it as `Quader-Authz-Min-Epoch` to read the change at once on any replica.
               schema:
                 type: string
                 pattern: "^[0-9]+$"
@@ -8939,10 +8939,10 @@ paths:
         A JSON merge patch (RFC 7396) on the stored rule, with the rules of the replacement:
         `If-Match` required, `name` and `repository` immutable, the whole result validated. The rule
         editor sends `PUT`; the patch serves a toggle of `enabled` from the rule table (Q-EP-18).
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:write
-      x-trove-recent-auth: true
-      x-trove-if-match: required
+      x-quader-recent-auth: true
+      x-quader-if-match: required
       parameters:
         - name: endpoint
           in: path
@@ -8973,8 +8973,8 @@ paths:
           headers:
             ETag:
               $ref: "#/components/headers/ETag"
-            Trove-Authz-Epoch:
-              description: The authorization epoch of the write (R-AUTHZ-032); send it as `Trove-Authz-Min-Epoch` to read the change at once on any replica.
+            Quader-Authz-Epoch:
+              description: The authorization epoch of the write (R-AUTHZ-032); send it as `Quader-Authz-Min-Epoch` to read the change at once on any replica.
               schema:
                 type: string
                 pattern: "^[0-9]+$"
@@ -9016,9 +9016,9 @@ paths:
         Deletes the rule; `If-Match` is honoured when sent (`412` for a stale one). A rule of an inert
         endpoint can be deleted. Audited as `endpoint.exposure.deleted`, which the revocation journal
         carries (R-EP-020).
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:write
-      x-trove-recent-auth: true
+      x-quader-recent-auth: true
       parameters:
         - name: endpoint
           in: path
@@ -9039,8 +9039,8 @@ paths:
         "204":
           description: The rule is deleted.
           headers:
-            Trove-Authz-Epoch:
-              description: The authorization epoch of the write (R-AUTHZ-032); send it as `Trove-Authz-Min-Epoch` to read the change at once on any replica.
+            Quader-Authz-Epoch:
+              description: The authorization epoch of the write (R-AUTHZ-032); send it as `Quader-Authz-Min-Epoch` to read the change at once on any replica.
               schema:
                 type: string
                 pattern: "^[0-9]+$"
@@ -9063,7 +9063,7 @@ paths:
   /api/v1/endpoints/{endpoint}/check-exposure:
     post:
       operationId: checkExposure
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [endpoints]
       summary: Check what an endpoint exposes
       description: |
@@ -9087,7 +9087,7 @@ paths:
         always judged. A tag is visible when a rule admits its name and the
         version it points to is exposed. `distTags` is filled whenever a package of a format with
         tags is named, also when `versions` are sent.
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:read
       parameters:
         - name: endpoint
@@ -9172,7 +9172,7 @@ paths:
         installation that scans: the grade of the entry's `latestVersion` over the repositories the filter names (a virtual repository
         expanded to its members), from the open findings the caller can read, in a fixed number of statements per page (R-VULN-038,
         R-VULN-039, R-UI-052).
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - name: format
@@ -9287,7 +9287,7 @@ paths:
         NuGet IDs case-insensitively. The name travels as a query parameter, so a scoped name needs no
         path escaping. `404` when no visible version of that package exists, the same answer as for a
         package that does not exist.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - name: format
@@ -9336,7 +9336,7 @@ paths:
         The summary of a package (R-API-029), computed from the versions visible to the caller. The
         `ETag` is a strong tag over the representation; it changes when a visible version appears,
         goes or is downloaded.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -9378,7 +9378,7 @@ paths:
         first; the default is `-publishedAt`. `include=digest` also reads each version's `digest` from
         the format's metadata (an OCI tag: `sha256:…` of its manifest, R-UI-052); a format without one
         has no `digest`.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - name: prerelease
@@ -9457,7 +9457,7 @@ paths:
         and whether a README exists. The README is wiki content (R-AUTHZ-034): `hasReadme` is `false` for a caller who may
         read the artifacts of the repositories that hold the version and the wiki of none of them, and the members of
         `metadata` that are wiki content are absent (R-API-058). The `ETag` is a strong tag over the representation.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -9493,7 +9493,7 @@ paths:
                   - path: "@team-a/ui/-/ui-1.4.0.tgz"
                     sizeBytes: 48213
                     sha256: 5be0c1d2e8f3a4b5c6d7e8f90123456789abcdef0123456789abcdef01234567
-                    downloadUrl: https://trove.example.com/api/npm/web/npm-local/@team-a/ui/-/ui-1.4.0.tgz
+                    downloadUrl: https://quader.example.com/api/npm/web/npm-local/@team-a/ui/-/ui-1.4.0.tgz
                     contentUrl: /api/v1/repositories/npm-local/content/@team-a/ui/-/ui-1.4.0.tgz
         "304":
           $ref: "#/components/responses/NotModified"
@@ -9524,8 +9524,8 @@ paths:
         (R-AUTHZ-034, R-API-058): the answer is then the one of a missing README. The `ETag` is a strong tag
         over the README source, the renderer version and the external image origins, so a changed
         origin list changes it.
-      x-trove-part: wiki
-      x-trove-permission:
+      x-quader-part: wiki
+      x-quader-permission:
         public: true
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -9575,9 +9575,9 @@ paths:
         the version document. The answer names the repository it was read from. The counts of the groups are those before `q` filtered;
         `matchCount` is the number of entries left. `warnings` is only for a caller who holds `deploy` on the repository. A read never
         queries an upstream. A version of a format without documentation, and a version that is not visible, are `404`.
-      x-trove-permission:
+      x-quader-permission:
         public: true
-      x-trove-part: wiki
+      x-quader-part: wiki
       parameters:
         - $ref: "#/components/parameters/DocRepository"
         - name: q
@@ -9640,9 +9640,9 @@ paths:
         names, types and typed values are text and JSON values the client shows as text. An entry that does not exist, and a type or
         name outside its grammar, are `404`; an entry without documentation answers `200` with the header fields and no sections. The
         wiki rule of the tree applies (R-ANS-037).
-      x-trove-permission:
+      x-quader-permission:
         public: true
-      x-trove-part: wiki
+      x-quader-part: wiki
       parameters:
         - $ref: "#/components/parameters/DocRepository"
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -9688,9 +9688,9 @@ paths:
         The README or a Markdown file of a visible version as sanitized HTML, as the README operation answers it (R-ANS-036, R-API-029,
         R-UI-008). A name the tree does not list is `404`. The `ETag` is a strong tag over the source, the renderer version and the image
         policy. The wiki rule of the tree applies (R-ANS-037).
-      x-trove-permission:
+      x-quader-permission:
         public: true
-      x-trove-part: wiki
+      x-quader-part: wiki
       parameters:
         - $ref: "#/components/parameters/DocRepository"
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -9732,7 +9732,7 @@ paths:
         (`endpointPath`, npm's per-registry credential key) and the caller's name. It never fills a
         token: with `credentials=placeholder` a snippet holds the literal `{{token}}`, which the
         browser replaces; with `credentials=env` it holds the environment-variable reference of the
-        client's syntax (`${TROVE_TOKEN}` for npm and Yarn, `%TROVE_TOKEN%` for `nuget.config`;
+        client's syntax (`${QUADER_TOKEN}` for npm and Yarn, `%QUADER_TOKEN%` for `nuget.config`;
         the name is `ui.client_setup.token_env_var`); with `credentials=none` it holds no
         authentication line. With `package` and `version` the install snippets name that version.
         Values placed in shell commands are single-quoted unless they match
@@ -9740,8 +9740,8 @@ paths:
         (`404` otherwise, like a missing repository); the publish snippets are present only when the
         caller holds `deploy` on the repository that receives the publish (`publishTarget`). A virtual
         repository without a default deployment target has no publish snippets and `publishTarget:
-        null`. The answer never matches `trv_(pat|sat|cit)_`.
-      x-trove-permission:
+        null`. The answer never matches `qdr_(pat|sat|cit)_`.
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -9807,8 +9807,8 @@ paths:
                 format: npm
                 client: npm
                 credentials: placeholder
-                registryUrl: https://trove.example.com/api/npm/web/npm-all/
-                endpointPath: //trove.example.com/api/npm/web/npm-all/
+                registryUrl: https://quader.example.com/api/npm/web/npm-all/
+                endpointPath: //quader.example.com/api/npm/web/npm-all/
                 username: alice
                 publishTarget: web/npm-local
                 tokenTtlSeconds: 2592000
@@ -9817,7 +9817,7 @@ paths:
                     tab: configure
                     fileName: .npmrc
                     language: ini
-                    content: "registry=https://trove.example.com/api/npm/web/npm-all/\n//trove.example.com/api/npm/web/npm-all/:_authToken={{token}}\n"
+                    content: "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken={{token}}\n"
                   - id: npm.install
                     tab: install
                     fileName: null
@@ -9860,8 +9860,8 @@ paths:
         the endpoint note on an endpoint without exposure rules. The guide names the deployment target only
         when the caller may deploy there, and never the members of a virtual repository. The text is English.
         Needs `read` on the repository (`404` otherwise, like a missing repository); `503` while no base URL
-        is configured for the endpoint. The answer never matches `trv_(pat|sat|cit)_`.
-      x-trove-permission:
+        is configured for the endpoint. The answer never matches `qdr_(pat|sat|cit)_`.
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -9893,7 +9893,7 @@ paths:
                 class: virtual
                 client: npm
                 repository: web/npm-all
-                registryUrl: https://trove.example.com/api/npm/web/npm-all/
+                registryUrl: https://quader.example.com/api/npm/web/npm-all/
                 publishTarget: web/npm-local
                 credentials: env
                 exposureRules: false
@@ -9907,7 +9907,7 @@ paths:
                         tab: configure
                         fileName: .npmrc
                         language: ini
-                        content: "registry=https://trove.example.com/api/npm/web/npm-all/\n//trove.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}\n"
+                        content: "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}\n"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -9934,7 +9934,7 @@ paths:
         client setup rendered for that address. Any caller; an anonymous caller only while some repository's artifacts are
         `public` (`publicContent`, R-AUTH-037), else `401`. An unknown format answers `404`; a class or client the format does not have `400`;
         `503` while no base URL is configured for the endpoint.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - name: format
@@ -9987,12 +9987,12 @@ paths:
       tags: [manual]
       summary: The contents of the manual
       description: |
-        The sections of the trove manual (R-API-054) in reading order, the user guide first, each with the
+        The sections of the Quader manual (R-API-054) in reading order, the user guide first, each with the
         title and summary of its pages. The manual is the one the binary embeds, so it describes the running
         version; it is English and the same for every caller. Any caller; an anonymous caller only while some
         repository's artifacts are `public` (`publicContent`, R-AUTH-037), else `401`. The strong ETag changes with any page, and a matching
         `If-None-Match` answers `304`.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       responses:
         "200":
@@ -10034,7 +10034,7 @@ paths:
         the base address of the UI (`help/<section>/<page>`, with `#user-content-<slug>` for a heading), a
         link inside the page is `#user-content-<slug>`; bind the HTML like a README. Same access and ETag as
         the contents; an unknown section or page answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - name: section
@@ -10099,7 +10099,7 @@ paths:
       - $ref: "#/components/parameters/ProjectKey"
     post:
       operationId: invalidateRepositoryCache
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [repositories]
       summary: Invalidate the cached metadata or misses of a remote or virtual repository
       description: |
@@ -10117,7 +10117,7 @@ paths:
         prefix is dropped on every replica and `invalidated` is 0; its remote members are not
         touched. A local repository answers `400 not_applicable`. Needs `manage` on the repository
         or the system administrator role. Allowed in read-only mode.
-      x-trove-permission:
+      x-quader-permission:
         action: manage
         repository: path.repoKey
         project: path.projectKey
@@ -10179,7 +10179,7 @@ paths:
         `expiresAt` is null for an artifact, and `upstreamGoneAt` is set for a document the upstream
         answered 404 or 410 for. The list reads PostgreSQL. Needs `repositories:read-config`, or
         `manage` on the repository. A repository that is not remote answers `400 not_applicable`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - name: repoKey
@@ -10250,10 +10250,10 @@ paths:
           pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
           minLength: 2
           maxLength: 64
-          x-trove-reserved-names: [batch-create, batch-update, batch-get, batch-delete, quick-setup]
+          x-quader-reserved-names: [batch-create, batch-update, batch-get, batch-delete, quick-setup]
     post:
       operationId: testRepositoryUpstream
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [repositories]
       summary: Test the saved upstream of a remote repository
       description: |
@@ -10268,7 +10268,7 @@ paths:
         circuit state (R-REPO-029) and is answered by the replica that received it: with a
         `sourceNetwork`, `sourceAddress` is the address that replica bound. A repository that is not
         remote answers `400 not_applicable`.
-      x-trove-permission:
+      x-quader-permission:
         permission: repositories:write-config
         project: path.projectKey
         projectRole: owner
@@ -10310,7 +10310,7 @@ paths:
       - $ref: "#/components/parameters/ProjectKey"
     post:
       operationId: testUpstream
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [repositories]
       summary: Test an upstream configuration that is not saved
       description: |
@@ -10318,7 +10318,7 @@ paths:
         and every rule of R-REPO-008 checked (`422` lists the violations). Secret values in the body
         are used for this probe and stored nowhere; `{"set": true}` refers to a stored value and has
         nothing to refer to here. The result is that of `testRepositoryUpstream`.
-      x-trove-permission:
+      x-quader-permission:
         permission: repositories:write-config
         project: path.projectKey
         projectRole: owner
@@ -10382,7 +10382,7 @@ paths:
         repository (scope `global`). `source` is `manual` for a claim a person wrote and `auto` for the
         exact claim the first publish of a name created. A repository that cannot hold claims (not local,
         or a format without package names) answers an empty list. Needs `read` on the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -10431,11 +10431,11 @@ paths:
         (`403` otherwise). The warning `claim_overlaps` marks a manual claim that overlaps a claim of
         another repository which is in effect together with it. A write that changes nothing keeps
         the tag.
-      x-trove-permission:
+      x-quader-permission:
         action: manage
         repository: path.repoKey
         project: path.projectKey
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -10510,7 +10510,7 @@ paths:
         `claimed-elsewhere`, `refused-claimed`, `no-read`, `no-cache-fill`, `hit`, `miss`, `negative`,
         `offline` and `circuit-open`. Needs `read` on the virtual repository (the gate of step 1);
         another class answers `400 not_applicable`.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -10582,7 +10582,7 @@ paths:
         for a missing name, and so does a repository without ownership (remote, virtual, a format
         without package names) and a string that is no name of the format. An unclaimed name answers
         `200` with `state: unclaimed` and no owners. The state is read from PostgreSQL on every call.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -10632,10 +10632,10 @@ paths:
         reference that names no owner identity answers `422 unknown_principal`; one that owns the name
         already answers `409 already_exists`. `Location` is the owners of the name. The change and
         its audit event `authz.ownership.added` commit together.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         authenticated: true
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -10720,8 +10720,8 @@ paths:
         the repository, the name or the owner exists; a CI token always gets `403 ci_token_restricted`.
         An owner the name does not have answers `404`. The removal and its audit event
         (`authz.ownership.removed`, or `.released` for the last owner, both journaled) commit together.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         authenticated: true
       parameters:
         - name: release
@@ -10761,7 +10761,7 @@ paths:
         sees only names of repositories it may read, so a page may hold fewer items than `limit` while a
         `nextCursor` exists. `repository` narrows the list to one repository. An owner reference that
         names no owner identity answers `422 unknown_principal`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - name: owner
@@ -10819,10 +10819,10 @@ paths:
       tags: [bastions]
       summary: List the Bastion registrations
       description: |
-        The registrations of trove Bastions ordered by name, each with its unrevoked tokens (ID, hint, expiry, creation,
+        The registrations of Quader Bastions ordered by name, each with its unrevoked tokens (ID, hint, expiry, creation,
         last use) and the last contact of each replica: time, client address, release, interface version and the base URL it
         reported (R-BAS-004, R-BAS-010). At most `bastions.max_registrations` exist, so the list is one page.
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:read
       responses:
         "200":
@@ -10851,7 +10851,7 @@ paths:
         Creates a principal of the kind `bastion` (reference `bastion:<name>`, R-AUTHZ-002) that holds no grant, role, ownership
         or membership. At most `bastions.max_registrations` exist (`409` beyond). Records `bastion.created`. Its token is issued
         by `POST /api/v1/bastions/{name}/tokens`.
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:write
       requestBody:
         required: true
@@ -10909,7 +10909,7 @@ paths:
       description: |
         The registration with its unrevoked tokens and the last contact of each replica (R-BAS-004, R-BAS-010). The ETag is the
         registration's revision.
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:read
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -10949,9 +10949,9 @@ paths:
         unrevoked, so enabling the registration again restores them. A new description records `bastion.updated`; a disable
         records `bastion.disabled`, journaled, so a restore to a point before it disables the registration again (R-HA-054,
         Q-BAS-145); an enable records `bastion.enabled`.
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:write
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -11003,7 +11003,7 @@ paths:
       description: |
         Deletes the registration and revokes its tokens (`token.revoked`, journaled, R-HA-054). Records `bastion.deleted`,
         journaled: a restore to a point before the deletion brings the registration back disabled (Q-BAS-145).
-      x-trove-permission:
+      x-quader-permission:
         permission: endpoints:write
       responses:
         "204":
@@ -11025,20 +11025,20 @@ paths:
   /api/v1/bastions/{name}/tokens:
     post:
       operationId: createBastionToken
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [bastions]
       summary: Issue a Bastion token
       description: |
-        Issues a token of the type `bst` (`trv_bst_`, R-AUTH-022) for the registration. It has no scope, always expires
+        Issues a token of the type `bst` (`qdr_bst_`, R-AUTH-022) for the registration. It has no scope, always expires
         (`ttlSeconds` at most `auth.tokens.bst.max_ttl`, default `auth.tokens.bst.default_ttl`; `400 invalid_ttl` beyond) and at
         most `auth.tokens.max_active_per_principal.bst` unrevoked tokens exist per registration (`409 token_limit_reached`), so
         a renewal by hand fits its overlap (R-BAS-006). The value is in this answer only, which is never cached. Records
         `token.created` with `resource_type: bastion`. A session needs a recent authentication (`401
         reauthentication_required`, R-API-007), as for every other token it mints.
-      x-trove-recent-auth: true
-      x-trove-permission:
+      x-quader-recent-auth: true
+      x-quader-permission:
         permission: endpoints:write
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - name: name
           in: path
@@ -11097,7 +11097,7 @@ paths:
   /api/v1/bastions/{name}/tokens/{id}:
     delete:
       operationId: revokeBastionToken
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [bastions]
       summary: Revoke a Bastion token
       description: |
@@ -11105,7 +11105,7 @@ paths:
         or `tokens:revoke` (Q-BAS-24), so a security administrator can revoke a leaked token without managing endpoints; the
         declaration is the coarse `authenticated` form for that reason. Records `token.revoked` with `resource_type: bastion`,
         journaled (R-HA-054).
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - name: name
@@ -11143,14 +11143,14 @@ paths:
       tags: [bastion]
       summary: Bastion handshake
       description: |
-        The Bastion interface (R-BAS-008, interface version in `x-trove-bastion-interface`). Called by a Bastion with its
+        The Bastion interface (R-BAS-008, interface version in `x-quader-bastion-interface`). Called by a Bastion with its
         token as `Authorization: Bearer` at start, every `bastion.main.handshake_interval`, after a reconnect and after a feed
         entry of the kind `settings` (R-BAS-010). The answer carries the main installation's interface version, the registration
         and the token in use, the response base URL this request resolved to, whether anonymous requests read anything (`anonymousReads`), the download
         switch and the feed position. Records the replica's last contact at most once a minute. Not part of the management
         API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
-      x-trove-bastion-interface: 2
-      x-trove-permission:
+      x-quader-bastion-interface: 3
+      x-quader-permission:
         bastion: true
       parameters:
         - $ref: "#/components/parameters/BastionInterface"
@@ -11158,7 +11158,7 @@ paths:
         "200":
           description: The handshake.
           headers:
-            Trove-Bastion-Interface:
+            Quader-Bastion-Interface:
               $ref: "#/components/headers/BastionInterface"
           content:
             application/json:
@@ -11179,7 +11179,7 @@ paths:
   /api/v1/bastion/check:
     post:
       operationId: bastionCheck
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [bastion]
       summary: Check a caller's credential and read shape
       description: |
@@ -11189,8 +11189,8 @@ paths:
         with the status the caller would receive. It writes no `authz.denied` events. A repository name without a project
         (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; another
         interface version answers `400 bastion_interface_mismatch`.
-      x-trove-bastion-interface: 2
-      x-trove-permission:
+      x-quader-bastion-interface: 3
+      x-quader-permission:
         bastion: true
       parameters:
         - $ref: "#/components/parameters/BastionInterface"
@@ -11204,7 +11204,7 @@ paths:
         "200":
           description: The subject and the shapes.
           headers:
-            Trove-Bastion-Interface:
+            Quader-Bastion-Interface:
               $ref: "#/components/headers/BastionInterface"
           content:
             application/json:
@@ -11239,8 +11239,8 @@ paths:
         `cursor` of an earlier answer or a synthetic `t:<RFC 3339>`; the answer holds every entry newer than the cursor and the
         entries within `bastions.feed.lookback` behind it, which the Bastion skips by ID. `reset: true` tells the Bastion to
         drop every answer.
-      x-trove-bastion-interface: 2
-      x-trove-permission:
+      x-quader-bastion-interface: 3
+      x-quader-permission:
         bastion: true
       parameters:
         - $ref: "#/components/parameters/BastionInterface"
@@ -11260,7 +11260,7 @@ paths:
         "200":
           description: The entries after the cursor.
           headers:
-            Trove-Bastion-Interface:
+            Quader-Bastion-Interface:
               $ref: "#/components/headers/BastionInterface"
           content:
             application/json:
@@ -11281,7 +11281,7 @@ paths:
   /api/v1/bastion/downloads:
     post:
       operationId: bastionDownloads
-      x-trove-maintenance: allowed
+      x-quader-maintenance: allowed
       tags: [bastion]
       summary: Report downloads served from a Bastion's cache
       description: |
@@ -11289,8 +11289,8 @@ paths:
         asynchronous `artifact.downloaded` with `details.origin: bastion`; an event older than `bastions.downloads.max_age` is
         not recorded and counts as dropped, one in the future is recorded at the time of receipt. A non-zero `dropped` records
         `bastion.downloads.dropped`. With `audit.record_downloads: false` the answer is `204` and nothing is recorded.
-      x-trove-bastion-interface: 2
-      x-trove-permission:
+      x-quader-bastion-interface: 3
+      x-quader-permission:
         bastion: true
       parameters:
         - $ref: "#/components/parameters/BastionInterface"
@@ -11304,7 +11304,7 @@ paths:
         "204":
           description: The events are accepted.
           headers:
-            Trove-Bastion-Interface:
+            Quader-Bastion-Interface:
               $ref: "#/components/headers/BastionInterface"
         "400":
           $ref: "#/components/responses/BastionInterfaceMismatch"
@@ -11340,7 +11340,7 @@ paths:
         `advisory`, `-advisory`, `status` or `-status`. Without a `status` filter resolved findings are left out. An unknown
         filter answers `400`. `blocked` and `blockReason` are computed with the rule of R-VULN-015 and the repository's
         current policy.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - {name: project, in: query, description: "A project key: the findings of the project's repositories. Repeat for several.", schema: {type: array, items: {type: string}}}
@@ -11400,7 +11400,7 @@ paths:
         `resolvedAt`, `dismissalReason` (R-VULN-020). A cell that starts with `=`, `+`, `-`, `@`, a tab or a carriage return gets
         a leading apostrophe. An export that would exceed `vulnerabilities.export.max_rows` answers `422 export_too_large`
         before anything is streamed.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - {name: project, in: query, description: "A project key: the findings of the project's repositories. Repeat for several.", schema: {type: array, items: {type: string}}}
@@ -11458,9 +11458,9 @@ paths:
         `unchanged`, `404` for an id the caller cannot read, `409 finding_resolved`, `409 finding_not_confirmed`. A batch over
         500 ids answers `422`. Every change writes a history row and the audit event `vulnerability.finding.status_changed`
         with one bulk identifier. Needs the capability `vulnerabilities:triage` and `read` on each finding.
-      x-trove-permission:
+      x-quader-permission:
         permission: vulnerabilities:triage
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -11510,7 +11510,7 @@ paths:
         description: The finding ID (a UUIDv7). A string that is no finding the caller can read answers `404`, whatever its shape.
         schema:
           type: string
-          x-trove-reserved-names: [export, set-status]
+          x-quader-reserved-names: [export, set-status]
     get:
       operationId: getVulnerabilityFinding
       tags: [vulnerabilities]
@@ -11521,7 +11521,7 @@ paths:
         effective member list contains the repository, `blocked` with `blockReason`, for a block set in triage the principal
         and time that set it, and the history (R-VULN-020). A finding the caller cannot read answers `404`. The `ETag` is the
         finding's revision.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
@@ -11562,9 +11562,9 @@ paths:
         finding_not_confirmed`); `confirmed` or `dismissed` on a `blocked` finding lifts it. A resolved finding answers `409
         finding_resolved`, and `{"status": "resolved"}` answers `422 status_not_settable`. Needs the capability
         `vulnerabilities:triage` and `read` on the finding; a finding the caller cannot read answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         permission: vulnerabilities:triage
-      x-trove-if-match: required
+      x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -11634,7 +11634,7 @@ paths:
         An advisory by identifier or alias (R-VULN-020), with its source and license (R-VULN-003) and the findings of it that
         the caller can read, across repositories and versions: the "where is it used" view. The advisory is public data and
         visible to every authenticated caller; the list of findings is filtered as the findings list is (R-VULN-019).
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       responses:
         "200":
@@ -11664,7 +11664,7 @@ paths:
         Open findings counted by severity and by kind, `needsTriage`, `blocked` (versions) and `fixAvailable`; the coverage of
         the repositories by evaluation state; the data age per ecosystem (R-VULN-021). Computed per request over the findings
         the caller can read, never cached across callers (R-VULN-019).
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - {name: project, in: query, description: "A project key: the findings of the project's repositories. Repeat for several.", schema: {type: array, items: {type: string}}}
@@ -11698,7 +11698,7 @@ paths:
         Per day from `from` to `to` (at most 400 days, default the last 90): the findings detected and not resolved at the
         end of the day, by severity (R-VULN-021, Q-VULN-16). It counts a finding under its current severity and counts
         dismissed findings until they resolve; `basis` says so. Computed over the findings the caller can read.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - {name: from, in: query, description: "First day (RFC 3339 date); default 90 days before `to`.", schema: {type: string, format: date}}
@@ -11734,7 +11734,7 @@ paths:
       description: |
         Per source and ecosystem: `mode`, `state`, `stale`, `syncedAt`, `fullSyncedAt`, `attemptedAt`, `failures`, `lastError`,
         `records`, `rejected`, `fullRejected`, `unevaluable` and `nextRunAt` (R-VULN-021).
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:read
       responses:
         "200":
@@ -11761,7 +11761,7 @@ paths:
       description: |
         The advisories, above all `MAL-` records, for a package name the installation treats as internal (R-VULN-010): the sign
         of a dependency-confusion attempt.
-      x-trove-permission:
+      x-quader-permission:
         permission: repositories:read-config
       parameters:
         - $ref: "#/components/parameters/Limit"
@@ -11796,7 +11796,7 @@ paths:
       description: |
         Per readable repository that holds the version: `evaluation` (R-VULN-001), `blocked`, `blockReason` and the findings
         (R-VULN-020): the download status without downloading.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       responses:
         "200":
@@ -11828,7 +11828,7 @@ paths:
         Open findings per version of the package, counted by severity, over the findings the caller can read (R-VULN-020).
         `repository` (repeated) narrows them to the versions and findings of that repository; a virtual repository expands to
         its members (R-UI-052).
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       parameters:
         - name: repository
@@ -11879,11 +11879,11 @@ paths:
         Enqueues a `vuln-rescan` job of the repository and answers `202` with the job (R-VULN-011); `409` with the running job
         while one is queued or running. A change of the repository's scanning settings enqueues the same job itself. Needs
         `manage` on the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: manage
         repository: path.repoKey
         project: path.projectKey
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       responses:
@@ -11942,7 +11942,7 @@ paths:
         `scheduled` with nulls. `errors.lastMessage` names hosts, never a URL or a credential. Needs
         `repositories:read-config`, `manage` on the repository, or administration of its project; a repository that is hidden
         from the caller answers `404`. A local or virtual repository answers `400 not_applicable`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       responses:
         "200":
@@ -12026,9 +12026,9 @@ paths:
         a local or virtual repository answers `400 not_applicable`. The request writes the audit event
         `mirror.pass_requested`. Needs `repositories:write-config`, `manage` on the repository (which the role Maintainer and Owner
         grant), or the role Owner of its project; a repository that is hidden from the caller answers `404`.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -12082,11 +12082,11 @@ paths:
       description: |
         The runs of the backup job (R-API-050, R-BAK-014), newest first: creates, deletes and verifies, from `backup_run`.
         The answer shows what the runs recorded in PostgreSQL; the replicas hold no target credential and never read the
-        target, so the live contents of the target are `trove backup list`. `leaseExpired` is true for a run in an active
+        target, so the live contents of the target are `quader backup list`. `leaseExpired` is true for a run in an active
         state whose lease has passed; the next run will mark it `abandoned`. Cursor pagination (R-API-010) over
         `(startedAt, id)`; `includeTotal=true` adds `total`. No endpoint starts, deletes, verifies or restores a backup
         (Q-API-10): a manual run is `kubectl create job --from=cronjob/<name>`.
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:read
       parameters:
         - name: operation
@@ -12139,9 +12139,9 @@ paths:
                     backupId: 20261028T020000Z-7f3a
                     state: copying
                     trigger: schedule
-                    pod: trove-backup-29885880-x7k2q
-                    troveVersion: 0.4.0
-                    target: s3://trove-backups/trove
+                    pod: quader-backup-29885880-x7k2q
+                    quaderVersion: 0.4.0
+                    target: s3://quader-backups/quader
                     startedAt: "2026-10-28T02:00:04.112Z"
                     heartbeatAt: "2026-10-28T02:41:19.870Z"
                     leaseExpired: false
@@ -12171,10 +12171,10 @@ paths:
       description: |
         The last success, the overdue mark, the last failure, the active run, the stored backups and the retention that
         produced them, the target, the restore origin and the manual-run command (R-API-050, R-BAK-014). `overdue` is true
-        when the last success is older than 1.5 times `expectedIntervalSeconds`, the condition on which `TroveBackupStale`
+        when the last success is older than 1.5 times `expectedIntervalSeconds`, the condition on which `QuaderBackupStale`
         fires, so API, UI and alert agree; `null` when no run has succeeded. `storedBackups` and `retention` come from the
         newest create or delete run that listed the target (Q-API-11) and are `null` until such a run exists.
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:read
       responses:
         "200":
@@ -12189,15 +12189,15 @@ paths:
                 overdue: false
                 lastFailure: null
                 active: {id: 01933c4e-2f10-7b3a-9c1d-5e8f7a6b4c21, operation: create, state: copying, startedAt: "2026-10-28T02:00:04.112Z", leaseExpired: false}
-                target: s3://trove-backups/trove
+                target: s3://quader-backups/quader
                 retention: {keepLast: 7, keepWithinSeconds: 0}
                 storedBackups:
                   asOf: "2026-10-27T02:47:31.009Z"
                   runId: 01933a1b-8c22-7e41-b0f3-2a6d9e4c7b10
                   items:
-                    - {backupId: 20261027T020000Z-1c9e, snapshotAt: "2026-10-27T02:00:08.913Z", troveVersion: 0.4.0, schemaStep: 42, databaseBytes: 183500800, blobCount: 51234, blobBytes: 412316860416, damaged: false}
+                    - {backupId: 20261027T020000Z-1c9e, snapshotAt: "2026-10-27T02:00:08.913Z", quaderVersion: 0.4.0, schemaStep: 42, databaseBytes: 183500800, blobCount: 51234, blobBytes: 412316860416, damaged: false}
                 restoredFrom: null
-                manualRun: {namespace: trove, cronJob: trove-backup}
+                manualRun: {namespace: quader, cronJob: quader-backup}
         "401":
           $ref: "#/components/responses/Unauthenticated"
         "403":
@@ -12214,7 +12214,7 @@ paths:
       tags: [system]
       summary: Read a backup run
       description: One run of the backup job (R-API-050). `{runId}` is the server-generated UUID of the run.
-      x-trove-permission:
+      x-quader-permission:
         permission: settings:read
       parameters:
         - $ref: "#/components/parameters/BackupRunId"
@@ -12257,7 +12257,7 @@ paths:
         The keys of a local or virtual Debian repository in every state with their fingerprint, algorithm, size, the key's own
         creation time, state, origin, times and public certificate (R-DEB-015). A private key is never part of an answer. Needs
         `read` on the repository. A remote repository answers `400 not_applicable`.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -12289,11 +12289,11 @@ paths:
       tags: [deb]
       summary: Create the next signing key of a Debian repository
       description: |
-        Creates the next key (R-DEB-017): `{"generate": true}` makes trove generate an EdDSALegacy key, `{"privateKey": "<armored>",
+        Creates the next key (R-DEB-017): `{"generate": true}` makes Quader generate an EdDSALegacy key, `{"privateKey": "<armored>",
         "passphrase": "…"}` imports one whose clients already trust it (R-DEB-015). From the next build every suite is signed by the
         primary and the next key. `409` while a next key exists, `409 deb_key_in_use` for a fingerprint known in any state, `422
         deb_key_unsupported` for a key the import rules refuse. Needs `manage` on the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: manage
         repository: path.repoKey
         project: path.projectKey
@@ -12342,7 +12342,7 @@ paths:
         Promotes the next key and retires the old primary: it stops signing, leaves `signing-key.asc` and its private key is erased
         (R-DEB-017). Writes the journaled event `deb.signing_key.promoted`. `409 deb_no_next_key` without a next key. A client that
         never replaced its keyring file fails `apt-get update` from then on. Needs `manage` on the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: manage
         repository: path.repoKey
         project: path.projectKey
@@ -12384,7 +12384,7 @@ paths:
         Retires the next key before a promotion, or confirms the retirement of a key the journal replay withheld (R-DEB-032); the
         private key is erased and the journaled event `deb.signing_key.retired` is written. The primary key answers `409
         deb_key_state`. Needs `manage` on the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: manage
         repository: path.repoKey
         project: path.projectKey
@@ -12421,7 +12421,7 @@ paths:
       description: |
         Returns a key the journal replay withheld (R-DEB-032): to `primary` when the repository has none, else to `next` when it has
         none, else `409 deb_key_state`. Writes `deb.signing_key.reinstated`. Needs `manage` on the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: manage
         repository: path.repoKey
         project: path.projectKey
@@ -12465,7 +12465,7 @@ paths:
         validation_failed` with the field error `out_of_range`. A file the journal replay withheld answers `409 deb_withheld`, and
         a file whose coordinates changed while the request was decided `409 conflict`. A removed coordinate is journaled
         (`deb.coordinates.removed`) and a restore removes it again. The answer is the upload answer of R-DEB-006.
-      x-trove-permission:
+      x-quader-permission:
         authenticated: true
       requestBody:
         required: true
@@ -12513,7 +12513,7 @@ paths:
         from, the generation, the release date, the keys that signed it and, for a failed build, the reason. With `waitFor`
         (`<suite>:<changeSeq>[,…]`) the answer waits until every named suite's `publishedSeq` reaches its value or `deb.index_wait_max`
         has passed, and reports the state either way. The wait holds no transaction. Needs `read` on the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -12565,11 +12565,11 @@ paths:
         read again. A reindex while an automatic build waits upgrades that job to a full build and answers `202` with it; a reindex
         that meets a waiting or running reindex answers `409 reindex_running` naming the job. A format without a job-built index
         answers `405 not_applicable`. Needs `manage` on the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: manage
         repository: path.repoKey
         project: path.projectKey
-      x-trove-idempotency-key: optional
+      x-quader-idempotency-key: optional
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       responses:
@@ -12625,7 +12625,7 @@ paths:
         The import tasks of the publishes of a local Ansible Galaxy repository, newest first (R-ANS-009), optionally of one state. A
         virtual repository lists the tasks of its deployment target; a remote repository answers `405 not_applicable`. A task is kept for
         `ansible.import_task_keep`. Needs `read` on the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: read
         repository: path.repoKey
         project: path.projectKey
@@ -12689,7 +12689,7 @@ paths:
       description: |
         The versions of a local Ansible Galaxy repository that were deleted and whose numbers are not accepted again (R-ANS-012), in
         collection and version order. Other classes answer `405 not_applicable`. Needs `manage` on the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: manage
         repository: path.repoKey
         project: path.projectKey
@@ -12751,7 +12751,7 @@ paths:
       description: |
         Clears the tombstone of a version, so that its number can be published again, with other bytes (R-ANS-012). Writes the
         journaled audit event `ansible.tombstone.cleared`. Needs `manage` on the repository.
-      x-trove-permission:
+      x-quader-permission:
         action: manage
         repository: path.repoKey
         project: path.projectKey
@@ -12800,7 +12800,7 @@ paths:
         `kind` `user` or `group` needs `identities:read`: without it the answer is `403` before any lookup, the same for every
         `q`. A caller without a credential gets `401` while no repository's artifacts are `public`. The request costs a fixed
         number of statements (R-API-064) and is limited by the class `read`, or `anonymous` without a credential (R-API-016).
-      x-trove-permission:
+      x-quader-permission:
         public: true
       parameters:
         - name: q
@@ -12871,7 +12871,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      description: A trove token (`trv_` prefix). Credentials that are present but invalid always give `401`.
+      description: A Quader token (`qdr_` prefix). Credentials that are present but invalid always give `401`.
   headers:
     # >>> M13 bastion
     BastionInterface:
@@ -12893,7 +12893,7 @@ components:
         example: '"4"'
     AuthzEpoch:
       description: >-
-        The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next
+        The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next
         request to see the change on whichever replica answers (R-AUTHZ-032).
       schema:
         type: integer
@@ -12941,7 +12941,7 @@ components:
         pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
         minLength: 2
         maxLength: 64
-        x-trove-reserved-names: [batch-create, batch-update, batch-get, batch-delete, quick-setup]
+        x-quader-reserved-names: [batch-create, batch-update, batch-get, batch-delete, quick-setup]
     DebFingerprint:
       name: fingerprint
       in: path
@@ -12950,10 +12950,10 @@ components:
       schema:
         type: string
         pattern: "^[0-9A-F]{40}$"
-        x-trove-reserved-names: [promote]
+        x-quader-reserved-names: [promote]
     # >>> M13 bastion
     BastionInterface:
-      name: Trove-Bastion-Interface
+      name: Quader-Bastion-Interface
       in: header
       required: false
       description: |
@@ -13015,7 +13015,7 @@ components:
       schema:
         type: string
         format: uuid
-        x-trove-reserved-names: [summary]
+        x-quader-reserved-names: [summary]
     JobId:
       name: id
       in: path
@@ -13032,7 +13032,7 @@ components:
       schema:
         type: string
         pattern: "^pkg_[0-9A-Za-z]+$"
-        x-trove-reserved-names: [lookup]
+        x-quader-reserved-names: [lookup]
     DocRepository:
       name: repository
       in: query
@@ -13063,7 +13063,7 @@ components:
     BastionInterfaceMismatch:
       description: The request names another interface version than this installation speaks, or none (`bastion_interface_mismatch`); the problem carries `interfaceVersion` (R-BAS-009).
       headers:
-        Trove-Bastion-Interface:
+        Quader-Bastion-Interface:
           $ref: "#/components/headers/BastionInterface"
       content:
         application/problem+json:
@@ -13278,7 +13278,7 @@ components:
       properties:
         version:
           type: string
-          description: The trove version, or `dev` for a build without a release version.
+          description: The quader version, or `dev` for a build without a release version.
         revision:
           type: string
           description: The source revision, or `unknown`.
@@ -13325,7 +13325,7 @@ components:
               type: string
             role:
               type: string
-              description: "The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `trove_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role)."
+              description: "The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `quader_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role)."
               enum: [api, packages, worker, web, all]
               example: api
         version:
@@ -13708,12 +13708,12 @@ components:
         requiresApp:
           type: [string, "null"]
           description: |
-            A contract step's `-- trove:requires-app`: the oldest release allowed to serve once the step is applied. The
+            A contract step's `-- quader:requires-app`: the oldest release allowed to serve once the step is applied. The
             contract guard refuses the step while a live replica runs an older release. `null` for an expand step.
         requiresBackground:
           type: array
           description: |
-            A contract step's `-- trove:requires-background`: the background data migrations that must have `succeeded`
+            A contract step's `-- quader:requires-background`: the background data migrations that must have `succeeded`
             before the contract guard lets the step run (R-HA-021 step 4). Empty for every other step.
           items:
             type: string
@@ -13815,7 +13815,7 @@ components:
           example: [packages]
         pool:
           type: [string, "null"]
-          description: The endpoint pool or worker pool the replica belongs to (`TROVE_POOL_NAME`); `null` for the main Deployment of its role.
+          description: The endpoint pool or worker pool the replica belongs to (`QUADER_POOL_NAME`); `null` for the main Deployment of its role.
         state:
           type: string
           enum: [starting, ready, unready, draining]
@@ -13841,7 +13841,7 @@ components:
                 format: date-time
         node:
           type: [string, "null"]
-          description: The Kubernetes node name (`TROVE_NODE_NAME`); `null` outside Kubernetes.
+          description: The Kubernetes node name (`QUADER_NODE_NAME`); `null` outside Kubernetes.
         checks:
           type: object
           description: The last result of every readiness check, gating and reported.
@@ -15277,7 +15277,7 @@ components:
       type: object
       description: |
         The exchange parameters with the OAuth names of RFC 8693 (R-CI-007); they are not management-API fields and keep
-        their snake_case spelling. `ci_issuer` and `ttl` are trove's extensions.
+        their snake_case spelling. `ci_issuer` and `ttl` are Quader's extensions.
       additionalProperties: false
       required: [grant_type, subject_token, subject_token_type]
       properties:
@@ -15298,7 +15298,7 @@ components:
       additionalProperties: false
       required: [access_token, issued_token_type, token_type, expires_in, scope, ci_issuer, mappings]
       properties:
-        access_token: {type: string, description: "A `trv_cit_` token."}
+        access_token: {type: string, description: "A `qdr_cit_` token."}
         issued_token_type: {type: string, enum: ["urn:ietf:params:oauth:token-type:access_token"]}
         token_type: {type: string, enum: [Bearer]}
         expires_in: {type: integer, format: int64}
@@ -15307,7 +15307,7 @@ components:
         mappings: {type: array, items: {type: string}}
     CiExchangeError:
       type: object
-      description: The OAuth error response of RFC 6749 section 5.2 with trove's `reason` and `requestId` (R-CI-008).
+      description: The OAuth error response of RFC 6749 section 5.2 with Quader's `reason` and `requestId` (R-CI-008).
       additionalProperties: false
       required: [error, requestId]
       properties:
@@ -15608,8 +15608,8 @@ components:
       example:
         id: 0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e11
         type: pat
-        token: trv_pat_3kQ9xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        hint: trv_pat_3kQ9
+        token: qdr_pat_3kQ9xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        hint: qdr_pat_3kQ9
         owner: {kind: user, name: alice}
         description: laptop npm
         scope: {inherit: true, admin: false, repositories: [], system: []}
@@ -15643,7 +15643,7 @@ components:
       properties:
         token:
           type: string
-          description: The token value, `trv_…`.
+          description: The token value, `qdr_…`.
     RevokedToken:
       type: object
       description: What an administrator receives from a revocation by value.
@@ -16193,7 +16193,7 @@ components:
           description: >-
             Who keeps the binding (R-AUTHZ-010, Q-AUTHZ-170): `api` for one made through this API or an administration
             command, `configuration` for one that `authz.role_bindings` of the system configuration declares and
-            `trove migrate` applies. A `configuration` binding cannot be removed here (`409
+            `quader migrate` applies. A `configuration` binding cannot be removed here (`409
             role_binding_managed_by_configuration`).
     RoleBindingList:
       type: object
@@ -16377,7 +16377,7 @@ components:
         wiki:
           type: boolean
           description: |
-            Whether the format has wiki content, the documentation trove serves or shows apart from the files (R-AUTHZ-034):
+            Whether the format has wiki content, the documentation Quader serves or shows apart from the files (R-AUTHZ-034):
             a repository of such a format has a wiki level of its own that is worth setting. `false` for a format whose
             repository serves no documentation; its wiki level then changes nothing.
         settingsSchema:
@@ -16386,8 +16386,8 @@ components:
           description: |
             The JSON Schema 2020-12 of the format's settings member of a repository document (the member named
             after the format, R-REPO-004), which the create form renders and the service validates a document
-            against (R-ARCH-008). Its properties may carry `x-trove-classes`, the classes the setting applies to;
-            a setting of another class answers `not_applicable`. A property with an `enum` carries `x-trove-enum-titles`,
+            against (R-ARCH-008). Its properties may carry `x-quader-classes`, the classes the setting applies to;
+            a setting of another class answers `not_applicable`. A property with an `enum` carries `x-quader-enum-titles`,
             the label the form shows for each value (R-UI-088). A `title` and a `description` are the texts the form shows,
             in plain words; the member schemas of this document (`NpmSettings`, …) describe each setting for the API
             reader. `null` for a format without settings.
@@ -16504,7 +16504,7 @@ components:
       type: object
       description: |
         The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
-        download, and `wiki`, the documentation of its packages that trove serves or shows apart from the files. The artifacts
+        download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
         level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
         `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
       additionalProperties: false
@@ -16739,17 +16739,17 @@ components:
           type: object
           additionalProperties: false
           description: |
-            Every class (R-NPM-038, R-VULN-017). The security audit endpoint: answer from trove's own advisory data, or
+            Every class (R-NPM-038, R-VULN-017). The security audit endpoint: answer from Quader's own advisory data, or
             forward the names this remote has fetched, and that nothing marks internal, to an advisory provider.
           properties:
             mode:
               type: string
               enum: [local, forward, disabled]
               description: |
-                `local` answers from trove's own advisory data and sends nothing out (every class; `503 vulnerability_data_unavailable`
+                `local` answers from Quader's own advisory data and sends nothing out (every class; `503 vulnerability_data_unavailable`
                 until the npm data is complete; answers like `disabled` while `vulnerabilities.enabled` is false). `forward` answers
                 through the first remote that forwards (remote and virtual repositories; a local repository answers like `disabled`);
-                `disabled` answers 501 `npm_audit_unavailable`. Left out, the audit answers from trove's data while
+                `disabled` answers 501 `npm_audit_unavailable`. Left out, the audit answers from Quader's data while
                 `vulnerabilities.enabled` is true and the OSV source is not `off`; else the mode is `forward` on remote and virtual
                 repositories and `disabled` on local ones (Q-ARCH-341).
             providerURL:
@@ -16799,7 +16799,7 @@ components:
           type: string
           enum: [local, "off"]
           description: |
-            The vulnerability information of the service index (R-VULN-018): `local` lists VulnerabilityInfo/6.7.0 and serves trove's
+            The vulnerability information of the service index (R-VULN-018): `local` lists VulnerabilityInfo/6.7.0 and serves Quader's
             own NuGet advisory data while that data is complete (every class; answers like `off` while `vulnerabilities.enabled` is
             false); `off` lists nothing. Left out, the mode is `local` while `vulnerabilities.enabled` is true and the OSV source is not
             off, else `off`. The pass-through of the upstream's information, `upstream`, is refused until R-NUGET-023 is built.
@@ -17772,7 +17772,7 @@ components:
             $ref: "#/components/schemas/PackageDocReturnValue"
         examples:
           type: string
-          description: Text, shown in a code block; trove does not highlight or run it.
+          description: Text, shown in a code block; Quader does not highlight or run it.
         seealso:
           type: array
           items:
@@ -18383,7 +18383,7 @@ components:
         be sent back without blanking or leaking the secret. A read shows `{"set": true}` for a sealed
         value and the reference itself for a reference. The value is never returned. `value` and
         `secretRef` together, an empty value, a reference outside the rules of R-OPS-029 (a file directly
-        under `config_as_code.secrets_dir`; a variable named `TROVE_CAC_<NAME>`) and `set: false` are
+        under `config_as_code.secrets_dir`; a variable named `QUADER_CAC_<NAME>`) and `set: false` are
         `422 invalid_secret`.
       properties:
         value:
@@ -18406,7 +18406,7 @@ components:
           pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,254}$"
         env:
           type: string
-          pattern: "^TROVE_CAC_[A-Z0-9_]{1,200}$"
+          pattern: "^QUADER_CAC_[A-Z0-9_]{1,200}$"
     UpstreamTestRequest:
       type: object
       additionalProperties: false
@@ -18791,17 +18791,17 @@ components:
         createdAt: "2026-11-02T10:00:00Z"
         tokens:
           - id: 0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41
-            hint: trv_bst_3kQ9
+            hint: qdr_bst_3kQ9
             description: partners 2026
             createdAt: "2026-11-02T10:05:00Z"
             expiresAt: "2027-11-02T10:05:00Z"
             lastUsedAt: "2026-11-02T10:06:12Z"
         contacts:
-          - replica: trove-bastion-7d9c-x2k4q
+          - replica: quader-bastion-7d9c-x2k4q
             contactAt: "2026-11-02T10:06:12Z"
             clientAddress: 198.51.100.20
             release: 0.15.0
-            interfaceVersion: 1
+            interfaceVersion: 3
             baseUrl: https://packages.example.com
     BastionList:
       type: object
@@ -18895,7 +18895,7 @@ components:
           format: uuid
         token:
           type: string
-          description: The secret, 57 characters with the prefix `trv_bst_`. Shown once.
+          description: The secret, 57 characters with the prefix `qdr_bst_`. Shown once.
         hint:
           type: string
         description:
@@ -19110,7 +19110,7 @@ components:
       type: string
       enum: [needs_triage, confirmed, blocked, dismissed, resolved]
       description: |
-        The status of a finding (R-VULN-012). `needs_triage`, `confirmed` and `blocked` are open; `resolved` is set by trove
+        The status of a finding (R-VULN-012). `needs_triage`, `confirmed` and `blocked` are open; `resolved` is set by Quader
         only.
     VulnerabilityBlockReason:
       type: string
@@ -19164,7 +19164,7 @@ components:
       type: object
       additionalProperties: false
       required: [version, score, vector]
-      description: The vector the severity was scored from (R-VULN-007); trove never mixes versions in one value.
+      description: The vector the severity was scored from (R-VULN-007); Quader never mixes versions in one value.
       properties:
         version: {type: string, enum: ["4.0", "3.1", "3.0", "2.0"]}
         score: {type: number, minimum: 0, maximum: 10}
@@ -19357,7 +19357,7 @@ components:
         at: {type: string, format: date-time}
         actor:
           type: [object, "null"]
-          description: The principal behind the change; `null` for trove.
+          description: The principal behind the change; `null` for Quader.
           additionalProperties: false
           required: [id, name]
           properties:
@@ -19938,7 +19938,7 @@ components:
     BackupRun:
       type: object
       description: One row of `backup_run` in the names of R-API-003 (R-API-050).
-      required: [id, operation, backupId, state, trigger, pod, troveVersion, target, startedAt, heartbeatAt, leaseExpired, finishedAt, snapshotAt, progress, result, error]
+      required: [id, operation, backupId, state, trigger, pod, quaderVersion, target, startedAt, heartbeatAt, leaseExpired, finishedAt, snapshotAt, progress, result, error]
       properties:
         id:
           type: string
@@ -19958,7 +19958,7 @@ components:
         pod:
           type: string
           description: The pod of the run; a Job created by hand carries the name its creator chose.
-        troveVersion:
+        quaderVersion:
           type: string
         target:
           type: string
@@ -20062,14 +20062,14 @@ components:
           format: int64
     StoredBackup:
       type: object
-      required: [backupId, snapshotAt, troveVersion, schemaStep, databaseBytes, blobCount, blobBytes, damaged]
+      required: [backupId, snapshotAt, quaderVersion, schemaStep, databaseBytes, blobCount, blobBytes, damaged]
       properties:
         backupId:
           type: string
         snapshotAt:
           type: string
           format: date-time
-        troveVersion:
+        quaderVersion:
           type: string
         schemaStep:
           type: integer
@@ -20129,7 +20129,7 @@ components:
         expectedIntervalSeconds:
           type: integer
           format: int64
-          description: "`backup.expected_interval`, the value behind `trove_backup_expected_interval_seconds` and `TroveBackupStale`."
+          description: "`backup.expected_interval`, the value behind `quader_backup_expected_interval_seconds` and `QuaderBackupStale`."
         lastSuccessAt:
           type: [string, "null"]
           format: date-time
@@ -20324,7 +20324,7 @@ components:
             enum: [xz]
         origin:
           type: string
-          default: trove
+          default: quader
           pattern: "^[ -9;-~]{1,64}$"
           description: Local and virtual. The `Origin` field of every `Release`; printable ASCII without `:`, 1 to 64 characters.
         label:

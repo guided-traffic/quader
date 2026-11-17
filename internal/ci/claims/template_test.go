@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 func render(t testing.TB, src string, c claims.Claims, ctx claims.Context) (string, error) {

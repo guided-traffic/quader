@@ -48,7 +48,7 @@ describe('Client setup for a Bastion (R-BAS-007, R-API-030)', () => {
     expect(target(r.root, 'target', '')?.checked).toBe(true);
     expect(r.setup.calls.at(-1)?.query.bastion).toBeUndefined();
     // The place to install from is one of More options, closed until opened (Q-UI-316).
-    const more = r.root.querySelector('trove-disclosure.more-options')!;
+    const more = r.root.querySelector('quader-disclosure.more-options')!;
     expect(text(more)).toContain('Install from');
     expect(text(more)).toContain('where to install from');
     expect(more.querySelector('input[name="target"]')).toBeTruthy();
@@ -64,7 +64,7 @@ describe('Client setup for a Bastion (R-BAS-007, R-API-030)', () => {
     const all = [...r.root.querySelectorAll('.snippet pre')].map((p) => p.textContent ?? '').join('\n');
     expect(all).toContain('registry=https://packages.example.com/api/npm/web/npm-all/');
     expect(all).toContain('replace-registry-host=always');
-    expect(all).not.toContain('trove.example.net');
+    expect(all).not.toContain('quader.example.net');
     expect(text(r.root)).toContain('makes npm fetch every package from this address');
     expect(text(r.root)).toContain('These snippets point at the Bastion');
     expect(addressValues(r.root)).toEqual(['https://packages.example.com/api/npm/web/npm-all/']);
@@ -92,7 +92,7 @@ describe('Client setup for a Bastion (R-BAS-007, R-API-030)', () => {
   it('R-BAS-007 a caller without endpoints:read gets no choice, and a Bastion named in the query still works', async () => {
     const plain = await openSetup({ repository: 'web/npm-all', client: 'npm' }, ['repositories:read-config']);
     expect(plain.root.querySelector('input[name="target"]')).toBeNull();
-    expect(text(plain.root.querySelector('trove-disclosure.more-options')!)).not.toContain('where to install from');
+    expect(text(plain.root.querySelector('quader-disclosure.more-options')!)).not.toContain('where to install from');
     const linked = await openSetup({ repository: 'web/npm-all', client: 'npm', bastion: 'partners' }, ['repositories:read-config']);
     expect(target(linked.root, 'target', 'partners')?.checked).toBe(true);
     expect(linked.setup.calls.at(-1)?.query.bastion).toBe('partners');
@@ -106,7 +106,7 @@ describe('Client setup for a Bastion (R-BAS-007, R-API-030)', () => {
 
   it('R-BAS-007 a name that is no registration is a not-found notice', async () => {
     const r = await openSetup({ repository: 'web/npm-all', client: 'npm', bastion: 'nobody' });
-    expect(r.root.querySelector('trove-error-notice')).toBeTruthy();
+    expect(r.root.querySelector('quader-error-notice')).toBeTruthy();
     expect(r.root.querySelector('.snippet')).toBeNull();
   });
 

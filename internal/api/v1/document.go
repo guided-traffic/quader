@@ -12,7 +12,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // specYAML is the embedded copy of api/openapi.yaml. `go generate` refreshes it,
@@ -29,47 +29,47 @@ func EmbeddedYAML() []byte { return bytes.Clone(specYAML) }
 type Operation struct {
 	ID      string
 	Pattern string // the ServeMux pattern, for example "GET /api/v1/system/ping"
-	// Permission is the value of x-trove-permission, decoded.
+	// Permission is the value of x-quader-permission, decoded.
 	Permission map[string]any
 	// Requirement is Permission in the form the authorization step enforces.
 	Requirement Requirement
-	// RecentAuth is x-trove-recent-auth: true. A caller that authenticates with a
+	// RecentAuth is x-quader-recent-auth: true. A caller that authenticates with a
 	// session must have signed in at the identity provider within
 	// auth.sessions.recent_auth_window, otherwise the shared step answers 401
 	// reauthentication_required (R-API-007, R-AUTH-011). A token is not asked.
 	RecentAuth bool
-	// OwnerRights is x-trove-owner-rights: required. The operation acts on the caller's own account
+	// OwnerRights is x-quader-owner-rights: required. The operation acts on the caller's own account
 	// (profile, preferences, sessions, the revocation of all own tokens), which no token scope names: a
 	// token whose scope does not inherit its owner's rights is refused with 403 forbidden by the shared
 	// step, a session and an inheriting token pass (R-API-021, R-AUTH-024, Q-API-214).
 	OwnerRights bool
-	// IfMatchRequired is x-trove-if-match: required (R-API-012). The operation
+	// IfMatchRequired is x-quader-if-match: required (R-API-012). The operation
 	// declares the shared IfMatch parameter, the generated wrapper refuses a
 	// request without the header, and bindError answers it with 428
 	// precondition_required (Q-API-43).
 	IfMatchRequired bool
-	// CIAdmitted is x-trove-ci: admitted. A CI token is admitted on the management API only on the
+	// CIAdmitted is x-quader-ci: admitted. A CI token is admitted on the management API only on the
 	// operations of the action form (repository content that needs repository actions only), on public
 	// operations, and on the operations that declare this (GET and DELETE /tokens/current, R-CI-013,
 	// R-CI-017). Every other operation refuses it with 403 ci_token_restricted (Q-CI-18).
 	CIAdmitted bool
-	// MaintenanceAllowed is x-trove-maintenance: allowed. While the installation is in read-only maintenance mode (R-OPS-024) the
+	// MaintenanceAllowed is x-quader-maintenance: allowed. While the installation is in read-only maintenance mode (R-OPS-024) the
 	// shared step refuses every operation with a method other than GET, HEAD and OPTIONS with 503 unavailable, unless it declares
 	// this: the operations that keep the installation usable (credentials, sessions, the CI exchange, cache invalidation, the
 	// switch itself) and the ones that only evaluate.
 	MaintenanceAllowed bool
-	// BastionInterface is x-trove-bastion-interface: the interface version the operation belongs to
+	// BastionInterface is x-quader-bastion-interface: the interface version the operation belongs to
 	// (R-BAS-008, R-BAS-009); 0 for every other operation. It is set exactly on the operations whose
-	// x-trove-permission is {bastion: true}, and equals iface.InterfaceVersion.
+	// x-quader-permission is {bastion: true}, and equals iface.InterfaceVersion.
 	BastionInterface int
-	// Part is x-trove-part: the part of a repository the operation serves when it is not the artifacts, "" for the artifacts (Q-API-260).
+	// Part is x-quader-part: the part of a repository the operation serves when it is not the artifacts, "" for the artifacts (Q-API-260).
 	// The only value is [PartWiki]: the operation serves the wiki part (documentation) of a repository, which is read under the wiki
 	// check of R-AUTHZ-034 and not under the artifact check alone (R-ANS-037). The marker makes the seam declarative: a test lists the
 	// wiki operations from the document, and the check that runs before the handler reads it.
 	Part string
 }
 
-// PartWiki is the value of x-trove-part for an operation that serves the wiki part of a repository (Q-API-260).
+// PartWiki is the value of x-quader-part for an operation that serves the wiki part of a repository (Q-API-260).
 const PartWiki = "wiki"
 
 // Document is the parsed OpenAPI document.
@@ -94,7 +94,7 @@ func httpMethods() []string {
 
 // LoadDocument parses a document and builds the table of operations keyed by
 // route pattern. Every operation must carry an operationId and an
-// x-trove-permission declaration in a form the authorization step enforces: no
+// x-quader-permission declaration in a form the authorization step enforces: no
 // operation can run without a declared and enforced permission (R-API-002,
 // R-API-008).
 func LoadDocument(raw []byte) (*Document, error) {
@@ -124,45 +124,45 @@ func LoadDocument(raw []byte) (*Document, error) {
 			if id == "" {
 				problems = append(problems, fmt.Errorf("%s has no operationId", pattern))
 			}
-			perm, _ := op["x-trove-permission"].(map[string]any)
+			perm, _ := op["x-quader-permission"].(map[string]any)
 			var req Requirement
 			if len(perm) == 0 {
-				problems = append(problems, fmt.Errorf("%s (%s) has no x-trove-permission declaration", pattern, id))
+				problems = append(problems, fmt.Errorf("%s (%s) has no x-quader-permission declaration", pattern, id))
 			} else if r, err := parseRequirement(perm); err != nil {
-				problems = append(problems, fmt.Errorf("%s (%s): x-trove-permission: %w", pattern, id, err))
+				problems = append(problems, fmt.Errorf("%s (%s): x-quader-permission: %w", pattern, id, err))
 			} else {
 				req = r
 			}
 			recent, err := parseRecentAuth(op)
 			if err != nil {
-				problems = append(problems, fmt.Errorf("%s (%s): x-trove-recent-auth: %w", pattern, id, err))
+				problems = append(problems, fmt.Errorf("%s (%s): x-quader-recent-auth: %w", pattern, id, err))
 			}
 			ownerRights, err := parseOwnerRights(op, req, pattern)
 			if err != nil {
-				problems = append(problems, fmt.Errorf("%s (%s): x-trove-owner-rights: %w", pattern, id, err))
+				problems = append(problems, fmt.Errorf("%s (%s): x-quader-owner-rights: %w", pattern, id, err))
 			}
-			if v, has := op["x-trove-if-match"]; has && v != "required" {
-				problems = append(problems, fmt.Errorf("%s (%s): x-trove-if-match must be required, not %v", pattern, id, v))
+			if v, has := op["x-quader-if-match"]; has && v != "required" {
+				problems = append(problems, fmt.Errorf("%s (%s): x-quader-if-match must be required, not %v", pattern, id, v))
 			}
 			admitted, err := parseCIAdmitted(op)
 			if err != nil {
-				problems = append(problems, fmt.Errorf("%s (%s): x-trove-ci: %w", pattern, id, err))
+				problems = append(problems, fmt.Errorf("%s (%s): x-quader-ci: %w", pattern, id, err))
 			}
 			allowed, err := parseMaintenanceAllowed(op, m)
 			if err != nil {
-				problems = append(problems, fmt.Errorf("%s (%s): x-trove-maintenance: %w", pattern, id, err))
+				problems = append(problems, fmt.Errorf("%s (%s): x-quader-maintenance: %w", pattern, id, err))
 			}
 			bastionVersion, err := parseBastionInterface(op, req)
 			if err != nil {
-				problems = append(problems, fmt.Errorf("%s (%s): x-trove-bastion-interface: %w", pattern, id, err))
+				problems = append(problems, fmt.Errorf("%s (%s): x-quader-bastion-interface: %w", pattern, id, err))
 			}
 			part, err := parsePart(op, m, req)
 			if err != nil {
-				problems = append(problems, fmt.Errorf("%s (%s): x-trove-part: %w", pattern, id, err))
+				problems = append(problems, fmt.Errorf("%s (%s): x-quader-part: %w", pattern, id, err))
 			}
 			o := Operation{
 				ID: id, Pattern: pattern, Permission: perm, Requirement: req, RecentAuth: recent, OwnerRights: ownerRights,
-				IfMatchRequired: op["x-trove-if-match"] == "required", CIAdmitted: admitted, MaintenanceAllowed: allowed,
+				IfMatchRequired: op["x-quader-if-match"] == "required", CIAdmitted: admitted, MaintenanceAllowed: allowed,
 				BastionInterface: bastionVersion, Part: part,
 			}
 			if isFilesPattern(pattern) {
@@ -180,10 +180,10 @@ func LoadDocument(raw []byte) (*Document, error) {
 	return d, nil
 }
 
-// parseRecentAuth reads x-trove-recent-auth of an operation: absent is false, and
+// parseRecentAuth reads x-quader-recent-auth of an operation: absent is false, and
 // the only other accepted value is true (leave the member out instead of false).
 func parseRecentAuth(op map[string]any) (bool, error) {
-	raw, has := op["x-trove-recent-auth"]
+	raw, has := op["x-quader-recent-auth"]
 	if !has {
 		return false, nil
 	}
@@ -193,13 +193,13 @@ func parseRecentAuth(op map[string]any) (bool, error) {
 	return false, fmt.Errorf("must be true (leave it out instead of %v)", raw)
 }
 
-// parseOwnerRights reads x-trove-owner-rights of an operation: absent is false, and the only other accepted
+// parseOwnerRights reads x-quader-owner-rights of an operation: absent is false, and the only other accepted
 // value is "required". It belongs to the form {authenticated: true} of the management API: an operation that
 // declares a permission, a role or a repository action is decided by the decision point, which applies the
 // token's scope already, and the operations of /files/ and of the content routes are decided by the files
 // handler, which the shared step that enforces the attribute never wraps.
 func parseOwnerRights(op map[string]any, req Requirement, pattern string) (bool, error) {
-	raw, has := op["x-trove-owner-rights"]
+	raw, has := op["x-quader-owner-rights"]
 	if !has {
 		return false, nil
 	}
@@ -215,10 +215,10 @@ func parseOwnerRights(op map[string]any, req Requirement, pattern string) (bool,
 	return true, nil
 }
 
-// parseMaintenanceAllowed reads x-trove-maintenance of an operation: absent is false, and the only other accepted value is "allowed".
+// parseMaintenanceAllowed reads x-quader-maintenance of an operation: absent is false, and the only other accepted value is "allowed".
 // It is meaningless on a method that is never refused in maintenance mode, which the document refuses.
 func parseMaintenanceAllowed(op map[string]any, method string) (bool, error) {
-	raw, has := op["x-trove-maintenance"]
+	raw, has := op["x-quader-maintenance"]
 	if !has {
 		return false, nil
 	}
@@ -240,12 +240,12 @@ func refusedInMaintenance(method string) bool {
 	return true
 }
 
-// parsePart reads x-trove-part of an operation: absent is "", and the only other accepted value is "wiki" (Q-API-260, R-API-058). It
+// parsePart reads x-quader-part of an operation: absent is "", and the only other accepted value is "wiki" (Q-API-260, R-API-058). It
 // belongs to a GET operation declared {public: true}, the form of the reads of R-API-029 whose handler decides the caller per
 // repository; on any other method or declaration the document refuses it, because the shared step would decide nothing about the
 // wiki there.
 func parsePart(op map[string]any, method string, req Requirement) (string, error) {
-	raw, has := op["x-trove-part"]
+	raw, has := op["x-quader-part"]
 	if !has {
 		return "", nil
 	}
@@ -261,10 +261,10 @@ func parsePart(op map[string]any, method string, req Requirement) (string, error
 	return PartWiki, nil
 }
 
-// parseCIAdmitted reads x-trove-ci of an operation: absent is false, and the only other accepted
+// parseCIAdmitted reads x-quader-ci of an operation: absent is false, and the only other accepted
 // value is "admitted".
 func parseCIAdmitted(op map[string]any) (bool, error) {
-	raw, has := op["x-trove-ci"]
+	raw, has := op["x-quader-ci"]
 	if !has {
 		return false, nil
 	}
@@ -274,11 +274,11 @@ func parseCIAdmitted(op map[string]any) (bool, error) {
 	return false, fmt.Errorf("must be admitted (leave the member out to refuse CI tokens), not %v", raw)
 }
 
-// parseBastionInterface reads x-trove-bastion-interface of an operation. The member and the permission form
+// parseBastionInterface reads x-quader-bastion-interface of an operation. The member and the permission form
 // {bastion: true} go together, and the member's value is the interface version of this build: an operation
 // documented for another version is a change of the interface that the guard of R-BAS-009 did not see.
 func parseBastionInterface(op map[string]any, req Requirement) (int, error) {
-	raw, has := op["x-trove-bastion-interface"]
+	raw, has := op["x-quader-bastion-interface"]
 	switch {
 	case !has && !req.Bastion:
 		return 0, nil

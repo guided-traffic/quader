@@ -8,11 +8,11 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nupkg"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nupkg"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The reads of the package view (R-API-029, R-EP-016, Q-NUGET-48): what the screens show of a

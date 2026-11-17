@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	nugetdata "github.com/guided-traffic/trove/internal/formatdata/nuget"
+	"github.com/guided-traffic/quader/internal/blob"
+	nugetdata "github.com/guided-traffic/quader/internal/formatdata/nuget"
 )
 
 // nugetBlobs gives the NuGet package view its ranged reads over a stored package (Q-NUGET-48):

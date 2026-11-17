@@ -14,13 +14,13 @@ import (
 )
 
 // promtoolPath returns the promtool of the pin (tools/versions.env, PROMTOOL_VERSION). `make chart-test` fetches
-// it into .bin and hands the path over in TROVE_PROMTOOL; a promtool of another version is refused, so the
+// it into .bin and hands the path over in QUADER_PROMTOOL; a promtool of another version is refused, so the
 // rules are never tested with two versions.
 func promtoolPath(t *testing.T) string {
 	t.Helper()
-	path := os.Getenv("TROVE_PROMTOOL")
+	path := os.Getenv("QUADER_PROMTOOL")
 	if path == "" {
-		t.Fatal("TROVE_PROMTOOL is not set: run `make chart-test`, which fetches promtool at the pin of tools/versions.env into .bin")
+		t.Fatal("QUADER_PROMTOOL is not set: run `make chart-test`, which fetches promtool at the pin of tools/versions.env into .bin")
 	}
 	raw, err := os.ReadFile(filepath.Join(repoRoot, "tools", "versions.env"))
 	if err != nil {
@@ -59,7 +59,7 @@ func runPromtool(t *testing.T, dir, promtool string, args ...string) {
 
 // TestR_BAS_041_PromtoolRules (R-BAS-041): the rendered PrometheusRule passes `promtool check rules` and
 // `promtool test rules`, with one test per alert that fires on its failure input and one on healthy input in
-// which it stays silent (deploy/helm/trove-bastion/tests/rules_test.yaml).
+// which it stays silent (deploy/helm/quader-bastion/tests/rules_test.yaml).
 func TestR_BAS_041_PromtoolRules(t *testing.T) {
 	promtool := promtoolPath(t)
 	_, docs := bstRender(t, []string{bastionSet("bucket-valkey")})

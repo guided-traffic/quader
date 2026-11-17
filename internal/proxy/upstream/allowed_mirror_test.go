@@ -4,8 +4,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestAllowedMirror: the hosts a mirror's discovery request may reach (R-REPO-051, Q-REPO-151): the upstream's, the extraHosts entries

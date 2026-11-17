@@ -7,7 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // How a suggestion matches and is ranked (R-API-062). The text is q trimmed and lower-cased; its terms are its parts between

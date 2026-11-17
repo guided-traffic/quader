@@ -148,7 +148,7 @@ The queues are fixed by the release: `default`, `maintenance`, `index`, `deliver
 | `$2` of the claim is every registered kind, so a row a release left in the old queue of a kind that moved runs on a process that claims that queue, in the slots of the row's queue (Q-ARCH-305) | `Worker.Start` |
 | The reaper and the scheduler lease are cluster-wide and run on every worker whatever it claims | `Worker.reaperLoop`, `schedulerWork` |
 
-Both settings are lists, so as environment variables they are one JSON list, `TROVE_JOBS_QUEUES='["index"]'` (Q-ARCH-304); a bare name or a comma-separated text is refused, naming the variable. The tests: `TestJobsQueueSettings`, `TestJobsQueuesFromTheEnvironment` ([jobs_test.go](../../internal/config/jobs_test.go)), `TestWorkerClaimsOnlyItsQueues` ([worker_test.go](../../internal/jobs/worker_test.go)) and `TestJobQueues` ([queues_test.go](../../test/integration/coordination/queues_test.go): two workers with disjoint queue sets split 50 + 50 jobs, a held `vuln` job does not delay a `maintenance` job, a row of a moved kind runs).
+Both settings are lists, so as environment variables they are one JSON list, `QUADER_JOBS_QUEUES='["index"]'` (Q-ARCH-304); a bare name or a comma-separated text is refused, naming the variable. The tests: `TestJobsQueueSettings`, `TestJobsQueuesFromTheEnvironment` ([jobs_test.go](../../internal/config/jobs_test.go)), `TestWorkerClaimsOnlyItsQueues` ([worker_test.go](../../internal/jobs/worker_test.go)) and `TestJobQueues` ([queues_test.go](../../test/integration/coordination/queues_test.go): two workers with disjoint queue sets split 50 + 50 jobs, a held `vuln` job does not delay a `maintenance` job, a row of a moved kind runs).
 
 ### Claim, lease, heartbeat, reaper
 
@@ -217,7 +217,7 @@ one-argument form, an ad-hoc first argument, category 2, or the shared form outs
 There is no fencing token. Fencing is "the singleton's writes run on the lease's own session" (R-HA-006): a holder that lost the lock has
 no session to write on, and `Tx` proves the lock with `pg_locks` before the first statement. (An `xid8` token was removed: it is not
 monotonic across an asynchronous failover and nothing consumed it.) The loss of a lease (failed `SELECT 1` of the check loop every `database.lease_check_interval`, or a
-failing statement on a closed connection) cancels `Held.Context()`, counts `trove_lease_lost_total{task}`, and destroys the connection. The holder loop retries
+failing statement on a closed connection) cancels `Held.Context()`, counts `quader_lease_lost_total{task}`, and destroys the connection. The holder loop retries
 every `cluster.lease_retry_interval`. `Leases.Release(ctx, id)` unlocks at once and stops retrying (the scheduler lease at drain); `Leases.Stop` unlocks all.
 
 The server's side of a holder that is gone: a vanished one (its node lost, its network cut) is ended by the server keepalive
@@ -277,13 +277,13 @@ v, err := tokens.Load(ctx, key, func(ctx context.Context) (Token, error) { retur
 
 `Load` implements the fill rule: it reads `Applied(area)` of every area before the loader, and inserts only if those epochs and the cache's invalidation counter are unchanged afterwards.
 `Invalidate`, `InvalidateFunc` and any flush bump the counter, so an early eviction during a fill also stops the insert. `Set` inserts unconditionally (write-through of a value the caller just committed).
-A cache with `MaxBytes` needs `Weigh`. Metrics: `trove_cache_requests_total{cache,result}` (`hit`, `miss`, `expired`, `fill_skipped`), `trove_cache_flushes_total{cache,reason}`, `trove_cache_entries`, `trove_cache_bytes`.
+A cache with `MaxBytes` needs `Weigh`. Metrics: `quader_cache_requests_total{cache,result}` (`hit`, `miss`, `expired`, `fill_skipped`), `quader_cache_flushes_total{cache,reason}`, `quader_cache_entries`, `quader_cache_bytes`.
 
 ### Signals
 
 `signals.Notify(tx, "jobs", payload)` (or `Publish` after the commit) goes to a per-area coalescer: the first signal of an idle area leaves at once, further ones within
 `cluster.signal_coalesce_window` leave as one batch, a batch above 1 KiB becomes a coarse signal. Subscribers on the same replica get the batch directly. Without Valkey the signal is dropped and counted
-(`trove_cluster_signals_dropped_total{area}`); every consumer polls.
+(`quader_cluster_signals_dropped_total{area}`); every consumer polls.
 
 ## Replica registry
 
@@ -321,7 +321,7 @@ last value, n is at least 1, and `Get` is the `Replicas` function of `proxy.Opti
 
 ## Bounds P-13 and P-14
 
-| Bound | Spec | Test | Per change | With `TROVE_PERF_GATE=1` (nightly) | Measured (this machine, `-race`) |
+| Bound | Spec | Test | Per change | With `QUADER_PERF_GATE=1` (nightly) | Measured (this machine, `-race`) |
 |---|---|---|---|---|---|
 | Change propagation with Valkey | P-13 | `TestChangePropagation`, with poll 2 s, so only the message can explain it | every change reaches B; at most 20 of 200 changes take 400 ms or longer (`checkWoken`, [Q-ARCH-495](../spec/architecture.md#q-arch-495--the-per-change-check-of-p-13-is-that-the-notification-carried-the-change-and-the-p50-bound-moves-to-the-nightly-run)) | p50 ≤ 20 ms, p99 ≤ 100 ms | p50 1.2 to 9 ms, p99 4 to 88 ms (host load 15 to 40) |
 | Change propagation without Valkey | P-13 | same, Sentinel address that does not answer, poll 1 s | p99 ≤ `epoch_poll_interval` + 1 s | same | p99 about 1.0 s |

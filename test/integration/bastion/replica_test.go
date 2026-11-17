@@ -21,12 +21,12 @@ import (
 
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/internal/bastion/engine"
-	"github.com/guided-traffic/trove/internal/bastion/server"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/bastion/engine"
+	"github.com/guided-traffic/quader/internal/bastion/server"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // clock is the settable clock of a Bastion replica (engine.Deps.Now). It starts at the real time; the periods
@@ -196,14 +196,14 @@ func (b *bastion) start(t *testing.T, dir string, o bastionOptions, i int) *repl
 	if o.Valkey {
 		y.WriteString(valkeyYAML(t, dir, b.sh.vprefix, o.ValkeyDown))
 	}
-	cfgFile := writeFile(t, dir, fmt.Sprintf("trove-%d.yaml", i+1), y.String())
+	cfgFile := writeFile(t, dir, fmt.Sprintf("quader-%d.yaml", i+1), y.String())
 	loaded, err := config.LoadBastion(config.Options{File: cfgFile, Command: config.CommandServe})
 	if err != nil {
 		t.Fatalf("config: %v", err)
 	}
 	logs := &syncBuf{}
 	srv, err := server.New(server.Options{
-		Loaded: loaded, Environ: []string{"TROVE_POD_NAME=" + name}, LogWriter: logs, DrainDelay: 10 * time.Millisecond,
+		Loaded: loaded, Environ: []string{"QUADER_POD_NAME=" + name}, LogWriter: logs, DrainDelay: 10 * time.Millisecond,
 		Deps: func(d *engine.Deps) { d.Now = b.clk.Now },
 	})
 	if err != nil {
@@ -229,7 +229,7 @@ func (b *bastion) wait() *bastion {
 	b.t.Helper()
 	for _, r := range b.reps {
 		testenv.WaitFor(b.t, r.name+" ready and connected", 30*time.Second, func() bool {
-			return r.srv.Health().Ready() && metricValue(b.t, r.metrics(b.t), "trove_bastion_main_reachable") == 1
+			return r.srv.Health().Ready() && metricValue(b.t, r.metrics(b.t), "quader_bastion_main_reachable") == 1
 		})
 	}
 	return b
@@ -288,11 +288,11 @@ func bucketSetup(t *testing.T, dir string) (prefix, yml string, raw *s3.Client) 
 }
 
 // The Bastion's Valkey user of the stack (test/integration/conf/users.acl): the commands of the least-privilege
-// rule, on the keys and channels below trove-bastion: only.
+// rule, on the keys and channels below quader-bastion: only.
 const (
 	bastionUser = "bastion"
 	bastionPass = "bastion-valkey-it"
-	aclRules    = "on >" + bastionPass + " resetkeys ~trove-bastion:* resetchannels &trove-bastion:* -@all +get +set +delifeq +incr +expire +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo"
+	aclRules    = "on >" + bastionPass + " resetkeys ~quader-bastion:* resetchannels &quader-bastion:* -@all +get +set +delifeq +incr +expire +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo"
 )
 
 var aclOnce sync.Once

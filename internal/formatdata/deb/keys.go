@@ -10,20 +10,20 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/openpgp"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // This file holds what the key store (keys_store.go) and the replay of the key events (keys_journal.go) share: the statements' types
 // in the words of the port, the repository an operation names, the clock of the database, and the audit events of the key changes.
 
-// keyLead is how far before the creating transaction a generated key's creation time lies, so that every signature trove makes with
+// keyLead is how far before the creating transaction a generated key's creation time lies, so that every signature quader makes with
 // it is later than the key on every client whose clock trails the database by less than that (R-DEB-015, Q-DEB-30).
 const keyLead = time.Hour
 

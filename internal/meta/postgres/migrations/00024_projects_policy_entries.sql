@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Projects (R-AUTHZ-026, Q-AUTHZ-174, Q-AUTHZ-175): the unique constraints of
 -- repositories (00020) and authz_policy (00023) from their indexes, the table of the grants of project

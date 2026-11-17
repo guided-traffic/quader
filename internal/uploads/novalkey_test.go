@@ -10,7 +10,7 @@ import (
 // session service reaches Valkey through no package it imports: neither the coordination package that holds the client nor a client
 // library is among its dependencies.
 func TestR_OCI_032_TheSessionServiceReachesNoValkeyClient(t *testing.T) {
-	out, err := exec.Command("go", "list", "-deps", "-f", "{{.ImportPath}}", "github.com/guided-traffic/trove/internal/uploads").Output()
+	out, err := exec.Command("go", "list", "-deps", "-f", "{{.ImportPath}}", "github.com/guided-traffic/quader/internal/uploads").Output()
 	if err != nil {
 		t.Fatalf("go list: %v", err)
 	}

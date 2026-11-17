@@ -3,8 +3,8 @@ package fixup
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // RevisionStep is what a restore adds to every revision column: values that clients hold as ETag or send as If-Match would

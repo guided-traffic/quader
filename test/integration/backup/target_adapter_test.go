@@ -17,12 +17,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/backup/target/targettest"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/target/targettest"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const testPart = 5 << 20
@@ -49,13 +49,13 @@ func targetConfig(tb testing.TB, bucket, sse string) config.Backup {
 	}
 	var b config.Backup
 	b.Target = config.BackupTarget{
-		Endpoint: testenv.Get(tb, "TROVE_TEST_S3_ENDPOINT"), Region: testenv.Get(tb, "TROVE_TEST_S3_REGION"), Bucket: bucket,
-		Prefix: "it-backup/" + randomID(tb), ForcePathStyle: testenv.Get(tb, "TROVE_TEST_S3_FORCE_PATH_STYLE") == "true",
+		Endpoint: testenv.Get(tb, "QUADER_TEST_S3_ENDPOINT"), Region: testenv.Get(tb, "QUADER_TEST_S3_REGION"), Bucket: bucket,
+		Prefix: "it-backup/" + randomID(tb), ForcePathStyle: testenv.Get(tb, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true",
 		CAFile: testenv.CAFile(tb),
 		Credentials: config.StorageS3Credentials{
 			Source:              "static",
-			AccessKeyIDFile:     write("id", testenv.Get(tb, "TROVE_TEST_S3_ACCESS_KEY")),
-			SecretAccessKeyFile: write("secret", testenv.Get(tb, "TROVE_TEST_S3_SECRET_KEY")),
+			AccessKeyIDFile:     write("id", testenv.Get(tb, "QUADER_TEST_S3_ACCESS_KEY")),
+			SecretAccessKeyFile: write("secret", testenv.Get(tb, "QUADER_TEST_S3_SECRET_KEY")),
 		},
 		SSE: config.BackupSSE{Mode: sse, BucketKey: true},
 	}
@@ -104,7 +104,7 @@ var (
 
 func probeSSE(tb testing.TB) string {
 	tb.Helper()
-	cfg := targetConfig(tb, testenv.Get(tb, "TROVE_TEST_S3_BUCKET_BACKUPS"), "s3")
+	cfg := targetConfig(tb, testenv.Get(tb, "QUADER_TEST_S3_BUCKET_BACKUPS"), "s3")
 	cfg.Target.Prefix += "-probe"
 	s := newTarget(tb, cfg)
 	cleanup(tb, s, cfg.Target.Prefix+"/")
@@ -118,7 +118,7 @@ func probeSSE(tb testing.TB) string {
 
 func TestR_BAK_002_TargetAdapterConformance(t *testing.T) {
 	mode := workingSSE(t)
-	cfg := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), mode)
+	cfg := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), mode)
 	s := newTarget(t, cfg)
 	prefix := cfg.Target.Prefix + "/"
 	cleanup(t, s, prefix)
@@ -130,7 +130,7 @@ func TestR_BAK_002_TargetAdapterConformance(t *testing.T) {
 }
 
 func TestR_BAK_026_TargetSSE(t *testing.T) {
-	cfg := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), "s3")
+	cfg := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), "s3")
 	s := newTarget(t, cfg)
 	prefix := cfg.Target.Prefix + "/"
 	cleanup(t, s, prefix)
@@ -153,7 +153,7 @@ func TestR_BAK_026_TargetSSE(t *testing.T) {
 		}
 	})
 	t.Run("R-BAK-026 mode none accepts a store without encryption", func(t *testing.T) {
-		none := newTarget(t, targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), "none"))
+		none := newTarget(t, targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), "none"))
 		o, err := none.Probe(ctx, prefix+"probe-none")
 		if err != nil {
 			t.Fatal(err)
@@ -176,12 +176,12 @@ func TestR_BAK_026_TargetSSE(t *testing.T) {
 }
 
 func TestR_BAK_015_TargetOwnCredentials(t *testing.T) {
-	cfg := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), "none")
+	cfg := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), "none")
 	ctx := context.Background()
 	// The credential comes from backup.target.credentials only: with another secret in the target's file, the target fails
 	// while the process environment holds working keys.
-	t.Setenv("AWS_ACCESS_KEY_ID", testenv.Get(t, "TROVE_TEST_S3_ACCESS_KEY"))
-	t.Setenv("AWS_SECRET_ACCESS_KEY", testenv.Get(t, "TROVE_TEST_S3_SECRET_KEY"))
+	t.Setenv("AWS_ACCESS_KEY_ID", testenv.Get(t, "QUADER_TEST_S3_ACCESS_KEY"))
+	t.Setenv("AWS_SECRET_ACCESS_KEY", testenv.Get(t, "QUADER_TEST_S3_SECRET_KEY"))
 	if err := os.WriteFile(cfg.Target.Credentials.SecretAccessKeyFile, []byte("not-the-secret\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +193,7 @@ func TestR_BAK_015_TargetOwnCredentials(t *testing.T) {
 }
 
 func TestR_BAK_002_TargetConditionalCreateConcurrent(t *testing.T) {
-	cfg := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), "none")
+	cfg := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), "none")
 	s := newTarget(t, cfg)
 	prefix := cfg.Target.Prefix + "/"
 	cleanup(t, s, prefix)
@@ -205,7 +205,7 @@ func TestR_BAK_002_TargetConditionalCreateConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, err := s.Put(ctx, prefix+"trove-backup-target.json", []byte(fmt.Sprintf(`{"writer":%d}`, i)), target.PutOptions{IfAbsent: true})
+			_, err := s.Put(ctx, prefix+"quader-backup-target.json", []byte(fmt.Sprintf(`{"writer":%d}`, i)), target.PutOptions{IfAbsent: true})
 			if err == nil {
 				mu.Lock()
 				won++
@@ -225,7 +225,7 @@ func TestR_BAK_002_TargetConditionalCreateConcurrent(t *testing.T) {
 }
 
 func TestR_BAK_002_TargetBatchedDeleteAndPaging(t *testing.T) {
-	cfg := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), "none")
+	cfg := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), "none")
 	s := newTarget(t, cfg)
 	prefix := cfg.Target.Prefix + "/many/"
 	cleanup(t, s, prefix)
@@ -273,19 +273,19 @@ func TestR_BAK_002_TargetBatchedDeleteAndPaging(t *testing.T) {
 }
 
 func TestR_BAK_006_TargetServerSideCopy(t *testing.T) {
-	cfg := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), workingSSE(t))
+	cfg := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), workingSSE(t))
 	// A single-copy limit of 6 MiB with 5 MiB parts makes a 13 MiB object take UploadPartCopy with three parts.
 	s := newTarget(t, cfg, s3.WithSingleCopyLimit(6<<20), s3.WithCopyPartSize(testPart))
 	prefix := cfg.Target.Prefix + "/"
 	cleanup(t, s, prefix)
 	ctx := context.Background()
 
-	srcCfg := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BLOBS"), "none")
+	srcCfg := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BLOBS"), "none")
 	src := newTarget(t, srcCfg)
 	// The source is in the versioned blob bucket, where a deletion through the target leaves the versions behind (F-113).
 	testenv.RemoveObjectsAtCleanup(t, srcCfg.Target.Bucket, srcCfg.Target.Prefix)
 	ref := func(key string, size int) target.ObjectRef {
-		return target.ObjectRef{Endpoint: testenv.Get(t, "TROVE_TEST_S3_ENDPOINT"), Bucket: src.Bucket(), Key: key, Size: int64(size)}
+		return target.ObjectRef{Endpoint: testenv.Get(t, "QUADER_TEST_S3_ENDPOINT"), Bucket: src.Bucket(), Key: key, Size: int64(size)}
 	}
 
 	for _, size := range []int{1000, 13<<20 + 123} {

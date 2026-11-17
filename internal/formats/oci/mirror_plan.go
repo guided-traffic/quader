@@ -4,11 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/oci/manifest"
-	"github.com/guided-traffic/trove/internal/formats/oci/tagorder"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
+	"github.com/guided-traffic/quader/internal/formats/oci/tagorder"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // Annotations of BuildKit's attestation manifests in an index: the entry names the manifest it attests, with the platform

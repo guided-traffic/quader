@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/items"
+	"github.com/guided-traffic/quader/internal/items"
 )
 
 // Links builds the absolute URLs a description carries from the public base URL

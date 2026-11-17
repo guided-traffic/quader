@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // shaped is a format whose error shape is visible in a test.
@@ -201,7 +201,7 @@ func TestTemplate(t *testing.T) {
 // answer of a format route carries Cache-Status, set by the handler, by an engine before
 // a body or in an error's headers; on any other endpoint it is kept (R-REPO-047, Q-EP-60).
 func TestR_EP_018_NoCacheStatusOnAnEndpointWithRules(t *testing.T) {
-	const status = "trove; fwd=miss; stored"
+	const status = "quader; fwd=miss; stored"
 	routes := map[string]HandlerFunc{
 		"a document": func(_ context.Context, _ *Request, w http.ResponseWriter) error {
 			w.Header().Set("Cache-Status", status)

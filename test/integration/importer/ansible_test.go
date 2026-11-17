@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	imp "github.com/guided-traffic/trove/internal/importer"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/ansiblestub"
+	"github.com/guided-traffic/quader/internal/config"
+	imp "github.com/guided-traffic/quader/internal/importer"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/ansiblestub"
 )
 
 // ansibleSource is the counting stub Galaxy behind TLS with the factory that trusts it and reaches the target replica by its name.

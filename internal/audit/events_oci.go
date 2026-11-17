@@ -10,7 +10,7 @@ package audit
 // EventOCIManifestDeleted names the event, for the producers.
 const EventOCIManifestDeleted = "oci.manifest.deleted"
 
-// EventOCIReinstate names the event of `trove admin oci reinstate`, which puts back a manifest the replay withheld (R-OCI-033). It is
+// EventOCIReinstate names the event of `quader admin oci reinstate`, which puts back a manifest the replay withheld (R-OCI-033). It is
 // not journaled, as npm.reinstate is not: it restores access rather than removing it.
 const EventOCIReinstate = "oci.reinstate"
 

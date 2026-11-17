@@ -1,5 +1,5 @@
--- trove:phase expand
--- trove:no-transaction
+-- quader:phase expand
+-- quader:no-transaction
 --
 -- GitLab CI OIDC (R-AUTHZ-018, R-HA-018): the index behind package_owner_ci_issuer_id_fkey of 00026,
 -- built without blocking writes. The delete of an issuer cascades to its project owners through it.

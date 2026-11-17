@@ -9,7 +9,7 @@ import (
 )
 
 // EnvPrefix starts the name of every configuration environment variable.
-const EnvPrefix = "TROVE_"
+const EnvPrefix = "QUADER_"
 
 // KeyKind says what a key is.
 type KeyKind int
@@ -32,7 +32,7 @@ func (k KeyKind) IsSecret() bool { return k != KindValue }
 // Key is one leaf of the configuration tree.
 type Key struct {
 	Path       string       // dotted YAML path, e.g. "database.pool.max_conns"
-	Env        string       // environment variable, e.g. "TROVE_DATABASE_POOL_MAX_CONNS"
+	Env        string       // environment variable, e.g. "QUADER_DATABASE_POOL_MAX_CONNS"
 	Kind       KeyKind      //
 	Index      []int        // field index path from the root struct
 	Type       reflect.Type // Go type of the stored value

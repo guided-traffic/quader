@@ -14,7 +14,7 @@ lock or a rotation reaches every replica.
 ## Parties and what each is trusted with
 
 ```text
-  browser ──(1) /auth/oidc/{p}/start──► trove api replica ──flow row──► PostgreSQL
+  browser ──(1) /auth/oidc/{p}/start──► Quader api replica ──flow row──► PostgreSQL
      │                                        │                            ▲
      │◄──302 to the IdP (state, nonce, PKCE)──┘                            │
      ├──(2) sign-in at the IdP──► IdP                                      │
@@ -22,13 +22,13 @@ lock or a rotation reaches every replica.
      └──(3) /auth/oidc/{p}/callback──► any api replica ──DELETE flow──────►│
                                           │──token, JWKS, userinfo──► IdP (outbound client, 10 s each)
                                           │──provisioner (identity) + session row──────────────────────►│
-     ◄──__Host-trv_session, __Host-trv_csrf──┘
+     ◄──__Host-qdr_session, __Host-qdr_csrf──┘
   Valkey: change messages only; never read for a session, a flow or a lock
 ```
 
 | Party | Trusted with | Not trusted with |
 |---|---|---|
-| The IdP | the identity (`iss`, `sub`), the mapped claims, through group rules possibly administrator rights | the redirect target (trove derives every URL from `server.base_url`), the algorithm (`allowed_signing_algs`, never `none` or `HS*`) |
+| The IdP | the identity (`iss`, `sub`), the mapped claims, through group rules possibly administrator rights | the redirect target (Quader derives every URL from `server.base_url`), the algorithm (`allowed_signing_algs`, never `none` or `HS*`) |
 | The browser | holding the three `__Host-` cookies | the `Host` header, `return_to` (only `/ui/…` paths), the origin of an unsafe request (checked) |
 | PostgreSQL | every login state: flows, sessions, lockout, rotation hold | — |
 | Valkey | nothing of the login: it carries the change messages of the area `auth` as early evictions | sessions, flows, locks; a lost or forged message neither hides nor delays an end |
@@ -38,9 +38,9 @@ lock or a rotation reaches every replica.
 
 | Secret | Where it lives | Where it never is |
 |---|---|---|
-| Session secret (`__Host-trv_session`, 32 random bytes) | the browser; PostgreSQL holds its SHA-256 (`ui_session.secret_sha256`) | logs, events, Valkey, the change log (a change names the hash of an ended secret, [changes.go](../../internal/auth/session/changes.go)) |
-| CSRF token (`__Host-trv_csrf`, readable by the UI) | the browser; its SHA-256 in `ui_session.csrf_sha256` | as above |
-| Browser binding (`__Host-trv_oidc_binding`, 10 min) | the browser; its SHA-256 in `oidc_login_flow` | as above |
+| Session secret (`__Host-qdr_session`, 32 random bytes) | the browser; PostgreSQL holds its SHA-256 (`ui_session.secret_sha256`) | logs, events, Valkey, the change log (a change names the hash of an ended secret, [changes.go](../../internal/auth/session/changes.go)) |
+| CSRF token (`__Host-qdr_csrf`, readable by the UI) | the browser; its SHA-256 in `ui_session.csrf_sha256` | as above |
+| Browser binding (`__Host-qdr_oidc_binding`, 10 min) | the browser; its SHA-256 in `oidc_login_flow` | as above |
 | `state` and `nonce` | the authorization request and the ID token; their SHA-256 in `oidc_login_flow` | the request log: the query of the callback (code, `state`, `session_state`) is redacted whole, as is `id_token_hint` (Q-OPS-91, [redact.go](../../internal/observability/redact.go)) |
 | PKCE `code_verifier` | `oidc_login_flow.code_verifier` in clear for at most 10 minutes; the row is deleted by the callback that uses it (`DELETE … RETURNING`) or by `session-cleanup` | backups: the table is `transient` |
 | The provider's ID token | `ui_session.id_token`, the `id_token_hint` of RP-initiated logout (R-AUTH-013) | every API answer; backups (`transient`) |
@@ -135,7 +135,7 @@ decoder. The tests `TestR_AUTH_014_LocalLoginEdge` pin the order.
   to it.
 - Every login decision is recorded: `auth.login.succeeded` and `auth.login.failed`, `auth.breakglass.login` and
   `auth.breakglass.locked`, `auth.logout` and `auth.session.ended` go to the audit recorder of the replica
-  ([events_login.go](../../internal/audit/events_login.go)); the `trove admin` commands write their events (actor `admin-cli`,
+  ([events_login.go](../../internal/audit/events_login.go)); the `quader admin` commands write their events (actor `admin-cli`,
   pod and OS user) through an audit writer of their own, in the transaction of the change.
 - The single factor, the IdP's authentication strength and a rotation that no running replica notices are gaps of the spec, linked
   at the end of this page.
@@ -145,7 +145,7 @@ decoder. The tests `TestR_AUTH_014_LocalLoginEdge` pin the order.
 [sessions_api.go](../../internal/api/v1/sessions_api.go), [test/integration/login/api_test.go](../../test/integration/login/api_test.go).
 
 - A user lists and ends its own sessions (`/users/me/sessions`) through a session or a personal token that inherits the owner's rights; a
-  token whose scope does not (`inherit: false`) answers `403` from the shared authorization step (`x-trove-owner-rights`, Q-API-214), and
+  token whose scope does not (`inherit: false`) answers `403` from the shared authorization step (`x-quader-owner-rights`, Q-API-214), and
   so do a service account and a CI token. The list names the addresses and user agents of the other logins, which no scope names.
   A session of another user, an unknown ID and an own session that was withdrawn already answer `404`, so session IDs are not probed.
   An own session that had ended by time, by the session limit or by a re-authentication answers `204` once, because the end withdraws
@@ -162,7 +162,7 @@ decoder. The tests `TestR_AUTH_014_LocalLoginEdge` pin the order.
 
 The gaps of the spec pages whose mechanism this page describes:
 
-- [H-16](../spec/identity-and-authentication.md#h-16--idp-side-deactivation-without-scim): a deactivation at the identity provider does not reach trove without SCIM; open sessions run until their timeout.
+- [H-16](../spec/identity-and-authentication.md#h-16--idp-side-deactivation-without-scim): a deactivation at the identity provider does not reach Quader without SCIM; open sessions run until their timeout.
 - [H-17](../spec/identity-and-authentication.md#h-17--break-glass-account-is-single-factor): the break-glass account is single-factor.
 - [H-18](../spec/identity-and-authentication.md#h-18--authentication-strength-at-the-idp-is-not-checked): the authentication strength at the IdP is not checked.
 - [H-52](../spec/identity-and-authentication.md#h-52--a-break-glass-rotation-that-no-running-replica-notices): a break-glass rotation that no running replica notices.
@@ -176,7 +176,7 @@ The provisioner applies the claims and the group memberships in its own transact
 (Q-AUTH-32). A replica that dies, or a session insert that fails, between the two commits leaves the memberships of that login in
 force without a session. The memberships are those the IdP vouched for at that moment, so the effect equals a login the user
 abandoned after the callback; no user is half-created. What makes it real: an administrator who relies on "group changes reach
-trove only with a completed login" (R-AUTH-008) to time a membership change.
+Quader only with a completed login" (R-AUTH-008) to time a membership change.
 
 ### H-93 · An enabled break-glass account without a password file starts silently
 
@@ -211,7 +211,7 @@ whenever the break-glass account is enabled. The lockout counts every failure, f
 password in the system (R-AUTH-038); five wrong passwords lock the account for `lockout.duration`, and during the lock the right
 password gets `429` as well. Someone who sends five guesses every 15 minutes keeps the account locked for as long as they like;
 five requests per lock stay far below the `starts_per_address` budget of one address. Locks expire on their own, and an administrator or
-`trove admin break-glass unlock` clears one, but an operator who needs the break-glass account because no administrator can sign
+`quader admin break-glass unlock` clears one, but an operator who needs the break-glass account because no administrator can sign
 in has only the command. Exempting `auth.rate_limit.exempt_cidrs` from the lock would let guesses from those networks through
 unbounded, so the lock stays as specified. What makes it real: a local login reachable from networks other than the operators'.
 Keep the break-glass account disabled outside recovery, or restrict `/auth/local/` at the edge.

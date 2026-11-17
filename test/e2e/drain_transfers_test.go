@@ -13,7 +13,7 @@ package e2e
 // The cut is a property of the pod that serves the transfer when it is told to stop: it keeps serving for the drain delay and then
 // for server.shutdown_timeout (110 s), then resets the connection (R-HA-011, Q-ARCH-187). A probe that no evicted pod serves is cut by
 // nothing, and the test would pass without the path having run. Download probe 0 therefore starts again until the packages pod of the
-// drained node answers it (X-Trove-Replica), so that it is in flight on the evicted pod when the drain starts: its cut is a
+// drained node answers it (X-Quader-Replica), so that it is in flight on the evicted pod when the drain starts: its cut is a
 // precondition the test proves (exactly one cut, on that pod). Probe 1 takes whichever replica the edge gives it. An upload cannot be held
 // on a pod (its answer comes at the end), so four upload probes run and the cuts that happen are judged.
 //
@@ -194,7 +194,7 @@ func (p *dlProbe) run(x *longTransfers) {
 	}
 }
 
-// firstReplica is the X-Trove-Replica header of the first response in a curl header dump, "" while there is none.
+// firstReplica is the X-Quader-Replica header of the first response in a curl header dump, "" while there is none.
 func firstReplica(path string) string {
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -229,7 +229,7 @@ func responseBlocks(raw []byte) []responseBlock {
 			_, _ = fmt.Sscan(f[1], &b.code)
 		}
 		for _, l := range lines[1:] {
-			if k, v, ok := strings.Cut(l, ":"); ok && strings.EqualFold(strings.TrimSpace(k), "X-Trove-Replica") {
+			if k, v, ok := strings.Cut(l, ":"); ok && strings.EqualFold(strings.TrimSpace(k), "X-Quader-Replica") {
 				b.replica = strings.TrimSpace(v)
 			}
 		}
@@ -286,7 +286,7 @@ func (p *ulProbe) run(x *longTransfers) {
 func (x *longTransfers) begin(t *testing.T, d *variantDrain, started time.Time) {
 	t.Helper()
 	for _, p := range d.OnNode {
-		if strings.HasPrefix(p.Name, "trove-packages-") {
+		if strings.HasPrefix(p.Name, "quader-packages-") {
 			x.pin = p.Name
 		}
 	}

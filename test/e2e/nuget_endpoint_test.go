@@ -3,7 +3,7 @@
 package e2e
 
 // NuGet on a customer endpoint (exit criterion E3.7, R-NUGET-034, R-EP-018): the endpoint customers of the dev profile has
-// its own Ingress and host (packages.trove.localhost) and exposes a repository only through rules. The clients reach it by
+// its own Ingress and host (packages.quader.localhost) and exposes a repository only through rules. The clients reach it by
 // that host, which their pods resolve to the loopback address of their forwarder (hostAliases in deploy/dev/e2e.sh), and
 // use a service-account token bound to the endpoint as the Basic password. The rule exposes the package from 2.0 on,
 // without pre-releases; the repository holds 1.9.0, 2.0.0, 2.1.0-beta.1 and 2.1.0 of it, and a second package that no rule names.

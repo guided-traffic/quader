@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/mirror"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/mirror"
 )
 
 func TestMirrorEngineArea(t *testing.T) {

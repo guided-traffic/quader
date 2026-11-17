@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // h2Server serves h over TLS with HTTP/2 and returns the CA the client trusts.

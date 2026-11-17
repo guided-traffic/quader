@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection"
-	"github.com/guided-traffic/trove/internal/formats/ansible/galaxydoc"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
+	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // The remote class (R-ANS-016 to R-ANS-018, R-ANS-020). The remote engine owns the request path, the freshness, the collapsing of
@@ -175,7 +175,7 @@ func (a remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, 
 	case kindDocs:
 		var set rows.DocSet
 		if set, err = galaxydoc.ParseUpstreamDocs(doc); err != nil {
-			err = errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a documentation document that trove cannot use: "+err.Error()+".", errs.WithCause(err))
+			err = errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a documentation document that Quader cannot use: "+err.Error()+".", errs.WithCause(err))
 			break
 		}
 		data.docs = &set
@@ -216,7 +216,7 @@ func (remoteAdapter) checkCollection(doc []byte, t target) error {
 func (remoteAdapter) checkVersion(rc formats.RemoteContext, hosts []string, doc []byte, t target) ([]formats.URLMapping, rows.Announced, error) {
 	v, dl, err := galaxydoc.ParseUpstreamVersion(doc)
 	if err != nil {
-		return nil, rows.Announced{}, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a version document that trove cannot use: "+err.Error()+".", errs.WithCause(err))
+		return nil, rows.Announced{}, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a version document that Quader cannot use: "+err.Error()+".", errs.WithCause(err))
 	}
 	if !strings.EqualFold(v.Namespace, t.ns) || !strings.EqualFold(v.Name, t.name) || v.Version != t.version {
 		return nil, rows.Announced{}, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed,
@@ -263,7 +263,7 @@ func docsAddress(rc formats.RemoteContext, hosts []string, doc []byte, t target)
 }
 
 func checkRoleLookup(doc []byte) error {
-	_, err := renderRoleLookup(doc, "https://trove.invalid/", "o", "n")
+	_, err := renderRoleLookup(doc, "https://quader.invalid/", "o", "n")
 	return err
 }
 
@@ -392,7 +392,7 @@ func (a remoteAdapter) Rewrite(_ context.Context, rc formats.RemoteContext, p fo
 	case kindVersion:
 		v, _, err := galaxydoc.ParseUpstreamVersion(doc)
 		if err != nil {
-			return nil, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a version document that trove cannot use: "+err.Error()+".", errs.WithCause(err))
+			return nil, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a version document that Quader cannot use: "+err.Error()+".", errs.WithCause(err))
 		}
 		v.Filename = ArtifactFile(t.ns, t.name, t.version)
 		return galaxydoc.RenderVersion(v, addr), nil

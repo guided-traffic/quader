@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
+	"github.com/guided-traffic/quader/internal/authz"
 )
 
 // smallDeletes makes a subtree of more than five items a job, in batches of four.
-var smallDeletes = []string{"TROVE_STORAGE_DELETE_MAX_SYNC_ITEMS=5", "TROVE_STORAGE_DELETE_BATCH_SIZE=4"}
+var smallDeletes = []string{"QUADER_STORAGE_DELETE_MAX_SYNC_ITEMS=5", "QUADER_STORAGE_DELETE_BATCH_SIZE=4"}
 
 func TestR_AUTHZ_016_HiddenExistence(t *testing.T) {
 	te := newWebTransferEnv(t)

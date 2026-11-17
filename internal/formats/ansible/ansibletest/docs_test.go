@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible"
-	"github.com/guided-traffic/trove/internal/formats/ansible/ansibletest"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/ansible"
+	"github.com/guided-traffic/quader/internal/formats/ansible/ansibletest"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
 
 var _ ansible.Store = (*ansibletest.Store)(nil)

@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/subject"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/ci/subject"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 // statsFlushWait bounds the delay of the table statistics: one second between two flushes of a backend plus
@@ -233,8 +233,8 @@ func TestR_CI_003_StaleAndUnreachable(t *testing.T) {
 	d := startDouble(t, oidcstub.Config{})
 	// max_stale 1 m needs a refresh bound of 1 m (max_stale is at least max_refresh_interval).
 	e := newEnv(t, options{valkey: false, env: []string{
-		"TROVE_CI_SIGNING_KEYS_MIN_REFRESH_INTERVAL=10s", "TROVE_CI_SIGNING_KEYS_DEFAULT_REFRESH_INTERVAL=1m",
-		"TROVE_CI_SIGNING_KEYS_MAX_REFRESH_INTERVAL=1m", "TROVE_CI_SIGNING_KEYS_MAX_STALE=1m",
+		"QUADER_CI_SIGNING_KEYS_MIN_REFRESH_INTERVAL=10s", "QUADER_CI_SIGNING_KEYS_DEFAULT_REFRESH_INTERVAL=1m",
+		"QUADER_CI_SIGNING_KEYS_MAX_REFRESH_INTERVAL=1m", "QUADER_CI_SIGNING_KEYS_MAX_STALE=1m",
 	}})
 	a, b := e.web("web-a"), e.web("web-b")
 	_ = e.worker("worker-a")

@@ -13,14 +13,14 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/remote"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/search"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/search"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // The search of a remote repository (R-NUGET-016): the query is forwarded to the search resource
@@ -188,7 +188,7 @@ func (f *Format) forwardSearch(ctx context.Context, s searchSource, scope format
 	return nil, 0, false, nil
 }
 
-// isInternalFault reports an error the host or the format raised as a fault of trove's own (an
+// isInternalFault reports an error the host or the format raised as a fault of quader's own (an
 // *errs.Error of kind internal): it is answered as one and not hidden behind the cache-only search.
 // Any other error is the upstream's or the storage's, and the remote answers from its cache.
 func isInternalFault(err error) bool {
@@ -205,7 +205,7 @@ func logOf(rq *formats.Request) *slog.Logger {
 
 // forwardParams are the parameters of the upstream request (R-NUGET-016): the terms of the
 // client's q as Parse read them and the withheld rule checked them (forwardedQ), and the filters
-// and the page in the form trove validated and clamped them to, so that equal searches share one
+// and the page in the form quader validated and clamped them to, so that equal searches share one
 // cached answer.
 func forwardParams(p search.Params) url.Values {
 	v := url.Values{}
@@ -279,7 +279,7 @@ func parseUpstreamSearch(body []byte) (upstreamSearch, error) {
 }
 
 // upstreamResult is one result of an upstream's search as the protocol describes it
-// (R-NUGET-016): the members trove renders again, and the ones it keeps.
+// (R-NUGET-016): the members quader renders again, and the ones it keeps.
 type upstreamResult struct {
 	ID              string          `json:"id"`
 	Version         string          `json:"version"`
@@ -394,7 +394,7 @@ func resultHit(raw json.RawMessage) (rows.SearchHit, bool) {
 // members. The deprecation and the vulnerabilities come without the upstream's addresses, as
 // in the remote's registration: every "@id" and "@type" is dropped at any depth, an advisoryUrl
 // is kept only as an absolute http(s) link without user info (Q-NUGET-85). ok is false for a
-// result whose ID is no NuGet ID, that lists no version, or that lists more versions than trove
+// result whose ID is no NuGet ID, that lists no version, or that lists more versions than quader
 // reads of one ID (remote.MaxLeaves, Q-NUGET-83).
 func (u upstreamResult) hit() (rows.SearchHit, bool) {
 	lower, ok := lowerID(u.ID)

@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The signing keys of the Debian (APT) format's local and virtual repositories (R-DEB-015, Q-DEB-9, Q-DEB-10, Q-DEB-31): a key
 -- belongs to one repository, and a repository has at most one primary and one next key (the partial unique indexes). The fingerprint

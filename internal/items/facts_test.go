@@ -3,8 +3,8 @@ package items
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/servefacts"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/servefacts"
 )
 
 // R-ARCH-027: the facts of a lookup are stamped with the key only when the statement says it evaluated that kind. A kind the

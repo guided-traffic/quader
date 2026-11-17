@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // MaxFullNameBytes bounds the name of a repository scope entry, "<projectKey>/<repoKey>/<name>" as a client sends it
@@ -15,7 +15,7 @@ const MaxFullNameBytes = 255
 // invalid_request).
 var ErrTooManyScopes = errors.New("registrytoken: a token request carries at most 16 scope entries")
 
-// Scope is one entry of a token request that names something trove can grant: an image name of a repository with the
+// Scope is one entry of a token request that names something quader can grant: an image name of a repository with the
 // actions asked for, or the catalog.
 type Scope struct {
 	// Catalog is the entry registry:catalog:* (R-OCI-017).
@@ -33,7 +33,7 @@ type Scope struct {
 // Each value may hold several entries separated by spaces (the OAuth 2.0 form of the POST request sends them so; Docker sends
 // one scope parameter per entry). The resource name may contain ':', so the actions are what follows the last one.
 //
-// Every entry read counts toward [MaxEntries]; more answer [ErrTooManyScopes]. An entry trove cannot grant - another
+// Every entry read counts toward [MaxEntries]; more answer [ErrTooManyScopes]. An entry quader cannot grant - another
 // resource type or class, a name outside the grammar, no known action - is skipped and grants nothing, because a partial or
 // empty grant is not an error (R-OCI-004). On a host whose root is bound to a repository (bound is not the zero value), a
 // repository entry names the image without the repository's prefix (R-OCI-029); elsewhere its first two segments are the

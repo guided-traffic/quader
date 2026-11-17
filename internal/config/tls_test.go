@@ -35,7 +35,7 @@ func TestServerTLS(t *testing.T) {
 		if got := l.Config.Server.TLS.Certificates; len(got) != 2 || got[1].CertFile != "/tls/wild.crt" {
 			t.Fatalf("certificates = %+v", got)
 		}
-		l, err = load("", `TROVE_SERVER_TLS_CERTIFICATES=[{"cert_file":"/e/tls.crt","key_file":"/e/tls.key"}]`, "TROVE_SERVER_TLS_RELOAD_INTERVAL=2s")
+		l, err = load("", `QUADER_SERVER_TLS_CERTIFICATES=[{"cert_file":"/e/tls.crt","key_file":"/e/tls.key"}]`, "QUADER_SERVER_TLS_RELOAD_INTERVAL=2s")
 		if err != nil {
 			t.Fatal(err)
 		}

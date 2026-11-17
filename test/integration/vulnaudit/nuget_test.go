@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // seedNuGet inserts the NuGet advisories of the tests and marks the data complete.
@@ -94,12 +94,12 @@ func TestR_VULN_018_TheDocuments(t *testing.T) {
 	}
 	var entries []map[string]string
 	if err := json.Unmarshal(idx.Body, &entries); err != nil || len(entries) != 1 ||
-		entries[0]["@name"] != "trove" || entries[0]["@id"] != feedBase+"/api/nuget/it/"+nugetRemote+"/v3/vulnerabilities/trove.json" ||
-		entries[0]["@updated"] == "" || entries[0]["comment"] != "Advisory data mirrored by trove" {
+		entries[0]["@name"] != "quader" || entries[0]["@id"] != feedBase+"/api/nuget/it/"+nugetRemote+"/v3/vulnerabilities/quader.json" ||
+		entries[0]["@updated"] == "" || entries[0]["comment"] != "Advisory data mirrored by Quader" {
 		t.Fatalf("index: %v %s", err, idx.Body)
 	}
 
-	page := e.get(a, nugetRemote, "v3/vulnerabilities/trove.json", e.tokReader)
+	page := e.get(a, nugetRemote, "v3/vulnerabilities/quader.json", e.tokReader)
 	if page.Status != 200 {
 		t.Fatalf("page: %d %s", page.Status, page.Body)
 	}
@@ -129,10 +129,10 @@ func TestR_VULN_018_TheDocuments(t *testing.T) {
 		t.Errorf("headers %v", page.Header)
 	}
 	etag := page.Header.Get("ETag")
-	if c := e.get(a, nugetLocal, "v3/vulnerabilities/trove.json", e.tokReader, "If-None-Match", etag); c.Status != http.StatusNotModified {
+	if c := e.get(a, nugetLocal, "v3/vulnerabilities/quader.json", e.tokReader, "If-None-Match", etag); c.Status != http.StatusNotModified {
 		t.Errorf("the same page through another repository: %d, want 304", c.Status)
 	}
-	if other := e.get(b, nugetAll, "v3/vulnerabilities/trove.json", e.tokReader); other.Header.Get("ETag") != etag || string(other.Body) != string(page.Body) {
+	if other := e.get(b, nugetAll, "v3/vulnerabilities/quader.json", e.tokReader); other.Header.Get("ETag") != etag || string(other.Body) != string(page.Body) {
 		t.Errorf("the other replica: ETag %q, want %q", other.Header.Get("ETag"), etag)
 	}
 
@@ -142,18 +142,18 @@ func TestR_VULN_018_TheDocuments(t *testing.T) {
 	e.data("NuGet", true, 2, 0)
 	e.changed("vuln_data", `{"ecosystem":"NuGet","epoch":2}`, a, b)
 	for _, r := range []*testenv.Replica{a, b} {
-		x := e.get(r, nugetAll, "v3/vulnerabilities/trove.json", e.tokReader, "If-None-Match", etag)
+		x := e.get(r, nugetAll, "v3/vulnerabilities/quader.json", e.tokReader, "If-None-Match", etag)
 		if x.Status != 200 || x.Header.Get("ETag") == etag || !strings.Contains(string(x.Body), "[12.0.0]") {
 			t.Errorf("after the epoch change: %d, ETag %q", x.Status, x.Header.Get("ETag"))
 		}
 	}
 
 	// A claim that makes a name internal changes the page, without a change of the advisory data.
-	etag = e.get(a, nugetAll, "v3/vulnerabilities/trove.json", e.tokReader).Header.Get("ETag")
+	etag = e.get(a, nugetAll, "v3/vulnerabilities/quader.json", e.tokReader).Header.Get("ETag")
 	e.claim(nugetLocal, "newtonsoft.*")
 	e.changed("claims", `{}`, a, b)
 	for _, r := range []*testenv.Replica{a, b} {
-		x := e.get(r, nugetAll, "v3/vulnerabilities/trove.json", e.tokReader)
+		x := e.get(r, nugetAll, "v3/vulnerabilities/quader.json", e.tokReader)
 		if x.Header.Get("ETag") == etag || strings.Contains(string(x.Body), "newtonsoft.json") {
 			t.Errorf("after the claim: ETag %q, %s", x.Header.Get("ETag"), x.Body)
 		}
@@ -164,7 +164,7 @@ func TestR_VULN_018_TheDocuments(t *testing.T) {
 func TestR_VULN_018_WhereTheDocumentsAreNotServed(t *testing.T) {
 	e := newEnv(t)
 	a := e.replica("web-a")
-	for _, f := range []string{"index.json", "trove.json"} {
+	for _, f := range []string{"index.json", "quader.json"} {
 		x := e.get(a, nugetRemote, "v3/vulnerabilities/"+f, e.tokReader)
 		if x.Status != http.StatusServiceUnavailable || !strings.Contains(string(x.Body), "vulnerability_data_unavailable") {
 			t.Errorf("%s before the data is complete: %d %s", f, x.Status, x.Body)
@@ -172,7 +172,7 @@ func TestR_VULN_018_WhereTheDocumentsAreNotServed(t *testing.T) {
 	}
 	e.seedNuGet()
 	e.changed("vuln_data", `{"ecosystem":"NuGet","epoch":1}`, a)
-	for _, f := range []string{"index.json", "trove.json"} {
+	for _, f := range []string{"index.json", "quader.json"} {
 		if x := e.get(a, nugetOff, "v3/vulnerabilities/"+f, e.tokReader); x.Status != http.StatusNotFound {
 			t.Errorf("%s in mode off: %d", f, x.Status)
 		}

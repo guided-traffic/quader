@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 var t0 = time.Date(2026, 11, 2, 10, 0, 0, 0, time.UTC)

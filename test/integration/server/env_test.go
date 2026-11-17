@@ -25,13 +25,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-// install is one trove installation on the stack: its own database, its own
+// install is one quader installation on the stack: its own database, its own
 // Valkey key prefix and key ring files.
 type install struct {
-	env  []string // TROVE_* settings shared by every replica
+	env  []string // QUADER_* settings shared by every replica
 	db   string
 	conn *pgx.Conn // admin connection to the installation's database
 }
@@ -77,8 +77,8 @@ func freeAddr(t testing.TB) string {
 // newInstall creates a fresh database and the settings that point a replica at the stack.
 func newInstall(t *testing.T) *install {
 	t.Helper()
-	host, port := testenv.Get(t, "TROVE_TEST_PG_HOST"), testenv.Get(t, "TROVE_TEST_PG_PORT")
-	user, pass := testenv.Get(t, "TROVE_TEST_PG_USER"), testenv.Get(t, "TROVE_TEST_PG_PASSWORD")
+	host, port := testenv.Get(t, "QUADER_TEST_PG_HOST"), testenv.Get(t, "QUADER_TEST_PG_PORT")
+	user, pass := testenv.Get(t, "QUADER_TEST_PG_USER"), testenv.Get(t, "QUADER_TEST_PG_PASSWORD")
 	adminDSN := testenv.PgDSN(t, "postgres")
 	ctx := context.Background()
 	maint, err := pgx.Connect(ctx, adminDSN)
@@ -87,7 +87,7 @@ func newInstall(t *testing.T) *install {
 	}
 	var b [5]byte
 	_, _ = rand.Read(b[:])
-	name := "trove_srv_" + hex.EncodeToString(b[:])
+	name := "quader_srv_" + hex.EncodeToString(b[:])
 	if _, err := maint.Exec(ctx, "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatal(err)
 	}
@@ -109,30 +109,30 @@ func newInstall(t *testing.T) *install {
 	}
 	key := write(t, dir, "2026-10.key", base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{42}, 32)))
 	env := []string{
-		"TROVE_DATABASE_HOST=" + host, "TROVE_DATABASE_PORT=" + port, "TROVE_DATABASE_NAME=" + name,
-		"TROVE_DATABASE_USERNAME_FILE=" + write(t, dir, "db-user", user+"\n"), "TROVE_DATABASE_PASSWORD_FILE=" + write(t, dir, "db-pass", pass+"\n"),
-		"TROVE_DATABASE_SSL_MODE=verify-full", "TROVE_DATABASE_SSL_ROOT_CERT_FILE=" + testenv.CAFile(t), "TROVE_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true",
-		"TROVE_DATABASE_RETRY_MAX_ELAPSED=3s", "TROVE_HEALTH_DATABASE_OUTAGE_GRACE=2s",
+		"QUADER_DATABASE_HOST=" + host, "QUADER_DATABASE_PORT=" + port, "QUADER_DATABASE_NAME=" + name,
+		"QUADER_DATABASE_USERNAME_FILE=" + write(t, dir, "db-user", user+"\n"), "QUADER_DATABASE_PASSWORD_FILE=" + write(t, dir, "db-pass", pass+"\n"),
+		"QUADER_DATABASE_SSL_MODE=verify-full", "QUADER_DATABASE_SSL_ROOT_CERT_FILE=" + testenv.CAFile(t), "QUADER_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true",
+		"QUADER_DATABASE_RETRY_MAX_ELAPSED=3s", "QUADER_HEALTH_DATABASE_OUTAGE_GRACE=2s",
 		// The tests poll the bootstrap read anonymously, far above the default anonymous
 		// class (R-API-016); the limiter stays on with a budget the polling never reaches.
 		// The limits themselves are tested in test/integration/api.
-		"TROVE_API_RATE_LIMITS_ANONYMOUS_REQUESTS_PER_SECOND=1000", "TROVE_API_RATE_LIMITS_ANONYMOUS_BURST=10000",
-		"TROVE_VALKEY_SENTINEL_ADDRESSES=[" + strings.Join(sentinels, ",") + "]", "TROVE_VALKEY_SENTINEL_PRIMARY_NAME=" + vk.PrimaryName,
-		"TROVE_VALKEY_SENTINEL_PASSWORD_FILE=" + write(t, dir, "vk-sentinel-pass", vk.SentinelPassword),
-		"TROVE_VALKEY_USERNAME_FILE=" + write(t, dir, "vk-user", vk.Username), "TROVE_VALKEY_PASSWORD_FILE=" + write(t, dir, "vk-pass", vk.Password),
-		"TROVE_VALKEY_TLS_CA_FILE=" + vk.CAFile, "TROVE_VALKEY_KEY_PREFIX=" + vk.KeyPrefix,
-		"TROVE_STORAGE_S3_BUCKET=" + s3.BlobsBucket, "TROVE_STORAGE_S3_ENDPOINT=" + s3.Endpoint, "TROVE_STORAGE_S3_REGION=" + s3.Region,
-		"TROVE_STORAGE_S3_FORCE_PATH_STYLE=true", "TROVE_STORAGE_S3_CA_FILE=" + testenv.CAFile(t),
-		"TROVE_STORAGE_S3_CREDENTIALS_SOURCE=static",
-		"TROVE_STORAGE_S3_CREDENTIALS_ACCESS_KEY_ID_FILE=" + write(t, dir, "s3-id", s3.AccessKey),
-		"TROVE_STORAGE_S3_CREDENTIALS_SECRET_ACCESS_KEY_FILE=" + write(t, dir, "s3-secret", s3.SecretKey),
-		"TROVE_SECRETS_ENCRYPTION_KEY_FILES=[" + strconv.Quote(key) + "]", "TROVE_SECRETS_ACTIVE_KEY_ID=2026-10",
-		"TROVE_SERVER_TRUSTED_PROXIES=[\"127.0.0.0/8\"]", "TROVE_TRACING_TRUSTED_PEERS=[\"127.0.0.0/8\"]", "TROVE_SERVER_BASE_URL=http://trove.test",
-		"TROVE_SYSTEM_BOOTSTRAP_ANONYMOUS_READ=true",
-		"TROVE_HEALTH_CHECK_INTERVAL=" + checkInterval.String(), "TROVE_HEALTH_CHECK_TIMEOUT=" + checkTimeout.String(), "TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY=1500ms",
-		"TROVE_SERVER_SHUTDOWN_TIMEOUT=10s", "TROVE_STORAGE_SPOOL_DIR=" + filepath.Join(dir, "spool"),
-		"TROVE_SYSTEM_HEARTBEAT_INTERVAL=1s", "TROVE_SYSTEM_HEARTBEAT_STALE_AFTER=3s",
-		"TROVE_JOBS_SCHEDULE_TICK=1s", "TROVE_JOBS_POLL_INTERVAL=1s", "TROVE_CONFIG_FILE=" + write(t, dir, "trove.yaml", ""),
+		"QUADER_API_RATE_LIMITS_ANONYMOUS_REQUESTS_PER_SECOND=1000", "QUADER_API_RATE_LIMITS_ANONYMOUS_BURST=10000",
+		"QUADER_VALKEY_SENTINEL_ADDRESSES=[" + strings.Join(sentinels, ",") + "]", "QUADER_VALKEY_SENTINEL_PRIMARY_NAME=" + vk.PrimaryName,
+		"QUADER_VALKEY_SENTINEL_PASSWORD_FILE=" + write(t, dir, "vk-sentinel-pass", vk.SentinelPassword),
+		"QUADER_VALKEY_USERNAME_FILE=" + write(t, dir, "vk-user", vk.Username), "QUADER_VALKEY_PASSWORD_FILE=" + write(t, dir, "vk-pass", vk.Password),
+		"QUADER_VALKEY_TLS_CA_FILE=" + vk.CAFile, "QUADER_VALKEY_KEY_PREFIX=" + vk.KeyPrefix,
+		"QUADER_STORAGE_S3_BUCKET=" + s3.BlobsBucket, "QUADER_STORAGE_S3_ENDPOINT=" + s3.Endpoint, "QUADER_STORAGE_S3_REGION=" + s3.Region,
+		"QUADER_STORAGE_S3_FORCE_PATH_STYLE=true", "QUADER_STORAGE_S3_CA_FILE=" + testenv.CAFile(t),
+		"QUADER_STORAGE_S3_CREDENTIALS_SOURCE=static",
+		"QUADER_STORAGE_S3_CREDENTIALS_ACCESS_KEY_ID_FILE=" + write(t, dir, "s3-id", s3.AccessKey),
+		"QUADER_STORAGE_S3_CREDENTIALS_SECRET_ACCESS_KEY_FILE=" + write(t, dir, "s3-secret", s3.SecretKey),
+		"QUADER_SECRETS_ENCRYPTION_KEY_FILES=[" + strconv.Quote(key) + "]", "QUADER_SECRETS_ACTIVE_KEY_ID=2026-10",
+		"QUADER_SERVER_TRUSTED_PROXIES=[\"127.0.0.0/8\"]", "QUADER_TRACING_TRUSTED_PEERS=[\"127.0.0.0/8\"]", "QUADER_SERVER_BASE_URL=http://quader.test",
+		"QUADER_SYSTEM_BOOTSTRAP_ANONYMOUS_READ=true",
+		"QUADER_HEALTH_CHECK_INTERVAL=" + checkInterval.String(), "QUADER_HEALTH_CHECK_TIMEOUT=" + checkTimeout.String(), "QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY=1500ms",
+		"QUADER_SERVER_SHUTDOWN_TIMEOUT=10s", "QUADER_STORAGE_SPOOL_DIR=" + filepath.Join(dir, "spool"),
+		"QUADER_SYSTEM_HEARTBEAT_INTERVAL=1s", "QUADER_SYSTEM_HEARTBEAT_STALE_AFTER=3s",
+		"QUADER_JOBS_SCHEDULE_TICK=1s", "QUADER_JOBS_POLL_INTERVAL=1s", "QUADER_CONFIG_FILE=" + write(t, dir, "quader.yaml", ""),
 	}
 	return &install{env: env, db: name, conn: conn}
 }
@@ -178,7 +178,7 @@ func (s *syncBuffer) Write(p []byte) (int, error) {
 }
 func (s *syncBuffer) String() string { s.mu.Lock(); defer s.mu.Unlock(); return s.b.String() }
 
-// replica is one running `trove serve`.
+// replica is one running `quader serve`.
 type replica struct {
 	name        string
 	role        string
@@ -194,7 +194,7 @@ func (in *install) start(t *testing.T, role, name string, extra ...string) *repl
 	r := &replica{name: name, role: role, client: freeAddr(t), ops: freeAddr(t), logs: &syncBuffer{}, exited: make(chan error, 1)}
 	r.cmd = exec.Command(binary, "serve", "--role", role)
 	r.cmd.Env = append(append(append([]string{"PATH=" + os.Getenv("PATH")}, in.env...),
-		"TROVE_SERVER_LISTEN="+r.client, "TROVE_SERVER_OPS_LISTEN="+r.ops, "TROVE_POD_NAME="+name), extra...)
+		"QUADER_SERVER_LISTEN="+r.client, "QUADER_SERVER_OPS_LISTEN="+r.ops, "QUADER_POD_NAME="+name), extra...)
 	r.cmd.Stdout, r.cmd.Stderr = r.logs, r.logs
 	if err := r.cmd.Start(); err != nil {
 		t.Fatal(err)
@@ -306,7 +306,7 @@ func startRaw(t *testing.T, in *install, r *replica) *exec.Cmd {
 	t.Helper()
 	r.cmd = exec.Command(binary, "serve", "--role", r.role)
 	r.cmd.Env = append(append([]string{"PATH=" + os.Getenv("PATH")}, in.env...),
-		"TROVE_SERVER_LISTEN="+r.client, "TROVE_SERVER_OPS_LISTEN="+r.ops, "TROVE_POD_NAME="+r.name)
+		"QUADER_SERVER_LISTEN="+r.client, "QUADER_SERVER_OPS_LISTEN="+r.ops, "QUADER_POD_NAME="+r.name)
 	r.cmd.Stdout, r.cmd.Stderr = r.logs, r.logs
 	if err := r.cmd.Start(); err != nil {
 		t.Fatal(err)

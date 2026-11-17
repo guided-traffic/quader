@@ -9,7 +9,7 @@ import (
 
 func renderer(t *testing.T, origins ...string) *Renderer {
 	t.Helper()
-	r, err := New(Options{MaxSourceBytes: 512 << 10, ImageOrigins: origins, OwnOrigins: []string{"https://trove.example.com"}})
+	r, err := New(Options{MaxSourceBytes: 512 << 10, ImageOrigins: origins, OwnOrigins: []string{"https://quader.example.com"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestR_UI_008_RawCheckboxIsDisabled(t *testing.T) {
 	}
 }
 
-// TestR_UI_008_LinksGetRelAndNoTarget: a link that leaves trove carries the rel of the
+// TestR_UI_008_LinksGetRelAndNoTarget: a link that leaves quader carries the rel of the
 // spec and no target; a fragment stays; a relative link is reduced to its text.
 func TestR_UI_008_LinksGetRelAndNoTarget(t *testing.T) {
 	res := renderer(t).Render(`<a href="https://example.com" target="_blank" rel="opener">ext</a> [frag](#user-content-usage) [rel](docs/guide.md) [abs](/api/v1/users) [mail](mailto:a@example.com) [pr](//evil.example/x)`)
@@ -120,15 +120,15 @@ func TestR_UI_008_LinksGetRelAndNoTarget(t *testing.T) {
 }
 
 // TestR_UI_008_ExternalImagesPerPolicy: a listed https origin keeps its image, every
-// other external image becomes a link and is counted, and an image of trove's own
+// other external image becomes a link and is counted, and an image of quader's own
 // origin or a relative one is dropped without a link.
 func TestR_UI_008_ExternalImagesPerPolicy(t *testing.T) {
 	src := strings.Join([]string{
 		`![build status](https://img.shields.example/badge.svg)`,
 		`![kept](https://gitlab.example.com/logo.png)`,
 		`![x](/api/npm/npm-remote/left-pad)`,
-		`<img src="https://trove.example.com/files/generic-local/x.png">`,
-		`<img src="https://TROVE.example.com:443/files/generic-local/y.png">`,
+		`<img src="https://quader.example.com/files/generic-local/x.png">`,
+		`<img src="https://QUADER.example.com:443/files/generic-local/y.png">`,
 		`![plain http](http://gitlab.example.com/logo.png)`,
 		`[![badge](https://img.shields.example/b.svg)](https://example.com)`,
 	}, "\n\n")
@@ -142,7 +142,7 @@ func TestR_UI_008_ExternalImagesPerPolicy(t *testing.T) {
 	if strings.Count(res.HTML, "<img") != 1 || !strings.Contains(res.HTML, `src="https://gitlab.example.com/logo.png"`) {
 		t.Errorf("only the listed image stays: %q", res.HTML)
 	}
-	for _, s := range []string{"left-pad", "trove.example.com", "TROVE"} {
+	for _, s := range []string{"left-pad", "quader.example.com", "QUADER"} {
 		if strings.Contains(res.HTML, s) {
 			t.Errorf("%q survived: %q", s, res.HTML)
 		}
@@ -174,10 +174,10 @@ func TestR_UI_008_OnlyExactHTTPSOriginsAreAccepted(t *testing.T) {
 	}
 }
 
-// TestR_UI_008_AnOriginOfTroveItselfCannotBeListed: a list that names trove's own origin
+// TestR_UI_008_AnOriginOfQuaderItselfCannotBeListed: a list that names quader's own origin
 // is refused when the renderer is built.
-func TestR_UI_008_AnOriginOfTroveItselfCannotBeListed(t *testing.T) {
-	_, err := New(Options{MaxSourceBytes: 1, ImageOrigins: []string{"https://trove.example.com"}, OwnOrigins: []string{"https://TROVE.example.com:443/"}})
+func TestR_UI_008_AnOriginOfQuaderItselfCannotBeListed(t *testing.T) {
+	_, err := New(Options{MaxSourceBytes: 1, ImageOrigins: []string{"https://quader.example.com"}, OwnOrigins: []string{"https://QUADER.example.com:443/"}})
 	if err == nil {
 		t.Fatal("accepted")
 	}

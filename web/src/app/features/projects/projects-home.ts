@@ -11,7 +11,7 @@ import { AddressField } from '../../shared/address-field';
 import { valueOf } from '../../shared/paged-resource';
 import { TextField } from '../../shared/access/fields';
 import { Checkbox } from '../../shared/ui/checkbox';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -29,14 +29,14 @@ const RECENT_SHOWN = 5;
  * sees it: the start route sends them into that project. Creating a project needs `projects:write` (R-UI-041).
  */
 @Component({
-  selector: 'trove-projects-home',
+  selector: 'quader-projects-home',
   imports: [RouterLink, AddressField, Checkbox, DataTable, PageHeader, TextField, VisibilityIcon],
   template: `
-    <trove-page-header [heading]="heading" [description]="hint()">
+    <quader-page-header [heading]="heading" [description]="hint()">
       @if (canCreate()) {
         <button actions class="btn btn-confirm" type="button" (click)="create()" i18n="@@projects-home.add">New project</button>
       }
-    </trove-page-header>
+    </quader-page-header>
 
     @if (recent().length > 0) {
       <section class="recent" aria-labelledby="recent-heading">
@@ -50,7 +50,7 @@ const RECENT_SHOWN = 5;
               </div>
               <!-- The client address only (Q-UI-320); a further address is on the repository's page. -->
               @if (r.addresses[0]; as a) {
-                <trove-address-field [value]="a" [label]="addressLabel(r.key)" [copyLabel]="copyLabel(r.key)" />
+                <quader-address-field [value]="a" [label]="addressLabel(r.key)" [copyLabel]="copyLabel(r.key)" />
               }
               <a class="btn btn-default" routerLink="/setup" [queryParams]="{ repository: refOf(r) }" i18n="@@repo.content.tab.setup"
                 >Set up client</a
@@ -63,14 +63,14 @@ const RECENT_SHOWN = 5;
 
     <h2 class="projects-heading" i18n="@@projects-home.projects">Projects</h2>
     @if (context.projects().length > 5) {
-      <trove-text-field width="name" i18n-label="@@projects.q" label="Key or name" name="q" [(value)]="q" />
+      <quader-text-field width="name" i18n-label="@@projects.q" label="Key or name" name="q" [(value)]="q" />
     }
     @if (session.authenticated() && hasOthers()) {
-      <trove-checkbox [checked]="onlyMine()" (checkedChange)="onlyMine.set($event)">
+      <quader-checkbox [checked]="onlyMine()" (checkedChange)="onlyMine.set($event)">
         <ng-container i18n="@@projects-home.mine">Your projects</ng-container>
-      </trove-checkbox>
+      </quader-checkbox>
     }
-    <trove-data-table
+    <quader-data-table
       [caption]="caption()"
       [columns]="columns()"
       [loaded]="context.loaded()"
@@ -85,7 +85,7 @@ const RECENT_SHOWN = 5;
             <span class="secondary" translate="no">{{ p.key }}</span>
           </th>
           <td>{{ p.description }}</td>
-          <td class="level"><trove-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
+          <td class="level"><quader-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
           @if (!anonymous()) {
             <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
           }
@@ -93,23 +93,23 @@ const RECENT_SHOWN = 5;
           <td class="num">{{ p.members }}</td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
     .find {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-1);
-      max-inline-size: var(--trove-address-measure);
-      margin-block-end: var(--trove-space-6);
+      gap: var(--quader-space-1);
+      max-inline-size: var(--quader-address-measure);
+      margin-block-end: var(--quader-space-6);
     }
 
     .recent ul {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-3);
-      margin: var(--trove-space-2) 0 0;
+      gap: var(--quader-space-3);
+      margin: var(--quader-space-2) 0 0;
       padding: 0;
       list-style: none;
     }
@@ -118,33 +118,33 @@ const RECENT_SHOWN = 5;
       display: flex;
       flex-wrap: wrap;
       align-items: baseline;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
     }
 
     .recent {
-      margin-block-end: var(--trove-space-6);
+      margin-block-end: var(--quader-space-6);
     }
 
     .recent li {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: var(--trove-space-2);
-      padding-block-end: var(--trove-space-3);
-      border-block-end: 1px solid var(--trove-border);
+      gap: var(--quader-space-2);
+      padding-block-end: var(--quader-space-3);
+      border-block-end: 1px solid var(--quader-border);
     }
 
-    .recent li trove-address-field {
+    .recent li quader-address-field {
       inline-size: 100%;
     }
 
     .muted {
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
 
     h2 {
-      margin-block: 0 var(--trove-space-2);
-      font-size: var(--trove-heading-3);
+      margin-block: 0 var(--quader-space-2);
+      font-size: var(--quader-heading-3);
       font-weight: 600;
     }
   `,
@@ -153,7 +153,7 @@ export class ProjectsHome {
   protected readonly context = inject(ProjectContext);
   protected readonly session = inject(SessionStore);
   private readonly projectsApi = inject(ProjectsApi);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly router = inject(Router);
   private readonly repositories = inject(RepositoriesApi);
   private readonly frequent = inject(FrequentPlaces);

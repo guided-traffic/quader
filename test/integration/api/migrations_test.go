@@ -8,14 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/app"
-	"github.com/guided-traffic/trove/internal/buildinfo"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/app"
+	"github.com/guided-traffic/quader/internal/buildinfo"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestMigrationStatus is GET /api/v1/system/migrations through the production composition root of an `api` replica (ADR-155)
-// against PostgreSQL: the report of `trove migrate status`, from the same code, read on the replica's pool (R-HA-018, the
+// against PostgreSQL: the report of `quader migrate status`, from the same code, read on the replica's pool (R-HA-018, the
 // upgrade verification of R-HA-020, step 4 of R-HA-021, R-HA-022, Q-HA-114), behind settings:read. Every answer is validated
 // against api/openapi.yaml.
 func TestMigrationStatus(t *testing.T) {
@@ -96,7 +96,7 @@ func TestMigrationStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-018 the endpoint and `trove migrate status` answer from the same code: the same schema, steps and background migrations", func(t *testing.T) {
+	t.Run("R-HA-018 the endpoint and `quader migrate status` answer from the same code: the same schema, steps and background migrations", func(t *testing.T) {
 		r := get(t)
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -106,7 +106,7 @@ func TestMigrationStatus(t *testing.T) {
 		}
 		if cli.Schema.Applied != r.Schema.Applied || cli.Schema.CompatFloor != r.Schema.CompatFloor || cli.Binary.RequiredSchema != r.Binary.RequiredSchema ||
 			len(cli.Pending) != len(r.Pending) || len(cli.Applied) != len(r.Applied) || len(cli.Background) != len(r.Background) {
-			t.Fatalf("the endpoint says %+v, `trove migrate status` says %+v", r, cli)
+			t.Fatalf("the endpoint says %+v, `quader migrate status` says %+v", r, cli)
 		}
 		for i := range cli.Background {
 			if cli.Background[i].Name != r.Background[i].Name || cli.Background[i].Release != r.Background[i].Release {

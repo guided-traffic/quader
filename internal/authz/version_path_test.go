@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/scope"
 )
 
 // TestR_AUTHZ_005_AVersionIsDecidedOnItsFilesPath: a version is decided on the package document's path and on the path of

@@ -2,7 +2,7 @@
 
 Status: specification — not implemented
 
-This page specifies trove's management HTTP API and the Angular UI built on it. Part A fixes the
+This page specifies Quader's management HTTP API and the Angular UI built on it. Part A fixes the
 conventions every management endpoint follows: base path and versioning, the OpenAPI 3.1 contract,
 JSON rules, authentication and CSRF handling on the API, problem-details errors, cursor
 pagination, filtering, optimistic concurrency, idempotency keys, long-running work, cluster-wide
@@ -64,8 +64,8 @@ OPS-032),
 - Payload sketches appear only for resources this page owns. For every other resource the owning
   page holds the normative fields; the OpenAPI document (R-API-002) is where the pages meet, and a
   disagreement between pages is a review finding, not a choice for the implementer.
-- Examples use `TROVE_URL=https://trove.example.com` (# example) and a token in the
-  environment variable `TROVE_TOKEN`.
+- Examples use `QUADER_URL=https://quader.example.com` (# example) and a token in the
+  environment variable `QUADER_TOKEN`.
 
 ## Part A — API conventions
 
@@ -73,7 +73,7 @@ OPS-032),
 Priority: **MVP** · Covers: API-001, ADMAPI-002, EVT-072
 
 Every management endpoint MUST live under `/api/v1/` (INV-6). The major version in the path is
-the only version selector; trove MUST NOT version through media types or request headers. The
+the only version selector; Quader MUST NOT version through media types or request headers. The
 compatibility promise is the one of R-ARCH-025 in [architecture.md](architecture.md); this
 requirement makes it concrete for the API.
 
@@ -93,13 +93,13 @@ requirement makes it concrete for the API.
   `Deprecation` ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745), structured date such as
   `@1798761600`), `Sunset` ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) once the removal
   date is fixed, and `Link: <…>; rel="deprecation"` pointing at the migration note in the release
-  notes. Calls are counted in `trove_api_deprecated_requests_total{operation}` (INV-16).
-- An operation MAY be marked experimental with `x-trove-stability: experimental`. It lives under
+  notes. Calls are counted in `quader_api_deprecated_requests_total{operation}` (INV-16).
+- An operation MAY be marked experimental with `x-quader-stability: experimental`. It lives under
   `/api/v1/` but may change in any minor release; the UI uses it only behind a feature switch.
 
 Acceptance criteria:
 
-- `curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TROVE_TOKEN" "$TROVE_URL/api/v1/repositories"`
+- `curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $QUADER_TOKEN" "$QUADER_URL/api/v1/repositories"`
   prints `200`; the same request to `/api/v0/repositories` and `/api/v3/repositories` prints
   `404` with a problem body.
 - An integration test registers a fixture operation marked deprecated with a sunset date and
@@ -124,12 +124,12 @@ Every operation MUST declare:
 | `operationId` | lowerCamelCase verb + noun (`createRepository`), stable for the life of v1; generated clients and audit events use it |
 | `tags` | The resource family of Part B |
 | `security` | The accepted credential kinds of R-API-005 |
-| `x-trove-permission` | The repository action or role that admits the caller, machine-readable, e.g. `{"action": "deploy", "repository": "query.repository", "path": "query.path"}` or `{"role": "admin"}`; R-API-008 enforces from it |
-| `x-trove-system-scope` | The token system scope item that admits the caller instead of a role, where one exists (R-AUTH-025) |
-| `x-trove-recent-auth` | `true` for operations that require recent authentication through a session (R-API-007) |
-| `x-trove-owner-rights` | `required` on every `authenticated: true` operation that changes the caller's own account, or exposes it beyond the user record (profile, preferences, sessions, the revocation of all own tokens): a token must inherit its owner's rights, a session may (R-API-021, Q-API-214) |
-| `x-trove-idempotency-key` | `optional` on creating and job-starting POSTs and on DELETEs that answer 202 with a job (R-API-014) |
-| `x-trove-if-match` | `required` on PUT and PATCH of a resource that carries a revision ETag (R-API-012) |
+| `x-quader-permission` | The repository action or role that admits the caller, machine-readable, e.g. `{"action": "deploy", "repository": "query.repository", "path": "query.path"}` or `{"role": "admin"}`; R-API-008 enforces from it |
+| `x-quader-system-scope` | The token system scope item that admits the caller instead of a role, where one exists (R-AUTH-025) |
+| `x-quader-recent-auth` | `true` for operations that require recent authentication through a session (R-API-007) |
+| `x-quader-owner-rights` | `required` on every `authenticated: true` operation that changes the caller's own account, or exposes it beyond the user record (profile, preferences, sessions, the revocation of all own tokens): a token must inherit its owner's rights, a session may (R-API-021, Q-API-214) |
+| `x-quader-idempotency-key` | `optional` on creating and job-starting POSTs and on DELETEs that answer 202 with a job (R-API-014) |
+| `x-quader-if-match` | `required` on PUT and PATCH of a resource that carries a revision ETag (R-API-012) |
 | Responses | Success schema with an example; every possible 4xx and 5xx as a reference to the shared problem schema (R-API-009) |
 | Pagination | List operations reference the shared cursor parameters and envelope (R-API-010) |
 
@@ -148,8 +148,8 @@ document spec-first (Q-API-1):
   generates types into `web/src/app/api/generated/`. Thin hand-written clients per resource family
   in `web/src/app/api/` build `HttpClient` calls and `httpResource()` request descriptors with them
   (R-UI-046). No generated Angular service layer is used.
-- **Authorization declarations.** At start-up the server reads `x-trove-permission`,
-  `x-trove-system-scope`, `x-trove-recent-auth`, `x-trove-owner-rights` and `x-trove-if-match` from the embedded document
+- **Authorization declarations.** At start-up the server reads `x-quader-permission`,
+  `x-quader-system-scope`, `x-quader-recent-auth`, `x-quader-owner-rights` and `x-quader-if-match` from the embedded document
   into a table keyed by route pattern. The shared step of R-API-008 looks up the matched pattern
   (`http.Request.Pattern`) there. A registered `/api/v1/` route without an entry stops start-up, so
   no operation can run without a declared permission.
@@ -182,7 +182,7 @@ Every generator and validator version is pinned once (Go tools through the `tool
 
 Acceptance criteria:
 
-- `curl -s "$TROVE_URL/api/v1/openapi.json" | jq -r .openapi` prints a value starting with
+- `curl -s "$QUADER_URL/api/v1/openapi.json" | jq -r .openapi` prints a value starting with
   `3.1.`.
 - The route-parity check of item 5 fails when a handler is registered without a document entry.
 - A script over the document asserts that every operation has `operationId`, a permission or
@@ -260,7 +260,7 @@ Priority: **MVP** · Covers: API-001, ADMAPI-002
   where they do not, one URL would still name two things, and the next route added with a shared
   method would silently shadow the resource. The owning page rejects it on create (422 `reserved_name`), and names
   that come from an identity provider follow that page's reserved-username rule. The key or name
-  schema in the OpenAPI document lists the reserved names as `x-trove-reserved-names`; a CI check
+  schema in the OpenAPI document lists the reserved names as `x-quader-reserved-names`; a CI check
   derives every literal sibling of a `{key}` segment from the document and fails when one is
   missing from that list. Collections addressed by server-generated identifiers (tokens, jobs) need
   no reservation.
@@ -284,9 +284,9 @@ Priority: **MVP** · Covers: API-001, ADMAPI-001
 
 | Credential | Presented as | Typical caller |
 |---|---|---|
-| trove token (`trv_pat_`, `trv_sat_`, `trv_cit_`, INV-8) | `Authorization: Bearer <token>` | Scripts, CI jobs, tooling |
+| Quader token (`qdr_pat_`, `qdr_sat_`, `qdr_cit_`, INV-8) | `Authorization: Bearer <token>` | Scripts, CI jobs, tooling |
 | The same token as Basic password | `Authorization: Basic` with any username | Tools that only speak Basic, `curl -u` on `/files` |
-| UI session | `__Host-trv_session` cookie (INV-8, Q-AUTH-2) plus CSRF protection (R-API-006) | The Angular UI |
+| UI session | `__Host-qdr_session` cookie (INV-8, Q-AUTH-2) plus CSRF protection (R-API-006) | The Angular UI |
 | None | — | Anonymous caller, where a `public` level admits the read ([authorization.md](authorization.md) R-AUTHZ-003) or the operation serves every caller while `publicContent` is true (R-AUTH-037) |
 
 - When an `Authorization` header is present, the session cookie is ignored for that request.
@@ -294,7 +294,7 @@ Priority: **MVP** · Covers: API-001, ADMAPI-001
   access when a credential was presented.
 - Access tokens and ID tokens of an identity provider are never accepted as credentials (INV-8).
   The only endpoint that takes an ID token is the CI exchange (R-API-035), as a body parameter.
-- 401 answers under `/api/v1/` carry `WWW-Authenticate: Bearer realm="trove"`
+- 401 answers under `/api/v1/` carry `WWW-Authenticate: Bearer realm="quader"`
   ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750)) and no `Basic` challenge, so browsers never
   open their native credential prompt for UI requests. `/files` adds the `Basic` challenge
   (R-ARCH-011) except for requests carrying `Sec-Fetch-Site: same-origin`.
@@ -304,15 +304,15 @@ Priority: **MVP** · Covers: API-001, ADMAPI-001
 
 Acceptance criteria:
 
-- `curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer trv_pat_invalid' "$TROVE_URL/api/v1/auth/whoami"`
+- `curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer qdr_pat_invalid' "$QUADER_URL/api/v1/auth/whoami"`
   prints `401`, also while repositories are `public`.
-- `curl -s -u "anyname:$TROVE_TOKEN" "$TROVE_URL/api/v1/auth/whoami"` names the token owner.
+- `curl -s -u "anyname:$QUADER_TOKEN" "$QUADER_URL/api/v1/auth/whoami"` names the token owner.
 - A Playwright test with an expired session sees no browser credential dialog.
 
 ### R-API-006 · CSRF protection on the management API
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
-The mechanism (per-session token in the `__Host-trv_csrf` cookie, `X-CSRF-Token` header, origin and
+The mechanism (per-session token in the `__Host-qdr_csrf` cookie, `X-CSRF-Token` header, origin and
 fetch-metadata checks, failure code `csrf_failed`) is R-AUTH-012 in
 [identity-and-authentication.md](identity-and-authentication.md). This page fixes where it
 applies and how the UI uses it:
@@ -323,7 +323,7 @@ applies and how the UI uses it:
   credential.
 - No GET under `/api/v1/` changes state; sign-out is a POST.
 - The UI configures Angular's XSRF support with
-  `withXsrfConfiguration({cookieName: '__Host-trv_csrf', headerName: 'X-CSRF-Token'})`
+  `withXsrfConfiguration({cookieName: '__Host-qdr_csrf', headerName: 'X-CSRF-Token'})`
   ([Angular API](https://angular.dev/api/common/http/withXsrfConfiguration)) and calls the API with
   relative URLs, which is the case in which Angular attaches the header to unsafe requests.
 
@@ -331,19 +331,19 @@ Acceptance criteria:
 
 - With a valid session cookie and no `X-CSRF-Token`, `POST /api/v1/tokens` answers 403
   `csrf_failed`; with the header it succeeds.
-- The same request with `Authorization: Bearer $TROVE_TOKEN` and no CSRF header succeeds.
+- The same request with `Authorization: Bearer $QUADER_TOKEN` and no CSRF header succeeds.
 - A Playwright test submits a form from a page on a second origin to `/api/v1/tokens` while the
   session cookie is present; no token is created.
 
 ### R-API-007 · Recent authentication for sensitive actions
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 A stolen or forgotten-open session must not be enough to mint long-lived credentials or widen
 permissions. The mechanism (re-authentication round trip through the identity provider, answer
 401 `reauthentication_required`) is R-AUTH-011 in
 [identity-and-authentication.md](identity-and-authentication.md). This page names the API
 operations that require it when called with a session; the OpenAPI document marks them with
-`x-trove-recent-auth: true`:
+`x-quader-recent-auth: true`:
 
 | Operation family | Operations |
 |---|---|
@@ -432,7 +432,7 @@ device token endpoint `POST /api/v1/auth/device/token` (P1, R-AUTH-036 in
 
 | Member | Content |
 |---|---|
-| `type` | The relative URI `/api/v1/problems/<code>` (R-ARCH-023). trove serves a human-readable description of every code there from the embedded code registry, so the URI resolves on every installation and is identical across installations. |
+| `type` | The relative URI `/api/v1/problems/<code>` (R-ARCH-023). Quader serves a human-readable description of every code there from the embedded code registry, so the URI resolves on every installation and is identical across installations. |
 | `title` | Fixed English summary per `code` |
 | `status` | The HTTP status |
 | `detail` | Instance-specific English explanation |
@@ -469,7 +469,7 @@ R-UI-045); API text stays English.
 | 400 | `malformed_request` | Unparsable JSON, wrong JSON types, unknown or duplicate field, unknown query parameter |
 | 400 | `invalid_path` | Item path violates R-API-004 |
 | 400 | `invalid_cursor` | Cursor not issued by the server, or issued for other filters or sort (R-API-010) |
-| 400 | `invalid_header` | A trove request header with an invalid value, today `Trove-Authz-Min-Epoch` that is not a decimal integer between 1 and 2^63 − 1 (R-API-052, [authorization.md](authorization.md) R-AUTHZ-032); the `detail` names the header |
+| 400 | `invalid_header` | A Quader request header with an invalid value, today `Quader-Authz-Min-Epoch` that is not a decimal integer between 1 and 2^63 − 1 (R-API-052, [authorization.md](authorization.md) R-AUTHZ-032); the `detail` names the header |
 | 400 | `filter_required` | A search without any selective filter (R-API-028) |
 | 401 | `unauthenticated` | Missing, invalid, expired or revoked credential |
 | 401 | `reauthentication_required` | R-API-007 |
@@ -482,7 +482,7 @@ R-UI-045); API text stays English.
 | 409 | `conflict` | State conflict; owning pages define specific codes (`project_not_empty`, `last_admin`, `last_owner`, `repository_in_use`, …) |
 | 409 | `idempotency_in_progress`, `token_already_issued` | R-API-014 |
 | 412 | `precondition_failed` | `If-Match` does not match; extension `currentEtag` |
-| 412 | `authz_epoch_unknown` | `Trove-Authz-Min-Epoch` names an authorization epoch the database has not reached, for example because a PostgreSQL failover lost the commit that returned it (R-API-052, R-AUTHZ-032); the client drops that epoch and re-reads the object it changed |
+| 412 | `authz_epoch_unknown` | `Quader-Authz-Min-Epoch` names an authorization epoch the database has not reached, for example because a PostgreSQL failover lost the commit that returned it (R-API-052, R-AUTHZ-032); the client drops that epoch and re-reads the object it changed |
 | 413 | `payload_too_large` | R-API-017 |
 | 415 | `unsupported_media_type` | Wrong `Content-Type` |
 | 422 | `validation_failed` | Semantically invalid input; `errors[]` lists every violation with its own code and pointer, and the top-level code is `validation_failed` whatever the number of violations (Q-API-136) |
@@ -493,7 +493,7 @@ R-UI-045); API text stays English.
 | 500 | `internal` | Unexpected failure (R-ARCH-023) |
 | 502 | `upstream_error` | A synchronous action that calls an upstream or issuer failed |
 | 503 | `unavailable` | A dependency is unreachable or maintenance mode refuses the write; `Retry-After` set. An unavailable Valkey never causes it: every use of Valkey has a fallback ([architecture.md](architecture.md) R-ARCH-031) |
-| 503 | `authz_stale` | The replica could not confirm a grant index that is current, or at least as new as `Trove-Authz-Min-Epoch`, within the wait of [authorization.md](authorization.md) R-AUTHZ-028; the request was refused and changed nothing; `Retry-After` set (R-AUTHZ-016, R-AUTHZ-032) |
+| 503 | `authz_stale` | The replica could not confirm a grant index that is current, or at least as new as `Quader-Authz-Min-Epoch`, within the wait of [authorization.md](authorization.md) R-AUTHZ-028; the request was refused and changed nothing; `Retry-After` set (R-AUTHZ-016, R-AUTHZ-032) |
 
 Success statuses used: 200, 201 (with `Location`), 202 (with `Location` of the job), 204, 304.
 207 is not used; partial failures of bulk work are reported in the job result or the per-item
@@ -505,7 +505,7 @@ Acceptance criteria:
 
 - An invalid repository key answers 422 with `Content-Type: application/problem+json`, `code`
   `validation_failed` and `errors[0].pointer` `/key`.
-- `curl -s "$TROVE_URL/api/v1/problems/validation_failed"` answers 200 with a description.
+- `curl -s "$QUADER_URL/api/v1/problems/validation_failed"` answers 200 with a description.
 - A test injects a database error and asserts that the 500 body contains no SQL and no Go type
   names, and that the log line with the same `requestId` contains the cause.
 
@@ -566,7 +566,7 @@ Acceptance criteria:
   returns only repositories that user can read.
 - In the e2e profile `scatter` ([architecture.md](architecture.md) R-ARCH-032: three `web`
   replicas, round robin per request), paging the 120 groups with `limit=1` yields 120 distinct
-  names, each page from another replica than the one before (`X-Trove-Replica`).
+  names, each page from another replica than the one before (`X-Quader-Replica`).
 - A test drives one traversal with `limit=1` through a release N-1 and a release N replica in
   turn, where the test build of N adds a cursor version; it ends without `invalid_cursor`.
 
@@ -593,7 +593,7 @@ Acceptance criteria:
 - `GET /api/v1/repositories?fromat=npm` answers 400 naming `fromat`.
 
 ### R-API-012 · Optimistic concurrency with ETag and If-Match
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - Every mutable configuration resource carries an integer revision that increases with every
   change (the owning page names the column, e.g. `config_version` for repositories). GET returns a
@@ -608,7 +608,7 @@ Priority: **MVP** · Covers: trove-only
   ([RFC 6585 §3](https://www.rfc-editor.org/rfc/rfc6585#section-3)) whose `detail` names the
   header. A client that deliberately overwrites whatever is stored sends `If-Match: *`, so a blind
   write is always an explicit choice. The OpenAPI document marks these operations with
-  `x-trove-if-match: required` (R-API-002). There is no switch to turn the rule off.
+  `x-quader-if-match: required` (R-API-002). There is no switch to turn the rule off.
 - Exempt, because they cannot lose another writer's change or carry no revision: DELETE (honors
   `If-Match` when sent), membership edits that send a delta or bind one pair
   (`{"add": [...], "remove": [...]}`, role bindings, the members of a project with their role), the move of a
@@ -660,9 +660,9 @@ Acceptance criteria:
 - The same PATCH without `If-Match` answers 428 `precondition_required` and changes nothing; with
   `If-Match: *` it answers 200.
 - A script over the OpenAPI document asserts that every PUT and PATCH whose resource's GET declares
-  an `ETag` response header carries `x-trove-if-match: required`, unless it is in the exempt list
+  an `ETag` response header carries `x-quader-if-match: required`, unless it is in the exempt list
   above.
-- `curl -X PUT -T app.tgz -H 'If-None-Match: *' -u "ci:$TROVE_TOKEN" "$TROVE_URL/files/web/generic-local/app/1.0/app.tgz"`
+- `curl -X PUT -T app.tgz -H 'If-None-Match: *' -u "ci:$QUADER_TOKEN" "$QUADER_URL/files/web/generic-local/app/1.0/app.tgz"`
   answers 201 the first time and 412 the second time.
 - A repository at `ETag: "4"` is backed up, then patched twice on the old installation
   (`ETag: "6"`). After a restore of that backup into a new installation and two patches there, a
@@ -694,13 +694,13 @@ Priority: **MVP** · Covers: ADMAPI-007, ADMAPI-016, ADMAPI-024
 
 Acceptance criteria:
 
-- `curl -X PATCH -H 'Content-Type: application/merge-patch+json' -H 'If-Match: "3"' -d '{"description": null}' "$TROVE_URL/api/v1/projects/web/repositories/npm-remote"`
+- `curl -X PATCH -H 'Content-Type: application/merge-patch+json' -H 'If-Match: "3"' -d '{"description": null}' "$QUADER_URL/api/v1/projects/web/repositories/npm-remote"`
   answers 200 with `"description": null` and `ETag: "4"`.
 - `{"class": "local"}` sent with a matching `If-Match` to a remote repository answers 422 with
   pointer `/class`.
 
 ### R-API-014 · Idempotency keys for creates
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 POST endpoints that create a resource or start a job, and DELETE endpoints that answer 202 with a
 job (R-API-015), accept the `Idempotency-Key` request header of the IETF draft
@@ -771,7 +771,7 @@ Acceptance criteria:
   table row contains the token secret.
 - A test build holds the first request's transaction open for 3 s. 50 concurrent duplicates with
   the same key each answer 409 `idempotency_in_progress` with `Retry-After: 1` within 1.5 s, and
-  `pg_stat_activity` shows no trove connection waiting on a lock (`wait_event_type = 'Lock'`) for
+  `pg_stat_activity` shows no Quader connection waiting on a lock (`wait_event_type = 'Lock'`) for
   longer than 1.5 s. A retry after the first request committed replays its outcome.
 
 ### R-API-015 · Long-running work as jobs
@@ -869,7 +869,7 @@ because its request asks PostgreSQL whether the repository was just created befo
   `max(1, burst ÷ n)`, where `n` is the number of live `web` replicas in the replica registry, at
   least 1, refreshed with the heartbeat (R-ARCH-034). The cluster-wide budget then holds
   approximately; a client whose keep-alive connection stays on one replica gets about `1/n` of it.
-  `trove_ratelimit_fallback{limiter}` is 1 while this lasts. A limiter never fails a request because Valkey failed, and never delays it by
+  `quader_ratelimit_fallback{limiter}` is 1 while this lasts. A limiter never fails a request because Valkey failed, and never delays it by
   more than `valkey.command_timeout`. H-43 records what stays open.
 - **Answer.** An exhausted bucket answers 429 `rate_limited` with `Retry-After`: the whole seconds
   after which the next request would be admitted if the caller sent nothing more, computed from the
@@ -886,7 +886,7 @@ because its request asks PostgreSQL whether the repository was just created befo
 - The one guessable credential, the break-glass password, is counted cluster-wide in PostgreSQL by
   R-AUTH-038 in [identity-and-authentication.md](identity-and-authentication.md), because a lockout
   must survive a loss of Valkey's data. Administrators are not exempt by default. Rejections are
-  counted in `trove_api_rate_limited_total{class}`.
+  counted in `quader_api_rate_limited_total{class}`.
 
 Configuration (each value is the budget of one bucket across the whole installation):
 
@@ -914,7 +914,7 @@ Acceptance criteria:
 - In the e2e profile `scatter` (three `web` replicas, round robin per request), 1,000
   `GET /api/v1/repositories` with one token within 2 s are admitted at most 300 times, the same
   bound as against one replica. With Valkey stopped, the same run is admitted at most 300 times,
-  and `trove_ratelimit_fallback{limiter="api_read"}` is 1 on every replica.
+  and `quader_ratelimit_fallback{limiter="api_read"}` is 1 on every replica.
 - With the defaults, a `200` answer of `GET /api/v1/repositories` carries
   `RateLimit-Policy: "read";q=200;w=4`.
 - A loop of 1,100 `GET /api/npm/<projectKey>/<repoKey>/<name>` with one token receives 429 answers after the
@@ -928,7 +928,7 @@ Acceptance criteria:
   `nuget.config`, from three addresses at once through a repository that is not `public`, succeed (E3.2).
 
 ### R-API-017 · Request limits, timeouts and response headers
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - JSON bodies are limited to `api.max_request_body_bytes`; YAML for configuration as code to
   `api.max_configuration_body_bytes`. Larger bodies answer 413. Uploads on `/files` are limited by
@@ -964,20 +964,20 @@ api:
 
 Acceptance criteria:
 
-- `curl -sD - -o /dev/null -H "Authorization: Bearer $TROVE_TOKEN" "$TROVE_URL/api/v1/auth/whoami"`
+- `curl -sD - -o /dev/null -H "Authorization: Bearer $QUADER_TOKEN" "$QUADER_URL/api/v1/auth/whoami"`
   shows the four security headers and `X-Request-Id`.
 - A 2 MiB JSON body answers 413 `payload_too_large`.
 
 ### R-API-018 · Cross-origin access
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The UI is same-origin; CORS is off by default and the server emits no `Access-Control-Allow-*`
 headers. `api.cors.allowed_origins` (exact origins, no wildcards) enables CORS for requests that
 carry an `Authorization` header. `Access-Control-Allow-Credentials` is never sent, so a session
 cookie is never usable cross-origin. Allowed request headers: `Authorization`, `Content-Type`,
-`If-Match`, `If-None-Match`, `Idempotency-Key`, `Trove-Authz-Min-Epoch`. Exposed response headers:
+`If-Match`, `If-None-Match`, `Idempotency-Key`, `Quader-Authz-Min-Epoch`. Exposed response headers:
 `ETag`, `Location`, `Link`, `Retry-After`, `RateLimit`, `RateLimit-Policy`, `X-Request-Id`,
-`Deprecation`, `Sunset`, `Trove-Authz-Epoch` (R-API-052).
+`Deprecation`, `Sunset`, `Quader-Authz-Epoch` (R-API-052).
 
 ```yaml
 api:
@@ -1014,7 +1014,7 @@ Acceptance criteria:
 - A rejected policy change (403) produces an audit event with outcome `denied`.
 
 ### R-API-051 · Requests that span replicas
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The Service distributes requests at random and without session affinity (INV-12), so consecutive
 requests of one client, a UI tab included, reach different `web` replicas, and any of them may be
@@ -1029,7 +1029,7 @@ back:
 | Idempotent creates and job starts (R-API-014) | `api_idempotency_keys` in PostgreSQL | A retry replays, answers 409 `idempotency_in_progress`, or runs again on whichever replica it reaches |
 | Long-running work (R-API-015) | Job rows | Enqueued by the answering `web` replica, run by `worker` replicas |
 | Optimistic concurrency (R-API-012) | Revision columns in PostgreSQL | Every replica computes the same `ETag`; a restore lifts every revision column, so an `ETag` from before it never matches |
-| Seeing one's own grant change (R-API-052) | The epoch the client sends in `Trove-Authz-Min-Epoch`, checked against `cluster_epoch` in PostgreSQL | Any replica waits for a grant index at least that new, or answers `412` when the database never reached it |
+| Seeing one's own grant change (R-API-052) | The epoch the client sends in `Quader-Authz-Min-Epoch`, checked against `cluster_epoch` in PostgreSQL | Any replica waits for a grant index at least that new, or answers `412` when the database never reached it |
 | UI sessions, CSRF tokens, recent authentication, browser sign-in | Session and login-flow rows ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-006, R-AUTH-010, R-AUTH-011, R-AUTH-012) | A CSRF token or a re-authentication obtained through one replica counts on every other |
 | Command-line login approval and polling (P1) | The `cli_login` row (R-AUTH-034, R-AUTH-036) | The UI's 2 s refresh (R-UI-004) and the client's polls may each reach another replica |
 | Event streams (`text/event-stream`) | The event `id` | Below |
@@ -1078,7 +1078,7 @@ back:
     covers its occurrence time is not in that export; a range whose `to` lies further in the past
     than the longest write transaction is complete.
 - **No affinity, anywhere.** Neither the API nor the UI sets a cookie, header or token whose
-  purpose is to reach the same replica again. `X-Trove-Replica` (R-OPS-002) is diagnostic only;
+  purpose is to reach the same replica again. `X-Quader-Replica` (R-OPS-002) is diagnostic only;
   the UI shows it in error details and never sends it back.
 
 Configuration:
@@ -1110,7 +1110,7 @@ Acceptance criteria:
   query.
 
 ### R-API-052 · Visibility of a management write on other replicas
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 A client that writes through one replica and then calls another must know what the second replica
 sees (Q-API-12). The propagation mechanism is R-ARCH-018 in [architecture.md](architecture.md);
@@ -1161,11 +1161,11 @@ this requirement states the contract for API clients.
   Q-AUTHZ-12). Two headers carry the authorization epoch, the epoch of the `authz` change area
   (R-AUTHZ-028), so that a client can see its own grant change on whichever replica answers next,
   without affinity:
-  - Response header `Trove-Authz-Epoch: <n>`: sent by the writes that change grants, which are
+  - Response header `Quader-Authz-Epoch: <n>`: sent by the writes that change grants, which are
     policy writes and role bindings (R-API-033), project writes with their members and roles, and
     the move of a repository to another project (R-API-047). `n` is the epoch the write's transaction
     produced.
-  - Request header `Trove-Authz-Min-Epoch: <n>`: honoured on every authenticated request on the
+  - Request header `Quader-Authz-Min-Epoch: <n>`: honoured on every authenticated request on the
     client listener, `/api/v1/`, `/files/` and the package protocols alike. It is read only after
     authentication succeeded, so an invalid or revoked credential gets its `401` first, and a
     request without a credential ignores it, which keeps anonymous callers from probing the epoch.
@@ -1179,15 +1179,15 @@ this requirement states the contract for API clients.
     take long to reach it, and re-reads the changed object; its `ETag` tells whether the change is
     stored (R-API-012). Epochs from before a restore lie below every restored one and pass at once
     ([backup-and-restore.md](backup-and-restore.md) R-BAK-022).
-  - The OpenAPI document (R-API-002) declares `Trove-Authz-Min-Epoch` as an optional header
-    parameter of every authenticated operation, and `Trove-Authz-Epoch` on the responses of the
+  - The OpenAPI document (R-API-002) declares `Quader-Authz-Min-Epoch` as an optional header
+    parameter of every authenticated operation, and `Quader-Authz-Epoch` on the responses of the
     writes above. The UI sends the request header after its own permission changes (R-UI-042).
 
 Acceptance criteria:
 
 - In the e2e profile `scatter` with Valkey stopped and `cluster.epoch_poll_interval: 10s` (a test
   setting that makes a stale snapshot visible), 100 runs of `POST /api/v1/projects/web/repositories` creating
-  `npm-new-<n>` followed at once by `npm publish --registry "$TROVE_URL/api/npm/web/npm-new-<n>/"`
+  `npm-new-<n>` followed at once by `npm publish --registry "$QUADER_URL/api/npm/web/npm-new-<n>/"`
   through the Service all succeed on the first attempt.
 - In the same profile, a `PATCH` of a repository followed at once by a `GET` through another
   replica returns the new `ETag` in 100 of 100 trials.
@@ -1200,15 +1200,15 @@ Acceptance criteria:
 - In the profile `scatter` with the test settings of [authorization.md](authorization.md)
   R-AUTHZ-032's acceptance criteria (Valkey stopped, a long change-log poll interval), a
   `PUT /api/v1/permission-policies/{name}` that grants a group `deploy` on a local repository
-  answers `Trove-Authz-Epoch: n`; 20 uploads of a member to `/files/…` through the Service with
-  `Trove-Authz-Min-Epoch: n` all succeed on the first attempt. The value `abc` answers `400`
+  answers `Quader-Authz-Epoch: n`; 20 uploads of a member to `/files/…` through the Service with
+  `Quader-Authz-Min-Epoch: n` all succeed on the first attempt. The value `abc` answers `400`
   `invalid_header`, the current epoch plus 1,000 answers `412` `authz_epoch_unknown`, and the same
   header without a credential gets the answer it would get without the header.
 
 ## Part B — Endpoint surface
 
 ### R-API-020 · Resource map and routing
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 | Path prefix | Family | Requirement | Semantics and payloads |
 |---|---|---|---|
@@ -1263,28 +1263,28 @@ Acceptance criteria:
   `/api/v1/system/storage/summary`, and `POST /api/v1/system/tasks/gc/run` starts a run.
 
 ### R-API-021 · Current caller and UI preferences
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 | Method | Path | Purpose | Permission | Owner |
 |---|---|---|---|---|
 | GET | `/api/v1/auth/whoami` | Principal and credential of the caller | authenticated | R-AUTH in [identity-and-authentication.md](identity-and-authentication.md) |
 | GET | `/api/v1/auth/login-options` | Providers, auto-redirect, break-glass visibility, `publicContent`; the sign-in screen renders only from it | anonymous | [identity-and-authentication.md](identity-and-authentication.md) |
 | GET | `/api/v1/users/me` | Own user record | authenticated user | [identity-and-authentication.md](identity-and-authentication.md) |
-| GET | `/api/v1/users/me/sessions`, DELETE `/api/v1/users/me/sessions…` | Own sessions; end one or all | `self`, `x-trove-owner-rights` | R-AUTH-010 in [identity-and-authentication.md](identity-and-authentication.md) |
+| GET | `/api/v1/users/me/sessions`, DELETE `/api/v1/users/me/sessions…` | Own sessions; end one or all | `self`, `x-quader-owner-rights` | R-AUTH-010 in [identity-and-authentication.md](identity-and-authentication.md) |
 | GET | `/api/v1/authz/me` | Effective capabilities, scope summary, principal set and the caller's project memberships with their roles (`projects`: `{key, role}`); drives navigation | authenticated | R-AUTHZ-022, R-AUTHZ-026 in [authorization.md](authorization.md) |
 | POST | `/api/v1/authz/check` | Up to 100 permission checks for the caller's own credential; drives per-control rendering | authenticated | R-AUTHZ-023 in [authorization.md](authorization.md) |
-| GET, PATCH | `/api/v1/users/me/preferences` | UI preferences | `self`; PATCH with `x-trove-owner-rights` | this page |
+| GET, PATCH | `/api/v1/users/me/preferences` | UI preferences | `self`; PATCH with `x-quader-owner-rights` | this page |
 
 **Own-account operations and token scopes.** A token's scope is a ceiling on its owner's rights (R-AUTH-024), and
 a profile resource is no repository right a scope can name. The operations that change, or expose beyond the
-user record, the caller's own account therefore declare `x-trove-owner-rights: required` and the shared
+user record, the caller's own account therefore declare `x-quader-owner-rights: required` and the shared
 authorization step refuses a token whose scope does not inherit the owner's rights (`scope.inherit` false) with
 `403 forbidden`, before the handler runs; a session, the break-glass session and a token with `inherit: true` pass
 (Q-API-214). The set is: `setAvatar`, `removeAvatar`, `updatePreferences`, `listOwnSessions`, `endOwnSession`,
 `endOwnSessions` and `revokeOwnTokens`. The reads `getCurrentUser`, `getPreferences`, `getWhoami` and `getAuthzMe`
 are not in it: they return what the credential itself is allowed to know about its principal, and the UI of a restricted
 token needs them. `403` also answers a service account and a CI token (they have no profile). A new unsafe operation
-that declares `authenticated: true` must either declare `x-trove-owner-rights` or be named, with the reason, in the
+that declares `authenticated: true` must either declare `x-quader-owner-rights` or be named, with the reason, in the
 list `ownerRightsExempt` of `TestR_API_021_EveryAuthenticatedWriteDeclaresItsTokenRule`.
 
 Preferences are owned here:
@@ -1316,7 +1316,7 @@ CREATE TABLE user_preferences (
 
 Acceptance criteria:
 
-- `curl -s -H "Authorization: Bearer $TROVE_TOKEN" "$TROVE_URL/api/v1/auth/whoami" | jq -r .credential.type`
+- `curl -s -H "Authorization: Bearer $QUADER_TOKEN" "$QUADER_URL/api/v1/auth/whoami" | jq -r .credential.type`
   names the token type.
 - `PATCH /api/v1/users/me/preferences` with `{"locale": "de"}` makes the next visit of `/ui/`
   open the German UI (R-UI-045).
@@ -1353,8 +1353,8 @@ API-060 (all configurations) are the list with `view` and the batch read of R-AP
 Acceptance criteria:
 
 - Creating an npm remote repository with
-  `curl -s -X POST -H "Authorization: Bearer $TROVE_TOKEN" -H 'Content-Type: application/json' -d @npm-remote.json "$TROVE_URL/api/v1/projects/web/repositories"`
-  answers 201; then `npm view lodash version --registry "$TROVE_URL/api/npm/web/npm-remote/"`, sent
+  `curl -s -X POST -H "Authorization: Bearer $QUADER_TOKEN" -H 'Content-Type: application/json' -d @npm-remote.json "$QUADER_URL/api/v1/projects/web/repositories"`
+  answers 201; then `npm view lodash version --registry "$QUADER_URL/api/npm/web/npm-remote/"`, sent
   at once through the Service to whichever replica it reaches, prints a version (R-API-052).
 - A reader without `repositories:read-config` gets no upstream configuration in the answer.
 - Projects `web` and `mobile` each create a repository `npm-remote` (201 twice); a second create of `npm-remote` in
@@ -1404,7 +1404,7 @@ Acceptance criteria:
 
 - After a test removes a computed npm package document, `POST …/web/repositories/npm-local/reindex` restores it and
   `npm view @team-a/ui versions` lists every stored version.
-- `POST …/web/repositories/npm-remote/cache/invalidate` followed by `npm view lodash` makes trove fetch the package
+- `POST …/web/repositories/npm-remote/cache/invalidate` followed by `npm view lodash` makes Quader fetch the package
   document from the upstream again (visible in the upstream mock's request log). With Valkey
   stopped, the same holds on another replica within `cluster.epoch_poll_interval` plus 1 s.
 - The same invalidation with the token of a user who holds `read` and `delete` but not `manage` on
@@ -1461,8 +1461,8 @@ Acceptance criteria:
 - After `npm publish` of `@team-a/ui@1.4.0` to `npm-local`,
   `GET /api/v1/projects/web/repositories/npm-local/items?path=@team-a/ui/-/ui-1.4.0.tgz` returns the SHA-256
   that `shasum -a 256 ui-1.4.0.tgz` prints.
-- `curl -s -X PUT -T app.tgz -u "ci:$TROVE_TOKEN" -H "Repr-Digest: sha-256=:$(openssl dgst -sha256 -binary app.tgz | base64):" "$TROVE_URL/files/web/generic-local/app/1.0/app.tgz"`
-  answers 201 (generic format, P1); `curl -s -r 0-99 -u "ci:$TROVE_TOKEN" "$TROVE_URL/files/web/generic-local/app/1.0/app.tgz" | wc -c`
+- `curl -s -X PUT -T app.tgz -u "ci:$QUADER_TOKEN" -H "Repr-Digest: sha-256=:$(openssl dgst -sha256 -binary app.tgz | base64):" "$QUADER_URL/files/web/generic-local/app/1.0/app.tgz"`
+  answers 201 (generic format, P1); `curl -s -r 0-99 -u "ci:$QUADER_TOKEN" "$QUADER_URL/files/web/generic-local/app/1.0/app.tgz" | wc -c`
   prints `100`.
 - Paging the children of a folder with 1,000 files at `limit=100` returns ten pages.
 
@@ -1473,7 +1473,7 @@ Owned by [storage.md](storage.md):
 
 | Method | Path | Purpose | Permission |
 |---|---|---|---|
-| PUT | `/files/{projectKey}/{repoKey}/{path}` with `Trove-Deploy-By-Checksum: ?1` and `Repr-Digest`, empty body | Create a file from content already stored; 404 when the content is unknown **or** not readable by the caller (R-STOR-008) | `deploy` on the target and `read` on an item holding the content |
+| PUT | `/files/{projectKey}/{repoKey}/{path}` with `Quader-Deploy-By-Checksum: ?1` and `Repr-Digest`, empty body | Create a file from content already stored; 404 when the content is unknown **or** not readable by the caller (R-STOR-008) | `deploy` on the target and `read` on an item holding the content |
 | GET | `/api/v1/projects/{projectKey}/repositories/{repoKey}/properties?path=&keys=` | Read properties | `read` |
 | PATCH | `/api/v1/projects/{projectKey}/repositories/{repoKey}/properties?path=&recursive=` | Merge patch of properties | `annotate` |
 | DELETE | `/api/v1/projects/{projectKey}/repositories/{repoKey}/properties?path=&keys=&recursive=` | Remove properties | `annotate` |
@@ -1484,7 +1484,7 @@ every other multi-value parameter, so one parser and the generated clients' arra
 
 Acceptance criteria:
 
-- `curl -X PATCH -H 'Content-Type: application/merge-patch+json' -d '{"qa.status": "passed"}' "$TROVE_URL/api/v1/projects/web/repositories/generic-local/properties?path=app/1.0/app.tgz"`
+- `curl -X PATCH -H 'Content-Type: application/merge-patch+json' -d '{"qa.status": "passed"}' "$QUADER_URL/api/v1/projects/web/repositories/generic-local/properties?path=app/1.0/app.tgz"`
   answers 200, and `GET /api/v1/search/items?property=qa.status%3Dpassed` finds the file.
 - A user without read on any item holding the content gets 404 for a deploy by checksum, and the
   same answer for a random digest.
@@ -1506,7 +1506,7 @@ Owned by [storage.md](storage.md):
 Acceptance criteria:
 
 - A copy of `@team-a/ui/-/ui-1.4.0.tgz` from `npm-local` to `npm-release` makes
-  `npm view @team-a/ui@1.4.0 --registry "$TROVE_URL/api/npm/web/npm-release/"` succeed.
+  `npm view @team-a/ui@1.4.0 --registry "$QUADER_URL/api/npm/web/npm-release/"` succeed.
 - A deleted file appears in `GET /api/v1/trash-can/items?repository=web/generic-local`, and after a
   restoration it downloads again with the same SHA-256.
 
@@ -1557,7 +1557,7 @@ remain as their owners define them.)
 | GET | `/api/v1/packages/{packageId}` | Package summary | as list |
 | GET | `/api/v1/packages/{packageId}/versions` | Versions; filters `prerelease`, `repository`; `sort` `-publishedAt` (default), `publishedAt`, `-version`, `version` (the format's version precedence); `include=digest` (R-UI-052) | as list |
 | GET | `/api/v1/packages/{packageId}/versions/{version}` | Version details | as list |
-| GET | `/api/v1/packages/{packageId}/versions/{version}/readme` | Sanitized README HTML; wiki content (`x-trove-part: wiki`, R-API-058) | as list, then the wiki check ([authorization.md](authorization.md) R-AUTHZ-034) |
+| GET | `/api/v1/packages/{packageId}/versions/{version}/readme` | Sanitized README HTML; wiki content (`x-quader-part: wiki`, R-API-058) | as list, then the wiki check ([authorization.md](authorization.md) R-AUTHZ-034) |
 | GET | `/api/v1/packages/{packageId}/versions/{version}/docs`, `…/docs/entries/{type}/{name}`, `…/docs/files/{file}` | The documentation of a version of a format that has one (Ansible Galaxy: the tree with search, one plugin's page, a Markdown file): `getPackageVersionDocs`, `getPackageVersionDocEntry`, `getPackageVersionDocFile`, [formats/ansible.md](formats/ansible.md) R-ANS-036; wiki content (Q-API-260, Q-API-261); 404 for a format without documentation | as list, then the wiki check of R-AUTHZ-034 ([formats/ansible.md](formats/ansible.md) R-ANS-037) |
 
 - A package is identified by format plus normalized name (npm names as stored; NuGet IDs
@@ -1696,8 +1696,8 @@ on:
   With `package` and `version` the install snippets are specific to that version.
 - The server never fills a token. With `credentials=placeholder` snippets contain the placeholder
   `{{token}}`, replaced in the browser (R-UI-016); with `credentials=env` they hold the
-  environment-variable reference of the client's syntax (`${TROVE_TOKEN}` for npm and Yarn,
-  `%TROVE_TOKEN%` for `nuget.config` and cmd, `$env:TROVE_TOKEN` for PowerShell, Q-API-187); with `credentials=none` they hold no authentication line (an
+  environment-variable reference of the client's syntax (`${QUADER_TOKEN}` for npm and Yarn,
+  `%QUADER_TOKEN%` for `nuget.config` and cmd, `$env:QUADER_TOKEN` for PowerShell, Q-API-187); with `credentials=none` they hold no authentication line (an
   anonymous caller, and the install command panel of R-UI-009). The variable name is
   `ui.client_setup.token_env_var`. `tokenTtlSeconds` is `ui.client_setup.token_ttl` in seconds, the lifetime
   the setup dialog asks for when it creates a token.
@@ -1706,8 +1706,8 @@ on:
   `-scoped` to its name. A scoped variant exists only for a configure template that reads the scope (the npm clients);
   `scope` for a client without one answers `400 malformed_request` whose detail names `scope` (Q-API-235).
 - The credential mode, the package and the quoting are the API's, not the template's (Q-API-168): the template
-  spells the token as `${TROVE_TOKEN}` (POSIX shell), `%TROVE_TOKEN%` (a `nuget.config` value or cmd) or
-  `$env:TROVE_TOKEN` (PowerShell), whichever the syntax of its file or shell expands, and the package as `<package>`,
+  spells the token as `${QUADER_TOKEN}` (POSIX shell), `%QUADER_TOKEN%` (a `nuget.config` value or cmd) or
+  `$env:QUADER_TOKEN` (PowerShell), whichever the syntax of its file or shell expands, and the package as `<package>`,
   and receives the functions `shell`, `powershell`, `cmd` and `xml` (quoting) and `schemeless` (a URL without its scheme, the
   key of a keyed credential line; Q-ARCH-257) and `hostname` (the host name of a URL without port and path, the key of a
   credential line that binds to a host name alone, such as a `~/.netrc` line; Q-ANS-48). An install template may carry a `VersionSpec`, the
@@ -1742,21 +1742,21 @@ Configuration:
 ```yaml
 ui:
   client_setup:
-    token_env_var: TROVE_TOKEN   # default; an environment variable name, at most 64 characters
+    token_env_var: QUADER_TOKEN   # default; an environment variable name, at most 64 characters
     token_ttl: 720h               # default; expiry of tokens created by the setup dialog, at most auth.tokens.pat.max_ttl
 ```
 
 Acceptance criteria:
 
 - The answer for `npm-all` of project `web`, client `npm`, `credentials=env` contains
-  `//trove.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}`.
+  `//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}`.
 - No answer of this endpoint, for any format, client and credential mode, matches
-  `trv_(pat|sat|cit)_` (R-ARCH-010 kit check 8).
+  `qdr_(pat|sat|cit)_` (R-ARCH-010 kit check 8).
 - The npm install snippet for version `1.0.0` of a legacy remote package named `a(b)` reads
   `npm install 'a(b)@1.0.0'`.
 
 ### R-API-053 · Guides of the formats
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's requirement of 2026-10-31 (Q-UI-83): the guide of R-UI-049 for every registry variant (format × repository
 class × client). The format contributes the text (`Guide()` of the format contract, [architecture.md](architecture.md)
@@ -1780,13 +1780,13 @@ R-ARCH-008, Q-ARCH-235); this page owns the operations (Q-API-175).
 - A section that names a setup section carries the snippets of R-API-030 for the same repository, client and credential
   mode, rendered by the same code, so the guide's configure and install snippets are the client setup's. The credential
   mode is `env` for a signed-in caller and `none` for an anonymous one; the guide never carries a token or the placeholder
-  of one, and the reference `${TROVE_TOKEN}` of a section's text is rewritten like a snippet's (Q-API-176).
+  of one, and the reference `${QUADER_TOKEN}` of a section's text is rewritten like a snippet's (Q-API-176).
 - The guide of a format writes `<project>` and `<repository>` where the project key and the repository key go and names
   no target. The guide of a virtual repository
   names its deployment target only to a caller who may deploy there and never lists the members, which are configuration
   (Q-API-179). Both operations answer `503` while no base URL is configured for the endpoint, like R-API-030.
 - An unknown format answers `404`; a client or class the format does not have, or a format without clients, `400
-  malformed_request`. No answer matches `trv_(pat|sat|cit)_`.
+  malformed_request`. No answer matches `qdr_(pat|sat|cit)_`.
 
 Acceptance criteria:
 
@@ -1798,13 +1798,13 @@ Acceptance criteria:
   local repository has neither, and its snippets hold no credential line.
 - On an endpoint with exposure rules the guide carries the `endpoint` section and the endpoint's own addresses; on the
   default endpoint it does not (`TestR_API_053_TheGuideOnAnEndpointWithRules`).
-- No answer, for any class, client and caller, matches `trv_(pat|sat|cit)_`.
+- No answer, for any class, client and caller, matches `qdr_(pat|sat|cit)_`.
 
 ### R-API-054 · The manual
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
-The owner's requirement of 2026-11-01: the documentation for the people who use trove and the people who run it is
-delivered by trove itself, behind the Documentation link of the UI (R-UI-050). The manual is Markdown in
+The owner's requirement of 2026-11-01: the documentation for the people who use Quader and the people who run it is
+delivered by Quader itself, behind the Documentation link of the UI (R-UI-050). The manual is Markdown in
 [docs/manual/](../manual/README.md), embedded into the binary (`docs/manual/embed.go`), so an installation always shows the
 manual of the version it runs; [internal/manual](../../internal/manual/) loads and renders it once at start-up (Q-UI-89).
 
@@ -1836,12 +1836,12 @@ Acceptance criteria:
   (`TestR_API_054_TheManualOperations`, `TestR_API_054_AnonymousReadersFollowPublicContent`).
 
 ### R-API-055 · User avatars
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's requirement of 2026-11-07, in two parts. A user who has not uploaded an avatar gets a generated robot avatar in
-the UI (R-UI-051); the UI bundles the generator and loads nothing from outside trove's origin. A user can upload an avatar,
+the UI (R-UI-051); the UI bundles the generator and loads nothing from outside Quader's origin. A user can upload an avatar,
 and the owner fixed its shape: only PNG, JPEG and WebP and never SVG; the server decodes the image and stores a new one; at
-most 1 MiB is accepted; the image is stored as a blob; the `api` role serves it from trove's origin. Everything below that
+most 1 MiB is accepted; the image is stored as a blob; the `api` role serves it from Quader's origin. Everything below that
 the owner did not say is the development agent's decision, recorded as Q-API-207 to Q-API-210, Q-AUTH-195 to Q-AUTH-197 and
 Q-STOR-166, Q-STOR-167.
 
@@ -1879,7 +1879,7 @@ Q-STOR-166, Q-STOR-167.
   `ETag: "<sha256>"` and `Cache-Control: private, max-age=31536000, immutable`: the answer is for a signed-in caller and the
   URL never changes its content (Q-API-209). These replace the headers R-API-017 gives a JSON answer. A digest that is no
   user's avatar, a replaced or removed one included, is `404`; the route reads no other blob of the store. The page's CSP
-  (`img-src 'self' data:`, R-UI-001) admits the URL, which is on trove's origin.
+  (`img-src 'self' data:`, R-UI-001) admits the URL, which is on Quader's origin.
 - **Storage.** The PNG is a blob of the object store, committed by the protocol of R-STOR-005 and deduplicated; the table
   `user_avatars` names it for the user, with `ON DELETE CASCADE` from the user (Q-STOR-166, Q-STOR-167). A replaced or removed
   avatar's blob is queued for collection by the reference triggers (R-STOR-024); deleting a user does the same. The
@@ -1887,7 +1887,7 @@ Q-STOR-166, Q-STOR-167.
 - **Audit.** `user.avatar.set` (`details.source` `self`, `sha256`, `size`) and `user.avatar.removed` (`source` `self` or
   `admin`, `sha256`), transactional with the change (Q-AUTH-197). An upload of the image the user already has records nothing.
 - **Who.** A user changes only their own avatar. A service account and a CI token have no avatar and answer `403` on the two
-  `me` routes, and so does a token whose scope is narrower than its owner's rights (`x-trove-owner-rights`, R-API-021, Q-API-213, Q-API-214); a session
+  `me` routes, and so does a token whose scope is narrower than its owner's rights (`x-quader-owner-rights`, R-API-021, Q-API-213, Q-API-214); a session
   and a token that inherits the owner's rights may. An administrator removes, never sets, another user's avatar (Q-AUTH-196). Any authenticated caller reads an
   image (Q-AUTH-195).
 - **Writes from the browser** are session writes: `X-CSRF-Token` is required (R-API-006), `If-Match` is not (the image is
@@ -1929,7 +1929,7 @@ Acceptance criteria:
   `TestR_API_055_AvatarWritesNeedTheCSRFHeaderOfASession`).
 
 ### R-API-056 · The installation's visibility settings
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Owned by [authorization.md](authorization.md) R-AUTHZ-033 (the installation's default level, Q-AUTHZ-264):
 
@@ -1972,7 +1972,7 @@ Acceptance criteria:
   `PATCH`.
 
 ### R-API-057 · The visibility of projects and repositories in the API
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Owned by [authorization.md](authorization.md) R-AUTHZ-033 and R-AUTHZ-035:
 
@@ -1984,7 +1984,7 @@ Owned by [authorization.md](authorization.md) R-AUTHZ-033 and R-AUTHZ-035:
 
 - **The project's answer.** `setProjectVisibility` answers 200 with the project and a member `lowered`: the qualified names of
   the repositories whose levels the change lowered, with their levels before (`[{"repository": "web/npm-public", "before":
-  {"artifacts": "public", "wiki": "internal"}}]`), empty when it lowered none. The answer carries `Trove-Authz-Epoch`
+  {"artifacts": "public", "wiki": "internal"}}]`), empty when it lowered none. The answer carries `Quader-Authz-Epoch`
   (R-AUTHZ-032). 409 `public_not_allowed` while the default endpoint admits no request without a credential; 412 for a
   stale `If-Match`; 403 for an Owner without `projects:write`.
 - **The repository's member.** `visibility` is `{"artifacts": "<level>", "wiki": "<level>"}` in every view of the document,
@@ -2010,12 +2010,12 @@ Acceptance criteria:
   artifacts `public`.
 
 ### R-API-058 · Operations that serve wiki content
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 An operation of the management API that serves only wiki content ([authorization.md](authorization.md) R-AUTHZ-034) carries
-the extension `x-trove-part: wiki` in `api/openapi.yaml`. The document validator accepts the extension only on a `GET`
+the extension `x-quader-part: wiki` in `api/openapi.yaml`. The document validator accepts the extension only on a `GET`
 operation whose permission is the read of a repository's content (the declaration of R-API-029's operations) and refuses it
-elsewhere; it is read into `Operation.Part`, as `x-trove-maintenance` is read into `Operation.MaintenanceAllowed`
+elsewhere; it is read into `Operation.Part`, as `x-quader-maintenance` is read into `Operation.MaintenanceAllowed`
 ([Q-API-247](#q-api-247--the-wiki-part-of-an-operation-is-an-extension-of-the-document-read-into-the-operation)).
 
 - The shared authorization step admits such an operation as it admits the other reads of R-API-029, whose read is decided per
@@ -2026,19 +2026,19 @@ elsewhere; it is read into `Operation.Part`, as `x-trove-maintenance` is read in
 - A member of a management answer that carries wiki content (`hasReadme` of R-API-029, `metadata.docs` of the Ansible format)
   is decided with `MayReadWiki` and is `false` or absent when refused. The format's view adapter returns the wiki members
   marked, so that the API, not the format, drops them.
-- Today's operations with `x-trove-part: wiki`: `getPackageVersionReadme`; the documentation operations of
+- Today's operations with `x-quader-part: wiki`: `getPackageVersionReadme`; the documentation operations of
   [formats/ansible.md](formats/ansible.md) (T-19) join with their requirement.
 - A test walks the document and fails when an operation whose response schema holds a README or a documentation body lacks
   the extension (`TestR_API_058_WikiOperationsAreMarked`).
 
 Acceptance criteria:
 
-- `getPackageVersionReadme` carries `x-trove-part: wiki`; a document with the extension on a `PUT` operation fails to load.
+- `getPackageVersionReadme` carries `x-quader-part: wiki`; a document with the extension on a `PUT` operation fails to load.
 - For a caller who reads the artifacts of `web/npm-public` and not its wiki, `GET …/readme` answers 404 with the body of a
   missing README.
 
 ### R-API-060 · One operation answers the suggestions of the search field
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's task T-22 (2026-11-12): one search field with live suggestions for every caller (R-UI-095 to R-UI-099).
 `GET /api/v1/search/suggestions` answers, in one request, the best matches of a text for each kind the field shows
@@ -2063,7 +2063,7 @@ The owner's task T-22 (2026-11-12): one search field with live suggestions for e
   "description"}`; a package's `name` is its display name and `id` the identifier of `GET /api/v1/packages/{packageId}`
   ([Q-API-271](#q-api-271--the-answer-holds-one-typed-member-per-kind-and-no-cursor)).
 - Not a list of R-API-010: no `cursor`, `nextCursor` or `Link`. The results page reads the lists (R-UI-098).
-- Permission: any caller (`x-trove-permission: public: true`), decided in the handler by R-API-061. Without a credential `401`
+- Permission: any caller (`x-quader-permission: public: true`), decided in the handler by R-API-061. Without a credential `401`
   while no repository's artifacts are `public`, as the lists answer. `kind` `user` or `group` needs `identities:read`; without it
   the answer is `403`, before any lookup and the same for every `q`
   ([Q-API-272](#q-api-272--users-and-groups-need-identitiesread-checked-before-any-lookup)).
@@ -2071,7 +2071,7 @@ The owner's task T-22 (2026-11-12): one search field with live suggestions for e
   ([Q-API-281](#q-api-281--the-suggestions-use-the-read-and-anonymous-classes-and-q-is-2-to-100-characters)).
 - Freshness: the repositories are matched over the grant index of the request (R-AUTHZ-028), on which they are decided anyway, so a
   repository created through another replica is suggested within the propagation bound of R-API-052; projects, packages, users and
-  groups are read from PostgreSQL. `Trove-Authz-Min-Epoch` (R-AUTHZ-032) applies as on every operation.
+  groups are read from PostgreSQL. `Quader-Authz-Min-Epoch` (R-AUTHZ-032) applies as on every operation.
 - `Cache-Control: no-store` (R-API-017).
 
 Acceptance criteria:
@@ -2082,7 +2082,7 @@ Acceptance criteria:
 - The answer carries `RateLimit-Policy: "read";q=200;w=4` with the defaults.
 
 ### R-API-061 · A suggestion names only what the caller may read
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The suggestions are a listing in the sense of [authorization.md](authorization.md) R-AUTHZ-016: they hold only what the caller may
 read, and nothing in the answer depends on an object it may not read. Per kind the rule is the one of that kind's list, on the same
@@ -2124,7 +2124,7 @@ external with `read` on `npm-private`; Frank internal without grants):
 - Twenty packages `button-<n>` added to `npm-private` change neither Frank's answer to `q=button` nor its `more`.
 
 ### R-API-062 · How a suggestion matches and is ranked
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 `q` is trimmed and lower-cased (Unicode simple case folding); its **terms** are its parts between white space.
 
@@ -2151,7 +2151,7 @@ Acceptance criteria:
 - `GET /api/v1/repositories?q=web/npm` lists `web/npm-local`.
 
 ### R-API-063 · The repository list answers named repositories
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 `GET /api/v1/repositories` takes `name`, a qualified name `<project>/<key>`, repeated or comma-separated, at most 50
 ([Q-API-278](#q-api-278--the-repository-list-takes-name)). The answer holds the named repositories the caller may see, in the list's
@@ -2166,7 +2166,7 @@ Acceptance criteria:
 - 51 names answer `400`.
 
 ### R-API-064 · The indexes and the bounds of the suggestions
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Data model ([Q-API-274](#q-api-274--package-names-a-whole-name-prefix-on-a-c-collation-b-tree-and-word-prefixes-on-a-gin-tsvector-without-pg_trgm)),
 in migration `00076_search.sql`:
@@ -2198,7 +2198,7 @@ How each kind is read ([Q-API-273](#q-api-273--repositories-are-matched-over-the
 - A request costs at most a fixed number of statements, independent of the number of matches and of the rows read: the project
   statement, the user and group statements for the kinds asked, and for packages the withheld query of each format that has one,
   the plan setting, statement A and, when A leaves room, statement B.
-- trove does not create `pg_trgm` (migration 00017), so an infix inside a word of a name (`it` in `ui-kit`) is not suggested; the
+- Quader does not create `pg_trgm` (migration 00017), so an infix inside a word of a name (`it` in `ui-kit`) is not suggested; the
   results page's `GET /api/v1/packages?q=` finds it.
 
 Acceptance criteria:
@@ -2264,7 +2264,7 @@ grammar, lifetimes, revocation):
 | POST | `/api/v1/projects/{projectKey}/service-accounts/{name}/tokens` | Create a token of a project's service account; for an Owner without `identities:write` never non-expiring, `admin: false`, no `system` item ([authorization.md](authorization.md) R-AUTHZ-026, Q-AUTHZ-177) | `admin`, or Owner of the project; recent authentication for sessions |
 | GET | `/api/v1/tokens` | List own tokens; all with `tokens:read`; an Owner also the tokens of its project's service accounts (`project=<key>`) | `self`, `tokens:read`, Owner |
 | GET | `/api/v1/tokens/{id}`, `/api/v1/tokens/current` | Read one token | `{id}`: owner, `tokens:read`; `current`: the presenting token itself, CI tokens included ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-013) |
-| DELETE | `/api/v1/tokens/{id}`, `/api/v1/tokens/current` | Revoke | `{id}`: owner, owners of the service account (P1), an Owner of the project of the service account, `tokens:revoke`, `admin`; `current`: the presenting token itself, of every type, CI tokens (`trv_cit_`) included (R-AUTH-029; [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-013) |
+| DELETE | `/api/v1/tokens/{id}`, `/api/v1/tokens/current` | Revoke | `{id}`: owner, owners of the service account (P1), an Owner of the project of the service account, `tokens:revoke`, `admin`; `current`: the presenting token itself, of every type, CI tokens (`qdr_cit_`) included (R-AUTH-029; [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-013) |
 | DELETE | `/api/v1/users/me/tokens` | Revoke all own tokens | `self` |
 | DELETE | `/api/v1/service-accounts/{name}/tokens` | Revoke all tokens of a service account of no project | `admin` |
 | DELETE | `/api/v1/projects/{projectKey}/service-accounts/{name}/tokens` | Revoke all tokens of a project's service account | `admin`, `tokens:revoke`, or Owner of the project |
@@ -2276,12 +2276,12 @@ API conventions that apply: the secret appears only in the create and rotate ans
 
 Acceptance criteria:
 
-- `curl -s -X POST -H "Authorization: Bearer $TROVE_TOKEN" -H 'Content-Type: application/json' -d '{"description":"t","ttlSeconds":3600}' "$TROVE_URL/api/v1/tokens"`
-  returns a value starting with `trv_pat_` (field names per
+- `curl -s -X POST -H "Authorization: Bearer $QUADER_TOKEN" -H 'Content-Type: application/json' -d '{"description":"t","ttlSeconds":3600}' "$QUADER_URL/api/v1/tokens"`
+  returns a value starting with `qdr_pat_` (field names per
   [identity-and-authentication.md](identity-and-authentication.md)); `GET /api/v1/tokens/{id}`
   never contains it.
 - `POST /api/v1/tokens/revoke` without credentials and with a valid token value revokes it.
-- `DELETE /api/v1/tokens/current` with a `trv_cit_` token answers 204, and the same token then gets
+- `DELETE /api/v1/tokens/current` with a `qdr_cit_` token answers 204, and the same token then gets
   401 on every replica within 2 s (R-AUTH-023, R-API-052).
 - A token whose scope is `{"system": ["tokens:revoke"]}` gets 403 `forbidden` from
   `POST /api/v1/tokens/{id of another user's PAT}/rotate` and 204 from `DELETE` of the same ID
@@ -2306,8 +2306,8 @@ Owned by [authorization.md](authorization.md):
 | GET | `/api/v1/role-bindings` | List bindings; filters `role`, `principal` | `roles:read` |
 | PUT, DELETE | `/api/v1/role-bindings/{role}/{principalRef}` | Bind (idempotent) or unbind; 409 `last_admin` | `roles:write`; recent authentication |
 
-Every successful write of a policy or a role binding answers with `Trove-Authz-Epoch`, which a
-later request names in `Trove-Authz-Min-Epoch` to see the change on any replica (R-API-052,
+Every successful write of a policy or a role binding answers with `Quader-Authz-Epoch`, which a
+later request names in `Quader-Authz-Min-Epoch` to see the change on any replica (R-API-052,
 R-AUTHZ-032).
 
 Acceptance criteria:
@@ -2361,7 +2361,7 @@ Owned by [gitlab-ci-oidc.md](gitlab-ci-oidc.md):
 | POST, DELETE | `/api/v1/ci/issuers/{issuer}/delegations…` | Delegate mapping management for a scope to a group (P1; covers project-scoped mappings, ADMAPI-030) | `admin` |
 | GET | `/api/v1/ci/issuances`, `/api/v1/ci/issuances/{tokenId}` | Issued CI tokens with job context | `admin`, `tokens:read` |
 | POST | `/api/v1/ci/issuances/revoke` | Revoke matching CI tokens | `admin`, `tokens:revoke` |
-| POST | `/api/v1/auth/oidc/token` | Exchange a CI ID token for a `trv_cit_` token (INV-10) | anonymous; the ID token is the proof |
+| POST | `/api/v1/auth/oidc/token` | Exchange a CI ID token for a `qdr_cit_` token (INV-10) | anonymous; the ID token is the proof |
 
 The permission column names the role that holds the capabilities of the operations: the issuer, mapping,
 dry-run and snippet operations declare `ci:read` (the reads, the dry run and the snippet) and `ci:write` (the writes,
@@ -2373,7 +2373,7 @@ pasted tokens in the browser (R-UI-036). The exchange speaks OAuth to OAuth clie
 carry `Cache-Control: no-store` and the field names of RFC 8693, and its errors are OAuth error
 responses ([RFC 6749 §5.2](https://www.rfc-editor.org/rfc/rfc6749#section-5.2),
 `Content-Type: application/json`, `Cache-Control: no-store`) with `error` and
-`error_description` plus trove's members `reason` (left out under
+`error_description` plus Quader's members `reason` (left out under
 `ci.exchange.expose_reason: false`) and `requestId`, not problem details (R-API-009). A rejected
 subject token answers 400 `invalid_request` ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-008,
 Q-CI-8).
@@ -2469,7 +2469,7 @@ their favour.
     the pool of [ha-and-helm.md](ha-and-helm.md) R-HA-062;
   - `state` (`starting`, `ready`, `unready`, `draining`) and `lost`;
   - `node`, the Kubernetes node name from the downward API (`spec.nodeName` through the
-    environment variable `TROVE_NODE_NAME`), `null` outside Kubernetes;
+    environment variable `QUADER_NODE_NAME`), `null` outside Kubernetes;
   - `checks`, the status of each gating and reported check (`pass`, `fail`, `degraded`), and
     `degraded`, the reported checks that fail (R-OPS-001);
   - `valkey`, the replica's view of Valkey as one nested object:
@@ -2477,7 +2477,7 @@ their favour.
     | Field | Content |
     |---|---|
     | `state` | `available` or `degraded` |
-    | `reason` | `null`, or the reason of the `valkey` check in R-OPS-001's vocabulary: an error kind of `trove_valkey_errors_total` (`timeout`, `connection`, `readonly`, `auth`, `tls`, `oom`), `no_primary` or `unsupported_version` |
+    | `reason` | `null`, or the reason of the `valkey` check in R-OPS-001's vocabulary: an error kind of `quader_valkey_errors_total` (`timeout`, `connection`, `readonly`, `auth`, `tls`, `oom`), `no_primary` or `unsupported_version` |
     | `circuit` | The state of the replica's Valkey circuit breaker ([ha-and-helm.md](ha-and-helm.md) R-HA-057), for example `closed` or `open` |
     | `primary` | The primary address (host and port) the replica's client currently uses; `null` while it has none |
     | `sentinelsReachable`, `sentinelsConfigured` | The Sentinels this replica reaches, and the number configured |
@@ -2498,7 +2498,7 @@ their favour.
   - the `backup` block: `expectedIntervalSeconds`, `lastSuccessAt`, `overdue` and `lastRunState`,
     read from `backup_run` (Q-API-205). `overdue` follows the rule of R-API-050 (1.5 × the
     expected interval), so this block, the backup summary of R-API-050, the UI and
-    `TroveBackupStale` agree.
+    `QuaderBackupStale` agree.
 - **Drain safety.** The screen decides whether a role is drain-safe from the items of
   `/system/replicas`: its ready replicas that are not `lost`, and their distinct nodes (R-UI-038).
   `replicas.roles.<role>.nodes` is the installation-wide summary for scripts and monitoring.
@@ -2555,7 +2555,7 @@ of R-OPS-019 (one path per function, Q-API-9 and R-API-020):
 
 Acceptance criteria:
 
-- `curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' -d '{"dryRun":true}' "$TROVE_URL/api/v1/system/tasks/gc-full/run"`
+- `curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' -d '{"dryRun":true}' "$QUADER_URL/api/v1/system/tasks/gc-full/run"`
   answers 202; `POST …/system/tasks/gc/run` while it runs answers 409 with the same job; after the
   job ends, `GET /api/v1/system/jobs?kind=gc-full` lists it with its result counts.
 
@@ -2648,8 +2648,8 @@ list) with `/{id}`, `/{id}/download` and DELETE. Leases and the other advisory l
 PostgreSQL ([architecture.md](architecture.md) R-ARCH-017), so one query answers for the whole
 cluster. The flight locks that collapse remote fetches live in Valkey (R-ARCH-033), last at most
 `cluster.flight_lock_ttl` past their holder's last extension and carry only hashes, so the lock
-list does not show them; their metrics (`trove_flight_lock_lost_total`,
-`trove_flight_lock_bypass_total`) are the diagnostic. R-OPS-026 lists the PostgreSQL category
+list does not show them; their metrics (`quader_flight_lock_lost_total`,
+`quader_flight_lock_bypass_total`) are the diagnostic. R-OPS-026 lists the PostgreSQL category
 `fetch` as retired, and R-ARCH-017 keeps its number reserved.
 
 Acceptance criteria:
@@ -2690,7 +2690,7 @@ and groups are members with a role, [Q-AUTHZ-206](authorization.md#q-authz-206--
 | PUT | `/api/v1/projects/{projectKey}` | Replace display name and description; `If-Match` required | `projects:write`, or Owner; recent authentication |
 | DELETE | `/api/v1/projects/{projectKey}` | Delete when empty (no repository, service account or CI mapping) | `projects:write`; recent authentication |
 | GET | `/api/v1/projects/{projectKey}/members` | The members (users and groups) with their roles | `projects:read`, or a member |
-| PUT | `/api/v1/projects/{projectKey}/members/{principalRef}` | Add a member or change its role, `{"role": "developer"}` (`reader`, `developer`, `maintainer` or `owner`); 409 `last_owner` when it demotes the last Owner ([Q-AUTHZ-217](authorization.md#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-trove)) | `projects:write`, or Owner; recent authentication |
+| PUT | `/api/v1/projects/{projectKey}/members/{principalRef}` | Add a member or change its role, `{"role": "developer"}` (`reader`, `developer`, `maintainer` or `owner`); 409 `last_owner` when it demotes the last Owner ([Q-AUTHZ-217](authorization.md#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-quader)) | `projects:write`, or Owner; recent authentication |
 | DELETE | `/api/v1/projects/{projectKey}/members/{principalRef}` | Remove a member; 409 `last_owner` for the last Owner | as `PUT` |
 | GET | `/api/v1/projects/{projectKey}/principals?q=&kind=&limit=` | The users and groups whose name starts with `q`, to name as members and in policies | `identities:read`, or Owner |
 
@@ -2700,7 +2700,7 @@ tests (R-API-022 to R-API-030), service accounts and their tokens (R-API-031, R-
 mappings (R-API-035). The instance-wide lists of repositories, permission policies and service accounts carry each
 item's `project` and accept `project=` (webhooks and retention policies when they exist). `GET /api/v1/authz/me`
 lists the caller's memberships with their roles (`projects`). Global custom roles and environments are P2 there
-(see Deferred). Project writes, members and the move of a repository included, answer with `Trove-Authz-Epoch`
+(see Deferred). Project writes, members and the move of a repository included, answer with `Quader-Authz-Epoch`
 (R-API-052, R-AUTHZ-032).
 
 Acceptance criteria:
@@ -2713,7 +2713,7 @@ Acceptance criteria:
   `developer` (201), and removing herself while she is the only Owner answers 409 `last_owner`.
 
 ### R-API-048 · Package ownership surface
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 Package ownership (who may publish new versions of a package name) is owned by
 [authorization.md](authorization.md):
@@ -2725,7 +2725,7 @@ percent-encoded in `{packageName}` (`%40team-a%2Fui`); the router decodes the se
 
 Acceptance criteria:
 
-- `curl -s -H "Authorization: Bearer $TROVE_TOKEN" "$TROVE_URL/api/v1/projects/web/repositories/npm-local/packages/%40team-a%2Fui/owners"`
+- `curl -s -H "Authorization: Bearer $QUADER_TOKEN" "$QUADER_URL/api/v1/projects/web/repositories/npm-local/packages/%40team-a%2Fui/owners"`
   answers 200 for a reader of `web/npm-local`.
 
 ### R-API-049 · Stored-secret key-ring status
@@ -2735,7 +2735,7 @@ The key ring that seals stored secrets is configured through mounted files (R-AR
 [architecture.md](architecture.md)) and rotated in steps (R-HA-027 in
 [ha-and-helm.md](ha-and-helm.md)). This requirement makes its state readable through the API, so
 the UI, monitoring and an operator can check and finish a rotation without a shell in a pod, which
-would expose the key files themselves (Q-API-8). `trove admin secrets status` and this endpoint
+would expose the key files themselves (Q-API-8). `quader admin secrets status` and this endpoint
 share one implementation in `internal/secrets`; this page owns the payload.
 
 | Method | Path | Purpose | Permission |
@@ -2745,15 +2745,15 @@ share one implementation in `internal/secrets`; this page owns the payload.
 
 ```json
 {
-  "answeredBy": "trove-web-6f9c7d8b5-x2v4q",
+  "answeredBy": "quader-web-6f9c7d8b5-x2v4q",
   "activeKeyId": "2026-10",
   "keys": [
     {"id": "2026-10", "active": true, "sealedValues": 14, "canary": "ok"},
     {"id": "2026-04", "active": false, "sealedValues": 3, "canary": "ok"}
   ],
   "replicas": [
-    {"name": "trove-web-6f9c7d8b5-x2v4q", "role": "web", "activeKeyId": "2026-10", "keyIds": ["2026-04", "2026-10"]},
-    {"name": "trove-worker-7d4b9c6f8-q8n2m", "role": "worker", "activeKeyId": "2026-10", "keyIds": ["2026-04", "2026-10"]}
+    {"name": "quader-web-6f9c7d8b5-x2v4q", "role": "web", "activeKeyId": "2026-10", "keyIds": ["2026-04", "2026-10"]},
+    {"name": "quader-worker-7d4b9c6f8-q8n2m", "role": "worker", "activeKeyId": "2026-10", "keyIds": ["2026-04", "2026-10"]}
   ],
   "ringsCompatible": true,
   "lastReencryption": {"jobId": "01933b2a-7c41-7d1e-9a52-3f0e4b8c2d11", "state": "succeeded", "finishedAt": "2026-10-28T12:40:02.118Z"}
@@ -2788,7 +2788,7 @@ share one implementation in `internal/secrets`; this page owns the payload.
   may not be listed yet. The start-up canary of R-ARCH-021 stays the hard guard; this endpoint and
   the task's refusal catch the mixed-ring state of a running cluster, which the canary cannot see.
 - Monitoring reads the same state as metrics on the operations listener:
-  `trove_secrets_sealed_values{key_id}` and `trove_secrets_key_rings_compatible` (0 or 1), defined
+  `quader_secrets_sealed_values{key_id}` and `quader_secrets_key_rings_compatible` (0 or 1), defined
   by [operations-and-observability.md](operations-and-observability.md).
 
 Acceptance criteria:
@@ -2797,7 +2797,7 @@ Acceptance criteria:
   that A's ring lacks, `GET /api/v1/system/encryption` shows `ringsCompatible: false`, and
   `POST /api/v1/system/tasks/secrets-reencrypt/run` answers 409 `key_ring_incompatible`.
 - After the rotation steps of R-HA-027 and a successful re-encryption run, `keys` reports
-  `sealedValues: 0` for the old key ID, the same count that `trove admin secrets status` prints.
+  `sealedValues: 0` for the old key ID, the same count that `quader admin secrets status` prints.
 - No answer of the endpoint contains the base64 content of any key file.
 
 ### R-API-050 · Backup runs, status and stored backups
@@ -2830,9 +2830,9 @@ Run (an item of the list):
   "backupId": "20261028T020000Z-7f3a",
   "state": "copying",
   "trigger": "schedule",
-  "pod": "trove-backup-29885880-x7k2q",
-  "troveVersion": "0.4.0",
-  "target": "s3://trove-backups/trove",
+  "pod": "quader-backup-29885880-x7k2q",
+  "quaderVersion": "0.4.0",
+  "target": "s3://quader-backups/quader",
   "startedAt": "2026-10-28T02:00:04.112Z",
   "heartbeatAt": "2026-10-28T02:41:19.870Z",
   "leaseExpired": false,
@@ -2862,37 +2862,37 @@ Summary:
   "overdue": false,
   "lastFailure": null,
   "active": {"id": "01933c4e-2f10-7b3a-9c1d-5e8f7a6b4c21", "operation": "create", "state": "copying", "startedAt": "2026-10-28T02:00:04.112Z", "leaseExpired": false},
-  "target": "s3://trove-backups/trove",
+  "target": "s3://quader-backups/quader",
   "retention": {"keepLast": 7, "keepWithinSeconds": 0},
   "storedBackups": {
     "asOf": "2026-10-27T02:47:31.009Z",
     "runId": "01933a1b-8c22-7e41-b0f3-2a6d9e4c7b10",
     "items": [
-      {"backupId": "20261027T020000Z-1c9e", "snapshotAt": "2026-10-27T02:00:08.913Z", "troveVersion": "0.4.0", "schemaStep": 42, "databaseBytes": 183500800, "blobCount": 51234, "blobBytes": 412316860416, "damaged": false}
+      {"backupId": "20261027T020000Z-1c9e", "snapshotAt": "2026-10-27T02:00:08.913Z", "quaderVersion": "0.4.0", "schemaStep": 42, "databaseBytes": 183500800, "blobCount": 51234, "blobBytes": 412316860416, "damaged": false}
     ]
   },
   "restoredFrom": null,
-  "manualRun": {"namespace": "trove", "cronJob": "trove-backup"}
+  "manualRun": {"namespace": "quader", "cronJob": "quader-backup"}
 }
 ```
 
 - `expectedIntervalSeconds` is `backup.expected_interval`, the value behind
-  `trove_backup_expected_interval_seconds` and the alert `TroveBackupStale` (R-BAK-014).
+  `quader_backup_expected_interval_seconds` and the alert `QuaderBackupStale` (R-BAK-014).
 - `lastSuccessAt` is `finished_at` of the newest `completed` or `completed_with_warnings` create
   run. `overdue` is true when it is older than 1.5 × the expected interval, the condition on which
-  `TroveBackupStale` fires, so API, UI and alert agree. A mark at 1 × would flap on every
+  `QuaderBackupStale` fires, so API, UI and alert agree. A mark at 1 × would flap on every
   schedule whose runs vary in length: a daily run that finishes a few minutes later than the day
   before is older than 24 h for those minutes. With no successful run at all, `lastSuccessAt` and
   `overdue` are `null`, and the UI shows "No backup yet" as a warning.
 - `lastFailure` (`runId`, `at`, `code`) is the newest `failed` or `abandoned` create run, or an
   active create run whose lease has expired, when it is newer than the last success; `interrupted`
   runs never count, because a drain is not a failure. This is the same rule as
-  `trove_backup_last_failure_timestamp_seconds` and `TroveBackupFailed`.
+  `quader_backup_last_failure_timestamp_seconds` and `QuaderBackupFailed`.
 - `storedBackups` and `retention` come from the newest create or delete run that listed the
   target: the complete backups it found after its own deletions, and the `keep_last` and
   `keep_within` it applied (Q-API-11; the run result's `retained` and `retention`, cross-page to
   R-BAK-016). `asOf` and `runId` name that run, so the view says how old it is. Backups written or
-  removed outside trove appear only after the next run; `trove backup list` reads the target
+  removed outside Quader appear only after the next run; `quader backup list` reads the target
   itself (R-BAK-018). `null` until such a run exists. The run is the one with the newest finish
   among the 25 newest successful create and delete runs of each operation that recorded a
   `retention` (a create with `--no-prune` records none, Q-BAK-41).
@@ -2906,8 +2906,8 @@ Summary:
 ```yaml
 backup:
   manual_run:
-    namespace: ""        # default (proposed): empty; the chart sets the release namespace, example: trove
-    cronjob: ""          # default (proposed): empty; the chart sets <fullname>-backup, example: trove-backup
+    namespace: ""        # default (proposed): empty; the chart sets the release namespace, example: quader
+    cronjob: ""          # default (proposed): empty; the chart sets <fullname>-backup, example: quader-backup
 ```
 
 Acceptance criteria:
@@ -2923,7 +2923,7 @@ Acceptance criteria:
   `lastFailure`.
 - With `backup.expected_interval: 1h` and a test clock, `overdue` is `false` 80 minutes after the
   last success and `true` at 91 minutes, the same moments at which a `promtool` test of
-  `TroveBackupStale` is silent and fires.
+  `QuaderBackupStale` is silent and fires.
 - `GET /api/v1/system/backups/summary` without `system.read` answers 403. No answer of these
   endpoints contains a value of the target's credentials (a test greps for the fixture's access
   key ID and secret).
@@ -2974,11 +2974,11 @@ Priority: **MVP** · Covers: UI-058
   ([Angular security guide](https://angular.dev/best-practices/security)), and without
   `angular#components` the CDK cannot insert SVG markup. Sign-in navigates to
   `/auth/…` and the identity provider by top-level navigation, which `form-action` does not govern.
-- The UI's own code and assets come from nothing but trove's origin (fonts and icons self-hosted,
+- The UI's own code and assets come from nothing but Quader's origin (fonts and icons self-hosted,
   no analytics, no CDN), so it works in air-gapped installations; the only foreign requests are
   README images from origins an operator listed (R-UI-008). From P1, with `server.content_base_url`
-  set, package content opened or shown in the browser loads from trove's content origin
-  (R-ARCH-029); that origin is trove's own, not a foreign one.
+  set, package content opened or shown in the browser loads from Quader's content origin
+  (R-ARCH-029); that origin is Quader's own, not a foreign one.
 - Links to package content (R-ARCH-007, R-ARCH-029 in [architecture.md](architecture.md)):
   - The UI never assembles a `/files/` or `/api/<format>/` URL from strings. "Copy
     download URL" uses the `downloadUrl` of the item or the version file, and the UI's own downloads and file links use
@@ -2992,16 +2992,16 @@ Priority: **MVP** · Covers: UI-058
     `PUT /files/{projectKey}/{repoKey}/{path}` of R-API-025. It always targets the UI's own origin, because the
     content origin serves only `GET` and `HEAD` (R-ARCH-029), and it is built in one place, the
     `files` client in `web/src/app/api/`, like every other API call.
-- Component library (Q-UI-1, replaced by Q-UI-126): trove's own controls, plain HTML elements with the classes of
+- Component library (Q-UI-1, replaced by Q-UI-126): Quader's own controls, plain HTML elements with the classes of
   `web/src/styles/_controls.scss`, on the Angular CDK in the release line of the Angular major in use (22.x,
   pinned once in the lockfile with the rest of Angular) for the behaviour of dialogs, menus and overlays, plus
   `@angular/aria` for the widgets the CDK lacks (the tabs, the tree of R-UI-010 and the listboxes of the
   member editor, R-UI-022). No other component suite is added, and `@angular/material` is not a dependency.
-  Colours, type and measures are trove's CSS custom properties (`web/src/styles/_tokens.scss`) for both themes.
+  Colours, type and measures are Quader's CSS custom properties (`web/src/styles/_tokens.scss`) for both themes.
   Icons come from a self-hosted icon font used through
   ligatures (`font-src 'self'`). The one exception is the icon of a package format, which is the logo of the
   format's owner where the owner's terms allow it: the owner's unchanged file under `web/public/formats/`, shown as an
-  `<img>` (`img-src 'self'`) by `<trove-format-icon>` (Q-UI-225, Q-UI-226). SVG icon registration is not used,
+  `<img>` (`img-src 'self'`) by `<quader-format-icon>` (Q-UI-225, Q-UI-226). SVG icon registration is not used,
   because it takes URLs only as `SafeResourceUrl` values from a security bypass (banned by
   R-UI-046) and inserts the SVG through the Trusted Types policy `angular#components`, which this
   CSP does not list.
@@ -3016,13 +3016,13 @@ Priority: **MVP** · Covers: UI-058
 
 Acceptance criteria:
 
-- `curl -sI "$TROVE_URL/ui/en/"` shows the CSP with a nonce that differs between two requests.
+- `curl -sI "$QUADER_URL/ui/en/"` shows the CSP with a nonce that differs between two requests.
 - A Playwright test records every request of a full journey (with no image origins and no content
   origin configured) and finds none to a foreign origin and no `securitypolicyviolation` event.
 - The same journey shows no `fetch` or XHR request to a `/files/` or `/api/<format>/` path other than
   the upload of R-UI-012.
-- With `server.content_base_url: https://trove-content.example.net` (# example, P1), the CSP's
-  `img-src` names `https://trove-content.example.net`, and a README with an image from its own
+- With `server.content_base_url: https://quader-content.example.net` (# example, P1), the CSP's
+  `img-src` names `https://quader-content.example.net`, and a README with an image from its own
   package renders that image without a `securitypolicyviolation` event.
 - `grep -rn "bypassSecurityTrust\|addSvgIcon" web/src` finds nothing.
 - The production build fails when the initial bundle exceeds the budget.
@@ -3050,7 +3050,7 @@ Priority: **MVP** · Covers: UI-001, UI-004
   befinden und von dort ausgeliefert werden."): a user without an uploaded avatar gets a generated robot in DiceBear's
   "Bottts" style, the same one for the same user everywhere and in every session, seeded with the user's ID
   ([Q-UI-166](#q-ui-166--the-avatar-is-seeded-with-the-id-of-the-principal)). DiceBear's core and the Bottts style are
-  dependencies of the UI, bundled by its build and served by trove with the rest of the UI; the browser renders the SVG
+  dependencies of the UI, bundled by its build and served by Quader with the rest of the UI; the browser renders the SVG
   itself and shows it as a data URI, and no request goes to DiceBear's HTTP service, a CDN or any other host at runtime
   ([Q-UI-167](#q-ui-167--the-robot-is-rendered-in-the-browser-from-the-bundled-bottts-style-and-loaded-as-a-lazy-chunk)). An
   uploaded avatar takes precedence over the robot (the avatar component takes an optional image URL; upload and removal
@@ -3203,7 +3203,7 @@ selected tab and selected version live in query parameters.
 - Route guards only shape navigation; the API decides (R-UI-005). When a screen's first API call
   answers 403, the screen shows a "no access" state with the missing permission and, for callers
   with `policies:read`, a link to the explainer.
-- Every route sets a page title ("Packages – trove") through a `TitleStrategy`.
+- Every route sets a page title ("Packages – Quader") through a `TitleStrategy`.
 
 Acceptance criteria:
 
@@ -3386,7 +3386,7 @@ client.
 |---|---|
 | Elements | `h1`–`h6`, `p`, `br`, `hr`, `blockquote`, `ul`, `ol`, `li`, `dl`, `dt`, `dd`, `pre`, `code`, `kbd`, `samp`, `em`, `strong`, `del`, `ins`, `sup`, `sub`, `a`, `img`, `table`, `thead`, `tbody`, `tfoot`, `tr`, `th`, `td`, `details`, `summary`, and disabled task-list checkboxes |
 | `href` on `a` | Schemes `http`, `https`, `mailto`, and in-page `#` fragments; relative links that cannot be resolved are reduced to their text; links get `rel="nofollow noopener noreferrer"` and no `target` |
-| `img` | `src` per the image policy (Q-UI-6): an `https` image whose origin is listed in `ui.readme.external_image_origins` is kept (the UI document's `Referrer-Policy: same-origin` of R-UI-001 keeps the page URL, which names the package, from reaching that host); every other external image is replaced by a link "External image: <alt>"; `data:` sources dropped; sources that resolve to trove's own origin, relative or absolute, dropped as well, except image URLs the renderer itself generates for files embedded in the package, so a README cannot make the viewer's browser send authenticated requests to package or file endpoints ([authorization.md](authorization.md) R-AUTHZ-008). The renderer builds those URLs only through `LinkBuilder` ([architecture.md](architecture.md) R-ARCH-007), never from strings, so from P1 a content origin (R-ARCH-029) receives them without a renderer change; `alt`, `width`, `height` |
+| `img` | `src` per the image policy (Q-UI-6): an `https` image whose origin is listed in `ui.readme.external_image_origins` is kept (the UI document's `Referrer-Policy: same-origin` of R-UI-001 keeps the page URL, which names the package, from reaching that host); every other external image is replaced by a link "External image: <alt>"; `data:` sources dropped; sources that resolve to Quader's own origin, relative or absolute, dropped as well, except image URLs the renderer itself generates for files embedded in the package, so a README cannot make the viewer's browser send authenticated requests to package or file endpoints ([authorization.md](authorization.md) R-AUTHZ-008). The renderer builds those URLs only through `LinkBuilder` ([architecture.md](architecture.md) R-ARCH-007), never from strings, so from P1 a content origin (R-ARCH-029) receives them without a renderer change; `alt`, `width`, `height` |
 | `id`, `name` | Kept only when prefixed `user-content-` (prevents DOM clobbering) |
 | `class` | Only `language-*` on `code` |
 | Table attributes | `align` with `left`, `center`, `right`; `colspan`, `rowspan` |
@@ -3403,7 +3403,7 @@ client.
   and does not know `vbscript:`; the component therefore finishes the job after binding: it drops a link
   target that is not a fragment, `http`, `https` or `mailto`, drops an image whose source is neither
   `https` nor a path of this origin, sets `rel="nofollow noopener noreferrer"` and no `target` on every
-  link that leaves trove, and derives the anchor `user-content-<slug>` of every heading itself, with the
+  link that leaves Quader, and derives the anchor `user-content-<slug>` of every heading itself, with the
   rule of the server's renderer (lower case, punctuation removed, spaces to hyphens, a repeated name
   numbered `-1`, `-2`), so that the table-of-contents links the server wrote resolve (Q-UI-71). The server
   and the component implement one rule, JavaScript's `trim`, `\s` and `toLowerCase`, and test one corpus
@@ -3416,7 +3416,7 @@ client.
 - External image origins (Q-UI-6) are exact `https` origins (scheme, host, optional port; no
   path, no wildcard), validated at start-up; an invalid entry stops start-up, and so does an entry that
   is an origin of this installation (`server.base_url`, `additional_base_urls`, an endpoint's `base_url`):
-  an image from it would make the viewer's browser send authenticated requests to trove. Images of files
+  an image from it would make the viewer's browser send authenticated requests to Quader. Images of files
   embedded in the package (rendered through `LinkBuilder`) are P1 (R-ARCH-029) and not built. The same list feeds
   the sanitizer and the CSP `img-src` of R-UI-001, so the two can never disagree. Because the
   rendered HTML depends on the list, the README cache of R-API-029 stores the list's hash and
@@ -3447,7 +3447,7 @@ Acceptance criteria:
   UI's CSP names exactly that origin in `img-src`, and an image from an unlisted host in the same
   README is still a link.
 - A README containing `![x](/api/npm/web/npm-remote/left-pad)` or
-  `<img src="https://trove.example.com/files/web/generic-local/x.png">` renders without an `img`
+  `<img src="https://quader.example.com/files/web/generic-local/x.png">` renders without an `img`
   element for either source, and viewing it causes no request to those paths.
 
 ### R-UI-009 · Install command panel
@@ -3475,7 +3475,7 @@ Acceptance criteria:
   client setup installs that version.
 
 ### R-UI-052 · Repository content page
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 `/projects/{project}/repositories/{key}` is what a repository holds, on the logical level (Q-UI-216); its settings moved to
 `…/settings`. One shell serves every format; what differs per format is a small table of words and columns, not a screen per format
@@ -3496,7 +3496,7 @@ Priority: **MVP** · Covers: trove-only
   advisories (`FormatDescriptor.vulnerabilityScanning`, a format with the vulnerability adapter, R-VULN-009, or the image scanning, R-VULN-033)
   and only when the answer carries grades (Q-UI-377); for a format that is not scanned a muted sentence says so (Debian today). It shows
   the grade of the item's latest version in this repository (`vulnerabilityGrade` from `include=vulnerabilities`, R-VULN-039, Q-VULN-154)
-  as `<trove-grade>` (R-UI-094) and sorts by grade (`sort=grade`, worst first as `-grade`, in the browser, Q-UI-373). The versions list
+  as `<quader-grade>` (R-UI-094) and sorts by grade (`sort=grade`, worst first as `-grade`, in the browser, Q-UI-373). The versions list
   of an item is `…/versions?repository=…` with its `…/vulnerabilities?repository=…` report, one request each per opened item.
 - The row of an item opens in place (`collapse-region`) to its versions: for an image, the tags with digest (`include=digest`), size and
   pushed time; for a package, its versions with size and published time; each with the grade of the version in this repository.
@@ -3715,10 +3715,10 @@ Priority: **MVP** · Covers: UI-021, UI-022, UI-023
      `nuget.config`; Docker CLI with Buildx, Podman);
   3. repository: readable repositories of that format, each named with its project (`web/npm-all`), virtual
      repositories marked as recommended, publish availability shown per repository.
-- The credential is one line under the choices: by default "The snippets read your token from the variable TROVE_TOKEN."
+- The credential is one line under the choices: by default "The snippets read your token from the variable QUADER_TOKEN."
   with **Create a token to put into the variable**. The ways to give it, and the place to install from where a Bastion can be
   chosen (R-BAS-007), are a closed **More options** (the disclosure of Q-UI-322). The credentials, one of:
-     - **Reference an environment variable** (default): snippets reference `TROVE_TOKEN`
+     - **Reference an environment variable** (default): snippets reference `QUADER_TOKEN`
        (R-API-030 `credentials=env`); no secret appears on screen; a link leads to creating a token.
      - **Create a token for this setup**: creates a personal token (R-API-032) described as "Client
        setup: <client>, <repository>, <date>", scoped to the chosen repository with `read` (plus
@@ -3750,13 +3750,13 @@ Acceptance criteria:
 
 - Playwright: choosing npm, `npm-all` and "Create a token for this setup", downloading `.npmrc` and
   running `npm install @team-a/ui` with it in a `node:24` container succeeds.
-- The default choice produces a `.npmrc` containing the literal `${TROVE_TOKEN}`.
+- The default choice produces a `.npmrc` containing the literal `${QUADER_TOKEN}`.
 - Pasting a token with a wrong checksum shows a validation error and sends no request.
 
 ### R-UI-017 · npm client instructions
 Priority: **MVP** · Covers: UI-024
 
-Snippets for `npm-all` at `https://trove.example.com` (# example). The registry URL keeps its
+Snippets for `npm-all` at `https://quader.example.com` (# example). The registry URL keeps its
 trailing slash; the credential key is the same URL without scheme, which is how npm matches
 credentials to a registry ([npmrc](https://docs.npmjs.com/cli/v11/configuring-npm/npmrc)); npm
 expands `${…}` in `.npmrc`. The protocol behind the URLs is owned by
@@ -3765,38 +3765,38 @@ expands `${…}` in `.npmrc`. The protocol behind the URLs is owned by
 Project `.npmrc` for npm, pnpm and Yarn classic:
 
 ```ini
-registry=https://trove.example.com/api/npm/web/npm-all/
-//trove.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}
+registry=https://quader.example.com/api/npm/web/npm-all/
+//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}
 ```
 
-Scoped variant (only `@team-a` packages from trove):
+Scoped variant (only `@team-a` packages from Quader):
 
 ```ini
-@team-a:registry=https://trove.example.com/api/npm/web/npm-all/
-//trove.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}
+@team-a:registry=https://quader.example.com/api/npm/web/npm-all/
+//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}
 ```
 
 User-level configuration through the CLI (the shell expands the variable, so the token is written
 into `~/.npmrc`):
 
 ```shell
-npm config set registry=https://trove.example.com/api/npm/web/npm-all/
-npm config set "//trove.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}"
+npm config set registry=https://quader.example.com/api/npm/web/npm-all/
+npm config set "//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}"
 ```
 
 Yarn Berry `.yarnrc.yml` ([yarnrc](https://yarnpkg.com/configuration/yarnrc); Yarn expands
 `${…}`):
 
 ```yaml
-npmRegistryServer: "https://trove.example.com/api/npm/web/npm-all/"
+npmRegistryServer: "https://quader.example.com/api/npm/web/npm-all/"
 npmAlwaysAuth: true
-npmAuthToken: "${TROVE_TOKEN}"
+npmAuthToken: "${QUADER_TOKEN}"
 ```
 
 | Client | Install | Publish (local repository, or virtual with default deployment target) |
 |---|---|---|
-| npm | `npm install <package>` | `npm publish --registry https://trove.example.com/api/npm/web/npm-all/`, or `"publishConfig": {"registry": "…/api/npm/web/npm-all/"}` in `package.json` (the guide) |
-| pnpm | `pnpm add <package>` | `pnpm publish --registry https://trove.example.com/api/npm/web/npm-all/` |
+| npm | `npm install <package>` | `npm publish --registry https://quader.example.com/api/npm/web/npm-all/`, or `"publishConfig": {"registry": "…/api/npm/web/npm-all/"}` in `package.json` (the guide) |
+| pnpm | `pnpm add <package>` | `pnpm publish --registry https://quader.example.com/api/npm/web/npm-all/` |
 | Yarn Berry | `yarn add <package>` | `npmPublishRegistry: "…/api/npm/web/npm-all/"` in `.yarnrc.yml`, then `yarn npm publish` |
 | Yarn classic | `yarn add <package>` | `yarn publish --registry …/api/npm/web/npm-all/` |
 
@@ -3809,16 +3809,16 @@ it serves, so the user picks by the client in the job image:
 
 | Variant | Label | ID token | Priority |
 |---|---|---|---|
-| Native exchange | "npm 11.5.1 and later, pnpm 11 and 12, Yarn 4" | `NPM_ID_TOKEN` with `aud: "npm:<host>"` (here `npm:trove.example.com`); the client exchanges it itself (R-NPM-022) | P1, with R-NPM-022 |
-| Generic exchange | "npm 10, pnpm 10 on npm 10, Yarn 1" | `TROVE_ID_TOKEN` with `aud` set to the base URL; a pipeline step exchanges it at `POST /api/v1/auth/oidc/token` ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-007), and the job revokes the token as its last step | MVP |
+| Native exchange | "npm 11.5.1 and later, pnpm 11 and 12, Yarn 4" | `NPM_ID_TOKEN` with `aud: "npm:<host>"` (here `npm:quader.example.com`); the client exchanges it itself (R-NPM-022) | P1, with R-NPM-022 |
+| Generic exchange | "npm 10, pnpm 10 on npm 10, Yarn 1" | `QUADER_ID_TOKEN` with `aud` set to the base URL; a pipeline step exchanges it at `POST /api/v1/auth/oidc/token` ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-007), and the job revokes the token as its last step | MVP |
 
 The dialog offers both variants for every installation and never chooses between them by the base
 URL's path: `server.base_url` is an origin without a path (R-OPS-005 in
-[operations-and-observability.md](operations-and-observability.md)), so trove owns the host root
+[operations-and-observability.md](operations-and-observability.md)), so Quader owns the host root
 that npm's native exchange posts to ([formats/npm.md](formats/npm.md) Q-NPM-1). Until R-NPM-022
 ships, the native variant is not shown.
 
-Acceptance criteria (CI end-to-end, `node:24` container, real token in `TROVE_TOKEN`):
+Acceptance criteria (CI end-to-end, `node:24` container, real token in `QUADER_TOKEN`):
 
 - With the project `.npmrc`, `npm view <package> version` and `npm install <package>` succeed;
   `npm publish` of a fixture to `npm-local` succeeds.
@@ -3835,15 +3835,15 @@ Priority: **MVP** · Covers: UI-025
 encrypt stored passwords):
 
 ```shell
-dotnet nuget add source "https://trove.example.com/api/nuget/web/nuget-all/v3/index.json" \
-  --name trove --username trove --password "${TROVE_TOKEN}" --store-password-in-clear-text
+dotnet nuget add source "https://quader.example.com/api/nuget/web/nuget-all/v3/index.json" \
+  --name quader --username quader --password "${QUADER_TOKEN}" --store-password-in-clear-text
 ```
 
 The snippets of the UI write the credential part only for a repository that is not anonymously readable, and the fixed user
-name `trove`; the exact shapes per client and shell are in [formats/nuget.md](formats/nuget.md) R-NUGET-026 (Q-NUGET-49).
+name `quader`; the exact shapes per client and shell are in [formats/nuget.md](formats/nuget.md) R-NUGET-026 (Q-NUGET-49).
 
 Repository `nuget.config`. `%VAR%` references work on every operating system, and `<clear />`
-removes other sources, so every package resolves through trove (the virtual repository includes a
+removes other sources, so every package resolves through Quader (the virtual repository includes a
 nuget.org remote) and a same-named package on a public source cannot slip in
 ([nuget.config reference](https://learn.microsoft.com/en-us/nuget/reference/nuget-config-file)):
 
@@ -3852,34 +3852,34 @@ nuget.org remote) and a same-named package on a public source cannot slip in
 <configuration>
   <packageSources>
     <clear />
-    <add key="trove" value="https://trove.example.com/api/nuget/web/nuget-all/v3/index.json" />
+    <add key="quader" value="https://quader.example.com/api/nuget/web/nuget-all/v3/index.json" />
   </packageSources>
   <packageSourceCredentials>
-    <trove>
-      <add key="Username" value="trove" />
-      <add key="ClearTextPassword" value="%TROVE_TOKEN%" />
-    </trove>
+    <quader>
+      <add key="Username" value="quader" />
+      <add key="ClearTextPassword" value="%QUADER_TOKEN%" />
+    </quader>
   </packageSourceCredentials>
 </configuration>
 ```
 
-NuGet CLI: `nuget sources add -Name trove -Source "https://trove.example.com/api/nuget/web/nuget-all/v3/index.json" -Username trove -Password "<token>"`.
+NuGet CLI: `nuget sources add -Name quader -Source "https://quader.example.com/api/nuget/web/nuget-all/v3/index.json" -Username quader -Password "<token>"`.
 Visual Studio: add a package source with name and service-index URL in the NuGet package manager
 options; at the credential prompt enter any user name and the token as password.
 
 | Task | Command |
 |---|---|
 | Install | `dotnet add package <id> --version <version>`; `dotnet restore` |
-| Publish | `dotnet nuget push <id>.<version>.nupkg --source "https://trove.example.com/api/nuget/web/nuget-local/v3/index.json" --api-key "${TROVE_TOKEN}"` (the token travels as `X-NuGet-ApiKey`, INV-8; a `.snupkg` next to the package is pushed with it, [formats/nuget.md](formats/nuget.md)) |
+| Publish | `dotnet nuget push <id>.<version>.nupkg --source "https://quader.example.com/api/nuget/web/nuget-local/v3/index.json" --api-key "${QUADER_TOKEN}"` (the token travels as `X-NuGet-ApiKey`, INV-8; a `.snupkg` next to the package is pushed with it, [formats/nuget.md](formats/nuget.md)) |
 
-The username is not checked (INV-8); the snippets use the fixed name `trove`.
+The username is not checked (INV-8); the snippets use the fixed name `quader`.
 
 The UI's client table offers three clients for NuGet: `dotnet`, `nuget` (nuget.exe) and `visual-studio` (Q-UI-94). Visual Studio
 has a configure and an install snippet and none for publishing.
 PowerShellGet and Chocolatey instructions need NuGet v2, which is P2 (INV-14), and are not offered in
 the MVP; the `dotnet` and `nuget.exe` commands also come in PowerShell syntax.
 
-Acceptance criteria (CI end-to-end, .NET SDK container, real token in `TROVE_TOKEN`):
+Acceptance criteria (CI end-to-end, .NET SDK container, real token in `QUADER_TOKEN`):
 
 - With the generated `nuget.config`, `dotnet restore` of a fixture project that references a package
   from `nuget-local` and one from nuget.org succeeds.
@@ -3891,7 +3891,7 @@ Priority: **MVP** · Covers: UI-026
 
 Each format that ships, in whichever phase, ships in that phase its snippet templates (R-API-030), its guide
 (R-UI-049) for every class and client it supports, and acceptance commands for its native clients (for example
-`docker login`, Maven `settings.xml` with `${env.TROVE_TOKEN}`, `pip` index configuration, `GOPROXY` with `.netrc`,
+`docker login`, Maven `settings.xml` with `${env.QUADER_TOKEN}`, `pip` index configuration, `GOPROXY` with `.netrc`,
 `helm repo add` and OCI registry login). The guide is not a later step: the conformance kit fails a format with
 clients that lacks it (R-ARCH-010 check 8). The setup page and the guides area are data-driven: a new format needs no
 new screen, and the guides area offers it as soon as `GET /api/v1/formats` lists it with clients; the setup page still
@@ -3906,11 +3906,11 @@ the UI's table names its clients, the guides area as soon as the format register
 whose guide misses a class or a client.
 
 ### R-UI-049 · Guides for every registry variant
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's requirement of 2026-10-31 (Q-UI-83): the UI offers documentation and setup help for every package registry
 variant, which is a format × a repository class (local, remote, virtual) × a client (for npm: npm, pnpm, Yarn Berry,
-Yarn Classic). A guide tells a developer, accurately for trove as built, what the repository is and how the client
+Yarn Classic). A guide tells a developer, accurately for Quader as built, what the repository is and how the client
 configures, signs in, installs, publishes, changes tags, unpublishes, audits and keeps lockfiles through it, what an
 endpoint with exposure rules changes, and what each answer of the protocol means. The text is the format's
 (R-ARCH-008 `Guide()`, kit check 8), rendered by the server (R-API-053); the UI adds no format knowledge.
@@ -3944,13 +3944,13 @@ Acceptance criteria:
   serious or critical violation (E2.13, Q-UI-87).
 - For every class and client of npm the guide has the sections `what`, `configure`, `authenticate`, `install` and
   `troubleshooting` (kit check 8), and every code its troubleshooting table names is a code of the problem catalog,
-  under the status trove answers it with (`TestR_UI_049_TheTroubleshootingCodesAreTroves`).
+  under the status Quader answers it with (`TestR_UI_049_TheTroubleshootingCodesAreQuaders`).
 
 ### R-UI-050 · Help area and the manual
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's requirement of 2026-11-01: a "?" at the top right behind which the user and administrator documentation of
-trove is found, delivered by the frontend. The text is the manual of R-API-054; the UI renders no Markdown.
+Quader is found, delivered by the frontend. The text is the manual of R-API-054; the UI renders no Markdown.
 
 - **Entry.** The Documentation link of the top bar (R-UI-002) links to the manual page of the current screen: the longest route
   prefix of `HELP_TOPICS` in [core/help-topics.ts](../../web/src/app/core/help-topics.ts) (for example `/admin/endpoints`
@@ -4045,7 +4045,7 @@ Priority: **MVP** · Covers: UI-031
   format member of the repository document that is named after the format (`npm`, `nuget`;
   [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-004), never into a generic
   `formatSettings` member. A format adds a panel only for interactions a schema cannot express.
-  The form shows the members whose `x-trove-classes` contain the class, in **Advanced settings** of the
+  The form shows the members whose `x-quader-classes` contain the class, in **Advanced settings** of the
   creation form (R-UI-083) and in a closed section of the settings page (R-UI-087), and writes a setting only where it differs
   from the schema's default (Q-UI-78 to Q-UI-81).
 - NuGet local repositories: the NuGet settings of the settings page show
@@ -4226,7 +4226,7 @@ Acceptance criteria:
   with source `manual`.
 
 ### R-UI-026 · Service accounts
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - List and editor: project (none for an account of no project), name, description, owners (P1), groups (accounts of
   no project only: a project's account is never a group member), status with disable and enable. The list of the admin
@@ -4333,10 +4333,10 @@ Priority: **MVP** · Covers: UI-053, AUTHN-039, AUTHN-040
 - What the profile does not have (settles UI-053's open point on password changes): no unlock step,
   because the session already proves the login (R-AUTH-017 in
   [identity-and-authentication.md](identity-and-authentication.md)); no password section, because
-  users have no password in trove (INV-7) and the break-glass password is changed by replacing its
+  users have no password in Quader (INV-7) and the break-glass password is changed by replacing its
   Kubernetes Secret (R-AUTH-014); no editable email or display name, because both come from the
   identity provider at every login (R-AUTH-016 maps the catalog's "profile updatable" option to
-  this). Nobody changes a password through trove. An administrator's correction of email or
+  this). Nobody changes a password through Quader. An administrator's correction of email or
   display name through `PATCH /api/v1/users/{username}` (R-API-031) lasts until the user's next
   login. SSH keys and linked accounts are P2 on the identity page and not shown.
 - The profile's three pages (Profile, Personal tokens, Sessions) have the shared page header and are the tab strip of links
@@ -4359,7 +4359,7 @@ Priority: **MVP** · Covers: UI-053, AUTHN-039, AUTHN-040
 
 Acceptance criteria:
 
-- A created token works in `curl -H "Authorization: Bearer …" "$TROVE_URL/api/v1/auth/whoami"`;
+- A created token works in `curl -H "Authorization: Bearer …" "$QUADER_URL/api/v1/auth/whoami"`;
   reopening the profile never shows it again; revoking it makes the same call answer 401 on every
   replica within 2 s (R-API-052).
 - Ending all other sessions signs out a second browser.
@@ -4494,7 +4494,7 @@ Acceptance criteria:
   branch against the test environment, publishes `@team-a/ui`.
 
 ### R-UI-036 · Claim tester
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - `/admin/ci/{issuer}/test`. Input: a text area accepting claims as JSON or a compact JWT.
 - A pasted JWT is decoded in the browser (base64url header and payload, no signature check). The UI
@@ -4595,7 +4595,7 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
     and N-1 run side by side during every rolling upgrade (INV-3); it is not a warning.
 
   The screen says what it cannot see: disruption budgets, free capacity on other nodes and whether
-  the remaining replicas carry the peak (the N + 1 rule of R-HA-059), because trove holds no
+  the remaining replicas carry the peak (the N + 1 rule of R-HA-059), because Quader holds no
   Kubernetes permissions (R-HA-033).
 - Readiness checks per replica, from the `checks` of `/system/replicas` (R-OPS-001, R-OPS-003; Q-OPS-2
   in [operations-and-observability.md](operations-and-observability.md)), in two kinds that the
@@ -4604,7 +4604,7 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
     replica is `unready`; shown as an error with the check names;
   - **degraded**: the replica is `ready` while a reported check fails. Two checks can be in this
     state; `/readyz` answers `200` and lists them under `degraded`, and
-    `trove_health_check_passing{name=…}` shows `0`:
+    `quader_health_check_passing{name=…}` shows `0`:
     - `objectStore`, after the first readiness unless `health.require_object_store` is set: blob
       requests on that replica fail with a retryable `503`, everything else keeps working;
     - `valkey`, whenever Valkey is unreachable from that replica ([architecture.md](architecture.md)
@@ -4631,9 +4631,9 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
     one heartbeat: a replica bound to a demoted primary, the case R-ARCH-031's reconciliation
     bounds;
   - "Sentinels unreachable" when a replica's `valkey.sentinelsReachable` is below a majority of its
-    `valkey.sentinelsConfigured`, the condition on which `TroveValkeySentinelsDegraded` fires
+    `valkey.sentinelsConfigured`, the condition on which `QuaderValkeySentinelsDegraded` fires
     ([ha-and-helm.md](ha-and-helm.md) R-HA-007): no failover can happen while it lasts, so the next
-    primary failure would leave trove degraded until someone acts. The `valkey` check stays `pass`
+    primary failure would leave Quader degraded until someone acts. The `valkey` check stays `pass`
     meanwhile, because the primary still answers (R-HA-056 step 6);
   - the time of the last primary change (the newest `valkey.lastPrimaryChangeAt` of the
     replicas);
@@ -4674,7 +4674,7 @@ Acceptance criteria:
 - With two `web` and two `worker` replicas, stopping Valkey shows every replica as degraded with
   `valkey` and the explanation within 40 seconds, the header reads "degraded", no replica is shown
   unready, and the Valkey card reads "Degraded on 4 of 4 replicas".
-- `SENTINEL FAILOVER trove` updates the last primary change on the Valkey card within 40 seconds,
+- `SENTINEL FAILOVER quader` updates the last primary change on the Valkey card within 40 seconds,
   and every replica reports the new primary.
 - Scaling `worker` to 0 shows "No live worker replica" within `system.heartbeat_stale_after` plus
   15 seconds. A test that pins both `web` replicas to one node shows "All ready replicas on one
@@ -4713,9 +4713,9 @@ Acceptance criteria:
   naming `define`.
 
 ### R-UI-053 · The installation's visibility in the general settings
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
-`/admin/settings/general` gains the section **Visibility** (`<trove-disclosure>`, closed by default) below the public base
+`/admin/settings/general` gains the section **Visibility** (`<quader-disclosure>`, closed by default) below the public base
 URL, with its own **Save changes**, reading and writing `/api/v1/settings/visibility` (R-API-056):
 
 - **Default visibility level** is a radio group of the three levels, each with its icon and one muted sentence
@@ -4739,11 +4739,11 @@ Acceptance criteria:
 Built as [Q-UI-228](#q-ui-228--a-level-is-chosen-in-a-radio-group-of-three-each-with-its-icon-and-a-sentence): [general-settings.ts](../../web/src/app/features/settings/general-settings.ts), [visibility-level.ts](../../web/src/app/shared/ui/visibility-level.ts); tests [visibility-settings.spec.ts](../../web/src/app/features/settings/visibility-settings.spec.ts) and the journey [21-visibility.spec.ts](../../web/e2e/tests/21-visibility.spec.ts).
 
 ### R-UI-054 · The visibility of a project
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - The project's settings (`/projects/{project}/settings`, one column, Q-UI-215) gain the section **Visibility** after the name
   and the description, with the radio group of Q-UI-228 for the project's level. An administrator (`projects:write`) edits it
-  with its own **Save changes**; the Owner and every other reader see it read-only with "Only an administrator of trove sets
+  with its own **Save changes**; the Owner and every other reader see it read-only with "Only an administrator of Quader sets
   the visibility of a project."
 - Lowering the level asks first in a confirmation dialog that lists the repositories that will be lowered with their levels
   (from the project's repository list, `visibility` above the new level) and names the consequence ("Anyone who reads them only
@@ -4766,7 +4766,7 @@ Acceptance criteria:
 Built as Q-UI-229, Q-UI-233 to Q-UI-236: [project-settings.ts](../../web/src/app/features/projects/project-settings.ts), [project-dialog.ts](../../web/src/app/features/projects/project-dialog.ts), [projects-home.ts](../../web/src/app/features/projects/projects-home.ts); test [project-visibility.spec.ts](../../web/src/app/features/projects/project-visibility.spec.ts).
 
 ### R-UI-055 · The visibility of a repository
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - The section **Visibility** of the repository's settings page (R-UI-087) is the block **Visibility**: one column, two radio groups of Q-UI-228, **Artifacts** ("Who can install, download and list the packages")
   and **Wiki** ("Who can read the README and the documentation"), and its own **Save changes**
@@ -4791,7 +4791,7 @@ Acceptance criteria:
 Built as Q-UI-231, Q-UI-236, Q-UI-237: [repository-visibility.ts](../../web/src/app/features/repositories/repository-visibility.ts), [repository-create.ts](../../web/src/app/features/repositories/repository-create.ts) (the creation form since R-UI-080); test [repository-visibility.spec.ts](../../web/src/app/features/repositories/repository-visibility.spec.ts).
 
 ### R-UI-056 · The external flag on the user page
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - The user detail (R-UI-024) gains the checkbox **External user** with the muted sentence "Sees only the projects it is a member
   of, what a policy grants it, and what is public. Internal projects and repositories stay hidden.", edited in place with its
@@ -4810,7 +4810,7 @@ Acceptance criteria:
 Built as Q-UI-232: [user-detail.ts](../../web/src/app/features/users/user-detail.ts), [user-list.ts](../../web/src/app/features/users/user-list.ts), [user-create-dialog.ts](../../web/src/app/features/users/user-create-dialog.ts); test [user-external.spec.ts](../../web/src/app/features/users/user-external.spec.ts).
 
 ### R-UI-057 · What the UI shows of the wiki and of public content
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - The package page (R-UI-007) shows the README tab only when `hasReadme` is true for the caller, and a format's documentation
   tabs only when their member is present ([authorization.md](authorization.md) R-AUTHZ-034); it never requests the README for
@@ -4868,7 +4868,7 @@ the model gives the screens:
   administrator add a member through the principal lookup (Q-AUTHZ-182), change a role and remove a member. The last
   Owner cannot be removed or demoted except by an administrator: the action is shown disabled with the reason, and a
   `409 last_owner` from a concurrent change is reported as such
-  ([Q-AUTHZ-217](authorization.md#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-trove)).
+  ([Q-AUTHZ-217](authorization.md#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-quader)).
 - For an Owner of a project, also without any capability, the project's side bar holds the project's administration (as
   for the delegates of Q-AUTHZ-181): its repositories (create in the project, edit, delete and move to another project
   it owns; R-UI-020, R-UI-021), its policies (`/projects/{project}/policies`, named within the project; the editor offers the
@@ -4895,7 +4895,7 @@ Acceptance criteria:
 - The remove action of alice's own membership is disabled while she is the only Owner.
 
 ### R-UI-042 · Errors, conflicts and feedback
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - One HTTP interceptor (R-ARCH-004 `core/http`) maps problem `code` values to translated messages and
   `errors[].pointer` to form controls. Unknown codes show the English `detail` and the `requestId`
@@ -4904,9 +4904,9 @@ Priority: **MVP** · Covers: trove-only
   showing their version against yours field by field, with "Reload (discard mine)", "Overwrite"
   (re-sends with the new ETag after showing the diff) and "Copy my changes".
 - **Own permission changes** (INV-17, R-API-052, [authorization.md](authorization.md)
-  R-AUTHZ-032). After a write that answers `Trove-Authz-Epoch` (a policy, a role binding, a project, its members, the
+  R-AUTHZ-032). After a write that answers `Quader-Authz-Epoch` (a policy, a role binding, a project, its members, the
   move of a repository), the session store (R-UI-046) keeps the highest such epoch of the tab, and the
-  interceptor sends it as `Trove-Authz-Min-Epoch` on every request that follows, so the next
+  interceptor sends it as `Quader-Authz-Min-Epoch` on every request that follows, so the next
   screen, the `authz/me` and `authz/check` refresh included, shows the change on whichever replica
   answers. The epoch lives in memory only, never in browser storage, and is cleared on 401 and on
   sign-out.
@@ -4951,9 +4951,9 @@ Acceptance criteria:
 - A forced 412 `precondition_failed` in a Playwright test opens the conflict dialog, and
   "Overwrite" stores the user's version.
 - After saving a policy in the e2e profile `scatter`, the network log shows
-  `Trove-Authz-Min-Epoch` with the epoch of the `PUT` on the requests that follow it. A test proxy
+  `Quader-Authz-Min-Epoch` with the epoch of the `PUT` on the requests that follow it. A test proxy
   that answers one of them `412` `authz_epoch_unknown` makes the UI show "may not have been saved",
-  re-read the policy, and send no `Trove-Authz-Min-Epoch` on later requests until its next
+  re-read the policy, and send no `Quader-Authz-Min-Epoch` on later requests until its next
   permission change; the conflict dialog does not open.
 - An unknown `code` shows the request ID.
 - A test proxy resets the connection of the wizard's `POST /api/v1/projects/{projectKey}/repositories` after the server
@@ -4966,7 +4966,7 @@ Acceptance criteria:
   shows the user's state as reloaded afterwards.
 
 ### R-UI-043 · Secrets in the browser
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - Token values (created or pasted) live only in component-local signals. They never enter shared
   services, the URL, `localStorage`, `sessionStorage`, IndexedDB, the browser history, console output
@@ -4983,15 +4983,15 @@ Priority: **MVP** · Covers: trove-only
 Acceptance criteria:
 
 - After creating a token and closing the dialog, a test inspects `localStorage`, `sessionStorage`,
-  IndexedDB, the URL history and the console log and finds no `trv_` value.
+  IndexedDB, the URL history and the console log and finds no `qdr_` value.
 
 ### R-UI-044 · Accessibility
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Every screen meets [WCAG 2.2](https://www.w3.org/TR/WCAG22/) level AA. Design rules that follow from
 specific criteria:
 
-| Criterion | Rule in trove |
+| Criterion | Rule in Quader |
 |---|---|
 | 1.3.1 Info and relationships | Data tables are `<table>` with `<th scope>`; landmarks; one `h1` per screen, no skipped heading levels |
 | 1.4.1 Use of color; 1.4.3 and 1.4.11 contrast | Status, decision and diff marks carry icon and text; contrast verified in both themes |
@@ -5025,7 +5025,7 @@ Acceptance criteria:
 - The five manual journeys are recorded as passed in the release checklist.
 
 ### R-UI-045 · Internationalization
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - English (source and default) and German ship with the MVP. Every UI text is translatable; no
   sentence is concatenated from fragments; counts use ICU plural and select messages ("1 Version",
@@ -5069,7 +5069,7 @@ Acceptance criteria:
 - Removing one German translation unit makes the build fail.
 
 ### R-UI-046 · State management with signals
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Builds on the workspace rules of R-ARCH-004 (standalone, zoneless, signals; generated types and
 thin hand-written clients in `src/app/api/`):
@@ -5108,7 +5108,7 @@ Acceptance criteria:
 - Changing a filter on the packages list issues exactly one API request and updates the URL.
 
 ### R-UI-047 · Testing
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 | Tier | Tool | Scope | When |
 |---|---|---|---|
@@ -5154,13 +5154,13 @@ configured through the chart and the configuration file, and restored by a Helm 
   a drain or eviction; the Job retries it" and is not shown as a failure (R-BAK-012). A detail panel
   shows the result and the error.
 - **Stored backups.** The complete backups that the newest listing run found in the target, with
-  backup ID, snapshot time, trove version, schema step, database and blob sizes and a "damaged"
-  mark, headed "as recorded by run <id> at <time>" and the note that `trove backup list` reads the
+  backup ID, snapshot time, Quader version, schema step, database and blob sizes and a "damaged"
+  mark, headed "as recorded by run <id> at <time>" and the note that `quader backup list` reads the
   target itself (Q-API-11). Next to it, read-only: the target, `keep_last` and `keep_within` as
   that run applied them, and the expected interval.
 - **Start a backup now.** No button starts one. A panel shows the command with a copy button,
   filled from `manualRun`:
-  `kubectl -n trove create job --from=cronjob/trove-backup trove-backup-manual-<timestamp>`
+  `kubectl -n quader create job --from=cronjob/quader-backup quader-backup-manual-<timestamp>`
   (# example), with `<timestamp>` (Unix seconds) filled in by the browser when the panel opens.
   A Job name may have at most 63 characters
   ([Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/)), so the browser shortens
@@ -5187,7 +5187,7 @@ Acceptance criteria:
   creates the Job, and its name has at most 63 characters.
 
 ### R-UI-051 · Avatar upload
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's decision of 2026-11-07: "Upload jetzt mitbauen: nur PNG/JPEG/WebP, serverseitig neu kodiert, max. 1 MiB, als Blob
 gespeichert, vom api-Pod ausgeliefert; Spec, Security-Seite und Tests dazu." The API is R-API-055; this requirement is the
@@ -5232,10 +5232,10 @@ Acceptance criteria:
 - Every refusal code above has an English and a German sentence.
 - An administrator with `identities:write` sees **Remove avatar** on the user screen of a user who has an image, after a
   confirmation the image is gone and the robot is shown; without the capability the button is not shown.
-- While the profile and the top bar are used, no request leaves trove's origin.
+- While the profile and the top bar are used, no request leaves Quader's origin.
 
 ### R-UI-060 · The Documentation tab of an Ansible collection
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 The package page (R-UI-007) of a version of the format `ansible` shows the tab **Documentation** instead of README when `metadata.docs.state` is not `none` or
 the version has a README, and makes it the default tab then. The data is that of [R-ANS-036](formats/ansible.md#r-ans-036--the-documentation-operations-of-the-screens-their-rendering-and-the-search);
@@ -5260,14 +5260,14 @@ Acceptance criteria:
 - Keyboard: the tree is a `role="tree"` of links; arrow keys move, Enter opens, `aria-current="page"` marks the open entry; the search field has the label "Search the documentation" and Escape clears it.
 
 ### R-UI-061 · An entry page and a file page
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 An entry page (Q-UI-242) shows, in the order ansible-doc prints, a head (the full name `<ns>.<name>.<entry>` with a copy button, the short description, "added in", a `warn` badge for a
 deprecated plugin) and the sections Synopsis, Parameters, Notes, Requirements, Attributes, See also, Examples, Return values and Authors, each only when it has content. **Parameters** is the shared data
 table (no frame, hairlines) with the columns Name (with aliases), Type (and element type), Required (a text badge), Default, Choices and Description; a suboption row is indented 16 px per level
 with a "suboptions of <name>" label for the screen reader, and a parameter with suboptions is collapsible (open at first, [Q-UI-252](#q-ui-252--the-parameters-of-a-page-are-open-at-every-level-at-first-each-parameter-with-suboptions-folds-on-its-own)). Defaults, choices and samples are text as written. Examples and a sample are a `<pre>` in the code block
 control of the README with a copy button, no highlighting. A role shows its README only. A page whose entry has `hasDocs` false shows the head and "This plugin has no documentation in its source." (generated) or "The upstream sent no
-documentation for this plugin." (upstream). A muted line below says where the documentation comes from ("Generated by trove from the archive, 2026-11-11 09:41" or "Taken from the upstream") and names
+documentation for this plugin." (upstream). A muted line below says where the documentation comes from ("Generated by Quader from the archive, 2026-11-11 09:41" or "Taken from the upstream") and names
 the repository when the version is in more than one. A file page is the README renderer's output (R-UI-008) for a Markdown file.
 
 - **Safety.** The HTML an operation returns is bound with `[innerHTML]` as the README component binds it (Angular's sanitizer and Trusted Types stay on); **every other value of an entry is bound as text**, so a
@@ -5280,7 +5280,7 @@ Acceptance criteria:
 - A role page shows the README HTML and no Parameters section.
 
 ### R-UI-062 · The Contents tab
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 The tab **Contents** (shown with the Documentation tab, with the count as a neutral badge) is the flat list of what the version contains: a data table with the columns Name, Type and Short description, a type
 filter (a select of the types present with their counts), sorted by type then name, one request (the tree of `getPackageVersionDocs`, shared with the Documentation tab so the two never disagree). A row whose entry has documentation links to
@@ -5292,7 +5292,7 @@ Acceptance criteria:
 - A row with documentation opens the entry in the Documentation tab.
 
 ### R-UI-063 · The Import log tab and the other tabs of the reference
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 The tab **Import log** is shown on a version held by a **local** repository (not for a remote or a virtual repository's remote member): the import task of that version, newest first, through `listAnsibleImportTasks` with the optional query
 parameters `package` and `version` (Q-API-262), state as a badge, the time, and the messages as text (level, message); the warnings of the generator (R-ANS-034) are among them. It is readable by whoever reads the repository, as the task is (R-ANS-009), and is
@@ -5300,7 +5300,7 @@ parameters `package` and `version` (Q-API-262), state as a badge, the time, and 
 
 The other tabs and facts the reference shows are the page's existing ones; nothing is duplicated (Q-UI-240, Q-UI-245):
 
-| Reference | trove | Where |
+| Reference | Quader | Where |
 |---|---|---|
 | Install: description, license, install command, download, Requires Ansible | The install panel (the command of R-API-030 with the real address), the Metadata tab (description, **Requires Ansible**, licenses, tags), the Files tab (the archive with its SHA-256 and download) | R-UI-007, R-ANS-026 |
 | Dependencies | A **Dependencies** section of the Metadata tab: the collections the version needs with their ranges, each a link to that package's page when the installation holds it (muted text otherwise) | Q-UI-245 |
@@ -5314,7 +5314,7 @@ Acceptance criteria:
 - A version with `dependencies` shows the Dependencies section with a link for a collection the installation holds; a link with another scheme than `http` or `https` is not rendered as a link.
 
 ### R-UI-064 · States, the wiki check, responsiveness and tests of the documentation screens
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - **The wiki check.** `metadata.docs` absent means no Documentation and no Contents tab and no request (Q-UI-244); a 404 or a refusal of an operation removes the tab without a message. The Import log and the other tabs are unaffected.
 - **Responsiveness.** At 390 px the tree and the page are one pane at a time; at 1440 px both; the parameter table scrolls horizontally inside its region, never the page.
@@ -5324,21 +5324,21 @@ Priority: **P1** · Covers: trove-only
 Acceptance criteria: the tests above exist and run in `make web-test`; the journeys run in the e2e set `ansible`; `make web-lint` is green.
 
 ### R-UI-065 · One read-only address field with a joined copy button for every client address
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's task of 2026-11-11 (T-20): the column **Client address** of the repository list cut the address with an ellipsis
-(`https://trove.k8s-main.…`), so it could not be read. Every address that trove shows for a client to put into its
+(`https://quader.k8s-main.…`), so it could not be read. Every address that Quader shows for a client to put into its
 configuration looks like the field **Clone with SSH** of the owner's GitLab: the whole address in a read-only, bordered field
 in a monospace font, with the copy button joined to the field's right edge. It is one shared component,
-`<trove-address-field>` ([ui-style-guide.md](../developer/ui-style-guide.md#address-field)); no screen draws its own
+`<quader-address-field>` ([ui-style-guide.md](../developer/ui-style-guide.md#address-field)); no screen draws its own
 `<code>` plus copy button for a client address. The development agent decided what the owner did not say (Q-UI-272 to Q-UI-274);
 the widths are Q-UI-300 and Q-UI-301 since the owner's task of 2026-11-12 (T-21), which replaced Q-UI-270 and Q-UI-271 after
 the list showed a field of a different width in every row and scrolled sideways.
 
-- **The field.** A read-only `<input type="text">` holding the address, 32 px high, the text in `--trove-font-mono` at 0.875rem,
-  a 1 px border in `--trove-control-border`, the fill of an editable control (`--trove-control-bg`), not the grey fill of a
+- **The field.** A read-only `<input type="text">` holding the address, 32 px high, the text in `--quader-font-mono` at 0.875rem,
+  a 1 px border in `--quader-control-border`, the fill of an editable control (`--quader-control-bg`), not the grey fill of a
   read-only value (Q-UI-274). The copy button sits in the same row, attached to the right edge: no gap, one border between
-  them, the field's right corners and the button's left corners square, the outer corners rounded by `--trove-control-radius`.
+  them, the field's right corners and the button's left corners square, the outer corners rounded by `--quader-control-radius`.
   The button is the existing `btn btn-icon` copy button with the glyph `content_copy`.
 - **Never cut.** The address is never cut with an ellipsis, never wrapped, and its `title` is not the only way to read it.
   Where the field is shorter than the address, the address scrolls inside the field (an input does so natively), and the
@@ -5356,7 +5356,7 @@ the list showed a field of a different width in every row and scrolled sideways.
 - **Copy button.** `aria-label` and `title` name what is copied (**Copy client address**; in a list the label names the row,
   **Copy client address of npm-internal**). A click writes the address to the clipboard and the polite live region says
   **Copied to the clipboard.**; where the clipboard is not available an alert says so and the field stays selectable (the
-  behaviour of `trove-copy-button`, which the component reuses). There is no other visual confirmation, and no green
+  behaviour of `quader-copy-button`, which the component reuses). There is no other visual confirmation, and no green
   (owner rule).
 - **Name.** The field has an accessible name: `aria-label` = the label of the place (**Client address**, in a list **Client
   address of npm-internal**).
@@ -5367,13 +5367,13 @@ the list showed a field of a different width in every row and scrolled sideways.
 - **No address, no field.** An empty address renders nothing; the caller decides what stands in its place (a server without a
   configured base URL shows no address, R-REPO-002).
 - **Scope (Q-UI-272, Q-UI-320).** The field holds one line to copy: an address (a URL, or a registry host with a path,
-  `trove.k8s-main.wds18.de/docker-hub-remote`) or a command of one line (the install command of a package). A configuration
+  `quader.k8s-main.wds18.de/docker-hub-remote`) or a command of one line (the install command of a package). A configuration
   file or a snippet of several lines keeps the code block with its copy button.
 
 Acceptance criteria:
 
-- Component unit tests: the field's value is the full address for `https://trove.k8s-main.wds18.de/api/npm/npm-internal/`,
-  for `trove.k8s-main.wds18.de/docker-hub-remote` and for a 300-character address; the input is `readonly` and has an
+- Component unit tests: the field's value is the full address for `https://quader.k8s-main.wds18.de/api/npm/npm-internal/`,
+  for `quader.k8s-main.wds18.de/docker-hub-remote` and for a 300-character address; the input is `readonly` and has an
   accessible name; no element of the component has `text-overflow: ellipsis`; the field sets no width of its own from its
   address; a field shorter than its address shows its start; a click on the button writes exactly the address to the clipboard
   and sets the status message; a failed write sets the alert; focus in the field selects all of its text; an empty address
@@ -5389,9 +5389,9 @@ Acceptance criteria:
   address, does the same.
 
 ### R-UI-066 · The screens that show a client address use the address field
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
-Each screen shows its client addresses through `<trove-address-field>` (R-UI-065):
+Each screen shows its client addresses through `<quader-address-field>` (R-UI-065):
 
 | Screen | Place | Notes |
 |---|---|---|
@@ -5413,11 +5413,11 @@ address).
 
 Acceptance criteria:
 
-- A unit test per row of the table finds `trove-address-field` with the full address as its value.
+- A unit test per row of the table finds `quader-address-field` with the full address as its value.
 - A test that read an address from text content reads the field's value instead (an input's value is not text content).
 
 ### R-UI-067 · Three kinds of user: the plain user, the power user and the administrator
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's task T-21 of 2026-11-12: "Easy access to the product for simple users. Optional details for power users and
 admins." The UI serves three kinds of user. A kind is not a role of its own: it is read from the roles and capabilities the
@@ -5560,7 +5560,7 @@ Acceptance criteria:
 ### R-UI-083 · Details on demand
 Priority: **MVP** · Covers: UI-031
 
-- The form's section **Advanced settings** (`<trove-disclosure>`, closed) has the sentence "Notes, paths and the settings of
+- The form's section **Advanced settings** (`<quader-disclosure>`, closed) has the sentence "Notes, paths and the settings of
   the format. The defaults suit most repositories." and these groups, each under its own heading, where they apply:
   **Administrator notes**; **Paths** (include and exclude patterns, the pattern syntax); **Access details** (Hide existence);
   **Mirror** (a remote of a format with `mirror`: the mode, and in mode mirror the members of `remote.mirror` and the format's own
@@ -5594,22 +5594,22 @@ Priority: **MVP** · Covers: UI-031
 Acceptance criteria:
 
 - An OCI remote shows 300 in both cache periods; in mode mirror, 3600 as the pass interval and 4 as the concurrent fetches; a
-  local Debian repository shows the architectures `amd64` and `arm64` and the origin `trove`. A create that changes none of them
+  local Debian repository shows the architectures `amd64` and `arm64` and the origin `quader`. A create that changes none of them
   writes none of them.
 
 ### R-UI-085 · A field is as wide as its expected input
 Priority: **MVP** · Covers: UI-031
 
 - The five widths of the style guide's **Forms**, tokens in `_tokens.scss`, classes in `_controls.scss` and the input `width` of
-  `<trove-text-field>` and `<trove-select-field>` ([Q-UI-334](#q-ui-334--a-picker-is-one-control-from-the-start-held-while-its-list-loads-and-a-field-is-as-wide-as-its-kind-of-input));
+  `<quader-text-field>` and `<quader-select-field>` ([Q-UI-334](#q-ui-334--a-picker-is-one-control-from-the-start-held-while-its-list-loads-and-a-field-is-as-wide-as-its-kind-of-input));
   which field of the repository forms takes which is [Q-UI-349](#q-ui-349--a-field-of-the-repository-forms-takes-the-width-of-its-kind-of-input-and-a-schema-member-the-width-of-its-type):
 
   | Class | Token | Width | For |
   |---|---|---|---|
-  | `field-w-number` | `--trove-field-width-number` | 6 rem | a count of up to six digits |
-  | `field-w-duration` | `--trove-field-width-duration` | 8 rem | a period in seconds, up to eight digits |
-  | `field-w-bytes` | `--trove-field-width-bytes` | 13 rem | a byte count, up to nineteen digits |
-  | `field-w-name` | `--trove-field-width-name` | 28 rem, half the column | a key, a name, a host, every select and every picker |
+  | `field-w-number` | `--quader-field-width-number` | 6 rem | a count of up to six digits |
+  | `field-w-duration` | `--quader-field-width-duration` | 8 rem | a period in seconds, up to eight digits |
+  | `field-w-bytes` | `--quader-field-width-bytes` | 13 rem | a byte count, up to nineteen digits |
+  | `field-w-name` | `--quader-field-width-name` | 28 rem, half the column | a key, a name, a host, every select and every picker |
   | `field-w-full` | — | the column | a URL, a description, a list, a key block |
 
 - A field is never wider than its column; a narrower column shrinks it and its text scrolls inside it.
@@ -5691,7 +5691,7 @@ Priority: **MVP** · Covers: UI-031
   words: no HTTP status, no error code, no configuration key or member name, no `null`, and a limit in words ("1 to 300 seconds,
   written like 30s"). The wording of the specification stays with the format's page of the specification and the member's
   description in the OpenAPI document (Q-UI-79).
-- Each value of a setting's `enum` has a label of its own in the member's `x-trove-enum-titles`, which the select shows
+- Each value of a setting's `enum` has a label of its own in the member's `x-quader-enum-titles`, which the select shows
   ("Delete for good", not `delete`); a choice without a static default still offers **Automatic** first (R-UI-084), and the
   description says what Automatic does.
 - An object of a schema is a group under its own heading, in the type of the page's other group headings and without a frame
@@ -5706,14 +5706,14 @@ Acceptance criteria:
   member name in camelCase or `null`, no description has more than two sentences, and every value of a member's `enum` has a
   label (`TestR_UI_088_EverySettingOfAFormatHasATitleAndPlainTexts`).
 - The creation form of an npm remote shows **Security audit** as a heading in Advanced settings, with no frame around its fields,
-  and its **Mode** offers Automatic, "From trove's advisory data", "Forward to an advisory service" and "Off".
+  and its **Mode** offers Automatic, "From Quader's advisory data", "Forward to an advisory service" and "Off".
 
 ### R-UI-090 · The grade shield
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 The owner's task of 2026-11-12 (T-21): "Vulnerabilities shall be shown as we realised it in cogpit." A version's grade
 ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-038) is drawn as cogpit draws an image's: a crest with its letter.
-`<trove-grade-shield>` ([grade-shield.ts](../../web/src/app/shared/vulnerability/grade-shield.ts)) is the one drawing of it; no
+`<quader-grade-shield>` ([grade-shield.ts](../../web/src/app/shared/vulnerability/grade-shield.ts)) is the one drawing of it; no
 screen draws its own.
 
 - **The crest.** An inline SVG in a box of 100: two shallow arcs across the top that meet in a point at its middle, the sides
@@ -5724,8 +5724,8 @@ screen draws its own.
 - **Sizes.** 20 px in a list, a header and a tab, the size of a format's icon in a list
   ([Q-UI-381](#q-ui-381--the-shield-in-a-list-is-20-px-the-size-of-a-format-icon)); 32 px on the card.
 - **Colours** ([Q-UI-370](#q-ui-370--the-grades-take-cogpits-colours-and-s-a-and-b-are-the-greens-of-a-good-grade)): the tokens
-  `--trove-grade-s` to `--trove-grade-e`, `--trove-grade-na`, the rim `--trove-grade-rim` and the letters' inks
-  `--trove-grade-s-ink`, `--trove-grade-ink`, `--trove-grade-ink-on-dark`, `--trove-grade-na-ink`; S to E are the same in both
+  `--quader-grade-s` to `--quader-grade-e`, `--quader-grade-na`, the rim `--quader-grade-rim` and the letters' inks
+  `--quader-grade-s-ink`, `--quader-grade-ink`, `--quader-grade-ink-on-dark`, `--quader-grade-na-ink`; S to E are the same in both
   schemes, N/A is the scheme's quiet grey. The letter keeps 4.5:1 on its fill (`palette.spec.ts`).
 - **Never by colour alone.** The letter says the grade, and the grade's text stands beside the shield wherever it is shown; there
   the shield is decorative (`aria-hidden`). Alone, it is `role="img"` named **Grade E**
@@ -5738,13 +5738,13 @@ Acceptance criteria:
 - The contrast of every letter on its fill and of N/A's crest and letter is held by `palette.spec.ts`.
 
 ### R-UI-091 · The grade's text and rule
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - **The text** is the grade and the count that decides it, as R-VULN-038 words it: "E · 13 Critical", "C · OS end of life",
   "S · no known vulnerabilities", "N/A · not scanned"; the letter at weight 600. **The rule** is the sentence of R-VULN-038's
   table; for S of an image "No known vulnerabilities, and the OS is supported", for N/A the evaluation state in words.
-- `<trove-grade>` ([grade.ts](../../web/src/app/shared/vulnerability/grade.ts)) is the shield of 20 px and the text on one line,
-  for a list cell, a header and a tab. Its tooltip (`[troveTooltip]`) names every count, "13 Critical · 160 High · 113 Medium ·
+- `<quader-grade>` ([grade.ts](../../web/src/app/shared/vulnerability/grade.ts)) is the shield of 20 px and the text on one line,
+  for a list cell, a header and a tab. Its tooltip (`[quaderTooltip]`) names every count, "13 Critical · 160 High · 113 Medium ·
   16 Low · 843 Unknown", and "OS end of life" when it is; the text stays the accessible name of the cell.
 - The words are the UI's, translated (`vuln.grade.*`); the grade is the server's (R-VULN-039). `gradeText`, `gradeRule` and
   `gradeRank` ([grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts)) derive them from the grade, its counts and
@@ -5754,22 +5754,22 @@ Acceptance criteria:
 
 - A table test of the text, the rule and the rank over the boundaries of R-VULN-038 (0, 10 and 11 Low, 1, 5 and 6 Critical, the
   end of life, N/A) and of the order E · 13 > E · 6 > D · 4 > D · 2 > C · 120 > S > N/A.
-- Unit: `<trove-grade>` shows the shield and the text, its tooltip names every count; axe finds no serious violation.
+- Unit: `<quader-grade>` shows the shield and the text, its tooltip names every count; axe finds no serious violation.
 
 ### R-UI-092 · The severity bar
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
-`<trove-severity-bar>` ([severity-bar.ts](../../web/src/app/shared/vulnerability/severity-bar.ts)) draws open findings by severity
+`<quader-severity-bar>` ([severity-bar.ts](../../web/src/app/shared/vulnerability/severity-bar.ts)) draws open findings by severity
 as cogpit draws an image's:
 
 - **Five segments** in one row, Critical, High, Medium, Low and Unknown, `none` counted in Low (Q-VULN-153); 22 px high, 4 px apart,
-  rounded by `--trove-radius-s`; each segment's count inside it, centred, at 12 px and weight 700, in tabular figures.
+  rounded by `--quader-radius-s`; each segment's count inside it, centred, at 12 px and weight 700, in tabular figures.
 - **Width by share** ([Q-UI-372](#q-ui-372--the-bars-segments-are-as-wide-as-their-share-with-room-for-their-number)): each
   segment first gets the room of its number and its padding, then the rest of the row is shared by the segments' shares of all
   findings, each share at least 7 %. A count is never cut and the row never scrolls sideways.
-- **Colours**: `--trove-sev-critical` (dark red), `--trove-sev-high` (red), `--trove-sev-medium` (orange), `--trove-sev-low`
-  (yellow), the count in `--trove-sev-ink-on-dark` on the first two and `--trove-sev-ink` on the next two; Unknown hatched in
-  diagonal stripes of `--trove-sev-unknown` and `--trove-sev-unknown-light`, its count in the text colour. A severity without
+- **Colours**: `--quader-sev-critical` (dark red), `--quader-sev-high` (red), `--quader-sev-medium` (orange), `--quader-sev-low`
+  (yellow), the count in `--quader-sev-ink-on-dark` on the first two and `--quader-sev-ink` on the next two; Unknown hatched in
+  diagonal stripes of `--quader-sev-unknown` and `--quader-sev-unknown-light`, its count in the text colour. A severity without
   findings is drawn faint (its fill at 28 % over the surface), and its 0 stays readable in the text colour (4.5:1; the muted tone
   would not be, `palette.spec.ts`).
 - **Name.** The bar is `role="img"` with the name "Open findings: 13 Critical, 160 High, 113 Medium, 16 Low, 843 Unknown"; the
@@ -5786,9 +5786,9 @@ Acceptance criteria:
 - Rendered: the counts 13, 160, 113, 16 and 843 fit their segments at 1440 and 390 px in both schemes.
 
 ### R-UI-093 · The grade card
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
-`<trove-grade-card>` ([grade-card.ts](../../web/src/app/shared/vulnerability/grade-card.ts)) is a version's grade in one
+`<quader-grade-card>` ([grade-card.ts](../../web/src/app/shared/vulnerability/grade-card.ts)) is a version's grade in one
 repository with its details, as cogpit's card:
 
 - The shield of 32 px on the left, centred on the card's lines; on the right, one below the other: the text (weight 600), the rule
@@ -5796,7 +5796,7 @@ repository with its details, as cogpit's card:
 - **The line of facts**, its parts separated by " · ": for an image **OS** and its name, **end of life** in the warning colour
   when it is, and **Scanned** with the time of its oldest scan ("Scanned 1 h ago (Nov 12, 2026, 12:31:51 PM)"); for every other
   format **Checked** with the time of the advisory data it was checked against ("Checked 3 min ago (…)", Q-VULN-156); the time is
-  `<trove-time-ago>`, one relative time ("just now", "3 min ago", "1 h ago", "4 d ago") with the absolute time in brackets
+  `<quader-time-ago>`, one relative time ("just now", "3 min ago", "1 h ago", "4 d ago") with the absolute time in brackets
   ([Q-UI-378](#q-ui-378--a-time-on-the-grade-card-is-one-relative-time-with-the-absolute-time-in-brackets-from-one-component));
   last, the link **Findings in web-frontend/images**, which opens the project's vulnerability report filtered by the repository,
   the package and the version (R-VULN-022) ([Q-UI-374](#q-ui-374--a-list-shows-the-shield-and-the-text-the-bar-and-the-facts-are-the-cards)).
@@ -5809,7 +5809,7 @@ Acceptance criteria:
   query names the repository, the package and the version; N/A has no bar and no line of facts; axe finds no serious violation.
 
 ### R-UI-094 · Where the grade shows
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 Every screen that showed the highest severity of a version or a package shows its grade instead; the findings themselves keep
 their severity (R-VULN-022). The list shows the grade; the bar and the facts are on the card (R-UI-067: details on demand,
@@ -5817,19 +5817,19 @@ their severity (R-VULN-022). The list shows the grade; the bar and the facts are
 
 | Screen | Place | What |
 |---|---|---|
-| Repository content (R-UI-052) | The column **Vulnerabilities** of the items | `<trove-grade>` of the item's latest version (`vulnerabilityGrade`, R-VULN-039); the column sorts by grade ([Q-UI-373](#q-ui-373--the-list-sorts-by-grade-in-the-browser-over-the-whole-list-up-to-1000-entries)) |
-| Repository content, the opened row | The column **Vulnerabilities** of the versions | `<trove-grade>` of each version in this repository |
-| Package page (R-UI-007) | The header's facts | `<trove-grade>` of the selected version (the worst of its repositories), a link to the tab **Vulnerabilities** ([Q-UI-375](#q-ui-375--the-package-page-shows-the-versions-grade-in-its-header-and-a-card-per-repository-on-its-tab)) |
-| Package page, tab **Vulnerabilities** (R-VULN-023) | Each repository's section | `<trove-grade-card>` above the block banner, its bar's segments the severity filter of the findings below (`severity` in the URL); then the open findings, 25 at a time from the findings API, worst first, with their number from the grade's counts ([Q-UI-379](#q-ui-379--the-vulnerabilities-tab-pages-the-open-findings-of-a-version-from-the-findings-api-filtered-by-the-cards-bar)) |
-| Package page, tab **All versions** | The column **Vulnerabilities** | `<trove-grade>` of each version |
-| Vulnerability report (R-VULN-022), a project's and the admin area's security dashboard | The header | `<trove-severity-bar [links]>` of the open findings in scope in place of the five severity counts; the counts **Malicious**, **Needs triage** and **Blocked versions** stay ([Q-UI-376](#q-ui-376--the-reports-header-shows-the-severity-bar-whose-segments-are-its-filter-links)) |
+| Repository content (R-UI-052) | The column **Vulnerabilities** of the items | `<quader-grade>` of the item's latest version (`vulnerabilityGrade`, R-VULN-039); the column sorts by grade ([Q-UI-373](#q-ui-373--the-list-sorts-by-grade-in-the-browser-over-the-whole-list-up-to-1000-entries)) |
+| Repository content, the opened row | The column **Vulnerabilities** of the versions | `<quader-grade>` of each version in this repository |
+| Package page (R-UI-007) | The header's facts | `<quader-grade>` of the selected version (the worst of its repositories), a link to the tab **Vulnerabilities** ([Q-UI-375](#q-ui-375--the-package-page-shows-the-versions-grade-in-its-header-and-a-card-per-repository-on-its-tab)) |
+| Package page, tab **Vulnerabilities** (R-VULN-023) | Each repository's section | `<quader-grade-card>` above the block banner, its bar's segments the severity filter of the findings below (`severity` in the URL); then the open findings, 25 at a time from the findings API, worst first, with their number from the grade's counts ([Q-UI-379](#q-ui-379--the-vulnerabilities-tab-pages-the-open-findings-of-a-version-from-the-findings-api-filtered-by-the-cards-bar)) |
+| Package page, tab **All versions** | The column **Vulnerabilities** | `<quader-grade>` of each version |
+| Vulnerability report (R-VULN-022), a project's and the admin area's security dashboard | The header | `<quader-severity-bar [links]>` of the open findings in scope in place of the five severity counts; the counts **Malicious**, **Needs triage** and **Blocked versions** stay ([Q-UI-376](#q-ui-376--the-reports-header-shows-the-severity-bar-whose-segments-are-its-filter-links)) |
 
 - A caller who gets no grades (signed out, an installation that does not scan, Q-VULN-158) sees no grade column, no card and no
   header grade, not a column of dashes ([Q-UI-377](#q-ui-377--a-list-without-grades-has-no-grade-column)).
 
 Acceptance criteria:
 
-- Unit: the repository content list shows `<trove-grade>` for each row and sorts by grade, worst first, on its second click; the
+- Unit: the repository content list shows `<quader-grade>` for each row and sorts by grade, worst first, on its second click; the
   opened row grades each version; the package page's header grade links to the tab, the tab shows one card per repository and
   *All versions* a grade per version; the tab asks the findings API for 25 open findings of the version, worst first, says their
   number, and a segment of the card's bar narrows them to its severity; the report's header shows the bar with five filter links;
@@ -5840,7 +5840,7 @@ Acceptance criteria:
   versions of the grades S, A, B, C, D, E and N/A.
 
 ### R-UI-095 · One search field in the top bar for every caller
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner's task T-22 (2026-11-12): "A sensible search, with suggestions and everything." The top bar's field (R-UI-002) is the one
 search of the UI.
@@ -5876,7 +5876,7 @@ Acceptance criteria:
 - At 390 px the button opens the sheet with the focus in its field; Escape closes it and the focus is on the button again.
 
 ### R-UI-096 · What the opened field offers before anything is typed
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 When the field gets the focus without a text, a list opens under it, in this order
 ([Q-UI-404](#q-ui-404--the-empty-field-offers-the-references-parts-in-its-order-and-the-admin-pages-last)):
@@ -5895,7 +5895,7 @@ Groups 2 to 4 are not shown to an anonymous caller.
 
 - **Where "frequently visited" is kept**
   ([Q-UI-405](#q-ui-405--frequently-visited-is-kept-in-the-browser-per-principal-by-visits-and-recency)). In browser storage
-  (non-secret, R-UI-043), one key per signed-in principal ID, `trove.frequent.<principal ID>`: per repository its qualified name,
+  (non-secret, R-UI-043), one key per signed-in principal ID, `quader.frequent.<principal ID>`: per repository its qualified name,
   per project its key, each with the number of visits and the time of the last one, at most 20 per kind. A visit is the opening of a
   repository's page or content page, or of a project's screen; it counts once per entry in 15 minutes, and every visit is the entry's
   last one. The order is the number of visits, halved for every 14 days since the last visit, then the last visit. The same store,
@@ -5920,7 +5920,7 @@ Acceptance criteria:
 - Opening the empty list sends at most the one request of the repositories.
 
 ### R-UI-097 · Live suggestions while typing
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **When** ([Q-UI-408](#q-ui-408--one-request-per-settled-text-250-ms-after-the-last-key-an-anonymous-caller-waits-longer)). A
   signed-in caller's text of two or more characters is sent 250 ms after the last key; an anonymous caller's of three or more after
@@ -5966,7 +5966,7 @@ Acceptance criteria:
 - axe reports no serious or critical violation with the list open, in both schemes.
 
 ### R-UI-098 · Enter opens the results page of the main area
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Enter in the field with no active entry opens `/search?q=<text>&kind=<kind>`
 ([Q-UI-411](#q-ui-411--enter-without-a-picked-suggestion-opens-search-whose-tabs-read-the-three-lists)), a page of the main area with
@@ -5997,7 +5997,7 @@ Acceptance criteria:
   `sam` holds nothing is not listed.
 
 ### R-UI-099 · The search leads into the admin area only by an administrator's choice of a marked suggestion
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The owner (2026-11-12, after typing "test" in the top bar and landing on the admin area's repository list with Enter): a search on
 the main page must never end in the admin area, unless live suggestions are shown, some of them are explicitly marked as pages of the
@@ -6047,7 +6047,7 @@ whose owning page defers them. None has a requirement here.
 <summary>Content operations (API)</summary>
 
 - API-006 · Last-modified item under a path — P2
-- API-012 · Compute SHA-256 for legacy items — P2 (trove computes SHA-256 on every upload, INV-4)
+- API-012 · Compute SHA-256 for legacy items — P2 (Quader computes SHA-256 on every upload, INV-4)
 - API-015 · Deploy and extract an archive — P2
 - API-017 · Download a single entry from an archive — P2
 - API-018 · Download all artifacts of a build as an archive — P2
@@ -6056,7 +6056,7 @@ whose owning page defers them. None has a requirement here.
 - API-021 · RubyGems version list — P2
 - API-025 · Create a signed download URL — P2
 - API-026 · Rotate the signed-URL key — P2
-- API-029 · List background tasks — P2 (the job list of R-API-015 covers trove's own jobs)
+- API-029 · List background tasks — P2 (the job list of R-API-015 covers Quader's own jobs)
 - API-030 · Rebalance redundant storage — P2 (not applicable to S3, INV-4)
 - API-034 · Puppet module and release listing — P2
 - API-035 · Source-control repository listing (tags, branches, refs) — P2
@@ -6180,7 +6180,7 @@ whose owning page defers them. None has a requirement here.
 - ADMAPI-079 · Upstream curation availability setting — Later
 - ADMAPI-082 · Support bundles of the distribution service — Later
 - ADMAPI-083 · System and repository import and export — P2 as API operations. The whole-installation
-  backup and restore are MVP, but as `trove backup create` and `trove backup restore` in the
+  backup and restore are MVP, but as `quader backup create` and `quader backup restore` in the
   `backup` role (INV-19, [backup-and-restore.md](backup-and-restore.md)); the API only reports
   their runs (R-API-050, Q-API-10)
 - ADMAPI-087 · Release-set cleanup policy operations — Later
@@ -6273,8 +6273,8 @@ whose owning page defers them. None has a requirement here.
 - **Error bodies** never carry stack traces, SQL, internal host names, secrets or raw upstream errors
   (R-API-009).
 - **Dependency confusion.** The NuGet snippet clears other package sources (R-UI-018); the scoped npm
-  variant routes a scope to trove (R-UI-017).
-- **Authorization epoch header.** `Trove-Authz-Min-Epoch` is read only after authentication
+  variant routes a scope to Quader (R-UI-017).
+- **Authorization epoch header.** `Quader-Authz-Min-Epoch` is read only after authentication
   succeeded, and ignored without a credential, so an anonymous caller can neither probe the epoch
   nor make a replica wait (R-API-052). A forged high value costs one coalesced epoch read and
   answers `412` at once ([authorization.md](authorization.md) R-AUTHZ-032). Neither a `412` nor a
@@ -6286,7 +6286,7 @@ whose owning page defers them. None has a requirement here.
 - **Backups through the API.** The API and UI only read backup runs from PostgreSQL. `web` replicas
   never hold the backup target's credentials, and no endpoint starts, deletes or restores a backup
   (R-API-050, Q-API-10), so neither a hijacked session nor a compromised `web` replica can read or
-  destroy backups through trove, and the chart grants trove no Kubernetes permission that could
+  destroy backups through Quader, and the chart grants Quader no Kubernetes permission that could
   start a pod with the backup role's identity.
 - **Status payloads.** The system status answers show internal facts (node names, the Valkey
   primary's address, the backup target's bucket and prefix) to `system.read` holders only, and
@@ -6325,9 +6325,9 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (b) — `If-Match` is required on every PUT and PATCH of a resource that carries a revision ETag, `If-Match: *` is the explicit blind write, and DELETE and delta-style edits are exempt.
 
-**Rationale:** In trove a lost update is a security problem more often than it looks: besides permission policies, the member order of a virtual repository and the conditions of a CI identity mapping decide which package a client receives and who may publish. (a) and (c) depend on someone recognizing each such field; (b) makes the safe behavior the default for all of them, and the UI already sends the header everywhere. The argument against a mandatory header, scripts that overwrite on purpose, is answered by `If-Match: *` ([RFC 9110 §13.1.1](https://www.rfc-editor.org/rfc/rfc9110#section-13.1.1)), which keeps blind writes possible and makes them visible in the request. DELETE is exempt because a deletion means to remove whatever version exists; delta edits (`add`/`remove` lists, role bindings, assignments) are exempt because they cannot overwrite another writer's change. A script over the document checks the rule, and dropping the switch leaves one behavior to test. The development agent revisits this if a client tool that matters to the owner cannot send request headers.
+**Rationale:** In Quader a lost update is a security problem more often than it looks: besides permission policies, the member order of a virtual repository and the conditions of a CI identity mapping decide which package a client receives and who may publish. (a) and (c) depend on someone recognizing each such field; (b) makes the safe behavior the default for all of them, and the UI already sends the header everywhere. The argument against a mandatory header, scripts that overwrite on purpose, is answered by `If-Match: *` ([RFC 9110 §13.1.1](https://www.rfc-editor.org/rfc/rfc9110#section-13.1.1)), which keeps blind writes possible and makes them visible in the request. DELETE is exempt because a deletion means to remove whatever version exists; delta edits (`add`/`remove` lists, role bindings, assignments) are exempt because they cannot overwrite another writer's change. A script over the document checks the rule, and dropping the switch leaves one behavior to test. The development agent revisits this if a client tool that matters to the owner cannot send request headers.
 
-**Applied in the spec:** R-API-012 states the rule, the exempt list and the 428 answer ([RFC 6585](https://www.rfc-editor.org/rfc/rfc6585#section-3)), and gains two acceptance criteria; the configuration key `api.require_if_match` is removed. R-API-002 adds the operation marker `x-trove-if-match`. R-API-013's acceptance criterion and R-API-023's `batch-update` send the precondition. The security notes gain "Lost updates of grants". Pages that own revisioned resources get the 428 answer as a cross-page edit.
+**Applied in the spec:** R-API-012 states the rule, the exempt list and the 428 answer ([RFC 6585](https://www.rfc-editor.org/rfc/rfc6585#section-3)), and gains two acceptance criteria; the configuration key `api.require_if_match` is removed. R-API-002 adds the operation marker `x-quader-if-match`. R-API-013's acceptance criterion and R-API-023's `batch-update` send the precondition. The security notes gain "Lost updates of grants". Pages that own revisioned resources get the 428 answer as a cross-page edit.
 
 ### Q-API-3 · Cluster-wide rate limiting
 
@@ -6412,7 +6412,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a) — `limit` and `cursor`, with the `items` and `nextCursor` envelope, on every list endpoint.
 
-**Rationale:** Uniform names let the UI and generated clients page through every list with one helper; (a) gets there by changing one page, (b) by changing all others. The development agent would revisit this only if a client ecosystem trove must serve required other names, and none does: package-manager protocols keep their own paging outside `/api/v1/`.
+**Rationale:** Uniform names let the UI and generated clients page through every list with one helper; (a) gets there by changing one page, (b) by changing all others. The development agent would revisit this only if a client ecosystem Quader must serve required other names, and none does: package-manager protocols keep their own paging outside `/api/v1/`.
 
 **Applied in the spec:** R-API-010 states that the names and the envelope are the same on every list endpoint, with no per-page variants. The repository list's `pageSize`, `pageToken` and `nextPageToken` are a cross-page edit to [repositories-and-proxy.md](repositories-and-proxy.md).
 
@@ -6431,25 +6431,25 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Rationale:** The decisive point is that the collision (b) and (d) avoid for repositories exists anyway on other collections: `GET /api/v1/webhooks/deliveries` makes a webhook keyed `deliveries` unreachable, and `/api/v1/users/me` a user named `me`, because the router prefers the literal. A reserved-name rule is therefore needed whatever this question decides; once it exists, the only advantage of (b) and (d) is that five repository names stay free, and the price is a second URL shape. (c) merges operations whose answers differ in status and atomicity. Declaring the reserved names in the OpenAPI document and deriving the literal siblings in CI turns a silent shadowing bug into a failing check. The development agent revisits this if an import from another system must keep a repository key that collides with a reserved verb; (d) is then the fallback for repositories alone.
 
-**Applied in the spec:** R-API-004 now uses the sub-path form for collection actions and adds the reserved-name rule (422 `reserved_name`, `x-trove-reserved-names`, a CI check, an acceptance criterion); R-API-009 lists `reserved_name`; R-API-023 and R-UI-023 use `/batch-create`, `/batch-update`, `/batch-get`, `/batch-delete` and `/quick-setup`. The cross-page edits are the repository paths and reserved keys in [repositories-and-proxy.md](repositories-and-proxy.md), and the reserved names `me` for users, `test`, `deliveries` and `event-types` for webhooks, and `disable-all` for retention policies on their owning pages.
+**Applied in the spec:** R-API-004 now uses the sub-path form for collection actions and adds the reserved-name rule (422 `reserved_name`, `x-quader-reserved-names`, a CI check, an acceptance criterion); R-API-009 lists `reserved_name`; R-API-023 and R-UI-023 use `/batch-create`, `/batch-update`, `/batch-get`, `/batch-delete` and `/quick-setup`. The cross-page edits are the repository paths and reserved keys in [repositories-and-proxy.md](repositories-and-proxy.md), and the reserved names `me` for users, `test`, `deliveries` and `event-types` for webhooks, and `disable-all` for retention policies on their owning pages.
 
 ### Q-API-8 · Stored-secret key-ring status through the API
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-An earlier revision of this page listed `GET /api/v1/system/encryption`; it was dropped because R-ARCH-021 offers key-ring status only through `trove admin secrets status`. This question decides whether the UI and monitoring get that status through the API.
+An earlier revision of this page listed `GET /api/v1/system/encryption`; it was dropped because R-ARCH-021 offers key-ring status only through `quader admin secrets status`. This question decides whether the UI and monitoring get that status through the API.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Command line only | `trove admin secrets status`, as R-ARCH-021 specifies | Nothing new to build | Checking a rotation needs a shell in a pod, where the key files themselves are readable; no UI view; nothing alerts when two replicas' rings disagree |
-| (b) Read-only status endpoint, metrics and a UI card; re-encryption through the task trigger | `GET /api/v1/system/encryption` with key IDs, counts, canary state and every replica's key IDs; `trove_secrets_*` metrics; the `secrets-reencrypt` task started through `POST /api/v1/system/tasks/{name}/run` and refused while the rings are incompatible | A rotation can be checked and finished without pod access; monitoring can alert on incompatible rings and on values left under a retired key; the API refuses the one step that would break decryption | One endpoint, two metrics and one card to build; replicas publish their key IDs |
+| (a) Command line only | `quader admin secrets status`, as R-ARCH-021 specifies | Nothing new to build | Checking a rotation needs a shell in a pod, where the key files themselves are readable; no UI view; nothing alerts when two replicas' rings disagree |
+| (b) Read-only status endpoint, metrics and a UI card; re-encryption through the task trigger | `GET /api/v1/system/encryption` with key IDs, counts, canary state and every replica's key IDs; `quader_secrets_*` metrics; the `secrets-reencrypt` task started through `POST /api/v1/system/tasks/{name}/run` and refused while the rings are incompatible | A rotation can be checked and finished without pod access; monitoring can alert on incompatible rings and on values left under a retired key; the API refuses the one step that would break decryption | One endpoint, two metrics and one card to build; replicas publish their key IDs |
 | (c) Metrics only | Gauges per key ID on the operations listener | Monitoring without a new API | No UI view; no guarded way to start re-encryption; operators still need a pod shell to finish a rotation |
-| (d) Key management through the API | Upload a new key and set the active key through the API | Rotation without touching Kubernetes | Key material travels through the API and must rest somewhere: in PostgreSQL it sits next to the values it protects, in a Secret written by trove it needs write access to Secrets; both break the separation ADR-032 relies on |
+| (d) Key management through the API | Upload a new key and set the active key through the API | Rotation without touching Kubernetes | Key material travels through the API and must rest somewhere: in PostgreSQL it sits next to the values it protects, in a Secret written by Quader it needs write access to Secrets; both break the separation ADR-032 relies on |
 | (e) Endpoint and guarded task in the MVP, metrics and UI card in P1 | (b) split by priority | The smallest MVP that still removes the pod shell and guards re-encryption | The metrics and the card read the payload the endpoint already computes, so the split saves little; without the gauge nothing alerts on a mixed-ring cluster, the state in which upstream credentials stop decrypting on some replicas |
 
 **Choice:** (b) — a read-only key-ring status endpoint with metrics and a card on the system status screen, and re-encryption started through the task trigger, which refuses to run while the replicas' rings are incompatible.
 
-**Rationale:** Today an operator follows the four rotation steps of R-HA-027 and checks two of them with `trove admin secrets status`, which in Kubernetes means `kubectl exec` into a pod, a right that also reads the key files. (b) exposes exactly the state a rotation needs (key IDs, counts, which replica holds which key) and nothing secret. It also covers a case the command cannot see: a running replica whose ring lacks a key that another replica has since made active cannot open the values sealed with it. The command sees only its own pod; the endpoint sees every replica through the registry, and the re-encryption task refuses to start in that state. (c) gives alerts but no guarded action; (d) moves key material into the system it protects; (e) saves only two gauges and one card, because both render the payload the endpoint already computes. The whole of (b) is MVP because the key ring and its rotation are MVP (R-ARCH-021, R-HA-027), the per-key counting already exists for `trove admin secrets status`, and the system status screen that shows the card is MVP (R-UI-038). The development agent revisits this when a key source backed by an external key management service arrives (ADR-032 names it as a later option), whose status would extend this payload.
+**Rationale:** Today an operator follows the four rotation steps of R-HA-027 and checks two of them with `quader admin secrets status`, which in Kubernetes means `kubectl exec` into a pod, a right that also reads the key files. (b) exposes exactly the state a rotation needs (key IDs, counts, which replica holds which key) and nothing secret. It also covers a case the command cannot see: a running replica whose ring lacks a key that another replica has since made active cannot open the values sealed with it. The command sees only its own pod; the endpoint sees every replica through the registry, and the re-encryption task refuses to start in that state. (c) gives alerts but no guarded action; (d) moves key material into the system it protects; (e) saves only two gauges and one card, because both render the payload the endpoint already computes. The whole of (b) is MVP because the key ring and its rotation are MVP (R-ARCH-021, R-HA-027), the per-key counting already exists for `quader admin secrets status`, and the system status screen that shows the card is MVP (R-UI-038). The development agent revisits this when a key source backed by an external key management service arrives (ADR-032 names it as a later option), whose status would extend this payload.
 
 **Applied in the spec:** New requirement R-API-049 (MVP, payload, rules, acceptance criteria), which starts re-encryption as the manual task `secrets-reencrypt` whose job kind carries the same name; R-API-020 lists it; R-UI-038 gains the "Stored-secret keys" card with "Re-encrypt now" and states why the screen is MVP; the security notes gain "Key-ring status without pod access"; the page's Covers list adds HA-016. Cross-page edits: the endpoint, the shared implementation and the job kind renamed from `secrets_reencrypt` to `secrets-reencrypt` in [architecture.md](architecture.md) R-ARCH-016 and R-ARCH-021; the replica registry columns, the manual task `secrets-reencrypt` and the two metrics in [operations-and-observability.md](operations-and-observability.md); the status check in the rotation steps of [ha-and-helm.md](ha-and-helm.md) R-HA-027; the MVP status of the UI status screen in R-OPS-003 and in [ha-and-helm.md](ha-and-helm.md) R-HA-003 and Q-HA-12, which still call it P1; the HA-016 row of the coverage checklist.
 
@@ -6475,7 +6475,7 @@ The owning pages specified two paths for the same functions: [storage.md](storag
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-The owner requires a configurable backup job, comparable to GitLab's, that writes a consistent backup to S3 when it runs (INV-19). It runs as a CronJob of the `backup` role, and only backup and restore pods hold the target's credentials ([backup-and-restore.md](backup-and-restore.md) R-BAK-015). The chart renders no RBAC for trove, and trove never calls the Kubernetes API ([ha-and-helm.md](ha-and-helm.md) R-HA-033). The catalog's backup screen (OPS-032) edits schedules and starts backups from the UI. The question is whether trove's API and UI may start a backup.
+The owner requires a configurable backup job, comparable to GitLab's, that writes a consistent backup to S3 when it runs (INV-19). It runs as a CronJob of the `backup` role, and only backup and restore pods hold the target's credentials ([backup-and-restore.md](backup-and-restore.md) R-BAK-015). The chart renders no RBAC for Quader, and Quader never calls the Kubernetes API ([ha-and-helm.md](ha-and-helm.md) R-HA-033). The catalog's backup screen (OPS-032) edits schedules and starts backups from the UI. The question is whether Quader's API and UI may start a backup.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -6494,40 +6494,40 @@ The owner requires a configurable backup job, comparable to GitLab's, that write
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-R-BAK-014 gives the API the run records only, and `trove backup list` reads the target with the target-reader credential. An operator in the UI wants to know which backups exist and what the retention kept, without target credentials in `web` pods.
+R-BAK-014 gives the API the run records only, and `quader backup list` reads the target with the target-reader credential. An operator in the UI wants to know which backups exist and what the retention kept, without target credentials in `web` pods.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Runs only | The UI lists create runs; which backups still exist is left to the reader | Nothing new | Retention's effect is invisible; `backup_run` rows older than `backup.run_history` disappear while their backups may still be kept by `keep_within` |
 | (b) `web` replicas read the target | A target-reader credential in every `web` pod | The live truth | Every `web` pod could read every backup, a full copy of the database with token hashes and personal data (H-48); breaks R-BAK-015 |
-| (c) Each target-writing run records what it found | After its deletions, a create or delete run stores in its result the complete backups left in the target and the retention it applied | No new credential and no new table; the run already lists the complete backups to apply retention (R-BAK-016) and to build the sweep's keep set (R-BAK-017); the view states its own age | As fresh as the last create or delete run; a backup removed outside trove shows until the next run |
+| (c) Each target-writing run records what it found | After its deletions, a create or delete run stores in its result the complete backups left in the target and the retention it applied | No new credential and no new table; the run already lists the complete backups to apply retention (R-BAK-016) and to build the sweep's keep set (R-BAK-017); the view states its own age | As fresh as the last create or delete run; a backup removed outside Quader shows until the next run |
 | (d) A catalog table kept by the backup role | One row per backup in the target, updated by every run | Survives history pruning by design; queryable | A second copy of what (c) records, with its own consistency rules, grants for the backup role and a backup export class |
 
 **Choice:** (c) — the newest create or delete run that listed the target is the source of `storedBackups` and `retention` in R-API-050.
 
-**Rationale:** The question is how to show the target's state without giving `web` pods a key to it, and the backup run is the one place that already sees the target with the right credential at the right moment, right after it applied retention. Recording that list costs one field in a row the run writes anyway, and the newest run is never pruned, because history pruning removes only old rows. A view that is a day old is honest when it says so, and when runs stop, the overdue mark and `TroveBackupStale` are the signal that matters. (b) trades the credential separation for freshness, (d) duplicates (c) with more machinery, and (a) leaves retention unverifiable from the UI. The development agent revisits this if frequent backups with a long `keep_within` make the recorded list grow beyond about 1,000 entries per run, where (d) becomes cheaper than repeating the list in every result.
+**Rationale:** The question is how to show the target's state without giving `web` pods a key to it, and the backup run is the one place that already sees the target with the right credential at the right moment, right after it applied retention. Recording that list costs one field in a row the run writes anyway, and the newest run is never pruned, because history pruning removes only old rows. A view that is a day old is honest when it says so, and when runs stop, the overdue mark and `QuaderBackupStale` are the signal that matters. (b) trades the credential separation for freshness, (d) duplicates (c) with more machinery, and (a) leaves retention unverifiable from the UI. The development agent revisits this if frequent backups with a long `keep_within` make the recorded list grow beyond about 1,000 entries per run, where (d) becomes cheaper than repeating the list in every result.
 
-**Applied in the spec:** R-API-050 (`storedBackups` with `asOf` and `runId`, `retention`, acceptance criteria), R-UI-048 ("Stored backups", headed with the recording run). Cross-page: [backup-and-restore.md](backup-and-restore.md) R-BAK-016 ("Reporting": the result also carries `retention` with `keepLast` and `keepWithinSeconds`, and `retained`, the complete backups left after the run's deletions with ID, snapshot time, trove version, schema step, database bytes, blob count, blob bytes and the damaged flag) and R-BAK-014 (its API table points to R-API-050, and `expectedInterval` and `lastSuccessAt` move from the list answer into the summary as `expectedIntervalSeconds` and `lastSuccessAt`, because R-API-010 gives every list the same envelope and R-API-003 puts the unit into a duration's name).
+**Applied in the spec:** R-API-050 (`storedBackups` with `asOf` and `runId`, `retention`, acceptance criteria), R-UI-048 ("Stored backups", headed with the recording run). Cross-page: [backup-and-restore.md](backup-and-restore.md) R-BAK-016 ("Reporting": the result also carries `retention` with `keepLast` and `keepWithinSeconds`, and `retained`, the complete backups left after the run's deletions with ID, snapshot time, Quader version, schema step, database bytes, blob count, blob bytes and the damaged flag) and R-BAK-014 (its API table points to R-API-050, and `expectedInterval` and `lastSuccessAt` move from the list answer into the summary as `expectedIntervalSeconds` and `lastSuccessAt`, because R-API-010 gives every list the same envelope and R-API-003 puts the unit into a duration's name).
 
 ### Q-API-12 · Visibility of a management write on the other replicas
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice moves from (c) to the new option (e). Under random distribution, [authorization.md](authorization.md) Q-AUTHZ-12 gave grant changes a request header, `Trove-Authz-Min-Epoch`, which is option (b) restricted to the `authz` area; this page registers both headers and the codes `invalid_header`, `authz_epoch_unknown` and `authz_stale`, and a client that changed grants no longer has to wait for the bound.
+Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice moves from (c) to the new option (e). Under random distribution, [authorization.md](authorization.md) Q-AUTHZ-12 gave grant changes a request header, `Quader-Authz-Min-Epoch`, which is option (b) restricted to the `authz` area; this page registers both headers and the codes `invalid_header`, `authz_epoch_unknown` and `authz_stale`, and a client that changed grants no longer has to wait for the bound.
 
 Requests reach `web` replicas at random (INV-12), and each replica answers package and file requests from an in-process repository snapshot that learns of changes through the change log ([architecture.md](architecture.md) R-ARCH-018): within milliseconds with Valkey, within the poll interval without it. A script that creates a repository through one replica and publishes to it in the next step can reach a replica that does not know the repository yet. npm answers that `404` with a failure, because its fetch layer retries `408`, `420`, `429` and `5xx` only (`make-fetch-happen`, `lib/remote.js`, checked 2026-10-28).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Document the bound | Changes apply everywhere within the propagation bound; clients wait or retry | Nothing to build | npm and NuGet clients cannot be told to wait; a create-then-publish script fails intermittently, more often during a Valkey outage |
-| (b) A consistency token | Writes answer with the change area's epoch; a request carrying `Trove-Min-Change-Epoch` waits up to 2 s until its replica has applied it | Exact read-your-writes for every kind of change, without affinity | Package clients cannot send the header, so the most common case stays open; one more header in the contract |
+| (b) A consistency token | Writes answer with the change area's epoch; a request carrying `Quader-Min-Change-Epoch` waits up to 2 s until its replica has applied it | Exact read-your-writes for every kind of change, without affinity | Package clients cannot send the header, so the most common case stays open; one more header in the contract |
 | (c) Management reads from PostgreSQL, an unknown repository key checked in PostgreSQL, the bound for the rest | API reads of configuration never come from a cache; a key the snapshot lacks is looked up before `404`, and a found key brings the snapshot up to date | Creation, the case package clients meet, is visible at once on every replica; management reads are exact; nothing for clients to learn | A request for an unknown key costs one indexed query, as an unknown token does (R-AUTH-023); changes to existing grants and repositories still follow the bound |
 | (d) Session affinity | The edge keeps a client on one replica | Read-your-writes on that replica | Forbidden by INV-12 and R-ARCH-032; it defeats random load sharing and breaks at every drain |
-| (e) (c), plus (b) for grant changes only | As (c); in addition, grant writes answer `Trove-Authz-Epoch`, and an authenticated request carrying `Trove-Authz-Min-Epoch` is decided on a grant index at least that new, or answered `412` when the database never reached the epoch ([authorization.md](authorization.md) R-AUTHZ-032) | (c)'s strengths; the UI and automation see their own grant changes, added or removed, on whichever replica answers next; one header with one owner instead of a token per change area | Two headers and three codes in the contract; package clients still rely on the bound for grant changes |
+| (e) (c), plus (b) for grant changes only | As (c); in addition, grant writes answer `Quader-Authz-Epoch`, and an authenticated request carrying `Quader-Authz-Min-Epoch` is decided on a grant index at least that new, or answered `412` when the database never reached the epoch ([authorization.md](authorization.md) R-AUTHZ-032) | (c)'s strengths; the UI and automation see their own grant changes, added or removed, on whichever replica answers next; one header with one owner instead of a token per change area | Two headers and three codes in the contract; package clients still rely on the bound for grant changes |
 
-**Choice:** (e) — management reads come from PostgreSQL, an unknown repository key is looked up in PostgreSQL before `404`, a client that changed grants may name the authorization epoch in `Trove-Authz-Min-Epoch`, and every other effect on enforcement follows the propagation bound of R-ARCH-018, which R-API-052 states as the contract.
+**Choice:** (e) — management reads come from PostgreSQL, an unknown repository key is looked up in PostgreSQL before `404`, a client that changed grants may name the authorization epoch in `Quader-Authz-Min-Epoch`, and every other effect on enforcement follows the propagation bound of R-ARCH-018, which R-API-052 states as the contract.
 
-**Rationale:** The bound is short and well defined, so the only cases worth extra machinery are those where a client cannot wait. Package clients are that case, and what they meet in practice is a repository created a moment earlier by a setup script or a pipeline. (c) closes exactly that case with a lookup the replica would otherwise answer from its snapshot, while changes to existing configuration keep the bound, which R-ARCH-018 tests. Management reads cost little and are made by administrators and scripts that compare `ETag`s, so reading them from PostgreSQL makes `GET` after `PATCH` exact on every replica. The second case that cannot simply wait is a client that changes grants and uses them in the next step: the UI after a policy edit, a provisioning pipeline, and trove's own end-to-end tests in the `scatter` profile. Under random distribution it cannot pick the replica that answers next, so the epoch has to travel with the request, and [authorization.md](authorization.md) Q-AUTHZ-12 made that the `authz` area's header; (e) adopts it here instead of a general token, because the grant index is the one enforcement cache whose change a management client acts on at once. A general token for every area, (b), still helps scripts but not package clients, and (d) is ruled out. The development agent revisits this if scripts that create a repository and use it at once through a pattern grant fail in practice: the `repo_config` epoch then joins the same header, as Q-AUTHZ-12 foresees.
+**Rationale:** The bound is short and well defined, so the only cases worth extra machinery are those where a client cannot wait. Package clients are that case, and what they meet in practice is a repository created a moment earlier by a setup script or a pipeline. (c) closes exactly that case with a lookup the replica would otherwise answer from its snapshot, while changes to existing configuration keep the bound, which R-ARCH-018 tests. Management reads cost little and are made by administrators and scripts that compare `ETag`s, so reading them from PostgreSQL makes `GET` after `PATCH` exact on every replica. The second case that cannot simply wait is a client that changes grants and uses them in the next step: the UI after a policy edit, a provisioning pipeline, and Quader's own end-to-end tests in the `scatter` profile. Under random distribution it cannot pick the replica that answers next, so the epoch has to travel with the request, and [authorization.md](authorization.md) Q-AUTHZ-12 made that the `authz` area's header; (e) adopts it here instead of a general token, because the grant index is the one enforcement cache whose change a management client acts on at once. A general token for every area, (b), still helps scripts but not package clients, and (d) is ruled out. The development agent revisits this if scripts that create a repository and use it at once through a pattern grant fail in practice: the `repo_config` epoch then joins the same header, as Q-AUTHZ-12 foresees.
 
 **Applied in the spec:** New requirement R-API-052; R-API-022's acceptance criterion sends its `npm view` through the Service; the acceptance criteria of R-API-031, R-API-032, R-UI-024 and R-UI-029 name the 2 s revocation bound, which [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-023 already states as `auth.revocation_bound`. Cross-page: [architecture.md](architecture.md) R-ARCH-011 step 2 (a key that matches INV-5's pattern but is unknown to the snapshot is looked up in PostgreSQL before `404 repository_not_found`; a found key triggers an immediate change-log poll, coalesced with concurrent ones, and the request waits until the caches it invalidates, the grant index of R-AUTHZ-028 included, are rebuilt; repeated misses for one key are answered from a size-bounded per-replica negative cache that every `repo_config` change evicts), with R-ARCH-018 noting the poll a request may trigger and R-ARCH-032's state table gaining the negative cache. The revisit adds: R-API-052's bullet "Waiting for one's own permission change" with the two headers and an acceptance criterion; R-API-009's codes `invalid_header` (400), `authz_epoch_unknown` (412) and `authz_stale` (503 with `Retry-After`); R-API-018's CORS header lists; the epoch notes in R-API-033 and R-API-047; R-UI-042's handling of the header and of the two codes, with an acceptance criterion; R-UI-046's session store holding the epoch. No cross-page edit beyond those that [authorization.md](authorization.md) Q-AUTHZ-12 already lists.
 
@@ -6537,7 +6537,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Angular Material, the CDK and `@angular/aria` | Material for standard widgets, the CDK for overlays and drag and drop, `@angular/aria` for widgets Material lacks | Released with every Angular major, so it moves with INV-1's pin; accessible tables, dialogs, menus and form fields from day one; theming through design tokens | Needs token work so trove does not look like a stock Material app; SVG icons through `MatIconRegistry` need a `bypassSecurityTrust*` value and insert markup through the CDK's own Trusted Types policy `angular#components`, which the CSP of R-UI-001 does not list, so icons come from a font |
+| (a) Angular Material, the CDK and `@angular/aria` | Material for standard widgets, the CDK for overlays and drag and drop, `@angular/aria` for widgets Material lacks | Released with every Angular major, so it moves with INV-1's pin; accessible tables, dialogs, menus and form fields from day one; theming through design tokens | Needs token work so Quader does not look like a stock Material app; SVG icons through `MatIconRegistry` need a `bypassSecurityTrust*` value and insert markup through the CDK's own Trusted Types policy `angular#components`, which the CSP of R-UI-001 does not list, so icons come from a font |
 | (b) A third-party suite (for example PrimeNG) | One large component set, including tree tables | More widgets out of the box | Release cadence decoupled from Angular majors, so an Angular upgrade waits for the vendor; another large dependency whose CSP and Trusted Types behavior must be verified |
 | (c) Own components on the CDK and `@angular/aria` only | Every widget built in the project | Full control over look and markup | Weeks of widget work (tables, dialogs, date pickers, form fields) before the first screen, and each widget is an accessibility risk to test |
 
@@ -6622,7 +6622,7 @@ Status: **Decided by the development agent** — selected from the options below
 |---|---|---|---|
 | (a) Block always | Every external image becomes a link with its alt text | No third-party request ever; the simplest CSP | Badges and diagrams from an internal GitLab or badge server never show, even where the operator trusts that host |
 | (b) Allow every `https` image | `img-src https:` in the CSP | READMEs look as on public registries | Every viewer's address reaches any host a package author names, including tracking pixels in public packages served through remote repositories |
-| (c) Proxy images through trove | trove fetches and serves the image with size and type limits | Viewer addresses stay inside | trove fetches URLs chosen by README authors from inside the network: a server-side request forgery surface controlled by package authors |
+| (c) Proxy images through Quader | Quader fetches and serves the image with size and type limits | Viewer addresses stay inside | Quader fetches URLs chosen by README authors from inside the network: a server-side request forgery surface controlled by package authors |
 | (d) Block by default; operator allowlist of exact origins mirrored into the CSP | `ui.readme.external_image_origins` lists trusted origins; the sanitizer keeps images from them and the CSP allows exactly them | Air-gapped and cautious installations lose nothing; others enable exactly the hosts they trust; the browser enforces the same list | One configuration key; badges of public packages from unlisted hosts still show as links |
 
 **Choice:** (d) — external images are blocked by default, and an operator can list exact `https` origins whose images are shown; the same list drives the sanitizer and the CSP `img-src`.
@@ -6635,20 +6635,20 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Since 2026-10-28 every installation runs separate `web` and `worker` Deployments, needs at least two replicas per role on different nodes for a drain without outage, and runs on Valkey with Sentinel, which can degrade trove without making a replica unready (INV-2, INV-12). The status screen of R-UI-038 showed a flat list of replicas and treated `objectStore` as the only degraded check. The question is what the screen shows about roles, drains and Valkey, and from which data.
+Since 2026-10-28 every installation runs separate `web` and `worker` Deployments, needs at least two replicas per role on different nodes for a drain without outage, and runs on Valkey with Sentinel, which can degrade Quader without making a replica unready (INV-2, INV-12). The status screen of R-UI-038 showed a flat list of replicas and treated `objectStore` as the only degraded check. The question is what the screen shows about roles, drains and Valkey, and from which data.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Readiness checks only | Each replica shows its checks, `valkey` among the degraded ones | No new data | Nobody sees from the UI that a role has one ready replica left, that both `web` pods share a node, or that replicas disagree about the Valkey primary |
-| (b) Registry-based role and Valkey view | The registry carries role, node (downward API `spec.nodeName`) and each replica's Valkey view (its `valkey` check, the primary it uses, the Sentinels it reaches); the screen groups by role, states drain safety per role and summarises Valkey | Shows the two conditions of a safe drain that trove can observe, and the Valkey states an operator must act on, from data the replicas already have; the catalog's status screen lists a node per service instance (OPS-008) | Two more registry columns per heartbeat; the screen cannot see disruption budgets or free capacity |
+| (b) Registry-based role and Valkey view | The registry carries role, node (downward API `spec.nodeName`) and each replica's Valkey view (its `valkey` check, the primary it uses, the Sentinels it reaches); the screen groups by role, states drain safety per role and summarises Valkey | Shows the two conditions of a safe drain that Quader can observe, and the Valkey states an operator must act on, from data the replicas already have; the catalog's status screen lists a node per service instance (OPS-008) | Two more registry columns per heartbeat; the screen cannot see disruption budgets or free capacity |
 | (c) Read Kubernetes objects | The replicas read Deployments, PodDisruptionBudgets and nodes through the Kubernetes API | Desired replicas, PDB state and node capacity | Needs a ServiceAccount token and read RBAC, which R-HA-033 rules out, for data that `kubectl` and the cluster's monitoring already show |
 | (d) Leave it to dashboards | The screen links to Prometheus and Grafana | Nothing to build in the UI | Installations without dashboards see nothing, and the status screen keeps claiming "all ready" while a role is one pod from an outage |
 
 **Choice:** (b) — the replica registry gains the node name and the number of Sentinels each replica reaches, next to the Valkey primary and check it already records, and the status screen groups replicas by role, states drain safety per role, and summarises Valkey from the replicas' views.
 
-**Rationale:** The owner requires a drain without outage "when the setup is designed for it", and the screen is where an operator without cluster access sees whether it currently is. Two of the conditions are visible to trove: at least two ready replicas per role, and on different nodes. The node name costs one environment variable from the downward API (`spec.nodeName` is offered as an environment variable only, [downward API](https://kubernetes.io/docs/concepts/workloads/pods/downward-api/), checked 2026-10-28), and every replica already computes its Valkey state, circuit, Sentinel reachability and primary for the metrics of R-HA-057. Showing the primary each replica uses exposes the one Valkey fault that metrics aggregated with `max` hide: a replica still bound to a demoted primary. (c) needs Kubernetes permissions that trove deliberately lacks, and (d) leaves the UI silent about the requirement the owner stressed. The screen states what it cannot see (budgets, capacity, the N + 1 rule). The development agent revisits this if trove ever gets read access to the Kubernetes API for another reason, which would let the screen show desired replicas and budgets too.
+**Rationale:** The owner requires a drain without outage "when the setup is designed for it", and the screen is where an operator without cluster access sees whether it currently is. Two of the conditions are visible to Quader: at least two ready replicas per role, and on different nodes. The node name costs one environment variable from the downward API (`spec.nodeName` is offered as an environment variable only, [downward API](https://kubernetes.io/docs/concepts/workloads/pods/downward-api/), checked 2026-10-28), and every replica already computes its Valkey state, circuit, Sentinel reachability and primary for the metrics of R-HA-057. Showing the primary each replica uses exposes the one Valkey fault that metrics aggregated with `max` hide: a replica still bound to a demoted primary. (c) needs Kubernetes permissions that Quader deliberately lacks, and (d) leaves the UI silent about the requirement the owner stressed. The screen states what it cannot see (budgets, capacity, the N + 1 rule). The development agent revisits this if Quader ever gets read access to the Kubernetes API for another reason, which would let the screen show desired replicas and budgets too.
 
-**Applied in the spec:** R-UI-038 (replicas by role with drain safety, the `valkey` degraded check, the Valkey card, the Backups card, the header's "not drain-safe", new acceptance criteria, and the MVP note that names the added registry fields), R-API-038 (the registry and system-information fields the screen reads, adopted unchanged from [operations-and-observability.md](operations-and-observability.md) R-OPS-003 and R-OPS-004, which own their shapes: per replica `roles` (`["all"]` for the development role), `state`, `node`, `checks`, `degraded` and the nested `valkey` view with `state`, `reason` in R-OPS-001's vocabulary, `circuit`, `primary`, `sentinelsReachable`, `sentinelsConfigured`, `serverVersion` and `lastPrimaryChangeAt`; per installation `replicas.roles.<role>` with `live`, `ready`, `degraded` and `nodes`, the `valkey` block of installation facts and the `backup` block). An earlier revision of this block named flat fields (`valkeyPrimary`, `valkeyPrimarySince`, `valkeySentinelsReachable`), `replicas.byRole` and other reason names; the choice is unchanged, only the field shapes follow their owner. Cross-page: [operations-and-observability.md](operations-and-observability.md) R-OPS-003 (column `node` and the `valkey` view column); [ha-and-helm.md](ha-and-helm.md) R-HA-030 (the chart sets `TROVE_NODE_NAME` from `spec.nodeName` for `web` and `worker` pods), R-HA-057 (`trove_valkey_sentinels_reachable` counts the Sentinels that answer a periodic probe of all configured ones) and Q-HA-12 (the status screen now needs these registry fields and the backup summary, so "adds no backend work" no longer holds).
+**Applied in the spec:** R-UI-038 (replicas by role with drain safety, the `valkey` degraded check, the Valkey card, the Backups card, the header's "not drain-safe", new acceptance criteria, and the MVP note that names the added registry fields), R-API-038 (the registry and system-information fields the screen reads, adopted unchanged from [operations-and-observability.md](operations-and-observability.md) R-OPS-003 and R-OPS-004, which own their shapes: per replica `roles` (`["all"]` for the development role), `state`, `node`, `checks`, `degraded` and the nested `valkey` view with `state`, `reason` in R-OPS-001's vocabulary, `circuit`, `primary`, `sentinelsReachable`, `sentinelsConfigured`, `serverVersion` and `lastPrimaryChangeAt`; per installation `replicas.roles.<role>` with `live`, `ready`, `degraded` and `nodes`, the `valkey` block of installation facts and the `backup` block). An earlier revision of this block named flat fields (`valkeyPrimary`, `valkeyPrimarySince`, `valkeySentinelsReachable`), `replicas.byRole` and other reason names; the choice is unchanged, only the field shapes follow their owner. Cross-page: [operations-and-observability.md](operations-and-observability.md) R-OPS-003 (column `node` and the `valkey` view column); [ha-and-helm.md](ha-and-helm.md) R-HA-030 (the chart sets `QUADER_NODE_NAME` from `spec.nodeName` for `web` and `worker` pods), R-HA-057 (`quader_valkey_sentinels_reachable` counts the Sentinels that answer a periodic probe of all configured ones) and Q-HA-12 (the status screen now needs these registry fields and the backup summary, so "adds no backend work" no longer holds).
 
 ### Q-API-13 · Problem member name, problem type, status of validation errors and error codes
 
@@ -6657,7 +6657,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Absolute problem type on the public base URL | `type` is `https://<base url>/api/v1/problems/<code>` | Resolves to a page of the installation | Differs for every installation and for every alias of the host; cannot be compared across installations |
-| (b) Relative reference `/api/v1/problems/<code>` served by trove from the embedded code registry (chosen) | `type` is the same on every installation; `GET /api/v1/problems/{code}` describes it | Identical everywhere; resolves on every base URL | Served by trove only |
+| (b) Relative reference `/api/v1/problems/<code>` served by Quader from the embedded code registry (chosen) | `type` is the same on every installation; `GET /api/v1/problems/{code}` describes it | Identical everywhere; resolves on every base URL | Served by Quader only |
 | (c) `about:blank` with the code as a member | The RFC 9457 default | No catalog to serve | No description of the code for clients |
 
 Request-ID member (chosen with the API conventions, `requestId`): (a) `request_id` in snake case, as the logs
@@ -6719,7 +6719,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Raw-size guard in `angular.json`: warning at 800 kB, error at 1500 kB (chosen as the first line) | Angular's budget on the build output | Fails on a gross regression with no extra tooling | Raw sizes say little about what a browser downloads |
 | (c) Compressed budget of what `index.html` loads, checked by `web/scripts/check-budget.mjs` (400 kB, chosen as the rule of R-UI-001) | The script reads `index.html`, follows the files it loads and sums their gzip size; `build:embed` runs it after the build | The number of R-UI-001 is what is enforced | A script to keep in step with Angular's output names |
 
-Nonce: `index.html` carries the literal `TROVE_CSP_NONCE` on the root element as `ngCspNonce`; the server replaces it with the
+Nonce: `index.html` carries the literal `QUADER_CSP_NONCE` on the root element as `ngCspNonce`; the server replaces it with the
 per-response nonce of the CSP. Inline code: critical-CSS inlining and font inlining are off in `angular.json` (`inlineCritical: false`,
 `fonts.inline: false`), so no inline code needs the nonce.
 
@@ -6824,9 +6824,9 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) A generated service layer | Generated clients | No hand-written shape | Excluded by R-ARCH-004 / R-UI-046 |
 
 **Choice:** (b). Interceptors, outermost first: problem mapping and session consequences, the one automatic retry, then the request conventions.
-CSRF is Angular's XSRF support configured with the cookie `__Host-trv_csrf` and the header `X-CSRF-Token` (R-AUTH-012). The retry layer follows R-UI-042
+CSRF is Angular's XSRF support configured with the cookie `__Host-qdr_csrf` and the header `X-CSRF-Token` (R-AUTH-012). The retry layer follows R-UI-042
 literally and retries at most once per request: a GET after a network error, `429`, or `503 authz_stale`; a request with an idempotency key after a network
-error or `409 idempotency_in_progress`; a PUT or PATCH with its `If-Match` and a DELETE after a network error; a GET without `Trove-Authz-Min-Epoch` after
+error or `409 idempotency_in_progress`; a PUT or PATCH with its `If-Match` and a DELETE after a network error; a GET without `Quader-Authz-Min-Epoch` after
 `412 authz_epoch_unknown`. A DELETE that answers `404` after a retry counts as done; an `ApiError` carries `afterRetry` so that an editor can compare the stored resource with its
 draft before it opens the conflict dialog. The client has no wildcard overload for `If-Match` (R-API-012). Endpoints typed by hand for now:
 `auth/whoami`, `auth/login-options`, `auth/local/login`, `auth/logout`, `authz/me`, `authz/check`, `users/me/preferences` and `system/encryption`, with the shapes
@@ -6895,7 +6895,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Question | Options | Choice |
 |---|---|---|
-| How progress is reported | `fetch` upload streams; a second `HttpClient` on XHR (`withXhr()`) | A second `HttpClient`, created once from the root environment injector in `api/files-api.ts`, with XSRF protection and without the trove interceptors (they cover `/api/v1/` and `/auth/` only). It maps a failure to `ApiError` and ends the session on a 401. It is the only XHR use and it only writes (R-UI-001, R-UI-012) |
+| How progress is reported | `fetch` upload streams; a second `HttpClient` on XHR (`withXhr()`) | A second `HttpClient`, created once from the root environment injector in `api/files-api.ts`, with XSRF protection and without the Quader interceptors (they cover `/api/v1/` and `/auth/` only). It maps a failure to `ApiError` and ends the session on a 401. It is the only XHR use and it only writes (R-UI-001, R-UI-012) |
 | What a path that already exists does | Always replace; replace only when asked | The request carries `If-None-Match: *` unless the user ticks "Replace files that already exist", offered only to a caller who holds `overwrite` there (one batched `authz/check`). Without the tick a duplicate is a `412` with a sentence that names the switch |
 | Hashing | Never; always; up to 256 MiB | Up to 256 MiB the browser computes SHA-256 and sends `Repr-Digest` (R-UI-012). A file that cannot be read for hashing is still sent |
 | A cut upload | Fail; retry once | One retry from the start with the `File` in hand after a request that got no answer. If the retry answers `412` (the first attempt did commit), the dialog reads the item and counts the upload as done when the stored SHA-256 equals the one it computed |
@@ -7028,7 +7028,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) An inline panel of the creating component (chosen) | `<trove-token-secret>` takes the value as an input from a signal of the parent; focus moves to it; "I have copied it" drops the value | The value never passes through a dialog service or route; dies with the component | The panel is part of the page, not modal |
+| (a) An inline panel of the creating component (chosen) | `<quader-token-secret>` takes the value as an input from a signal of the parent; focus moves to it; "I have copied it" drops the value | The value never passes through a dialog service or route; dies with the component | The panel is part of the page, not modal |
 | (b) A dialog | The value is the dialog's data | Familiar | `MAT_DIALOG_DATA` holds the value in a service-owned object |
 | (c) A separate route | `/profile/tokens/created` | Linkable | The value would have to travel in a store or the URL (R-UI-043 forbids both) |
 
@@ -7044,7 +7044,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Question | Options | Choice |
 |---|---|---|
-| How R-UI-005's "disabled with the reason" applies to administration screens | Hide everything; disable everything; disable primary actions and note the rest | List pages show their create button disabled with `<trove-needs>` ("Read only: changing this needs the permission X") described by `aria-describedby`; detail pages hide the edit controls and show the same note at the top. The API decides in every case |
+| How R-UI-005's "disabled with the reason" applies to administration screens | Hide everything; disable everything; disable primary actions and note the rest | List pages show their create button disabled with `<quader-needs>` ("Read only: changing this needs the permission X") described by `aria-describedby`; detail pages hide the edit controls and show the same note at the top. The API decides in every case |
 | Token filter "unused since N days" | A date field; a day count | A day count, sent as `lastUsedBefore` = now minus N days. The API records the last use (R-AUTH-031, Q-AUTH-178), so the filter lists the tokens not used since, and the tokens never used |
 | R-UI-031 warnings about the poll binding and the `authz.hide_existence` display | Invent them from other data; show nothing; wait | Not shown: `GET /api/v1/settings/auth` returns neither the poll-binding mode, the trusted-proxy fact, SCIM state nor `hide_existence`. The status block lists what the answer carries |
 | Audit link on the user detail | Omit; link with a query | A link to `/admin/audit?actor=<username>`; the audit screen's filter parameter is the audit screen's decision |
@@ -7064,9 +7064,9 @@ Status: **Decided by the development agent** — selected from the options below
 |---|---|---|
 | Where the suite and its tools live | A `web/e2e` project with its own `package.json`; devDependencies of the Angular workspace (`web/package.json`) | The Angular workspace's `package.json`: one lockfile pins `@playwright/test` 1.64.1, `@axe-core/playwright` 4.14.0 (its `axe-core ~4.14.0` is the version of the jsdom tier) and `@types/node`; the browser build is `npx playwright install --with-deps chromium`, which resolves to the locked version, so there is one version per tool |
 | How the browser trusts the dev CA | Install the CA into the browser profile or the system store; `--ignore-certificate-errors-spki-list` for the leaf; `ignoreHTTPSErrors` with a verified handshake first | `ignoreHTTPSErrors`, after `global-setup.ts` has opened a verified TLS connection to the edge and to the IdP against the dev CA (name checked). A system store needs administrator rights, an SPKI list breaks when the leaf rotates (E0.15 renews it under load), and the handshake keeps the check the CA exists for |
-| How the browser reaches the IdP's Service name | A hosts entry (administrator rights); a proxy; `--host-resolver-rules` | `--host-resolver-rules=MAP trove-keycloak.trove.svc <port-forward>`: the page keeps the issuer's name, the redirect URI and the certificate check are the real ones, and the host stays untouched |
+| How the browser reaches the IdP's Service name | A hosts entry (administrator rights); a proxy; `--host-resolver-rules` | `--host-resolver-rules=MAP quader-keycloak.quader.svc <port-forward>`: the page keeps the issuer's name, the redirect URI and the certificate check are the real ones, and the host stays untouched |
 | Concurrency and retries | Parallel workers with retries; one worker, no retries | One worker, in file order, no retries. The journeys share one installation and the per-address limits of R-AUTH-038; the audit journey reads the actions of those before it; a retry that turns red into green hides a finding |
-| What an assertion of "scattered" is | Count requests in the proxy; the `X-Trove-Replica` of the responses the page saw | The responses the page saw: at least two replicas per journey. Which replica a single call reaches is not asserted: the calls of a screen repeat in a fixed number, so one of them can reach the same replica on every load (measured on the status screen). Nothing is inferred from server metrics |
+| What an assertion of "scattered" is | Count requests in the proxy; the `X-Quader-Replica` of the responses the page saw | The responses the page saw: at least two replicas per journey. Which replica a single call reaches is not asserted: the calls of a screen repeat in a fixed number, so one of them can reach the same replica on every load (measured on the status screen). Nothing is inferred from server metrics |
 | Test data | Through the UI; through the API | Through the API with the administrator token (INV-17), `beforeAll` and `afterAll` per journey; the UI is used for what the journey tests. `global-setup.ts` removes alice and bob, the JIT users of an earlier run, like E1.1 |
 | Reporting | The list only; plus a JSON report | List, HTML (`.out/playwright/report`, uploaded by CI) and, when `TestE1_11Journeys` runs it, JSON, which the Go test turns into one subtest per journey named by its title, so the `go test -json` report says which journey failed |
 | Browsers | Chromium, Firefox and WebKit | Chromium. R-UI-047 asks for all three in the full run on the commit that closes the phase; that run is not set up (the self-hosted runner would install two more browsers, and the journeys have no engine-specific behavior yet) |
@@ -7099,7 +7099,7 @@ The third was a false alarm of timing, not a defect. The development agent would
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-The owner asked on 2026-10-30 for a product-grade layout with a navigation sidebar, list tables and a filter panel, and supplied a screenshot of another product as a visual reference for layout and interaction only. This decision turns it into trove's own structure; Q-UI-2 (side bar from 1024 CSS px, compact density, container queries) stays in force.
+The owner asked on 2026-10-30 for a product-grade layout with a navigation sidebar, list tables and a filter panel, and supplied a screenshot of another product as a visual reference for layout and interaction only. This decision turns it into Quader's own structure; Q-UI-2 (side bar from 1024 CSS px, compact density, container queries) stays in force.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -7167,7 +7167,7 @@ R-UI-008 lets the server sanitize and the client bind with `[innerHTML]`, with A
 | (b) Bypass the sanitizer with a trusted-HTML value | `bypassSecurityTrustHtml` | The server's ids survive | Forbidden by R-UI-001 and the lint rule; the second layer is gone |
 | (c) Bind with the sanitizer, then finish in the component | Walk the bound element once after render: drop disallowed link targets and image sources, set `rel`, derive the heading anchors, keep fragments in the page | Keeps both layers; the added rules are small and testable | The slug rule exists twice (server and client) and must agree |
 
-**Choice:** (c). After binding, the component removes the `href` of an `a` whose target is not a fragment, `http`, `https` or `mailto`; removes an `img` whose source is neither `https` nor a path of this origin; sets `rel="nofollow noopener noreferrer"` and no `target` on every link that leaves trove; gives every heading `id="user-content-<slug>"` (lower case, letters, digits, `_` and `-` kept, spaces to hyphens, a repeated name numbered); and handles a click on a `#user-content-…` link by scrolling inside the README and never navigating. It never builds HTML. The server's renderer must derive the anchors of its table-of-contents links with the same rule (the function `headingSlug` documents it); where the server's links and the client's anchors disagree, the link is dead and no more.
+**Choice:** (c). After binding, the component removes the `href` of an `a` whose target is not a fragment, `http`, `https` or `mailto`; removes an `img` whose source is neither `https` nor a path of this origin; sets `rel="nofollow noopener noreferrer"` and no `target` on every link that leaves Quader; gives every heading `id="user-content-<slug>"` (lower case, letters, digits, `_` and `-` kept, spaces to hyphens, a repeated name numbered); and handles a click on a `#user-content-…` link by scrolling inside the README and never navigating. It never builds HTML. The server's renderer must derive the anchors of its table-of-contents links with the same rule (the function `headingSlug` documents it); where the server's links and the client's anchors disagree, the link is dead and no more.
 
 **Rationale:** The client-side finishing can only remove or add attributes of a tree that both layers already cleaned; it cannot introduce a script. Deriving the anchors in the client is the only way to have them at all under the second layer. The development agent revisits this when the server's renderer exists: if it emits ids that Angular's sanitizer keeps (it does not today), the derivation is deleted.
 
@@ -7185,9 +7185,9 @@ R-UI-006 asks for three tabs (all, recently viewed, saved views), a default view
 | (b) Tabs are component state | Local signals | Simplest | A link cannot open "Recently viewed"; reload loses it |
 | (c) Saved views store absolute dates | `createdFrom` as a date | Reproducible | A view saved as "last 7 days" would go stale the next day |
 
-**Choice:** (a). Per signed-in principal, browser storage holds the ten last packages opened (`format`, `name`) and at most eight saved views (`id`, name, query) with the id of the default (`trove.packages.<name>`, non-secret, R-UI-043). A relative period is stored as `period=7|30|90` and turned into `createdFrom` when the request is made; a custom period is two days, the end day included (the API's `createdTo` is exclusive, so the request adds one day). Blocked storage, or no signed-in principal, hides the two tabs and ignores `tab=recent|views`. The default view applies once per page load, only when the query has no filter, sort or tab.
+**Choice:** (a). Per signed-in principal, browser storage holds the ten last packages opened (`format`, `name`) and at most eight saved views (`id`, name, query) with the id of the default (`quader.packages.<name>`, non-secret, R-UI-043). A relative period is stored as `period=7|30|90` and turned into `createdFrom` when the request is made; a custom period is two days, the end day included (the API's `createdTo` is exclusive, so the request adds one day). Blocked storage, or no signed-in principal, hides the two tabs and ignores `tab=recent|views`. The default view applies once per page load, only when the query has no filter, sort or tab.
 
-**Rationale:** Anything the user could want to send to a colleague belongs in the URL; anything that is a personal shortcut belongs in browser storage and must disappear without it (R-UI-006). The columns first created, versions and downloads of the owner's reference are shown because the API now carries them (Q-API-159); security scanning is not, because trove has no such data. The development agent revisits this if saved views should follow a user across browsers: that needs a server-side preference (R-API-021), which is a contract change.
+**Rationale:** Anything the user could want to send to a colleague belongs in the URL; anything that is a personal shortcut belongs in browser storage and must disappear without it (R-UI-006). The columns first created, versions and downloads of the owner's reference are shown because the API now carries them (Q-API-159); security scanning is not, because Quader has no such data. The development agent revisits this if saved views should follow a user across browsers: that needs a server-side preference (R-API-021), which is a contract change.
 
 **Applied in the spec:** R-UI-006 (columns, sortable columns, the `tab` parameter, the default view).
 
@@ -7205,7 +7205,7 @@ R-UI-003 gives `/packages/{format}/{name…}`; the name of an npm package may co
 
 **Choice:** (a). The file tree's matcher already produces one breadcrumb step per segment; the route data `crumbParam` names a parameter whose value becomes one step instead (a package name is one thing, whatever its slashes). The step links to the page itself; the area steps are "Packages and files" (a name) and "Packages" (the list).
 
-**Rationale:** The trail's job is to answer "where am I"; `@team-a` alone is not a place in trove. The development agent revisits this if scopes become a screen of their own.
+**Rationale:** The trail's job is to answer "where am I"; `@team-a` alone is not a place in Quader. The development agent revisits this if scopes become a screen of their own.
 
 **Applied in the spec:** R-UI-007 (the name keeps its slash and is one breadcrumb step).
 
@@ -7285,11 +7285,11 @@ R-API-030 and Q-UI-70 spelled the clients of npm `npm`, `pnpm`, `yarn-berry` and
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-UI-021 and R-ARCH-004 render a format's settings from the schema `GET /api/v1/formats` serves (`settingsSchema`, Q-ARCH-229); Q-UI-18 had left the forms hand-built for the generic format, so the `npm` member could be set through the API only. npm's schema holds booleans and string enums, each with a default and its classes in `x-trove-classes`; the audit settings of R-NPM-038 add an object of the remote class with an enum, a nullable URL, and durations and byte sizes written as strings. The server compiles and enforces the whole schema.
+Context: R-UI-021 and R-ARCH-004 render a format's settings from the schema `GET /api/v1/formats` serves (`settingsSchema`, Q-ARCH-229); Q-UI-18 had left the forms hand-built for the generic format, so the `npm` member could be set through the API only. npm's schema holds booleans and string enums, each with a default and its classes in `x-quader-classes`; the audit settings of R-NPM-038 add an object of the remote class with an enum, a nullable URL, and durations and byte sizes written as strings. The server compiles and enforces the whole schema.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A renderer of the subset the formats use, in the repository feature | An object with `properties` is a fieldset, `boolean` a checkbox, `enum` a select, `string` a text field (`format: uri` a URL field), `integer` and `number` a text field with a numeric keyboard; `null` in a type list is ignored, so an empty field means "not set"; a member whose `x-trove-classes` lack the class is left out at every level; any other construct (an array, a composition, `$ref`) is shown with its stored value and "Set it through the API" | No dependency (INV-1); a format adds a setting by editing its schema; the server stays the only validator | A construct outside the subset is not editable until the renderer learns it |
+| (a) A renderer of the subset the formats use, in the repository feature | An object with `properties` is a fieldset, `boolean` a checkbox, `enum` a select, `string` a text field (`format: uri` a URL field), `integer` and `number` a text field with a numeric keyboard; `null` in a type list is ignored, so an empty field means "not set"; a member whose `x-quader-classes` lack the class is left out at every level; any other construct (an array, a composition, `$ref`) is shown with its stored value and "Set it through the API" | No dependency (INV-1); a format adds a setting by editing its schema; the server stays the only validator | A construct outside the subset is not editable until the renderer learns it |
 | (b) A JSON Schema form library | A generic form engine | Covers more of the standard | A dependency with its own widgets, styles and accessibility for four switches today; its validation would be a second one next to the server's |
 | (c) A panel per format under `features/formats/<id>/` | Hand-written controls | Free layout | Code per field, which R-ARCH-004 reserves for what a schema cannot express; the schema and the panel drift apart |
 
@@ -7302,7 +7302,7 @@ Context: R-UI-021 and R-ARCH-004 render a format's settings from the schema `GET
 **Amended 2026-11-12 (the owner's look at npm's Advanced settings):** the fieldset of an object drew a framed box inside Advanced
 settings, where every other group stands under a heading, so **Security audit** looked like another kind of thing than **Paths**.
 An object is now a group (`role="group"`, named by its heading) under a heading one level below the one the part stands under
-(`headingLevel` of `<trove-format-settings>`: 3 on the settings page, 4 in the creation form, one more for each object it lies in),
+(`headingLevel` of `<quader-format-settings>`: 3 on the settings page, 4 in the creation form, one more for each object it lies in),
 in the type of the page's other group headings and without a frame; the checkboxes of a list of enum values stand under the
 setting's label like any other field, also without a frame. Code: [format-settings.ts](../../web/src/app/features/repositories/format-settings.ts).
 
@@ -7333,7 +7333,7 @@ the schema's and English, as chosen; what changes is what they say and where the
 |---|---|---|---|
 | Where does the specification's wording go? | (a) The format's page of the specification and the member's description in the OpenAPI document, which already carry it (chosen) | One place for the developer's facts, each next to the requirement it belongs to; the schema holds only what the form shows | The schema served by `GET /api/v1/formats` no longer explains the edge cases; its reader looks them up in the OpenAPI document |
 | | (b) `$comment` in the schema, beside the plain `description` | The schema stays self-contained | A third copy of each fact next to the spec and the OpenAPI document, which drifts |
-| How does an enum value get a label? | (a) `x-trove-enum-titles` next to `enum`: an object from each value, as text, to its label (chosen) | `enum` stays as it is, so the server's validation and the comparison with the OpenAPI member (`TestR_ARCH_008_…`) are untouched; a value without a label is shown as written | An extension keyword the JSON Schema standard does not define, like `x-trove-classes` |
+| How does an enum value get a label? | (a) `x-quader-enum-titles` next to `enum`: an object from each value, as text, to its label (chosen) | `enum` stays as it is, so the server's validation and the comparison with the OpenAPI member (`TestR_ARCH_008_…`) are untouched; a value without a label is shown as written | An extension keyword the JSON Schema standard does not define, like `x-quader-classes` |
 | | (b) `oneOf` of `const` with a `title` each, the standard's idiom | Standard JSON Schema | Every enum rewritten as a composition, which the renderer of Q-UI-78 shows as "set it through the API", and the OpenAPI comparison reads `enum` |
 | | (c) A table of labels per format in the UI | Labels translated with the UI | Code per field (R-ARCH-004); a new value without a UI change is shown bare |
 
@@ -7344,7 +7344,7 @@ like the title and is shown with `lang="en"`. **Rationale:** the facts the edge 
 page of the specification and in the OpenAPI member, so the plain text costs no fact. The development agent revisits this when the
 owner wants the descriptions in German (option (c) of the first table, localized schemas) or a reader of the API asks for the
 edge cases in the served schema. **Applied in the spec:** R-UI-088; [architecture.md](architecture.md) R-ARCH-008 names
-`x-trove-enum-titles`; `settingsSchema` of `GET /api/v1/formats` in the OpenAPI document.
+`x-quader-enum-titles`; `settingsSchema` of `GET /api/v1/formats` in the OpenAPI document.
 
 ### Q-UI-80 · A setting equal to its default is not written
 
@@ -7386,7 +7386,7 @@ Context: R-UI-021 has five steps (class, format, basic settings, class-specific 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: E2.8 asks that E2.1's configure step use the snippets of the client setup dialog verbatim. The npm matrix does not open the dialog: `setupSnippet` ([npm_matrix_test.go](../../test/e2e/npm_matrix_test.go)) renders npm's configure templates with the data the setup API would give them (the edge's registry URL on `localhost`, the keyed credential line with `${TROVE_TOKEN}`, the always-auth switches of a repository that is not anonymously readable). R-UI-047's acceptance criterion asks that a deliberately broken snippet template fail the client-setup journey.
+Context: E2.8 asks that E2.1's configure step use the snippets of the client setup dialog verbatim. The npm matrix does not open the dialog: `setupSnippet` ([npm_matrix_test.go](../../test/e2e/npm_matrix_test.go)) renders npm's configure templates with the data the setup API would give them (the edge's registry URL on `localhost`, the keyed credential line with `${QUADER_TOKEN}`, the always-auth switches of a repository that is not anonymously readable). R-UI-047's acceptance criterion asks that a deliberately broken snippet template fail the client-setup journey.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -7394,7 +7394,7 @@ Context: E2.8 asks that E2.1's configure step use the snippets of the client set
 | (b) The journey compares the page with the setup API's answer | `GET /api/v1/repositories/{repoKey}/client-setup` with the administrator token | Nothing written twice | Proves only that the page shows what the API says; a broken template passes |
 | (c) The matrix opens the dialog | The Go test drives a browser | The literal criterion | A browser in the npm suite for text the API already returns |
 
-**Choice:** (a), with the credential mode "Reference an environment variable", which writes `${TROVE_TOKEN}` as the matrix does. The journey's repository is its own local npm repository (INV-17: prepared through the API), not `npm-all`, which only the npm suite creates; the templates are the same for every key.
+**Choice:** (a), with the credential mode "Reference an environment variable", which writes `${QUADER_TOKEN}` as the matrix does. The journey's repository is its own local npm repository (INV-17: prepared through the API), not `npm-all`, which only the npm suite creates; the templates are the same for every key.
 
 **Rationale:** The criterion exists to catch a dialog and a client configuration that disagree, and only an expected text that neither of them produced can. The development agent revisits this when the matrix reads its snippets from the setup API itself, which would make (b) enough.
 
@@ -7412,7 +7412,7 @@ offers documentation and setup help for all package registry variants."
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Keep the snippets as the only help | The setup page | Nothing to build | A developer learns what trove does from its error messages |
+| (a) Keep the snippets as the only help | The setup page | Nothing to build | A developer learns what Quader does from its error messages |
 | (b) An in-app guide per variant (format × class × client), in the beta, and every later format ships its own | R-UI-049, R-API-053; R-UI-019 raised | Every variant is explained where it is used | One more surface each format keeps true |
 
 **Choice:** (b).
@@ -7453,7 +7453,7 @@ Context: the server renders a section's Markdown with the README renderer (Q-API
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Bind the HTML with the README component and render the snippets as structured data | `trove-package-readme` per section; snippets with copy buttons | The one finishing pass of Q-UI-71 serves both; the snippets are copied exactly as the setup page shows them | One README component instance per section |
+| (a) Bind the HTML with the README component and render the snippets as structured data | `quader-package-readme` per section; snippets with copy buttons | The one finishing pass of Q-UI-71 serves both; the snippets are copied exactly as the setup page shows them | One README component instance per section |
 | (b) Put the snippets into the Markdown as code blocks | One HTML string | One binding | No copy button, and the snippet is no longer the setup API's value but a rendering of it |
 | (c) A component of its own for guide HTML | A second finishing pass | Freedom | Two implementations of one sanitizing rule |
 
@@ -7502,7 +7502,7 @@ Context: E2.13 asks that the guide of a virtual npm repository show the configur
 
 Status: **The owner's requirement of 2026-11-01; the adaptation decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. **Superseded in part by [Q-UI-96](#q-ui-96--cogpit-blue-as-the-primary-colour-green-only-for-positive-status)**: the accent is cogpit's blue (light `#0a62c2`, dark `#4aa8ff`) instead of the screens' green, and green marks a positive status only; the surfaces, borders, chrome and type stay as chosen here.
 
-Context: the owner sent two example screens, one dark and one light, and asked that trove take their design language and
+Context: the owner sent two example screens, one dark and one light, and asked that Quader take their design language and
 colours, with a dark and a light mode. The measured values and the reading of both screens are in
 [design-language.md](../developer/design-language.md). Two measured values miss WCAG AA, which R-UI-044 requires and the
 browser tier checks with axe's `color-contrast` rule: the accent green as text or as the fill under white text on the
@@ -7543,7 +7543,7 @@ renders and sanitizes Markdown for READMEs and guides (R-UI-008, R-API-053), and
 **Choice:** (a). Links between pages are relative `.md` links, so the same files read on GitHub; the server turns them into
 links of the help area, and a link to a page or heading that does not exist stops the load.
 
-**Rationale:** The manual is the third Markdown text trove shows; giving it the pipeline the other two use keeps one
+**Rationale:** The manual is the third Markdown text Quader shows; giving it the pipeline the other two use keeps one
 sanitizer policy and one binding component, and embedding it ties the text to the version it describes. The development
 agent revisits this if the manual needs content per installation (addresses, configured providers), which the guides of
 R-API-053 already cover for package clients.
@@ -7571,7 +7571,7 @@ screen gains a help need its manual page does not answer, for example with a fra
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-A token is bound to endpoints through `scope.endpoints` ([endpoints.md](endpoints.md) R-EP-011); a further endpoint accepts only service-account tokens bound to it (Q-EP-10). The forms had no field, so the binding needed the API or `trove admin token`.
+A token is bound to endpoints through `scope.endpoints` ([endpoints.md](endpoints.md) R-EP-011); a further endpoint accepts only service-account tokens bound to it (Q-EP-10). The forms had no field, so the binding needed the API or `quader admin token`.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -7662,9 +7662,9 @@ R-UI-047 gives each format a browser journey. The npm journey publishes a packag
 Status: **Decided by the owner on 2026-11-02.** **Superseded by [Q-UI-128](#q-ui-128--the-references-type-colours-and-measures)**
 for the blue: the accent is the reference's blue since 2026-11-06; green still marks a positive status only.
 
-Context: Q-UI-88 took the green of the owner's example screens as trove's one accent, so green marked the current
+Context: Q-UI-88 took the green of the owner's example screens as Quader's one accent, so green marked the current
 navigation entry, the primary button, links, the focus ring and a selected row as well as a positive status
-(`--trove-status-ok` was the accent green). The owner wants the blue of his other product, cogpit, as the regular primary
+(`--quader-status-ok` was the accent green). The owner wants the blue of his other product, cogpit, as the regular primary
 colour, and green only for a positive status. cogpit's palettes (`internal/ui/fyneui/theme.go` in guided-traffic/cogpit)
 give: dark primary `#4aa8ff` (glow blue) with `#04111f` on it, hyperlink `#7cc4ff`, selection `#22406a`, focus the
 primary at alpha `0xaa`; light primary `#0a6fd6` with white on it, hyperlink `#0a62c2`, selection `#cfe2ff`, focus
@@ -7672,10 +7672,10 @@ primary at alpha `0xaa`; light primary `#0a6fd6` with white on it, hyperlink `#0
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) cogpit's blue as the primary, green for a positive status only | The accent, the link, the focus ring, the selection fills and the navigation's accent take cogpit's values; `--trove-status-ok` keeps its green | The owner's two products share one accent; green has one meaning, "fine", instead of "here", "go" and "fine" at once | Departs from the example screens' green; cogpit's light primary and its translucent focus miss WCAG AA on some of trove's surfaces and need the rule of Q-UI-88 |
+| (a) cogpit's blue as the primary, green for a positive status only | The accent, the link, the focus ring, the selection fills and the navigation's accent take cogpit's values; `--quader-status-ok` keeps its green | The owner's two products share one accent; green has one meaning, "fine", instead of "here", "go" and "fine" at once | Departs from the example screens' green; cogpit's light primary and its translucent focus miss WCAG AA on some of Quader's surfaces and need the rule of Q-UI-88 |
 | (b) Keep green | Q-UI-88 as built | No change | A positive status and the accent are one colour, so a green mark does not say which of the two it is; not what the owner wants |
 
-**Choice:** (a). Where a cogpit value misses AA on a surface of trove, the rule of Q-UI-88 applies (darkened in the light
+**Choice:** (a). Where a cogpit value misses AA on a surface of Quader, the rule of Q-UI-88 applies (darkened in the light
 scheme, lightened in the dark one, in its own hue):
 
 - The light primary is `#0a62c2`, cogpit's own light hyperlink, for the primary as a whole. cogpit's `#0a6fd6` is 4.9:1
@@ -7685,18 +7685,18 @@ scheme, lightened in the dark one, in its own hue):
   the focused label and the checkbox.
 - The dark primary is `#4aa8ff` with `#04111f` on it, as in cogpit: 7.8:1 on the page, 5.7:1 on the field, 7.5:1 on a
   filled button.
-- Links take cogpit's hyperlink through a new token, `--trove-link`: `#0a62c2` in the light scheme (the primary itself),
+- Links take cogpit's hyperlink through a new token, `--quader-link`: `#0a62c2` in the light scheme (the primary itself),
   `#7cc4ff` in the dark one (10.5:1 on the page).
 - The focus ring stays a solid 2 px line in the primary: cogpit's light focus at alpha `0x99` is 2.5:1 on white, below the
   3:1 of WCAG 1.4.11.
 - `primary-container` is cogpit's selection (`#cfe2ff`, `#22406a`); `secondary-container`, the fill of the selected tree
   item, the current audit row and the active access tab, is cogpit's selected row (`#d6e6ff`, `#183252`); the text on
   both is cogpit's selected-row text (`#0b1a33`, `#f2f7ff`).
-- The navigation's accent (`--trove-nav-accent`, and in the dark scheme the current entry's text and fill) is cogpit's
+- The navigation's accent (`--quader-nav-accent`, and in the dark scheme the current entry's text and fill) is cogpit's
   glow blue `#4aa8ff` in both schemes, because the frame is dark in both: 4.7:1 on the light side bar.
 - The Material base palette is `mat.$azure-palette`, whose tone 40 has cogpit's hue of 210° (`mat.$blue-palette` is at
   237°, toward violet).
-- `--trove-status-ok` keeps `#1a6e3c` and `#3db064`. Every positive status of the UI already used it and none used the
+- `--quader-status-ok` keeps `#1a6e3c` and `#3db064`. Every positive status of the UI already used it and none used the
   accent, so no screen changes its status colour. No other token is green; `web/src/styles/palette.spec.ts` checks that,
   and the contrast of every accent pair, in the unit tier.
 
@@ -8088,7 +8088,7 @@ the rule for a missing `If-Match`; it replaces what Q-API-24 and Q-API-32 said s
 | Question | Options | Choice |
 |---|---|---|
 | The document marks `If-Match` required on `PUT` and `PATCH`, and the generated wrapper answers a missing required header with 400 before any handler runs. R-API-012 says 428 | (a) Mark the header optional in the document and let each handler answer 428. (b) Keep it required and map the wrapper's missing-`If-Match` error to the 428 problem in `bindError` | (b): the document keeps saying the header is needed (a client generated from it sends it), one place answers it for every resource, and the problem is the 428 of `Precondition.Require`. A handler does not check the header again |
-| `Trove-Authz-Epoch` is raised by the change log in a hook just before `COMMIT`, after the operation returned its outcome, yet an idempotent create stores its outcome (R-API-014) and a replay must carry the epoch of the first answer | (a) Leave the header out of a replay. (b) Read the epoch in the operation by locking the epoch row early. (c) Let an outcome complete itself after the commit hooks: `Outcome.Finish` runs in a hook registered after the operation's own, before the outcome is stored | (c): (a) loses what a client that lost the first response needs; (b) takes the epoch row before the policy rows and can deadlock with a writer that takes them in the other order. Every idempotent create that changes authorization data uses it through `finishEpoch` ([Q-API-44](#q-api-44--one-header-name-and-one-setter-for-the-authorization-epoch)) |
+| `Quader-Authz-Epoch` is raised by the change log in a hook just before `COMMIT`, after the operation returned its outcome, yet an idempotent create stores its outcome (R-API-014) and a replay must carry the epoch of the first answer | (a) Leave the header out of a replay. (b) Read the epoch in the operation by locking the epoch row early. (c) Let an outcome complete itself after the commit hooks: `Outcome.Finish` runs in a hook registered after the operation's own, before the outcome is stored | (c): (a) loses what a client that lost the first response needs; (b) takes the epoch row before the policy rows and can deadlock with a writer that takes them in the other order. Every idempotent create that changes authorization data uses it through `finishEpoch` ([Q-API-44](#q-api-44--one-header-name-and-one-setter-for-the-authorization-epoch)) |
 
 **Rationale:** both keep the convention in the shared package and add nothing a resource has to remember. The development agent would revisit (c) if a second use shows that a resource needs to change the status after the hooks, which `Finish` allows but no one needs; it would revisit the binder mapping if the code generator offers a hook for required headers.
 
@@ -8162,12 +8162,12 @@ R-REPO-009 returns "the stored document plus warnings", R-API-003 says a body ob
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-R-API-007 lists the operations that need a recent interactive authentication when called with a session, and the document marked a few of them with `x-trove-recent-auth: true`; only the token and settings handlers checked it, each in its own way.
+R-API-007 lists the operations that need a recent interactive authentication when called with a session, and the document marked a few of them with `x-quader-recent-auth: true`; only the token and settings handlers checked it, each in its own way.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Each handler checks | `requireRecentAuth` stays a call in the handlers | Nothing to change | An operation that declares the extension and forgets the call is open (the exposure rule writes were, H-165); the table of R-API-007 is not what runs |
-| (b) The shared step, after the permission (chosen) | `Operation.RecentAuth` is read from `x-trove-recent-auth` at load; `authorize` calls `requireRecentAuth` once `decide` allowed the caller; a declaration other than `true` refuses start-up | One mechanism; the document is what runs; a caller who may not act gets 403, not an invitation to sign in again | An operation decided inside its handler (`authenticated: true` with an own check, such as token creation) answers 401 before its own 403 |
+| (b) The shared step, after the permission (chosen) | `Operation.RecentAuth` is read from `x-quader-recent-auth` at load; `authorize` calls `requireRecentAuth` once `decide` allowed the caller; a declaration other than `true` refuses start-up | One mechanism; the document is what runs; a caller who may not act gets 403, not an invitation to sign in again | An operation decided inside its handler (`authenticated: true` with an own check, such as token creation) answers 401 before its own 403 |
 | (c) The shared step before the permission | Check first, decide second | A stale session never reaches the evaluator | Tells a caller without the permission to sign in again, and the audit event of the denial is lost |
 
 **Choice:** (b). The declaration is on every operation of the table that exists in this build: creating and rotating a token (`createToken`, `rotateToken`, `createServiceAccountToken`), changing the authentication settings, creating, replacing, patching and deleting a permission policy, binding and unbinding a role, deleting a repository, and the four writes of exposure rules. The rows that name operations of later milestones (approving a command-line login, CI issuers and mappings, applying configuration as code) take the declaration with those operations; `TestR_API_007_DocumentDeclaresRecentAuth` lists the set, so a new declaration or a missing one is a deliberate edit. A token is not asked (R-API-007): its scope bounds it. With no session store the step answers 503 instead of passing.
@@ -8202,7 +8202,7 @@ The rule for a missing `If-Match` was written in three decision blocks (Q-API-24
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Keep the variants | Each resource decides | Nothing to change | A new resource picks one; the document and the behavior drift |
-| (b) One declaration and one error (chosen) | A `PUT` or `PATCH` that requires the header declares `x-trove-if-match: required` and references the shared `IfMatch` parameter; a `DELETE` references the shared `IfMatchOptional`; `bindError` maps the binder's error to the 428; `errs.Stale(what, current)` is the one 412 with `currentEtag` and the cause `errs.StaleRevision`; `errs.AnyRevision` is the one value for the blind write | The document is what runs; a handler cannot forget the check | The domain packages import `errs` for the constant, which they already do |
+| (b) One declaration and one error (chosen) | A `PUT` or `PATCH` that requires the header declares `x-quader-if-match: required` and references the shared `IfMatch` parameter; a `DELETE` references the shared `IfMatchOptional`; `bindError` maps the binder's error to the 428; `errs.Stale(what, current)` is the one 412 with `currentEtag` and the cause `errs.StaleRevision`; `errs.AnyRevision` is the one value for the blind write | The document is what runs; a handler cannot forget the check | The domain packages import `errs` for the constant, which they already do |
 
 **Choice:** (b). `TestR_API_012_OneMechanismForAMissingIfMatch` reads the document: every `PUT` and `PATCH` either requires the header with the shared parameter alone or is on the list of exemptions (membership deltas, role bindings, file content), and documents the 428; `TestR_API_012_MissingIfMatchIs428` sends every such operation without the header through the generated wrapper. The domain returns the cause and the extension itself (`repository`, `authz`, `token` settings, the principal manager), the handler adds nothing, and `Failed` is the same error for a handler that compares in memory before it calls the domain. A tag the server never issued is revision 0, which no row has, so it answers 412 with the current tag.
 
@@ -8231,7 +8231,7 @@ The policy shows its revision as `version`, the repository as `version`, an expo
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-`Trove-Authz-Epoch` was written by `authz.HeaderEpoch` in the policy handlers and by a second constant in the endpoint handlers, and the exposure rule create gave its epoch to the first answer only (a replay carried none).
+`Quader-Authz-Epoch` was written by `authz.HeaderEpoch` in the policy handlers and by a second constant in the endpoint handlers, and the exposure rule create gave its epoch to the first answer only (a replay carried none).
 
 **Choice:** `authz.HeaderEpoch` is the one name, `setEpoch` the one setter for a plain answer, and `finishEpoch` the one `Outcome.Finish` for an idempotent create: the change log raises the epoch in a hook just before `COMMIT`, `Finish` runs after that hook and before the outcome is stored, so a replay carries the epoch of the first answer (Q-API-28). The exposure rule create uses it like the policy create. The endpoint integration test sends the same create twice and compares the epochs.
 
@@ -8398,7 +8398,7 @@ The UI of the packages area is built before the package read model and the forma
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-The `x-trove-permission` declaration of an operation is enforced before its handler (R-API-008). The package operations are not about one repository: a package is visible when any of its versions is, and the answer is filtered in SQL (R-API-029).
+The `x-quader-permission` declaration of an operation is enforced before its handler (R-API-008). The package operations are not about one repository: a package is visible when any of its versions is, and the answer is filtered in SQL (R-API-029).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8406,7 +8406,7 @@ The `x-trove-permission` declaration of an operation is enforced before its hand
 | (b) `{authenticated: true}` | Any signed-in principal | Simple | Anonymous read (R-UI-004, R-API-029 "anonymous where allowed") would not work |
 | (c) A capability such as `packages:read` | A new system capability | Visible in the document | A capability that grants nothing by itself: the decision is still per repository and package (INV-9); it would only add a second place to keep in step |
 
-**Choice:** (a) for the six package operations, and the action form `read` on `path.repoKey` for the client setup operation. `lookup` is a reserved name of `{packageId}` (R-API-004): `GET /api/v1/packages/lookup` is a literal next to the key, so the parameter schema lists it in `x-trove-reserved-names`, which the document check demands; package identifiers (`pkg_…`) can never be `lookup`.
+**Choice:** (a) for the six package operations, and the action form `read` on `path.repoKey` for the client setup operation. `lookup` is a reserved name of `{packageId}` (R-API-004): `GET /api/v1/packages/lookup` is a literal next to the key, so the parameter schema lists it in `x-quader-reserved-names`, which the document check demands; package identifiers (`pkg_…`) can never be `lookup`.
 
 **Rationale:** The same reasoning as for `GET /api/v1/repositories`: the declaration admits the caller, the read model filters, and a hidden package is a `404` identical to a missing one. The implementation test is therefore the one of R-API-029's second acceptance criterion (a caller who reads only one repository sees only its versions), and it belongs to the work package that writes the read model. The development agent revisits this if a package operation gains a write form (ownership, R-API-048), which gets an action declaration on its repository.
 
@@ -8497,7 +8497,7 @@ R-API-029 puts the README renderer on the server and sketches a table `package_r
 | (b) The cache table now | Render once per (version, inputs) | One rendering per README | A table written on a read path, a job that prunes it, a migration, and a row per README per policy |
 | (c) Render at publish | The HTML in the version row | No rendering on read | The renderer version is then a data migration |
 
-**Choice:** (a). `readme.Renderer` (`internal/packages/readme`) is goldmark with the GitHub-style extensions and raw HTML, bluemonday with the allowlist of R-UI-008, and a pass over the parsed result for what an allowlist cannot say: the links (an absolute `http`, `https` or `mailto` address keeps its target and gets `rel="nofollow noopener noreferrer"`; a fragment stays; anything else is reduced to its text), the images (an `https` image of a listed origin stays, an image of trove's own origin or a relative or other source is dropped, every other becomes a link "External image: <alt>" and is counted), disabled checkboxes, and the heading anchors (Q-UI-76). A source above the limit is cut; an HTML above 1 MiB is re-rendered from a proportionally shorter source; a rendering above two seconds is abandoned for the escaped text; each sets `truncated`. A list of origins that names an origin of the installation is refused at start-up. The cache table of R-API-029 is not built: its three inputs are the parts of the tag, and the table is added when a profile asks for it (H-298).
+**Choice:** (a). `readme.Renderer` (`internal/packages/readme`) is goldmark with the GitHub-style extensions and raw HTML, bluemonday with the allowlist of R-UI-008, and a pass over the parsed result for what an allowlist cannot say: the links (an absolute `http`, `https` or `mailto` address keeps its target and gets `rel="nofollow noopener noreferrer"`; a fragment stays; anything else is reduced to its text), the images (an `https` image of a listed origin stays, an image of Quader's own origin or a relative or other source is dropped, every other becomes a link "External image: <alt>" and is counted), disabled checkboxes, and the heading anchors (Q-UI-76). A source above the limit is cut; an HTML above 1 MiB is re-rendered from a proportionally shorter source; a rendering above two seconds is abandoned for the escaped text; each sets `truncated`. A list of origins that names an origin of the installation is refused at start-up. The cache table of R-API-029 is not built: its three inputs are the parts of the tag, and the table is added when a profile asks for it (H-298).
 
 **Rationale:** The browser keeps the answer by its tag; the server renders for a first view and for a changed policy. The development agent revisits this when README requests dominate the CPU of a replica, or when the abandoned renderings of H-298 show up in a profile: the table then holds the HTML and the abandoned work is bounded by it.
 
@@ -8507,7 +8507,7 @@ R-API-029 puts the README renderer on the server and sketches a table `package_r
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-R-API-030 asks for three credential modes (`placeholder`, `env`, `none`), the package of an install snippet, shell and XML quoting, and addresses from the configured base URL. The npm templates of R-NPM-041 are `text/template` over `SetupData`, which has no credential field, and always spell the credential as `${TROVE_TOKEN}`.
+R-API-030 asks for three credential modes (`placeholder`, `env`, `none`), the package of an install snippet, shell and XML quoting, and addresses from the configured base URL. The npm templates of R-NPM-041 are `text/template` over `SetupData`, which has no credential field, and always spell the credential as `${QUADER_TOKEN}`.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8515,7 +8515,7 @@ R-API-030 asks for three credential modes (`placeholder`, `env`, `none`), the pa
 | (b) The API rewrites the rendered text | The template spells the token as the literal `formats.SetupTokenRef` and the package as `formats.SetupPackageRef`; the API replaces the first by the placeholder or the configured variable (`ui.client_setup.token_env_var`) or drops the lines that hold it, and the second by the quoted package | The modes and the quoting exist once; a template stays one text; `RequiresAuth` is cleared for `none` so that an always-auth switch goes with the credential | The template and the API share two literals |
 | (c) The UI strips and substitutes | The server sends the `env` form | Nothing on the server | The UI would parse client syntax (Q-API-160) |
 
-**Choice:** (b). The templates also get the functions `shell` and `xml` for values they place in a command or in XML. A package name or version above 256 bytes, with a control character or in the shape of a token (`trv_(pat|sat|cit)_`) is refused with `400`, so that the answer cannot echo a token it was handed; every snippet is checked against the shape again before it is sent. The addresses are built on the configured base URL of the endpoint the request arrived on; without one the operation answers `503`, because an address from the `Host` of the request would end in a file the user copies. `requiresAuth` of the templates is true unless an anonymous caller on the same endpoint may read the repository. The publish tab is rendered only for a caller who holds `deploy` on the publish target (the repository itself when local, the deploy target of a virtual one, none for a remote one) and `publishTarget` names it. The snippet id is `<client>.<section>[.<name>]`, with `-scoped` appended to the name of the scoped variant of a configure snippet. The npm templates contribute configure and install snippets (R-NPM-041); the publish and CI snippets of R-UI-017 are not templates yet, so the publish tab is empty for npm until they are (the API renders them where a format supplies them). The npm publish templates arrived with Q-API-180.
+**Choice:** (b). The templates also get the functions `shell` and `xml` for values they place in a command or in XML. A package name or version above 256 bytes, with a control character or in the shape of a token (`qdr_(pat|sat|cit)_`) is refused with `400`, so that the answer cannot echo a token it was handed; every snippet is checked against the shape again before it is sent. The addresses are built on the configured base URL of the endpoint the request arrived on; without one the operation answers `503`, because an address from the `Host` of the request would end in a file the user copies. `requiresAuth` of the templates is true unless an anonymous caller on the same endpoint may read the repository. The publish tab is rendered only for a caller who holds `deploy` on the publish target (the repository itself when local, the deploy target of a virtual one, none for a remote one) and `publishTarget` names it. The snippet id is `<client>.<section>[.<name>]`, with `-scoped` appended to the name of the scoped variant of a configure snippet. The npm templates contribute configure and install snippets (R-NPM-041); the publish and CI snippets of R-UI-017 are not templates yet, so the publish tab is empty for npm until they are (the API renders them where a format supplies them). The npm publish templates arrived with Q-API-180.
 
 **Rationale:** The mode and the quoting are the security-relevant part of the operation and belong in one place with one test (`TestR_API_030_*`, the integration tests over every client, mode and caller). The development agent revisits this when the first format needs a credential in a place that is not a line (NuGet's `nuget.config` element): the literal then becomes a typed marker.
 
@@ -8646,7 +8646,7 @@ Context: the client setup offers three credential modes (R-API-030), one of them
 | (a) `env` for a signed-in caller, `none` for an anonymous one; the snippets go through the setup's renderer | No placeholder, no token mode | A guide can be copied, cached, printed without holding a secret; its snippet equals the setup page's default | A reader who wants a token goes to the setup page |
 | (b) The guide offers the three modes | The setup page's choice | One page for everything | The token would live in a second component (R-UI-043) |
 
-**Choice:** (a). The reference `${TROVE_TOKEN}` in a section's text is rewritten by the same function as a snippet's (`${<ui.client_setup.token_env_var>}`, or the line is dropped for an anonymous reader), and every answer is checked for the shape of a token before it is sent.
+**Choice:** (a). The reference `${QUADER_TOKEN}` in a section's text is rewritten by the same function as a snippet's (`${<ui.client_setup.token_env_var>}`, or the line is dropped for an anonymous reader), and every answer is checked for the shape of a token before it is sent.
 
 **Rationale:** The guide is reading; the token stays with the one page built for it. The development agent revisits this if the setup page and the guides area merge.
 
@@ -8733,7 +8733,7 @@ R-AUTH-001 item 3 and ignores it on `/ui/`, so the principal of a `/ui/` request
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The redirect peeks at the session itself (chosen) | `Preference` reads `__Host-trv_session`, resolves it with the read-only `Store.Peek` (the lookup, the freshness gate and the deadline check of `Validate`, without its writes and without filling the session cache, Q-AUTH-185), reads the stored locale of that user | Nothing else changes: the stage still ignores the cookie on `/ui/`; the same lookup and deadlines as everywhere else, so an ended or forged cookie names nobody; a redirect writes nothing: it does not extend the idle deadline, end an expired session or end the break-glass sessions of a disabled account | One session validation and one read of `user_preferences` per request for a locale-less UI path, which is a redirect, not a page |
+| (a) The redirect peeks at the session itself (chosen) | `Preference` reads `__Host-qdr_session`, resolves it with the read-only `Store.Peek` (the lookup, the freshness gate and the deadline check of `Validate`, without its writes and without filling the session cache, Q-AUTH-185), reads the stored locale of that user | Nothing else changes: the stage still ignores the cookie on `/ui/`; the same lookup and deadlines as everywhere else, so an ended or forged cookie names nobody; a redirect writes nothing: it does not extend the idle deadline, end an expired session or end the break-glass sessions of a disabled account | One session validation and one read of `user_preferences` per request for a locale-less UI path, which is a redirect, not a page |
 | (b) Let the stage accept the session cookie on `GET /ui/` | `sessionAllowed` returns true for the UI shell | The principal is there for any later UI code | An invalid cookie would answer `401 session_expired` for the UI shell, the dead-cookie lock-out of Q-AUTH-177 |
 | (c) Keep a `locale` cookie the UI sets | The redirect reads a plain cookie | No lookup | A second source of truth next to the preference, and a cookie that stays after the user changes the preference elsewhere |
 
@@ -8788,7 +8788,7 @@ revisit this if preferences moved into a package of their own. **Applied in the 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: the API rewrote one literal, `${TROVE_TOKEN}`, by the credential mode. A `nuget.config` value and a cmd command expand `%NAME%`, PowerShell `$env:NAME`; a POSIX `${NAME}` there is text. `credentials=env` for NuGet would otherwise write a reference that the client does not expand.
+Context: the API rewrote one literal, `${QUADER_TOKEN}`, by the credential mode. A `nuget.config` value and a cmd command expand `%NAME%`, PowerShell `$env:NAME`; a POSIX `${NAME}` there is text. `credentials=env` for NuGet would otherwise write a reference that the client does not expand.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -9273,7 +9273,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Hide it | The class step lists only the format's classes | Nothing to explain | A user who looks for a virtual repository of a format without it cannot tell whether trove lacks the feature or the format does |
+| (a) Hide it | The class step lists only the format's classes | Nothing to explain | A user who looks for a virtual repository of a format without it cannot tell whether Quader lacks the feature or the format does |
 | (b) Show it disabled with one sentence (chosen) | The card stays, cannot be chosen, and says "NuGet does not implement the class Virtual." | It teaches what the format cannot do, which is the reason the format comes first; the sentence is the description of the disabled radio, so assistive technology reads it | Three cards where one would do |
 | (c) Show it enabled and refuse at the end | The server's 422 decides | No client logic | The user finds out at the last step |
 
@@ -9301,7 +9301,7 @@ settings, Q-UI-116), and a click on the chosen tile keeps the choice. The icon i
 package list shows in its type column: `extension` for NuGet and the neutral `inventory_2` for every other format; the UI holds no
 list of formats (FMT-001). The name is the descriptor's `displayName`. *Since [Q-UI-225](#q-ui-225--a-format-shows-its-owners-logo-where-the-owners-terms-allow-it-else-the-neutral-glyph)
 the icon is the owner's logo where its terms allow it (Debian, NuGet, OCI) and `inventory_2` elsewhere, rendered by
-`<trove-format-icon>`; it is still the same function as the list's.*
+`<quader-format-icon>`; it is still the same function as the list's.*
 
 **Rationale:** the wizard now has a picker of one of many that a filter shortens, which is the listbox pattern. Keyboard users move
 with Left and Right, Home, End and typeahead, and the filter shortens the path. The development agent would revisit (a) if the
@@ -9546,9 +9546,9 @@ instead of a replica failing at start-up.
 **Applied in the spec:** R-UI-004 above, R-AUTH-009 and R-AUTH-014 in
 [identity-and-authentication.md](identity-and-authentication.md). Code: `app.ts` (`bare`, `shell`), `app.html`,
 `app.routes.ts`, `features/login/login.ts`, `features/login/logged-out.ts`, `_shell.scss` (`.bare`, `.bare-panel`),
-`deploy/helm/trove/values.yaml`, `values.schema.json`. Tests: `app.spec.ts`, `login.spec.ts`, journey `01-sign-in.spec.ts`.
+`deploy/helm/quader/values.yaml`, `values.schema.json`. Tests: `app.spec.ts`, `login.spec.ts`, journey `01-sign-in.spec.ts`.
 
-### Q-UI-126 · trove's own controls in place of Angular Material
+### Q-UI-126 · Quader's own controls in place of Angular Material
 
 Status: **Decided by the owner on 2026-11-06.** Built: the sign-in screens, the shell and the admin dashboard first, then
 every other screen, the dialogs, tabs, checkboxes, menus and the tooltip, and the Material theme last
@@ -9557,22 +9557,22 @@ is no dependency of `web/` any more.
 
 The owner asked to leave the look of Angular Material for the design language of the sign-in page he showed: flat
 controls, labels above the fields, a primary button in the accent, neutral grey secondary buttons. Measured on
-2026-11-06: the forms were already native (147 `input`, `select` and `textarea` elements with trove's own classes against
+2026-11-06: the forms were already native (147 `input`, `select` and `textarea` elements with Quader's own classes against
 4 `mat-form-field`); Material remained in the buttons (253 uses in 81 files), the dialogs (28 files), the checkboxes (12),
 the tabs (5), the menus (3), the tooltip (2), and the top bar and sidebar. `@angular/cdk` and `@angular/aria` were
 already dependencies.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Replace Material: trove's own classes for the controls (`_controls.scss`), the behaviour of the composite widgets from the CDK (dialog, menu, overlay) and `@angular/aria` (tabs), screen by screen; `@angular/material` leaves `package.json` at the end (chosen) | The look is trove's alone | Full control of the look; no ripple, state layer or MDC structure to fight; a smaller bundle; focus trap, keyboard handling and ARIA still come from the Angular team's packages | Every template with a Material control changes; the dialogs move to the CDK's API |
+| (a) Replace Material: Quader's own classes for the controls (`_controls.scss`), the behaviour of the composite widgets from the CDK (dialog, menu, overlay) and `@angular/aria` (tabs), screen by screen; `@angular/material` leaves `package.json` at the end (chosen) | The look is Quader's alone | Full control of the look; no ripple, state layer or MDC structure to fight; a smaller bundle; focus trap, keyboard handling and ARIA still come from the Angular team's packages | Every template with a Material control changes; the dialogs move to the CDK's API |
 | (b) Restyle Material through its tokens and overrides | Templates stay | Fewer changes | The ink bar, the state layers and the dialog structure stay visible; every Material release can move the overrides; `main.scss` already carries many |
 | (c) Only the sign-in screen and the shell | Small | Quick | Two design languages side by side until the rest is decided |
 
 **Choice:** (a), in this order: the control styles and the sign-in screens first, then the buttons of every screen, the
 shell (top bar, sidebar, menus, tooltip), the dialogs, the tabs and checkboxes, and last the Material theme, whose
-`--mat-sys-*` tokens give way to trove's. The colours stay those of Q-UI-88 and Q-UI-96 (cogpit's blue as the accent,
-green for a positive status only); the controls take them from tokens of their own (`--trove-control-*`,
-`--trove-accent-fill`, `--trove-btn-*`), so they no longer depend on Material.
+`--mat-sys-*` tokens give way to Quader's. The colours stay those of Q-UI-88 and Q-UI-96 (cogpit's blue as the accent,
+green for a positive status only); the controls take them from tokens of their own (`--quader-control-*`,
+`--quader-accent-fill`, `--quader-btn-*`), so they no longer depend on Material.
 
 The controls: one height (32 px) and radius (6 px) for buttons and fields; buttons `btn-confirm` (the accent), `btn-default`
 (white with a hairline in the light scheme, filled grey in the dark one), `btn-tertiary` (text only), `btn-danger`,
@@ -9623,8 +9623,8 @@ Q-UI-68. The top bar, the sidebar and the menus are no longer Angular Material's
 (`cdkMenu`, radio items for the theme and the project filter), the drawer traps the focus with `cdkTrapFocus`.
 
 **Applied in the spec:** R-UI-002. Code: `app.html`, `app.ts`, `core/navigation.ts` (`areaOf`, `area`),
-`core/nav-state.ts` (`collapsed`), `_shell.scss`, `_tokens.scss` (`--trove-nav-*`, `--trove-search-*`,
-`--trove-brand-*`), `shared/brand/trove-mark.ts`. Tests: `app.spec.ts`, `app.projects.spec.ts`, `palette.spec.ts`.
+`core/nav-state.ts` (`collapsed`), `_shell.scss`, `_tokens.scss` (`--quader-nav-*`, `--quader-search-*`,
+`--quader-mark-*`, ADR-199), `shared/brand/quader-mark.ts`. Tests: `app.spec.ts`, `app.projects.spec.ts`, `palette.spec.ts`.
 
 ### Q-UI-128 · The reference's type, colours and measures
 
@@ -9633,19 +9633,19 @@ Status: **Decided by the owner on 2026-11-06.**
 Context: in the review of the shell the owner found the Admin button harder to read than the reference's and asked for
 the reference's colours, then, in its admin area: "Ich will dass du das Design (auch Schriftgröße) von hier übernimmst".
 The reference is his own GitLab (19.0.1), which he opened in a browser window the development agent could read. Asked
-whether that raises a legal problem: the values (colours, sizes, radii) are taken and written into trove's own tokens;
+whether that raises a legal problem: the values (colours, sizes, radii) are taken and written into Quader's own tokens;
 GitLab's design tokens and component library are MIT-licensed (`@gitlab/ui`), its font is OFL-1.1, and no code, name or
-logo of GitLab enters trove.
+logo of GitLab enters Quader.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The reference's values in trove's tokens: colours of both schemes, the type, the measures of the frame, controls, cards and lists; a pair that misses WCAG AA is moved in its own hue (chosen) | trove looks like the reference's admin area | One look across the owner's tools; values measured, not guessed; R-UI-044 holds | trove's own colour (cogpit's blue, Q-UI-96) goes |
-| (b) Only the type and measures, cogpit's colours kept | Half the reference | trove keeps a colour of its own | Not what the owner asked |
-| (c) GitLab's stylesheet or component library itself | Its CSS in trove | Exact | Its CSS carries GitLab's class names and EE parts under GitLab's own licence; a second component system next to Q-UI-126 |
+| (a) The reference's values in Quader's tokens: colours of both schemes, the type, the measures of the frame, controls, cards and lists; a pair that misses WCAG AA is moved in its own hue (chosen) | Quader looks like the reference's admin area | One look across the owner's tools; values measured, not guessed; R-UI-044 holds | Quader's own colour (cogpit's blue, Q-UI-96) goes |
+| (b) Only the type and measures, cogpit's colours kept | Half the reference | Quader keeps a colour of its own | Not what the owner asked |
+| (c) GitLab's stylesheet or component library itself | Its CSS in Quader | Exact | Its CSS carries GitLab's class names and EE parts under GitLab's own licence; a second component system next to Q-UI-126 |
 
 **Choice:** (a). The font, one decision of its own (owner, 2026-11-06): the reference's "GitLab Sans" is Inter with the
-`cv05` form of the lower-case l; trove ships Inter (`@fontsource-variable/inter`, OFL-1.1) with `cv05` switched on, so
-the look is the reference's without its name in trove (the options were GitLab Sans itself, or the system font as before).
+`cv05` form of the lower-case l; Quader ships Inter (`@fontsource-variable/inter`, OFL-1.1) with `cv05` switched on, so
+the look is the reference's without its name in Quader (the options were GitLab Sans itself, or the system font as before).
 
 What was measured, and where it went (the values per scheme are in [design-language.md](../developer/design-language.md#the-two-schemes)):
 
@@ -9667,7 +9667,7 @@ What was measured, and where it went (the values per scheme are in [design-langu
   Material's buttons and tabs, which most screens still use (Q-UI-126), are themed to these measures.
 - Statuses (owner, 2026-11-06: "Status auf GitLab Standard umstellen"): a status is the reference's badge, a pill 20 px
   high with 12 px text and a 12 px icon, pale with deep text in the light scheme and full with near-black text in the
-  dark one (success, warning, danger, info, neutral); every status of trove (an icon and a word with `.ok`, `.warn` or
+  dark one (success, warning, danger, info, neutral); every status of Quader (an icon and a word with `.ok`, `.warn` or
   `.bad`) is drawn as one, and the outlined tags of the screens became neutral badges. The content width stays the
   panel's (owner, the same day), where the reference centres a 1280 px column.
 - Top bar, compared side by side with the reference at 100 % zoom: the Admin button 88 × 32 px with 14 px text, the
@@ -9825,14 +9825,14 @@ Tests: `TestR_HA_020_SharedUIAssets` (a name two builds fill with other bytes; a
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: `storage.download.verify: false` (R-STOR-013, Q-STOR-6) hands out an object's bytes unchecked. For a package file that is
-the operator's choice; a file of the shared store is served from trove's origin as script, kept in a replica's memory and cached by
-browsers as immutable, so an object replaced in the bucket with bytes of the same length would run as trove's code (review of
+the operator's choice; a file of the shared store is served from Quader's origin as script, kept in a replica's memory and cached by
+browsers as immutable, so an object replaced in the bucket with bytes of the same length would run as Quader's code (review of
 2026-11-06).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Always verify this path (chosen) | `blob.OpenOptions.Verify` verifies a full read whatever the setting; the store asks for it and checks the length and the SHA-256 of the buffered bytes once more; a mismatch marks the blob corrupt as every verified read does, and the request answers `503` | A writer of the bucket alone cannot put code into the UI; the cost is a hash of at most 8 MiB per file and replica, kept in memory afterwards | None of weight: the files are small and read rarely |
-| (b) Follow the setting | As before | One rule | The setting would decide whether the bucket can inject script into trove's origin |
+| (b) Follow the setting | As before | One rule | The setting would decide whether the bucket can inject script into Quader's origin |
 
 **Choice:** (a).
 
@@ -9881,6 +9881,15 @@ beyond what two copies in the binary cost.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+**Superseded in part by [ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark)**
+(owner, 2026-11-17): the product is Quader and its mark a wall of stones. The lanes, the favicon form and the wordmark "trove"
+below belong to the earlier mark; the text is the record of that choice. What holds today: the wordmark is outlined paths of
+the static Inter files through opentype.js (option (a) of the outlines; "Quader" in Bold, and "Bastion" in Regular in the
+Bastion's lockup, without tracking), and the ICO's frames are rasterised by the generator. The favicon needs no reduced form
+any more: it is the wall itself, whose stones are 4 px and joints 1 px at 16 px, `favicon.svg` without a tile following
+`prefers-color-scheme` and `favicon.ico` on the dark tile `#18171d`. The drafts and the development preview on the sign-in
+screen are gone. The [design language's logo section](../developer/design-language.md#logo) describes the current mark.
+
 Context: the logo's wordmark was SVG `<text>` in the system font, so the lockup and the app icon rendered in another face per
 platform; at 16 px the three lanes of the mark ran together, and `favicon.ico` was the framework's default icon. Two open
 points of the logo (the third, removing the drafts and the preview, waits for the owner to call the logo final).
@@ -9913,7 +9922,8 @@ count of the mark (the reduced form takes its own parameters in the script), or 
 files or fontkit instances WOFF2 outlines (then (b) drops the second font package).
 
 **Applied in the spec:** the [design language's logo section](../developer/design-language.md#logo). Code:
-`wordPath`, `faviconSvg`, `faviconPixels` in [brand-logo.mjs](../../web/scripts/brand-logo.mjs); the icons in
+`wordPath`, `faviconSvg`, `faviconPixels` in brand-logo.mjs as it was then (today `textPath`, `wordmark`, `faviconSvg`,
+`faviconPixels` in [brand-logo.mjs](../../web/scripts/brand-logo.mjs)); the icons in
 [index.html](../../web/src/index.html); `.svg` content type in `contentType` of [webui.go](../../internal/webui/webui.go).
 
 ### Q-UI-148 · A link in a table or a key-value list is its own box, and the language submenu opens on a click
@@ -9942,7 +9952,7 @@ How the language submenu is opened:
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A click on the trigger opens the submenu and never closes it (chosen) | The directive `troveOpenSubmenuOnClick` ([open-submenu-on-click.ts](../../web/src/app/shared/ui/open-submenu-on-click.ts)) swallows the click while the submenu is open and moves the focus into it; Escape and the left arrow still close it | Mouse, touch (the first tap opens) and keyboard (arrow right, Enter) all reach the languages as `menuitem`s of a `menu`, the ARIA menu pattern | One small directive over the CDK |
+| (a) A click on the trigger opens the submenu and never closes it (chosen) | The directive `quaderOpenSubmenuOnClick` ([open-submenu-on-click.ts](../../web/src/app/shared/ui/open-submenu-on-click.ts)) swallows the click while the submenu is open and moves the focus into it; Escape and the left arrow still close it | Mouse, touch (the first tap opens) and keyboard (arrow right, Enter) all reach the languages as `menuitem`s of a `menu`, the ARIA menu pattern | One small directive over the CDK |
 | (b) Languages as `menuitemradio` entries inside the user menu, no submenu | The theme menu's pattern; the current language is checked | No nested menu | R-UI-045 and the top bar's description are "Language with its submenu"; changes a decided structure for a bug in the hover/click interplay |
 
 **Choice (submenu):** (a). The journey's roles (`menuitem` "Sprache", then `menuitem` "English") are what the ARIA menu pattern
@@ -9961,7 +9971,7 @@ journeys `07-german-dark.spec.ts` and `vuln/15-vulnerabilities.spec.ts` (axe in 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: Q-UI-126 moved the sign-in screens and the shell to trove's own controls and left the rest on Angular Material:
+Context: Q-UI-126 moved the sign-in screens and the shell to Quader's own controls and left the rest on Angular Material:
 about 250 buttons in 80 files, 28 dialogs, 24 checkboxes, 5 tab groups with 10 tabs, 2 menus, one tooltip and the two
 field components `TextField` and `SelectField` (a `mat-form-field` around a native control). Finishing it needed one
 answer for how a screen opens a dialog, since the CDK's `Dialog` differs from `MatDialog` in its type parameters
@@ -9971,7 +9981,7 @@ directive in the CDK of this release).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A thin `TroveDialog` service on the CDK `Dialog`, with a title directive and a close directive (chosen) | One place sets `role="dialog"`, `aria-modal`, the first-tabbable focus, focus restore, the panel and backdrop classes and a width that never exceeds the window; `DialogTitle` names the container through the CDK's own `aria-labelledby` queue; `DialogClose` closes with an optional value | A dialog is opened and written the way the 22 call sites already were (component, data, result); the accessibility contract is in one tested file; no screen can forget the title association | One 90-line file of ours beside the CDK |
+| (a) A thin `QuaderDialog` service on the CDK `Dialog`, with a title directive and a close directive (chosen) | One place sets `role="dialog"`, `aria-modal`, the first-tabbable focus, focus restore, the panel and backdrop classes and a width that never exceeds the window; `DialogTitle` names the container through the CDK's own `aria-labelledby` queue; `DialogClose` closes with an optional value | A dialog is opened and written the way the 22 call sites already were (component, data, result); the accessibility contract is in one tested file; no screen can forget the title association | One 90-line file of ours beside the CDK |
 | (b) The CDK `Dialog` in each screen | `inject(Dialog)` and a config at every call site | Nothing of ours to maintain | The config (role, modal, focus, classes) repeated 22 times and the title association forgotten once; the reversed type parameters invite mistakes |
 | (c) The native `<dialog>` element | `showModal()` | No library | The result and data plumbing, the focus return and the stacking with the CDK's overlays (menus, tooltips) are ours to write; jsdom lacks `showModal` |
 
@@ -9981,24 +9991,24 @@ directive in the CDK of this release).
   `mat-icon-button` `btn btn-icon`: the shapes Q-UI-128 had already themed Material's variants to, so no screen changes its
   look by the move. A button that was `mat-flat-button` keeps being the confirm button even where it deletes; a destructive
   action asks through `Confirm` as before.
-- Checkboxes: a small component `trove-checkbox`, not the bare input with a label in every template, because 24 uses share the
+- Checkboxes: a small component `quader-checkbox`, not the bare input with a label in every template, because 24 uses share the
   label wrapper, the `describedBy` note and the `ariaLabel` of a row's box (the table's selection boxes have no visible label).
   The output is `checkedChange` with the new state, not `change`: a native `change` event bubbles from the input and would
   reach a `(change)` handler of the host with an `Event`.
-- Tabs: a `trove-tab-group` over `@angular/aria`'s tabs (the roles, the arrow keys, Home and End, the roving tab stop) in the
+- Tabs: a `quader-tab-group` over `@angular/aria`'s tabs (the roles, the arrow keys, Home and End, the roving tab stop) in the
   `.tab-nav` look of the package views, because the five groups switch a view in place and a tab that is a route is already
   a `.tab-nav` link. Only the selected tab's content is in the page, as with Material's tabs; content a screen wants created
-  on selection is wrapped in `<ng-template troveTabContent>`.
+  on selection is wrapped in `<ng-template quaderTabContent>`.
 - Tooltip: a directive on the CDK overlay with the hidden description of the CDK's `AriaDescriber`, so the help button of a
   table column is described whether or not the bubble shows (WCAG 1.4.13: Escape dismisses it, the pointer can move onto it).
 - Menus: the CDK menu, as the user menu already was.
-- Fields: the two field components render the label, the control and the text below with trove's classes; the label sits above
+- Fields: the two field components render the label, the control and the text below with Quader's classes; the label sits above
   and is bound with `for`, so every field has a visible, programmatic name (the `display: none` label of the density -2
   Material field that axe found in the browser tier cannot recur).
-- Tokens: every `--mat-sys-*` property became a `--trove-*` property in `_tokens.scss`. The page palette moved over with its
+- Tokens: every `--mat-sys-*` property became a `--quader-*` property in `_tokens.scss`. The page palette moved over with its
   values; the error, inverse, banner and surface-container tones the screens read from Material's generated palette are
   literal `light-dark()` pairs with the values they had, so no screen changes its colour. Type scale properties became
-  font shorthands (`--trove-type-*`), the corner sizes the radii (`--trove-radius-*`).
+  font shorthands (`--quader-type-*`), the corner sizes the radii (`--quader-radius-*`).
 - Unit tests: `settle` follows each `whenStable` with a turn of the event loop through a message channel. With Material gone,
   nothing held the application unstable while a chain of awaits ran (the file tree's deep link loads one folder after the
   other), so six rounds no longer reached the end; a timer would not do, because specs with fake timers use `settle` too.
@@ -10066,7 +10076,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 Context: [Q-UI-130](#q-ui-130--the-auditor-has-an-instance-wide-vulnerability-dashboard-in-the-admin-area) asks for counts, a
 trend, a search by advisory, package and project, a list with the project as a column and the triage of each finding in the
-admin area. The Vulnerabilities screen of a project (`/projects/:project/vulnerabilities`, Q-UI-163) already has the counts, the trend (`--trove-chart-*`), the list with
+admin area. The Vulnerabilities screen of a project (`/projects/:project/vulnerabilities`, Q-UI-163) already has the counts, the trend (`--quader-chart-*`), the list with
 its filters, the bulk triage, and the finding and advisory screens behind it; only the `project` filter and the search
 were missing in the UI for the whole instance.
 
@@ -10113,7 +10123,7 @@ the same everywhere. The seed decides the robot.
 | (d) The token or session ID | Per credential | None | Changes with every sign-in: the robot would not be the same |
 
 **Choice:** (a).
-**Rationale:** the ID is the identifier trove itself keys the principal by; it is not a secret (it is in the API response and
+**Rationale:** the ID is the identifier Quader itself keys the principal by; it is not a secret (it is in the API response and
 the audit log). The development agent would revisit this when the user has an uploaded avatar (the image then wins) or when
 another principal kind needs a different identity.
 **Applied:** R-UI-002. Code: `web/src/app/app.html` (`[seed]="session.whoami()?.principal?.id"`), `web/src/app/shared/ui/avatar.ts`.
@@ -10142,7 +10152,7 @@ carries both; a major goes through the Dependency Dashboard approval (`renovate.
 Licences (read in the installed packages): DiceBear's code, `@dicebear/core`, MIT (Florian Körner). The Bottts artwork is by
 Pablo Stanley, licence "Free for personal and commercial use" (https://bottts.com/), repeated in the `meta` block of the
 definition and in the metadata of every SVG the library renders; it permits this use. It asks for no attribution beyond the
-text kept in the SVG's metadata, and trove keeps it there. `@dicebear/styles` ships the licences of all its styles in
+text kept in the SVG's metadata, and Quader keeps it there. `@dicebear/styles` ships the licences of all its styles in
 `LICENSE.md`; Angular copies that file into `3rdpartylicenses.txt`, which every installation serves at
 `/ui/<locale>/3rdpartylicenses.txt` (Q-UI-144), so the notice of the Bottts artwork travels with the bundle. The notice also
 lists the licences of the styles that are not bundled (some are CC BY 4.0); they are not used. `web/scripts/build-embed.mjs`
@@ -10166,9 +10176,9 @@ styling, so the avatar keeps the 32 px circle and the hover (`brightness(1.1)`).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A transparent SVG on `--trove-surface-variant` of the host (chosen) | `#ececef` in the light scheme, `#3a383f` in the dark one, round | Follows the chosen theme, including the explicit choice of R-API-021, which a data URI cannot; no new colour | The robot's dark parts sit on a dark fill in the dark scheme (the head is the robot's own colour and fills most of the circle) |
+| (a) A transparent SVG on `--quader-surface-variant` of the host (chosen) | `#ececef` in the light scheme, `#3a383f` in the dark one, round | Follows the chosen theme, including the explicit choice of R-API-021, which a data URI cannot; no new colour | The robot's dark parts sit on a dark fill in the dark scheme (the head is the robot's own colour and fills most of the circle) |
 | (b) A fixed background colour in the SVG (`backgroundColor`) | One colour for both schemes | The image is self-contained | A colour outside the palette; wrong in one of the schemes |
-| (c) The accent fill as before | `--trove-accent-fill` | Unchanged look | The accent is for actions; a robot on it looks like a button state |
+| (c) The accent fill as before | `--quader-accent-fill` | Unchanged look | The accent is for actions; a robot on it looks like a button state |
 
 **Choice:** (a). The SVG is rendered at 64 px for sharpness at 2x and shown at 32 px (`inline-size: 2rem`); the options are
 only `seed`, `size` and `idRandomization: false` (the ids inside the SVG are not randomised, so the output is a function of the
@@ -10184,7 +10194,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Follow the table of R-API-050 literally | The permission is `system.read`; `summary` needs no reservation; `state`, `operation` and `trigger` are enums | Matches the text | `system.read` is the name of the capability `settings:read` (R-OPS page); the route check of R-API-004 lists every literal sibling of a `{key}` segment; the code generator renames the existing `ReplicaState` constants when a second enum has the values `failed` or `completed`, which would change the code of every other page |
-| (b) `settings:read`, `summary` in `x-trove-reserved-names`, strings with the values in the description (chosen) | The operations declare `permission: settings:read`; `BackupRunId` lists `summary`; the schema types are strings | No other page's generated names change; the check passes; the authorization step needs no new permission | The generated client does not type the state; the UI compares strings |
+| (b) `settings:read`, `summary` in `x-quader-reserved-names`, strings with the values in the description (chosen) | The operations declare `permission: settings:read`; `BackupRunId` lists `summary`; the schema types are strings | No other page's generated names change; the check passes; the authorization step needs no new permission | The generated client does not type the state; the UI compares strings |
 
 **Choice:** (b).
 
@@ -10196,14 +10206,14 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: the owner decided that a user can upload an avatar and that the `api` role serves it from trove's origin (R-API-055). The UI shows another user's avatar in lists, in members and in audit rows, so a read path must work for any user, and the user record has to tell the UI whether a user has an avatar or the generated one applies.
+Context: the owner decided that a user can upload an avatar and that the `api` role serves it from Quader's origin (R-API-055). The UI shows another user's avatar in lists, in members and in audit rows, so a read path must work for any user, and the user record has to tell the UI whether a user has an avatar or the generated one applies.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `GET /api/v1/avatars/{digest}`, the SHA-256 of the stored image; the user record carries the path (chosen) | The URL names the content; a replacement is a new URL | The answer can be cached forever (`immutable`) and the browser never asks again; no username in the URL, so a rename breaks nothing; a lookup by digest cannot be confused with any other user's data | The record has to carry the URL; the old URL is `404` after a replacement, so a page that was rendered before the change shows a broken image until it reloads |
 | (b) `GET /api/v1/users/{username}/avatar` | One stable URL per user | The UI can build the URL from the name | The URL is stable but the content is not: a cache needs revalidation on every use or a query string; a rename moves the URL; the UI still needs to know whether the user has one (a `404` per list row otherwise) |
 | (c) The image inline in the user record as a data URL | No second request | No new route | Every user list carries up to 100 images of tens of KiB, uncacheable; the JSON answers are `no-store` (R-API-017) |
-| (d) A configured URL per user from the identity provider (`picture` claim) | trove shows an external image | No upload, no storage | The owner decided on upload; a foreign origin in `img-src` and a third party that sees every page view (R-UI-001 loads nothing from outside) |
+| (d) A configured URL per user from the identity provider (`picture` claim) | Quader shows an external image | No upload, no storage | The owner decided on upload; a foreign origin in `img-src` and a third party that sees every page view (R-UI-001 loads nothing from outside) |
 
 **Choice:** (a). `PUT /api/v1/users/me/avatar` and `DELETE /api/v1/users/me/avatar` write, `DELETE /api/v1/users/{username}/avatar` is the moderation, `GET /api/v1/avatars/{digest}` reads. The route answers only for a digest that a user's avatar currently names (`AvatarByDigest`), so it is no way to read another blob of the store.
 
@@ -10246,7 +10256,7 @@ Context: R-API-017 gives every `/api/v1/` answer `Cache-Control: no-store` and a
 
 **Choice:** (a). The headers are `Content-Type: image/png`, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox`, `Content-Disposition: inline; filename="avatar.png"` and `Cross-Origin-Resource-Policy: same-origin`. `If-None-Match` answers `304`. The bytes are read through the verifying path of the blob store and compared with the digest once more before they are sent, as for the shared UI assets (Q-UI-143).
 
-**Rationale:** the stored bytes are trove's own PNG, but the response is still defended as if it were not: nosniff and the sandboxing CSP keep a browser that is pointed at the URL from reading it as anything else, and `Content-Disposition: inline` with a fixed name keeps the name out of the answer. A removed avatar is `404` for any new request, and a browser that already has it keeps it until its cache entry ends (H-561). The development agent revisits `immutable` if avatars are ever removed for legal reasons that a browser's copy must not outlive.
+**Rationale:** the stored bytes are Quader's own PNG, but the response is still defended as if it were not: nosniff and the sandboxing CSP keep a browser that is pointed at the URL from reading it as anything else, and `Content-Disposition: inline` with a fixed name keeps the name out of the answer. A removed avatar is `404` for any new request, and a browser that already has it keeps it until its cache entry ends (H-561). The development agent revisits `immutable` if avatars are ever removed for legal reasons that a browser's copy must not outlive.
 
 **Applied:** R-API-055 (the image answer); `internal/api/v1/avatar_api.go` (`GetAvatar`).
 
@@ -10293,7 +10303,7 @@ when the avatar is shown on lists (the list items carry their own `avatarUrl`) o
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: the reference's "Public avatar" lets the user choose a file and saves it with the form's "Update profile settings"; the
-profile of trove has no such form for identity (name and email come from the identity provider, R-UI-029), only the preferences.
+profile of Quader has no such form for identity (name and email come from the identity provider, R-UI-029), only the preferences.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -10423,13 +10433,13 @@ Context: Q-API-213 closed the gap for the avatar in the handler. The routes of t
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A helper per handler | `avatarOwner`'s check becomes `requireOwnerRights(r)`, called by each handler | No change to the document or the shared step | The class stays open: a handler that does not call it is open, and nothing finds it |
-| (b) A route attribute `x-trove-owner-rights: required`, read at load and enforced by the shared step, plus a test that classifies every unsafe `authenticated` operation (chosen) | `Operation.OwnerRights`; `authorize` refuses a token whose `Credential.Scope` is set and not `Inherit` with `403 forbidden` after the permission decision, like `RecentAuth`; any value but `required`, the attribute on a declaration other than `authenticated: true`, and the attribute on an operation of `/files/` or of the content routes (decided by the files handler, which the shared step never wraps) stops start-up | The document is what runs (as for Q-API-40 and the CI gate); the handlers lose their copies; the classification test makes a new `authenticated` write a deliberate decision | One more extension; a new operation needs a line in the test or in the document |
+| (b) A route attribute `x-quader-owner-rights: required`, read at load and enforced by the shared step, plus a test that classifies every unsafe `authenticated` operation (chosen) | `Operation.OwnerRights`; `authorize` refuses a token whose `Credential.Scope` is set and not `Inherit` with `403 forbidden` after the permission decision, like `RecentAuth`; any value but `required`, the attribute on a declaration other than `authenticated: true`, and the attribute on an operation of `/files/` or of the content routes (decided by the files handler, which the shared step never wraps) stops start-up | The document is what runs (as for Q-API-40 and the CI gate); the handlers lose their copies; the classification test makes a new `authenticated` write a deliberate decision | One more extension; a new operation needs a line in the test or in the document |
 | (c) The refusal as the default for every unsafe `authenticated` operation, with an `admitted` opt-out in the document | As the CI gate (Q-CI-18) | Closed by construction | About a dozen operations that decide through the decision point or the token rules (package owners, mirror run, job cancel, token creation, rotation, `authz/check`) would each need a declaration that says nothing; the runtime step cannot tell them from an own-account write |
 | (d) Sessions only | Tokens refused on the own-account operations | The strictest | A script with a full personal token loses what Q-API-213 kept for the avatar; the API would have browser-only writes |
 
-**Choice:** (b). The attribute is on `setAvatar`, `removeAvatar`, `updatePreferences`, `listOwnSessions`, `endOwnSession`, `endOwnSessions` and `revokeOwnTokens`. `TestR_API_021_EveryAuthenticatedWriteDeclaresItsTokenRule` walks the document: every operation with an unsafe method and `authenticated: true` either declares `x-trove-owner-rights` or is in `ownerRightsExempt` with the reason (it decides through the decision point, which applies the scope; or its own rule applies: derivation R-AUTH-027, the line of revocation and rotation R-AUTH-029 and R-AUTH-030 (Q-AUTH-199), the presenting token itself, the scope's `manage` for an owner change (Q-AUTHZ-240), a session or an inheriting token for the starter of a job (Q-API-215)), and the set that declares it is compared with the list above. Reads of the own profile (`getCurrentUser`, `getPreferences`, `getWhoami`, `getAuthzMe`) stay open to every token: they return what the credential may know about itself and the UI needs them. The session list is in the set because it shows the addresses and user agents of the owner's other logins, which no scope names. The reads are classified the same way: `TestR_API_021_EveryAuthenticatedReadIsClassified` walks every authenticated `GET`, which either declares the attribute or is in `ownerRightsReads` with the reason it may answer a narrowed token (the credential's own data, a filter with the token's scope, or nothing of the account). The one read that shows the owner's activity beyond the credential, the job list and a job, stays open by Q-API-215 so a pipeline polls the run it started. A token with `admin: true` and `inherit: false` is a narrowed token here: the flag is about the owner's personal rights, not about administration. The attribute takes away no capability the scope names: an administrator's token with `admin: true`, or a scope naming `identities:read`, `identities:write` or `tokens:revoke` with an owner whose roles grant it, still lists and ends the owner's sessions, removes the owner's avatar and revokes the owner's tokens through `/api/v1/users/{username}/…` with the owner's own name, as it does for every user; that is the capability, not an escalation past the rule.
+**Choice:** (b). The attribute is on `setAvatar`, `removeAvatar`, `updatePreferences`, `listOwnSessions`, `endOwnSession`, `endOwnSessions` and `revokeOwnTokens`. `TestR_API_021_EveryAuthenticatedWriteDeclaresItsTokenRule` walks the document: every operation with an unsafe method and `authenticated: true` either declares `x-quader-owner-rights` or is in `ownerRightsExempt` with the reason (it decides through the decision point, which applies the scope; or its own rule applies: derivation R-AUTH-027, the line of revocation and rotation R-AUTH-029 and R-AUTH-030 (Q-AUTH-199), the presenting token itself, the scope's `manage` for an owner change (Q-AUTHZ-240), a session or an inheriting token for the starter of a job (Q-API-215)), and the set that declares it is compared with the list above. Reads of the own profile (`getCurrentUser`, `getPreferences`, `getWhoami`, `getAuthzMe`) stay open to every token: they return what the credential may know about itself and the UI needs them. The session list is in the set because it shows the addresses and user agents of the owner's other logins, which no scope names. The reads are classified the same way: `TestR_API_021_EveryAuthenticatedReadIsClassified` walks every authenticated `GET`, which either declares the attribute or is in `ownerRightsReads` with the reason it may answer a narrowed token (the credential's own data, a filter with the token's scope, or nothing of the account). The one read that shows the owner's activity beyond the credential, the job list and a job, stays open by Q-API-215 so a pipeline polls the run it started. A token with `admin: true` and `inherit: false` is a narrowed token here: the flag is about the owner's personal rights, not about administration. The attribute takes away no capability the scope names: an administrator's token with `admin: true`, or a scope naming `identities:read`, `identities:write` or `tokens:revoke` with an owner whose roles grant it, still lists and ends the owner's sessions, removes the owner's avatar and revokes the owner's tokens through `/api/v1/users/{username}/…` with the owner's own name, as it does for every user; that is the capability, not an escalation past the rule.
 
-**Rationale:** the avatar decision (Q-API-213) chose "inherit or session" and the same reasoning holds for every operation on the owner's own account, so the mechanism, not the list, is the decision. The attribute follows the shape of `x-trove-recent-auth` (Q-API-40), which solved the same problem of a rule the document states but a handler may forget. The development agent would revisit (c) if the exempt list grows beyond what a reviewer can hold. Three more operations admitted a narrowed token by its owner's identity, and their rules need the record of the target, so they cannot be a route attribute; each is decided on the page of its rule and named in the exempt list: the token operations (`listTokens`, `getToken`, `revokeToken`, `rotateToken`) reach only the token's line, itself and the tokens derived from it ([Q-AUTH-199](identity-and-authentication.md#q-auth-199--a-token-whose-scope-does-not-inherit-sees-revokes-and-rotates-only-itself-and-the-tokens-derived-from-it)); an owner of a package name changes its owners through such a token only where the scope lists `manage` on the name ([Q-AUTHZ-240](authorization.md#q-authz-240--an-owner-changes-the-owners-of-a-name-through-a-narrowed-token-only-where-its-scope-lists-manage-on-the-name)); the one who started a job cancels it through such a token only with `settings:write` (Q-API-215).
+**Rationale:** the avatar decision (Q-API-213) chose "inherit or session" and the same reasoning holds for every operation on the owner's own account, so the mechanism, not the list, is the decision. The attribute follows the shape of `x-quader-recent-auth` (Q-API-40), which solved the same problem of a rule the document states but a handler may forget. The development agent would revisit (c) if the exempt list grows beyond what a reviewer can hold. Three more operations admitted a narrowed token by its owner's identity, and their rules need the record of the target, so they cannot be a route attribute; each is decided on the page of its rule and named in the exempt list: the token operations (`listTokens`, `getToken`, `revokeToken`, `rotateToken`) reach only the token's line, itself and the tokens derived from it ([Q-AUTH-199](identity-and-authentication.md#q-auth-199--a-token-whose-scope-does-not-inherit-sees-revokes-and-rotates-only-itself-and-the-tokens-derived-from-it)); an owner of a package name changes its owners through such a token only where the scope lists `manage` on the name ([Q-AUTHZ-240](authorization.md#q-authz-240--an-owner-changes-the-owners-of-a-name-through-a-narrowed-token-only-where-its-scope-lists-manage-on-the-name)); the one who started a job cancels it through such a token only with `settings:write` (Q-API-215).
 
 **Applied:** R-API-002 (table of declarations), R-API-021, R-API-055; R-AUTH-024 and R-AUTH-010 in [identity-and-authentication.md](identity-and-authentication.md); `api/openapi.yaml` (the attribute on seven operations), `internal/api/v1/document.go` (`Operation.OwnerRights`, `parseOwnerRights`), `internal/api/v1/authorize.go` (`ownerRightsGate`), `internal/api/v1/avatar_api.go` (the handler's own check removed). Tests: `TestR_API_021_DocumentDeclaresOwnerRights`, `TestR_API_021_EveryAuthenticatedWriteDeclaresItsTokenRule`, `TestR_API_021_EveryAuthenticatedReadIsClassified`, `TestR_API_021_TheAttributeIsRefusedOnTheOperationsOfTheFilesHandler`, `TestR_API_021_ANarrowedTokenIsRefusedOnTheOperationsOfTheOwnAccount`, `TestR_API_021_TheRegisteredRoutesCarryTheGate`, `TestR_API_021_TheReadsOfTheOwnProfileAdmitANarrowedToken` (unit), `TestR_API_021_ANarrowedTokenDoesNotChangeItsOwnersAccount` (integration), `TestR_API_055_AvatarRefusals`.
 
@@ -10494,7 +10504,7 @@ members. Code: `web/src/app/features/system/job-table.ts`; the manual page [oper
 
 Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: finding F-81. The area limit accepts 2048 x 2048 pixels (4,194,304) and a decode is cut off after 5 s (`avatar.DecodeTimeout`), but the only test of the largest accepted area raised the deadline to one minute, because Test and Release run 42409044656 measured 9.7 s for a 2048 x 2048 PNG under the race detector on a throttled runner. Nothing showed that an image the checks accept decodes inside 5 s without the race detector in a CPU-limited pod. The chart gives the pods that serve `/api/v1/` (the `api` and `all` roles) a CPU request of 500m and no CPU limit (`deploy/helm/trove/values.yaml`, `api.resources`); an operator may set one, and a replica decodes two images at a time (`MaxConcurrent`), so under load each decode gets half of what the pod gets.
+Context: finding F-81. The area limit accepts 2048 x 2048 pixels (4,194,304) and a decode is cut off after 5 s (`avatar.DecodeTimeout`), but the only test of the largest accepted area raised the deadline to one minute, because Test and Release run 42409044656 measured 9.7 s for a 2048 x 2048 PNG under the race detector on a throttled runner. Nothing showed that an image the checks accept decodes inside 5 s without the race detector in a CPU-limited pod. The chart gives the pods that serve `/api/v1/` (the `api` and `all` roles) a CPU request of 500m and no CPU limit (`deploy/helm/quader/values.yaml`, `api.resources`); an operator may set one, and a replica decodes two images at a time (`MaxConcurrent`), so under load each decode gets half of what the pod gets.
 
 What decides the slowest accepted image depends on the format. For a PNG, a baseline JPEG and a WebP the 1 MiB upload cap does: a 2048 x 2048 PNG of 16 bits per channel is 32 MiB of filtered rows, so it is accepted only when it deflates at least 32 to 1, and noise that does not compress is refused by size before any decoder runs. The slowest are the images with the most work per byte: Paeth on every row, Adam7 interlacing, 16 bits, sparse noise that keeps the deflate stream literal-heavy. For a progressive JPEG the cap does not decide: the cost is the area times the scans times the work of a scan, and a scan can be a few bytes. The first version of this decision assumed the cap decided for every format and missed that (found in review, with a deadline that did not fire for such a file); [Q-UI-174](api-and-ui.md#q-ui-174--the-scans-of-a-jpeg-are-bounded-by-block-visits-and-the-decoders-input-is-read-in-short-pieces) bounds it.
 
@@ -10527,7 +10537,7 @@ What decides the slowest accepted image depends on the format. For a PNG, a base
 
 The slowest accepted image costs about 0.47 s of CPU. One decode therefore needs 0.094 CPU on average to finish inside 5 s, and a pod that runs two such decodes at once (an attacker fills both slots) needs 0.19 CPU. As a limit of 500m (the chart's request, which is not a limit) that is 0.25 CPU per decode and a predicted 1.9 s for the slowest, a margin of 2.6; that figure is the CPU time divided by the share, not a reading: the runs with `--cpus=0.5` fell in the loaded hours and are not reported. The scale and the encode are part of every figure; the lossy WebP is not measured (the repository has no encoder to build one) and a lossless WebP with transforms (predictor, cross-colour, subtract-green), which adds work per pixel for almost no bytes, was not built, so the WebP row is the stream without them, not the slowest. Only linux/arm64 and the development machine's CPU were measured.
 
-The race detector took 9.7 s for a 2048 x 2048 PNG on a throttled runner (Test and Release run 42409044656) that takes about 0.3 s without it, which is why the per-change tier, which runs with it, judges none of this: both tests skip under `-race` (building the inputs alone takes minutes there). They are not part of the plain run of `make test` either, because the inputs take 14 s to build, and that is paid on every change for a property that moves only when the decoders or the bounds do; `make test-performance`, the nightly run, runs them without `-race`. `TestR_API_055_TheWorstCaseInputsAreAccepted` checks that each input fits the cap, passes every check and decodes. `TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline` decodes each input with a deadline of a minute (a slow decode on a busy host is a reading, not a refusal) and logs wall and CPU time; with `TROVE_PERF_GATE=1` it decodes each input seven times (the inputs are built once) and requires the least CPU time inside one second, the threshold of the revisit condition below. The wall time is logged and not judged: on a shared runner it is the runner's load (under a load of 36 to 77 on 20 cores at `--cpus=1` the median wall time of three fresh decodes was 3.3 to 5.0 s while the benchmark floor was 0.58 to 0.9 s, each fresh decode also paying a collection of the 40 MB it allocates), which is the lesson of Q-ARCH-220; the least of several CPU readings is the image's cost, and H-641 turns that into the CPU a pod needs. The inputs are deterministic and fit the cap by construction.
+The race detector took 9.7 s for a 2048 x 2048 PNG on a throttled runner (Test and Release run 42409044656) that takes about 0.3 s without it, which is why the per-change tier, which runs with it, judges none of this: both tests skip under `-race` (building the inputs alone takes minutes there). They are not part of the plain run of `make test` either, because the inputs take 14 s to build, and that is paid on every change for a property that moves only when the decoders or the bounds do; `make test-performance`, the nightly run, runs them without `-race`. `TestR_API_055_TheWorstCaseInputsAreAccepted` checks that each input fits the cap, passes every check and decodes. `TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline` decodes each input with a deadline of a minute (a slow decode on a busy host is a reading, not a refusal) and logs wall and CPU time; with `QUADER_PERF_GATE=1` it decodes each input seven times (the inputs are built once) and requires the least CPU time inside one second, the threshold of the revisit condition below. The wall time is logged and not judged: on a shared runner it is the runner's load (under a load of 36 to 77 on 20 cores at `--cpus=1` the median wall time of three fresh decodes was 3.3 to 5.0 s while the benchmark floor was 0.58 to 0.9 s, each fresh decode also paying a collection of the 40 MB it allocates), which is the lesson of Q-ARCH-220; the least of several CPU readings is the image's cost, and H-641 turns that into the CPU a pod needs. The inputs are deterministic and fit the cap by construction.
 
 **Rationale:** for a PNG, a baseline JPEG and a WebP the numbers show a margin of 15 or more on an unlimited pod, and no bound has to move; for a progressive JPEG the number of scans was not a bound, which Q-UI-174 corrects. Lowering the area or raising the deadline would change what users and attackers get for a risk the measurement does not show. The development agent revisits the numbers when the floor of any row above exceeds 1 s on the platform's reference hardware (then the area, `MaxBlockVisits` or `MaxScans` falls, not the deadline), when an operator reports `too_complex` for ordinary images (then the CPU limit of the pod is the cause: H-641), when a decoder is replaced, or when a lossless WebP with transforms is built and costs more than a row above.
 **Applied:** R-API-055 (Bounded cost); [user-avatars.md](../security/user-avatars.md) (the cost section, H-640, H-641); `internal/avatar/worstcase_test.go`, `worstcase_bench_unix_test.go`, `cpu_unix_test.go`, `cpu_other_test.go`, `race_on_test.go`, `race_off_test.go`; `Makefile` (`test-performance`); [build-and-test.md](../developer/build-and-test.md), [identity.md](../developer/identity.md).
@@ -10630,7 +10640,7 @@ Status: Decided by the development agent — selected from the options below; th
 | (c) No confirmation | Fewer clicks | Faster | A promotion erases a private key and breaks every client that never replaced its key file |
 
 **Choice:** (a). The panel keeps no draft of the form (the unsaved-changes guard and the drafts store do not see it). Reinstating a withheld key and generating a next key do not ask: neither erases anything and both are visible in the list at once.
-**Rationale:** R-DEB-015 says a private key is never written anywhere else than its sealed column; the browser is the one place trove does not control, so the page holds it for the length of one call. The development agent revisits this when imports are common enough to warrant a file upload instead of a paste.
+**Rationale:** R-DEB-015 says a private key is never written anywhere else than its sealed column; the browser is the one place Quader does not control, so the page holds it for the length of one call. The development agent revisits this when imports are common enough to warrant a file upload instead of a paste.
 **Applied:** `web/src/app/features/repositories/deb-signing-keys.ts` and its spec ("an imported key is sent once with its passphrase and leaves the form").
 
 ### Q-API-235 · A scope is rendered and accepted only where the client has a scoped variant
@@ -10679,7 +10689,7 @@ On this sequence two bounded answers exist. `503 authz_stale` with `Retry-After`
 | (c) Make the create wait until every replica's grant index holds the repository | The `201` answers later | Removes the `503` for this sequence | The creating replica cannot know the other replicas; a poll of all of them is a coordination mechanism the spec does not have (R-ARCH-018 is pull-based), and it would still not cover a build that fails on the other replica |
 | (d) Run the test again until it passes | — | None | Hides a real defect |
 
-**Choice:** (a). `suite.readBack` in `internal/api/v1/apitest/contract.go` sends the read-back again after the `Retry-After` of a `503` with the problem code `authz_stale` (50 ms when it is 0), until 30 s have passed, and logs every repeat with the status, `X-Trove-Replica`, the attempt number and the time waited; the `503` is then the answer. The bound is a client's: a replica that has not confirmed its state within its own wait (30 s by default) is stalled, so a client that has waited as long again has seen the answer twice. `call` does not repeat anything. The failure message of the Location check carries the status, the replica and the body. `TestReadBackIsRepeatedAfterRetryAfterOfAnUnconfirmedState`, `TestReadBackRepeatsOnlyAStaleAnswerWithRetryAfter`, `TestReadBackEndsWithTheAnswerOfAReplicaThatNeverConfirms` and `TestOtherCallsOfTheContractAreNotRepeated` pin the helper. The promise that a fresh repository is usable on the other replica at once, with no repeat, stays pinned by `test/integration/transfer/repository_api_test.go`.
+**Choice:** (a). `suite.readBack` in `internal/api/v1/apitest/contract.go` sends the read-back again after the `Retry-After` of a `503` with the problem code `authz_stale` (50 ms when it is 0), until 30 s have passed, and logs every repeat with the status, `X-Quader-Replica`, the attempt number and the time waited; the `503` is then the answer. The bound is a client's: a replica that has not confirmed its state within its own wait (30 s by default) is stalled, so a client that has waited as long again has seen the answer twice. `call` does not repeat anything. The failure message of the Location check carries the status, the replica and the body. `TestReadBackIsRepeatedAfterRetryAfterOfAnUnconfirmedState`, `TestReadBackRepeatsOnlyAStaleAnswerWithRetryAfter`, `TestReadBackEndsWithTheAnswerOfAReplicaThatNeverConfirms` and `TestOtherCallsOfTheContractAreNotRepeated` pin the helper. The promise that a fresh repository is usable on the other replica at once, with no repeat, stays pinned by `test/integration/transfer/repository_api_test.go`.
 
 **Rationale:** the product already keeps its promise (no `404` for a new repository, a body read from PostgreSQL); what a loaded host changes is whether the grant index of the answering replica is confirmed within 2 s, and the specified answer to "not yet" is a retryable `503`. The repeat is limited to the one place where the spec says a replica may legitimately not be ready. F-90 can still recur as `503 unavailable` (option a3). The development agent revisits this when the replica's catch-up is found to need more than the stack's 2 s on an idle host (then the build, not the test, is the finding), when the repeat is logged for most creates of a run, or when a client of the product other than the contract helper meets the `503` on this sequence in practice.
 **Applied:** R-API-004 (acceptance criterion); `internal/api/v1/apitest/contract.go` (`readBack`, `staleBudget`), `internal/api/v1/apitest/call_test.go`; [http-api.md](../developer/http-api.md) (the tests step of the extension checklist).
@@ -10760,9 +10770,9 @@ Context: the screen showed `user:name` in a plain table with a labelled select p
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The reference's layout with what trove knows (chosen) | Header with **Add member**, tab with the count, filter and sort, columns Account, Source and Role, a row menu, the add form in a dialog; `GET /api/v1/projects/{key}/members` carries `id`, `displayName` and `avatarUrl` | The reference's reading order, with real people instead of references | The list answer grows by three members |
+| (a) The reference's layout with what Quader knows (chosen) | Header with **Add member**, tab with the count, filter and sort, columns Account, Source and Role, a row menu, the add form in a dialog; `GET /api/v1/projects/{key}/members` carries `id`, `displayName` and `avatarUrl` | The reference's reading order, with real people instead of references | The list answer grows by three members |
 | (b) The layout without new data | The name alone, a robot seeded by the name | No API change | The robot differs from the one the same user has elsewhere (it is seeded by the ID), no picture, no real name |
-| (c) Also Expiration and Activity | The reference's two further columns | Identical columns | trove stores neither for a member: a membership has no expiry and no recorded activity, so the columns would be empty |
+| (c) Also Expiration and Activity | The reference's two further columns | Identical columns | Quader stores neither for a member: a membership has no expiry and no recorded activity, so the columns would be empty |
 
 **Choice:** (a). Every project reader sees the display name and the avatar of the project's members: the avatar image is available to every authenticated caller by its digest (R-API-055), and the display name comes from the identity provider and is shown to the same readers next to the user name they already see. **Rationale:** the reference's list is about people, and a list of references is not. The source is always **Direct member**, because a project has no other kind of membership. The badge **It's you** is blue, not the reference's green, because green is a positive status alone (Q-UI-96). The development agent would add Expiration or Activity with a feature that stores them.
 
@@ -10842,7 +10852,7 @@ Context: [Q-UI-213](#q-ui-213--the-token-form-names-what-a-token-can-be-in-three
 |---|---|---|---|
 | (a) Offer the choice when the caller is an administrator and the account holds the role now (chosen) | The record states it (`ServiceAccount.isAdmin`, [Q-AUTH-209](identity-and-authentication.md#q-auth-209--a-token-and-a-service-account-state-whether-the-owner-holds-the-administrator-role)); the choice is offered for an instance-wide account with `isAdmin` | Only a choice that takes effect; the account page also names the role in its details | One more field on the account |
 | (b) Offer it for every instance-wide account to an administrator | No new field | The creator may prepare a token for an account that is bound to the role later | The token is inactive from the first minute and the list says so; a choice that does nothing now invites the mistake the token form was reworked to avoid |
-| (c) Do not offer it; `trove admin token create --scope-file` stays the way | Nothing changes | No work | The owner's installation has an account that administers, and its token cannot be made in the screen |
+| (c) Do not offer it; `quader admin token create --scope-file` stays the way | Nothing changes | No work | The owner's installation has an account that administers, and its token cannot be made in the screen |
 
 **Choice:** (a). The choice sends `{"inherit": true, "admin": true}`, as the personal token's does. A project's account is never offered it (its page shows no role line), and a caller without the administrator role is not offered the form at all (R-AUTH-027). **Rationale:** the form promises only what the token will hold. The development agent would revisit (a) when roles are bound to accounts through a group, which R-AUTH-019 forbids today.
 
@@ -10927,9 +10937,9 @@ and its "Recently viewed" list (R-UI-006), on the package page's type badge (R-U
 (R-UI-021). A logo is a trademark and a copyrighted drawing; whether a product may show it beside the ecosystem it serves
 is its owner's decision. The development agent read each owner's terms on 2026-11-11:
 
-| Format | Mark and official source | Copyright licence | What the owner's terms say about this use | Shown | Conditions trove follows |
+| Format | Mark and official source | Copyright licence | What the owner's terms say about this use | Shown | Conditions Quader follows |
 |---|---|---|---|---|---|
-| `deb` | Debian Open Use Logo without label, `openlogo-nd.svg` from [debian.org/logos](https://www.debian.org/logos/) (page modified 2020-10-05) | LGPL-3.0-or-later or, at the user's option, CC BY-SA 3.0; © 1999 Software in the Public Interest, Inc. | [Trademark policy](https://www.debian.org/trademark) (modified 2026-06-10): Debian's marks may "describe or advertise your services or products relating to Debian"; the logos "can be used as part of a page describing your products or services", not as part of a product's own logo; scaling keeps the proportions; acknowledge SPI's ownership prominently and disclaim affiliation. The logos page asks, as a wish, that the image link to debian.org | Yes | The owner's file unchanged, proportions kept (`object-fit: contain`), always beside the format's name and never as trove's branding; CC BY-SA 3.0 chosen, attribution, ownership and non-affiliation in the notices and the README (Q-UI-227). The image is no link: it sits inside a row link and a listbox option, where a second link would break both |
+| `deb` | Debian Open Use Logo without label, `openlogo-nd.svg` from [debian.org/logos](https://www.debian.org/logos/) (page modified 2020-10-05) | LGPL-3.0-or-later or, at the user's option, CC BY-SA 3.0; © 1999 Software in the Public Interest, Inc. | [Trademark policy](https://www.debian.org/trademark) (modified 2026-06-10): Debian's marks may "describe or advertise your services or products relating to Debian"; the logos "can be used as part of a page describing your products or services", not as part of a product's own logo; scaling keeps the proportions; acknowledge SPI's ownership prominently and disclaim affiliation. The logos page asks, as a wish, that the image link to debian.org | Yes | The owner's file unchanged, proportions kept (`object-fit: contain`), always beside the format's name and never as Quader's branding; CC BY-SA 3.0 chosen, attribution, ownership and non-affiliation in the notices and the README (Q-UI-227). The image is no link: it sits inside a row link and a listbox option, where a second link would break both |
 | `nuget` | NuGet logo, `nuget.svg`, and the owner's white variant `nuget_96_mono_w.png`, from the NuGet project's media repository [NuGet/Media](https://github.com/NuGet/Media) | CC BY 2.0 ("all content in this repository unless stated otherwise") | No logo or trademark guideline of the NuGet project or of the .NET Foundation, whose project NuGet is, was found. nuget.org's terms (Microsoft, January 2025) say Microsoft's logos and product icons need an express licence; Microsoft's trademark list (FY27Q2) does not name NuGet ([H-878](#h-878--the-owner-and-the-terms-of-the-nuget-mark-are-not-published)) | Yes | The owner's files unchanged; CC BY 2.0 attribution (the project, the source at its commit, the licence, no changes) in the notices; the mark only names the NuGet format |
 | `oci` | Open Container Initiative icon, `oci-icon-color.svg` and the owner's white variant `oci-icon-white.svg`, from [opencontainers/artwork](https://github.com/opencontainers/artwork) | Apache-2.0 (the repository's licence) | The Linux Foundation's [trademark usage](https://www.linuxfoundation.org/legal/trademark-usage): official versions only, no colour variations, nothing on top of the logo, never more prominent than the user's own name, no implied endorsement, a trademark notice; a logo in "any commercial or marketing context" other than those the page permits needs written permission ([H-877](#h-877--the-oci-logo-rests-on-a-non-commercial-use-under-the-linux-foundations-terms)) | Yes | The official files unchanged, the owner's white variant on the dark scheme, smaller than and beside the format's name; "Open Container Initiative®" and "OCI™" notices and the Apache-2.0 text next to the files |
 | `oci` | Docker's whale, [Docker trademark guidelines](https://www.docker.com/legal/trademark-guidelines/) | — | Docker's logos "may be taken only from Docker's product sheet or from Docker's service screen shot following authorization"; to indicate compatibility only the word marks, "not logo marks", may be used | No | — |
@@ -10957,7 +10967,7 @@ scheme or none, and whether the mark stands on a plate, Q-UI-226) or the glyph.
 permission" (npm, Red Hat for Ansible, Docker), a product that installations run cannot rest on nobody objecting, and the
 name beside every icon (R-UI-006) carries the meaning anyway. The development agent revisits this when npm, Inc. or Red Hat
 grant permission (the owner can ask through [npm's contact page](https://www.npmjs.com/contact) and trademarks@redhat.com),
-when an owner's terms change ([H-879](#h-879--an-owners-terms-can-change-after-the-day-they-were-read)), and when trove is
+when an owner's terms change ([H-879](#h-879--an-owners-terms-can-change-after-the-day-they-were-read)), and when Quader is
 offered commercially (H-877).
 
 **Applied in the spec:** R-UI-001 (the icon bullet), R-UI-006, R-UI-007, R-UI-021; the notes on Q-UI-1, Q-UI-114, Q-UI-178
@@ -10973,28 +10983,28 @@ and [web-ui.md](../developer/web-ui.md). Code: [format-icon.ts](../../web/src/ap
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: Q-UI-1 excluded SVG icon registration (a security bypass for every URL, banned by R-UI-046, and a Trusted Types
-policy the CSP does not list), and `@angular/material` is no dependency since Q-UI-126. trove's theme is its own: `data-theme`
+policy the CSP does not list), and `@angular/material` is no dependency since Q-UI-126. Quader's theme is its own: `data-theme`
 overrides the system's scheme, and an `<img>` sees only the system's. Measured against the dark surfaces (`#18171d`,
 `#28272d`, `#1d283e`), Debian's red (`#a80030`) reaches 1.9:1 to 2.3:1, NuGet's blue (`#004880`) 1.6:1 to 1.9:1 and the
 OCI navy (`#262261`) 1.0:1 to 1.3:1; on the light surfaces each is 6.9:1 or more.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) An `<img>` of the owner's file under `web/public/formats/`, in a small component; where the owner has a variant for dark grounds, both images, switched by trove's scheme; else a light plate behind the mark in the dark scheme (chosen) | `<trove-format-icon [format]>` | The file is the owner's, byte for byte (its SHA-256 is in the notice), so "unchanged" is checkable and an update is a copy; no bypass, no new CSP source (`img-src 'self'`); the switch follows trove's theme through CSS | OCI and NuGet load the hidden variant too; files of `web/public` are revalidated, not cached as immutable |
+| (a) An `<img>` of the owner's file under `web/public/formats/`, in a small component; where the owner has a variant for dark grounds, both images, switched by Quader's scheme; else a light plate behind the mark in the dark scheme (chosen) | `<quader-format-icon [format]>` | The file is the owner's, byte for byte (its SHA-256 is in the notice), so "unchanged" is checkable and an update is a copy; no bypass, no new CSP source (`img-src 'self'`); the switch follows Quader's theme through CSS | OCI and NuGet load the hidden variant too; files of `web/public` are revalidated, not cached as immutable |
 | (b) Inline SVG in a component | The paths copied into a template | One theme mechanism, no request | A transcribed logo is a modified copy, checked by eye; NuGet's light variant is a PNG; the paths ship in the scripts |
 | (c) An icon registry | Material's or a registry of its own | One icon API | A security bypass for every URL and the Trusted Types gap of Q-UI-1 |
 | (d) CSS background images | `url()` in a stylesheet, hashed by the build | Immutable caching | No element to carry an empty `alt`; the build renames the owner's file; the same scheme switch |
 
 **Choice:** (a). `formatIcon` returns the file, the dark-scheme file or none, and the plate flag; `FormatIconView`
-(`<trove-format-icon>`) draws a square of one em, so each place sets the size it had: 20 px in the list and "Recently
+(`<quader-format-icon>`) draws a square of one em, so each place sets the size it had: 20 px in the list and "Recently
 viewed", 16 px on the badge, 32 px on a tile. In the dark scheme OCI shows its owner's white icon and NuGet its owner's white
 variant, which NuGet publishes as PNG only (96 px covers a 32 px tile at three device pixels per CSS pixel); Debian
-publishes none and stands on the plate `--trove-logo-plate` (`#ececef`, 6.6:1 for the swirl; transparent in the light
+publishes none and stands on the plate `--quader-logo-plate` (`#ececef`, 6.6:1 for the swirl; transparent in the light
 scheme). No mark is recoloured. The switch is `.logo-on-light` and `.logo-on-dark` in `_icons.scss`, under
 `:root[data-theme='dark']` and under `prefers-color-scheme: dark` without `data-theme='light'`, the conditions of the
 tokens' `color-scheme`. Every place shows the format's name as text beside the icon, so a logo has `alt=""` and the glyph
 `aria-hidden="true"`: the accessible name of a type cell, the badge and a tile is the display name, said once. The files are
-served at trove's origin without the page's CSP, so a spec refuses scripts, event handlers, foreign objects and references
+served at Quader's origin without the page's CSP, so a spec refuses scripts, event handlers, foreign objects and references
 outside the file in every SVG that `formatIcon` names.
 
 **Rationale:** the licence and trademark conditions of Q-UI-225 ask for the owner's unchanged file, which (a) ships as it is
@@ -11005,7 +11015,7 @@ revisits this if NuGet publishes an SVG for dark grounds, if the request of the 
 an owner asks for the logo to be a link.
 
 **Applied in the spec:** R-UI-001 (the icon bullet). Code: [format-icon.ts](../../web/src/app/shared/format-icon.ts),
-[_icons.scss](../../web/src/styles/_icons.scss), [_tokens.scss](../../web/src/styles/_tokens.scss) (`--trove-logo-plate`),
+[_icons.scss](../../web/src/styles/_icons.scss), [_tokens.scss](../../web/src/styles/_tokens.scss) (`--quader-logo-plate`),
 `package-list.scss`, `package-detail.scss`, `repository-wizard.scss`. Tests: the `Q-UI-226` cases in
 [format-icon.spec.ts](../../web/src/app/shared/format-icon.spec.ts) and [palette.spec.ts](../../web/src/styles/palette.spec.ts),
 `spokenText` in [axe.ts](../../web/src/app/testing/axe.ts).
@@ -11022,7 +11032,7 @@ system status.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `web/public/formats/NOTICE.txt`, served next to the logos and appended by `build:embed` to the notices, plus a paragraph in the README (chosen) | One section per logo (file, SHA-256, source at its commit, owner, licence, trademark line) and the sentence that no owner is affiliated with or endorses trove; the build fails without it | The notice travels with the files and with the notices of the build; the README is the project's front page, where Debian's "prominently" is met | Two places say the same in different lengths |
+| (a) `web/public/formats/NOTICE.txt`, served next to the logos and appended by `build:embed` to the notices, plus a paragraph in the README (chosen) | One section per logo (file, SHA-256, source at its commit, owner, licence, trademark line) and the sentence that no owner is affiliated with or endorses Quader; the build fails without it | The notice travels with the files and with the notices of the build; the README is the project's front page, where Debian's "prominently" is met | Two places say the same in different lengths |
 | (b) Only in `3rdpartylicenses.txt` | The text in `build-embed.mjs` | One place | The logo directory carries no notice of its own; the README says nothing |
 | (c) A line in the UI | A footer or an about panel | Seen by every user | The UI has no footer, and the logos stand beside the names they denote |
 
@@ -11044,7 +11054,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) A radio group of Private, Internal, Public, each with GitLab's icon (a lock, a shield, a globe) and one muted sentence; an option that cannot be chosen is disabled with its reason (chosen) | The control of the owner's GitLab "Visibility level"; the style guide's rule for three exclusive choices | The reader sees all three and what each means; a disabled option says why; the same control on four screens | Takes vertical space |
 | (b) A select | Compact | One line | Hides the alternatives and their meaning, against the style guide's rule for three choices |
 
-**Choice:** (a), one shared component `trove-visibility-level` in `web/src/app/shared/ui/`, used by the general settings, the project,
+**Choice:** (a), one shared component `quader-visibility-level` in `web/src/app/shared/ui/`, used by the general settings, the project,
 the repository (twice) and the create dialogs; recorded in [ui-style-guide.md](../developer/ui-style-guide.md) by the package
 that builds it.
 
@@ -11130,7 +11140,7 @@ Context: R-UI-054 puts the level "after the name and the description" on the one
 | (a) A settings section **Visibility** whose one-sentence summary names the level (chosen) | The page keeps the name and the description open at the top; sections fold | The page rule of Q-UI-215 and Q-UI-222: a group with a save of its own is a section; the summary tells the level without opening it | One click to change it |
 | (b) The group in the open form next to the name | One form, one save | Visible at once | The level is saved by its own operation with its own confirmation; one save for two requests would send the name along with a cascade |
 
-**Choice:** (a). The group is read-only with "Only an administrator of trove sets the visibility of a project." for everyone without `projects:write`, the Owner included.
+**Choice:** (a). The group is read-only with "Only an administrator of Quader sets the visibility of a project." for everyone without `projects:write`, the Owner included.
 
 **Rationale:** The level is written through `PUT …/visibility`, not through the replace of the project, so it needs its own button and its own confirmation. The development agent records no revisit condition.
 
@@ -11209,9 +11219,9 @@ Context: R-UI-055 gives the block Visibility its own Save changes inside the tab
 Status: **Replaced by [Q-UI-300](#q-ui-300--in-a-list-every-address-field-has-one-width-the-lists-longest-address-up-to-what-the-other-columns-leave)** (the owner's task T-21 of 2026-11-12: the list showed a field of a different width in every row
 and scrolled sideways at about 1540 px). Kept for its record; nothing in the UI follows it any more.
 
-Context: the list is `<trove-data-table>`: a bordered region that scrolls in both directions (`.table-scroll`, `overflow: auto`)
+Context: the list is `<quader-data-table>`: a bordered region that scrolls in both directions (`.table-scroll`, `overflow: auto`)
 with a sticky header; the address was capped at 24 ch with an ellipsis. The longest realistic addresses are
-`https://trove.k8s-main.wds18.de/api/npm/npm-internal/` (53 characters) and `trove.k8s-main.wds18.de/docker-hub-remote` (40);
+`https://quader.k8s-main.wds18.de/api/npm/npm-internal/` (53 characters) and `quader.k8s-main.wds18.de/docker-hub-remote` (40);
 at 0.875rem monospace (about 8.4 px per character) the field is about 450 px plus the 32 px button.
 
 | Option | What happens | For | Against |
@@ -11270,15 +11280,15 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What happens | For | Against |
 |---|---|---|---|
-| (a) `<input readonly>` plus `<trove-copy-button>` inside `<trove-address-field>` (chosen) | The browser provides scrolling, selection, caret keys, find and a focus stop | Native behaviour, accessible by default, the reference's markup | The address is not in `textContent`; tests read `.value` |
+| (a) `<input readonly>` plus `<quader-copy-button>` inside `<quader-address-field>` (chosen) | The browser provides scrolling, selection, caret keys, find and a focus stop | Native behaviour, accessible by default, the reference's markup | The address is not in `textContent`; tests read `.value` |
 | (b) A `<code>` in an overflow container | Text in the DOM | Tests unchanged | Scrolling a non-focusable box needs `tabindex` and a role; selecting exactly the address is fiddly |
-| (c) A new copy button inside the component | Joined look in one place | Full control | A second copy implementation beside `trove-copy-button`, which the rest of the UI uses and tests |
+| (c) A new copy button inside the component | Joined look in one place | Full control | A second copy implementation beside `quader-copy-button`, which the rest of the UI uses and tests |
 
 **Choice:** (a). The component sets `readonly`, `spellcheck="false"`, `autocomplete="off"`, `translate="no"` and `aria-label`
-from its `label` input, and selects all on `focus` and `click`. It renders `trove-copy-button` with `[label]="copyLabel"` and
+from its `label` input, and selects all on `focus` and `click`. It renders `quader-copy-button` with `[label]="copyLabel"` and
 the default glyph; the joined look is the component's own stylesheet.
 **Rationale:** the clipboard path, the live-region message and the failure alert exist and are tested once. The development
-agent revisits it if `trove-copy-button` gains a visible "copied" state for other places; the field then takes it too.
+agent revisits it if `quader-copy-button` gains a visible "copied" state for other places; the field then takes it too.
 
 **Applied in the spec:** R-UI-065.
 
@@ -11313,12 +11323,12 @@ activity and the row actions out of view. The requirement: one width per list; t
 to a cap that keeps the list free of sideways scrolling at 1280 px and wider with its usual columns; the field fills the cell;
 a longer address scrolls inside the field, never an ellipsis, the copy button attached. The coordinator's look at the first
 renders (2026-11-12) added: the address is the plain user's main value in the list, so at 1440 px an address of the length of
-the owner's (`https://trove.k8s-main.wds18.net/api/ansible/test/galaxy/`, 57 characters) is shown whole, and a field shows the
+the owner's (`https://quader.k8s-main.wds18.net/api/ansible/test/galaxy/`, 57 characters) is shown whole, and a field shows the
 address from its start, never its tail.
 
 | Option | What happens | For | Against |
 |---|---|---|---|
-| (a) The column is `min(longest address, the list's width minus the room of its other columns)`, at least 16 rem; the field fills the cell and shows the address from its start (chosen) | The list passes the length of its longest address (`--trove-address-chars`) and the room its other columns need (`--trove-address-others`, 36 rem in a project, 44 rem in the admin area with its project column); `td.address-cell` computes the width in the field's own monospace face (`ch`) with the padding, the border and the copy button; that width is also the column's least, so the other columns give way first | One width per list by construction; the address takes all the room the list can give it; no measuring in script | The room of the other columns is a number per list, measured on the renders |
+| (a) The column is `min(longest address, the list's width minus the room of its other columns)`, at least 16 rem; the field fills the cell and shows the address from its start (chosen) | The list passes the length of its longest address (`--quader-address-chars`) and the room its other columns need (`--quader-address-others`, 36 rem in a project, 44 rem in the admin area with its project column); `td.address-cell` computes the width in the field's own monospace face (`ch`) with the padding, the border and the copy button; that width is also the column's least, so the other columns give way first | One width per list by construction; the address takes all the room the list can give it; no measuring in script | The room of the other columns is a number per list, measured on the renders |
 | (b) A share of the list's width (26 %, the first version of this decision) | A fixed proportion | One rule for every list | At 1440 px the field showed 28 characters: the host and a few more; the render showed every row as `https://localhost:4200/api/r…` |
 | (c) The share, with the field scrolled to the address's end | The rows differ at their end | Distinct rows in a narrow field | The host is cut mid-token (`pi/ansible/…`, `t:4200/api/deb/…`), which reads as broken |
 | (d) The column takes what the browser leaves it (`table-layout: auto`, no width) | The browser shares out the room | Adapts to every list | The address column is shrunk first: every field showed `https://loca` in the render |
@@ -11339,7 +11349,7 @@ the repository list (`addressChars`, `addressOthers`) and the endpoint page. Sty
 [Address field](../developer/ui-style-guide.md#address-field).
 
 **Revised by [Q-UI-330](#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share) (2026-11-12):** the address is no longer what gets every pixel the other columns do not need. The column is
-the list's longest address up to its share (`--trove-address-share`): in a project's list what is left after the repository's
+the list's longest address up to its share (`--quader-address-share`): in a project's list what is left after the repository's
 preferred 20 rem and the least widths of the others, room left over going back to the repository; in a list without a preferred
 column 46 characters and what the others leave at their least widths. Never under 10 rem. A longer address scrolls inside its
 field from its start, never an ellipsis. The admin area's list and the search results show no field at all.
@@ -11354,18 +11364,18 @@ defect as the list's.
 
 | Option | What happens | For | Against |
 |---|---|---|---|
-| (a) The field fills its line, at most `--trove-address-measure` (40 rem: 70 characters at 0.875rem with the padding and the button) (chosen) | Every single field and every stack of fields is one width | One rule; a stack is aligned; an address of up to 70 characters is shown whole | A short address has empty room at the end of its field |
+| (a) The field fills its line, at most `--quader-address-measure` (40 rem: 70 characters at 0.875rem with the padding and the button) (chosen) | Every single field and every stack of fields is one width | One rule; a stack is aligned; an address of up to 70 characters is shown whole | A short address has empty room at the end of its field |
 | (b) As wide as its address (Q-UI-271) | The field follows its address | No empty room | Stacked fields differ, as the render showed |
 | (c) The settings column's measure, 56 rem | The widest form measure | One measure for forms | At 1440 px a 53-character address fills half of an 896-px field |
 
 **Choice:** (a). Below the measure the field takes the line and scrolls inside, from 8 rem up (R-UI-044 reflow); several fields
-of one repository stand one under the other with `--trove-space-2` between them.
+of one repository stand one under the other with `--quader-space-2` between them.
 
 **Rationale:** the renders of the repository page in both schemes and at 1440, 1024 and 390 px show aligned fields whose
 addresses are read whole at the two wider widths. The development agent revisits the measure if an installation's addresses
 are longer than 70 characters.
 
-**Applied in the spec:** R-UI-065, R-UI-066. Code: the token `--trove-address-measure` in [_tokens.scss](../../web/src/styles/_tokens.scss).
+**Applied in the spec:** R-UI-065, R-UI-066. Code: the token `--quader-address-measure` in [_tokens.scss](../../web/src/styles/_tokens.scss).
 
 **Unchanged by [Q-UI-330](#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share):** a field alone on its line is not one of a list's columns; in a stacked row the field takes the row's
 width (Q-UI-306).
@@ -11433,13 +11443,13 @@ for the formats' upload routes.
 
 | Option | What happens | For | Against |
 |---|---|---|---|
-| (a) The dev server (`ng serve --configuration local`) in front of one trove of the profile, a sign-in provider of the profile ([test/devidp](../../test/devidp/devidp.go)) that signs in `sam`, `priya` or `ada` without a password, a seed through the management API as the break-glass account and through the formats' routes with the power user's token (chosen) | The renders show the working tree as it is, in seconds after a change; the users are real users of trove with real grants | No build of the embedded bundle (minutes) per change; the same login as an installation's (code flow, PKCE, the user created at the first sign-in) | English only and no CSP, the dev server's differences that web-ui.md lists |
-| (b) The embedded build (`make web`) served by trove | The installation's bundle | CSP and both locales | A localized production build and a rebuild of trove for every look |
+| (a) The dev server (`ng serve --configuration local`) in front of one Quader of the profile, a sign-in provider of the profile ([test/devidp](../../test/devidp/devidp.go)) that signs in `sam`, `priya` or `ada` without a password, a seed through the management API as the break-glass account and through the formats' routes with the power user's token (chosen) | The renders show the working tree as it is, in seconds after a change; the users are real users of Quader with real grants | No build of the embedded bundle (minutes) per change; the same login as an installation's (code flow, PKCE, the user created at the first sign-in) | English only and no CSP, the dev server's differences that web-ui.md lists |
+| (b) The embedded build (`make web`) served by Quader | The installation's bundle | CSP and both locales | A localized production build and a rebuild of Quader for every look |
 | (c) Sessions written into the database for each user | No provider | Fast | Bypasses the login and ties the tool to the schema |
 | (d) The browser sends a token instead of the session | No provider | Simple | The UI decides what to show by the session (`whoami`, recent sign-in), so the screens would not be the user's |
 
 **Choice:** (a). The provider listens on `127.0.0.1:19090` only, starts and stops with `make ui-dev-backend`, and is in the
-profile's `trove.yaml` as the provider `ui-dev`; the sign-in screen of the profile offers it beside the break-glass form
+profile's `quader.yaml` as the provider `ui-dev`; the sign-in screen of the profile offers it beside the break-glass form
 (`auth.login_page.auto_redirect: false`). The profile's outbound configuration trusts its CA and allows the loopback addresses.
 The scheme is the browser's (`prefers-color-scheme`), which the app follows when no theme is stored, the way the theme button's
 "Follow the system" does; the seed clears a stored theme of the three users.
@@ -11495,7 +11505,7 @@ address column was out of view and the description wrapped into a tall, narrow c
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A list that opts in (`class="stack-narrow"` on `<trove-data-table>`) shows each row as a block below 48 rem of the list's width: the name and its description with the row's menu on the first line, format and class on one line, the address field across the full width, then the cells that carry a value, each with its column's name (`data-label`) (chosen) | A container query on the list region `.list-main` | The plain user's address is whole and wide on a phone; no sideways scrolling; the same markup, the head kept for assistive technology | A second layout to check; a table whose rows are blocks keeps its semantics in Chromium and Firefox, not reliably in older Safari |
+| (a) A list that opts in (`class="stack-narrow"` on `<quader-data-table>`) shows each row as a block below 48 rem of the list's width: the name and its description with the row's menu on the first line, format and class on one line, the address field across the full width, then the cells that carry a value, each with its column's name (`data-label`) (chosen) | A container query on the list region `.list-main` | The plain user's address is whole and wide on a phone; no sideways scrolling; the same markup, the head kept for assistive technology | A second layout to check; a table whose rows are blocks keeps its semantics in Chromium and Firefox, not reliably in older Safari |
 | (b) The table scrolls sideways in its region | Today | Nothing to build | The address out of view |
 | (c) A separate list of cards for small screens | Two templates | Freedom of layout | Two templates of one list drift apart |
 
@@ -11547,7 +11557,7 @@ Status: **Decided by the development agent** — selected from the options below
 Context: fix wave 1 of T-21 (the coordinator, 2026-11-12) after the renders of Q-UI-300: in the repository list at 1440 px the
 first column was about 150 px, so the key `debian-internal-packages-for-bookworm-and-trixie` wrapped to four lines and the
 descriptions to three; the cells of one row sat at different heights (the name at the top of its tall cell, format and address
-centred); and the room of the other columns was a number the repository list set for itself (`--trove-address-others`). The other
+centred); and the room of the other columns was a number the repository list set for itself (`--quader-address-others`). The other
 lists had none of it (systemic cause 2 of [ui-audit.md](../projektplan/ui-audit.md)).
 
 | Option | What it means | For | Against |
@@ -11565,7 +11575,7 @@ agent revisits top alignment if a list's controls are taller than one line of te
 
 **Applied in the spec:** R-UI-020, R-UI-065; Q-UI-306 now holds for every list. Code: [data-table.ts](../../web/src/app/shared/ui/data-table.ts),
 [_list-screens.scss](../../web/src/styles/_list-screens.scss). Style guide: [Lists](../developer/ui-style-guide.md#lists). Fix wave 2: a column marked `narrow` gives its room to the address below 64 rem
-of the list's width (`--trove-list-narrow`); the repository list's Last activity is one, so the admin area's list shows about 48
+of the list's width (`--quader-list-narrow`); the repository list's Last activity is one, so the admin area's list shows about 48
 characters of an address at 1280 px as at 1440 px (UI-A-30). Fix wave 4: the narrow columns and the stacked rows follow the table's
 own width (the container `table`, its frame), and the address column's share is of the width of the rows without the scrollbar
 beside them (Q-UI-327).
@@ -11579,7 +11589,7 @@ was filtered (UI-A-17, UI-A-20, UI-A-25).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `<trove-empty-state text>` with the action projected: a muted sentence over a hairline and, under it, the button or link that fills the list; the data table uses it for an empty list, with `emptyAction` content (chosen) | One look, one place for the action | The style guide's rule ("offers the action that fills it") in one component | Screens move to it one by one |
+| (a) `<quader-empty-state text>` with the action projected: a muted sentence over a hairline and, under it, the button or link that fills the list; the data table uses it for an empty list, with `emptyAction` content (chosen) | One look, one place for the action | The style guide's rule ("offers the action that fills it") in one component | Screens move to it one by one |
 | (b) The dashed box | Today's data table | Visible | A frame around nothing; no action |
 
 **Choice:** (a). **Rationale:** an empty list is a moment to act, so its action is next to the sentence. The development agent
@@ -11776,7 +11786,7 @@ revisit condition.
 
 **Applied in the spec:** R-UI-067, R-UI-005 (the reason of a disabled action names a role where one grants it). Built in fix
 wave 2: on a project's screens (members, settings, policies, service accounts, CI mappings) the reason is "Read only. Ask
-priya, an Owner of web-frontend, to change this." (`<trove-needs [project]>`); the administrator's screens keep the
+priya, an Owner of web-frontend, to change this." (`<quader-needs [project]>`); the administrator's screens keep the
 capability.
 
 ### Q-UI-319 · The details are one closed section per screen that remembers whether the user opened it
@@ -11785,7 +11795,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `<trove-settings-section>` with the heading **Details** at the end of the main view, closed at first; whether a user opened it is kept per screen kind in the browser's storage (chosen) | One component, one place, one name | The plain user is not shown it open; a power user opens it once per screen kind | Kept per browser, not per account |
+| (a) `<quader-settings-section>` with the heading **Details** at the end of the main view, closed at first; whether a user opened it is kept per screen kind in the browser's storage (chosen) | One component, one place, one name | The plain user is not shown it open; a power user opens it once per screen kind | Kept per browser, not per account |
 | (b) Open for power users and administrators, closed for plain users | By kind | No click for the power user | The same screen looks different by role, and a kind is per project |
 | (c) A tab "Details" | A tab per screen | The tab strip exists | A tab hides the main view; screens without tabs get one |
 
@@ -11807,7 +11817,7 @@ this" next to the address field.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) An address and a command of one line are `<trove-address-field>` (the read-only input with its joined copy button); a command of several lines stays a code block with its copy button. The header of the repository page and the start page show the repository's first address only; the further ones are labelled fields in the repository page's Details. The selects of a panel stack and take the panel's width (chosen) | One look for one line to copy; one address where a client needs one | The plain user copies the one address its client takes; the second address says what it is for; the panel's controls line up | A long command scrolls inside its field instead of wrapping |
+| (a) An address and a command of one line are `<quader-address-field>` (the read-only input with its joined copy button); a command of several lines stays a code block with its copy button. The header of the repository page and the start page show the repository's first address only; the further ones are labelled fields in the repository page's Details. The selects of a panel stack and take the panel's width (chosen) | One look for one line to copy; one address where a client needs one | The plain user copies the one address its client takes; the second address says what it is for; the panel's controls line up | A long command scrolls inside its field instead of wrapping |
 | (b) Keep Q-UI-272: a command is a code block | Two looks | A command reads as something to run | Two copy patterns on one panel, which the owner's renders called out |
 | (c) Both addresses in the header, each with a label | Everything at the top | No click for the download address | The plain user chooses between two addresses at the first glance; the header grows by two lines |
 
@@ -11843,13 +11853,13 @@ development agent revisits it if users want the setup and the content side by si
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: fix wave 1 built the repository page's and the package page's **Details** and the project list's **About this project**
-with `<trove-settings-section>`, the collapsible group of a settings page: its heading at `--trove-heading-2` and its bordered
+with `<quader-settings-section>`, the collapsible group of a settings page: its heading at `--quader-heading-2` and its bordered
 region made each look like a second title of the page below its content.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `<trove-disclosure heading hint [(expanded)]>`: the heading at the size of the text, weight 600, as a button with a chevron that turns when open; one muted hint line under it; the body below. A settings page keeps `<trove-settings-section>` for its groups (chosen) | Two components, one per job | Details stay quiet below the content; a settings page keeps the headings that structure it | Two collapsible components to keep apart |
-| (b) `<trove-settings-section>` everywhere, with a quiet variant | One component | One file | One component whose look depends on an input; a reader has to know which look means what |
+| (a) `<quader-disclosure heading hint [(expanded)]>`: the heading at the size of the text, weight 600, as a button with a chevron that turns when open; one muted hint line under it; the body below. A settings page keeps `<quader-settings-section>` for its groups (chosen) | Two components, one per job | Details stay quiet below the content; a settings page keeps the headings that structure it | Two collapsible components to keep apart |
+| (b) `<quader-settings-section>` everywhere, with a quiet variant | One component | One file | One component whose look depends on an input; a reader has to know which look means what |
 | (c) The native `<details>` and `<summary>` | No component | Nothing to build | The marker differs between browsers; the open state does not bind to a signal, which remembering it (Q-UI-319) needs |
 
 **Choice:** (a). **Rationale:** what is on demand should be quiet until asked for, and a settings page's groups are its content, not
@@ -11857,7 +11867,7 @@ details. The development agent revisits (b) if the two components grow apart in 
 
 **Applied in the spec:** R-UI-067, Q-UI-319; the style guide's components table and its section on details. Built in fix wave 2 on
 the repository page and the package page. Revised in fix wave 3 (the coordinator, 2026-11-12): the quiet look serves every
-collapsible section, the groups of the settings pages and the editors too, and `<trove-settings-section>` is gone; one component,
+collapsible section, the groups of the settings pages and the editors too, and `<quader-settings-section>` is gone; one component,
 one look.
 
 ### Q-UI-323 · A project's repository list says in one muted line what the project is and whom to ask; recently opened is the start page's
@@ -11885,7 +11895,7 @@ walkthrough shows readers look for the project's members.
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: the documentation's overview (R-UI-050) lists the user guide and the administrator guide one after the other for everyone;
-the plain user scrolls through the guide of running trove to reach nothing of theirs (UI-A-21).
+the plain user scrolls through the guide of running Quader to reach nothing of theirs (UI-A-21).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -11902,7 +11912,7 @@ development agent revisits it if power users without a system role also prefer t
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: UI-A-30 after fix wave 2. The measure is the owner's own address, `https://trove.k8s-main.wds18.net/api/ansible/test/galaxy/`,
+Context: UI-A-30 after fix wave 2. The measure is the owner's own address, `https://quader.k8s-main.wds18.net/api/ansible/test/galaxy/`,
 57 characters: in the field's face (0.875 rem monospace, about 8.4 px a character) with its padding, border and copy button the
 field needs about 537 px. The admin area's list at 1280 px is about 937 px wide (the sidebar open). With the columns repository
 (16 rem), format and class (5.5 rem), Last activity (7.5 rem) and the menu (2 rem), and each column's padding, the other columns took
@@ -12062,12 +12072,12 @@ if the walkthrough shows that readers cannot tell addresses apart at 1440 px, an
 **Revised in the follow-up (the coordinator, 2026-11-12):** the first version capped the field at 46 characters in every list.
 At 1920 px beside the open panel the repository column of a project's list was mostly empty (most keys are short) while every
 address was cut at 46 characters, although the room was there: the cap was as rigid as the room-taking it replaced. A column now
-`prefer`s a width (the data table counts it in `--trove-list-others` and gives it what is left over, every other column keeps its
+`prefer`s a width (the data table counts it in `--quader-list-others` and gives it what is left over, every other column keeps its
 width), and the list sets the address's share to its longest address.
 
 **Revised in the second follow-up (the coordinator, 2026-11-12), a third case: the search results.** With the project list's rule
 the search results at 1440 px gave the address field 31 characters, `https://localhost:4200/api/npm/` on every row, so the field
-showed nothing that told the rows apart; with a real host (`https://trove.k8s-main.wds18.net/`, 32 characters before the path) it
+showed nothing that told the rows apart; with a real host (`https://quader.k8s-main.wds18.net/`, 32 characters before the path) it
 would be the same. Judged by purpose: who searches wants to find a repository and open it, and copying is secondary there. So the
 search results take the admin area's pattern: **Repository** (key and description), **Project**, **Format**, **Class**, and the
 quiet copy button whose name and tooltip carry the address, alone at the end of the row because a result has no menu; no
@@ -12119,7 +12129,7 @@ service account's and the token administration's. Who reads a token list decides
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) **Token** (description and the hint, which names the type: `trv_pat_…`), **Scope**, **Expires**, **Last used** and at the row's end **Revoke** with a quiet **Rotate** icon where the caller may rotate, or the state of a token that is no longer active; **Created** and **Created via** are `narrow` in an owner's list; the token administration adds **Owner** and the selection and stacks below 64 rem (chosen) | Five columns that decide, two that give way first | No column repeats what another says (the type is in the hint, "Active" is the default filter); every list fits its width or stacks; the action is where the eye ends | **Created** and **Created via** are not visible on a page narrower than 64 rem; **Rotate** is an icon with its name and tooltip |
+| (a) **Token** (description and the hint, which names the type: `qdr_pat_…`), **Scope**, **Expires**, **Last used** and at the row's end **Revoke** with a quiet **Rotate** icon where the caller may rotate, or the state of a token that is no longer active; **Created** and **Created via** are `narrow` in an owner's list; the token administration adds **Owner** and the selection and stacks below 64 rem (chosen) | Five columns that decide, two that give way first | No column repeats what another says (the type is in the hint, "Active" is the default filter); every list fits its width or stacks; the action is where the eye ends | **Created** and **Created via** are not visible on a page narrower than 64 rem; **Rotate** is an icon with its name and tooltip |
 | (b) The nine columns with least widths | Nothing dropped | Every fact visible | 74 rem of columns: no page shows them without scrolling |
 | (c) Details of a row behind a disclosure | Fewer columns | Room | A second click for the facts of every token, and a pattern no other list has |
 
@@ -12183,7 +12193,7 @@ For the widths:
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The five widths of the T-21b plan (`field-w-number`, `-duration`, `-bytes`, `-name`, `-full`, tokens `--trove-field-width-*`), every select and picker `name` unless its place fills a line (chosen) | One set for the app, by kind of input | The selects of a column line up; the repository forms of T-21b take the same set, so there are never two | A select with long options (the mapping editor's **Pipelines from other projects**) shows the start of its choice in a closed state |
+| (a) The five widths of the T-21b plan (`field-w-number`, `-duration`, `-bytes`, `-name`, `-full`, tokens `--quader-field-width-*`), every select and picker `name` unless its place fills a line (chosen) | One set for the app, by kind of input | The selects of a column line up; the repository forms of T-21b take the same set, so there are never two | A select with long options (the mapping editor's **Pipelines from other projects**) shows the start of its choice in a closed state |
 | (b) Small, medium, large by content length | Three sizes for selects alone | Fits each select closer | A second set of widths next to the plan's, which the plan forbids |
 | (c) Every select the width of its column | No classes | Lines up | A two-word choice across the whole page |
 
@@ -12364,7 +12374,7 @@ setting needs "empty" as a value of its own.
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Each standard field is named to one of the five widths of Q-UI-334, and a member of a format's schema takes the width of its type (chosen) | key, names, hosts and choices `name`; URL, description, notes, patterns and lists `full`; periods `duration`; counts `number`; the storage limit `bytes`; a schema's `integer` and `number` `number`, a string with `format: uri` or `maxLength` above 128 `full`, any other string and every choice `name` | A format's schema needs no annotation; a member a format adds gets a width without a change of the UI | A member whose type does not tell its length (a short string without `maxLength`) takes `name` |
-| (b) A width per schema member (`x-trove-width`) | Each format names the widths of its members | Exact | A fact of the UI in every format's schema |
+| (b) A width per schema member (`x-quader-width`) | Each format names the widths of its members | Exact | A fact of the UI in every format's schema |
 | (c) Every field the width of the column | As built | — | The owner's finding |
 
 **Choice:** (a). The five widths are those of [Q-UI-334](#q-ui-334--a-picker-is-one-control-from-the-start-held-while-its-list-loads-and-a-field-is-as-wide-as-its-kind-of-input),
@@ -12449,7 +12459,7 @@ seconds need not offer room for billions. Q-UI-334 had given the selects their w
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `<trove-text-field>` must name its `width` (a required input), a raw input of a form carries the class, the schema-driven settings derive it (`widthOf`), and a lint check fails a number field without a number width (chosen) | The five widths of Q-UI-334 on every field, by the kind of its expected input | The compiler refuses a text field without a width, so a new field is decided where it is written; the check keeps raw number inputs honest | Every text area says `full` |
+| (a) `<quader-text-field>` must name its `width` (a required input), a raw input of a form carries the class, the schema-driven settings derive it (`widthOf`), and a lint check fails a number field without a number width (chosen) | The five widths of Q-UI-334 on every field, by the kind of its expected input | The compiler refuses a text field without a width, so a new field is decided where it is written; the check keeps raw number inputs honest | Every text area says `full` |
 | (b) A default width (`full` or `name`) with exceptions | Fewer attributes | Short templates | A forgotten field silently takes the default, which is how the finding arose |
 | (c) Width by `type` alone | `number` → number width | Automatic | A period in seconds is not a count, and an ID of nineteen digits is neither |
 
@@ -12476,14 +12486,14 @@ development agent revisits a width whose renders cut a common value, by moving t
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: the owner asked for the grades "as we realised it in cogpit"; cogpit's scale runs from a deep teal (S) through green
-(A), mint (B), amber (C) and orange (D) to red (E), the same in both of its themes, with a quiet grey for N/A. trove's rule is
+(A), mint (B), amber (C) and orange (D) to red (E), the same in both of its themes, with a quiet grey for N/A. Quader's rule is
 that green means a positive status only (Q-UI-96).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) cogpit's colours, as tokens with the same value in both schemes for S to E and a grey per scheme for N/A; S, A and B are allowed to be green (chosen) | The palette test admits the three grade tokens and their rim and ink beside the positive status | The grade looks as the owner knows it; S, A and B are the good end of the scale, so their green is a positive status in Q-UI-96's sense; the letter and the text carry the grade, never the colour alone | Three more greens in the palette |
 | (b) cogpit's scale without green: S to B in blue or grey | Q-UI-96 untouched | No exception | Not what the owner asked for; a blue S reads as a link or a selection |
-| (c) trove's status colours | Positive, warning, error | Fewer tokens | Three colours for seven grades; C and D look the same |
+| (c) Quader's status colours | Positive, warning, error | Fewer tokens | Three colours for seven grades; C and D look the same |
 
 **Choice:** (a). The bar takes cogpit's severity colours as well; its High is one step deeper than cogpit's (`#c9302a` for
 `#d9403a`) so that its white count keeps 4.5:1. **Rationale:** the owner's reference, inside the rule's intent: green still means
@@ -12544,7 +12554,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) The shield alone, as cogpit's Pods list | The quietest | Narrow | A letter without its count says less than the old column did |
 
 **Choice:** (a). The card's last fact is the link **Findings in** and the repository, to the report filtered by the repository,
-the package and the version: the scanned object cogpit links to is, in trove, that list. **Rationale:** simple by default,
+the package and the version: the scanned object cogpit links to is, in Quader, that list. **Rationale:** simple by default,
 details on demand. The development agent records no revisit condition. **Applied in the spec:** R-UI-091, R-UI-093, R-UI-094.
 
 ### Q-UI-375 · The package page shows the version's grade in its header and a card per repository on its tab
@@ -12553,7 +12563,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The header's facts hold `<trove-grade>` of the selected version, a link to the tab; the tab holds one card per repository (chosen) | Seen at once, detailed on demand | A plain user sees whether the version is safe without opening a tab; the card's counts match the repository's findings below it | Two places |
+| (a) The header's facts hold `<quader-grade>` of the selected version, a link to the tab; the tab holds one card per repository (chosen) | Seen at once, detailed on demand | A plain user sees whether the version is safe without opening a tab; the card's counts match the repository's findings below it | Two places |
 | (b) One card in the header | Everything on top | No tab needed | A card of 32 px with a bar pushes the install command down, which the plain user came for (Q-UI-315) |
 | (c) The tab only | One place | Quiet | The grade is hidden behind a tab |
 
@@ -12596,7 +12606,7 @@ Context: the first card read "Advisory data from this minute (Nov 12, 2026, 2:22
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `<trove-time-ago>`: "just now", "3 min ago", "1 h ago", "4 d ago", then the absolute time in brackets; the card says **Scanned** for an image and **Checked** for a package (chosen) | One component, the words trove's own | cogpit's form; the same words in every place that shows a time this way; translated | Days do not turn into months or years |
+| (a) `<quader-time-ago>`: "just now", "3 min ago", "1 h ago", "4 d ago", then the absolute time in brackets; the card says **Scanned** for an image and **Checked** for a package (chosen) | One component, the words Quader's own | cogpit's form; the same words in every place that shows a time this way; translated | Days do not turn into months or years |
 | (b) The browser's `Intl.RelativeTimeFormat` | No words of our own | Months and years for free | "this minute", "yesterday": the words change their shape, and differ per browser |
 
 **Choice:** (a). **Rationale:** one short, stable form a reader can scan. The development agent revisits months and years if a
@@ -12637,7 +12647,7 @@ project already.
 | (b) Keep the columns and let the list scroll inside its region | Nothing changes | The column stays | The defect stays |
 | (c) Stack the rows from a wider width | The rows become blocks earlier | No column dropped | A list of findings is read as a table; blocks at 1440 px are not a table |
 
-**Choice:** (a). **Rationale:** the qualified name `<project>/<repository>` is how trove names a repository outside its project ([Q-REPO-212](repositories-and-proxy.md#q-repo-212--a-repository-is-addressed-inside-its-project-and-no-repository-is-shared)), so a
+**Choice:** (a). **Rationale:** the qualified name `<project>/<repository>` is how Quader names a repository outside its project ([Q-REPO-212](repositories-and-proxy.md#q-repo-212--a-repository-is-addressed-inside-its-project-and-no-repository-is-shared)), so a
 column that repeats its first part costs the room without adding a fact. The development agent revisits the column if the owner wants
 the project as a column of its own. **Applied in the spec:** R-VULN-022 (List, Instance-wide); [Q-UI-165](#q-ui-165--the-security-dashboard-is-the-content-report-mounted-in-the-admin-area-with-its-own-links-project-column-and-search)'s column is replaced by the link.
 
@@ -12676,7 +12686,7 @@ belief that readers had no list across projects; the list `GET /api/v1/repositor
 an anonymous visitor gets it with T-22. The page's address is `/search?q=<text>`, which T-22's results page
 (R-UI-098 in [its plan](../projektplan/search-work-packages.md)) extends by
 `kind` and tabs. The field offers no suggestions of its own while
-typing (no `datalist`, no list of trove's): what a browser may offer is its own form history, which `autocomplete="off"` asks it to
+typing (no `datalist`, no list of Quader's): what a browser may offer is its own form history, which `autocomplete="off"` asks it to
 leave out. The start page's package search takes its text from the address (`/projects?find=<text>`), so that the results page can
 hand the text over. **Rationale:** the owner's rule, with the least that makes Enter useful until T-22. The development agent revisits
 nothing: T-22 extends the page. **Applied in the spec:** R-UI-002; [search-results.ts](../../web/src/app/features/search/search-results.ts).
@@ -12767,13 +12777,13 @@ keeps an unavailable action visible with its reason, and the reason is the one f
 The development agent revisits the sentence if the setting moves into the UI. **Applied in the spec:** R-VULN-022 (Sources);
 [vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts).
 
-### Q-API-246 · An operation that is allowed while the installation is read-only declares `x-trove-maintenance: allowed`
+### Q-API-246 · An operation that is allowed while the installation is read-only declares `x-quader-maintenance: allowed`
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context and options are those of [Q-OPS-208](operations-and-observability.md#q-ops-208--the-read-only-mode-is-refused-at-four-places-by-a-default-of-refusal-and-the-banner-write-is-refused-with-the-rest); this block fixes the contract of the document.
 
-**Choice:** the member `x-trove-maintenance` of an operation has the single value `allowed`, is valid only on a method other than GET, HEAD and OPTIONS (the document refuses it elsewhere), and is read into `Operation.MaintenanceAllowed`. The `info.description` of the document states the rule. `GET /api/v1/system/banner` is `public`, `GET /api/v1/system/maintenance` is `authenticated`, both `PUT` operations need `settings:write`. `422` is documented on both `PUT`s.
+**Choice:** the member `x-quader-maintenance` of an operation has the single value `allowed`, is valid only on a method other than GET, HEAD and OPTIONS (the document refuses it elsewhere), and is read into `Operation.MaintenanceAllowed`. The `info.description` of the document states the rule. `GET /api/v1/system/banner` is `public`, `GET /api/v1/system/maintenance` is `authenticated`, both `PUT` operations need `settings:write`. `422` is documented on both `PUT`s.
 
 **Rationale:** the document is the one place that already says, per operation, who may call it (R-API-008), so what stays callable in maintenance belongs next to it. The development agent would revisit the single value if an operation needs "allowed for administrators only".
 
@@ -12785,7 +12795,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `x-trove-part: wiki` on the operation, read into `Operation.Part` (chosen) | As `x-trove-maintenance` (Q-API-246) | The document says which operations serve wiki content; the shared step and a test can read it; the T-19 operations name it the same way | One more extension |
+| (a) `x-quader-part: wiki` on the operation, read into `Operation.Part` (chosen) | As `x-quader-maintenance` (Q-API-246) | The document says which operations serve wiki content; the shared step and a test can read it; the T-19 operations name it the same way | One more extension |
 | (b) A handler check only | The handler asks the wiki | No document change | Nothing says which operation is wiki; a new operation can forget it |
 
 **Choice:** (a), valid only on a `GET` that reads repository content.
@@ -12819,7 +12829,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `x-trove-permission: public: true`; the handler lists what the caller's level admits, its memberships and, with `projects:read`, every project; a project it may not see is 404 (chosen) | As `listRepositories` does | One place decides who sees a project; an anonymous caller gets the public projects while a public repository exists and 401 before | The declaration does not tell the rule; the description of the operation does |
+| (a) `x-quader-permission: public: true`; the handler lists what the caller's level admits, its memberships and, with `projects:read`, every project; a project it may not see is 404 (chosen) | As `listRepositories` does | One place decides who sees a project; an anonymous caller gets the public projects while a public repository exists and 401 before | The declaration does not tell the rule; the description of the operation does |
 | (b) Keep the declaration (`projects:read` or a member) and add a second path for the levels | Two decisions | The declaration is still the rule | A project that a level admits would be reachable by two paths with two answers |
 
 **Choice:** (a). `membership=true` keeps the caller's memberships. A caller without a credential gets 401 while no repository's artifacts
@@ -12856,7 +12866,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) Only callers that can read something | A probe before the field shows | No empty answers | A request on every screen; an empty answer is a valid answer |
 
 **Choice:** (a). **Rationale:** the field is how a reader finds content, and the anonymous visitor of public content is a reader.
-The development agent revisits it if the field shows up in `trove_api_rate_limited_total{class="anonymous"}`.
+The development agent revisits it if the field shows up in `quader_api_rate_limited_total{class="anonymous"}`.
 
 **Applied in the spec:** R-UI-095.
 
@@ -12912,7 +12922,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Places, frequently visited repositories, **View all my projects**, frequently visited projects; for an instance administrator an **Admin area** group last (chosen) | The reference's order with trove's objects: a repository where the reference has a project, a project where it has a group | Familiar; the user's own places first; the admin entries apart | Five groups in a small list |
+| (a) Places, frequently visited repositories, **View all my projects**, frequently visited projects; for an instance administrator an **Admin area** group last (chosen) | The reference's order with Quader's objects: a repository where the reference has a project, a project where it has a group | Familiar; the user's own places first; the admin entries apart | Five groups in a small list |
 | (b) Only the frequently visited | Short | Less to read | No way to the places by keyboard |
 | (c) The admin area as one of the Places, as the reference lists it | Mixed | One group fewer | The plain group then holds an admin entry, which R-UI-099 keeps apart |
 
@@ -12931,8 +12941,8 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) A server table of visits per user | Across devices | Follows the user | A navigation history of every user on the server; a write per page view; filtered by read on every use anyway |
 | (c) The browser, by recency only (today's recent lists) | Last opened | Nothing new | "Frequently" means more than "last" |
 
-**Choice:** (a). The store replaces `trove.recent-repositories`, which is one key for every user of a browser, and
-`trove.recent-projects.<name>`. **Rationale:** the list is a convenience, and a convenience does not justify a record of what people
+**Choice:** (a). The store replaces `quader.recent-repositories`, which is one key for every user of a browser, and
+`quader.recent-projects.<name>`. **Rationale:** the list is a convenience, and a convenience does not justify a record of what people
 open. As the owner's brief describes the reference, it keeps the list in the browser too (not checked against its current version).
 The development agent revisits it if the owner wants the list on every device.
 
@@ -12961,7 +12971,7 @@ Status: **Decided by the development agent** — selected from the options below
 |---|---|---|---|
 | (a) Repositories, Packages, Projects, Pages; then Admin pages, Users, Groups for an instance administrator; five each, three pages, ten under a kind (chosen) | Grouped by kind | The plain user's job is a repository or a package (R-UI-067); the admin kinds apart (R-UI-099) | Up to 25 entries for an administrator |
 | (b) One list ranked across kinds | Mixed | Short | Ranks of different kinds do not compare; the owner showed groups |
-| (c) Projects first, in the reference's order | Containers first | Like the reference | In trove a project is the container and rarely the target |
+| (c) Projects first, in the reference's order | Containers first | Like the reference | In Quader a project is the container and rarely the target |
 
 **Choice:** (a). **Rationale:** the order follows what a reader looks for most. The development agent revisits it if the
 walkthrough shows projects are looked for more.
@@ -12979,7 +12989,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) One request per kind | Three to five lists per text | No new operation | Three to five times the budget; answers that arrive apart |
 
 **Choice:** (a). **Rationale:** the field must never starve the screens of their budget, and the anonymous budget is shared by a
-client address. The development agent revisits the numbers if the field shows up in `trove_api_rate_limited_total`.
+client address. The development agent revisits the numbers if the field shows up in `quader_api_rate_limited_total`.
 
 **Applied in the spec:** R-UI-097.
 
@@ -13005,7 +13015,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `@angular/aria`'s combobox with a listbox popup, groups as `role="group"` (chosen) | The library R-UI-044 names | Roles, active descendant and keys from the library | Its listbox has no group directive (types of 22.2.5): if it does not find options inside group elements, (b) is used |
-| (b) A combobox written on the CDK's `ActiveDescendantKeyManager` | Hand-made | Groups under full control | Keys and roles written and tested by trove |
+| (b) A combobox written on the CDK's `ActiveDescendantKeyManager` | Hand-made | Groups under full control | Keys and roles written and tested by Quader |
 | (c) A menu | `role="menu"` | Simple | A menu has no text field; screen readers announce it as a menu of commands |
 
 **Choice:** (a), with (b) when a spec test shows that the arrow keys do not cross groups. **Rationale:** the APG's combobox is the
@@ -13162,8 +13172,8 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) A trigram GIN index (`pg_trgm`) | Any infix | Finds everything | The extension may be refused on a managed PostgreSQL (migration 00017) |
 | (c) The name prefix only | One B-tree | Smallest | Misses every scoped npm name and every dotted NuGet ID by its last part |
 
-**Choice:** (a). **Rationale:** it follows NuGet's search (Q-NUGET-12) and trove's rule against the extension. The development agent
-revisits (b) if trove ever requires `pg_trgm` for another reason.
+**Choice:** (a). **Rationale:** it follows NuGet's search (Q-NUGET-12) and Quader's rule against the extension. The development agent
+revisits (b) if Quader ever requires `pg_trgm` for another reason.
 
 **Applied in the spec:** R-API-062, R-API-064.
 
@@ -13271,7 +13281,7 @@ starve the screens.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-API-064 as planned read statement A with `LIKE <escaped q>%` and left the plans to PostgreSQL. trove's connections
+Context: R-API-064 as planned read statement A with `LIKE <escaped q>%` and left the plans to PostgreSQL. Quader's connections
 prepare their statements (`QueryExecModeCacheStatement`), and PostgreSQL may switch a prepared statement to a generic plan after
 its fifth run. The `EXPLAIN` of the integration area `search` showed statement B's generic plan walking `packages_name_lower` over
 every package for a rare word, and a generic plan cannot derive index bounds from a `LIKE` parameter at all.
@@ -13296,19 +13306,19 @@ the planner's time.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: task T-19. The owner's galaxy_ng shows, per collection version: Install (description, license, install command, download, requires Ansible), Documentation (search and tree), Contents, Import log, Dependencies, Distributions, and the links Docs site, Website, Issue tracker, Repo. trove's package page (R-UI-007) already has an install panel, a Metadata tab (authors, license, `requires_ansible`, dependencies, links), Files, Repositories and All versions.
+Context: task T-19. The owner's galaxy_ng shows, per collection version: Install (description, license, install command, download, requires Ansible), Documentation (search and tree), Contents, Import log, Dependencies, Distributions, and the links Docs site, Website, Issue tracker, Repo. Quader's package page (R-UI-007) already has an install panel, a Metadata tab (authors, license, `requires_ansible`, dependencies, links), Files, Repositories and All versions.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) For the format `ansible`: tabs **Documentation** (replaces README), **Contents**, Metadata, Files, Repositories, All versions, and **Import log** on a local repository (chosen) | Install = the install panel, Dependencies = a section of Metadata with links to the packages, Distributions = the Repositories tab, the links = the Metadata tab | Nothing exists twice; the page keeps the layout of the other formats; the new tabs are exactly what trove lacks | Dependencies is not a tab of its own, which the reference has |
+| (a) For the format `ansible`: tabs **Documentation** (replaces README), **Contents**, Metadata, Files, Repositories, All versions, and **Import log** on a local repository (chosen) | Install = the install panel, Dependencies = a section of Metadata with links to the packages, Distributions = the Repositories tab, the links = the Metadata tab | Nothing exists twice; the page keeps the layout of the other formats; the new tabs are exactly what Quader lacks | Dependencies is not a tab of its own, which the reference has |
 | (b) Mirror the reference's tab names one by one | Install, Documentation, Contents, Import log, Dependencies, Distributions | Familiar | An Install tab duplicates the sticky install panel; Distributions duplicates Repositories; the layout of R-UI-007 is a decision of the owner (Q-UI-3) |
 | (c) Documentation only | No Contents tab | Smaller | The flat list "what is in this collection" is one click in the reference and cheap here (the tree's data) |
 
-**Choice:** (a). **Rationale:** the tabs of the reference that hold information trove does not show yet are Documentation, Contents and the Import log; the rest are shown already, by the
+**Choice:** (a). **Rationale:** the tabs of the reference that hold information Quader does not show yet are Documentation, Contents and the Import log; the rest are shown already, by the
 install panel, the Metadata tab and the Repositories tab. **Documentation** is shown when `metadata.docs.state` is not `none` or the version has a README, and is the default tab
 then (as README is elsewhere); its first page is the README. **Contents** is a data table (name, type, short description, a link to the page where `hasDocs`), a type filter, and
 the count in its tab as a neutral badge; shown with the Documentation tab. **Import log** (local only) lists the import task of this version through `listAnsibleImportTasks`, extended by the optional query
-parameters `package` and `version` (the tasks are readable by whoever reads the repository, R-ANS-009), newest first, state as a badge and the messages as text. All tabs are `<trove-tab-group>`
+parameters `package` and `version` (the tasks are readable by whoever reads the repository, R-ANS-009), newest first, state as a badge and the messages as text. All tabs are `<quader-tab-group>`
 lazy tabs in GitLab's strip (design-language.md, Controls). A `404` of the documentation operations removes the tab without an error message (Q-UI-244). Dependencies is a section of the Metadata tab and the links of the reference are its links ([Q-UI-245](#q-ui-245--dependencies-and-the-links-of-the-reference-are-sections-of-the-metadata-tab-not-tabs-the-documentation-link-is-called-docs-site)). Revisit at the walkthrough.
 
 **Applied in the spec:** R-UI-007 (the tab list for the format), R-UI-060 to R-UI-064, [R-ANS-026](formats/ansible.md#r-ans-026--package-screens-and-the-deploy-dialog), [R-ANS-036](formats/ansible.md#r-ans-036--the-documentation-operations-of-the-screens-their-rendering-and-the-search).
@@ -13326,7 +13336,7 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). **Rationale:** the pattern exists and the owner chose it for hierarchies (design-language.md). The tree's rows are 32 px: the first row is **Documentation** (the README, the other
 Markdown files below it as children), then the groups **Modules (8)**, **Plugins (24)** (children by type, each type collapsed at first with its count, expanded when it holds the current page or a search match) and **Roles (n)**, as the reference's
 tree is, each group with its count as a neutral badge; an entry is a row with its name (the short description as the tooltip); an entry with `hasDocs` false is muted and labelled "no documentation". The selected row is
-`--trove-accent-container`. The page is addressed by the query parameter `doc` of the package URL (`doc=README.md`, `doc=module/check_host_reachable`, `doc=file/install.md`), so a link, reload and back button work, and the tree follows it.
+`--quader-accent-container`. The page is addressed by the query parameter `doc` of the package URL (`doc=README.md`, `doc=module/check_host_reachable`, `doc=file/install.md`), so a link, reload and back button work, and the tree follows it.
 Under 48 rem of content width one pane shows at a time. The tree is a `role="tree"` of links (`aria-current="page"` on the open one), reachable by keyboard; it takes the width of the content container query, not of the viewport (the package
 page is two columns from 960 px). Revisit if the owner finds the tab too narrow beside the install panel (then the install panel moves above the tabs for this tab).
 
@@ -13346,7 +13356,7 @@ Status: **Decided by the development agent** — selected from the options below
 indented by its depth (16 px per level, a "suboptions of <name>" label for the screen reader) and a parameter with suboptions is collapsible with a chevron (open at first, Q-UI-252). Defaults, choices and samples are
 text (typed JSON shown as written, a boolean as `true`/`false`). Examples and a sample are a `<pre>` in the same code block control as the README's, scrolling horizontally, with a copy button; there is no highlighting. A deprecated plugin
 shows a `warn` badge. A role shows its README only. A page whose entry has `hasDocs` false shows the head and the line "This plugin has no documentation in its source." (generated) or "The upstream sent no documentation for this plugin." (upstream).
-Below the page, one muted line says where the documentation comes from ("Generated by trove from the archive, 2026-11-11 09:41" or "Taken from the upstream") and names the repository when the version is in more than one. States: `pending`
+Below the page, one muted line says where the documentation comes from ("Generated by Quader from the archive, 2026-11-11 09:41" or "Taken from the upstream") and names the repository when the version is in more than one. States: `pending`
 ("The documentation of this version is being fetched.", with a refresh action), `unavailable` (the reason in words), `none` (no tab). Revisit at the walkthrough.
 
 **Applied in the spec:** [R-ANS-036](formats/ansible.md#r-ans-036--the-documentation-operations-of-the-screens-their-rendering-and-the-search).
@@ -13503,7 +13513,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `<trove-tab [count]>` draws the number as the neutral badge after the label; the page passes `metadata.docs.entries` (chosen) | R-UI-062 | The strip of the reference has counters as badges; the number is known without the tree request; every tab group can use it | One input on the shared tab component |
+| (a) `<quader-tab [count]>` draws the number as the neutral badge after the label; the page passes `metadata.docs.entries` (chosen) | R-UI-062 | The strip of the reference has counters as badges; the number is known without the tree request; every tab group can use it | One input on the shared tab component |
 | (b) The count in the label text (`Contents (32)`) | As the Vulnerabilities tab | No change to the tab component | The text of the label changes with the number; not a badge |
 
 **Choice:** (a). **Rationale:** R-UI-062 says "with the count as a neutral badge"; the count is the number of entries the version announces and does not change with the type filter. Revisit if the Vulnerabilities tab moves to the badge.
@@ -13543,7 +13553,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A return value's sample of at most 60 characters on one line is a `<code>`; anything else is the code block with a copy button; the line "Generated by trove from the archive, 2026-11-11 09:41" is written in the viewer's time zone, as the other times of the page (chosen) | R-UI-061 | A boolean or a number does not get a block; a structure keeps its indentation; times agree with the rest of the page | Two people in two zones read two times |
+| (a) A return value's sample of at most 60 characters on one line is a `<code>`; anything else is the code block with a copy button; the line "Generated by Quader from the archive, 2026-11-11 09:41" is written in the viewer's time zone, as the other times of the page (chosen) | R-UI-061 | A boolean or a number does not get a block; a structure keeps its indentation; times agree with the rest of the page | Two people in two zones read two times |
 | (b) Every sample a block | Uniform | Simple | A block with a copy button for `true` |
 | (c) The time in UTC | One time | The same for everyone | Differs from the other times of the page |
 
@@ -13573,7 +13583,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `x-trove-part: wiki` on the three operations, read into `Operation.Part` by the document validator (the analogue of `x-trove-maintenance`, Q-API-246); where T-18's check runs before the handler it reads this marker, and the handler's call is the second layer (chosen) | R-ANS-037 | One declarative place; the generated document and a test can list every wiki operation | The name is a placeholder until R-AUTHZ-034 fixes its own marker; the development agent aligns them when the two plans merge |
+| (a) `x-quader-part: wiki` on the three operations, read into `Operation.Part` by the document validator (the analogue of `x-quader-maintenance`, Q-API-246); where T-18's check runs before the handler it reads this marker, and the handler's call is the second layer (chosen) | R-ANS-037 | One declarative place; the generated document and a test can list every wiki operation | The name is a placeholder until R-AUTHZ-034 fixes its own marker; the development agent aligns them when the two plans merge |
 | (b) Only the call in the handler | No marker | Nothing to align | A test cannot list the wiki operations from the document; the gate is invisible in the API description |
 | (c) A path convention (`/wiki/` in the path) | Visible in the URL | Obvious | The operations sit under the generic package path (Q-ANS-63) |
 
@@ -13681,12 +13691,12 @@ and counters lost in a failover. Live in the MVP in these cases:
   divides by the old count until its next registry read, for at most `system.heartbeat_interval`.
 - **Counters lost after a failover.** A Sentinel failover that loses recent writes resets the
   counters it lost, which admits at most one extra window per bucket (R-ARCH-034). A Valkey
-  restart without persistence has the same effect. trove's own cache flush leaves the counters
+  restart without persistence has the same effect. Quader's own cache flush leaves the counters
   alone ([operations-and-observability.md](operations-and-observability.md) R-OPS-047).
 
-Tampering is not part of this gap: whoever can write under trove's Valkey prefix can delete
+Tampering is not part of this gap: whoever can write under Quader's Valkey prefix can delete
 counters and lift every budget, or raise them and refuse a caller with `429`, and that is H-49 in
-[architecture.md](architecture.md), which covers every value trove keeps in Valkey.
+[architecture.md](architecture.md), which covers every value Quader keeps in Valkey.
 
 What makes it real: a client that wants more throughput than its budget, for example to scrape
 package metadata, and that can time its traffic to a Valkey outage or failover. It does not weaken
@@ -13694,11 +13704,11 @@ credential guessing: tokens are 256-bit random values, and the break-glass locko
 in PostgreSQL (R-AUTH-038), which survives a loss of Valkey's data. Per-replica in-flight limits (`server.max_in_flight`) still protect each replica in
 every case.
 
-### H-44 · Credentials displayed in the browser are outside trove's control
+### H-44 · Credentials displayed in the browser are outside Quader's control
 
 A token shown once, embedded in a snippet or copied to the clipboard (R-UI-016, R-UI-029) is readable
 by browser extensions with page access, by clipboard managers and history tools, and by anyone
-watching the screen. trove reduces exposure (environment-variable references by default,
+watching the screen. Quader reduces exposure (environment-variable references by default,
 repository-scoped short-lived setup tokens, no storage, Blob URLs revoked at once), but cannot prevent
 capture once the value is on screen or in the clipboard.
 
@@ -13714,14 +13724,14 @@ whether a key or path exists.
 Component: the client setup page (R-UI-016) and the guides (R-UI-049). Subject: the projects of users who choose "Create
 a token for this setup" or "Use a token I already have". Live today. In those modes the snippets and the downloaded
 `.npmrc` or `.yarnrc.yml` hold the token itself, and the project directory is where the guide tells a reader to save a
-configuration file. The default mode references `TROVE_TOKEN`, the guide says never to commit a file that holds a token
+configuration file. The default mode references `QUADER_TOKEN`, the guide says never to commit a file that holds a token
 and to keep such a file in the home directory, and the token of the setup page is scoped to one repository and expires
 after `ui.client_setup.token_ttl`; nothing checks a repository of source code. What makes it real: a developer who
 downloads the file with an embedded token into a project and commits it. Hardening: a secret-scanning rule for
-`trv_(pat|sat|cit)_` in the source-code host (the prefix and the CRC-32 of INV-8 make the token recognisable), and a
+`qdr_(pat|sat|cit)_` in the source-code host (the prefix and the CRC-32 of INV-8 make the token recognisable), and a
 shorter `ui.client_setup.token_ttl`.
 
-### H-320 · A guide can state what trove no longer does
+### H-320 · A guide can state what Quader no longer does
 
 Component: the guide text of a format (R-UI-049, R-ARCH-008 `Guide()`). Subject: readers who decide on the guide's
 statements, for example that a claimed name never reaches a remote member, which names an audit withholds, or that a
@@ -13737,19 +13747,19 @@ format's guide. Hardening: a change to a requirement that a guide section cites 
 Component: `GET /api/v1/formats/{format}/guide` (R-API-053). Subject: installations with public content (`publicContent`,
 R-AUTH-037); dormant otherwise. The operation is as public as the format list and names `ui.client_setup.token_env_var` in its text and
 snippets, besides the base URL that the format list already serves. The name is no secret, but it tells someone who can
-read a developer's environment which variable holds a trove token. What makes it real: a `public` repository, a variable
+read a developer's environment which variable holds a Quader token. What makes it real: a `public` repository, a variable
 name other than the default, and an attacker with read access to process environments of developer machines or CI
 runners, who could read every variable anyway.
 
 ### H-877 · The OCI logo rests on a non-commercial use under the Linux Foundation's terms
 
 Component: the format icon of `oci` ([Q-UI-225](#q-ui-225--a-format-shows-its-owners-logo-where-the-owners-terms-allow-it-else-the-neutral-glyph)).
-Subject: every installation that holds an OCI repository. Dormant today: trove is an open-source project and is not sold.
+Subject: every installation that holds an OCI repository. Dormant today: Quader is an open-source project and is not sold.
 The Linux Foundation's trademark usage permits a logo expressly only as a link to the project and for private
 merchandise, and asks for written permission for a logo "in any commercial or marketing context"; a project's own
-interface that names a format beside its logo is neither permitted nor forbidden in words. trove follows every other rule
+interface that names a format beside its logo is neither permitted nor forbidden in words. Quader follows every other rule
 of the page (official files, no colour change, nothing on top, smaller than the name, the trademark notice). What makes it
-real: trove sold or run as a paid service with the logo in its interface, or a request of the Linux Foundation. Then the
+real: Quader sold or run as a paid service with the logo in its interface, or a request of the Linux Foundation. Then the
 Linux Foundation's written permission, or the neutral glyph for `oci` (one line in `formatIcon`).
 
 ### H-878 · The owner and the terms of the NuGet mark are not published
@@ -13766,9 +13776,9 @@ for `nuget`.
 
 Component: the format logos and their notice ([NOTICE.txt](../../web/public/formats/NOTICE.txt)). Subject: every
 installation. Live from the day after 2026-11-11, when the terms of Q-UI-225 were read. npm's policy calls itself a living
-document, Docker and the Linux Foundation reserve changes without notice, and nothing in trove reads the pages again. What
-makes it real: an owner that narrows its terms (Debian, NuGet, the Linux Foundation) while trove still shows its logo, or one
-that opens them (npm, Red Hat, Docker) while trove still shows the glyph. Hardening: read the pages of the table in Q-UI-225
+document, Docker and the Linux Foundation reserve changes without notice, and nothing in Quader reads the pages again. What
+makes it real: an owner that narrows its terms (Debian, NuGet, the Linux Foundation) while Quader still shows its logo, or one
+that opens them (npm, Red Hat, Docker) while Quader still shows the glyph. Hardening: read the pages of the table in Q-UI-225
 again when a format is added and before the first stable release, and record the day in the notice.
 
 

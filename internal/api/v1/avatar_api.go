@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/avatar"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/avatar"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The avatar operations of R-API-055. The image is untrusted input: internal/avatar decides the format by the bytes, bounds
@@ -50,7 +50,7 @@ func (s *Server) avatars() (AvatarService, error) {
 }
 
 // avatarOwner answers 403 for a caller that is not a user: a service account or a CI token has no avatar. A token limited to
-// part of its owner's rights never gets here: the two operations declare x-trove-owner-rights, and the shared authorization
+// part of its owner's rights never gets here: the two operations declare x-quader-owner-rights, and the shared authorization
 // step refuses it (Q-API-213, Q-API-214).
 func avatarOwner(r *http.Request) (avatar.User, error) {
 	p := httpserver.PrincipalFrom(r.Context())

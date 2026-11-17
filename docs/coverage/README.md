@@ -3,7 +3,7 @@
 > **As of:** 2026-10-29 · **Stage:** specification, every question decided, no code yet · **Yardstick:**
 > [feature catalog](../features/README.md) · **Design:** [specification](../spec/README.md)
 
-This page answers two questions: how much of the feature catalog trove implements, and how much
+This page answers two questions: how much of the feature catalog Quader implements, and how much
 of it the specification already designs. The per-feature list, with each feature's status and the
 requirements that cover it, is [checklist.md](checklist.md).
 
@@ -23,7 +23,7 @@ regenerated.
 | In-scope features covered (MVP, P1, P2, Later) | 36.4% (788 of 2,167) | measured from `Covers:` lines |
 | Catalog features | 2,239 on 60 pages | measured from catalog headings |
 | Spec requirements | 877 on 20 pages (584 MVP, 252 P1, 41 P2) | measured from spec headings |
-| Requirements covering no catalog feature | 231 (`trove-only`) | measured from `Covers:` lines |
+| Requirements covering no catalog feature | 231 (`quader-only`) | measured from `Covers:` lines |
 <!-- coverage-gen:end headline -->
 
 **What the owner constraints of 2026-10-28 changed.** The tables were regenerated on 2026-10-29,
@@ -152,15 +152,15 @@ MVP is the scope of the first release. The [priority rubric](../features/README.
 in the catalog defines it, and the summary here is no substitute:
 
 - npm and NuGet, each with local, remote (pull-through) and virtual repositories;
-- human login through an external OpenID Connect provider, trove's own access tokens, and
+- human login through an external OpenID Connect provider, Quader's own access tokens, and
   fine-grained permissions;
 - the GitLab CI token exchange over OIDC, through which pipeline jobs obtain short-lived, scoped
-  trove tokens;
+  Quader tokens;
 - PostgreSQL for metadata, S3-compatible object storage for binaries, high availability, and
   deployment through a Helm chart;
 - since 2026-10-28, by owner constraint: HA PostgreSQL, HA Valkey with Sentinel and S3; `web` and
   `worker` replicas that share a load one replica cannot carry, with any request on any replica
-  and node drains without an outage; trove's own backup job with restore into an empty
+  and node drains without an outage; Quader's own backup job with restore into an empty
   installation; and no ReadWriteMany volume;
 - the UI and the management API needed to operate all of the above.
 
@@ -180,7 +180,7 @@ for them.
 ## Readiness by audience
 
 Readiness here means *specified versus open*, not *usable*. Nothing is implemented, so no audience
-can use trove today. The rows show how far the design gets each audience once it is built. Each
+can use Quader today. The rows show how far the design gets each audience once it is built. Each
 audience counts the MVP and P1 entries of a fixed list of catalog pages, shown below the first
 table.
 
@@ -197,7 +197,7 @@ Pages counted per audience:
 |---|---|---|
 | **npm-only team** | publishes and installs npm packages from workstations and GitLab CI | [formats/npm.md](../features/formats/npm.md), [formats/README.md](../features/formats/README.md), [repositories.md](../features/repositories.md), [remote-repositories.md](../features/remote-repositories.md), [artifacts.md](../features/artifacts.md), [search-and-query.md](../features/search-and-query.md), [builds-and-ci.md](../features/builds-and-ci.md), [identity-and-access.md](../features/identity-and-access.md), [authentication-providers.md](../features/authentication-providers.md), [access-tokens.md](../features/access-tokens.md), [oidc-ci-integration.md](../features/oidc-ci-integration.md), [ui-inventory.md](../features/ui-inventory.md) |
 | **.NET team** | publishes and restores NuGet packages from workstations and GitLab CI | [formats/nuget.md](../features/formats/nuget.md), [formats/README.md](../features/formats/README.md), [repositories.md](../features/repositories.md), [remote-repositories.md](../features/remote-repositories.md), [artifacts.md](../features/artifacts.md), [search-and-query.md](../features/search-and-query.md), [builds-and-ci.md](../features/builds-and-ci.md), [identity-and-access.md](../features/identity-and-access.md), [authentication-providers.md](../features/authentication-providers.md), [access-tokens.md](../features/access-tokens.md), [oidc-ci-integration.md](../features/oidc-ci-integration.md), [ui-inventory.md](../features/ui-inventory.md) |
-| **platform/ops team** | runs trove on Kubernetes and administers it | [ha-and-deployment.md](../features/ha-and-deployment.md), [operations-and-monitoring.md](../features/operations-and-monitoring.md), [storage-and-blobs.md](../features/storage-and-blobs.md), [retention-and-cleanup.md](../features/retention-and-cleanup.md), [repositories.md](../features/repositories.md), [remote-repositories.md](../features/remote-repositories.md), [identity-and-access.md](../features/identity-and-access.md), [authentication-providers.md](../features/authentication-providers.md), [access-tokens.md](../features/access-tokens.md), [oidc-ci-integration.md](../features/oidc-ci-integration.md), [api-admin-operations.md](../features/api-admin-operations.md), [events-and-extensibility.md](../features/events-and-extensibility.md), [ui-inventory.md](../features/ui-inventory.md) |
+| **platform/ops team** | runs Quader on Kubernetes and administers it | [ha-and-deployment.md](../features/ha-and-deployment.md), [operations-and-monitoring.md](../features/operations-and-monitoring.md), [storage-and-blobs.md](../features/storage-and-blobs.md), [retention-and-cleanup.md](../features/retention-and-cleanup.md), [repositories.md](../features/repositories.md), [remote-repositories.md](../features/remote-repositories.md), [identity-and-access.md](../features/identity-and-access.md), [authentication-providers.md](../features/authentication-providers.md), [access-tokens.md](../features/access-tokens.md), [oidc-ci-integration.md](../features/oidc-ci-integration.md), [api-admin-operations.md](../features/api-admin-operations.md), [events-and-extensibility.md](../features/events-and-extensibility.md), [ui-inventory.md](../features/ui-inventory.md) |
 
 Pages counted for no audience (41, 266 MVP and P1 entries): [Distribution and release lifecycle](checklist.md#distribution-and-release-lifecycle-dist), [Security scanning and curation](checklist.md#security-scanning-and-curation-sec), [Content API operation catalog](checklist.md#content-api-operation-catalog-api), [Docker image format](checklist.md#docker-image-format-pkg-docker), [OCI images and artifacts](checklist.md#oci-images-and-artifacts-pkg-oci), [Helm chart format](checklist.md#helm-chart-format-pkg-helm), [Maven package format](checklist.md#maven-package-format-pkg-maven), [PyPI package format](checklist.md#pypi-package-format-pkg-pypi), [Go modules format](checklist.md#go-modules-format-pkg-go), [Generic format](checklist.md#generic-format-pkg-generic), [Ansible collection format](checklist.md#ansible-collection-format-pkg-ansible), [Bazel modules package format](checklist.md#bazel-modules-package-format-pkg-bazel), [Gradle, Ivy, sbt and Eclipse P2 formats](checklist.md#gradle-ivy-sbt-and-eclipse-p2-formats-pkg-jvm), [Beyond the baseline: further formats and capabilities](checklist.md#beyond-the-baseline-further-formats-and-capabilities-beyond); plus 27 pages without MVP or P1 entries.
 <!-- coverage-gen:end audiences -->
@@ -254,7 +254,7 @@ What the open entries are, on 2026-10-29:
    inside fenced code blocks are ignored, so the format examples in the catalog README and the
    spec README are not entries.
 2. **Requirements.** Every heading `### R-<…>-<n> · <Title>` under [docs/spec/](../spec/) whose
-   next line is `Priority: **<P>** · Covers: <ID>, <ID>, …` or `Covers: trove-only`. Other
+   next line is `Priority: **<P>** · Covers: <ID>, <ID>, …` or `Covers: quader-only`. Other
    headings on spec pages (decided questions `Q-…`, gaps `H-…`, examples) are not requirements.
 3. **Status.** A feature is *specified* when its ID appears in the `Covers:` line of at least one
    requirement, and *open* otherwise. *Implemented* follows the rule of
@@ -276,7 +276,7 @@ What the open entries are, on 2026-10-29:
 6. **Checks that stop generation** (exit code 1):
    - a duplicate catalog ID, requirement ID, `Q-` ID or `H-` number;
    - a `Covers:` ID that is not in the catalog;
-   - a `Covers:` token that is neither an ID nor `trove-only`, or `trove-only` mixed with IDs;
+   - a `Covers:` token that is neither an ID nor `quader-only`, or `quader-only` mixed with IDs;
    - an entry or requirement heading without its priority line directly below, or with a
      priority outside the five rubric values;
    - an unclosed code fence;
@@ -322,15 +322,15 @@ and the report formats are in
 - **The catalog's limits.** The catalog was written from public product documentation, so
   behavior that documentation leaves out is missing from it. Entries differ in granularity by
   page: one per operation on the API pages, one per protocol capability on the format pages. If
-  the catalog grows, every share on this page moves without any change to trove. The catalog is
-  also a measure of breadth, not of design quality. The 81 `trove-only` requirements
+  the catalog grows, every share on this page moves without any change to Quader. The catalog is
+  also a measure of breadth, not of design quality. The 81 `quader-only` requirements
   (54 before 2026-10-28) are design work it does not measure at all, for example
   R-REPO-038 *Egress address rules for remote repositories*, R-STOR-013 *Download integrity
   verification* and R-HA-057 *Valkey failover, outage and degraded mode*. 27 of the 62
   requirements that the owner constraints of 2026-10-28 added are of this kind, among them the
   Valkey client with its degraded mode and each page's rules for its state across replicas and in
   backups, for example R-NPM-046 and R-NPM-047.
-- **Priorities are trove's own judgement** and can change. When a priority changes, the MVP
+- **Priorities are Quader's own judgement** and can change. When a priority changes, the MVP
   share changes with it, even if no design or code changes. The owner constraints of 2026-10-28
   are such a case: they raised eight requirements from P1 to MVP, among them the platform backup
   layer, the point-in-time restore and the revocation journal (R-HA-023, R-HA-025, R-HA-054),

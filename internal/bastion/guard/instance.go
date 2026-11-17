@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/bastion/shared"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // The names of the limiters (R-BAS-034: bastion.<name>). With Valkey they are the limiters of R-ARCH-034 and
-// the labels of trove_ratelimit_fallback.
+// the labels of quader_ratelimit_fallback.
 const (
 	limiterRequestsAuthenticated = "bastion.requests_authenticated"
 	limiterRequestsAnonymous     = "bastion.requests_anonymous"
@@ -53,7 +53,7 @@ type Options struct {
 }
 
 // Instance is the guard of a replica. It implements [Guard]; Close stops the loop that keeps
-// trove_bastion_blocked_addresses current.
+// quader_bastion_blocked_addresses current.
 type Instance struct {
 	o      Options
 	log    *slog.Logger

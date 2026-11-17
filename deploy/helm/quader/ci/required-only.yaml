@@ -1,0 +1,28 @@
+# Only the values named as required; everything else keeps its default, the backup off included.
+config:
+  server:
+    base_url: https://quader.example.com
+  database:
+    host: quader-db-rw.quader.svc
+  storage:
+    s3:
+      bucket: quader-blobs
+    upload:
+      max_size: 10GiB
+  valkey:
+    sentinel:
+      addresses:
+        - quader-valkey-sentinel-0.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-1.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-2.quader-valkey-sentinel.quader.svc:26379
+      primary_name: quader
+tls:
+  secretName: quader-tls                           # example: the one value TLS needs (tls.enabled defaults to true)
+secrets:
+  database:
+    existingSecret: quader-db-app
+  valkey:
+    existingSecret: quader-valkey
+  encryption:
+    existingSecret: quader-encryption-keys
+    keys: [2026-10.key]

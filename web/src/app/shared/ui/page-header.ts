@@ -9,7 +9,7 @@ import { AddressField } from '../address-field';
  * list is the breadcrumb.
  */
 @Component({
-  selector: 'trove-page-header',
+  selector: 'quader-page-header',
   imports: [AddressField],
   encapsulation: ViewEncapsulation.None,
   template: `
@@ -21,7 +21,7 @@ import { AddressField } from '../address-field';
         }
         <ng-content select="[meta]" />
         @for (a of addresses(); track a) {
-          <trove-address-field [value]="a" [label]="addressLabel()" [copyLabel]="copyLabel()" />
+          <quader-address-field [value]="a" [label]="addressLabel()" [copyLabel]="copyLabel()" />
         }
       </div>
       <div class="page-header-actions">
@@ -30,49 +30,49 @@ import { AddressField } from '../address-field';
     </header>
   `,
   styles: `
-    trove-page-header {
+    quader-page-header {
       display: block;
-      margin-block-end: var(--trove-space-4);
+      margin-block-end: var(--quader-space-4);
     }
 
-    trove-page-header .page-header-row {
+    quader-page-header .page-header-row {
       display: flex;
       flex-wrap: wrap;
       align-items: flex-start;
-      gap: var(--trove-space-3) var(--trove-space-4);
+      gap: var(--quader-space-3) var(--quader-space-4);
     }
 
-    trove-page-header .page-header-main {
+    quader-page-header .page-header-main {
       display: flex;
       flex: 1 1 24rem;
       flex-direction: column;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       min-inline-size: 0;
     }
 
-    trove-page-header h1 {
+    quader-page-header h1 {
       margin: 0;
       overflow-wrap: anywhere;
     }
 
-    trove-page-header .page-header-description {
+    quader-page-header .page-header-description {
       margin: 0;
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
 
     /* A badge that names the kind of a detail page's object keeps its own width (Q-UI-307). */
-    trove-page-header .page-header-main > .badge {
+    quader-page-header .page-header-main > .badge {
       align-self: flex-start;
     }
 
-    trove-page-header .page-header-actions {
+    quader-page-header .page-header-actions {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
     }
 
-    trove-page-header .page-header-actions:empty {
+    quader-page-header .page-header-actions:empty {
       display: none;
     }
   `,

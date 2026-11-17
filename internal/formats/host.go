@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Host is the core as a format reaches it (R-ARCH-009). One Host serves a replica
@@ -265,7 +265,7 @@ type PackageStore interface {
 // URL of the request's endpoint and host (R-EP-003, R-ARCH-006, R-ARCH-007).
 // Nothing else reads the host (C-11).
 type LinkBuilder interface {
-	// Base is the response base URL: "https://trove.example.com".
+	// Base is the response base URL: "https://quader.example.com".
 	Base() string
 	// Registry is the base URL followed by the protocol base path of the format with the project and the key filled in:
 	// "<base>/api/<format>/<project>/<key>/", or "<base>/v2/<project>/<key>/" for the format that declares the registry
@@ -304,7 +304,7 @@ type RenditionKey struct {
 	Endpoint string
 	Exposure string
 	// Settings is config_version of the serving repository plus the format's
-	// byte-changing trove.yaml keys.
+	// byte-changing quader.yaml keys.
 	Settings      string
 	RenderVersion int
 }

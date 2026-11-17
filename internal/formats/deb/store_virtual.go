@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 // VirtualStore is the part of the data port that the build of a virtual repository's indexes reads and writes (R-DEB-025, R-DEB-026).

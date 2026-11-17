@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // R-CI-018, Q-CI-51: the replay set stores the subject token's exp rounded up, never down to the second, so the

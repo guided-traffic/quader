@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // Context is where a template is rendered (R-CI-014): the context decides the escaping and the

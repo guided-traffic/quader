@@ -83,7 +83,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/guided-traffic/trove
+        - github.com/guided-traffic/quader
   exclusions:
     generated: lax
     paths:

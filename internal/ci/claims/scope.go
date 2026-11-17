@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // ScopeItem is one item of the `scope` request parameter of the exchange (R-CI-007, Q-CI-2):

@@ -6,4 +6,4 @@ An image index lists one manifest per platform, and the client picks the one tha
 
 ### Pin by digest
 
-A tag can move; a digest cannot. trove serves the manifest of a digest for as long as it is stored, whether a tag still points at it or not, so a deployment that names the digest keeps working when somebody moves the tag. Kubernetes pulls by digest the same way.
+A tag can move; a digest cannot. Quader serves the manifest of a digest for as long as it is stored, whether a tag still points at it or not, so a deployment that names the digest keeps working when somebody moves the tag. Kubernetes pulls by digest the same way.

@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The statements of the sweep of unreferenced blobs (R-OCI-019) and of the withheld marks (R-OCI-033).

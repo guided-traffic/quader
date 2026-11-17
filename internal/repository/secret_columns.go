@@ -1,6 +1,6 @@
 package repository
 
-import "github.com/guided-traffic/trove/internal/secrets"
+import "github.com/guided-traffic/quader/internal/secrets"
 
 // RepositorySecrets is the sealed column of the stored secret fields of a
 // repository (R-REPO-033, R-ARCH-021): the password of a remote repository's

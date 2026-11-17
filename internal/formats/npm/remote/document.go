@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
 )
 
 // Parsed is a full package document decoded to its top level, with every version

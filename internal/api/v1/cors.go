@@ -13,13 +13,13 @@ import (
 // usable cross-origin.
 
 func corsAllowedHeaders() []string {
-	return []string{"Authorization", "Content-Type", "If-Match", "If-None-Match", "Idempotency-Key", "Trove-Authz-Min-Epoch"}
+	return []string{"Authorization", "Content-Type", "If-Match", "If-None-Match", "Idempotency-Key", "Quader-Authz-Min-Epoch"}
 }
 
 func corsExposedHeaders() []string {
 	return []string{
 		"ETag", "Location", "Link", "Retry-After", "RateLimit", "RateLimit-Policy", "X-Request-Id",
-		"Deprecation", "Sunset", "Trove-Authz-Epoch",
+		"Deprecation", "Sunset", "Quader-Authz-Epoch",
 	}
 }
 

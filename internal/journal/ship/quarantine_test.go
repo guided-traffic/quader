@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 type quarantineOutbox struct {
@@ -29,7 +29,7 @@ func TestR_HA_054_AnUnencodableRowIsQuarantinedAndTheRestShips(t *testing.T) {
 	ob := &quarantineOutbox{fakeOutbox: &fakeOutbox{rows: rs}}
 	st := &fakeStore{}
 	var seen []string
-	sh := New(Options{Outbox: ob, Store: st, BlobPrefix: "trove", OnQuarantine: func(r journal.OutboxRow, _ error) { seen = append(seen, r.ID) }})
+	sh := New(Options{Outbox: ob, Store: st, BlobPrefix: "quader", OnQuarantine: func(r journal.OutboxRow, _ error) { seen = append(seen, r.ID) }})
 	n, err := sh.Ship(t.Context())
 	if err != nil || n != 2 {
 		t.Fatalf("Ship = %d, %v; want the two good rows shipped", n, err)

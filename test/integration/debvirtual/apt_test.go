@@ -9,25 +9,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/debstub/debgen"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // aptScript is what runs in the client container: the source with the virtual repository's key, the credential in auth.conf.d (never in
-// the URL), then the commands of a user. The packages come one from each member: hello-trove from the local member, trove-hello (and its
-// dependency libtrove1) from the remote member, through the member paths of the merged index.
+// the URL), then the commands of a user. The packages come one from each member: hello-quader from the local member, quader-hello (and its
+// dependency libquader1) from the remote member, through the member paths of the merged index.
 const aptScript = `set -eu
 mkdir -p /etc/apt/auth.conf.d
 umask 077
-printf 'machine http://%s login x password %s\n' "$TROVE_HOSTPORT" "$TROVE_TOKEN" > /etc/apt/auth.conf.d/trove.conf
+printf 'machine http://%s login x password %s\n' "$QUADER_HOSTPORT" "$QUADER_TOKEN" > /etc/apt/auth.conf.d/quader.conf
 umask 022
-mkdir -p /etc/apt/keyrings && printf '%s\n' "$TROVE_KEY" > /etc/apt/keyrings/trove.asc
-echo "deb [signed-by=/etc/apt/keyrings/trove.asc arch=amd64] http://$TROVE_HOSTPORT/api/deb/it/apt stable main" > /etc/apt/sources.list.d/trove.list
+mkdir -p /etc/apt/keyrings && printf '%s\n' "$QUADER_KEY" > /etc/apt/keyrings/quader.asc
+echo "deb [signed-by=/etc/apt/keyrings/quader.asc arch=amd64] http://$QUADER_HOSTPORT/api/deb/it/apt stable main" > /etc/apt/sources.list.d/quader.list
 rm -f /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list.d/ubuntu.sources
 apt-get update --error-on=any -o Debug::pkgAcquire::Worker=1
-apt-get install -y --no-install-recommends hello-trove=2.10-3 trove-hello
-/usr/bin/hello-trove
-dpkg-query -W -f='${Package} ${Version} ${db:Status-Status}\n' hello-trove trove-hello libtrove1
+apt-get install -y --no-install-recommends hello-quader=2.10-3 quader-hello
+/usr/bin/hello-quader
+dpkg-query -W -f='${Package} ${Version} ${db:Status-Status}\n' hello-quader quader-hello libquader1
 `
 
 // R-DEB-025, R-DEB-027: a real APT client reads the merged and re-signed indexes of a virtual repository, verifies them against the
@@ -35,16 +35,16 @@ dpkg-query -W -f='${Package} ${Version} ${db:Status-Status}\n' hello-trove trove
 // member paths. It runs in debian:13 (APT verifies with sqv) and ubuntu:22.04 (gpgv). The replica runs without Valkey (the stack's
 // default), so this is also the closing run of R-DEB-031 for the virtual class.
 func TestR_DEB_025_AptGetUpdateAndInstallThroughAVirtualRepository(t *testing.T) {
-	if _, err := exec.LookPath("docker"); err != nil || os.Getenv("TROVE_IT_NO_DOCKER") != "" {
+	if _, err := exec.LookPath("docker"); err != nil || os.Getenv("QUADER_IT_NO_DOCKER") != "" {
 		t.Skip("no docker")
 	}
 	e := newEnv(t, options{})
-	spec := debgen.Hello("hello-trove", "2.10-3", "amd64")
+	spec := debgen.Hello("hello-quader", "2.10-3", "amd64")
 	d, err := debgen.Build(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if a := e.uploadBytes(rLocal, e.admin, "hello-trove_2.10-3_amd64.deb", d.Bytes, "stable"); a.Status != 201 {
+	if a := e.uploadBytes(rLocal, e.admin, "hello-quader_2.10-3_amd64.deb", d.Bytes, "stable"); a.Status != 201 {
 		t.Fatalf("upload = %d %s", a.Status, a.Body)
 	}
 	testenv.WaitFor(t, "the virtual index to list both members", 90*time.Second, func() bool {
@@ -52,8 +52,8 @@ func TestR_DEB_025_AptGetUpdateAndInstallThroughAVirtualRepository(t *testing.T)
 			return false
 		}
 		list := e.packages(rApt, "stable", e.admin)
-		_, local := find(list, "hello-trove", "2.10-3")
-		_, remote := find(list, "trove-hello", "")
+		_, local := find(list, "hello-quader", "2.10-3")
+		_, remote := find(list, "quader-hello", "")
 		return local && remote
 	})
 
@@ -64,18 +64,18 @@ func TestR_DEB_025_AptGetUpdateAndInstallThroughAVirtualRepository(t *testing.T)
 	defer func() {
 		// The server saw the member paths of the merged index, one request for each member's package.
 		log := e.r.Logs.String()
-		for _, want := range []string{"/apt/members/" + rLocal + "/pool/h/hello-trove/", "/apt/members/" + rRemote + "/pool/main/t/trove-hello/"} {
+		for _, want := range []string{"/apt/members/" + rLocal + "/pool/h/hello-quader/", "/apt/members/" + rRemote + "/pool/main/q/quader-hello/"} {
 			if !strings.Contains(log, want) {
 				t.Errorf("no request for %s in the log of the replica", want)
 			}
 		}
 	}()
 	addr := e.r.Addr("default")
-	hostport := "trove.test:" + addr[strings.LastIndex(addr, ":")+1:]
+	hostport := "quader.test:" + addr[strings.LastIndex(addr, ":")+1:]
 	for _, image := range []string{"debian:13", "ubuntu:22.04"} {
 		t.Run(image, func(t *testing.T) {
-			args := append([]string{"run", "--rm", "--platform", "linux/amd64"}, testenv.DockerReachHost("trove.test")...)
-			args = append(args, "-e", "TROVE_KEY="+string(key.Body), "-e", "TROVE_HOSTPORT="+hostport, "-e", "TROVE_TOKEN="+e.alice, image, "sh", "-c", aptScript)
+			args := append([]string{"run", "--rm", "--platform", "linux/amd64"}, testenv.DockerReachHost("quader.test")...)
+			args = append(args, "-e", "QUADER_KEY="+string(key.Body), "-e", "QUADER_HOSTPORT="+hostport, "-e", "QUADER_TOKEN="+e.alice, image, "sh", "-c", aptScript)
 			cmd := exec.Command("docker", args...)
 			b, err := cmd.CombinedOutput()
 			if err != nil {
@@ -85,7 +85,7 @@ func TestR_DEB_025_AptGetUpdateAndInstallThroughAVirtualRepository(t *testing.T)
 			if !strings.Contains(out, spec.Output()) {
 				t.Errorf("the installed script did not print %q:\n%s", spec.Output(), out)
 			}
-			for _, want := range []string{"hello-trove 2.10-3 installed", "trove-hello ", "libtrove1 "} {
+			for _, want := range []string{"hello-quader 2.10-3 installed", "quader-hello ", "libquader1 "} {
 				if !strings.Contains(out, want) {
 					t.Errorf("the package state lacks %q:\n%s", want, out)
 				}

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // R-AUTH-019, R-AUTHZ-026: a group that is a member of a project is never turned into an auto-join group, because

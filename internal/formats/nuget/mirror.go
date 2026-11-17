@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/nuget/remote"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The mirror's discovery (R-REPO-050, R-REPO-051; nuget.md "Mirror discovery", Q-NUGET-95 to Q-NUGET-105). NuGet's remote

@@ -11,8 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/proxy/upstream"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/proxy/upstream"
 )
 
 // The background request of a mirror's pass (repositories-and-proxy.md R-REPO-053 to R-REPO-055, Q-REPO-149 to Q-REPO-152): a

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 const issuersPath = "/api/v1/ci/issuers"
@@ -61,7 +61,7 @@ func TestR_CI_002_TheIssuerLifecycle(t *testing.T) {
 			}
 		}
 		auds, _ := got["allowedAudiences"].([]any)
-		if fmt.Sprint(auds) != "[http://trove.test npm:trove.test]" {
+		if fmt.Sprint(auds) != "[http://quader.test npm:quader.test]" {
 			t.Errorf("allowedAudiences = %v", auds)
 		}
 		if e.epoch("ci_mappings") != before+1 {
@@ -359,7 +359,7 @@ func TestR_CI_002_TheCreateRefusals(t *testing.T) {
 
 func TestR_CI_001_TheDefaultAudiencesFollowTheBaseURL(t *testing.T) {
 	d := startDouble(t, oidcstub.Config{})
-	e := newEnv(t, options{valkey: true, env: []string{"TROVE_SERVER_BASE_URL=https://packages.example.com:8443"}})
+	e := newEnv(t, options{valkey: true, env: []string{"QUADER_SERVER_BASE_URL=https://packages.example.com:8443"}})
 	a := e.web("web-a")
 	r := e.do(a, "POST", issuersPath, d.body("gitlab-main", map[string]any{"validate": false}))
 	wantStatus(t, r, 201, "")
@@ -409,7 +409,7 @@ func TestQ_CI_26_AProjectOwnerListsTheIssuersReadOnly(t *testing.T) {
 	wantStatus(t, e.do(a, "POST", "/api/v1/projects", map[string]any{"key": "data", "displayName": "Data"}), 201, "")
 	epoch := e.addOwner("web", e.bobID)
 
-	r := e.as(a, e.bobPAT, "GET", "/api/v1/projects/web/ci/issuers", nil, "Trove-Authz-Min-Epoch", epoch)
+	r := e.as(a, e.bobPAT, "GET", "/api/v1/projects/web/ci/issuers", nil, "Quader-Authz-Min-Epoch", epoch)
 	wantStatus(t, r, 200, "")
 	items, _ := r.JSON(t)["items"].([]any)
 	if len(items) != 1 {

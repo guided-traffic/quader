@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const issuancesPath = "/api/v1/ci/issuances"
@@ -32,7 +32,7 @@ func items(t *testing.T, body map[string]any) []map[string]any {
 // and the bulk revoke's answer and refusals.
 func TestR_CI_020_TheIssuanceRecordsAndTheBulkRevoke(t *testing.T) {
 	// The database gauges are read every second, so the gauge follows the revocation within the test.
-	e := newCIEnvWith(t, options{env: []string{"TROVE_METRICS_DB_GAUGE_INTERVAL=1s"}}, "acme-release", "acme-read")
+	e := newCIEnvWith(t, options{env: []string{"QUADER_METRICS_DB_GAUGE_INTERVAL=1s"}}, "acme-release", "acme-read")
 	rel, read := e.maps["acme-release"], e.maps["acme-read"]
 	auditor := e.stack.User("auditor")
 	e.stack.Bind("auditor", auditor)
@@ -130,9 +130,9 @@ func TestR_CI_020_TheIssuanceRecordsAndTheBulkRevoke(t *testing.T) {
 			t.Errorf("the bulk event's filter %q", filter)
 		}
 	})
-	t.Run("R-CI-020 trove_ci_tokens_active counts the unexpired, unrevoked tokens per issuer", func(t *testing.T) {
+	t.Run("R-CI-020 quader_ci_tokens_active counts the unexpired, unrevoked tokens per issuer", func(t *testing.T) {
 		within(t, "the gauge after the revocation", 5*time.Second, func() bool {
-			return testenv.MetricValue(a.Metrics(t), `trove_ci_tokens_active{issuer="`+ciIssuerName+`"}`) == 2
+			return testenv.MetricValue(a.Metrics(t), `quader_ci_tokens_active{issuer="`+ciIssuerName+`"}`) == 2
 		})
 	})
 }
@@ -164,7 +164,7 @@ func TestQ_CI_26_AProjectOwnerListsTheTokensOfItsMappings(t *testing.T) {
 	 WHERE token_id = $1::uuid`, tok.id)
 	e.issue(a, e.bundle("4712", "acme/other", sys.contribution(nil)), job{"1", "78"}, 10*time.Minute)
 
-	r := e.as(a, e.bobPAT, "GET", "/api/v1/projects/web/ci/issuances", nil, "Trove-Authz-Min-Epoch", epoch)
+	r := e.as(a, e.bobPAT, "GET", "/api/v1/projects/web/ci/issuances", nil, "Quader-Authz-Min-Epoch", epoch)
 	wantStatus(t, r, 200, "")
 	got := items(t, r.JSON(t))
 	if len(got) != 1 || got[0]["tokenId"] != tok.id {
@@ -196,10 +196,10 @@ func TestQ_CI_26_AProjectOwnerListsTheTokensOfItsMappings(t *testing.T) {
 	if full := e.do(a, "GET", issuancesPath+"/"+tok.id, nil).JSON(t)["issuance"].(map[string]any); full["grantedScope"] == nil || full["grantedScope"] == "" {
 		t.Errorf("the system view lost grantedScope: %v", full["grantedScope"])
 	}
-	if r := e.as(a, carolTok, "GET", "/api/v1/projects/web/ci/issuances", nil, "Trove-Authz-Min-Epoch", epoch); r.Status != 404 {
+	if r := e.as(a, carolTok, "GET", "/api/v1/projects/web/ci/issuances", nil, "Quader-Authz-Min-Epoch", epoch); r.Status != 404 {
 		t.Errorf("another project's Owner got %d", r.Status)
 	}
-	if r := e.as(a, carolTok, "GET", "/api/v1/projects/data/ci/issuances", nil, "Trove-Authz-Min-Epoch", epoch); r.Status != 200 || len(items(t, r.JSON(t))) != 0 {
+	if r := e.as(a, carolTok, "GET", "/api/v1/projects/data/ci/issuances", nil, "Quader-Authz-Min-Epoch", epoch); r.Status != 200 || len(items(t, r.JSON(t))) != 0 {
 		t.Errorf("the other project lists %d %s", r.Status, r.Body)
 	}
 }

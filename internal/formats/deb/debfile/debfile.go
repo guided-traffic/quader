@@ -13,9 +13,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/deb/control"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // MaxControlArchiveBytes bounds the compressed control archive (R-DEB-034).
@@ -81,7 +81,7 @@ func Read(ra io.ReaderAt, size int64, lim untrusted.Limits) (*Package, error) {
 	}
 	if !knownCompression(ext) {
 		return nil, errs.E(errs.Unprocessable, errs.CodeDebUnsupportedCompression,
-			"The control archive is compressed with a method trove does not read; use none, gzip, xz or zstd.")
+			"The control archive is compressed with a method Quader does not read; use none, gzip, xz or zstd.")
 	}
 	if m.Size > MaxControlArchiveBytes {
 		return nil, errs.E(errs.TooLarge, errs.CodeTooLarge, "The control archive is larger than 16 MiB.")
@@ -122,7 +122,7 @@ func knownCompression(ext string) bool {
 	return false
 }
 
-// validDataSuffix admits the compressions dpkg writes for the data archive, which trove never decompresses.
+// validDataSuffix admits the compressions dpkg writes for the data archive, which quader never decompresses.
 func validDataSuffix(ext string) bool {
 	switch ext {
 	case "", ".gz", ".xz", ".zst", ".bz2", ".lzma":

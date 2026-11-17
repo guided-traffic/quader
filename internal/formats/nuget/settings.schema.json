@@ -1,33 +1,33 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/guided-traffic/trove/internal/formats/nuget/settings.schema.json",
+  "$id": "https://github.com/guided-traffic/quader/internal/formats/nuget/settings.schema.json",
   "title": "NuGet repository settings",
-  "description": "The nuget member of a repository document. A member lists the classes it applies to in x-trove-classes; a member of another class is refused as not applicable.",
+  "description": "The nuget member of a repository document. A member lists the classes it applies to in x-quader-classes; a member of another class is refused as not applicable.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "deleteMode": {
       "title": "Delete mode",
-      "description": "What dotnet nuget delete and nuget delete do in this repository: Unlist hides the version from search and keeps it downloadable, Delete for good removes it. A delete in trove's own pages or API always removes the version.",
+      "description": "What dotnet nuget delete and nuget delete do in this repository: Unlist hides the version from search and keeps it downloadable, Delete for good removes it. A delete in Quader's own pages or API always removes the version.",
       "type": "string",
       "enum": ["unlist", "delete"],
-      "x-trove-enum-titles": { "unlist": "Unlist", "delete": "Delete for good" },
+      "x-quader-enum-titles": { "unlist": "Unlist", "delete": "Delete for good" },
       "default": "unlist",
-      "x-trove-classes": ["local"]
+      "x-quader-classes": ["local"]
     },
     "forwardSearch": {
       "title": "Forward search",
-      "description": "Pass searches on to the upstream, so that clients also find packages nobody has fetched through trove yet. Turn it off to search only what this repository has cached and to keep search terms inside your network.",
+      "description": "Pass searches on to the upstream, so that clients also find packages nobody has fetched through Quader yet. Turn it off to search only what this repository has cached and to keep search terms inside your network.",
       "type": "boolean",
       "default": true,
-      "x-trove-classes": ["remote"]
+      "x-quader-classes": ["remote"]
     },
     "vulnerabilityInfo": {
       "title": "Vulnerability information",
-      "description": "Whether NuGet clients warn about known vulnerabilities of packages from this repository, using trove's advisory data. Automatic gives the warnings while vulnerability scanning is on.",
+      "description": "Whether NuGet clients warn about known vulnerabilities of packages from this repository, using Quader's advisory data. Automatic gives the warnings while vulnerability scanning is on.",
       "type": "string",
       "enum": ["local", "off"],
-      "x-trove-enum-titles": { "local": "From trove's advisory data", "off": "Off" }
+      "x-quader-enum-titles": { "local": "From Quader's advisory data", "off": "Off" }
     }
   }
 }

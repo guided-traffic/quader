@@ -15,49 +15,49 @@ type alertSeverity struct{ name, severity string }
 // R-HA-045's table, and the alerts of the vulnerability scanning, the mirror and the bridge.
 func alertSeverities() []alertSeverity {
 	return []alertSeverity{
-		{"TroveReplicasNotReady", "critical"},
-		{"TroveDatabaseUnreachable", "critical"},
-		{"TroveObjectStoreUnreachable", "critical"},
-		{"TroveObjectStoreUnreachableSingleReplica", "warning"},
-		{"TroveDatabasePoolSaturated", "warning"},
-		{"TroveControlConnectionWaits", "warning"},
-		{"TroveJobsStuck", "warning"},
-		{"TroveLeaseLost", "warning"},
-		{"TroveMixedVersions", "warning"},
-		{"TroveSpoolNearlyFull", "warning"},
-		{"TroveVulnerabilityDataStale", "warning"},
-		{"TroveVulnerabilitySyncFailing", "warning"},
-		{"TroveVulnerabilityRecordsRejected", "warning"},
-		{"TroveVulnerabilityRecordsInvalid", "warning"},
-		{"TroveVulnerabilityMaliciousRecordRejected", "critical"},
-		{"TroveVulnerabilityClaimedNameMalicious", "critical"},
-		{"TroveVulnerabilityImageScansFailing", "warning"},
-		{"TroveMirrorFailing", "warning"},
-		{"TroveMirrorStale", "warning"},
-		{"TroveBridgeLeftOn", "warning"},
-		{"TroveBlobMissing", "critical"},
-		{"TroveGCStale", "warning"},
-		{"TroveBackupCheckFailed", "critical"},
-		{"TroveRevocationJournalBacklog", "warning"},
-		{"TroveRevocationJournalQuarantined", "critical"},
-		{"TroveValkeyUnavailable", "critical"},
-		{"TroveValkeyUnavailableSingleReplica", "warning"},
-		{"TroveValkeySentinelsDegraded", "warning"},
-		{"TroveValkeyFailoverFlapping", "warning"},
-		{"TroveValkeyPrimaryDisagreement", "critical"},
-		{"TroveBackupStale", "critical"},
-		{"TroveBackupFailed", "critical"},
-		{"TroveBackupRunningLong", "warning"},
-		{"TroveBackupGlobalHoldLong", "warning"},
-		{"TroveBackupSourceDamage", "critical"},
-		{"TroveBackupVerifyFindings", "critical"},
+		{"QuaderReplicasNotReady", "critical"},
+		{"QuaderDatabaseUnreachable", "critical"},
+		{"QuaderObjectStoreUnreachable", "critical"},
+		{"QuaderObjectStoreUnreachableSingleReplica", "warning"},
+		{"QuaderDatabasePoolSaturated", "warning"},
+		{"QuaderControlConnectionWaits", "warning"},
+		{"QuaderJobsStuck", "warning"},
+		{"QuaderLeaseLost", "warning"},
+		{"QuaderMixedVersions", "warning"},
+		{"QuaderSpoolNearlyFull", "warning"},
+		{"QuaderVulnerabilityDataStale", "warning"},
+		{"QuaderVulnerabilitySyncFailing", "warning"},
+		{"QuaderVulnerabilityRecordsRejected", "warning"},
+		{"QuaderVulnerabilityRecordsInvalid", "warning"},
+		{"QuaderVulnerabilityMaliciousRecordRejected", "critical"},
+		{"QuaderVulnerabilityClaimedNameMalicious", "critical"},
+		{"QuaderVulnerabilityImageScansFailing", "warning"},
+		{"QuaderMirrorFailing", "warning"},
+		{"QuaderMirrorStale", "warning"},
+		{"QuaderBridgeLeftOn", "warning"},
+		{"QuaderBlobMissing", "critical"},
+		{"QuaderGCStale", "warning"},
+		{"QuaderBackupCheckFailed", "critical"},
+		{"QuaderRevocationJournalBacklog", "warning"},
+		{"QuaderRevocationJournalQuarantined", "critical"},
+		{"QuaderValkeyUnavailable", "critical"},
+		{"QuaderValkeyUnavailableSingleReplica", "warning"},
+		{"QuaderValkeySentinelsDegraded", "warning"},
+		{"QuaderValkeyFailoverFlapping", "warning"},
+		{"QuaderValkeyPrimaryDisagreement", "critical"},
+		{"QuaderBackupStale", "critical"},
+		{"QuaderBackupFailed", "critical"},
+		{"QuaderBackupRunningLong", "warning"},
+		{"QuaderBackupGlobalHoldLong", "warning"},
+		{"QuaderBackupSourceDamage", "critical"},
+		{"QuaderBackupVerifyFindings", "critical"},
 	}
 }
 
 func renderedRules(t *testing.T, sets ...string) []any {
 	t.Helper()
 	_, docs := render(t, []string{monitoringSet()}, sets...)
-	pr := find(docs, "PrometheusRule", "trove")
+	pr := find(docs, "PrometheusRule", "quader")
 	if pr == nil {
 		t.Fatal("no PrometheusRule")
 	}
@@ -66,13 +66,13 @@ func renderedRules(t *testing.T, sets ...string) []any {
 
 // TestR_HA_045_PrometheusRule (R-HA-045) checks the PrometheusRule of the chart: every alert of the requirement's table is
 // rendered with its severity and duration, reads a metric that code under internal/ registers (or kube-state-metrics), and has
-// a rule test in which it fires and one in which it stays silent (deploy/helm/trove/tests/rules_test.yaml, run by
+// a rule test in which it fires and one in which it stays silent (deploy/helm/quader/tests/rules_test.yaml, run by
 // TestR_VULN_024_PromtoolRules). The acceptance criteria that need a Prometheus scraping a running profile are the
 // end-to-end suite's: the rule tests prove the expressions against given series, not that a stopped component produces them.
 func TestR_HA_045_PrometheusRule(t *testing.T) {
 	t.Run("it is rendered when metrics.prometheusRule.enabled is true and carries the configured labels", func(t *testing.T) {
 		_, docs := render(t, []string{monitoringSet()})
-		pr := find(docs, "PrometheusRule", "trove")
+		pr := find(docs, "PrometheusRule", "quader")
 		if pr == nil {
 			t.Fatal("no PrometheusRule with metrics.prometheusRule.enabled: true")
 		}
@@ -85,7 +85,7 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 		if str(pr, "metadata", "labels", "app.kubernetes.io/name") == "" {
 			t.Errorf("the chart's own labels are missing: %v", at(pr, "metadata", "labels"))
 		}
-		if got := str(pr, "spec", "groups", "0", "name"); got != "trove" {
+		if got := str(pr, "spec", "groups", "0", "name"); got != "quader" {
 			t.Errorf("group name = %q, want the full name of the release", got)
 		}
 	})
@@ -124,13 +124,13 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 
 	t.Run("every alert has an expression, a summary and a description, and a duration only where the table has one", func(t *testing.T) {
 		forOf := map[string]string{
-			"TroveReplicasNotReady": "5m", "TroveDatabaseUnreachable": "2m", "TroveObjectStoreUnreachable": "2m",
-			"TroveObjectStoreUnreachableSingleReplica": "5m", "TroveDatabasePoolSaturated": "10m", "TroveControlConnectionWaits": "5m",
-			"TroveJobsStuck": "5m", "TroveLeaseLost": "", "TroveMixedVersions": "2h", "TroveSpoolNearlyFull": "10m",
-			"TroveBlobMissing": "", "TroveGCStale": "1h", "TroveValkeyUnavailable": "2m", "TroveValkeyUnavailableSingleReplica": "5m",
-			"TroveValkeySentinelsDegraded": "5m", "TroveValkeyFailoverFlapping": "", "TroveValkeyPrimaryDisagreement": "5m",
-			"TroveBackupCheckFailed": "1h", "TroveRevocationJournalBacklog": "15m", "TroveRevocationJournalQuarantined": "", "TroveBackupStale": "", "TroveBackupFailed": "", "TroveBackupRunningLong": "",
-			"TroveBackupGlobalHoldLong": "30m", "TroveBackupSourceDamage": "", "TroveBackupVerifyFindings": "",
+			"QuaderReplicasNotReady": "5m", "QuaderDatabaseUnreachable": "2m", "QuaderObjectStoreUnreachable": "2m",
+			"QuaderObjectStoreUnreachableSingleReplica": "5m", "QuaderDatabasePoolSaturated": "10m", "QuaderControlConnectionWaits": "5m",
+			"QuaderJobsStuck": "5m", "QuaderLeaseLost": "", "QuaderMixedVersions": "2h", "QuaderSpoolNearlyFull": "10m",
+			"QuaderBlobMissing": "", "QuaderGCStale": "1h", "QuaderValkeyUnavailable": "2m", "QuaderValkeyUnavailableSingleReplica": "5m",
+			"QuaderValkeySentinelsDegraded": "5m", "QuaderValkeyFailoverFlapping": "", "QuaderValkeyPrimaryDisagreement": "5m",
+			"QuaderBackupCheckFailed": "1h", "QuaderRevocationJournalBacklog": "15m", "QuaderRevocationJournalQuarantined": "", "QuaderBackupStale": "", "QuaderBackupFailed": "", "QuaderBackupRunningLong": "",
+			"QuaderBackupGlobalHoldLong": "30m", "QuaderBackupSourceDamage": "", "QuaderBackupVerifyFindings": "",
 		}
 		for _, r := range renderedRules(t) {
 			name := str(r, "alert")
@@ -143,19 +143,19 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 		}
 	})
 
-	t.Run("the role regex of TroveReplicasNotReady follows the full name and covers every role and pool Deployment", func(t *testing.T) {
+	t.Run("the role regex of QuaderReplicasNotReady follows the full name and covers every role and pool Deployment", func(t *testing.T) {
 		_, docs := renderRelease(t, "acme", []string{monitoringSet()})
-		pr := find(docs, "PrometheusRule", "acme-trove")
+		pr := find(docs, "PrometheusRule", "acme-quader")
 		if pr == nil {
-			t.Fatal("no PrometheusRule for release acme (full name acme-trove)")
+			t.Fatal("no PrometheusRule for release acme (full name acme-quader)")
 		}
 		found := false
 		for _, r := range list(pr, "spec", "groups", "0", "rules") {
-			if str(r, "alert") != "TroveReplicasNotReady" {
+			if str(r, "alert") != "QuaderReplicasNotReady" {
 				continue
 			}
 			found = true
-			want := `deployment=~"acme-trove-(api|packages|worker|web)(-.*)?"`
+			want := `deployment=~"acme-quader-(api|packages|worker|web)(-.*)?"`
 			if !strings.Contains(str(r, "expr"), want) {
 				t.Errorf("expr = %q, want it to contain %s", str(r, "expr"), want)
 			}
@@ -164,7 +164,7 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Error("TroveReplicasNotReady is not rendered")
+			t.Error("QuaderReplicasNotReady is not rendered")
 		}
 	})
 
@@ -174,9 +174,9 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 			exprs[str(r, "alert")] = str(r, "expr")
 		}
 		for name, want := range map[string]string{
-			"TroveBackupCheckFailed":        `min(trove_backup_check_ok{ namespace="default" }) == 0`,
-			"TroveRevocationJournalBacklog": `max(trove_revocation_journal_pending{ namespace="default" }) > 0`,
-			"TroveBackupFailed":             `max(trove_backup_last_failure_timestamp_seconds{ namespace="default" }) > (max(trove_backup_last_success_timestamp_seconds{ namespace="default" }) or vector(0))`,
+			"QuaderBackupCheckFailed":        `min(quader_backup_check_ok{ namespace="default" }) == 0`,
+			"QuaderRevocationJournalBacklog": `max(quader_revocation_journal_pending{ namespace="default" }) > 0`,
+			"QuaderBackupFailed":             `max(quader_backup_last_failure_timestamp_seconds{ namespace="default" }) > (max(quader_backup_last_success_timestamp_seconds{ namespace="default" }) or vector(0))`,
 		} {
 			if exprs[name] != want {
 				t.Errorf("%s: expr = %q, want %q", name, exprs[name], want)
@@ -211,10 +211,10 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 	})
 
 	t.Run("disabledAlerts accepts the names of the table", func(t *testing.T) {
-		got := renderedRules(t, "metrics.prometheusRule.disabledAlerts={TroveJobsStuck,TroveGCStale,TroveReplicasNotReady}")
+		got := renderedRules(t, "metrics.prometheusRule.disabledAlerts={QuaderJobsStuck,QuaderGCStale,QuaderReplicasNotReady}")
 		for _, r := range got {
 			switch str(r, "alert") {
-			case "TroveJobsStuck", "TroveGCStale", "TroveReplicasNotReady":
+			case "QuaderJobsStuck", "QuaderGCStale", "QuaderReplicasNotReady":
 				t.Errorf("%s is rendered although disabled", str(r, "alert"))
 			}
 		}
@@ -224,14 +224,14 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 	})
 
 	t.Run("a name that is no alert is refused", func(t *testing.T) {
-		renderFails(t, []string{monitoringSet()}, []string{"metrics.prometheusRule.disabledAlerts={TroveBackupCheckFaild}"}, "disabledAlerts", "TroveBackupCheckFaild", "TroveBackupCheckFailed")
+		renderFails(t, []string{monitoringSet()}, []string{"metrics.prometheusRule.disabledAlerts={QuaderBackupCheckFaild}"}, "disabledAlerts", "QuaderBackupCheckFaild", "QuaderBackupCheckFailed")
 	})
 
 	t.Run("the backup alerts can be disabled one by one", func(t *testing.T) {
-		got := renderedRules(t, "metrics.prometheusRule.disabledAlerts={TroveBackupStale,TroveBackupGlobalHoldLong,TroveRevocationJournalBacklog}")
+		got := renderedRules(t, "metrics.prometheusRule.disabledAlerts={QuaderBackupStale,QuaderBackupGlobalHoldLong,QuaderRevocationJournalBacklog}")
 		for _, r := range got {
 			switch str(r, "alert") {
-			case "TroveBackupStale", "TroveBackupGlobalHoldLong", "TroveRevocationJournalBacklog":
+			case "QuaderBackupStale", "QuaderBackupGlobalHoldLong", "QuaderRevocationJournalBacklog":
 				t.Errorf("%s is rendered although disabled", str(r, "alert"))
 			}
 		}
@@ -241,13 +241,13 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 	})
 }
 
-// metricNames returns the identifiers of an expression that look like a metric: they start with trove_ or kube_.
+// metricNames returns the identifiers of an expression that look like a metric: they start with quader_ or kube_.
 func metricNames(expr string) []string {
 	var out []string
 	for _, f := range strings.FieldsFunc(expr, func(r rune) bool {
 		return r != '_' && (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && (r < '0' || r > '9')
 	}) {
-		if strings.HasPrefix(f, "trove_") || strings.HasPrefix(f, "kube_") {
+		if strings.HasPrefix(f, "quader_") || strings.HasPrefix(f, "kube_") {
 			out = append(out, f)
 		}
 	}

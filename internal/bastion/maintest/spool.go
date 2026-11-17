@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
 )
 
 // SpoolWrite implements the audit spool: the file is named by a counter.

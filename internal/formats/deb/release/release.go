@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/control"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/openpgp"
 )
 
 // MaxBytes bounds a release document (R-DEB-019, R-DEB-034).

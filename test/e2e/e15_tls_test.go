@@ -21,22 +21,22 @@ import (
 // certificate is renewed by cert-manager under load without a failed request, a restart or a stale
 // certificate (R-ARCH-035, R-HA-063).
 
-// probeScript runs inside an ephemeral container next to the trove container of one pod (image: the
-// pinned openssl image, same user as trove, process namespace shared with it). It reads the serial of the
-// certificate file the kubelet mounts into the trove container (through /proc/1/root) and the serial that
+// probeScript runs inside an ephemeral container next to the quader container of one pod (image: the
+// pinned openssl image, same user as quader, process namespace shared with it). It reads the serial of the
+// certificate file the kubelet mounts into the quader container (through /proc/1/root) and the serial that
 // the pod's two listeners hand out in a TLS handshake (openssl s_client, no session reuse; "-" when nothing
 // listens, as on a worker's :8080), and prints a line when any of the three changes: "<uptime s> <file>
 // <:8080> <:8081>". The clock is the kernel's uptime, so lines of one container are comparable to 10 ms.
 // The loop ends after %d seconds.
 //
 // The probe must not load the node it measures (Q-HA-292: five openssl processes ten times a second took
-// more cores of a node than the trove containers of the whole installation used). So it looks at the file ten
+// more cores of a node than the quader containers of the whole installation used). So it looks at the file ten
 // times a second with the shell's own builtins (read, no process), and starts openssl only at the start and
 // from a change of the file until both listeners serve the certificate of the file (plus one second).
 const probeScript = `
-f=/proc/1/root/var/run/secrets/trove/tls/tls.crt
+f=/proc/1/root/var/run/secrets/quader/tls/tls.crt
 serial() { openssl x509 -noout -serial 2>/dev/null | cut -d= -f2; }
-dial() { s="$(echo | openssl s_client -connect 127.0.0.1:"$1" -servername trove.trove.svc 2>/dev/null | serial)"; echo "${s:--}"; }
+dial() { s="$(echo | openssl s_client -connect 127.0.0.1:"$1" -servername quader.quader.svc 2>/dev/null | serial)"; echo "${s:--}"; }
 filetext() { c=""; while IFS= read -r l; do c="$c$l"; done < $f; }
 read start _ < /proc/uptime; start=${start%%.*}; last=""; settle=1; filetext; prev="$c"
 while :; do
@@ -141,10 +141,10 @@ func metricSum(t testing.TB, podName, family string, fragments ...string) float6
 // configuredReloadInterval reads server.tls.reload_interval from the release's ConfigMap.
 func configuredReloadInterval(t testing.TB) time.Duration {
 	t.Helper()
-	cm := kn(t, "get", "configmap", "trove-config", "-o", "jsonpath={.data.trove\\.yaml}")
+	cm := kn(t, "get", "configmap", "quader-config", "-o", "jsonpath={.data.quader\\.yaml}")
 	m := regexp.MustCompile(`(?m)^\s+reload_interval:\s*(\S+)\s*$`).FindStringSubmatch(cm)
 	if m == nil {
-		t.Fatalf("server.tls.reload_interval is not in the trove ConfigMap:\n%s", cm)
+		t.Fatalf("server.tls.reload_interval is not in the quader ConfigMap:\n%s", cm)
 	}
 	d, err := time.ParseDuration(strings.Trim(m[1], `"'`))
 	if err != nil {
@@ -153,13 +153,13 @@ func configuredReloadInterval(t testing.TB) time.Duration {
 	return d
 }
 
-// runProbePod runs a shell script in a pod of the namespace default (not selected by any trove policy),
+// runProbePod runs a shell script in a pod of the namespace default (not selected by any quader policy),
 // waits for it to finish and returns its output.
 func runProbePod(t testing.TB, name, script string) string {
 	t.Helper()
-	image := os.Getenv("TROVE_E2E_OPENSSL_IMAGE")
+	image := os.Getenv("QUADER_E2E_OPENSSL_IMAGE")
 	if image == "" {
-		t.Fatal("TROVE_E2E_OPENSSL_IMAGE is not set; run the suite through deploy/dev/e2e.sh")
+		t.Fatal("QUADER_E2E_OPENSSL_IMAGE is not set; run the suite through deploy/dev/e2e.sh")
 	}
 	_, _ = kubectl("-n", "default", "delete", "pod", name, "--ignore-not-found", "--wait=true")
 	t.Cleanup(func() { _, _ = kubectl("-n", "default", "delete", "pod", name, "--ignore-not-found", "--wait=false") })
@@ -176,14 +176,14 @@ func runProbePod(t testing.TB, name, script string) string {
 
 // isServing: only an api or packages replica opens the client listener :8080; a worker serves the ops listener only.
 func isServing(p pod) bool {
-	return strings.HasPrefix(p.Name, "trove-api-") || strings.HasPrefix(p.Name, "trove-packages-")
+	return strings.HasPrefix(p.Name, "quader-api-") || strings.HasPrefix(p.Name, "quader-packages-")
 }
 
 func TestE15TLS(t *testing.T) {
-	t.Run("R-ARCH-035 R-HA-063 E0.15 a plaintext request to a trove pod's :8080 and :8081 and to the object store is not answered", func(t *testing.T) {
+	t.Run("R-ARCH-035 R-HA-063 E0.15 a plaintext request to a quader pod's :8080 and :8081 and to the object store is not answered", func(t *testing.T) {
 		pk := livePods(t, selPackages)[0]
 		ip := strings.TrimSpace(kn(t, "get", "pod", pk.Name, "-o", "jsonpath={.status.podIP}"))
-		script := fmt.Sprintf(`for u in http://%[1]s:8080/api/v1/system/ping http://%[1]s:8081/readyz http://trove-s3.%[2]s.svc:9000/; do `+
+		script := fmt.Sprintf(`for u in http://%[1]s:8080/api/v1/system/ping http://%[1]s:8081/readyz http://quader-s3.%[2]s.svc:9000/; do `+
 			`line="$(wget -T 5 -S -qO- "$u" 2>&1 | grep -m1 'HTTP/')"; echo "$u => ${line:-no response}"; done`, ip, cfg.namespace)
 		out := runProbePod(t, "e2e-plaintext-probe", script)
 		t.Logf("plaintext requests from namespace default:\n%s", strings.TrimSpace(out))
@@ -200,14 +200,14 @@ func TestE15TLS(t *testing.T) {
 	t.Run("R-ARCH-035 R-HA-063 E0.15 the listener certificate is renewed under load: only 200, the new certificate is served within reload_interval + 1 s on every pod, reloads are counted, no restart", func(t *testing.T) {
 		interval := configuredReloadInterval(t)
 		bound := interval + time.Second
-		image := os.Getenv("TROVE_E2E_OPENSSL_IMAGE")
+		image := os.Getenv("QUADER_E2E_OPENSSL_IMAGE")
 		if image == "" {
-			t.Fatal("TROVE_E2E_OPENSSL_IMAGE is not set; run the suite through deploy/dev/e2e.sh")
+			t.Fatal("QUADER_E2E_OPENSSL_IMAGE is not set; run the suite through deploy/dev/e2e.sh")
 		}
-		before := secretSerial(t, "trove-tls")
-		pods := livePods(t, selTrove)
+		before := secretSerial(t, "quader-tls")
+		pods := livePods(t, selQuader)
 		if len(pods) < 4 {
-			t.Fatalf("%d trove pods, want at least 4", len(pods))
+			t.Fatalf("%d quader pods, want at least 4", len(pods))
 		}
 		type base struct {
 			uid     string
@@ -220,7 +220,7 @@ func TestE15TLS(t *testing.T) {
 		for _, p := range pods {
 			bases[p.Name] = base{
 				p.UID, p.Restarts, metricSum(t, p.Name, "process_start_time_seconds"),
-				metricSum(t, p.Name, "trove_tls_reloads_total", `kind="listener"`), metricSum(t, p.Name, "trove_tls_reload_errors_total", `kind="listener"`),
+				metricSum(t, p.Name, "quader_tls_reloads_total", `kind="listener"`), metricSum(t, p.Name, "quader_tls_reload_errors_total", `kind="listener"`),
 			}
 		}
 
@@ -232,7 +232,7 @@ func TestE15TLS(t *testing.T) {
 		cname := fmt.Sprintf("e2e-tls-%d", time.Now().Unix())
 		const probeSeconds = 480
 		for _, p := range pods {
-			if _, err := kubectl("-n", cfg.namespace, "debug", p.Name, "--image="+image, "--target=trove", "--profile=restricted",
+			if _, err := kubectl("-n", cfg.namespace, "debug", p.Name, "--image="+image, "--target=quader", "--profile=restricted",
 				"--custom="+custom, "-c", cname, "--", "sh", "-c", fmt.Sprintf(probeScript, probeSeconds)); err != nil {
 				t.Fatal(err)
 			}
@@ -262,10 +262,10 @@ func TestE15TLS(t *testing.T) {
 		patch := fmt.Sprintf(`[{"op":"add","path":"/status/conditions/-","value":{"type":"Issuing","status":"True","reason":"ManuallyTriggered","message":"Certificate re-issuance manually triggered","lastTransitionTime":%q}}]`,
 			time.Now().UTC().Format(time.RFC3339))
 		renewedAt := time.Now()
-		kn(t, "patch", "certificate", "trove-tls", "--subresource=status", "--type=json", "-p", patch)
+		kn(t, "patch", "certificate", "quader-tls", "--subresource=status", "--type=json", "-p", patch)
 		var after string
-		waitFor(t, "cert-manager to issue a new certificate into Secret trove-tls", 3*time.Minute, 200*time.Millisecond, func() bool {
-			after = secretSerial(t, "trove-tls")
+		waitFor(t, "cert-manager to issue a new certificate into Secret quader-tls", 3*time.Minute, 200*time.Millisecond, func() bool {
+			after = secretSerial(t, "quader-tls")
 			return after != before
 		})
 		issued := time.Since(renewedAt)
@@ -298,7 +298,7 @@ func TestE15TLS(t *testing.T) {
 		res.clientsRanThrough(t, k6Clients, renewedAt, servedAt)
 		var apis []string
 		for _, p := range pods {
-			if strings.HasPrefix(p.Name, "trove-api-") {
+			if strings.HasPrefix(p.Name, "quader-api-") {
 				apis = append(apis, p.Name)
 			}
 		}
@@ -328,9 +328,9 @@ func TestE15TLS(t *testing.T) {
 		}
 		summary["per_pod"] = perPod
 
-		now := livePods(t, selTrove)
+		now := livePods(t, selQuader)
 		if len(now) != len(pods) {
-			t.Errorf("%d trove pods after the rotation, %d before", len(now), len(pods))
+			t.Errorf("%d quader pods after the rotation, %d before", len(now), len(pods))
 		}
 		for _, p := range now {
 			b, ok := bases[p.Name]
@@ -344,14 +344,14 @@ func TestE15TLS(t *testing.T) {
 			if st := metricSum(t, p.Name, "process_start_time_seconds"); st != b.start {
 				t.Errorf("%s: process start time changed (%v -> %v)", p.Name, b.start, st)
 			}
-			rl := metricSum(t, p.Name, "trove_tls_reloads_total", `kind="listener"`)
-			re := metricSum(t, p.Name, "trove_tls_reload_errors_total", `kind="listener"`)
-			t.Logf("%s: trove_tls_reloads_total{kind=listener} %v -> %v, trove_tls_reload_errors_total %v -> %v", p.Name, b.reloads, rl, b.errors, re)
+			rl := metricSum(t, p.Name, "quader_tls_reloads_total", `kind="listener"`)
+			re := metricSum(t, p.Name, "quader_tls_reload_errors_total", `kind="listener"`)
+			t.Logf("%s: quader_tls_reloads_total{kind=listener} %v -> %v, quader_tls_reload_errors_total %v -> %v", p.Name, b.reloads, rl, b.errors, re)
 			if rl <= b.reloads {
-				t.Errorf("%s: trove_tls_reloads_total did not increase (%v -> %v)", p.Name, b.reloads, rl)
+				t.Errorf("%s: quader_tls_reloads_total did not increase (%v -> %v)", p.Name, b.reloads, rl)
 			}
 			if re != b.errors {
-				t.Errorf("%s: trove_tls_reload_errors_total changed (%v -> %v)", p.Name, b.errors, re)
+				t.Errorf("%s: quader_tls_reload_errors_total changed (%v -> %v)", p.Name, b.errors, re)
 			}
 		}
 		noteResult(t, "e15-rotation", summary)

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
 )
 
 // fakeDB is a Source over a slice of rows; it records the page sizes it was asked for.
@@ -55,7 +55,7 @@ func fixture(t *testing.T, n int) (*fakeDB, *blobtest.Store) {
 	for i := range n {
 		data := []byte{byte(i), byte(i >> 8), 'x'}
 		d := blob.Digest(sha256.Sum256(data))
-		store.Set(blob.Key("trove", d), data, time.Now())
+		store.Set(blob.Key("quader", d), data, time.Now())
 		db.rows = append(db.rows, Row{Digest: d, Size: int64(len(data))})
 		db.items[d] = []Item{{Project: "p", Repository: "npm-local", Path: "pkg/" + d.Hex()[:6]}}
 	}
@@ -71,13 +71,13 @@ func TestR_HA_024_VerifyReportsEveryItemWithoutItsObject(t *testing.T) {
 	db, store := fixture(t, 25)
 	gone := db.rows[3].Digest
 	short := db.rows[17].Digest
-	if err := store.Delete(context.Background(), blob.Key("trove", gone)); err != nil {
+	if err := store.Delete(context.Background(), blob.Key("quader", gone)); err != nil {
 		t.Fatal(err)
 	}
-	store.Set(blob.Key("trove", short), []byte("z"), time.Now())
+	store.Set(blob.Key("quader", short), []byte("z"), time.Now())
 	db.items[gone] = append(db.items[gone], Item{Project: "p", Repository: "npm-local", Path: "other", Trashed: true})
 
-	rep, err := Run(context.Background(), Options{DB: db, Objects: store, Prefix: "trove", PageSize: 10, Concurrency: 4, MaxItems: 1, Sleep: noSleep})
+	rep, err := Run(context.Background(), Options{DB: db, Objects: store, Prefix: "quader", PageSize: 10, Concurrency: 4, MaxItems: 1, Sleep: noSleep})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func TestR_HA_024_VerifyReportsEveryItemWithoutItsObject(t *testing.T) {
 // TestR_HA_024_VerifyOfAnIntactStoreIsOK: no finding, nothing unchecked.
 func TestR_HA_024_VerifyOfAnIntactStoreIsOK(t *testing.T) {
 	db, store := fixture(t, 7)
-	rep, err := Run(context.Background(), Options{DB: db, Objects: store, Prefix: "trove", Sleep: noSleep})
+	rep, err := Run(context.Background(), Options{DB: db, Objects: store, Prefix: "quader", Sleep: noSleep})
 	if err != nil || !rep.OK() || rep.Checked != 7 {
 		t.Fatalf("rep = %+v, err = %v", rep, err)
 	}
@@ -117,7 +117,7 @@ func TestR_HA_024_VerifyOfAnIntactStoreIsOK(t *testing.T) {
 func TestR_HA_025_VerifyPassesTheSinceCutOffToTheTable(t *testing.T) {
 	db, store := fixture(t, 2)
 	cut := time.Date(2026, 11, 9, 10, 0, 0, 0, time.UTC)
-	rep, err := Run(context.Background(), Options{DB: db, Objects: store, Prefix: "trove", Since: cut, Sleep: noSleep})
+	rep, err := Run(context.Background(), Options{DB: db, Objects: store, Prefix: "quader", Since: cut, Sleep: noSleep})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +139,7 @@ func TestR_STOR_027_VerifyTreatsAStoreErrorAsUncheckedNotMissing(t *testing.T) {
 		}
 		return nil
 	})
-	rep, err := Run(context.Background(), Options{DB: db, Objects: store, Prefix: "trove", Sleep: noSleep})
+	rep, err := Run(context.Background(), Options{DB: db, Objects: store, Prefix: "quader", Sleep: noSleep})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func TestR_STOR_027_VerifyTreatsAStoreErrorAsUncheckedNotMissing(t *testing.T) {
 		}
 		return nil
 	})
-	_, err = Run(context.Background(), Options{DB: db, Objects: store, Prefix: "trove", Sleep: noSleep})
+	_, err = Run(context.Background(), Options{DB: db, Objects: store, Prefix: "quader", Sleep: noSleep})
 	if !blob.IsConfig(err) {
 		t.Errorf("err = %v, want a configuration error of the store", err)
 	}
@@ -169,7 +169,7 @@ func TestR_HA_024_VerifyRetriesATransientErrorBeforeItGivesUp(t *testing.T) {
 		}
 		return nil
 	})
-	rep, err := Run(context.Background(), Options{DB: db, Objects: store, Prefix: "trove", Sleep: noSleep})
+	rep, err := Run(context.Background(), Options{DB: db, Objects: store, Prefix: "quader", Sleep: noSleep})
 	if err != nil || !rep.OK() || rep.Checked != 1 {
 		t.Fatalf("rep = %+v, err = %v", rep, err)
 	}

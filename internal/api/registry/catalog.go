@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/api/registry/route"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/api/registry/route"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The catalog (R-OCI-017): the image names the caller may read in the local repositories and in the caches of the remote
@@ -77,7 +77,7 @@ type catalogRepo struct {
 }
 
 // ServeHTTP answers a page of the catalog. A registry token needs registry:catalog:* (the enforcement point checked it); the
-// names are the ones the caller's trove token may read, decided per name on one index of the decision point. A caller that
+// names are the ones the caller's quader token may read, decided per name on one index of the decision point. A caller that
 // may read nothing, the anonymous one while no repository's artifacts are public among them, gets an empty list (R-OCI-017).
 func (h *Catalog) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(route.APIVersionHeader, route.APIVersion)
@@ -126,7 +126,7 @@ func queryEscape(s string) string {
 }
 
 // catalogPage reads n and last. n defaults to and is capped at CatalogMaxPage; n=0 is an empty page; a value that is no
-// non-negative integer is 400 UNSUPPORTED (a parameter trove does not support, R-OCI-008).
+// non-negative integer is 400 UNSUPPORTED (a parameter quader does not support, R-OCI-008).
 func catalogPage(r *http.Request) (n int, last string, err error) {
 	q := r.URL.Query()
 	n = CatalogMaxPage

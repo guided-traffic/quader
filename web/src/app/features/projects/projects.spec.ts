@@ -75,7 +75,7 @@ describe('Projects overview (R-UI-041)', () => {
     const { fixture, root, get } = await renderScreen(ProjectList);
     buttonByText(root, 'New project').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-project-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-project-dialog') as HTMLElement;
     typeInto(dialog, 'Key', 'team-a');
     typeInto(dialog, 'Display name', 'Team A');
     typeInto(dialog, 'Find a user or group', 'team');
@@ -94,7 +94,7 @@ describe('Projects overview (R-UI-041)', () => {
     const { fixture, root, get } = await renderScreen(ProjectList);
     buttonByText(root, 'New project').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-project-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-project-dialog') as HTMLElement;
     typeInto(dialog, 'Key', 'Team_A');
     buttonByText(dialog, 'Create project').click();
     await settle(fixture);
@@ -107,7 +107,7 @@ describe('Projects overview (R-UI-041)', () => {
     const api = get(ProjectsApi) as FakeProjectsApi;
     buttonByText(root, 'Edit web').click();
     await settle(fixture);
-    let dialog = overlay().querySelector('trove-project-dialog') as HTMLElement;
+    let dialog = overlay().querySelector('quader-project-dialog') as HTMLElement;
     expect(dialog.querySelector<HTMLInputElement>('input[name="key"]')!.readOnly).toBe(true);
     typeInto(dialog, 'Display name', 'Web team');
     buttonByText(dialog, 'Save project').click();
@@ -118,12 +118,12 @@ describe('Projects overview (R-UI-041)', () => {
     // Someone else changes it while the dialog is open.
     buttonByText(root, 'Edit web').click();
     await settle(fixture);
-    dialog = overlay().querySelector('trove-project-dialog') as HTMLElement;
+    dialog = overlay().querySelector('quader-project-dialog') as HTMLElement;
     api.bump('web');
     typeInto(dialog, 'Display name', 'Web crew');
     buttonByText(dialog, 'Save project').click();
     await settle(fixture);
-    expect(overlay().querySelector('trove-conflict-dialog')).toBeTruthy();
+    expect(overlay().querySelector('quader-conflict-dialog')).toBeTruthy();
   });
 });
 
@@ -199,7 +199,7 @@ describe('Project settings (R-UI-041, Q-UI-129)', () => {
     const { fixture, root, get } = await renderScreen(ProjectSettings, { inputs: { project: 'web' } });
     buttonByText(root, 'Delete project').click();
     await settle(fixture);
-    const confirm = overlay().querySelector('trove-confirm-dialog') as HTMLElement;
+    const confirm = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
     type(confirm.querySelector<HTMLInputElement>('#confirm-name')!, 'web');
     await settle(fixture);
     buttonByText(confirm, 'Delete project').click();
@@ -213,7 +213,7 @@ describe('Project settings (R-UI-041, Q-UI-129)', () => {
     api.failure = new (await import('../../api/problem')).ApiError(409, { code: 'project_not_empty' }, 'req-1');
     buttonByText(root, 'Delete project').click();
     await settle(fixture);
-    const confirm = overlay().querySelector('trove-confirm-dialog') as HTMLElement;
+    const confirm = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
     type(confirm.querySelector<HTMLInputElement>('#confirm-name')!, 'web');
     await settle(fixture);
     buttonByText(confirm, 'Delete project').click();

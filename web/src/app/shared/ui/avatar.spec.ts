@@ -1,19 +1,19 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { settle } from '../../testing/screen';
-import { TroveAvatar } from './avatar';
+import { QuaderAvatar } from './avatar';
 import { robotDataUri } from './robot';
 
 @Component({
-  imports: [TroveAvatar],
-  template: `<trove-avatar [seed]="seed()" [imageUrl]="imageUrl()" />`,
+  imports: [QuaderAvatar],
+  template: `<quader-avatar [seed]="seed()" [imageUrl]="imageUrl()" />`,
 })
 class Host {
   readonly seed = signal('00000000-0000-0000-0000-000000000001');
   readonly imageUrl = signal<string | null>(null);
 }
 
-describe('trove avatar (R-UI-002)', () => {
+describe('Quader avatar (R-UI-002)', () => {
   async function render() {
     await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
     const fixture = TestBed.createComponent(Host);

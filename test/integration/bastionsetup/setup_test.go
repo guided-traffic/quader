@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -46,7 +46,7 @@ func TestR_BAS_007_ClientSetupForABastionThroughTheStack(t *testing.T) {
 	registration(st, "stray", "https://stray.example.com")
 	r := st.Start(t, testenv.ReplicaOptions{
 		Name: "web1",
-		Env:  []string{`TROVE_SERVER_ADDITIONAL_BASE_URLS=["https://packages.example.com"]`},
+		Env:  []string{`QUADER_SERVER_ADDITIONAL_BASE_URLS=["https://packages.example.com"]`},
 	})
 	const path = "/api/v1/projects/it/repositories/npm-local/client-setup?client=npm&credentials=env"
 
@@ -71,15 +71,15 @@ func TestR_BAS_007_ClientSetupForABastionThroughTheStack(t *testing.T) {
 			}
 		}
 		if !strings.Contains(configure, "replace-registry-host=always\n") ||
-			!strings.Contains(configure, "//packages.example.com/api/npm/it/npm-local/:_authToken=${TROVE_TOKEN}") ||
-			strings.Contains(configure, "trove.test") {
+			!strings.Contains(configure, "//packages.example.com/api/npm/it/npm-local/:_authToken=${QUADER_TOKEN}") ||
+			strings.Contains(configure, "quader.test") {
 			t.Fatalf("%q", configure)
 		}
 	})
 	t.Run("the setup of the installation itself is unchanged", func(t *testing.T) {
 		a := st.Do(r, "GET", path, tok, nil)
 		v := a.JSON(t)
-		if a.Status != 200 || v["registryUrl"] != "http://trove.test/api/npm/it/npm-local/" || v["publishTarget"] != "it/npm-local" {
+		if a.Status != 200 || v["registryUrl"] != "http://quader.test/api/npm/it/npm-local/" || v["publishTarget"] != "it/npm-local" {
 			t.Fatalf("%d %v", a.Status, v)
 		}
 	})

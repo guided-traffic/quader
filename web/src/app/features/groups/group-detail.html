@@ -1,10 +1,10 @@
-<trove-page-header [heading]="name()" [name]="true">
+<quader-page-header [heading]="name()" [name]="true">
   <span meta class="badge" i18n="@@group.heading">Group</span>
-</trove-page-header>
-<trove-needs capability="identities:write" />
+</quader-page-header>
+<quader-needs capability="identities:write" />
 
 @if (loadError(); as e) {
-  <trove-error-notice [error]="e" (retry)="load()" />
+  <quader-error-notice [error]="e" (retry)="load()" />
 }
 
 @if (group(); as g) {
@@ -27,24 +27,24 @@
       }
     }
     @if (editError(); as e) {
-      <trove-error-notice [error]="e" />
+      <quader-error-notice [error]="e" />
     }
     <form (submit)="save($event)" novalidate>
       <div class="row">
-        <trove-text-field width="name" i18n-label="@@group.name" label="Name" name="name" [(value)]="newName" [readonly]="readOnly() || !canWrite()" [error]="fieldError('/name')" />
-        <trove-text-field width="name" i18n-label="@@group.origin" label="Origin" name="origin" [value]="originLabel(g.origin)" [readonly]="true" />
+        <quader-text-field width="name" i18n-label="@@group.name" label="Name" name="name" [(value)]="newName" [readonly]="readOnly() || !canWrite()" [error]="fieldError('/name')" />
+        <quader-text-field width="name" i18n-label="@@group.origin" label="Origin" name="origin" [value]="originLabel(g.origin)" [readonly]="true" />
       </div>
-      <trove-text-field width="name" i18n-label="@@group.created" label="Created" name="created" [value]="(g.createdAt | date: 'medium') ?? ''" [readonly]="true" />
-      <trove-text-field width="full" i18n-label="@@group.description" label="Description" name="description" [(value)]="description" [readonly]="readOnly() || !canWrite()" [error]="fieldError('/description')" />
-      <trove-checkbox [checked]="autoJoin()" [disabled]="readOnly() || !canWrite()" (checkedChange)="autoJoin.set($event)">
+      <quader-text-field width="name" i18n-label="@@group.created" label="Created" name="created" [value]="(g.createdAt | date: 'medium') ?? ''" [readonly]="true" />
+      <quader-text-field width="full" i18n-label="@@group.description" label="Description" name="description" [(value)]="description" [readonly]="readOnly() || !canWrite()" [error]="fieldError('/description')" />
+      <quader-checkbox [checked]="autoJoin()" [disabled]="readOnly() || !canWrite()" (checkedChange)="autoJoin.set($event)">
         <ng-container i18n="@@group.auto-join">Every user joins this group automatically</ng-container>
-      </trove-checkbox>
+      </quader-checkbox>
       @if (canWrite() && !readOnly()) {
         <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirty()" i18n="@@group.save-changes">Save changes</button>
       }
     </form>
 
-  <trove-disclosure
+  <quader-disclosure
     i18n-heading="@@group.members"
     heading="Members ({{ g.memberCount }})"
     i18n-hint="@@group.members-hint"
@@ -52,13 +52,13 @@
     [expanded]="true"
   >
     @if (memberError(); as e) {
-      <trove-error-notice [error]="e" />
+      <quader-error-notice [error]="e" />
     }
     <div class="toolbar">
-      <trove-select-field i18n-label="@@group.source-filter" label="Source" name="source" [options]="sourceOptions" [(value)]="sourceFilter" />
+      <quader-select-field i18n-label="@@group.source-filter" label="Source" name="source" [options]="sourceOptions" [(value)]="sourceFilter" />
     </div>
     @if (members.error(); as e) {
-      <trove-error-notice [error]="e" (retry)="members.reload()" />
+      <quader-error-notice [error]="e" (retry)="members.reload()" />
     }
     @if (members.loaded()) {
       @if (members.items().length === 0) {
@@ -103,7 +103,7 @@
     }
     @if (canWrite() && !readOnly()) {
       <form class="toolbar" (submit)="addMember($event)">
-        <trove-text-field
+        <quader-text-field
           width="name"
           i18n-label="@@group.add-member"
           label="Add a member"
@@ -115,9 +115,9 @@
         <button class="btn btn-confirm" type="submit" [disabled]="busy() || newMember().trim() === ''" i18n="@@group.add-member-submit">Add</button>
       </form>
     }
-  </trove-disclosure>
+  </quader-disclosure>
 
-  <trove-disclosure
+  <quader-disclosure
     i18n-heading="@@group.roles"
     heading="System roles"
     i18n-hint="@@group.roles-hint"
@@ -135,10 +135,10 @@
     @if (session.has('roles:read')) {
       <p><a routerLink="/admin/roles" i18n="@@group.roles-link">Manage role bindings</a></p>
     }
-  </trove-disclosure>
+  </quader-disclosure>
 
   @if (policies(); as list) {
-    <trove-disclosure
+    <quader-disclosure
       i18n-heading="@@group.policies"
       heading="Permission policies naming this group"
       i18n-hint="@@group.policies-hint"
@@ -153,11 +153,11 @@
           }
         </ul>
       }
-    </trove-disclosure>
+    </quader-disclosure>
   }
 
   @if (canWrite() && !readOnly()) {
-    <trove-disclosure
+    <quader-disclosure
       i18n-heading="@@group.advanced"
       heading="Advanced"
       i18n-hint="@@group.advanced-hint"
@@ -165,7 +165,7 @@
     >
       <p class="muted" i18n="@@group.delete-note">Deleting the group removes its memberships and the role bindings of the group. Policies that name it stop granting to its members.</p>
       <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="remove()" i18n="@@group.delete">Delete group</button>
-    </trove-disclosure>
+    </quader-disclosure>
   }
   </div>
 }

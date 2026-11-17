@@ -10,6 +10,6 @@ ARG DOCKER_IMAGE
 FROM ${DOCKER_IMAGE}
 ARG TARGETARCH
 COPY --from=fwd fwd-linux-${TARGETARCH} /usr/local/bin/fwd
-COPY entrypoint-docker.sh /usr/local/bin/trove-entrypoint.sh
+COPY entrypoint-docker.sh /usr/local/bin/quader-entrypoint.sh
 # The entrypoint of the image starts dockerd with a TCP listener when it is given no arguments; ours passes the arguments itself.
-ENTRYPOINT ["/usr/local/bin/trove-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/quader-entrypoint.sh"]

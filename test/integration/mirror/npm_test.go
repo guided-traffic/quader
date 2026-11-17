@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // npm discovery against the counting npm stub (E6b.2; docs/spec/formats/npm.md "Mirror discovery", R-REPO-051).

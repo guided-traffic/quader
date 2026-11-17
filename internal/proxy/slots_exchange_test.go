@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // emptySlots fails the test when a counter of the slots is left over.

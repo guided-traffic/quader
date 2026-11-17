@@ -14,8 +14,8 @@ set -a
 . "$here/../versions.env"
 set +a
 
-export TROVE_SBOM_RUN="check-${GITHUB_RUN_ID:-$$}-${GITHUB_RUN_ATTEMPT:-0}"
-builder="trove-sbom-builder-${TROVE_SBOM_RUN}"
+export QUADER_SBOM_RUN="check-${GITHUB_RUN_ID:-$$}-${GITHUB_RUN_ATTEMPT:-0}"
+builder="quader-sbom-builder-${QUADER_SBOM_RUN}"
 tmp="$(mktemp -d)"
 cleanup() {
   docker buildx rm -f "$builder" >/dev/null 2>&1 || true

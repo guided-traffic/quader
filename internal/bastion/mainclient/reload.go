@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
 )
 
 // DefaultWatchEvery is how often the token file's identity is looked at between two full reads: a rotation of
@@ -30,7 +30,7 @@ type ReloaderOptions struct {
 	WatchEvery time.Duration
 	// Holder is the token in use. Its current value is the baseline of the first read.
 	Holder *Holder
-	// Metrics counts trove_bastion_token_reloads_total.
+	// Metrics counts quader_bastion_token_reloads_total.
 	Metrics *metrics.Metrics
 	Log     *slog.Logger
 	// OnChange is called after a different valid token replaced the one in use, with the new token. It must

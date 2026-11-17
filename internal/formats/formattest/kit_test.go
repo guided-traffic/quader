@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/formattest/crafted"
-	"github.com/guided-traffic/trove/internal/formats/formattest/testformat"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/formattest/crafted"
+	"github.com/guided-traffic/quader/internal/formats/formattest/testformat"
 )
 
 // bare is a format with no routes, no clients and no package names: the shape of
@@ -328,7 +328,7 @@ func TestR_ARCH_010_KitChecksCatchTheirDefects(t *testing.T) {
 				ID: "x2", Topic: formats.GuideWhat, Title: "x", Classes: []formats.Class{"federated"}, Markdown: "x",
 			}),
 			`attaches the snippets of section "deploy"`: with(func(s *formats.GuideSection) { s.Snippets = "deploy" }),
-			"holds the shape of a token":                with(func(s *formats.GuideSection) { s.Markdown = "Use trv_pat_x." }),
+			"holds the shape of a token":                with(func(s *formats.GuideSection) { s.Markdown = "Use qdr_pat_x." }),
 			`no guide section of topic "configure" attaches the configure snippets`: func() []formats.GuideSection {
 				out := append([]formats.GuideSection(nil), testformat.New().Guide()...)
 				out[1].Snippets = ""

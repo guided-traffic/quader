@@ -1,0 +1,37 @@
+# The operator runs "quader migrate up" by other means; a minAvailable budget and
+# a fixed digest instead of a tag.
+migrations:
+  mode: disabled
+image:
+  digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+packages:
+  podDisruptionBudget:
+    maxUnavailable: null
+    minAvailable: 2
+config:
+  server:
+    base_url: https://quader.example.com
+  database:
+    host: quader-db-rw.quader.svc
+  storage:
+    s3:
+      bucket: quader-blobs
+    upload:
+      max_size: 10GiB
+  valkey:
+    sentinel:
+      addresses:
+        - quader-valkey-sentinel-0.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-1.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-2.quader-valkey-sentinel.quader.svc:26379
+      primary_name: quader
+tls:
+  secretName: quader-tls
+secrets:
+  database:
+    existingSecret: quader-db-app
+  valkey:
+    existingSecret: quader-valkey
+  encryption:
+    existingSecret: quader-encryption-keys
+    keys: [2026-10.key]

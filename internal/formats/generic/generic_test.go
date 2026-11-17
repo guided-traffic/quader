@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 func TestDescriptor(t *testing.T) {

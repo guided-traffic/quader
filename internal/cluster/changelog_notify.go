@@ -8,8 +8,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // ErrPayloadTooLarge is returned by Notify for a payload that would not fit into

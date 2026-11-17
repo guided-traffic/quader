@@ -1612,9 +1612,9 @@ Errors: 400 (configure); 401; 403. Privilege: system administrator. Self-managed
 only.
 
 Priority rationale: replication is P2 by the rubric. The pull half of API-082 to API-085 is MVP since the owner asked for a
-full mirror of remote repositories in the beta (2026-11-02); trove builds it as the mirror mode of a remote repository
+full mirror of remote repositories in the beta (2026-11-02); Quader builds it as the mirror mode of a remote repository
 (repositories-and-proxy.md R-REPO-050 to R-REPO-056, Q-REPO-143), and push, bulk switches, peer channels, the global block
-and this entry stay P2. The case it serves exists for trove as
+and this entry stay P2. The case it serves exists for Quader as
 well: two sites on S3 buckets linked by the object store's own cross-region replication receive
 the binaries that way, so only metadata has to travel between the instances.
 
@@ -2380,7 +2380,7 @@ The distribution service issues its own OAuth2-style tokens (form-encoded reques
 | List | None. | Token ID, issuer, subject, issued-at and expiry (epoch seconds), refreshable flag. | Administrator. |
 | Revoke | Either the token value or the token ID (not both), per RFC 7009. | 200. | Administrator; 404 unknown token. |
 
-Priority rationale: trove issues all tokens from one place; see
+Priority rationale: Quader issues all tokens from one place; see
 [access-tokens.md](access-tokens.md) and [api-admin-operations.md](api-admin-operations.md).
 
 ### API-137 · Destination permissions

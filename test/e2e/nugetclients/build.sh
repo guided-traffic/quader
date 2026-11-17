@@ -4,15 +4,15 @@
 # pinned .NET SDK image with the pinned Mono and nuget.exe. `make nuget-clients-image` and deploy/dev/e2e.sh both
 # call it.
 #
-#   build.sh [image]    default image trove-e2e-nugetclients:dev
+#   build.sh [image]    default image quader-e2e-nugetclients:dev
 #
-# Environment: TROVE_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
+# Environment: QUADER_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../deploy/dev" && pwd)/lib.sh"
 
-image="${1:-trove-e2e-nugetclients:dev}"
-arch="${TROVE_E2E_CLIENTS_ARCH:-$(arch)}"
+image="${1:-quader-e2e-nugetclients:dev}"
+arch="${QUADER_E2E_CLIENTS_ARCH:-$(arch)}"
 for v in E2E_NUGETCLIENTS_SDK_IMAGE E2E_NUGETCLIENTS_SDK8_IMAGE E2E_NUGETCLIENTS_SDK9_IMAGE E2E_NUGETCLIENTS_MONO_VERSION E2E_NUGETCLIENTS_JQ_VERSION E2E_NUGETCLIENTS_NUGET_EXE_VERSION E2E_NUGETCLIENTS_NUGET_EXE_SHA256; do
   [ -n "${!v:-}" ] || die "$v is not set in tools/versions.env"
 done

@@ -6,15 +6,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
 )
 
 // One request of a client costs a bounded number of upstream pages, however many tags the caller may not read (Q-OCI-128).
 //
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestAPageEndsEarlyWithALinkAfterTheAllowedUpstreamPages(t *testing.T) {
 	var asked int
 	var all []string
@@ -22,7 +22,7 @@ func TestAPageEndsEarlyWithALinkAfterTheAllowedUpstreamPages(t *testing.T) {
 		all = append(all, string(c))
 	}
 	m := &formattest.MemRemote{Docs: map[string][]byte{
-		TaglistPath("cut"): []byte(`{"name":"cut","tags":["a"],"x-trove-truncated":true}`),
+		TaglistPath("cut"): []byte(`{"name":"cut","tags":["a"],"x-quader-truncated":true}`),
 	}}
 	m.Queries = func(_ context.Context, _ *formats.Request, q formats.Query) (*formats.QueryResult, error) {
 		asked++

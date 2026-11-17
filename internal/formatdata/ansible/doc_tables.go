@@ -1,6 +1,6 @@
 package ansible
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // The four tables of the documentation of collections (migrations ansible_doc_tables and ansible_doc_fetches, R-ANS-033)
 // are derived data and no source of truth: a backup does not export them (R-BAK-004). A restore enqueues the reindex, which rebuilds a

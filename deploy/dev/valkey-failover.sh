@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Valkey planned failover (R-HA-051 dev-valkey-failover): SENTINEL FAILOVER trove on one
+# Valkey planned failover (R-HA-051 dev-valkey-failover): SENTINEL FAILOVER quader on one
 # Sentinel, then waits until the Sentinels report another primary and the old primary is
 # the replica.
 set -euo pipefail
@@ -9,7 +9,7 @@ require_cluster
 
 before="$(valkey_primary)" || die "no Sentinel reports a primary"
 log "primary before: $before"
-sentinel_cli trove-valkey-sentinel-0 sentinel failover trove-valkey
+sentinel_cli quader-valkey-sentinel-0 sentinel failover quader-valkey
 deadline=$(( $(date +%s) + 60 ))
 while :; do
   after="$(valkey_primary || true)"

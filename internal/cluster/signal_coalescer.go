@@ -10,8 +10,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // SignalHandler receives the payloads of one delivery of a signal area. coarse
@@ -69,8 +69,8 @@ type SignalsOptions struct {
 // NewSignals creates the signal path.
 func NewSignals(o SignalsOptions) (*Signals, error) {
 	m := &signalMetrics{
-		published: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "trove_cluster_signals_published_total", Help: "Signal messages published to Valkey by area."}, []string{"area"}),
-		dropped:   prometheus.NewCounterVec(prometheus.CounterOpts{Name: "trove_cluster_signals_dropped_total", Help: "Signals not published because Valkey was unavailable, by area."}, []string{"area"}),
+		published: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "quader_cluster_signals_published_total", Help: "Signal messages published to Valkey by area."}, []string{"area"}),
+		dropped:   prometheus.NewCounterVec(prometheus.CounterOpts{Name: "quader_cluster_signals_dropped_total", Help: "Signals not published because Valkey was unavailable, by area."}, []string{"area"}),
 	}
 	if err := register(o.Metrics, m.published, m.dropped); err != nil {
 		return nil, err

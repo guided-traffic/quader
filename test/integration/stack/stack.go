@@ -35,28 +35,28 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	_ "github.com/guided-traffic/trove/internal/formats/all" // registers the formats the catalog answers for
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/project"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/visibility"
-	"github.com/guided-traffic/trove/test/integration/idapi"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	_ "github.com/guided-traffic/quader/internal/formats/all" // registers the formats the catalog answers for
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/project"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/visibility"
+	"github.com/guided-traffic/quader/test/integration/idapi"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // RandHex returns n random bytes in hex.
@@ -85,15 +85,15 @@ type Env struct {
 	people sync.Map   // name -> Person
 }
 
-// New creates a database trove_stack_<random>, migrates it (audit retention 365
+// New creates a database quader_stack_<random>, migrates it (audit retention 365
 // days) and drops it when the test ends.
 func New(t *testing.T) *Env {
 	t.Helper()
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		t.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		t.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
-	host, user, secret := testenv.Get(t, "TROVE_TEST_PG_HOST"), testenv.Get(t, "TROVE_TEST_PG_USER"), testenv.Get(t, "TROVE_TEST_PG_PASSWORD")
+	host, user, secret := testenv.Get(t, "QUADER_TEST_PG_HOST"), testenv.Get(t, "QUADER_TEST_PG_USER"), testenv.Get(t, "QUADER_TEST_PG_PASSWORD")
 	connect := func(database string) *pgx.Conn {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -108,7 +108,7 @@ func New(t *testing.T) *Env {
 		t.Cleanup(func() { _ = conn.Close(context.Background()) })
 		return conn
 	}
-	name := "trove_stack_" + RandHex(5)
+	name := "quader_stack_" + RandHex(5)
 	maint := connect("postgres")
 	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatalf("create database: %v", err)
@@ -125,7 +125,7 @@ func New(t *testing.T) *Env {
 		t.Fatal(err)
 	}
 	cfg := config.Database{
-		Host: host, Port: port, Name: name, Schema: "trove",
+		Host: host, Port: port, Name: name, Schema: "quader",
 		UsernameFile: userFile, PasswordFile: passFile,
 		SSLMode: "verify-full", SSLRootCertFile: testenv.CAFile(t),
 		ConnectTimeout: 5 * time.Second, TargetSessionAttrs: "read-write",
@@ -216,7 +216,7 @@ func (e *Env) User(name string) Person {
 }
 
 // Known makes a principal that another writer created (the provisioner of a
-// login, trove migrate) nameable in X-Test-Person.
+// login, quader migrate) nameable in X-Test-Person.
 func (e *Env) Known(kind principal.Kind, name string) Person {
 	id := e.Text("SELECT id::text FROM principal WHERE kind = $1 AND name = $2", string(kind), name)
 	return e.remember(Person{ID: id, Name: name, Kind: kind})
@@ -575,7 +575,7 @@ func (e *Env) NewReplica(name string, o Options) *Replica {
 func FormatCatalog() *catalog.Registry { return catalog.Default() }
 
 // testAuth reads the caller from X-Test-Person (a name made by User, Group or
-// ServiceAccount) and applies Trove-Authz-Min-Epoch to an authenticated caller,
+// ServiceAccount) and applies Quader-Authz-Min-Epoch to an authenticated caller,
 // as the composition root does.
 func (r *Replica) testAuth(req *http.Request) (httpserver.Principal, error) {
 	name := req.Header.Get("X-Test-Person")
@@ -618,7 +618,7 @@ func (r *Replica) serve(o Options, rec audit.Recorder) {
 	// The handler is the one the identity and login tests use (test/integration/idapi),
 	// with the stand-in authentication and the engine and services of this replica.
 	h := idapi.Handler(t, idapi.Components{
-		Name: r.Name, DB: r.DB, Changes: r.Changes, Recorder: rec, BaseURL: "http://trove.test", Log: quiet(),
+		Name: r.Name, DB: r.DB, Changes: r.Changes, Recorder: rec, BaseURL: "http://quader.test", Log: quiet(),
 		Engine: r.Engine, Authenticate: r.testAuth, Validator: o.Validator,
 		Options: func(_ *authz.Engine, o *v1.Options) {
 			o.AuditStore = r.Store

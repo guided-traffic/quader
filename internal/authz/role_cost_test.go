@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The cost of a project role in the decision point (R-AUTHZ-015 performance target, R-ARCH-033): a decision asks the

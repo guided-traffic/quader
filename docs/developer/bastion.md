@@ -1,4 +1,4 @@
-# The trove Bastion: contracts
+# The Quader Bastion: contracts
 
 Status: the contracts of phase 5b are laid (the shared types, interfaces, schema, routes, configuration and the skeleton of the
 role) and the role is built: package 1 (registrations and the `bst` token), package 2 ([the main installation's
@@ -8,9 +8,9 @@ shape](#marking-the-write-probe-and-the-read-shape-package-3)), package 4 ([the 
 package 6 ([shared state and guard](#shared-state-and-the-guard)) and package 8 (the screen, client setup and the manual); the end-to-end suite of R-BAS-049 on kind
 is described in [e2e.md](e2e.md#the-bastion-tests). The specification is
 [spec/bastion.md](../spec/bastion.md) (R-BAS-001 to R-BAS-049, decisions Q-BAS-1 onward), its security perspective [security/bastion.md](../security/bastion.md), the plan
-[projektplan/BETA.md](../projektplan/BETA.md#phase-5b--trove-bastion-m13).
+[projektplan/BETA.md](../projektplan/BETA.md#phase-5b--quader-bastion-m13).
 
-The Bastion is a role of the one image, `trove serve --role bastion`, with a configuration tree of its own, no PostgreSQL, no UI and a
+The Bastion is a role of the one image, `quader serve --role bastion`, with a configuration tree of its own, no PostgreSQL, no UI and a
 client listener that mirrors the main installation's package URL space. This page is for the eight developers who build it in
 parallel: it says which package owns which file, which seams join them, how a request travels, and how to run the role.
 
@@ -43,7 +43,7 @@ parallel: it says which package owns which file, which seams join them, how a re
 
 | # | Package | Owns (new files unless said) | Fills the seams |
 |---|---|---|---|
-| 1 | Registrations and the `bst` token type (R-BAS-004, R-BAS-005) — **built** | [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go), [registrations.go](../../internal/bastionmain/registrations.go), [admin_bastion.go](../../cmd/trove/admin_bastion.go), [bastion.go](../../internal/auth/token/bastion.go) (issuance, revocation and validation of the type `bst`), [events_bastion.go](../../internal/audit/events_bastion.go); see [identity.md](identity.md#bastion-registrations-and-tokens-r-bas-004-r-bas-005) | `bastionmain.TokenAuthenticator` ([authenticator.go](../../internal/bastionmain/authenticator.go), built by `bastionAuthenticator` in the `package 1` block of `wire_bastion.go`) |
+| 1 | Registrations and the `bst` token type (R-BAS-004, R-BAS-005) — **built** | [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go), [registrations.go](../../internal/bastionmain/registrations.go), [admin_bastion.go](../../cmd/quader/admin_bastion.go), [bastion.go](../../internal/auth/token/bastion.go) (issuance, revocation and validation of the type `bst`), [events_bastion.go](../../internal/audit/events_bastion.go); see [identity.md](identity.md#bastion-registrations-and-tokens-r-bas-004-r-bas-005) | `bastionmain.TokenAuthenticator` ([authenticator.go](../../internal/bastionmain/authenticator.go), built by `bastionAuthenticator` in the `package 1` block of `wire_bastion.go`) |
 | 2 | Interface handlers, recognition (R-BAS-008 to R-BAS-012, R-BAS-015 to R-BAS-017) | [bastion_handshake_api.go](../../internal/api/v1/bastion_handshake_api.go), [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go), [bastion_feed_api.go](../../internal/api/v1/bastion_feed_api.go), [bastion_downloads_api.go](../../internal/api/v1/bastion_downloads_api.go), the Recognize stage, the feed mapping over [bastion_feed.sql](../../internal/meta/postgres/queries/bastion_feed.sql), the contact upsert | `Stages.Recognize`; uses `ShapeResolver` |
 | 3 | Marking and the write probe (R-BAS-013, R-BAS-014) | **built**: [internal/api/bastionmark](../../internal/api/bastionmark) (the Mark stage and the `RouteObserver`), `authz.Engine.ReachOn` and `bastionmain.NewShapeResolver` (R-BAS-012), the notes of the lookups (`bastionmain.NoteMissing`), the calls in `internal/api/rawfiles`, kit check 12 | `Stages.Mark`, `RouteObserver`, `ShapeResolver` |
 | 4a | The link to the main installation, its lifecycle and the download buffer (R-BAS-006, R-BAS-010, R-BAS-025 to R-BAS-028, R-BAS-039, R-BAS-042 to R-BAS-044) — **built** | [mainclient](../../internal/bastion/mainclient) (client, budget, token reload), [link](../../internal/bastion/link), [downloads](../../internal/bastion/downloads), [server](../../internal/bastion/server), [maintest](../../internal/bastion/maintest) | `mainclient.Client`, `mainclient.Budget`, `downloads.Buffer`, `Deps.Link` |
@@ -67,7 +67,7 @@ shared authorization step (`{bastion: true}`), then the handler. The four handle
 
 What the Recognize stage decides, in order (Q-BAS-115, Q-BAS-116):
 
-1. **Forward or interface call.** `Trove-Bastion-Authorization` present: a forward, on every path, with the token of that header. Absent:
+1. **Forward or interface call.** `Quader-Bastion-Authorization` present: a forward, on every path, with the token of that header. Absent:
    an interface call when `routingSegments(r.URL.EscapedPath())` - the path split and decoded segment by segment, as `net/http.ServeMux`
    matches - starts with `api`, `v1`, `bastion`; the token is then the one of `Authorization`. Any other credential: an ordinary request.
 2. **Token.** `TokenAuthenticator.Authenticate(ctx, raw, AuthRequest)` with the throttle of the sending address and its source
@@ -96,7 +96,7 @@ Things other code now relies on: `httpserver.Credential.ExpiresAt` (the marking'
 `audit.Event.At`, `auth.NewAddressThrottle`, `postgres.IsNoRows`, `cluster.Limiter.TakeNAt` (a request charged n units, n `INCR` in one transaction, at most `MaxTakeUnits`), and
 `App.credentialStage`, which records nothing in the request log: `App.authenticate` does, so the check leaves the line of the registration
 alone (Q-BAS-119). The kind `bastion` has an empty principal set in the decision point (`authz.kindBastion`). Recognition is also where the main installation's own hot path can be slowed by a Bastion: it adds a header lookup to every
-request of the default endpoint and a store lookup only for a value that starts with `trv_bst_`.
+request of the default endpoint and a store lookup only for a value that starts with `qdr_bst_`.
 
 To replace a seam: `App.bastionTokens` returns package 1's `TokenAuthenticator` (without one, every Bastion token is invalid), `App.bastionShapes`
 returns package 3's `ShapeResolver` (without one, the check answers `503`).
@@ -180,7 +180,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [api/bastionmark/mark.go](../../internal/api/bastionmark/mark.go) | `New`, `Marker.Stage`: the Mark stage, its observer, the marking at the status line, the write refusal and the probe answer, the strip |
 | [bastionmain/route.go](../../internal/bastionmain/route.go) | `RouteObserver`, `RouteMatch`, `RouteDecision`, `WithObserver`, `ObserverFrom`, the kind names |
 | [bastionmain/stages.go](../../internal/bastionmain/stages.go) | `Stages` (Recognize, Mark, Chain), `Stub`, `ErrNotImplemented` |
-| [bastionmain/metrics.go](../../internal/bastionmain/metrics.go) | `trove_bastion_interface_requests_total`, `trove_bastion_forwarded_requests_total` |
+| [bastionmain/metrics.go](../../internal/bastionmain/metrics.go) | `quader_bastion_interface_requests_total`, `quader_bastion_forwarded_requests_total` |
 
 </details>
 
@@ -212,7 +212,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 with fields and JSON tags, functions) into [testdata/interface.txt](../../internal/bastion/iface/testdata/interface.txt), the version on the
 first line. `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion` fails when the code and the file differ. To change the interface:
 raise `InterfaceVersion`, then `go test ./internal/bastion/iface -run TestR_BAS_009 -update-interface`; the regeneration refuses to write
-a changed surface under an unchanged version. The OpenAPI document must name the new version in `x-trove-bastion-interface`
+a changed surface under an unchanged version. The OpenAPI document must name the new version in `x-quader-bastion-interface`
 (`LoadDocument` checks it), and the release notes announce it.
 
 ## Shared state and the guard
@@ -247,8 +247,8 @@ hands `engine.Deps.Shared` and `engine.Deps.Guard` over; it closes them (the Val
 | the main installation called the credential invalid | `FailedAuth(addr)` | none |
 
 The guard decides and returns a `Verdict` (`Status`, `Code`, `RetryAfter`, `Reason`, `Quiet`); the engine renders the problem details of R-BAS-029,
-sets `Retry-After` and the `RateLimit` fields, and counts `trove_bastion_refused_total{reason=Verdict.Reason}`. The guard counts the blocks it sets
-(`trove_bastion_blocks_total`, `trove_bastion_blocked_addresses`) and logs `bastion address blocked` once per block. An error of the shared state
+sets `Retry-After` and the `RateLimit` fields, and counts `quader_bastion_refused_total{reason=Verdict.Reason}`. The guard counts the blocks it sets
+(`quader_bastion_blocks_total`, `quader_bastion_blocked_addresses`) and logs `bastion address blocked` once per block. An error of the shared state
 admits the request (Q-BAS-94). `exempt_cidrs` are parsed at `guard.New`; a bad entry stops the start.
 
 **The rules in one place.**
@@ -284,7 +284,7 @@ visits the blocks shard by shard.
 with a closer. The Valkey form runs on `cluster.NewValkey(..., cluster.WithoutKeyspace())` and keeps a memory next to every mechanism: the block list
 writes to both, reads memory first (a blocked address costs no round trip) and then Valkey; the limiters are the cluster limiters whose fallback is
 the replica's share; the answers are Valkey only (the engine has its own memory). A Valkey that is down, refuses the credential or is slow makes
-the state run from memory and never the replica unready; `trove_valkey_available` and `trove_ratelimit_fallback{limiter}` show it. Losing Valkey
+the state run from memory and never the replica unready; `quader_valkey_available` and `quader_ratelimit_fallback{limiter}` show it. Losing Valkey
 costs the sharing, not correctness. The keys are in [valkey.md](valkey.md#the-bastions-keys).
 
 **Add a limit.** A new limiter is a name `bastion.<name>` in [guard/instance.go](../../internal/bastion/guard/instance.go), a call to
@@ -306,15 +306,15 @@ cached bytes. The main installation's `check` handler validates the credential (
 `ShapeResolver`.
 
 **Miss** (R-BAS-021): the engine takes a budget slot, forwards the request with the caller's `Authorization`, the Bastion token in
-`Trove-Bastion-Authorization` and the forwarded-for and host headers. On the main installation: the Recognize stage validates the token
+`Quader-Bastion-Authorization` and the forwarded-for and host headers. On the main installation: the Recognize stage validates the token
 and stores a `Recognition`; the Mark stage installs the observer; authentication and the dispatcher decide as for the caller's own
-request; the marking wrapper adds `Trove-Bastion-Class`, `-Repository`, `-Read`, `-Subject` and `-Interface` at the status line. The
+request; the marking wrapper adds `Quader-Bastion-Class`, `-Repository`, `-Read`, `-Subject` and `-Interface` at the status line. The
 engine keeps what the class allows, streams the rest.
 
 **Write probe** (R-BAS-014): a method other than `GET` and `HEAD` becomes a bodiless `Do` with `Probe` set, no credential and
-`Trove-Bastion-Probe: 1`. The dispatcher calls `RouteObserver.Matched` after the match: for an `Upload`, `Delete`, `Admin` route or a
+`Quader-Bastion-Probe: 1`. The dispatcher calls `RouteObserver.Matched` after the match: for an `Upload`, `Delete`, `Admin` route or a
 coarse action other than `read` it returns the `bastion_read_only` error, which the format renders in its own shape; for a read route
-that takes a body it answers `204` with `Trove-Bastion-Route: read-with-body` and reports `handled`. The Bastion replays a `403` or
+that takes a body it answers `204` with `Quader-Bastion-Route: read-with-body` and reports `handled`. The Bastion replays a `403` or
 `404` and, after a `204`, forwards the real request.
 
 **One cache, several replicas.** An entry kept under a key that carries the values of the request headers named by `Vary` is also written
@@ -353,11 +353,11 @@ backend's first `Check`; it never depends on the main installation (Q-BAS-44).
 **The client's contract.**
 
 - `Do(ctx, Forward)` sends the caller's request (method, path and query as received; the caller's `Authorization` and end-to-end
-  headers), removes `Cookie`, `Forwarded`, `X-Forwarded-*`, `Trove-*`, `Range`, `If-*`, trace headers and the hop-by-hop headers,
-  and adds the interface headers, the Bastion token in `Trove-Bastion-Authorization` and exactly one client address from
+  headers), removes `Cookie`, `Forwarded`, `X-Forwarded-*`, `Quader-*`, `Range`, `If-*`, trace headers and the hop-by-hop headers,
+  and adds the interface headers, the Bastion token in `Quader-Bastion-Authorization` and exactly one client address from
   `Forward.ClientAddress` in both families. `IfNoneMatch` is the Bastion's own condition. `Probe` sends the method without a body
   and without the caller's credential. A redirect is returned, not followed.
-- The `Response` has its `Trove-Bastion-*` headers removed and parsed into `Marking` (`Marked` false for an unmarked answer). `Response.Route` is the value of `Trove-Bastion-Route`, read before the strip (the engine's probe decides on it, [Q-BAS-108](../spec/bastion.md#q-bas-108--the-route-of-a-probe-answer-is-read-before-the-marking-is-stripped)). The
+- The `Response` has its `Quader-Bastion-*` headers removed and parsed into `Marking` (`Marked` false for an unmarked answer). `Response.Route` is the value of `Quader-Bastion-Route`, read before the strip (the engine's probe decides on it, [Q-BAS-108](../spec/bastion.md#q-bas-108--the-route-of-a-probe-answer-is-read-before-the-marking-is-stripped)). The
   slot of the budget is held until the body ends or `Close` is called, so **the engine closes every body on every path**
   (`TestR_BAS_025_EveryPathClosesTheResponseBodyAndSoReleasesItsSlot` serves every kind of answer over a budget of one slot and counts the slots after each).
 - `Forward.Class` is `Anonymous` for a request without a credential: those requests share the anonymous slots.
@@ -460,7 +460,7 @@ body was delivered from the cache, `200` or `206`; a `HEAD` and a `304` are no d
 
 **Answers** ([answerstore.go](../../internal/bastion/engine/answerstore.go)): an LRU in memory (`answers.max_entries`) and, when `Shared.Shared()` is
 true, records in `shared.AnswerStore`, which signs and verifies them itself (Q-BAS-93): the engine hands over plain JSON. `answerStore.get` judges every
-answer with `answers.State.Check` (the four rules, through `Link.AnswerState`) at every use, counts `trove_bastion_answers_total`, and drops what fails.
+answer with `answers.State.Check` (the four rules, through `Link.AnswerState`) at every use, counts `quader_bastion_answers_total`, and drops what fails.
 Private copies are never written anywhere but memory. The entries of a feed page reach the store through `Drop` (the link's `AnswerSink`, R-BAS-026): an `entryMatcher` built
 from the page's tokens, principals and repositories selects the answers in one pass, and they are deleted from memory and, in the background and best effort, from the shared store.
 
@@ -475,8 +475,8 @@ items); a shape answer used in the last fifth of its period is refreshed by one 
 runs in the engine: the link, the token reload, the download buffer and the cache sweep are the server's.
 
 **Logs and trace** (R-BAS-042): `rq.end` sets the fields of the request log (`bastion_class`, `bastion_result`, `token_hint`, `main_request_id`, the
-repository, the token ID, the refusal reason, the limiter) and the attributes `trove.bastion.class`, `trove.bastion.result` and
-`trove.bastion.refusal` on the span the server's chain started; the forwarded request carries the request's context, which `mainclient` propagates. A
+repository, the token ID, the refusal reason, the limiter) and the attributes `quader.bastion.class`, `quader.bastion.result` and
+`quader.bastion.refusal` on the span the server's chain started; the forwarded request carries the request's context, which `mainclient` propagates. A
 refusal whose `guard.Verdict` is `Quiet` marks the request through `engine.WithQuietSlot` (below).
 
 ## How the role is wired (package 4c)
@@ -503,7 +503,7 @@ cache backend); the link and the reloader stop; the ops listener closes last.
 
 **The request log of a quiet refusal**: the client listener's chain puts a slot into the request context before the request log
 ([`requestLog`](../../internal/bastion/server/server.go)); the engine sets it when a verdict is `Quiet`; the logger the request log writes through skips the
-record. The request is still counted in the metrics and in `trove_bastion_refused_total`; the guard logs one line per block (R-BAS-037).
+record. The request is still counted in the metrics and in `quader_bastion_refused_total`; the guard logs one line per block (R-BAS-037).
 
 **Seams that are gone.** Each was written twice, in the packages built in parallel, and one stayed:
 
@@ -535,7 +535,7 @@ a `*cache.Cache` from `cache.New(ctx, cfg.Cache, signer, cache.Options{…})`; t
 bytes, get a range, stat, list, remove, touch. `volumeStore` keeps the layout in `bastion.cache.volume.dir` and spools to `<dir>/tmp`
 on the same filesystem, so a fill is committed by a `rename`; stale spool files (older than an hour) are removed at start.
 `bucketStore` keeps it below `bastion.cache.bucket.prefix` through `internal/blob/s3` (the cache's only import beyond the platform
-list), spools to `<tmp>/trove-bastion-cache` in the pod, and uses nothing but PutObject, GetObject, HeadObject, ListObjectsV2 and
+list), spools to `<tmp>/quader-bastion-cache` in the pod, and uses nothing but PutObject, GetObject, HeadObject, ListObjectsV2 and
 DeleteObject, with no versioning and no conditional write. The S3 client is the main installation's, reached through the plain-typed
 methods of [plain.go](../../internal/blob/s3/plain.go) ([Q-BAS-89](../spec/bastion.md#q-bas-89--the-bucket-backend-reaches-s3-through-a-plain-adapter-and-fails-fast));
 `config.BastionCacheBucket.StorageS3()` maps the Bastion's keys onto it: `https` only, the trust bundle `ca_file`, credentials
@@ -554,7 +554,7 @@ and `DeleteObject`; the default is the artifact area, and the wrong area is a mi
 | `NewFill(kind)` → `Fill` | spools a response while it is streamed (`Write`, running `SHA256`, `Size`); `Commit(ctx, sha)` verifies, commits under the address and removes the spool, `Abort()` discards; refuses bytes past `max_object_bytes` (artifact) or `documents_max_bytes` (document) with `ErrTooLarge`, and a write that would take the fills in progress of the replica past `spool_max_bytes` with `ErrSpoolFull` (the fill gives its bytes back at once and cannot be committed; the engine passes the answer through unkept) |
 | `StoreEntry(ctx, cacheKey, entry)` | signs (HMAC over every field and the cache key) and stores; write the entry after `Commit` |
 | `LookupEntry(ctx, cacheKey)` | `ErrNotFound` is a miss: no entry, a failed signature (entry deleted, `evictions{stale}`), bytes gone (entry deleted, `evictions{missing}`), a size that differs from the entry's (counted corrupt, object deleted); any other error is the backend's: serve a miss |
-| `Open(ctx, cacheKey, entry)` | full read through the verifying reader; the last 64 KiB are released only after the SHA-256 and size matched; a mismatch returns `ErrCorrupt` from `Read`, deletes the object and the entry of the key, counts `trove_bastion_cache_corrupt_total`; a body longer than the entry is refused at once |
+| `Open(ctx, cacheKey, entry)` | full read through the verifying reader; the last 64 KiB are released only after the SHA-256 and size matched; a mismatch returns `ErrCorrupt` from `Read`, deletes the object and the entry of the key, counts `quader_bastion_cache_corrupt_total`; a body longer than the entry is refused at once |
 | `OpenRange` | a range, not verified (H-451) |
 | `Touch(ctx, entry)` | the access marker, at most once per `access_resolution` per replica and content address; best effort |
 | `SweepOnce(ctx, src)`, `RunSweeper(ctx, src)` | the sweep of R-BAS-031 and its loop; publish `cache_bytes`, count `evictions{size}`; `src` is a `LeaseSource` (`shared.State` is one), which offers the sweep lease only while the replicas share state, so the cache does not import `shared` |
@@ -562,12 +562,12 @@ and `DeleteObject`; the default is the artifact area, and the wrong area is a mi
 **The spool budget** ([spool.go](../../internal/bastion/cache/spool.go), [Q-BAS-131](../spec/bastion.md#q-bas-131--the-bytes-of-the-fills-in-progress-are-bounded-and-the-chart-sizes-the-volumes-from-the-bound)).
 `bastion.cache.spool_max_bytes` (2 GiB, at least `max_object_bytes`) bounds the bytes that all fills in progress of a replica hold in temporary storage:
 the bucket backend's `tmp` volume, or the `tmp` directory of the cache volume. A fill reserves before it writes and gives back when its file is removed
-(`Commit`, `Abort`); a refusal counts in `trove_bastion_cache_errors_total{op="spool"}`. The chart sizes `tmp.sizeLimit` from it (spool plus 256 MiB with the bucket
+(`Commit`, `Abort`); a refusal counts in `quader_bastion_cache_errors_total{op="spool"}`. The chart sizes `tmp.sizeLimit` from it (spool plus 256 MiB with the bucket
 backend) and refuses a volume that cannot hold it ([helm-chart.md](helm-chart.md#the-bastion-chart)); what is left open is
 [H-450](../spec/bastion.md#h-450--a-fill-that-does-not-fit-the-spool-is-passed-through-unkept-and-a-request-answered-from-the-spool-fails).
 
 **The sweep.** The limits are `max_bytes − documents_max_bytes` for artifacts and `documents_max_bytes` for documents
-([Q-BAS-88](../spec/bastion.md#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)); `trove_bastion_cache_capacity_bytes{area}`
+([Q-BAS-88](../spec/bastion.md#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)); `quader_bastion_cache_capacity_bytes{area}`
 exports them. A cycle measures both areas (one listing each); an area above 95 % of its limit is swept: it lists its bytes and `access/`
 (two listings), orders by the later of an object's marker and its own time (a refill counts as an access), and deletes oldest first until
 85 % remain, taking the markers along. The sweep does not read entries (H-452). Who runs it: the volume, every replica its own; the
@@ -575,23 +575,23 @@ bucket with Valkey (`st.Shared()`), the replica that wins `shared.SweepLease` fo
 replica at `sweep_interval ± 20 %`. The forms plug in through `shared.State` (the Valkey form of the server, `shared.NewLocal` in the tests).
 
 **Errors.** Every backend error except a missing key, an invalid name and a cancelled context is counted in
-`trove_bastion_cache_errors_total{op}` (`get`, `put`, `delete`, `list`, `spool`) where it happens, so a caller only has to turn an error
+`quader_bastion_cache_errors_total{op}` (`get`, `put`, `delete`, `list`, `spool`) where it happens, so a caller only has to turn an error
 into a miss. **Audit spool** (package 7): `SpoolWrite(ctx, replica, jsonl)` names the file `audit-spool/<replica>/<unix ms>.jsonl`
 (raised by a millisecond on a clash in the process); `SpoolList` is oldest first; names that do not match the form are refused or
 skipped, so no input becomes a path.
 
 **Run it.** `go test -race ./internal/bastion/cache`; the bucket tests need the stack (`make integration-up`) and run in
 `make test-integration` or alone with `go test -tags integration ./test/integration/bastioncache` after sourcing
-`.dev/integration/env`. They write below `it-bastioncache/<run>/` of the `trove-backups` bucket and remove it.
+`.dev/integration/env`. They write below `it-bastioncache/<run>/` of the `quader-backups` bucket and remove it.
 ## Marking, the write probe and the read shape (package 3)
 
 The Mark stage ([bastionmark](../../internal/api/bastionmark/mark.go)) wraps the response writer of every request that carries a
-`Recognition` and strips every `Trove-Bastion-` header from every other response. The chain is `client address → Recognize → Mark →
+`Recognition` and strips every `Quader-Bastion-` header from every other response. The chain is `client address → Recognize → Mark →
 authentication → rate limits → router`; the authentication stage reports the caller it accepted through `httpserver.WithPrincipalNote`,
 so the subject is right for answers that never reach a route. What happens to one forwarded read:
 
 1. The dispatcher (or `rawfiles`) matches the route and calls `Observer.Matched`. A write is refused here (`bastion_read_only`, rendered by the format's
-   `WriteError`); the probe of a read route that takes a body is answered `204` with `Trove-Bastion-Route: read-with-body`. Nothing has
+   `WriteError`); the probe of a read route that takes a body is answered `204` with `Quader-Bastion-Route: read-with-body`. Nothing has
    been decided or read yet.
 2. The decision point allows the request and the repository resolves; the dispatcher calls `Observer.Decided` with the subject and the
    index of the decision. The stage asks `ShapeResolver` for the caller's shape on the addressed repository, once.
@@ -623,8 +623,8 @@ as the table in [Seams](#seams) says; nobody edits another package's file: add a
 The main installation's keys ([bastions.go](../../internal/config/bastions.go), `auth.tokens.bst.*`,
 `auth.tokens.max_active_per_principal.bst`) are in [configuration.md](configuration.md#bastion-keys). The role's tree is
 [bastion_role.go](../../internal/config/bastion_role.go) (`BastionConfig`, `LoadBastion`); its JSON Schema is the committed, generated
-file [internal/config/bastion.schema.json](../../internal/config/bastion.schema.json), which the chart `trove-bastion` includes as the
-schema of its `config` value. Keys the chart renders carry `x-trove-chart-managed: true`; the chart refuses a value for them.
+file [internal/config/bastion.schema.json](../../internal/config/bastion.schema.json), which the chart `quader-bastion` includes as the
+schema of its `config` value. Keys the chart renders carry `x-quader-chart-managed: true`; the chart refuses a value for them.
 `go generate ./internal/config` writes both schema files and the generated files of the chart (`values.schema.json` `config`
 property, `chart-managed-keys.yaml`; [helm-chart.md](helm-chart.md#the-bastion-chart)).
 
@@ -638,7 +638,7 @@ The role needs a main installation that knows its token: it handshakes at start 
 ```shell
 mkdir -p .out/bastion
 go run ./internal/tools/bsttoken > .out/bastion/token
-cat > .out/bastion/trove.yaml <<'EOF'
+cat > .out/bastion/quader.yaml <<'EOF'
 server:
   listen: 127.0.0.1:18443
   ops_listen: 127.0.0.1:18081
@@ -646,18 +646,18 @@ server:
 bastion:
   cache:
     volume:
-      dir: .out/bastion/cache                  # the default /var/cache/trove-bastion is not writable for you
+      dir: .out/bastion/cache                  # the default /var/cache/quader-bastion is not writable for you
   main:
-    url: https://trove.example.com              # example; unreachable, which is the point of this variant
+    url: https://quader.example.com              # example; unreachable, which is the point of this variant
     token_file: .out/bastion/token
 EOF
-go run ./cmd/trove serve --role bastion --config .out/bastion/trove.yaml
+go run ./cmd/quader serve --role bastion --config .out/bastion/quader.yaml
 ```
 
-In a second shell: `curl -s 127.0.0.1:18081/readyz` (ready: the cache backend's first check passed), `curl -s 127.0.0.1:18081/metrics | grep trove_bastion_main_reachable`
+In a second shell: `curl -s 127.0.0.1:18081/readyz` (ready: the cache backend's first check passed), `curl -s 127.0.0.1:18081/metrics | grep quader_bastion_main_reachable`
 (`0`), `curl -si -H 'Host: packages.example.com' 127.0.0.1:18443/ui/` (`404 bastion_not_served`; the engine answers only for the host of `server.base_url`, so send
 the header), and a read with a well-formed token (`go run ./internal/tools/bsttoken` prints one; a Bastion token as a credential is refused, use a
-`trv_pat_` token) answers `503 main_unreachable` with `Retry-After: 30`. A key of another section stops the role: add `database: {host: x}` to the file and the
+`qdr_pat_` token) answers `503 main_unreachable` with `Retry-After: 30`. A key of another section stops the role: add `database: {host: x}` to the file and the
 start names `database.host` and the role. No TLS is configured on the listeners here; with `server.tls.certificates` both serve it and reload it ([tls.md](tls.md)).
 
 **2. Against the in-process main installation (verified).** The scenario of R-BAS-048 starts the role from a configuration file exactly as the command does and
@@ -672,9 +672,9 @@ To run the role by hand against a main installation you control, copy `Run` in [
 configuration file, the token file and the CA file of the double into a temporary directory.
 
 **3. Against a main installation of the development stack.** Register a Bastion on the main installation, which issues a
-`trv_bst_` token (package 1: `trove admin bastion …` and the screen of the management UI), write it to the token file, set `bastion.main.url` to the main
+`qdr_bst_` token (package 1: `quader admin bastion …` and the screen of the management UI), write it to the token file, set `bastion.main.url` to the main
 installation's https URL (and `bastion.main.ca_file` when its certificate is not signed by a root the machine trusts), and set `server.base_url` to the address
-clients will use for the Bastion: the handshake refuses a base URL the main installation does not honour (`trove_bastion_base_url_mismatch`). The main installation's side of the interface (the four operations, the Recognize and Mark stages) is built, so the handshake succeeds against a current release; against an
+clients will use for the Bastion: the handshake refuses a base URL the main installation does not honour (`quader_bastion_base_url_mismatch`). The main installation's side of the interface (the four operations, the Recognize and Mark stages) is built, so the handshake succeeds against a current release; against an
 older one the handshake fails and the role stays unreachable.
 
 ## Tests
@@ -683,23 +683,23 @@ older one the handshake fails and the role stays unreachable.
 |---|---|
 | `go test -race ./internal/bastion/...` | the guard of the interface, the validity rules, the metrics table against the specification, the signer, the token syntax against `internal/auth/token`, the local shared state, the guard with an injected clock (limits, misses, timeout, blocking, exempt networks, IPv6); the client's headers and typed errors, the budget, the token reload, the link against `maintest` (reachability, grace period, mismatch, feed, the 5 s bound over 100 trials), the download buffer; the engine (`TestR_BAS_003` to `TestR_BAS_043` in `internal/bastion/engine`: over the real link and a real cache on a temporary volume, with a double of the client; the slot test over the real client); the server (listeners, readiness gated by the cache's first check, drain order, TLS reload, token and key refusals, the quiet request log, the sweeper) |
 | `make test-integration` (`test/integration/bastion`) | the integration suite of R-BAS-048: the web role as the main installation and one or two real Bastion replicas, see [The integration suite](#the-integration-suite-r-bas-048) |
-| `go test -race ./internal/bastion/roletest` and `make test-integration` (`test/integration/bastion`) | `TestR_BAS_048_TheWholeRoleServes…`: the role started from a configuration file against `maintest` over TLS, with the volume backend (no key) and with the bucket backend (the stack's SeaweedFS, a prefix of its own in `trove-backups`): a cold miss, a warm hit that costs the main installation nothing, a second reader that costs one check, a revocation refused within 5 s, the main installation cut off (grace period, `503` for an unseen token, `503` after the period and the grace period); one clock for the replica and the double |
+| `go test -race ./internal/bastion/roletest` and `make test-integration` (`test/integration/bastion`) | `TestR_BAS_048_TheWholeRoleServes…`: the role started from a configuration file against `maintest` over TLS, with the volume backend (no key) and with the bucket backend (the stack's SeaweedFS, a prefix of its own in `quader-backups`): a cold miss, a warm hit that costs the main installation nothing, a second reader that costs one check, a revocation refused within 5 s, the main installation cut off (grace period, `503` for an unseen token, `503` after the period and the grace period); one clock for the replica and the double |
 | `go test ./internal/config` | the role's defaults, the refusal of another section's keys, the ranges, the chart-managed marking, the committed schema |
 | `go test ./internal/api/v1` | the document's interface operations, the `{bastion: true}` form, the stubs; the registration operations answer 503 without their service |
-| `go test ./internal/bastionmain ./internal/auth ./internal/authz ./internal/project ./internal/auth/principal ./cmd/trove` | package 1: the authenticator, a Bastion token as no credential on any other route, the refusals of a Bastion as principal, the usage of `trove admin bastion` |
+| `go test ./internal/bastionmain ./internal/auth ./internal/authz ./internal/project ./internal/auth/principal ./cmd/quader` | package 1: the authenticator, a Bastion token as no credential on any other route, the refusals of a Bastion as principal, the usage of `quader admin bastion` |
 | `make test-integration` (`test/integration/bastionreg`) | package 1 against PostgreSQL: `TestR_BAS_004_*` and `TestR_BAS_005_*` (registrations, tokens, limits, capabilities, events and journal, the authenticator across replicas, the admin commands) |
 | `go test ./internal/api/v1` | the document's interface operations, the `{bastion: true}` form, the stubs, the check against a fake stage and resolver, the intake's HTTP side, the read class of a Bastion |
-| `go test ./internal/bastionmain ./internal/httpserver ./internal/observability` | the Recognize stage and its throttle, the feed's mapping table, the intake and the contact helpers; the forwarded headers of a Bastion (`bastion_forwarded_test.go`); the redaction of `Trove-Bastion-Authorization` |
+| `go test ./internal/bastionmain ./internal/httpserver ./internal/observability` | the Recognize stage and its throttle, the feed's mapping table, the intake and the contact helpers; the forwarded headers of a Bastion (`bastion_forwarded_test.go`); the redaction of `Quader-Bastion-Authorization` |
 | `make test-integration` (`test/integration/bastioniface`) | the Recognize stage and the four operations behind the real chain, stage, token service, decision point and audit writer on PostgreSQL, with fakes for the two seams of packages 1 and 3 |
 | `go test ./internal/archtest/...` | R-BAS-001's import rule (direct, and transitive over the dependency closure with the listed exceptions) and the layers of the Bastion's packages |
 | `go test ./internal/authz -run R_BAS_012` | the shape against the decision point ([authorization.md](authorization.md#read-shapes)) |
 | `go test ./internal/api/bastionmark ./internal/api/rawfiles ./internal/bastionmain ./internal/formathost` | the marking: class by kind, status and shape, the subject, the strip over the route table of npm and NuGet, the write probe in npm's and NuGet's shape, the notes of the lookups |
 | `go test ./internal/formats/...` | kit check 12 on npm and NuGet, the defect `varies-by-caller` |
 | `make test-integration` (`test/integration/proxy`) | `TestR_BAS_013_UpstreamNotFoundIsMarkedAbsent`: the remote engine marks an upstream 404 and its negative entry, not a cache view miss |
-| `go test ./cmd/trove` | the role's start: another section's key, an http main URL, a missing token file |
+| `go test ./cmd/quader` | the role's start: another section's key, an http main URL, a missing token file |
 | `go test -race ./internal/bastion/engine ./internal/bastion/link ./internal/bastion/mainclient ./internal/bastion/server` (the review of the engine, the client and the link, Q-BAS-121 to Q-BAS-126) | the path rule against `net/http.ServeMux` ([path_test.go](../../internal/bastion/engine/path_test.go)); a refused token on a forward ([forward_token_test.go](../../internal/bastion/mainclient/forward_token_test.go), `TestR_BAS_006_R_BAS_021_ARefusalOfTheTokenOnAForwardDoesNotMakeTheReplicaUnreachable`); a withdrawal while unreachable ([withdraw_test.go](../../internal/bastion/engine/withdraw_test.go)); the fill without the client, the waiter bound and the pass-through floor ([decouple_test.go](../../internal/bastion/engine/decouple_test.go), [pace_test.go](../../internal/bastion/engine/pace_test.go), and over real sockets with slow readers [slow_clients_test.go](../../internal/bastion/server/slow_clients_test.go)); the `404` oracle ([oracle_test.go](../../internal/bastion/engine/oracle_test.go)); the probe's slot class ([probe_class_test.go](../../internal/bastion/engine/probe_class_test.go)); the mirror of the `304` ([mirror_test.go](../../internal/bastion/engine/mirror_test.go)); the marks of collapsing ([volatile_test.go](../../internal/bastion/engine/volatile_test.go)); the start read, the black-holed call, the burst page and the retained IDs ([pages_test.go](../../internal/bastion/link/pages_test.go), [blackhole_test.go](../../internal/bastion/link/blackhole_test.go), [burst_test.go](../../internal/bastion/engine/burst_test.go), [seen_test.go](../../internal/bastion/answers/seen_test.go)) |
 | `go test -race ./internal/bastion/cache` | the volume backend on a temporary directory, the fill, the sweep and its order, the audit spool, the verifying reader, the signed entries, the first-readiness gate and counted errors |
-| `make test-integration` (`test/integration/bastioncache`) | the bucket backend on the stack's SeaweedFS (S3, TLS), under a prefix of its own in `trove-backups`: two replicas on one bucket, the five operations asserted through a counting transport, eviction of 300 MiB to a 100 MiB limit, two sweepers, a replaced object, a rewritten entry |
+| `make test-integration` (`test/integration/bastioncache`) | the bucket backend on the stack's SeaweedFS (S3, TLS), under a prefix of its own in `quader-backups`: two replicas on one bucket, the five operations asserted through a counting transport, eviction of 300 MiB to a 100 MiB limit, two sweepers, a replaced object, a rewritten entry |
 | `make test-integration` (`test/integration/postgres`) | `TestBastionMigration`: the three migrations, the constraints, the guards and every query of the Bastion files |
 | `make test-integration` ([test/integration/bastionshared](../../test/integration/bastionshared)) | two replicas against the stack's Valkey with Sentinel and TLS, each test on a key prefix of its own and an injected clock: an answer stored by replica A is found by B and a forged or altered record is ignored (`TestR_BAS_034_…`); the anonymous limit in total over two replicas without Valkey, 1,000 requests in 10 s admitted at most 140 times, 100 misses a minute at most 30 (`TestR_BAS_035_…`); 21 tokens (`TestR_BAS_036_…`); a flood blocked on both replicas for 15 and then 30 minutes (`TestR_BAS_037_…`); the fetch lock and the sweep lease. Valkey unavailable is an address nothing listens on: the tests never stop Valkey or trigger a failover |
 | `go test ./internal/cluster` | `valkey_bastion_test.go`: the Bastion's keys against the in-memory server, the address mapping, `Limiter.Estimate` |
@@ -711,9 +711,9 @@ revoke, disable and unpublish) it starts:
 
 | Piece | What it is |
 |---|---|
-| the main installation ([world_test.go](../../test/integration/bastion/world_test.go)) | `testenv.NewStack` with Valkey and `Stack.Start` (the `web` role) on the stack's PostgreSQL, Valkey with Sentinel and S3. Repositories `npm-local`, `npm-remote` (over the counting `npmstub`), `npm-all`, `nuget-local`, `nuget-remote` (over `nugetstub`), `nuget-all`; the service accounts `acme-full` (`$FULL`), `acme-part` (`$PART`: `read` on the virtual repositories, on the local ones only `@acme/*` and `Acme.*`) and `no-grant` (`$NONE`); a `publisher`; an administrator; the registration `partners` and its `trv_bst_` token (issued through the management API); `server.trusted_proxies` with the front's address, `server.additional_base_urls` with the Bastion's base URL, `audit.record_downloads`. Everything a test changes at the main installation (revoke, disable, delete a policy, the anonymous switch, an exposure rule, an unpublish) goes through the management API, so the audit trail and the feed are the real ones. `restartMain` starts a second replica with `server.endpoints` of its own (the default endpoint with `exposure: rules` is read-only, so content is published first) |
+| the main installation ([world_test.go](../../test/integration/bastion/world_test.go)) | `testenv.NewStack` with Valkey and `Stack.Start` (the `web` role) on the stack's PostgreSQL, Valkey with Sentinel and S3. Repositories `npm-local`, `npm-remote` (over the counting `npmstub`), `npm-all`, `nuget-local`, `nuget-remote` (over `nugetstub`), `nuget-all`; the service accounts `acme-full` (`$FULL`), `acme-part` (`$PART`: `read` on the virtual repositories, on the local ones only `@acme/*` and `Acme.*`) and `no-grant` (`$NONE`); a `publisher`; an administrator; the registration `partners` and its `qdr_bst_` token (issued through the management API); `server.trusted_proxies` with the front's address, `server.additional_base_urls` with the Bastion's base URL, `audit.record_downloads`. Everything a test changes at the main installation (revoke, disable, delete a policy, the anonymous switch, an exposure rule, an unpublish) goes through the management API, so the audit trail and the feed are the real ones. `restartMain` starts a second replica with `server.endpoints` of its own (the default endpoint with `exposure: rules` is read-only, so content is published first) |
 | the front ([front_test.go](../../test/integration/bastion/front_test.go)) | A TLS listener (the Bastion talks to the main endpoint over TLS only) in front of the replica, with a certificate of a CA of the test. It records every request of the Bastion with its answer (`Mark`, `Since`, `Forwards`, `Artifacts`, `Cost`: what a client request costs the main installation, without the Bastion's polling), and it can cut the link (`SetDown`), delay or hold requests and answers (`SetDelay`, `SetGate`, `SetHold`: a decision of the main installation that reaches the Bastion late), count the requests in flight (`Peak`), and rewrite the interface version of a request or an answer (`reqVersion`, `resVersion`, [Q-BAS-105](../spec/bastion.md#q-bas-105--the-integration-suites-main-installation-is-the-web-role-behind-a-tls-front-another-interface-version-is-simulated-on-the-wire)). It keeps the forwarded headers as the Bastion wrote them and sets the Host of the main endpoint |
-| the Bastion ([replica_test.go](../../test/integration/bastion/replica_test.go)) | `newBastion` writes a configuration file and starts `server.New` and `Start` as the role does: the volume backend on a temporary directory or the bucket backend on the stack's S3 (below a prefix of its own in `trove-backups`, removed afterwards), with or without Valkey (the stack's Sentinels with the `bastion` ACL user and a key prefix of its own), one or two replicas that share the cache and the state, a signing key. The clock of the replicas is settable (`bastion.clk.Advance`); a test that needs both a revocation and an advanced clock revokes first, because the feed stamps an entry with the real time of its receipt |
+| the Bastion ([replica_test.go](../../test/integration/bastion/replica_test.go)) | `newBastion` writes a configuration file and starts `server.New` and `Start` as the role does: the volume backend on a temporary directory or the bucket backend on the stack's S3 (below a prefix of its own in `quader-backups`, removed afterwards), with or without Valkey (the stack's Sentinels with the `bastion` ACL user and a key prefix of its own), one or two replicas that share the cache and the state, a signing key. The clock of the replicas is settable (`bastion.clk.Advance`); a test that needs both a revocation and an advanced clock revokes first, because the feed stamps an entry with the real time of its receipt |
 | the clients ([clients_test.go](../../test/integration/bastion/clients_test.go)) | `npmRun` (the package document and the tarball at the address the document names, which must be on the Bastion's host) and `nugetRun` (service index, flat container, `.nupkg`) |
 
 The tests, by requirement (the file is the one to read; every name carries the IDs):
@@ -752,7 +752,7 @@ The tests, by requirement (the file is the one to read; every name carries the I
 ## Extension checklist
 
 1. A new field in a body of the interface: edit `iface`, raise `InterfaceVersion`, regenerate the surface file, update the OpenAPI
-   schema and its `x-trove-bastion-interface`, run `make generate` and `npm run generate:api` in `web/` (the UI types), and name the change in the release notes.
+   schema and its `x-quader-bastion-interface`, run `make generate` and `npm run generate:api` in `web/` (the UI types), and name the change in the release notes.
 2. A new Bastion setting: add the key to `BastionConfig` with tags and a validation, run `go generate ./internal/config`, add it to
    R-BAS-046's block in the spec and to the chart's values; if the chart renders it, tag it `chart:"managed"`.
 3. A new metric: a line in `internal/bastion/metrics` and a row in R-BAS-040; the test compares the two.

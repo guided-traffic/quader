@@ -20,20 +20,20 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/guard"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/bastion/shared"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The Bastion's Valkey user of the stack (test/integration/conf/users.acl): the commands of the least-privilege
-// rule, on the keys and channels below trove-bastion: only.
+// rule, on the keys and channels below quader-bastion: only.
 const (
 	bastionUser = "bastion"
 	bastionPass = "bastion-valkey-it"
-	aclRules    = "on >" + bastionPass + " resetkeys ~trove-bastion:* resetchannels &trove-bastion:* -@all +get +set +delifeq +incr +expire +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo"
+	aclRules    = "on >" + bastionPass + " resetkeys ~quader-bastion:* resetchannels &quader-bastion:* -@all +get +set +delifeq +incr +expire +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo"
 )
 
 func randHex(n int) string {

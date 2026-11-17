@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The job kinds and the task of the Ansible Galaxy format (R-ANS-012, R-ANS-009, Q-ANS-26).

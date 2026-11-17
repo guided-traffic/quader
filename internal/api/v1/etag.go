@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Optimistic concurrency (R-API-012). A mutable configuration resource carries

@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 func TestGate(t *testing.T) {
@@ -32,7 +32,7 @@ func TestGate(t *testing.T) {
 	t.Run("R-ARCH-026 an N-2 binary against schema N exits with the floor", func(t *testing.T) {
 		err := Gate(SchemaState{Applied: 60, CompatFloor: "0.4.0"}, 50, "0.2.1")
 		var fe *FloorError
-		if !errors.As(err, &fe) || err.Error() != "schema requires trove >= 0.4.0" {
+		if !errors.As(err, &fe) || err.Error() != "schema requires Quader >= 0.4.0" {
 			t.Fatalf("err = %v", err)
 		}
 	})

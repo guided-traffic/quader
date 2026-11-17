@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 type idVec struct {
@@ -103,7 +103,7 @@ func assertInvalid(t *testing.T, err error, in string) {
 	}
 }
 
-// TestR_NUGET_003_LowerIsASCIIOnly: a non-ASCII ID is never lowercased by trove, so client and
+// TestR_NUGET_003_LowerIsASCIIOnly: a non-ASCII ID is never lowercased by quader, so client and
 // server cannot map it to different URLs.
 func TestR_NUGET_003_LowerIsASCIIOnly(t *testing.T) {
 	tests := map[string]string{

@@ -5,7 +5,7 @@
 // It is a domain package: it imports neither the format nor the edge, so the values that cross the port are those of
 // internal/formats/deb/rows, a leaf both import. It owns the tables of the migrations 00060_deb, 00061_deb_signing_keys and
 // 00062_deb_remote and registers them with the backup (tables_deb.go), so that the package must be linked wherever the migrated
-// schema is checked against the registry (cmd/trove/registry.go).
+// schema is checked against the registry (cmd/quader/registry.go).
 //
 // The port is composed of one group per work package (apt-work-packages.md, 2.2), each in a file of its own: local_store.go,
 // keys_store.go, build_store.go, remote_store.go, mirror_store.go, virtual_store.go, view_store.go and journal_store.go. A group that
@@ -17,10 +17,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // Options configure [New].

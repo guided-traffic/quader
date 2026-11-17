@@ -55,7 +55,7 @@ type DocPage =
  * open entry. The HTML of a page is bound the way the README is; every other value is text.
  */
 @Component({
-  selector: 'trove-ansible-docs',
+  selector: 'quader-ansible-docs',
   imports: [
     DatePipe,
     NgTemplateOutlet,

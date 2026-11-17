@@ -6,9 +6,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci/manifest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
 )
 
 // What a client does to a virtual repository when it writes (R-OCI-028). The write routes serve the classes local and virtual: the

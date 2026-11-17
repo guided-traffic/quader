@@ -19,7 +19,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 func main() {

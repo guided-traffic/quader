@@ -35,25 +35,25 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	loginapi "github.com/guided-traffic/trove/internal/api/login"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/oidc"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
-	"github.com/guided-traffic/trove/test/integration/idapi"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	loginapi "github.com/guided-traffic/quader/internal/api/login"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/oidc"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/test/integration/idapi"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-const schemaName = "trove"
+const schemaName = "quader"
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
 
@@ -95,16 +95,16 @@ type env struct {
 	served []string // replica of each request, in order
 }
 
-// newEnv creates a database trove_login_<random>, migrates it, starts the fake
+// newEnv creates a database quader_login_<random>, migrates it, starts the fake
 // provider and the edge, and drops the database when the test ends.
 func newEnv(t *testing.T) *env {
 	t.Helper()
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		t.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		t.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
-	host, user, pass := testenv.Get(t, "TROVE_TEST_PG_HOST"), testenv.Get(t, "TROVE_TEST_PG_USER"), testenv.Get(t, "TROVE_TEST_PG_PASSWORD")
-	name := "trove_login_" + randHex(5)
+	host, user, pass := testenv.Get(t, "QUADER_TEST_PG_HOST"), testenv.Get(t, "QUADER_TEST_PG_USER"), testenv.Get(t, "QUADER_TEST_PG_PASSWORD")
+	name := "quader_login_" + randHex(5)
 	maint := connect(t, "postgres")
 	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatalf("create database: %v", err)
@@ -180,7 +180,7 @@ func (e *env) dispatch(w http.ResponseWriter, r *http.Request) {
 	e.mu.Lock()
 	e.served = append(e.served, rep.name)
 	e.mu.Unlock()
-	w.Header().Set("X-Trove-Replica", rep.name)
+	w.Header().Set("X-Quader-Replica", rep.name)
 	rep.mux.ServeHTTP(w, r)
 }
 
@@ -211,8 +211,8 @@ func (e *env) defaultAuth() config.Auth {
 
 func (e *env) provider(mut func(*config.AuthOIDCProvider)) config.AuthOIDCProvider {
 	p := config.AuthOIDCProvider{
-		DisplayName: "Corporate SSO", Issuer: e.idp.issuer, ClientID: "trove", ClientSecretFile: e.secretFile,
-		GroupSync: config.AuthOIDCGroupSync{Rules: []config.AuthOIDCGroupRule{{MatchRegex: "trove-team-(.+)", Group: "team-$1"}}},
+		DisplayName: "Corporate SSO", Issuer: e.idp.issuer, ClientID: "quader", ClientSecretFile: e.secretFile,
+		GroupSync: config.AuthOIDCGroupSync{Rules: []config.AuthOIDCGroupRule{{MatchRegex: "quader-team-(.+)", Group: "team-$1"}}},
 	}
 	if mut != nil {
 		mut(&p)

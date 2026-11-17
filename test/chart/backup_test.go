@@ -11,22 +11,22 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/guided-traffic/trove/internal/jobs"
+	"github.com/guided-traffic/quader/internal/jobs"
 )
 
-// backupID is a backup ID of the form trove backup list prints (R-BAK-002).
+// backupID is a backup ID of the form quader backup list prints (R-BAK-002).
 const backupID = "20261028T020000Z-7f3a"
 
 // backupSets turn the backup on (R-HA-060, Q-HA-17): the switch, off by default, and the target bucket it then requires.
 func backupSets(extra ...string) []string {
-	return append([]string{"backup.enabled=true", "config.backup.target.bucket=trove-backups"}, extra...)
+	return append([]string{"backup.enabled=true", "config.backup.target.bucket=quader-backups"}, extra...)
 }
 
 // restoreSets are the values of the operator's sequence of R-HA-060: the target the backup is read from, every role at zero
 // and the restore Job on. The backup stays as the base values have it.
 func restoreSets(extra ...string) []string {
 	return append([]string{
-		"config.backup.target.bucket=trove-backups",
+		"config.backup.target.bucket=quader-backups",
 		"restore.enabled=true", "restore.backupId=" + backupID,
 		"api.replicaCount=0", "packages.replicaCount=0", "worker.replicaCount=0",
 	}, extra...)
@@ -37,22 +37,22 @@ func restoreSets(extra ...string) []string {
 func staticTarget() []string {
 	return backupSets(
 		"config.backup.target.credentials.source=static",
-		"secrets.backupTarget.existingSecret=trove-backup-keys",
-		"secrets.backupTargetCA.existingSecret=trove-backup-ca",
-		"secrets.databaseBackup.existingSecret=trove-db-backup",
-		"secrets.databaseMigration.existingSecret=trove-db-owner",
+		"secrets.backupTarget.existingSecret=quader-backup-keys",
+		"secrets.backupTargetCA.existingSecret=quader-backup-ca",
+		"secrets.databaseBackup.existingSecret=quader-db-backup",
+		"secrets.databaseMigration.existingSecret=quader-db-owner",
 		"config.storage.s3.credentials.source=static",
-		"secrets.s3.existingSecret=trove-s3",
-		"secrets.backupSource.existingSecret=trove-blob-read",
+		"secrets.s3.existingSecret=quader-s3",
+		"secrets.backupSource.existingSecret=quader-blob-read",
 	)
 }
 
 func cronJobPod(docs []doc) any {
-	return at(find(docs, "CronJob", "trove-backup"), "spec", "jobTemplate", "spec", "template", "spec")
+	return at(find(docs, "CronJob", "quader-backup"), "spec", "jobTemplate", "spec", "template", "spec")
 }
 
 func restorePod(docs []doc) any {
-	return at(find(docs, "Job", "trove-restore"), "spec", "template", "spec")
+	return at(find(docs, "Job", "quader-restore"), "spec", "template", "spec")
 }
 
 // secretVolumes maps the volume names of a pod spec that come from a Secret to the Secret.
@@ -155,9 +155,9 @@ func intList(v any) []int {
 // commands need from it.
 func TestR_HA_060_BackupCronJob(t *testing.T) {
 	_, docs := render(t, required(), backupSets()...)
-	cj := find(docs, "CronJob", "trove-backup")
+	cj := find(docs, "CronJob", "quader-backup")
 	if cj == nil {
-		t.Fatal("no CronJob trove-backup with backup.enabled: true")
+		t.Fatal("no CronJob quader-backup with backup.enabled: true")
 	}
 	pod := cronJobPod(docs)
 	spec := at(cj, "spec")
@@ -189,7 +189,7 @@ func TestR_HA_060_BackupCronJob(t *testing.T) {
 			t.Error("activeDeadlineSeconds is rendered by default; a first backup of many hours would be killed")
 		}
 		_, docs := render(t, required(), backupSets("backup.activeDeadlineSeconds=7200", "backup.backoffLimit=0")...)
-		js := at(find(docs, "CronJob", "trove-backup"), "spec", "jobTemplate", "spec")
+		js := at(find(docs, "CronJob", "quader-backup"), "spec", "jobTemplate", "spec")
 		if at(js, "activeDeadlineSeconds") != 7200 || at(js, "backoffLimit") != 0 {
 			t.Errorf("activeDeadlineSeconds/backoffLimit = %v/%v, want 7200/0", at(js, "activeDeadlineSeconds"), at(js, "backoffLimit"))
 		}
@@ -227,7 +227,7 @@ func TestR_HA_060_BackupCronJob(t *testing.T) {
 		}
 	})
 
-	t.Run("the command and the pod: the trove image, the shared configuration, the contexts of R-HA-033, no listener and no probe", func(t *testing.T) {
+	t.Run("the command and the pod: the quader image, the shared configuration, the contexts of R-HA-033, no listener and no probe", func(t *testing.T) {
 		if got := strings.Join(containerArgs(pod), " "); got != "backup create --trigger schedule" {
 			t.Errorf("args = %q", got)
 		}
@@ -255,26 +255,26 @@ func TestR_HA_060_BackupCronJob(t *testing.T) {
 				cfg = str(v, "configMap", "name")
 			}
 		}
-		if cfg != "trove-config" {
-			t.Errorf("config volume = %q, want the shared ConfigMap trove-config", cfg)
+		if cfg != "quader-config" {
+			t.Errorf("config volume = %q, want the shared ConfigMap quader-config", cfg)
 		}
-		if lbl := podTemplateLabels(cj); lbl["trove/serve"] != "" || lbl["trove/pool"] != "" {
-			t.Errorf("the pods carry %v; trove/serve selects the serving pods (Services, Valkey policy) and a Job is none", lbl)
+		if lbl := podTemplateLabels(cj); lbl["quader/serve"] != "" || lbl["quader/pool"] != "" {
+			t.Errorf("the pods carry %v; quader/serve selects the serving pods (Services, Valkey policy) and a Job is none", lbl)
 		}
 	})
 
 	t.Run("a ServiceAccount of its own without a token", func(t *testing.T) {
-		if got := str(pod, "serviceAccountName"); got != "trove-backup" {
-			t.Errorf("serviceAccountName = %q, want trove-backup", got)
+		if got := str(pod, "serviceAccountName"); got != "quader-backup" {
+			t.Errorf("serviceAccountName = %q, want quader-backup", got)
 		}
 		if at(pod, "automountServiceAccountToken") != false {
 			t.Error("automountServiceAccountToken is not false")
 		}
-		sa := find(docs, "ServiceAccount", "trove-backup")
+		sa := find(docs, "ServiceAccount", "quader-backup")
 		if sa == nil || at(sa, "automountServiceAccountToken") != false {
-			t.Errorf("ServiceAccount trove-backup = %v", sa)
+			t.Errorf("ServiceAccount quader-backup = %v", sa)
 		}
-		if find(docs, "ServiceAccount", "trove") == nil {
+		if find(docs, "ServiceAccount", "quader") == nil {
 			t.Error("the replicas' ServiceAccount is gone")
 		}
 		_, docs := render(t, required(), backupSets("backup.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn=arn:aws:iam::1:role/b", "backup.serviceAccount.name=backup-identity")...)
@@ -285,14 +285,14 @@ func TestR_HA_060_BackupCronJob(t *testing.T) {
 			t.Errorf("serviceAccountName = %q", got)
 		}
 		_, docs = render(t, required(), backupSets("backup.serviceAccount.create=false")...)
-		if find(docs, "ServiceAccount", "trove-backup") != nil || str(cronJobPod(docs), "serviceAccountName") != "default" {
+		if find(docs, "ServiceAccount", "quader-backup") != nil || str(cronJobPod(docs), "serviceAccountName") != "default" {
 			t.Error("create=false renders the account or does not fall back to default")
 		}
 	})
 
 	t.Run("the values: schedule, time zone, adoption, suspension and the switch", func(t *testing.T) {
 		_, docs := render(t, required(), backupSets("backup.schedule=@hourly", "backup.timeZone=Europe/Berlin", "backup.adoptTarget=true", "backup.suspend=true", "backup.startingDeadlineSeconds=60")...)
-		cj := find(docs, "CronJob", "trove-backup")
+		cj := find(docs, "CronJob", "quader-backup")
 		if str(cj, "spec", "schedule") != "@hourly" || str(cj, "spec", "timeZone") != "Europe/Berlin" || at(cj, "spec", "suspend") != true || at(cj, "spec", "startingDeadlineSeconds") != 60 {
 			t.Errorf("spec = %v", at(cj, "spec"))
 		}
@@ -301,7 +301,7 @@ func TestR_HA_060_BackupCronJob(t *testing.T) {
 		}
 		// The switch alone decides: a target bucket with backup.enabled: false renders nothing of the backup.
 		_, docs = render(t, required(), backupSets("backup.enabled=false")...)
-		for _, k := range []string{"CronJob", "NetworkPolicy/trove-backup", "ServiceAccount/trove-backup"} {
+		for _, k := range []string{"CronJob", "NetworkPolicy/quader-backup", "ServiceAccount/quader-backup"} {
 			kind, name, _ := strings.Cut(k, "/")
 			if name == "" {
 				if len(ofKind(docs, kind)) != 0 {
@@ -332,7 +332,7 @@ func TestR_HA_060_BackupCronJob(t *testing.T) {
 			if want {
 				on++
 			}
-			if got := find(docs, "CronJob", "trove-backup") != nil; got != want {
+			if got := find(docs, "CronJob", "quader-backup") != nil; got != want {
 				t.Errorf("CronJob rendered = %v, but the set has backup.enabled = %v", got, want)
 			}
 		})
@@ -375,7 +375,7 @@ func TestR_HA_060_BackupOffByDefault(t *testing.T) {
 			t.Errorf("%d CronJobs rendered by default", n)
 		}
 		for _, d := range docs {
-			if str(d, "metadata", "labels", "app.kubernetes.io/component") == "backup" || str(d, "metadata", "name") == "trove-backup" {
+			if str(d, "metadata", "labels", "app.kubernetes.io/component") == "backup" || str(d, "metadata", "name") == "quader-backup" {
 				t.Errorf("%s %s of the backup is rendered by default", str(d, "kind"), str(d, "metadata", "name"))
 			}
 		}
@@ -395,10 +395,10 @@ func TestR_HA_060_BackupOffByDefault(t *testing.T) {
 
 	t.Run("R-HA-060 a restore needs the target bucket but not the backup: the restore Job is rendered and no CronJob", func(t *testing.T) {
 		_, docs := render(t, required(), restoreSets()...)
-		if find(docs, "Job", "trove-restore") == nil {
-			t.Error("no Job trove-restore with restore.enabled and the backup off")
+		if find(docs, "Job", "quader-restore") == nil {
+			t.Error("no Job quader-restore with restore.enabled and the backup off")
 		}
-		if find(docs, "CronJob", "trove-backup") != nil {
+		if find(docs, "CronJob", "quader-backup") != nil {
 			t.Error("a CronJob is rendered with the backup off")
 		}
 	})
@@ -417,8 +417,8 @@ func TestR_HA_060_BackupOffByDefault(t *testing.T) {
 
 	t.Run("R-HA-045 the PrometheusRule leaves out the six alerts of the backup runs while the backup is off and keeps the platform check and the journal", func(t *testing.T) {
 		runs := map[string]bool{
-			"TroveBackupStale": true, "TroveBackupFailed": true, "TroveBackupRunningLong": true,
-			"TroveBackupGlobalHoldLong": true, "TroveBackupSourceDamage": true, "TroveBackupVerifyFindings": true,
+			"QuaderBackupStale": true, "QuaderBackupFailed": true, "QuaderBackupRunningLong": true,
+			"QuaderBackupGlobalHoldLong": true, "QuaderBackupSourceDamage": true, "QuaderBackupVerifyFindings": true,
 		}
 		names := func(rules []any) map[string]bool {
 			out := map[string]bool{}
@@ -433,7 +433,7 @@ func TestR_HA_060_BackupOffByDefault(t *testing.T) {
 				t.Errorf("%s is rendered with backup.enabled: false; without the CronJob no run succeeds and it would fire on every such installation", n)
 			}
 		}
-		for _, n := range []string{"TroveBackupCheckFailed", "TroveRevocationJournalBacklog", "TroveRevocationJournalQuarantined"} {
+		for _, n := range []string{"QuaderBackupCheckFailed", "QuaderRevocationJournalBacklog", "QuaderRevocationJournalQuarantined"} {
 			if !off[n] {
 				t.Errorf("%s is missing with backup.enabled: false; the platform check and the journal do not depend on the backup", n)
 			}
@@ -448,7 +448,7 @@ func TestR_HA_060_BackupOffByDefault(t *testing.T) {
 			}
 		}
 		// A name of the six stays a valid entry of disabledAlerts while the backup is off.
-		renderedRules(t, "backup.enabled=false", "metrics.prometheusRule.disabledAlerts={TroveBackupStale}")
+		renderedRules(t, "backup.enabled=false", "metrics.prometheusRule.disabledAlerts={QuaderBackupStale}")
 	})
 }
 
@@ -475,16 +475,16 @@ func checkPodFailurePolicy(t *testing.T, policy any, container string) {
 func TestR_HA_060_RestoreJob(t *testing.T) {
 	t.Run("nothing is rendered without restore.enabled", func(t *testing.T) {
 		_, docs := render(t, required())
-		if find(docs, "Job", "trove-restore") != nil || find(docs, "ServiceAccount", "trove-restore") != nil || find(docs, "NetworkPolicy", "trove-restore") != nil {
+		if find(docs, "Job", "quader-restore") != nil || find(docs, "ServiceAccount", "quader-restore") != nil || find(docs, "NetworkPolicy", "quader-restore") != nil {
 			t.Error("restore objects rendered with restore.enabled: false")
 		}
 	})
 
 	// The operator's values with the backup on, so the CronJob is there to be suspended.
 	_, docs := render(t, required(), backupSets(restoreSets()...)...)
-	job := find(docs, "Job", "trove-restore")
+	job := find(docs, "Job", "quader-restore")
 	if job == nil {
-		t.Fatal("no Job trove-restore")
+		t.Fatal("no Job quader-restore")
 	}
 	pod := restorePod(docs)
 
@@ -509,7 +509,7 @@ func TestR_HA_060_RestoreJob(t *testing.T) {
 			t.Errorf("terminationGracePeriodSeconds = %v, want 60", got)
 		}
 		_, docs := render(t, required(), restoreSets("restore.backoffLimit=0", "restore.activeDeadlineSeconds=86400", "restore.terminationGracePeriodSeconds=120")...)
-		j := find(docs, "Job", "trove-restore")
+		j := find(docs, "Job", "quader-restore")
 		if at(j, "spec", "backoffLimit") != 0 || at(j, "spec", "activeDeadlineSeconds") != 86400 || at(restorePod(docs), "terminationGracePeriodSeconds") != 120 {
 			t.Errorf("spec = %v", at(j, "spec"))
 		}
@@ -526,11 +526,11 @@ func TestR_HA_060_RestoreJob(t *testing.T) {
 	})
 
 	t.Run("a ServiceAccount of its own, neither the backup's nor the replicas'", func(t *testing.T) {
-		if got := str(pod, "serviceAccountName"); got != "trove-restore" {
+		if got := str(pod, "serviceAccountName"); got != "quader-restore" {
 			t.Errorf("serviceAccountName = %q", got)
 		}
-		if find(docs, "ServiceAccount", "trove-restore") == nil || at(pod, "automountServiceAccountToken") != false {
-			t.Error("no ServiceAccount trove-restore, or its token is mounted")
+		if find(docs, "ServiceAccount", "quader-restore") == nil || at(pod, "automountServiceAccountToken") != false {
+			t.Error("no ServiceAccount quader-restore, or its token is mounted")
 		}
 		_, d2 := render(t, required(), restoreSets("restore.serviceAccount.name=restore-identity")...)
 		if str(restorePod(d2), "serviceAccountName") != "restore-identity" {
@@ -539,32 +539,32 @@ func TestR_HA_060_RestoreJob(t *testing.T) {
 	})
 
 	t.Run("no migration Job: the restore applies the migrations itself", func(t *testing.T) {
-		for _, c := range [][2]string{{"Job", "trove-migrate"}, {"ConfigMap", "trove-migrate"}, {"ServiceAccount", "trove-migrate"}} {
+		for _, c := range [][2]string{{"Job", "quader-migrate"}, {"ConfigMap", "quader-migrate"}, {"ServiceAccount", "quader-migrate"}} {
 			if find(docs, c[0], c[1]) != nil {
 				t.Errorf("%s %s rendered while restore.enabled", c[0], c[1])
 			}
 		}
-		if hook := str(find(docs, "NetworkPolicy", "trove-migrate"), "metadata", "annotations", "helm.sh/hook"); hook != "" {
+		if hook := str(find(docs, "NetworkPolicy", "quader-migrate"), "metadata", "annotations", "helm.sh/hook"); hook != "" {
 			t.Errorf("the migration policy is still a hook (%s) without the Job", hook)
 		}
 	})
 
 	t.Run("the backup CronJob is suspended whatever backup.suspend says", func(t *testing.T) {
-		if at(find(docs, "CronJob", "trove-backup"), "spec", "suspend") != true {
+		if at(find(docs, "CronJob", "quader-backup"), "spec", "suspend") != true {
 			t.Error("the CronJob is not suspended while restore.enabled")
 		}
 		_, d2 := render(t, required(), backupSets(restoreSets("backup.suspend=false")...)...)
-		if at(find(d2, "CronJob", "trove-backup"), "spec", "suspend") != true {
+		if at(find(d2, "CronJob", "quader-backup"), "spec", "suspend") != true {
 			t.Error("backup.suspend: false wins over restore.enabled")
 		}
 		_, d3 := render(t, required(), backupSets()...)
-		if at(find(d3, "CronJob", "trove-backup"), "spec", "suspend") != false {
+		if at(find(d3, "CronJob", "quader-backup"), "spec", "suspend") != false {
 			t.Error("the CronJob is suspended without restore.enabled")
 		}
 	})
 
 	t.Run("the roles are at zero and keep their Deployments", func(t *testing.T) {
-		for _, n := range []string{"trove-api", "trove-packages", "trove-worker"} {
+		for _, n := range []string{"quader-api", "quader-packages", "quader-worker"} {
 			if got := at(find(docs, "Deployment", n), "spec", "replicas"); got != 0 {
 				t.Errorf("%s replicas = %v, want 0", n, got)
 			}
@@ -572,18 +572,18 @@ func TestR_HA_060_RestoreJob(t *testing.T) {
 	})
 
 	t.Run("the journal reader (M3): runtime passes no file; default and static pass the file that turns the listing of versions on", func(t *testing.T) {
-		if hasMount(pod, "/etc/trove/restore") || find(docs, "ConfigMap", "trove-restore") != nil || strings.Contains(strings.Join(containerArgs(pod), " "), "--journal-credentials-file") {
+		if hasMount(pod, "/etc/quader/restore") || find(docs, "ConfigMap", "quader-restore") != nil || strings.Contains(strings.Join(containerArgs(pod), " "), "--journal-credentials-file") {
 			t.Error("a credentials file with journalCredentials.source runtime")
 		}
 		_, d := render(t, required(), restoreSets("restore.journalCredentials.source=default")...)
-		if !strings.HasSuffix(strings.Join(containerArgs(restorePod(d)), " "), "--journal-credentials-file /etc/trove/restore/credentials.yaml") || !hasMount(restorePod(d), "/etc/trove/restore") {
+		if !strings.HasSuffix(strings.Join(containerArgs(restorePod(d)), " "), "--journal-credentials-file /etc/quader/restore/credentials.yaml") || !hasMount(restorePod(d), "/etc/quader/restore") {
 			t.Errorf("args = %v", containerArgs(restorePod(d)))
 		}
-		if cm := str(find(d, "ConfigMap", "trove-restore"), "data", "credentials.yaml"); strings.TrimSpace(cm) != "source: default" {
+		if cm := str(find(d, "ConfigMap", "quader-restore"), "data", "credentials.yaml"); strings.TrimSpace(cm) != "source: default" {
 			t.Errorf("credentials.yaml = %q", cm)
 		}
-		_, d = render(t, required(), restoreSets("restore.journalCredentials.source=static", "secrets.journalReader.existingSecret=trove-journal")...)
-		if !has2(secretVolumes(restorePod(d)), "trove-journal") || !strings.Contains(str(find(d, "ConfigMap", "trove-restore"), "data", "credentials.yaml"), "journal-reader/access-key-id") {
+		_, d = render(t, required(), restoreSets("restore.journalCredentials.source=static", "secrets.journalReader.existingSecret=quader-journal")...)
+		if !has2(secretVolumes(restorePod(d)), "quader-journal") || !strings.Contains(str(find(d, "ConfigMap", "quader-restore"), "data", "credentials.yaml"), "journal-reader/access-key-id") {
 			t.Error("static: the journal reader is not mounted or named")
 		}
 		renderFails(t, required(), restoreSets("restore.journalCredentials.source=static"), "restore.journalCredentials.source", "secrets.journalReader.existingSecret")
@@ -610,7 +610,7 @@ func TestR_HA_029_BackupValidation(t *testing.T) {
 	})
 	t.Run("backup.enabled: false, the default, needs no bucket", func(t *testing.T) {
 		_, docs := render(t, required())
-		if find(docs, "CronJob", "trove-backup") != nil {
+		if find(docs, "CronJob", "quader-backup") != nil {
 			t.Error("CronJob rendered with backup.enabled: false")
 		}
 	})
@@ -618,7 +618,7 @@ func TestR_HA_029_BackupValidation(t *testing.T) {
 		renderFails(t, required(), restoreSets("config.backup.target.bucket="), "config.backup.target.bucket", "restore.enabled")
 	})
 	t.Run("restore.enabled without restore.backupId", func(t *testing.T) {
-		renderFails(t, required(), []string{"config.backup.target.bucket=trove-backups", "restore.enabled=true", "api.replicaCount=0", "packages.replicaCount=0", "worker.replicaCount=0"}, "restore.backupId")
+		renderFails(t, required(), []string{"config.backup.target.bucket=quader-backups", "restore.enabled=true", "api.replicaCount=0", "packages.replicaCount=0", "worker.replicaCount=0"}, "restore.backupId")
 	})
 	t.Run("restore.enabled with a replica of a role names restore.enabled and the value", func(t *testing.T) {
 		for _, v := range []string{"api", "packages", "worker"} {
@@ -637,26 +637,26 @@ func TestR_HA_029_BackupValidation(t *testing.T) {
 	})
 
 	t.Run("the target must not be the blob store's bucket on the same endpoint", func(t *testing.T) {
-		same := []string{"config.storage.s3.bucket=trove-blobs", "config.backup.target.bucket=trove-blobs"}
+		same := []string{"config.storage.s3.bucket=quader-blobs", "config.backup.target.bucket=quader-blobs"}
 		renderFails(t, required(), same, "config.backup.target.bucket", "config.storage.s3.bucket", "allow_same_bucket")
-		renderFails(t, required(), append([]string{"config.backup.target.prefix=trove/backups", "config.backup.target.allow_same_bucket=true"}, same...),
-			"config.backup.target.prefix", "config.storage.s3.prefix", "trove/backups")
-		renderFails(t, required(), append([]string{"config.backup.target.prefix=trove", "config.storage.s3.prefix=trove/blobs", "config.backup.target.allow_same_bucket=true"}, same...),
+		renderFails(t, required(), append([]string{"config.backup.target.prefix=quader/backups", "config.backup.target.allow_same_bucket=true"}, same...),
+			"config.backup.target.prefix", "config.storage.s3.prefix", "quader/backups")
+		renderFails(t, required(), append([]string{"config.backup.target.prefix=quader", "config.storage.s3.prefix=quader/blobs", "config.backup.target.allow_same_bucket=true"}, same...),
 			"config.backup.target.prefix", "config.storage.s3.prefix")
 		// Prefixes that do not contain each other pass with the flag, and another endpoint or bucket needs nothing.
 		render(t, required(), append([]string{"config.backup.target.prefix=backups", "config.storage.s3.prefix=blobs", "config.backup.target.allow_same_bucket=true"}, same...)...)
-		render(t, required(), "config.storage.s3.bucket=trove-blobs", "config.backup.target.bucket=trove-backups")
+		render(t, required(), "config.storage.s3.bucket=quader-blobs", "config.backup.target.bucket=quader-backups")
 		render(t, required(), append([]string{"config.backup.target.endpoint=https://backups.example.com"}, same...)...)
 	})
 	t.Run("the endpoints are compared the way the binary compares them: no scheme means https", func(t *testing.T) {
-		same := []string{"config.storage.s3.bucket=trove-blobs", "config.backup.target.bucket=trove-blobs"}
+		same := []string{"config.storage.s3.bucket=quader-blobs", "config.backup.target.bucket=quader-blobs"}
 		renderFails(t, required(), append([]string{"config.storage.s3.endpoint=s3.example.com", "config.backup.target.endpoint=https://s3.example.com"}, same...), "config.backup.target.bucket")
 		render(t, required(), append([]string{"config.storage.s3.endpoint=s3.example.com", "config.backup.target.endpoint=http://s3.example.com"}, same...)...)
 	})
 
 	t.Run("static credentials of the target need secrets.backupTarget.existingSecret", func(t *testing.T) {
 		renderFails(t, required(), backupSets("config.backup.target.credentials.source=static"), "config.backup.target.credentials.source", "secrets.backupTarget.existingSecret")
-		render(t, required(), backupSets("config.backup.target.credentials.source=static", "secrets.backupTarget.existingSecret=trove-backup-keys")...)
+		render(t, required(), backupSets("config.backup.target.credentials.source=static", "secrets.backupTarget.existingSecret=quader-backup-keys")...)
 	})
 
 	t.Run("a key the chart manages is refused inside config", func(t *testing.T) {
@@ -672,7 +672,7 @@ func TestR_HA_029_BackupValidation(t *testing.T) {
 		}
 	})
 
-	t.Run("the schedule is checked against the dialect of trove's cron parser", func(t *testing.T) {
+	t.Run("the schedule is checked against the dialect of quader's cron parser", func(t *testing.T) {
 		cases := []struct {
 			expr string
 			ok   bool
@@ -702,7 +702,7 @@ func TestR_HA_029_BackupValidation(t *testing.T) {
 		}
 		for _, c := range cases {
 			t.Run(c.expr, func(t *testing.T) {
-				// The chart and the parser the tasks of trove use agree: the table is the parser's answer.
+				// The chart and the parser the tasks of quader use agree: the table is the parser's answer.
 				_, err := jobs.ParseSchedule(c.expr)
 				if (err == nil) != c.ok {
 					t.Fatalf("jobs.ParseSchedule(%q) = %v, the table says ok=%v", c.expr, err, c.ok)
@@ -714,7 +714,7 @@ func TestR_HA_029_BackupValidation(t *testing.T) {
 				}
 				if c.ok {
 					_, docs := render(t, append(required(), f), backupSets()...)
-					if got := str(find(docs, "CronJob", "trove-backup"), "spec", "schedule"); got != c.expr {
+					if got := str(find(docs, "CronJob", "quader-backup"), "spec", "schedule"); got != c.expr {
 						t.Errorf("schedule = %q", got)
 					}
 					return
@@ -758,7 +758,7 @@ func TestR_HA_031_BackupValuesSchema(t *testing.T) {
 		if _, ok := envByName(pod)["HTTPS_PROXY"]; !ok {
 			t.Error("backup.extraEnv is not rendered")
 		}
-		lbl := podTemplateLabels(find(docs, "CronJob", "trove-backup"))
+		lbl := podTemplateLabels(find(docs, "CronJob", "quader-backup"))
 		if lbl["team"] != "ops" {
 			t.Errorf("labels = %v", lbl)
 		}
@@ -785,46 +785,46 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 
 	t.Run("the backup pod: the backup login, the blob store's read credential and the target", func(t *testing.T) {
 		v := secretVolumes(backupPod)
-		for _, want := range []string{"trove-db-backup", "trove-blob-read", "trove-backup-keys", "trove-backup-ca"} {
+		for _, want := range []string{"quader-db-backup", "quader-blob-read", "quader-backup-keys", "quader-backup-ca"} {
 			if !has(v, want) {
 				t.Errorf("the backup pod mounts %v, want %s among them", v, want)
 			}
 		}
-		for _, no := range []string{"trove-db-app", "trove-db-owner", "trove-valkey", "trove-encryption-keys", "trove-tls", "trove-s3"} {
+		for _, no := range []string{"quader-db-app", "quader-db-owner", "quader-valkey", "quader-encryption-keys", "quader-tls", "quader-s3"} {
 			if has(v, no) {
 				t.Errorf("the backup pod mounts %s", no)
 			}
 		}
-		if !hasMount(backupPod, "/var/run/secrets/trove/backup-target") || !hasMount(backupPod, "/var/run/secrets/trove/backup-target-ca") {
+		if !hasMount(backupPod, "/var/run/secrets/quader/backup-target") || !hasMount(backupPod, "/var/run/secrets/quader/backup-target-ca") {
 			t.Errorf("mounts = %v", mountPaths(backupPod))
 		}
 		for _, p := range []string{"valkey", "encryption", "oidc", "break-glass", "tls", "metrics"} {
-			if hasMount(backupPod, "/var/run/secrets/trove/"+p) {
+			if hasMount(backupPod, "/var/run/secrets/quader/"+p) {
 				t.Errorf("the backup pod mounts %s", p)
 			}
 		}
 	})
 
 	t.Run("the backup pod reads the blob bucket with its own read-only login, never the runtime credential (R-BAK-015)", func(t *testing.T) {
-		if hasMount(backupPod, "/var/run/secrets/trove/s3/") || !hasMount(backupPod, "/var/run/secrets/trove/backup-source") {
+		if hasMount(backupPod, "/var/run/secrets/quader/s3/") || !hasMount(backupPod, "/var/run/secrets/quader/backup-source") {
 			t.Errorf("mounts = %v", mountPaths(backupPod))
 		}
 		src := at(configOf(t, docs), "backup", "source")
 		if at(src, "separate_credentials") != true || str(src, "credentials", "source") != "static" ||
-			str(src, "credentials", "access_key_id_file") != "/var/run/secrets/trove/backup-source/access-key-id" ||
-			str(src, "credentials", "secret_access_key_file") != "/var/run/secrets/trove/backup-source/secret-access-key" {
+			str(src, "credentials", "access_key_id_file") != "/var/run/secrets/quader/backup-source/access-key-id" ||
+			str(src, "credentials", "secret_access_key_file") != "/var/run/secrets/quader/backup-source/secret-access-key" {
 			t.Errorf("backup.source = %v", src)
 		}
 		for name, pod := range podSpecs(docs) {
-			if has(secretVolumes(pod), "trove-blob-read") {
+			if has(secretVolumes(pod), "quader-blob-read") {
 				t.Errorf("%s mounts the backup's blob login", name)
 			}
 		}
-		if has(secretVolumes(restore), "trove-blob-read") || !has(secretVolumes(restore), "trove-s3") {
+		if has(secretVolumes(restore), "quader-blob-read") || !has(secretVolumes(restore), "quader-s3") {
 			t.Errorf("the restore Job writes the blob bucket and needs the runtime credential: %v", secretVolumes(restore))
 		}
-		renderFails(t, required(), backupSets("config.storage.s3.credentials.source=static", "secrets.s3.existingSecret=trove-s3"), "secrets.backupSource.existingSecret", "backup.enabled")
-		render(t, required(), "config.storage.s3.credentials.source=static", "secrets.s3.existingSecret=trove-s3")
+		renderFails(t, required(), backupSets("config.storage.s3.credentials.source=static", "secrets.s3.existingSecret=quader-s3"), "secrets.backupSource.existingSecret", "backup.enabled")
+		render(t, required(), "config.storage.s3.credentials.source=static", "secrets.s3.existingSecret=quader-s3")
 		_, d := render(t, required(), backupSets()...)
 		if at(configOf(t, d), "backup", "source") != nil {
 			t.Error("backup.source is rendered without static blob credentials: the backup pod's workload identity reads with storage.s3.credentials")
@@ -834,28 +834,28 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 
 	t.Run("the backup pod without a login of its own uses the runtime login", func(t *testing.T) {
 		_, d := render(t, required(), backupSets()...)
-		if v := secretVolumes(cronJobPod(d)); !has(v, "trove-db-app") {
-			t.Errorf("volumes = %v, want trove-db-app", v)
+		if v := secretVolumes(cronJobPod(d)); !has(v, "quader-db-app") {
+			t.Errorf("volumes = %v, want quader-db-app", v)
 		}
 	})
 
 	t.Run("the restore Job: the migration login, the blob store, the target and the key ring; no Valkey", func(t *testing.T) {
 		v := secretVolumes(restore)
-		for _, want := range []string{"trove-db-owner", "trove-s3", "trove-backup-keys", "trove-backup-ca", "trove-encryption-keys"} {
+		for _, want := range []string{"quader-db-owner", "quader-s3", "quader-backup-keys", "quader-backup-ca", "quader-encryption-keys"} {
 			if !has(v, want) {
 				t.Errorf("the restore Job mounts %v, want %s among them", v, want)
 			}
 		}
-		for _, no := range []string{"trove-db-app", "trove-db-backup", "trove-valkey", "trove-tls"} {
+		for _, no := range []string{"quader-db-app", "quader-db-backup", "quader-valkey", "quader-tls"} {
 			if has(v, no) {
 				t.Errorf("the restore Job mounts %s", no)
 			}
 		}
-		if hasMount(restore, "/var/run/secrets/trove/valkey") {
+		if hasMount(restore, "/var/run/secrets/quader/valkey") {
 			t.Error("the restore Job mounts a Valkey Secret")
 		}
 		_, d := render(t, required(), restoreSets()...)
-		if v := secretVolumes(restorePod(d)); !has(v, "trove-db-app") || has(v, "trove-encryption-keys") == false {
+		if v := secretVolumes(restorePod(d)); !has(v, "quader-db-app") || has(v, "quader-encryption-keys") == false {
 			t.Errorf("without a migration login the restore Job uses the runtime login, and always the key ring: %v", v)
 		}
 	})
@@ -864,13 +864,13 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 		_, d := render(t, required(), staticTarget()...)
 		for name, pod := range podSpecs(d) {
 			v := secretVolumes(pod)
-			if has(v, "trove-backup-keys") || has(v, "trove-backup-ca") || hasMount(pod, "/var/run/secrets/trove/backup-target") {
+			if has(v, "quader-backup-keys") || has(v, "quader-backup-ca") || hasMount(pod, "/var/run/secrets/quader/backup-target") {
 				t.Errorf("%s mounts the target's credentials or CA: %v", name, mountPaths(pod))
 			}
-			if name == "trove-migrate" && (has(v, "trove-db-backup") || has(v, "trove-s3")) {
+			if name == "quader-migrate" && (has(v, "quader-db-backup") || has(v, "quader-s3")) {
 				t.Errorf("the migration Job mounts %v", v)
 			}
-			if has(v, "trove-db-backup") {
+			if has(v, "quader-db-backup") {
 				t.Errorf("%s mounts the backup's database login", name)
 			}
 		}
@@ -904,24 +904,24 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 	t.Run("the shared configuration names the files of the target, and the replicas have nothing under those paths", func(t *testing.T) {
 		cfg := configOf(t, docs)
 		creds := at(cfg, "backup", "target", "credentials")
-		if str(creds, "access_key_id_file") != "/var/run/secrets/trove/backup-target/access-key-id" || str(creds, "secret_access_key_file") != "/var/run/secrets/trove/backup-target/secret-access-key" {
+		if str(creds, "access_key_id_file") != "/var/run/secrets/quader/backup-target/access-key-id" || str(creds, "secret_access_key_file") != "/var/run/secrets/quader/backup-target/secret-access-key" {
 			t.Errorf("credentials = %v", creds)
 		}
 		if at(creds, "session_token_file") != nil {
 			t.Errorf("session_token_file is set without secrets.backupTarget.sessionTokenKey: %v", creds)
 		}
-		if str(cfg, "backup", "target", "ca_file") != "/var/run/secrets/trove/backup-target-ca/ca.crt" {
+		if str(cfg, "backup", "target", "ca_file") != "/var/run/secrets/quader/backup-target-ca/ca.crt" {
 			t.Errorf("ca_file = %v", at(cfg, "backup", "target", "ca_file"))
 		}
-		if str(cfg, "backup", "manual_run", "namespace") != "default" || str(cfg, "backup", "manual_run", "cronjob") != "trove-backup" {
+		if str(cfg, "backup", "manual_run", "namespace") != "default" || str(cfg, "backup", "manual_run", "cronjob") != "quader-backup" {
 			t.Errorf("manual_run = %v", at(cfg, "backup", "manual_run"))
 		}
 		_, d := render(t, required(), append(staticTarget(), "secrets.backupTarget.sessionTokenKey=session")...)
-		if got := str(configOf(t, d), "backup", "target", "credentials", "session_token_file"); got != "/var/run/secrets/trove/backup-target/session-token" {
+		if got := str(configOf(t, d), "backup", "target", "credentials", "session_token_file"); got != "/var/run/secrets/quader/backup-target/session-token" {
 			t.Errorf("session_token_file = %q", got)
 		}
 		for _, v := range list(cronJobPod(d), "volumes") {
-			if str(v, "secret", "secretName") == "trove-backup-keys" {
+			if str(v, "secret", "secretName") == "quader-backup-keys" {
 				items := list(v, "secret", "items")
 				if len(items) != 3 {
 					t.Errorf("items = %v, want the two keys and the session token", items)
@@ -944,7 +944,7 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 		if at(cfg, "backup", "target", "ca_file") != nil {
 			t.Errorf("target = %v", at(cfg, "backup", "target"))
 		}
-		if hasMount(cronJobPod(d), "/var/run/secrets/trove/backup-target") {
+		if hasMount(cronJobPod(d), "/var/run/secrets/quader/backup-target") {
 			t.Error("the backup pod mounts the target's Secret with source default")
 		}
 	})
@@ -967,7 +967,7 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 		if _, ok := envByName(cronJobPod(d))["FOR_BACKUP"]; !ok {
 			t.Error("backup.extraEnv is missing")
 		}
-		if _, ok := envByName(at(find(d, "Deployment", "trove-api"), "spec", "template", "spec"))["FOR_REPLICAS"]; !ok {
+		if _, ok := envByName(at(find(d, "Deployment", "quader-api"), "spec", "template", "spec"))["FOR_REPLICAS"]; !ok {
 			t.Error("the global extraEnv is gone from the replicas")
 		}
 	})
@@ -975,16 +975,16 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 	t.Run("R-BAK-010 the backup pod knows its Job, from the pod's job-name label, and the restore pod does not", func(t *testing.T) {
 		var field string
 		for _, e := range list(backupPod, "containers", "0", "env") {
-			if str(e, "name") == "TROVE_JOB_NAME" {
+			if str(e, "name") == "QUADER_JOB_NAME" {
 				field = str(at(e, "valueFrom", "fieldRef"), "fieldPath")
 			}
 		}
 		if field != "metadata.labels['job-name']" {
-			t.Errorf("TROVE_JOB_NAME comes from %q", field)
+			t.Errorf("QUADER_JOB_NAME comes from %q", field)
 		}
 		for _, n := range envNames(restore) {
-			if n == "TROVE_JOB_NAME" {
-				t.Error("the restore pod carries TROVE_JOB_NAME")
+			if n == "QUADER_JOB_NAME" {
+				t.Error("the restore pod carries QUADER_JOB_NAME")
 			}
 		}
 	})
@@ -992,7 +992,7 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 	t.Run("the pods know their name for the run record", func(t *testing.T) {
 		for _, pod := range []any{backupPod, restore} {
 			names := envNames(pod)
-			for _, want := range []string{"TROVE_POD_NAME", "TROVE_POD_NAMESPACE", "TROVE_NODE_NAME", "TMPDIR"} {
+			for _, want := range []string{"QUADER_POD_NAME", "QUADER_POD_NAMESPACE", "QUADER_NODE_NAME", "TMPDIR"} {
 				found := false
 				for _, n := range names {
 					found = found || n == want
@@ -1059,7 +1059,7 @@ func TestR_HA_059_NoDisruptionBudgetForTheJobs(t *testing.T) {
 		if len(pdbs) == 0 {
 			t.Fatal("no PodDisruptionBudget rendered; the test would pass vacuously")
 		}
-		for _, d := range []doc{find(docs, "CronJob", "trove-backup"), find(docs, "Job", "trove-restore")} {
+		for _, d := range []doc{find(docs, "CronJob", "quader-backup"), find(docs, "Job", "quader-restore")} {
 			if d == nil {
 				continue
 			}
@@ -1099,21 +1099,21 @@ func TestR_HA_042_JobsAdmitNothing(t *testing.T) {
 		}
 	}
 	_, docs := render(t, required(), backupSets()...)
-	check(t, docs, "trove-backup", find(docs, "CronJob", "trove-backup"))
-	if find(docs, "NetworkPolicy", "trove-restore") != nil {
+	check(t, docs, "quader-backup", find(docs, "CronJob", "quader-backup"))
+	if find(docs, "NetworkPolicy", "quader-restore") != nil {
 		t.Error("a policy for the restore Job without the Job")
 	}
 	_, rdocs := render(t, required(), backupSets(restoreSets()...)...)
-	check(t, rdocs, "trove-backup", find(rdocs, "CronJob", "trove-backup"))
-	check(t, rdocs, "trove-restore", find(rdocs, "Job", "trove-restore"))
+	check(t, rdocs, "quader-backup", find(rdocs, "CronJob", "quader-backup"))
+	check(t, rdocs, "quader-restore", find(rdocs, "Job", "quader-restore"))
 
 	t.Run("none of the other policies admits a Job's pods", func(t *testing.T) {
 		for _, np := range ofKind(rdocs, "NetworkPolicy") {
 			name := str(np, "metadata", "name")
-			if name == "trove-backup" || name == "trove-restore" {
+			if name == "quader-backup" || name == "quader-restore" {
 				continue
 			}
-			for _, d := range []doc{find(rdocs, "CronJob", "trove-backup"), find(rdocs, "Job", "trove-restore")} {
+			for _, d := range []doc{find(rdocs, "CronJob", "quader-backup"), find(rdocs, "Job", "quader-restore")} {
 				if selects(at(np, "spec", "podSelector", "matchLabels"), podTemplateLabels(d)) {
 					t.Errorf("%s selects the pods of %s", name, str(d, "metadata", "name"))
 				}
@@ -1146,11 +1146,11 @@ func TestR_BAK_012_ChartObjects(t *testing.T) {
 	t.Run("the manual-run command of the UI names an object that exists", func(t *testing.T) {
 		_, docs := renderRelease(t, "prod", required(), backupSets()...)
 		var cfg doc
-		if err := yaml.Unmarshal([]byte(str(find(docs, "ConfigMap", "prod-trove-config"), "data", "trove.yaml")), &cfg); err != nil {
+		if err := yaml.Unmarshal([]byte(str(find(docs, "ConfigMap", "prod-quader-config"), "data", "quader.yaml")), &cfg); err != nil {
 			t.Fatal(err)
 		}
 		name := str(cfg, "backup", "manual_run", "cronjob")
-		if name != "prod-trove-backup" || find(docs, "CronJob", name) == nil {
+		if name != "prod-quader-backup" || find(docs, "CronJob", name) == nil {
 			t.Errorf("manual_run.cronjob = %q; the CronJob is %v", name, find(docs, "CronJob", name) != nil)
 		}
 		if str(cfg, "backup", "manual_run", "namespace") != "default" {

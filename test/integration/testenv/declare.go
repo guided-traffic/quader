@@ -4,16 +4,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/app"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/app"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
-// Declare runs `trove migrate up` in the test process with authz.role_bindings set
+// Declare runs `quader migrate up` in the test process with authz.role_bindings set
 // to bindings (R-AUTHZ-010, Q-AUTHZ-170): the migration runner with nothing to
 // apply, then the step that applies the declared role bindings, exactly as the
 // command composes it (app.DeclaredState). Replicas that run pick the change up
-// from the change log. The error is the one `trove migrate` would exit with.
+// from the change log. The error is the one `quader migrate` would exit with.
 func (s *Stack) Declare(bindings ...config.AuthzRoleBinding) error {
 	s.tb.Helper()
 	return DeclareRoleBindings(s.pg, bindings...)
@@ -29,7 +29,7 @@ func DeclareRoleBindings(db config.Database, bindings ...config.AuthzRoleBinding
 	cfg.Health.WatchdogTimeout = 30 * time.Second
 	cfg.Audit = config.Audit{AsyncBuffer: 100, RetentionDays: 365}
 	cfg.Auth.BreakGlass.Username = "admin"
-	// trove migrate applies ci.issuers on every run (R-CI-001, Q-CI-16), also with none declared; its issuer
+	// quader migrate applies ci.issuers on every run (R-CI-001, Q-CI-16), also with none declared; its issuer
 	// service registers its caches with the SafetyTTL that config.Load fills from the defaults (R-ARCH-018).
 	cfg.CI.Mappings.CacheSafetyTTL = 10 * time.Minute
 	cfg.CI.SigningKeys.CacheSafetyTTL = 10 * time.Minute

@@ -6,11 +6,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The issuer changes that move trust (Q-CI-50), checked and applied in the transaction of an issuer write that holds
@@ -61,7 +61,7 @@ func pinsNarrowed(before, next Issuer) bool {
 // checkPinsTx refuses an issuer write that would leave a mapping the pin rules of a save refuse under the new settings
 // (R-CI-005, R-CI-010, Q-CI-50): pin_required on a public issuer, unpinned_write on a private one, judged with the
 // actions the mapping's policies and groups give it now. The answer is 409 mappings_unpinned with the names, so the
-// administrator pins or deletes them first; trove migrate stops with the same error for a declared issuer.
+// administrator pins or deletes them first; quader migrate stops with the same error for a declared issuer.
 func (s *Service) checkPinsTx(ctx context.Context, qs *q.Queries, before, next Issuer) error {
 	if !pinsNarrowed(before, next) {
 		return nil

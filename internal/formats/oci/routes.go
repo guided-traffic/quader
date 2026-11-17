@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The names of the routes (R-OCI-009 to R-OCI-018): "oci.<resource>" and, after a dot, the operation. The request log and the

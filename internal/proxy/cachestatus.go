@@ -7,7 +7,7 @@ import (
 )
 
 // CacheStatus is what the engine reports of how a response came about, rendered as
-// the Cache-Status header of RFC 9211 with the cache name `trove` (R-REPO-047).
+// the Cache-Status header of RFC 9211 with the cache name `quader` (R-REPO-047).
 type CacheStatus struct {
 	// Hit: served from the cache without asking, or after a failed ask.
 	Hit bool
@@ -41,15 +41,15 @@ const (
 
 // Header renders the status:
 //
-//	trove; hit; ttl=300
-//	trove; fwd=uri-miss; fwd-status=200; stored
-//	trove; fwd=stale; fwd-status=304
-//	trove; fwd=stale; fwd-status=503; detail=served-stale
-//	trove; hit; detail=negative
-//	trove; hit; ttl=300; collapsed
+//	quader; hit; ttl=300
+//	quader; fwd=uri-miss; fwd-status=200; stored
+//	quader; fwd=stale; fwd-status=304
+//	quader; fwd=stale; fwd-status=503; detail=served-stale
+//	quader; hit; detail=negative
+//	quader; hit; ttl=300; collapsed
 func (c CacheStatus) Header() string {
 	var b strings.Builder
-	b.WriteString("trove")
+	b.WriteString("quader")
 	if c.Hit {
 		b.WriteString("; hit")
 		if c.Detail == "" && !c.Stale && c.TTL >= 0 {

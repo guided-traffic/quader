@@ -1,10 +1,10 @@
 # Sign-in and identities
 
-This page explains how people and machines become known to trove. It covers the OpenID Connect sign-in, how the identity provider's claims become users and group memberships, how sessions behave, the local break-glass administrator, anonymous access and the protection against password and token guessing. It also describes the Users, Groups and Service accounts screens and the commands for recovery.
+This page explains how people and machines become known to Quader. It covers the OpenID Connect sign-in, how the identity provider's claims become users and group memberships, how sessions behave, the local break-glass administrator, anonymous access and the protection against password and token guessing. It also describes the Users, Groups and Service accounts screens and the commands for recovery.
 
 ## Where the settings live
 
-trove has no password database. People sign in through an OpenID Connect identity provider such as Keycloak, Dex or GitLab; the one exception is the break-glass administrator. Machines use tokens of a service account.
+Quader has no password database. People sign in through an OpenID Connect identity provider such as Keycloak, Dex or GitLab; the one exception is the break-glass administrator. Machines use tokens of a service account.
 
 | What | Where it is set | When a change applies |
 |---|---|---|
@@ -21,21 +21,21 @@ The **Authentication settings** screen under **Admin area › Settings › Authe
 
 ## Configure an OpenID Connect provider
 
-### Register trove at the provider
+### Register Quader at the provider
 
-1. Set `server.base_url` to the address people use, for example `https://trove.example.com`. A provider cannot be configured without it.
+1. Set `server.base_url` to the address people use, for example `https://quader.example.com`. A provider cannot be configured without it.
 2. At the identity provider, create a confidential client for the authorization code flow.
-3. Register the redirect URI `https://trove.example.com/auth/oidc/<provider-id>/callback`, where `<provider-id>` is the key of the provider in `auth.oidc.providers`.
-4. Register the post-logout redirect URI `https://trove.example.com/ui/logged-out` if the provider supports RP-initiated logout.
+3. Register the redirect URI `https://quader.example.com/auth/oidc/<provider-id>/callback`, where `<provider-id>` is the key of the provider in `auth.oidc.providers`.
+4. Register the post-logout redirect URI `https://quader.example.com/ui/logged-out` if the provider supports RP-initiated logout.
 5. Make sure the ID token or the userinfo answer carries the username claim and, for group synchronization, a groups claim.
 
-trove uses the authorization code flow with PKCE, `state` and `nonce`, and checks `iss` on the callback. The specification is [OpenID Connect Core](https://openid.net/specs/openid-connect-core-1_0.html).
+Quader uses the authorization code flow with PKCE, `state` and `nonce`, and checks `iss` on the callback. The specification is [OpenID Connect Core](https://openid.net/specs/openid-connect-core-1_0.html).
 
 ### Provider settings
 
 ```yaml
 server:
-  base_url: https://trove.example.com            # example
+  base_url: https://quader.example.com            # example
 auth:
   login_page:
     auto_redirect: true                          # default: go straight to the provider when exactly one is configured; /ui/login?auto_sign_in=false shows the page anyway
@@ -45,8 +45,8 @@ auth:
         order: 0                                 # default: sorts the sign-in buttons
         display_name: Corporate SSO              # example; required
         issuer: https://login.example.com/realms/acme   # example; required, https
-        client_id: trove                         # example; required
-        client_secret_file: /var/run/secrets/trove/oidc-corp/client-secret  # example
+        client_id: quader                         # example; required
+        client_secret_file: /var/run/secrets/quader/oidc-corp/client-secret  # example
         client_auth_method: client_secret_basic  # default: client_secret_basic | client_secret_post | none
         scopes: [openid, profile, email]         # default; must contain openid
         rp_initiated_logout: true                # default
@@ -61,9 +61,9 @@ auth:
 | `issuer` | none, required | The issuer URL; `https` (plain `http` only for a loopback host), no query, no fragment |
 | `client_id` | none, required | The client ID at the provider |
 | `client_secret_file`, `client_secret_env` | none | The client secret, as a file path or the name of an environment variable; exactly one for `client_secret_basic` and `client_secret_post`, none for `none` |
-| `client_auth_method` | `client_secret_basic` | How trove authenticates at the token endpoint |
+| `client_auth_method` | `client_secret_basic` | How Quader authenticates at the token endpoint |
 | `scopes` | `[openid, profile, email]` | Requested scopes; add the scope that releases the groups claim if your provider needs one |
-| `extra_auth_params` | `{}` | Extra authorization request parameters; the parameters trove sets itself are refused |
+| `extra_auth_params` | `{}` | Extra authorization request parameters; the parameters Quader sets itself are refused |
 | `allowed_signing_algs` | `[RS256, PS256, ES256]` | Accepted ID token algorithms; supported are `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`; `none` and `HS*` are always refused |
 | `trusted_audiences` | `[]` | Audiences besides the client ID that the ID token may carry |
 | `clock_skew` | `60s` | Tolerance for `exp` and `nbf`, 0s to 5m |
@@ -80,8 +80,8 @@ auth:
 | `public_issuer` | `false` | Mark an issuer where anyone can register; `https://gitlab.com` and `https://accounts.google.com` count as public always |
 | `group_sync.enabled` | `true` | Synchronize group memberships at every sign-in |
 | `group_sync.on_missing_claim` | `clear` | `clear`, `keep` or `deny` when the groups claim is missing or unusable |
-| `group_sync.create_groups` | `false` | Create trove groups that a rule names but that do not exist |
-| `group_sync.rules` | `[]` | Rules that map claim values to trove group names |
+| `group_sync.create_groups` | `false` | Create Quader groups that a rule names but that do not exist |
+| `group_sync.rules` | `[]` | Rules that map claim values to Quader group names |
 
 </details>
 
@@ -97,7 +97,7 @@ Open **Admin area › Settings › Authentication**. Under **Identity providers*
 
 ### Usernames and profiles
 
-At every sign-in trove reads the username claim, puts `username_prefix` in front, normalizes it to Unicode NFC lower case and checks it: it must match `^[a-z0-9][a-z0-9._@+-]{0,127}$` and must not be `anonymous`, `authenticated`, `system`, `me` or the break-glass username. Email and display name are updated from the claims at every sign-in, which replaces corrections an administrator made.
+At every sign-in Quader reads the username claim, puts `username_prefix` in front, normalizes it to Unicode NFC lower case and checks it: it must match `^[a-z0-9][a-z0-9._@+-]{0,127}$` and must not be `anonymous`, `authenticated`, `system`, `me` or the break-glass username. Email and display name are updated from the claims at every sign-in, which replaces corrections an administrator made.
 
 The first sign-in of an identity is resolved in this order:
 
@@ -113,12 +113,12 @@ When the mapped username of a known identity changes and `sync_username` is true
 
 - `require_verified_email: true` refuses identities whose email is not verified.
 - `login_requires_groups` admits only identities whose groups claim contains one of the listed values, compared exactly.
-- For a public issuer, trove refuses to start if `jit` is true and `login_requires_groups` is empty, because every account of that issuer would become a user. A `match_regex` rule must then start with a literal namespace ending in `/`, such as `acme/`, because anyone can create groups there.
+- For a public issuer, Quader refuses to start if `jit` is true and `login_requires_groups` is empty, because every account of that issuer would become a user. A `match_regex` rule must then start with a literal namespace ending in `/`, such as `acme/`, because anyone can create groups there.
 - A disabled user cannot sign in.
 
 ### Group synchronization
 
-The groups claim may be a string or a list; the first 1000 values are read. Each rule maps claim values to a trove group name. A rule has exactly one of `match` (exact, case-sensitive) and `match_regex` (anchored to the whole value; `group` may use `$1` or `${name}`). Without rules, no group is synchronized.
+The groups claim may be a string or a list; the first 1000 values are read. Each rule maps claim values to a Quader group name. A rule has exactly one of `match` (exact, case-sensitive) and `match_regex` (anchored to the whole value; `group` may use `$1` or `${name}`). Without rules, no group is synchronized.
 
 ```yaml
 auth:
@@ -132,8 +132,8 @@ auth:
           on_missing_claim: clear                # default: clear | keep | deny
           create_groups: false                   # default
           rules:
-            - match: trove-admins                # example: exact claim value
-              group: platform-admins             # example: trove group name
+            - match: quader-admins                # example: exact claim value
+              group: platform-admins             # example: Quader group name
             - match_regex: "acme/team-(.+)"      # example
               group: "team-$1"                   # example
 ```
@@ -142,11 +142,11 @@ At every sign-in, the user's memberships from this provider become exactly the g
 
 A group that a restore marked as **detached** (below) is neither filled nor created by the sync: a rule that produces its name adds no member and, with `create_groups`, creates no second group; the sign-in goes on.
 
-A membership change at the provider reaches trove only at the user's next sign-in. The sync can remove the last member of a group that holds the `admin` role; keep the break-glass account or a service account with `admin` for recovery.
+A membership change at the provider reaches Quader only at the user's next sign-in. The sync can remove the last member of a group that holds the `admin` role; keep the break-glass account or a service account with `admin` for recovery.
 
 ## Administrators from the Helm values
 
-To decide in your GitOps repository which group of your identity provider administers trove, list the role bindings under `config.authz.role_bindings` in the chart values. The migration Job (`trove migrate`) applies the list on every `helm install` and `helm upgrade`, after the schema steps and in one transaction. The group name is the trove group your group-sync rule produces, not the claim value.
+To decide in your GitOps repository which group of your identity provider administers Quader, list the role bindings under `config.authz.role_bindings` in the chart values. The migration Job (`quader migrate`) applies the list on every `helm install` and `helm upgrade`, after the schema steps and in one transaction. The group name is the Quader group your group-sync rule produces, not the claim value.
 
 ```yaml
 config:
@@ -157,7 +157,7 @@ config:
           group_sync:
             rules:
               - match: wds18:k8s-main-admins          # example: the value the provider sends in the groups claim
-                group: gh-wds18-k8s-main-admins       # example: the trove group
+                group: gh-wds18-k8s-main-admins       # example: the Quader group
   authz:
     role_bindings:
       - role: admin                                   # example: admin | security-admin | auditor | repository-admin | webhook-admin
@@ -165,7 +165,7 @@ config:
 ```
 
 - A group that does not exist yet is created as a local group, so the binding holds before anyone has signed in. At sign-in, group synchronization puts the members in; `create_groups` is not needed.
-- A declared user or service account must exist. If it does not, the Job fails and its log names the entry: `kubectl -n trove logs job/trove-migrate`.
+- A declared user or service account must exist. If it does not, the Job fails and its log names the entry: `kubectl -n quader logs job/quader-migrate`.
 - An unknown role, an entry with two principals or none, and `anonymous` or `authenticated` (they are no principals) fail the Job before it touches the database, and the message names the key, for example `authz.role_bindings[0].role "root" is not a system role`.
 - **Admin area › Access › System roles** shows these bindings with the source **Configuration** and without **Unbind**; the API answers `409 role_binding_managed_by_configuration`. Bindings you made on that screen stay as they are. A binding you made there and then add to the list is taken over by the configuration.
 - An entry you remove from the list is unbound at the next upgrade. The Job refuses to remove the last administrator while the break-glass account is disabled (`last_admin`). To hand administration from one group to another, add the new group first and remove the old one in a later upgrade, after a member of the new group has signed in, or keep `secrets.breakGlass` set.
@@ -173,7 +173,7 @@ config:
 - Deleting a declared user or group on the **Users** or **Groups** screen removes its binding until the next upgrade, which creates a declared group again (empty until its members sign in) and fails for a declared user.
 - Every change is in the audit log as `authz.role.bound` or `authz.role.unbound` with the actor `system:configuration`.
 
-Whoever can change the membership of the declared group at your identity provider decides who administers trove. With a GitHub team behind Dex, that is the team's maintainers and the organization's owners. A membership change there reaches trove at the member's next sign-in.
+Whoever can change the membership of the declared group at your identity provider decides who administers Quader. With a GitHub team behind Dex, that is the team's maintainers and the organization's owners. A membership change there reaches Quader at the member's next sign-in.
 
 To check an upgrade, look for the line `role bindings of the configuration applied` in the Job's log, then sign in as a member of the group: the **Admin** button appears in the top bar.
 
@@ -202,14 +202,14 @@ The break-glass account is the one local account. It holds the `admin` role with
 
 1. Create a Kubernetes Secret that holds a plaintext password of at least 20 characters or an Argon2id hash in PHC string format.
 2. Name it in the Helm value `secrets.breakGlass.existingSecret`. Without it, the chart sets `auth.break_glass.enabled: false`.
-3. Sign in at `https://trove.example.com/ui/login?auto_sign_in=false`, or set `show_on_login_page: true` to show the username and password form on the sign-in screen.
+3. Sign in at `https://quader.example.com/ui/login?auto_sign_in=false`, or set `show_on_login_page: true` to show the username and password form on the sign-in screen.
 
 ```yaml
 auth:
   break_glass:
     enabled: true                                # default
     username: admin                              # default
-    password_file: /var/run/secrets/trove/break-glass/password   # example; the chart sets it
+    password_file: /var/run/secrets/quader/break-glass/password   # example; the chart sets it
     show_on_login_page: false                    # default
     idle_timeout: 15m                            # default
     absolute_timeout: 1h                         # default
@@ -220,7 +220,7 @@ auth:
       duration: 15m                              # default
 ```
 
-- **Lockout.** `threshold` failed attempts within `window`, from any address, lock the account for `duration`; during the lock even the right password is refused. Anyone who can reach the sign-in can keep the account locked, so keep it disabled outside recovery or restrict `/auth/local/` at your edge. An administrator clears a lock with **Unlock** on the account's user page, or with `trove admin break-glass unlock`.
+- **Lockout.** `threshold` failed attempts within `window`, from any address, lock the account for `duration`; during the lock even the right password is refused. Anyone who can reach the sign-in can keep the account locked, so keep it disabled outside recovery or restrict `/auth/local/` at your edge. An administrator clears a lock with **Unlock** on the account's user page, or with `quader admin break-glass unlock`.
 - **Rotation.** Replace the password in the Secret. When a replica notices the new file, all break-glass sessions end and local sign-in is refused for `rotation_hold`. A file without a usable password refuses every local sign-in.
 - **No password file.** An enabled account without `password_file` starts, logs a warning and refuses every local sign-in. The settings screen shows **Enabled.** and, below it, the error **No password is configured: `auth.break_glass.password_file` is empty.** The API field is `status.breakGlass.passwordStatus` of `GET /api/v1/settings/auth`: `ok`, `not_configured`, `unusable` (a rotated file that holds no usable password; the screen says **The password file is not usable on this replica**) or `not_applicable` (the account is disabled). The value describes the replica that answers; a replica that has not yet noticed a rotation can still say `ok`. Test a local sign-in before you rely on the account.
 - **Disable it** once an administrator can sign in through the identity provider: remove `secrets.breakGlass` and roll the release.
@@ -233,7 +233,7 @@ Anonymous callers only read: on the management API they get safe methods only, a
 
 ## Internal and external users
 
-The level **Internal** admits every internal user. A user is internal when it acts through a browser session or a personal access token and is not flagged external; a request that reached trove through a Bastion is never internal. A service account, a CI token and a Bastion registration are never internal.
+The level **Internal** admits every internal user. A user is internal when it acts through a browser session or a personal access token and is not flagged external; a request that reached Quader through a Bastion is never internal. A service account, a CI token and a Bastion registration are never internal.
 
 - **Flag a user as external** with **External user** on the user's page (**Admin area › Identity › Users**), then **Save changes**; it needs `identities:write` and a recent sign-in. The break-glass account is never external. The users list shows the badge **External** and has the filter **External**; the API filter is `external=true`.
 - **What an external user reads.** The projects it is a member of, what a policy grants it, and what is **Public**. Internal projects and repositories stay hidden: they are not listed and answer `404`. The change reaches every replica within `auth.revocation_bound`.
@@ -299,15 +299,15 @@ A service account of a project is created and managed by the Owners of the proje
 
 ## Commands for bootstrap and recovery
 
-The `trove admin` commands run against the database with the replica's configuration and write their own audit events.
+The `quader admin` commands run against the database with the replica's configuration and write their own audit events.
 
 | Command | Purpose |
 |---|---|
-| `trove admin break-glass status`, `unlock`, `end-sessions` | Inspect, unlock or sign out the break-glass account |
-| `trove admin sessions end --user <username>` or `--all` | End sessions |
-| `trove admin service-account create <name> [--description <text>] [--admin]` | Create a service account, optionally with the `admin` role |
-| `trove admin token create --service-account <name\|project/name> [--ttl 15m] [--scope-file <file>]` | Print a token of a service account; `<project>/<name>` names the account of a project |
-| `trove admin user disable <username> [--keep-tokens]` | Disable a user |
+| `quader admin break-glass status`, `unlock`, `end-sessions` | Inspect, unlock or sign out the break-glass account |
+| `quader admin sessions end --user <username>` or `--all` | End sessions |
+| `quader admin service-account create <name> [--description <text>] [--admin]` | Create a service account, optionally with the `admin` role |
+| `quader admin token create --service-account <name\|project/name> [--ttl 15m] [--scope-file <file>]` | Print a token of a service account; `<project>/<name>` names the account of a project |
+| `quader admin user disable <username> [--keep-tokens]` | Disable a user |
 
 <details><summary>Reasons on the "Sign-in failed" page</summary>
 
@@ -326,7 +326,7 @@ The `trove admin` commands run against the database with the replica's configura
 | `not_in_allowed_group` | `login_requires_groups` refused the identity |
 | `groups_claim_missing` | `on_missing_claim: deny` and no usable groups claim |
 | `reauth_user_mismatch` | A recent sign-in was confirmed with a different identity |
-| `provider_unavailable`, `unavailable`, `provisioning_failed` | The provider's discovery or trove's database did not answer |
+| `provider_unavailable`, `unavailable`, `provisioning_failed` | The provider's discovery or Quader's database did not answer |
 
 Every attempt is recorded as `auth.login.succeeded` or `auth.login.failed` in the audit log.
 

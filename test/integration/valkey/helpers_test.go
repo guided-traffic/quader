@@ -22,9 +22,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func randHex(n int) string {
@@ -34,9 +34,9 @@ func randHex(n int) string {
 }
 
 // runPrefix is the key prefix of this run. It starts with the stack's ACL
-// pattern (trove:*), and separates this run's keys from those of tests that
+// pattern (quader:*), and separates this run's keys from those of tests that
 // run in parallel on the same Valkey.
-var runPrefix = "trove:it" + randHex(3) + ":"
+var runPrefix = "quader:it" + randHex(3) + ":"
 
 // writeFile stores a credential or key file in a fresh directory.
 func writeFile(t *testing.T, name, content string) string {
@@ -251,11 +251,11 @@ func clientList(ctx context.Context, t *testing.T, c valkey.Client, extra ...str
 	return out
 }
 
-// named returns the entries whose client name starts with trove:<instance>:.
+// named returns the entries whose client name starts with quader:<instance>:.
 func named(list []map[string]string, instance string) []map[string]string {
 	var out []map[string]string
 	for _, m := range list {
-		if strings.HasPrefix(m["name"], "trove:"+instance+":") {
+		if strings.HasPrefix(m["name"], "quader:"+instance+":") {
 			out = append(out, m)
 		}
 	}

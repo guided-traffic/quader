@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/guided-traffic/trove/internal/formats/npm/settings.schema.json",
+  "$id": "https://github.com/guided-traffic/quader/internal/formats/npm/settings.schema.json",
   "title": "npm repository settings",
-  "description": "The npm member of a repository document. A member lists the classes it applies to in x-trove-classes; a member of another class is refused as not applicable.",
+  "description": "The npm member of a repository document. A member lists the classes it applies to in x-quader-classes; a member of another class is refused as not applicable.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -11,32 +11,32 @@
       "description": "A publish of a version below latest, or of a pre-release while latest is a release, is stored without moving latest. Turn it off if every publish under latest should move it.",
       "type": "boolean",
       "default": true,
-      "x-trove-classes": ["local"]
+      "x-quader-classes": ["local"]
     },
     "serveRemovedVersions": {
       "title": "Serve removed versions",
       "description": "Keep serving cached versions and packages that the upstream has removed, to exact downloads such as from a lockfile; they are no longer listed. Leave it off so that what the upstream took down, often malware, stops being served.",
       "type": "boolean",
       "default": false,
-      "x-trove-classes": ["remote"]
+      "x-quader-classes": ["remote"]
     },
     "latestStrategy": {
       "title": "Latest tag strategy",
       "description": "Which latest tag this virtual repository offers when the latest tags of its members differ.",
       "type": "string",
       "enum": ["highest-member-latest", "newest-published"],
-      "x-trove-enum-titles": { "highest-member-latest": "Highest version", "newest-published": "Most recently published" },
+      "x-quader-enum-titles": { "highest-member-latest": "Highest version", "newest-published": "Most recently published" },
       "default": "highest-member-latest",
-      "x-trove-classes": ["virtual"]
+      "x-quader-classes": ["virtual"]
     },
     "distTagStrategy": {
       "title": "Dist-tag strategy",
       "description": "Which value the other dist-tags, such as next or beta, take when the values of the members differ.",
       "type": "string",
       "enum": ["member-order", "highest-semver", "newest-published"],
-      "x-trove-enum-titles": { "member-order": "First member in order", "highest-semver": "Highest version", "newest-published": "Most recently published" },
+      "x-quader-enum-titles": { "member-order": "First member in order", "highest-semver": "Highest version", "newest-published": "Most recently published" },
       "default": "member-order",
-      "x-trove-classes": ["virtual"]
+      "x-quader-classes": ["virtual"]
     },
     "audit": {
       "title": "Security audit",
@@ -46,10 +46,10 @@
       "properties": {
         "mode": {
           "title": "Mode",
-          "description": "Automatic answers from trove's advisory data while vulnerability scanning is on, and otherwise forwards on a remote or virtual repository and is off on a local one. Forwarding sends only the names of public packages a remote has already fetched, never internal ones.",
+          "description": "Automatic answers from Quader's advisory data while vulnerability scanning is on, and otherwise forwards on a remote or virtual repository and is off on a local one. Forwarding sends only the names of public packages a remote has already fetched, never internal ones.",
           "type": "string",
           "enum": ["local", "forward", "disabled"],
-          "x-trove-enum-titles": { "local": "From trove's advisory data", "forward": "Forward to an advisory service", "disabled": "Off" }
+          "x-quader-enum-titles": { "local": "From Quader's advisory data", "forward": "Forward to an advisory service", "disabled": "Off" }
         },
         "providerURL": {
           "title": "Provider URL",
@@ -69,7 +69,7 @@
         },
         "maxBodySize": {
           "title": "Largest audit request",
-          "description": "The largest audit request trove accepts, 1 KiB to 10 MiB, written like 1MiB. Raise it if the audits of very large projects are refused.",
+          "description": "The largest audit request Quader accepts, 1 KiB to 10 MiB, written like 1MiB. Raise it if the audits of very large projects are refused.",
           "type": "string",
           "pattern": "^([1-9][0-9]{0,3}KiB|([1-9]|10)MiB)$",
           "default": "1MiB"

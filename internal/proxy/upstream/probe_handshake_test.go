@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // tokenService is a test registry's token service: it answers a login of the right Basic credential with a token, a wrong one

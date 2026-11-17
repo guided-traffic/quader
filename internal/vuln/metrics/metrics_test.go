@@ -7,7 +7,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // R-VULN-024, R-OPS-007: the collectors register, every label is in the allowed list (which gained ecosystem and severity),
@@ -59,7 +59,7 @@ func TestR_VULN_024_TheGaugesUseAllowedLabelsAndTheNamesAreTheSpecs(t *testing.T
 		t.Fatal(err)
 	}
 	for _, n := range Names() {
-		if !strings.HasPrefix(n, "trove_vuln_") || !strings.Contains(string(spec), "`"+n+"`") {
+		if !strings.HasPrefix(n, "quader_vuln_") || !strings.Contains(string(spec), "`"+n+"`") {
 			t.Errorf("%s is not a row of R-VULN-024", n)
 		}
 	}

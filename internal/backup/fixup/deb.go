@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/formatdata/deb"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/formatdata/deb"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The Debian fix-up and purger of a restore.

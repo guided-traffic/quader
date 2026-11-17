@@ -3,7 +3,7 @@ package remote
 import (
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Budget bounds what one rendering reads of an upstream's registration (Q-NUGET-83): the
@@ -70,7 +70,7 @@ func (b *Budget) decode(doc []byte) ([]byte, error) {
 // take spends n leaves.
 func (b *Budget) take(n int) error {
 	if n > b.leaves {
-		return invalid("The upstream's registration lists more than " + strconv.Itoa(MaxLeaves) + " versions; trove reads at most that many of one ID.")
+		return invalid("The upstream's registration lists more than " + strconv.Itoa(MaxLeaves) + " versions; Quader reads at most that many of one ID.")
 	}
 	b.leaves -= n
 	return nil

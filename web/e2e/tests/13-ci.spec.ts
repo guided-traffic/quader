@@ -7,7 +7,7 @@ import { bobPassword, expect, expectAccessible, openFilter, qualified, repositor
 // checked with axe in both colour schemes.
 //
 // TestE1_11Journeys mints the two ID tokens (a protected tag of acme/billing/invoice-api, as docs/spec/gitlab-ci-oidc.md writes
-// it) and passes them with the issuer URL: TROVE_E2E_OIDCSTUB_ISSUER, TROVE_E2E_CI_TOKEN_PASTE, TROVE_E2E_CI_TOKEN_EXCHANGE.
+// it) and passes them with the issuer URL: QUADER_E2E_OIDCSTUB_ISSUER, QUADER_E2E_CI_TOKEN_PASTE, QUADER_E2E_CI_TOKEN_EXCHANGE.
 
 function env(name: string): string {
   const v = process.env[name];
@@ -15,10 +15,10 @@ function env(name: string): string {
   return v;
 }
 
-const issuerUrl = env('TROVE_E2E_OIDCSTUB_ISSUER');
-const pasteToken = env('TROVE_E2E_CI_TOKEN_PASTE');
-const exchangeToken = env('TROVE_E2E_CI_TOKEN_EXCHANGE');
-const caRef = 'file:/etc/trove/ca/ca.crt'; // the dev CA, mounted into every pod through trustedCA (deploy/dev/values-dev.yaml, R-HA-043)
+const issuerUrl = env('QUADER_E2E_OIDCSTUB_ISSUER');
+const pasteToken = env('QUADER_E2E_CI_TOKEN_PASTE');
+const exchangeToken = env('QUADER_E2E_CI_TOKEN_EXCHANGE');
+const caRef = 'file:/etc/quader/ca/ca.crt'; // the dev CA, mounted into every pod through trustedCA (deploy/dev/values-dev.yaml, R-HA-043)
 
 const run = unique('ui-ci')
   .replace(/[^a-z0-9-]/g, '')
@@ -219,7 +219,7 @@ test('R-UI-035 R-UI-036 R-CI-019 an administrator registers the issuer, creates 
     };
     expect(exchange.status(), JSON.stringify(answer)).toBe(200);
     expect(answer.mappings).toContain('acme-release-publish');
-    expect(answer.access_token).toMatch(/^trv_cit_/);
+    expect(answer.access_token).toMatch(/^qdr_cit_/);
 
     await page.goto(`/ui/en/admin/ci/${issuerName}?tab=issuances`);
     await expect(page.getByRole('heading', { name: 'Issued tokens' }).first()).toBeVisible();

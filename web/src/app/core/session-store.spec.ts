@@ -97,7 +97,7 @@ describe('SessionStore', () => {
     await store.load();
     const router = TestBed.inject(Router);
     const navigate = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
-    const other = new BroadcastChannel('trove-session');
+    const other = new BroadcastChannel('quader-session');
     other.postMessage('signed-out');
     await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith('/logged-out'));
     other.close();

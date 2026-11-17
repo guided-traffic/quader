@@ -1,7 +1,7 @@
 //go:build integration
 
-// Package restoreversions tests the commands of steps 5 and 7 of the restore procedure (R-HA-025), `trove admin storage
-// restore-versions` and `trove admin maintenance pause-deletions` / `resume-deletions`, by running the binary against the
+// Package restoreversions tests the commands of steps 5 and 7 of the restore procedure (R-HA-025), `quader admin storage
+// restore-versions` and `quader admin maintenance pause-deletions` / `resume-deletions`, by running the binary against the
 // integration stack: an installation database, and the versioned blob bucket of the stack's SeaweedFS.
 package restoreversions
 
@@ -18,9 +18,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 var binary string
@@ -28,14 +28,14 @@ var binary string
 // TestMain builds the binary once for the package's tests.
 func TestMain(m *testing.M) {
 	os.Exit(func() int {
-		dir, err := os.MkdirTemp("", "trove-restoreversions-")
+		dir, err := os.MkdirTemp("", "quader-restoreversions-")
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}
 		defer func() { _ = os.RemoveAll(dir) }()
-		binary = filepath.Join(dir, "trove")
-		build := exec.Command("go", "build", "-o", binary, "github.com/guided-traffic/trove/cmd/trove")
+		binary = filepath.Join(dir, "quader")
+		build := exec.Command("go", "build", "-o", binary, "github.com/guided-traffic/quader/cmd/quader")
 		build.Env = append(os.Environ(), "CGO_ENABLED=0")
 		if out, err := build.CombinedOutput(); err != nil {
 			fmt.Fprintf(os.Stderr, "go build: %v\n%s", err, out)
@@ -45,14 +45,14 @@ func TestMain(m *testing.M) {
 	}())
 }
 
-// run runs `trove admin <args>` with the stack's configuration and returns the exit code and the two streams.
+// run runs `quader admin <args>` with the stack's configuration and returns the exit code and the two streams.
 func run(t *testing.T, s *testenv.Stack, args ...string) (int, string, string) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, append([]string{"admin"}, args...)...)
 	cmd.Env = append(os.Environ(), s.Environ()...)
-	cmd.Env = append(cmd.Env, "TROVE_LOG_LEVEL=warn")
+	cmd.Env = append(cmd.Env, "QUADER_LOG_LEVEL=warn")
 	var o, e bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &o, &e
 	code := 0

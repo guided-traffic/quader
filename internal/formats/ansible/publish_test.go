@@ -14,9 +14,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/ansibletest"
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection/collectiontest"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/ansible/ansibletest"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection/collectiontest"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
 )
 
 func newHost(t *testing.T) *formattest.Host {

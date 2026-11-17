@@ -1,7 +1,7 @@
 package audit
 
-// The event types of the maintenance commands of the restore procedure (R-HA-025), written by `trove admin maintenance` and
-// `trove admin storage restore-versions` as the actor system:admin, all transactional and none a webhook hook. No detail
+// The event types of the maintenance commands of the restore procedure (R-HA-025), written by `quader admin maintenance` and
+// `quader admin storage restore-versions` as the actor system:admin, all transactional and none a webhook hook. No detail
 // holds a credential.
 //
 //   - system.deletions_paused: the deletion pause was set by hand (pause-deletions). The pause a post-restore sets is part of

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 type stringerVal string
@@ -50,7 +50,7 @@ func lines(buf *bytes.Buffer) []string {
 func TestLogRecord(t *testing.T) {
 	t.Run("R-OPS-009 record carries time level msg log replica role as one JSON object per line", func(t *testing.T) {
 		var buf bytes.Buffer
-		log := NewLogger(testLogCfg(), &buf, WithIdentity("trove-web-0", "web"))
+		log := NewLogger(testLogCfg(), &buf, WithIdentity("quader-web-0", "web"))
 		log.With("component", "http").Info("hello", "n", 3)
 		ls := lines(&buf)
 		if len(ls) != 1 {
@@ -62,7 +62,7 @@ func TestLogRecord(t *testing.T) {
 				t.Errorf("missing field %q in %v", k, rec)
 			}
 		}
-		if rec["level"] != "INFO" || rec["log"] != "app" || rec["replica"] != "trove-web-0" || rec["role"] != "web" || rec["component"] != "http" {
+		if rec["level"] != "INFO" || rec["log"] != "app" || rec["replica"] != "quader-web-0" || rec["role"] != "web" || rec["component"] != "http" {
 			t.Errorf("unexpected values: %v", rec)
 		}
 	})
@@ -223,25 +223,25 @@ func TestRedaction(t *testing.T) {
 		}
 	})
 
-	t.Run("R-OPS-013 trove token formats are scrubbed in free text", func(t *testing.T) {
+	t.Run("R-OPS-013 quader token formats are scrubbed in free text", func(t *testing.T) {
 		for _, typ := range []string{"pat", "sat", "cit"} {
-			tok := "trv_" + typ + "_0123456789AbCdEfGhIjKlMnOp"
+			tok := "qdr_" + typ + "_0123456789AbCdEfGhIjKlMnOp"
 			out := scrub(t, "detail", "failed for "+tok+" today")
 			if strings.Contains(out, "0123456789") {
 				t.Errorf("%s token leaked: %s", typ, out)
 			}
-			if !strings.Contains(out, "trv_"+typ+"_[REDACTED]") {
+			if !strings.Contains(out, "qdr_"+typ+"_[REDACTED]") {
 				t.Errorf("%s marker missing: %s", typ, out)
 			}
 		}
-		if strings.Contains(scrub(t, "msgtext", "x"), "trv_") {
+		if strings.Contains(scrub(t, "msgtext", "x"), "qdr_") {
 			t.Error("unexpected token text")
 		}
 	})
 
 	t.Run("R-OPS-013 the message text is scrubbed too", func(t *testing.T) {
 		var buf bytes.Buffer
-		NewLogger(testLogCfg(), &buf).Info("got trv_pat_ABCDEFGHIJKLMNOP")
+		NewLogger(testLogCfg(), &buf).Info("got qdr_pat_ABCDEFGHIJKLMNOP")
 		if strings.Contains(buf.String(), "ABCDEFGHIJKLMNOP") {
 			t.Errorf("leak in msg: %s", buf.String())
 		}
@@ -316,7 +316,7 @@ func TestRedaction(t *testing.T) {
 		var buf bytes.Buffer
 		cfg := testLogCfg()
 		cfg.Format = "text"
-		NewLogger(cfg, &buf).Info("x", "password", "pw-xyz", "u", "trv_pat_AAAABBBBCCCC")
+		NewLogger(cfg, &buf).Info("x", "password", "pw-xyz", "u", "qdr_pat_AAAABBBBCCCC")
 		if strings.Contains(buf.String(), "pw-xyz") || strings.Contains(buf.String(), "AAAABBBB") {
 			t.Errorf("leak: %s", buf.String())
 		}
@@ -358,7 +358,7 @@ func TestRedaction(t *testing.T) {
 			"header":   h,
 			"map":      map[string]any{"endpoint": "https://svc:mappw123@up.example/", "client_secret": "mapsecret123", "n": 12345678901234567},
 			"slice":    []any{"Bearer slicetok123", map[string]string{"api_key": "slicekey123"}},
-			"strings":  []string{"trv_pat_STRINGSLICE123"},
+			"strings":  []string{"qdr_pat_STRINGSLICE123"},
 			"struct":   upstream{Name: "npm", URL: "https://svc:structpw123@up.example/", Password: "structpw456"},
 			"ptr":      &upstream{Name: "npm", Password: "ptrpw789"},
 		} {
@@ -399,7 +399,7 @@ func TestRoleValuesOfTheCut(t *testing.T) {
 	for _, role := range []string{"api", "packages", "worker", "web", "all"} {
 		t.Run("R-OPS-009 Q-OPS-161 the record of a "+role+" replica says role="+role, func(t *testing.T) {
 			var buf bytes.Buffer
-			NewLogger(testLogCfg(), &buf, WithIdentity("trove-"+role+"-0", role)).Info("hello")
+			NewLogger(testLogCfg(), &buf, WithIdentity("quader-"+role+"-0", role)).Info("hello")
 			ls := lines(&buf)
 			if len(ls) != 1 || decode(t, ls[0])["role"] != role {
 				t.Fatalf("record = %v", ls)

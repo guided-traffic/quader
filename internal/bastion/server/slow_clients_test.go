@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
 )
 
 // slowClientsConfig is linkedConfig with a budget of 4 slots, of which anonymous callers may hold 1.
@@ -121,7 +121,7 @@ func TestR_BAS_025_ClientsThatReadSlowlyDoNotHoldTheBudgetSlots(t *testing.T) {
 	}
 	// The spools are complete although nobody reads them.
 	eventually(t, 20*time.Second, "the three fills to end", func() bool {
-		return strings.Contains(grepLines(metricsBody(t, srv), "trove_bastion_main_in_flight"), `anonymous"} 0`)
+		return strings.Contains(grepLines(metricsBody(t, srv), "quader_bastion_main_in_flight"), `anonymous"} 0`)
 	})
 	code, got, took := fetchAll(addr, "/api/npm/web/npm-all/other/-/other-2.0.0.tgz", 20*time.Second)
 	if code != http.StatusOK || got != sha {

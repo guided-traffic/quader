@@ -19,7 +19,7 @@ func allowedLabels() []string {
 	}
 }
 
-// buildInfoOnlyLabels may appear only on trove_build_info.
+// buildInfoOnlyLabels may appear only on quader_build_info.
 func buildInfoOnlyLabels() []string { return []string{"version", "revision", "goversion", "role"} }
 
 // AllowedLabel reports whether name may be a label of the given family.
@@ -29,7 +29,7 @@ func AllowedLabel(family, name string) bool {
 			return true
 		}
 	}
-	if family == "trove_build_info" {
+	if family == "quader_build_info" {
 		for _, l := range buildInfoOnlyLabels() {
 			if l == name {
 				return true
@@ -41,8 +41,8 @@ func AllowedLabel(family, name string) bool {
 
 // checkName validates the naming rules of R-OPS-007 for a family.
 func checkName(name string, counter bool) error {
-	if !strings.HasPrefix(name, "trove_") {
-		return fmt.Errorf("metric %q: name must start with trove_", name)
+	if !strings.HasPrefix(name, "quader_") {
+		return fmt.Errorf("metric %q: name must start with quader_", name)
 	}
 	if counter && !strings.HasSuffix(name, "_total") {
 		return fmt.Errorf("metric %q: a counter name ends in _total", name)
@@ -63,9 +63,9 @@ func checkLabels(family string, labels []string) error {
 }
 
 // CheckFamilies returns one error per family of g that breaks the naming or
-// label rules of R-OPS-007: a missing trove_ prefix (the go_ and process_
+// label rules of R-OPS-007: a missing quader_ prefix (the go_ and process_
 // collectors are exempt), a label outside the allowed list, a role-label on a
-// family other than trove_build_info. Tests of any package call it over the
+// family other than quader_build_info. Tests of any package call it over the
 // registry after exercising their code.
 func CheckFamilies(families []*dto.MetricFamily) []error {
 	var errs []error
@@ -74,8 +74,8 @@ func CheckFamilies(families []*dto.MetricFamily) []error {
 		if strings.HasPrefix(name, "go_") || strings.HasPrefix(name, "process_") {
 			continue
 		}
-		if !strings.HasPrefix(name, "trove_") {
-			errs = append(errs, fmt.Errorf("family %q: name must start with trove_", name))
+		if !strings.HasPrefix(name, "quader_") {
+			errs = append(errs, fmt.Errorf("family %q: name must start with quader_", name))
 			continue
 		}
 		seen := map[string]bool{}

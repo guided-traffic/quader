@@ -3,9 +3,9 @@ package authz
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The read scope of a repository for a listing that aggregates versions across

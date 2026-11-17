@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/guided-traffic/trove/internal/formats/oci/settings.schema.json",
+  "$id": "https://github.com/guided-traffic/quader/internal/formats/oci/settings.schema.json",
   "title": "OCI repository settings",
-  "description": "The oci member of a repository document. A member lists the classes it applies to in x-trove-classes; a member of another class is refused as not applicable. Local and virtual repositories have no settings of the format.",
+  "description": "The oci member of a repository document. A member lists the classes it applies to in x-quader-classes; a member of another class is refused as not applicable. Local and virtual repositories have no settings of the format.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -11,7 +11,7 @@
       "description": "What a mirror of the registry keeps: which tags and which platforms.",
       "type": "object",
       "additionalProperties": false,
-      "x-trove-classes": ["remote"],
+      "x-quader-classes": ["remote"],
       "properties": {
         "tags": {
           "title": "Tags to mirror",

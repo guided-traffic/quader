@@ -17,10 +17,10 @@ func newMetrics(reg prometheus.Registerer) (*metrics, error) {
 	var errs []error
 	m := &metrics{}
 	m.touchFailures = counter(reg, &errs, prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "trove_auth_session_touch_failures_total", Help: "Session touches (last_seen_at) that failed; the request was served (R-AUTH-010).",
+		Name: "quader_auth_session_touch_failures_total", Help: "Session touches (last_seen_at) that failed; the request was served (R-AUTH-010).",
 	}))
 	m.csrfFailed = counter(reg, &errs, prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "trove_auth_csrf_failures_total", Help: "Cookie-authenticated requests refused by the CSRF checks (R-AUTH-012).",
+		Name: "quader_auth_csrf_failures_total", Help: "Cookie-authenticated requests refused by the CSRF checks (R-AUTH-012).",
 	}))
 	return m, errors.Join(errs...)
 }

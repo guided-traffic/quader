@@ -32,15 +32,15 @@ describe('ServerAddress', () => {
   it('R-REPO-002 a caller without settings:read and without a readable repository still has an address (Q-UI-75)', async () => {
     const { address, repos } = setup(['repositories:write-config']);
     repos.repositories = [];
-    expect(await address.baseUrl()).toBe('https://trove.example.net');
+    expect(await address.baseUrl()).toBe('https://quader.example.net');
   });
 
   it('R-UI-021 a server without a configured base URL answers null, and null is not remembered', async () => {
     const { address, repos } = setup([]);
     repos.baseUrlResult = null;
     expect(await address.baseUrl()).toBeNull();
-    repos.baseUrlResult = 'https://trove.example.net';
-    expect(await address.baseUrl()).toBe('https://trove.example.net');
+    repos.baseUrlResult = 'https://quader.example.net';
+    expect(await address.baseUrl()).toBe('https://quader.example.net');
   });
 
   it('R-UI-021 an unreadable answer is null and is asked again', async () => {
@@ -49,8 +49,8 @@ describe('ServerAddress', () => {
       throw new Error('offline');
     };
     expect(await address.baseUrl()).toBeNull();
-    repos.baseUrl = async () => 'https://trove.example.net/';
-    expect(await address.baseUrl()).toBe('https://trove.example.net');
+    repos.baseUrl = async () => 'https://quader.example.net/';
+    expect(await address.baseUrl()).toBe('https://quader.example.net');
   });
 
   it('R-UI-021 a known base URL is asked for once', async () => {

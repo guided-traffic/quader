@@ -5,8 +5,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 func TestR_API_029_NPMVersionOrderIsSemVerPrecedence(t *testing.T) {

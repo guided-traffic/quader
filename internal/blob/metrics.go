@@ -5,7 +5,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // Metrics are the Prometheus families of the blob store (R-STOR-004,
@@ -41,25 +41,25 @@ type Metrics struct {
 // in internal/observability, when called twice for one registry.
 func NewMetrics(m *observability.Metrics) *Metrics {
 	return &Metrics{
-		rejections: m.NewCounterVec("trove_storage_upload_rejections_total", "Uploads refused before or while reading the body, by reason.", "reason"),
-		spoolUsed:  m.NewGaugeVec("trove_spool_used_bytes", "Spool budget held by running uploads: the bytes they have reserved on the spool volume.").WithLabelValues(),
-		spoolFree:  m.NewGaugeVec("trove_spool_free_bytes", "Free bytes of the spool volume, read at the last reservation or release.").WithLabelValues(),
+		rejections: m.NewCounterVec("quader_storage_upload_rejections_total", "Uploads refused before or while reading the body, by reason.", "reason"),
+		spoolUsed:  m.NewGaugeVec("quader_spool_used_bytes", "Spool budget held by running uploads: the bytes they have reserved on the spool volume.").WithLabelValues(),
+		spoolFree:  m.NewGaugeVec("quader_spool_free_bytes", "Free bytes of the spool volume, read at the last reservation or release.").WithLabelValues(),
 
-		s3Requests:    m.NewCounterVec("trove_storage_s3_requests_total", "Object-store requests by operation and outcome.", "operation", "outcome"),
-		s3Duration:    m.NewHistogramVec("trove_storage_s3_request_duration_seconds", "Duration of object-store requests by operation.", observability.HTTPBuckets(), "operation"),
-		s3Bytes:       m.NewCounterVec("trove_storage_s3_bytes_total", "Bytes sent to and received from the object store.", "direction"),
-		s3CircuitOpen: m.NewGaugeVec("trove_storage_s3_circuit_open", "1 while the object-store circuit breaker is open.").WithLabelValues(),
+		s3Requests:    m.NewCounterVec("quader_storage_s3_requests_total", "Object-store requests by operation and outcome.", "operation", "outcome"),
+		s3Duration:    m.NewHistogramVec("quader_storage_s3_request_duration_seconds", "Duration of object-store requests by operation.", observability.HTTPBuckets(), "operation"),
+		s3Bytes:       m.NewCounterVec("quader_storage_s3_bytes_total", "Bytes sent to and received from the object store.", "direction"),
+		s3CircuitOpen: m.NewGaugeVec("quader_storage_s3_circuit_open", "1 while the object-store circuit breaker is open.").WithLabelValues(),
 
-		gcDeleted:   m.NewCounterVec("trove_gc_deleted_blobs_total", "Blobs whose object garbage collection deleted.").WithLabelValues(),
-		gcReclaimed: m.NewCounterVec("trove_gc_reclaimed_bytes_total", "Bytes garbage collection reclaimed.").WithLabelValues(),
-		gcKept:      m.NewCounterVec("trove_gc_candidates_kept_total", "Candidates the per-blob check found referenced or gone.").WithLabelValues(),
-		gcHeld:      m.NewCounterVec("trove_gc_candidates_held_total", "Candidates kept by a backup hold.").WithLabelValues(),
-		gcDeleting:  m.NewGaugeVec("trove_gc_deleting_rows", "Blob rows in state deleting at the end of the last run.").WithLabelValues(),
-		gcLastOK:    m.NewGaugeVec("trove_gc_last_success_timestamp_seconds", "End of the last garbage-collection run of this replica that was neither a dry run, nor paused, nor failed; absent until one has ended."),
+		gcDeleted:   m.NewCounterVec("quader_gc_deleted_blobs_total", "Blobs whose object garbage collection deleted.").WithLabelValues(),
+		gcReclaimed: m.NewCounterVec("quader_gc_reclaimed_bytes_total", "Bytes garbage collection reclaimed.").WithLabelValues(),
+		gcKept:      m.NewCounterVec("quader_gc_candidates_kept_total", "Candidates the per-blob check found referenced or gone.").WithLabelValues(),
+		gcHeld:      m.NewCounterVec("quader_gc_candidates_held_total", "Candidates kept by a backup hold.").WithLabelValues(),
+		gcDeleting:  m.NewGaugeVec("quader_gc_deleting_rows", "Blob rows in state deleting at the end of the last run.").WithLabelValues(),
+		gcLastOK:    m.NewGaugeVec("quader_gc_last_success_timestamp_seconds", "End of the last garbage-collection run of this replica that was neither a dry run, nor paused, nor failed; absent until one has ended."),
 
-		damaged: m.NewCounterVec("trove_storage_blobs_damaged_total", "Blobs marked damaged by a detection, by new status.", "status"),
+		damaged: m.NewCounterVec("quader_storage_blobs_damaged_total", "Blobs marked damaged by a detection, by new status.", "status"),
 
-		uploadSessions: m.NewCounterVec("trove_storage_upload_sessions_total", "Multi-request upload sessions by how they ended: completed, aborted or expired (R-STOR-011).", "outcome"),
+		uploadSessions: m.NewCounterVec("quader_storage_upload_sessions_total", "Multi-request upload sessions by how they ended: completed, aborted or expired (R-STOR-011).", "outcome"),
 	}
 }
 

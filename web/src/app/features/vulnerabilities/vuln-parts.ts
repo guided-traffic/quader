@@ -7,7 +7,7 @@ import { blockReasonLabel, severityClass, severityIcon, severityLabel, statusLab
  * reinforces them, and the shapes of the icons differ.
  */
 @Component({
-  selector: 'trove-severity',
+  selector: 'quader-severity',
   template: `
     <span class="sev" [class]="cls()">
       <span class="material-icons" aria-hidden="true">{{ icon() }}</span>
@@ -33,7 +33,7 @@ export class SeverityBadge {
  * green.
  */
 @Component({
-  selector: 'trove-finding-status',
+  selector: 'quader-finding-status',
   template: `
     <span class="fstatus" [class]="cls()">
       <span class="fstatus-main"><span class="material-icons" aria-hidden="true">{{ icon() }}</span><span>{{ label() }}</span></span>

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The bounds of an ar archive (R-DEB-034): at most eight members, names of at most 16 bytes (the field of the header; the long-name

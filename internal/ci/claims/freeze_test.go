@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/claims"
 )
 
 // R-CI-007, Q-AUTHZ-216: a project mapping writes bare keys; the token it contributes to carries instance

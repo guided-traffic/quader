@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // fillTwelve stores twelve objects of 100 bytes (1200 bytes against an artifact limit of 1000) with entries, and
@@ -64,7 +64,7 @@ func TestR_BAS_031_ASweepAboveNinetyFivePercentDeletesByLastAccessDownToEightyFi
 		t.Errorf("size evictions %v, want 4", got)
 	}
 	if got := val(t, r.m.CacheBytes.WithLabelValues(metrics.AreaArtifacts)); got != 800 {
-		t.Errorf("trove_bastion_cache_bytes{artifacts} = %v, want 800", got)
+		t.Errorf("quader_bastion_cache_bytes{artifacts} = %v, want 800", got)
 	}
 	if got := val(t, r.m.CacheCapacity.WithLabelValues(metrics.AreaArtifacts)); got != 1000 {
 		t.Errorf("capacity of artifacts = %v, want 1000", got)

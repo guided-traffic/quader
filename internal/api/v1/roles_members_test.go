@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
 )
 
 // TestQ_ARCH_341_EveryReplicaIsListedWithItsOwnRole: an api or packages replica is listed with its own role, not with a
@@ -12,16 +12,16 @@ import (
 func TestQ_ARCH_341_EveryReplicaIsListedWithItsOwnRole(t *testing.T) {
 	pool := "ep-customers"
 	reps := fakeReplicas{
-		replica("trove-api-1", "api", "n1", gen.Ready, false),
-		replica("trove-packages-1", "packages", "n2", gen.Ready, false),
-		replica("trove-worker-1", "worker", "n3", gen.Ready, false),
-		replica("trove-web-1", "web", "n4", gen.Ready, false),
-		replica("trove-all-1", "all", "n5", gen.Ready, false),
+		replica("quader-api-1", "api", "n1", gen.Ready, false),
+		replica("quader-packages-1", "packages", "n2", gen.Ready, false),
+		replica("quader-worker-1", "worker", "n3", gen.Ready, false),
+		replica("quader-web-1", "web", "n4", gen.Ready, false),
+		replica("quader-all-1", "all", "n5", gen.Ready, false),
 	}
 	reps[1].Pool = &pool
 	s := newSetup(t, func(o *Options) {
 		o.Replicas = reps
-		o.Identity = Identity{Replica: "trove-api-1", Role: "api"}
+		o.Identity = Identity{Replica: "quader-api-1", Role: "api"}
 	}, authed)
 
 	t.Run("R-OPS-003 the list names the own role of every replica, and the pool", func(t *testing.T) {
@@ -41,15 +41,15 @@ func TestQ_ARCH_341_EveryReplicaIsListedWithItsOwnRole(t *testing.T) {
 			got[r.Name] = string(r.Roles[0])
 		}
 		for name, want := range map[string]string{
-			"trove-api-1": "api", "trove-packages-1": "packages", "trove-worker-1": "worker",
-			"trove-web-1": "web", "trove-all-1": "all",
+			"quader-api-1": "api", "quader-packages-1": "packages", "quader-worker-1": "worker",
+			"quader-web-1": "web", "quader-all-1": "all",
 		} {
 			if got[name] != want {
 				t.Errorf("%s = %v, want %v", name, got[name], want)
 			}
 		}
 		for _, r := range list.Items {
-			if r.Name == "trove-packages-1" && (r.Pool == nil || *r.Pool != pool) {
+			if r.Name == "quader-packages-1" && (r.Pool == nil || *r.Pool != pool) {
 				t.Errorf("pool = %v", r.Pool)
 			}
 		}

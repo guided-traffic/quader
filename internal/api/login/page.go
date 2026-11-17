@@ -4,7 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/auth/oidc"
+	"github.com/guided-traffic/quader/internal/auth/oidc"
 )
 
 // errorPageHTML is the page a failed login ends on (R-AUTH-006). It needs no
@@ -12,7 +12,7 @@ import (
 // error_description, which the domain has truncated to 200 characters.
 const errorPageHTML = `<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Sign-in failed · trove</title><meta name="robots" content="noindex"></head>
+<head><meta charset="utf-8"><title>Sign-in failed · Quader</title><meta name="robots" content="noindex"></head>
 <body>
 <h1>Sign-in failed</h1>
 <p>The sign-in could not be completed. Reason: <code id="reason">{{.Reason}}</code></p>
@@ -23,7 +23,7 @@ const errorPageHTML = `<!doctype html>
 `
 
 // statusOf is the status of the error page of a failed login: 503 when a
-// dependency of trove did not answer, 502 when the provider is at fault, 500
+// dependency of quader did not answer, 502 when the provider is at fault, 500
 // when the provisioning failed, 400 for everything the browser or the user
 // caused.
 func statusOf(f *oidc.LoginFailure) int {

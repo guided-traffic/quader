@@ -6,26 +6,26 @@ import { Component, ViewEncapsulation, input } from '@angular/core';
  * that finds nothing is not an empty state: it says so in a row of the table.
  */
 @Component({
-  selector: 'trove-empty-state',
+  selector: 'quader-empty-state',
   encapsulation: ViewEncapsulation.None,
   template: `
     <p class="empty-state-text">{{ text() }}</p>
     <ng-content />
   `,
   styles: `
-    trove-empty-state {
+    quader-empty-state {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: var(--trove-space-3);
-      margin-block: var(--trove-space-4);
-      padding-block: var(--trove-space-4);
-      border-block-start: 1px solid var(--trove-border);
+      gap: var(--quader-space-3);
+      margin-block: var(--quader-space-4);
+      padding-block: var(--quader-space-4);
+      border-block-start: 1px solid var(--quader-border);
     }
 
-    trove-empty-state .empty-state-text {
+    quader-empty-state .empty-state-text {
       margin: 0;
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
   `,
 })

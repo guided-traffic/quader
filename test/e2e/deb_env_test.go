@@ -9,7 +9,7 @@ package e2e
 // the flat root), deb_rotation_test.go (the rotation table of R-DEB-017), deb_mirror_test.go and deb_virtual_test.go. docs/developer/e2e.md
 // describes the whole.
 //
-// Every client runs the setup snippets the setup API renders for the repository (Q-DEB-27), unchanged, with the token in $TROVE_TOKEN, and
+// Every client runs the setup snippets the setup API renders for the repository (Q-DEB-27), unchanged, with the token in $QUADER_TOKEN, and
 // APT runs with --error-on=any, so that a warning fails the row. Nothing sets trusted=yes.
 
 import (
@@ -26,8 +26,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/debstub"
-	"github.com/guided-traffic/trove/test/debstub/debgen"
+	"github.com/guided-traffic/quader/test/debstub"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
 )
 
 const (
@@ -88,9 +88,9 @@ func debRepoURL(t testing.TB, key string) string {
 }
 
 // name is a package name of this run: unique per scenario and run, so that a rerun on the same cluster never meets a version that exists
-// (the bytes of a stored version are immutable, R-DEB-006). It starts with trove- like the packages of the test archive, which the
+// (the bytes of a stored version are immutable, R-DEB-006). It starts with quader- like the packages of the test archive, which the
 // reset of a client removes.
-func (fx *debFixture) name(group string) string { return "trove-e2e-" + fx.run + "-" + group }
+func (fx *debFixture) name(group string) string { return "quader-e2e-" + fx.run + "-" + group }
 
 // localRepo creates a local Debian repository for one test: private, so that authentication is required, unless the purpose is "open"
 // (public artifacts in the public project, anonymous read, deb-open-*). The repository goes with the test.
@@ -309,7 +309,7 @@ func (fx *debFixture) signingKeyFile(t testing.TB, key string) []byte {
 
 // ── the setup snippets ───────────────────────────────────────────────────────
 
-// setupSnippets are the snippets of the client setup of a repository by id (credentials=env: the token is the reference $TROVE_TOKEN).
+// setupSnippets are the snippets of the client setup of a repository by id (credentials=env: the token is the reference $QUADER_TOKEN).
 func (fx *debFixture) setupSnippets(t testing.TB, key, pkg, version string) map[string]string {
 	t.Helper()
 	q := url.Values{"client": {"apt"}, "credentials": {"env"}, "package": {pkg}, "version": {version}}
@@ -329,8 +329,8 @@ func (fx *debFixture) setupSnippets(t testing.TB, key, pkg, version string) map[
 }
 
 // debNameOf is the name the snippets derive from the repository: the key file, the source file and the credential file are
-// trove-<project>-<repository> below /etc/apt (R-DEB-029).
-func debNameOf(key string) string { return "trove-" + e2eProject + "-" + key }
+// quader-<project>-<repository> below /etc/apt (R-DEB-029).
+func debNameOf(key string) string { return "quader-" + e2eProject + "-" + key }
 
 func debKeyFile(key string) string { return "/etc/apt/keyrings/" + debNameOf(key) + ".asc" }
 func debSourceFile(key string) string {
@@ -355,10 +355,10 @@ func (fx *debFixture) client(t testing.TB, img aptImage) *aptClient {
 	return c
 }
 
-// sh runs a shell script in the pod with the publisher's token as $TROVE_TOKEN.
+// sh runs a shell script in the pod with the publisher's token as $QUADER_TOKEN.
 func (c *aptClient) sh(script string) (string, error) {
 	c.t.Helper()
-	return aptTry(c.t, c.img, []string{"TROVE_TOKEN=" + c.fx.token}, script)
+	return aptTry(c.t, c.img, []string{"QUADER_TOKEN=" + c.fx.token}, script)
 }
 
 func (c *aptClient) must(script string) string {
@@ -374,9 +374,9 @@ func (c *aptClient) must(script string) string {
 // and the test packages.
 func (c *aptClient) reset() {
 	c.t.Helper()
-	const script = `rm -f /etc/apt/sources.list.d/trove-* /etc/apt/keyrings/trove-* /etc/apt/auth.conf.d/trove-*
+	const script = `rm -f /etc/apt/sources.list.d/quader-* /etc/apt/keyrings/quader-* /etc/apt/auth.conf.d/quader-*
 rm -rf /var/lib/apt/lists/*
-pkgs=$(dpkg-query -W -f '${Package} ' 'trove-*' 'libtrove*' 2>/dev/null || true)
+pkgs=$(dpkg-query -W -f '${Package} ' 'quader-*' 'libquader*' 2>/dev/null || true)
 if [ -n "$pkgs" ]; then apt-get purge --yes $pkgs >/dev/null; fi`
 	if out, err := c.sh(script); err != nil {
 		c.t.Errorf("reset %s: %v\n%s", c.img.name, err, tailLines(out, 20))
@@ -387,7 +387,7 @@ if [ -n "$pkgs" ]; then apt-get purge --yes $pkgs >/dev/null; fi`
 // repository that requires authentication).
 func (c *aptClient) configure(key string) {
 	c.t.Helper()
-	snippets := c.fx.setupSnippets(c.t, key, "trove-hello", "1.0")
+	snippets := c.fx.setupSnippets(c.t, key, "quader-hello", "1.0")
 	script := snippets["apt.configure.shell"]
 	if script == "" {
 		c.t.Fatalf("the setup of %s for apt has no snippet apt.configure.shell: %v", key, sortedKeys(snippets))
@@ -453,9 +453,9 @@ var (
 // debStubHost is the host of the Debian archive test upstream as deploy/dev/e2e.sh exports it.
 func debStubHost(t testing.TB) string {
 	t.Helper()
-	host := os.Getenv("TROVE_E2E_DEBSTUB_HOST")
+	host := os.Getenv("QUADER_E2E_DEBSTUB_HOST")
 	if host == "" {
-		t.Fatal("TROVE_E2E_DEBSTUB_HOST is not set; run `deploy/dev/e2e.sh deb`")
+		t.Fatal("QUADER_E2E_DEBSTUB_HOST is not set; run `deploy/dev/e2e.sh deb`")
 	}
 	return host
 }
@@ -465,7 +465,7 @@ func debStubHost(t testing.TB) string {
 func debStub(t testing.TB) *stubControl {
 	t.Helper()
 	host := debStubHost(t)
-	debStubOnce.Do(func() { debStubVal = newStubControl(t, "svc/debstub", host, "trove-debstub", 30*time.Second) })
+	debStubOnce.Do(func() { debStubVal = newStubControl(t, "svc/debstub", host, "quader-debstub", 30*time.Second) })
 	return debStubVal
 }
 

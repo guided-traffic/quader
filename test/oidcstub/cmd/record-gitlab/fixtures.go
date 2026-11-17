@@ -23,22 +23,22 @@ type tokenCase struct {
 }
 
 var cases = []tokenCase{
-	{"push-protected-branch", "main", "claims", "TROVE_ID_TOKEN", "A push pipeline on the protected default branch main; aud a string.", audience},
+	{"push-protected-branch", "main", "claims", "QUADER_ID_TOKEN", "A push pipeline on the protected default branch main; aud a string.", audience},
 	{"push-protected-branch-aud-array", "main", "claims", "ARRAY_ID_TOKEN", "The same job's second ID token, aud an array of two.", []string{audience, secondAudience}},
 	{"default-id-tokens", "main", "claims-default", "DEFAULT_ID_TOKEN", "A job without id_tokens of its own gets the id_tokens of default:; a job with its own does not (see variables).", defaultAudience},
-	{"job-timeout", "main", "claims-timeout", "TROVE_ID_TOKEN", "A job with timeout: 15m on main.", audience},
-	{"environment-start", "main", "environment-start", "TROVE_ID_TOKEN", "A job with environment production (protected where the licence allows), action start, on main.", audience},
-	{"environment-prepare", "main", "environment-prepare", "TROVE_ID_TOKEN", "A job with environment production, action prepare, on main.", audience},
-	{"environment-unprotected", "main", "environment-unprotected", "TROVE_ID_TOKEN", "A job with the unprotected environment staging, action start, on main.", audience},
-	{"push-unprotected-branch", "branch", "claims", "TROVE_ID_TOKEN", "A push pipeline on an unprotected branch.", audience},
-	{"push-protected-tag", "tag", "claims", "TROVE_ID_TOKEN", "A push pipeline on a tag protected by the rule v*.", audience},
-	{"push-protected-tag-environment", "tag", "environment-start", "TROVE_ID_TOKEN", "A job with environment production, action start, on the protected tag: the shape of the double's DefaultClaims.", audience},
-	{"merge-request-same-project", "mr", "claims", "TROVE_ID_TOKEN", "A merge request pipeline from an unprotected branch of the same project.", audience},
-	{"merge-request-fork-in-fork", "fork-in-fork", "claims", "TROVE_ID_TOKEN", "A merge request from a branch of the fork partner/invoice-api, opened by a user who is only a Reporter of the parent: GitLab runs its pipeline in the fork.", audience},
-	{"merge-request-fork-in-parent", "fork-in-parent", "claims", "TROVE_ID_TOKEN", "The same merge request's pipeline, run in the parent project billing/invoice-api by a member of the parent (POST /projects/:id/merge_requests/:iid/pipelines).", audience},
-	{"merge-request-fork-by-parent-member", "fork-by-member", "claims", "TROVE_ID_TOKEN", "A merge request from a branch of the fork opened by a member of the parent who may run pipelines there: GitLab runs its pipeline in the parent without being asked.", audience},
-	{"schedule", "schedule", "claims", "TROVE_ID_TOKEN", "A pipeline started by playing a pipeline schedule on main.", audience},
-	{"api", "api", "claims", "TROVE_ID_TOKEN", "A pipeline started through POST /projects/:id/pipeline on main.", audience},
+	{"job-timeout", "main", "claims-timeout", "QUADER_ID_TOKEN", "A job with timeout: 15m on main.", audience},
+	{"environment-start", "main", "environment-start", "QUADER_ID_TOKEN", "A job with environment production (protected where the licence allows), action start, on main.", audience},
+	{"environment-prepare", "main", "environment-prepare", "QUADER_ID_TOKEN", "A job with environment production, action prepare, on main.", audience},
+	{"environment-unprotected", "main", "environment-unprotected", "QUADER_ID_TOKEN", "A job with the unprotected environment staging, action start, on main.", audience},
+	{"push-unprotected-branch", "branch", "claims", "QUADER_ID_TOKEN", "A push pipeline on an unprotected branch.", audience},
+	{"push-protected-tag", "tag", "claims", "QUADER_ID_TOKEN", "A push pipeline on a tag protected by the rule v*.", audience},
+	{"push-protected-tag-environment", "tag", "environment-start", "QUADER_ID_TOKEN", "A job with environment production, action start, on the protected tag: the shape of the double's DefaultClaims.", audience},
+	{"merge-request-same-project", "mr", "claims", "QUADER_ID_TOKEN", "A merge request pipeline from an unprotected branch of the same project.", audience},
+	{"merge-request-fork-in-fork", "fork-in-fork", "claims", "QUADER_ID_TOKEN", "A merge request from a branch of the fork partner/invoice-api, opened by a user who is only a Reporter of the parent: GitLab runs its pipeline in the fork.", audience},
+	{"merge-request-fork-in-parent", "fork-in-parent", "claims", "QUADER_ID_TOKEN", "The same merge request's pipeline, run in the parent project billing/invoice-api by a member of the parent (POST /projects/:id/merge_requests/:iid/pipelines).", audience},
+	{"merge-request-fork-by-parent-member", "fork-by-member", "claims", "QUADER_ID_TOKEN", "A merge request from a branch of the fork opened by a member of the parent who may run pipelines there: GitLab runs its pipeline in the parent without being asked.", audience},
+	{"schedule", "schedule", "claims", "QUADER_ID_TOKEN", "A pipeline started by playing a pipeline schedule on main.", audience},
+	{"api", "api", "claims", "QUADER_ID_TOKEN", "A pipeline started through POST /projects/:id/pipeline on main.", audience},
 }
 
 type tokenFixture struct {
@@ -309,9 +309,9 @@ func (w writer) writeAll(iss *issuerRecord, logs map[string]map[string]*jobLog, 
 			Header: header, Claims: claims,
 		}
 		if tc.name == "default-id-tokens" {
-			f.Variables = map[string]map[string]string{"claims-default": presence(j, "DEFAULT_ID_TOKEN", "TROVE_ID_TOKEN")}
+			f.Variables = map[string]map[string]string{"claims-default": presence(j, "DEFAULT_ID_TOKEN", "QUADER_ID_TOKEN")}
 			if own := logs["main"]["claims"]; own != nil {
-				f.Variables["claims"] = presence(own, "TROVE_ID_TOKEN", "ARRAY_ID_TOKEN", "DEFAULT_ID_TOKEN")
+				f.Variables["claims"] = presence(own, "QUADER_ID_TOKEN", "ARRAY_ID_TOKEN", "DEFAULT_ID_TOKEN")
 			}
 		}
 		if err := w.write("id-token-"+tc.name+".json", f); err != nil {

@@ -26,9 +26,9 @@ generic-specific parts of [features/repositories.md](../../features/repositories
 
 Conventions on this page:
 
-- `https://trove.example.com` is the public base URL *(example)*; `web` is an example project key,
+- `https://quader.example.com` is the public base URL *(example)*; `web` is an example project key,
   `generic-local` an example local repository key of that project, `generic-remote` and `generic-all`
-  example remote and virtual keys; `$TROVE_TOKEN` is a trove token (INV-8). A repository named outside its
+  example remote and virtual keys; `$QUADER_TOKEN` is a Quader token (INV-8). A repository named outside its
   project is written `<projectKey>/<repoKey>` (`web/generic-local`).
 - The *file URL* of a path is `<public base URL>/files/<projectKey>/<repoKey>/<path>`. Paths in tables are
   relative to the repository root.
@@ -65,12 +65,12 @@ Priority: **MVP** · Covers: PKG-GENERIC-001
   ([storage.md](../storage.md) R-STOR-003, R-STOR-016 `package` is `null`).
 - The format has no format-specific settings: the configuration document has no `generic` member,
   and one that is sent answers 400 `invalid_document` like any unknown member (R-REPO-008).
-- Typical uses: installers, archives, documents, media, build outputs, and content of formats trove
+- Typical uses: installers, archives, documents, media, build outputs, and content of formats Quader
   does not support natively.
 
 Acceptance criteria:
 
-- `curl -s https://trove.example.com/api/v1/formats` lists `generic` with the field values above.
+- `curl -s https://quader.example.com/api/v1/formats` lists `generic` with the field values above.
 - `POST /api/v1/projects/web/repositories` with `{"key":"generic-local","class":"local","format":"generic"}`
   returns 201; a body with a `generic` member returns 400 `invalid_document`; the same create with
   `"class":"remote"` returns 422 `unsupported_class` until R-GENERIC-009 ships.
@@ -102,9 +102,9 @@ implicitly from the paths of deployed files or explicitly (R-STOR-007).
 
 Acceptance criteria:
 
-- `curl -T a.bin https://trove.example.com/files/web/generic-local/a/b/c/d.bin` creates the folders
+- `curl -T a.bin https://quader.example.com/files/web/generic-local/a/b/c/d.bin` creates the folders
   `a`, `a/b` and `a/b/c` implicitly (R-STOR-017 lists them).
-- `curl --path-as-is https://trove.example.com/files/web/generic-local/a/%2e%2e/x` answers 400 with the
+- `curl --path-as-is https://quader.example.com/files/web/generic-local/a/%2e%2e/x` answers 400 with the
   code `invalid_path`; so do `…/a//b`, `…/a%00b` and `…/a%5Cb`.
 - `Report.pdf` and `report.pdf` deployed to one repository are two items.
 
@@ -120,7 +120,7 @@ Priority: **MVP** · Covers: PKG-GENERIC-001, PKG-GENERIC-005
 | Method and path | Request kind | Package name, version |
 |---|---|---|
 | `GET`, `HEAD` on a path without a trailing `/` | `artifact` | none |
-| `GET`, `HEAD` on a path with a trailing `/`, or on the repository root | `other` (the directory index of R-STOR-017, rendered by trove) | none |
+| `GET`, `HEAD` on a path with a trailing `/`, or on the repository root | `other` (the directory index of R-STOR-017, rendered by Quader) | none |
 | `PUT`, `DELETE` and every other method that changes state | `write` | none |
 
 - A generic repository has no metadata documents, so no path is `metadata`: the rule that an
@@ -145,8 +145,8 @@ The client protocol for writing is `PUT /files/<projectKey>/<repoKey>/<path>` wi
 ([storage.md](../storage.md) R-STOR-007; request path R-ARCH-014):
 
 ```bash
-curl -fsS -H "Authorization: Bearer $TROVE_TOKEN" -T installer-2.4.1.msi \
-  "https://trove.example.com/files/web/generic-local/tools/installer/2.4.1/installer-2.4.1.msi"   # example
+curl -fsS -H "Authorization: Bearer $QUADER_TOKEN" -T installer-2.4.1.msi \
+  "https://quader.example.com/files/web/generic-local/tools/installer/2.4.1/installer-2.4.1.msi"   # example
 ```
 
 - The generic format refuses nothing on format grounds. No content check exists, so the response
@@ -170,7 +170,7 @@ curl -fsS -H "Authorization: Bearer $TROVE_TOKEN" -T installer-2.4.1.msi \
 
 Acceptance criteria:
 
-- `curl -fsS -u ci:$TROVE_TOKEN -T widget.bin https://trove.example.com/files/web/generic-local/tools/widget.bin`
+- `curl -fsS -u ci:$QUADER_TOKEN -T widget.bin https://quader.example.com/files/web/generic-local/tools/widget.bin`
   answers `201` with the item description of R-STOR-007; repeating it answers `200`.
 - With `read` and `deploy` but not `overwrite` on `generic-local`, a second `PUT` of different bytes
   to the same path answers 403 and the first content is still served.
@@ -201,7 +201,7 @@ address, `Repr-Digest`, a single byte range, `If-Range`, conditional requests) a
 
 Acceptance criteria:
 
-- `curl -r 0-99 -o part https://trove.example.com/files/web/generic-local/tools/widget.bin` answers
+- `curl -r 0-99 -o part https://quader.example.com/files/web/generic-local/tools/widget.bin` answers
   `206` with 100 bytes equal to `head -c 100 widget.bin`.
 - An uploaded `evil.svg` with an embedded script, opened from `/files/` in a browser, does not run
   the script; the response carries `Content-Disposition: attachment`, `nosniff`, the sandbox policy
@@ -289,21 +289,21 @@ format with one client, `curl` (Q-GENERIC-8). The format contributes its templat
 
 | Snippet `id` | Tab | Content (`<registry URL>` is `<public base URL>/files/<projectKey>/<repoKey>/`) |
 |---|---|---|
-| `curl.configure.function` | Configure | The shell function `trove_curl` below |
-| `curl.install` | Install | `trove_curl --fail --remote-name "<registry URL><path>"` |
-| `curl.publish` | Publish | `trove_curl --fail --upload-file <file> "<registry URL><path>"`, only for a caller with `deploy` |
+| `curl.configure.function` | Configure | The shell function `quader_curl` below |
+| `curl.install` | Install | `quader_curl --fail --remote-name "<registry URL><path>"` |
+| `curl.publish` | Publish | `quader_curl --fail --upload-file <file> "<registry URL><path>"`, only for a caller with `deploy` |
 
 ```shell
-trove_curl() {
+quader_curl() {
   curl --silent --show-error --config - "$@" <<EOF
-header = "Authorization: Bearer ${TROVE_TOKEN}"
+header = "Authorization: Bearer ${QUADER_TOKEN}"
 EOF
 }
 ```
 
 - The snippets are POSIX shell. The function hands curl the credential as configuration on standard input, so the
   token is never an argument of curl and appears neither in the process list nor in a shell trace, and no file holds
-  it (Q-GENERIC-9). The header is the one line that names `${TROVE_TOKEN}`: `credentials=env` names the configured
+  it (Q-GENERIC-9). The header is the one line that names `${QUADER_TOKEN}`: `credentials=env` names the configured
   variable there, `credentials=placeholder` the browser's token, and `credentials=none` drops the line, which leaves a
   function that sends no credential.
 - Deleting has no snippet, because the tabs are Configure, Install and Publish (Q-API-160); the guide names the
@@ -319,16 +319,16 @@ EOF
 Acceptance criteria:
 
 - `GET /api/v1/projects/web/repositories/generic-local/client-setup?client=curl&credentials=env` holds the three snippets, the
-  configure snippet with `header = "Authorization: Bearer ${TROVE_TOKEN}"`; with `credentials=none` it holds no
+  configure snippet with `header = "Authorization: Bearer ${QUADER_TOKEN}"`; with `credentials=none` it holds no
   `Authorization` line; without `deploy` it holds no publish snippet (`TestR_GENERIC_016_TheClientSetupOfCurl`).
 - The `configure`, `install` and `publish` snippets of `GET /api/v1/projects/web/repositories/generic-local/guide?client=curl`
   equal those of the client setup with `credentials=env` byte for byte
   (`TestR_GENERIC_016_TheGuideShowsTheSnippetsOfTheClientSetup`).
 - The conformance kit runs check 8 over the generic format (`TestR_ARCH_010_Conformance`); every code of the
-  troubleshooting table is a code of the problem catalog under the status trove answers it with
-  (`TestR_GENERIC_016_TheTroubleshootingCodesAreTroves`), and the limits the guide names are the configured defaults
+  troubleshooting table is a code of the problem catalog under the status Quader answers it with
+  (`TestR_GENERIC_016_TheTroubleshootingCodesAreQuaders`), and the limits the guide names are the configured defaults
   (`TestR_GENERIC_016_TheGuideStatesTheLimits`).
-- With the configure snippet defined in a POSIX shell and `TROVE_TOKEN` set, the install and publish snippets
+- With the configure snippet defined in a POSIX shell and `QUADER_TOKEN` set, the install and publish snippets
   download and upload a file of `generic-local`, and the token is in no argument of curl.
 
 ## Non-conformant content and other formats
@@ -621,16 +621,16 @@ acceptance criterion of `09-guides.spec.ts`).
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: the owner asked for the token in the environment variable `TROVE_TOKEN` and a header form without `.netrc`.
-A template never holds a token: it spells the reference `${TROVE_TOKEN}`, which the API rewrites by the credential
+Context: the owner asked for the token in the environment variable `QUADER_TOKEN` and a header form without `.netrc`.
+A template never holds a token: it spells the reference `${QUADER_TOKEN}`, which the API rewrites by the credential
 mode (R-API-030), and `credentials=none` drops the line that holds it.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `--header "Authorization: Bearer ${TROVE_TOKEN}"` on every command | The common form | Shortest; every command stands alone | The shell expands the token into an argument of curl: other users of the machine read it in the process list, a shell trace (`set -x`) prints it into a CI log, and an audit of executed commands records it |
-| (b) A shell function that hands curl the header as configuration on standard input (`--config -` with a here-document) (chosen) | `trove_curl` in the Configure tab; the other snippets and the guide call it | The token is never an argument; no file holds it; it uses only long-standing options of curl (`--config -`, `header`); the commands stay short; the one line with the reference is the header, so every credential mode of the API applies | The function lives in the shell that defined it; `trove_curl` cannot upload from standard input |
+| (a) `--header "Authorization: Bearer ${QUADER_TOKEN}"` on every command | The common form | Shortest; every command stands alone | The shell expands the token into an argument of curl: other users of the machine read it in the process list, a shell trace (`set -x`) prints it into a CI log, and an audit of executed commands records it |
+| (b) A shell function that hands curl the header as configuration on standard input (`--config -` with a here-document) (chosen) | `quader_curl` in the Configure tab; the other snippets and the guide call it | The token is never an argument; no file holds it; it uses only long-standing options of curl (`--config -`, `header`); the commands stay short; the one line with the reference is the header, so every credential mode of the API applies | The function lives in the shell that defined it; `quader_curl` cannot upload from standard input |
 | (c) `.netrc` (`--netrc-file`) | curl reads a login and password from a file | curl reads it itself | A file holding the token in plain text, which the owner ruled out; a template cannot write the token, so the file would need a step of its own |
-| (d) curl's variables (`--variable %TROVE_TOKEN` with `--expand-header`) | curl reads the variable itself | No shell involved | Needs curl 8.3 or later, which long-term-support distributions do not all ship; the reference is not `${TROVE_TOKEN}`, so neither the credential modes nor the configured variable name (`ui.client_setup.token_env_var`) would apply |
+| (d) curl's variables (`--variable %QUADER_TOKEN` with `--expand-header`) | curl reads the variable itself | No shell involved | Needs curl 8.3 or later, which long-term-support distributions do not all ship; the reference is not `${QUADER_TOKEN}`, so neither the credential modes nor the configured variable name (`ui.client_setup.token_env_var`) would apply |
 
 **Choice:** (b). Basic authentication with `--user` is not offered for the same reason as (a).
 
@@ -649,7 +649,7 @@ would make the function unnecessary.
 Component: raw file serving of generic repositories (R-GENERIC-005). Subject: the confidentiality
 and the integrity of stored content. Live with the MVP. A generic repository neither scans nor
 validates what it stores; content headers (R-ARCH-007) keep a browser from running uploaded
-content as part of trove's origin, but a downloaded installer or archive is exactly as trustworthy
+content as part of Quader's origin, but a downloaded installer or archive is exactly as trustworthy
 as its uploader. Grant `deploy` and `overwrite` only to the accounts that publish, and use the
 digests of the item information to verify downloads out of band. What makes it real: a write grant
 on a repository that other builds consume.

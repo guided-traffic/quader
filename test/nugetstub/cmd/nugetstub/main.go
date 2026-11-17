@@ -23,7 +23,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 func main() {

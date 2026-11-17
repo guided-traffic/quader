@@ -1,4 +1,4 @@
-// Package npmstub is the counting test upstream for trove's npm repositories: a stub npm registry
+// Package npmstub is the counting test upstream for quader's npm repositories: a stub npm registry
 // that serves the synthetic package set of package corpus (and a few recorded documents), counts
 // every request per path, and fails on command. It answers over TLS only; there is no plain-HTTP
 // listener to enable.
@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // Config configures a Server. The zero value serves the default corpus, derives the tarball

@@ -17,13 +17,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	ocidata "github.com/guided-traffic/trove/internal/formatdata/oci"
-	"github.com/guided-traffic/trove/internal/formats/oci/manifest"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
+	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }

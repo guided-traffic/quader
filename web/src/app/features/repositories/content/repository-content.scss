@@ -1,41 +1,41 @@
 .facts {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 }
 
 // The format badge carries the format's icon before its name (UI-A-24).
 .format-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
 
-  trove-format-icon {
+  quader-format-icon {
     font-size: 1rem;
   }
 }
 
 .resolves {
-  margin: 0 0 var(--trove-space-2);
-  color: var(--trove-text-muted);
+  margin: 0 0 var(--quader-space-2);
+  color: var(--quader-text-muted);
 }
 
 // Details of the repository (Q-UI-313, Q-UI-319): closed, at the end of the main view.
 .details {
   display: block;
-  margin-block-start: var(--trove-space-6);
+  margin-block-start: var(--quader-space-6);
 }
 
 .content-note {
-  margin: var(--trove-space-3) 0 0;
-  color: var(--trove-text-muted);
+  margin: var(--quader-space-3) 0 0;
+  color: var(--quader-text-muted);
 }
 
 .toolbar {
   display: flex;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
   align-items: center;
-  padding-block: var(--trove-space-3);
+  padding-block: var(--quader-space-3);
 }
 
 .filter {
@@ -45,15 +45,15 @@
   input {
     inline-size: 100%;
     box-sizing: border-box;
-    padding-inline-end: var(--trove-space-6);
+    padding-inline-end: var(--quader-space-6);
   }
 
   .material-icons {
     position: absolute;
-    inset-inline-end: var(--trove-space-2);
+    inset-inline-end: var(--quader-space-2);
     inset-block-start: 50%;
     transform: translateY(-50%);
-    color: var(--trove-text-muted);
+    color: var(--quader-text-muted);
     font-size: 1.125rem;
     pointer-events: none;
   }
@@ -63,15 +63,15 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-1);
-  margin-block-start: var(--trove-space-3);
-  color: var(--trove-text-muted);
+  gap: var(--quader-space-1);
+  margin-block-start: var(--quader-space-3);
+  color: var(--quader-text-muted);
 }
 
 .name-cell {
   display: flex;
   align-items: center;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
 }
 
 .item-name {
@@ -80,23 +80,23 @@
 
 .item-description {
   display: block;
-  color: var(--trove-text-muted);
+  color: var(--quader-text-muted);
   font-weight: 400;
 }
 
 .file-link {
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
   padding: 0;
   border: 0;
   background: none;
-  color: var(--trove-link);
+  color: var(--quader-link);
   font: inherit;
   cursor: pointer;
 
   .material-icons {
-    color: var(--trove-text-muted);
+    color: var(--quader-text-muted);
     font-size: 1.125rem;
   }
 }
@@ -120,6 +120,6 @@ tr.expansion td {
 .other-address {
   display: flex;
   flex-direction: column;
-  gap: var(--trove-space-1);
-  margin: 0 0 var(--trove-space-3);
+  gap: var(--quader-space-1);
+  margin: 0 0 var(--quader-space-3);
 }

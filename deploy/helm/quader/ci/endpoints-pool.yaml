@@ -1,0 +1,48 @@
+# An endpoint with a pool of its own: its pods are <fullname>-packages-ep-customers,
+# its listener runs only there, and the main packages pods do not open its port.
+config:
+  server:
+    base_url: https://quader.example.com
+  database:
+    host: quader-db-rw.quader.svc
+  storage:
+    s3:
+      bucket: quader-blobs
+  valkey:
+    sentinel:
+      addresses:
+        - quader-valkey-sentinel-0.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-1.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-2.quader-valkey-sentinel.quader.svc:26379
+      primary_name: quader
+tls:
+  secretName: quader-tls
+secrets:
+  database:
+    existingSecret: quader-db-app
+  valkey:
+    existingSecret: quader-valkey
+  encryption:
+    existingSecret: quader-encryption-keys
+    keys: [2026-10.key]
+endpoints:
+  customers:
+    port: 8443
+    baseUrl: https://packages.example.com
+    tls:
+      existingSecret: quader-packages-tls
+    pool:
+      enabled: true
+      replicaCount: 3
+      resources:
+        limits:
+          memory: 1Gi
+    ingress:
+      enabled: true
+      className: traefik-external
+      backendTLS:
+        controller: traefik
+        verify: false
+      tls:
+        - secretName: packages-tls
+          hosts: [packages.example.com]

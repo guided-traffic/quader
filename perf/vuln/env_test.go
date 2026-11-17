@@ -28,7 +28,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The size of the installation (R-VULN-028): 90,000 npm versions in 9,000 packages across npm-local and npm-remote, 10,000
@@ -97,7 +97,7 @@ type result struct {
 }
 
 // report collects the results of a run and writes them to .out/perf-vuln.json, which the workflow uploads. With
-// TROVE_PERF_GATE=1 a measured value above its target fails the test (the workflow sets it); without it the run reports only,
+// QUADER_PERF_GATE=1 a measured value above its target fails the test (the workflow sets it); without it the run reports only,
 // which is how a run on a developer machine is read. A scenario that does not finish fails the test either way.
 type report struct {
 	t    *testing.T
@@ -140,7 +140,7 @@ func (r *report) record(id string, value float64, note string) {
 	v := round(value)
 	r.add(result{ID: id, Name: w.name, Outcome: outcomeMeasured, Value: &v, Unit: w.unit, Target: w.target, Met: met, Note: note})
 	r.t.Logf("%s %s: %.3f %s (target %.3f %s) met=%t %s", id, w.name, value, w.unit, w.target, w.unit, met, note)
-	if !met && os.Getenv("TROVE_PERF_GATE") == "1" {
+	if !met && os.Getenv("QUADER_PERF_GATE") == "1" {
 		r.t.Errorf("%s %s: %.3f %s misses the target of %.3f %s", id, w.name, value, w.unit, w.target, w.unit)
 	}
 }
@@ -231,7 +231,7 @@ func (r *report) write() {
 	doc := map[string]any{
 		"requirement": "R-VULN-028",
 		"environment": fmt.Sprintf("integration stack, in-process web and worker replica, %s/%s, GOMAXPROCS %d", runtime.GOOS, runtime.GOARCH, runtime.GOMAXPROCS(0)),
-		"gate":        os.Getenv("TROVE_PERF_GATE") == "1",
+		"gate":        os.Getenv("QUADER_PERF_GATE") == "1",
 		"takenAt":     time.Now().UTC().Format(time.RFC3339),
 		"results":     r.rows,
 	}
@@ -432,7 +432,7 @@ func logExcerpt(log string, n int) string {
 // histogramBound returns the smallest bucket bound, in seconds, at or below which at least the share q of the observations
 // of the histogram series fall: an upper bound of the q-quantile that is exact to the bucket. -1 when the series has no
 // observations. series is the metric name and the label selector inside the braces, for example
-// `trove_vuln_evaluation_duration_seconds{trigger="publish"`.
+// `quader_vuln_evaluation_duration_seconds{trigger="publish"`.
 func histogramBound(text, name, selector string, q float64) float64 {
 	type bucket struct{ le, n float64 }
 	var buckets []bucket

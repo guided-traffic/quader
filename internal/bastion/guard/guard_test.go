@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/bastion/shared"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func TestR_BAS_019_AnIPv6AddressCountsAsItsSlash64(t *testing.T) {
@@ -287,10 +287,10 @@ func TestR_BAS_037_AFloodIsBlockedWithDoublingDurations(t *testing.T) {
 		t.Fatalf("Retry-After = %s, want within the first 15 minutes", v.RetryAfter)
 	}
 	if got := value(r.m.Blocks.WithLabelValues(metrics.BlockRefusals)); got != 1 {
-		t.Fatalf("trove_bastion_blocks_total = %v, want 1", got)
+		t.Fatalf("quader_bastion_blocks_total = %v, want 1", got)
 	}
 	if got := value(r.m.Blocked); got != 1 {
-		t.Fatalf("trove_bastion_blocked_addresses = %v, want 1", got)
+		t.Fatalf("quader_bastion_blocked_addresses = %v, want 1", got)
 	}
 	// 15 minutes after the block began it ends; a second flood within 24 h yields 30 minutes.
 	r.clk.advance(15 * time.Minute)

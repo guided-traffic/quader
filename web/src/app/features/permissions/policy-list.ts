@@ -37,7 +37,7 @@ export function actionSummary(policy: Pick<PermissionPolicy, 'entries'>): string
  * opens the list filtered.
  */
 @Component({
-  selector: 'trove-policy-list',
+  selector: 'quader-policy-list',
   imports: [PageHeader, RouterLink, DataTable, FilterCategory, FilterPanel, FilterToggle, Needs, TextField],
   templateUrl: './policy-list.html',
   styleUrl: '../../shared/access/access.scss',

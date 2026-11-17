@@ -33,7 +33,7 @@ func sessionClass(rel string) bool {
 	return strings.Contains(rel, "/migrations/") || rel == "internal/meta/postgres/migrate.go" || restoreFile(rel)
 }
 
-// restoreFile are the files of `trove backup restore` that run on its session connection under the migration lock: the load
+// restoreFile are the files of `quader backup restore` that run on its session connection under the migration lock: the load
 // copies into temporary tables and names tables by catalog and registry values (R-BAK-021 step 4).
 func restoreFile(rel string) bool {
 	return rel == "internal/meta/postgres/backup_load.go" || rel == "internal/meta/postgres/backup_restore_state.go" ||
@@ -83,13 +83,13 @@ func sqlRules() []sqlRule {
 		{
 			rule:   "R-ARCH-018",
 			re:     regexp.MustCompile(`(?is)` + sqlStatementStart + `(?:LISTEN|UNLISTEN|NOTIFY)\s+(?:"[^"]+"|[a-z_][a-z0-9_]*)\s*(?:,\s*'[^']*')?\s*;?\s*\z`),
-			why:    "trove issues no LISTEN or NOTIFY (Q-ARCH-15)",
+			why:    "quader issues no LISTEN or NOTIFY (Q-ARCH-15)",
 			exempt: never,
 		},
 		{
 			rule:   "R-ARCH-018",
 			re:     regexp.MustCompile(`(?i)\bpg_notify\s*\(`),
-			why:    "trove issues no pg_notify (Q-ARCH-15)",
+			why:    "quader issues no pg_notify (Q-ARCH-15)",
 			exempt: never,
 		},
 		{
@@ -303,7 +303,7 @@ func scanGo(root, rel string, rules []sqlRule) ([]Violation, error) {
 			if sel, ok := n.Fun.(*ast.SelectorExpr); ok && sel.Sel.Name == "WaitForNotification" {
 				out = append(out, Violation{
 					Rule: "R-ARCH-018", From: fmt.Sprintf("%s:%d", rel, at(n.Pos())), To: "WaitForNotification",
-					Detail: "trove issues no LISTEN, so nothing waits for a notification (Q-ARCH-15)",
+					Detail: "quader issues no LISTEN, so nothing waits for a notification (Q-ARCH-15)",
 				})
 			}
 			if builder {

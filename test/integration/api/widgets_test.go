@@ -15,12 +15,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // The widget is the test resource that proves the conventions end to end, and
@@ -33,7 +33,7 @@ import (
 // test database).
 
 const widgetSchema = `
-CREATE TABLE trove.widgets (
+CREATE TABLE quader.widgets (
     id         uuid        PRIMARY KEY,
     name       text        NOT NULL UNIQUE,
     color      text,
@@ -42,8 +42,8 @@ CREATE TABLE trove.widgets (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX widgets_created ON trove.widgets (created_at, id);
-GRANT ALL ON trove.widgets TO PUBLIC;`
+CREATE INDEX widgets_created ON quader.widgets (created_at, id);
+GRANT ALL ON quader.widgets TO PUBLIC;`
 
 // Widget is the representation: the same type serves GET, POST, PUT and the base
 // of a PATCH, so a body obtained by GET can be sent back (R-API-003).

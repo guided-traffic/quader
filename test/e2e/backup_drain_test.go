@@ -79,7 +79,7 @@ func (l *podLog) await(t testing.TB, text string, within time.Duration) {
 func restoreCopyStarted(t *testing.T) (pod string, l *podLog) {
 	t.Helper()
 	waitFor(t, "the restore pod", 3*time.Minute, 500*time.Millisecond, func() bool {
-		pod = bakPodOf(t, restoreNS, "trove-restore")
+		pod = bakPodOf(t, restoreNS, "quader-restore")
 		return pod != ""
 	})
 	l = followPodLog(restoreNS, pod)
@@ -136,7 +136,7 @@ func podNodeIfAny(ns, pod string) string {
 func bakDrainNode(t testing.TB) string {
 	t.Helper()
 	busy := map[string]bool{podNode(t, cfg.namespace, pgPrimary(t)): true}
-	if out, err := kubectl("-n", restoreNS, "get", "pod", "trove-db-1", "-o", "jsonpath={.spec.nodeName}"); err == nil {
+	if out, err := kubectl("-n", restoreNS, "get", "pod", "quader-db-1", "-o", "jsonpath={.spec.nodeName}"); err == nil {
 		busy[strings.TrimSpace(out)] = true
 	}
 	for _, n := range bakWorkerNodes(t) {
@@ -177,7 +177,7 @@ func bakDrain(t testing.TB, node string) {
 }
 
 // bakFreshPrefix is a target prefix no backup was written to: a full copy.
-func bakFreshPrefix(run, what string) string { return fmt.Sprintf("trove-%s-%s", what, run) }
+func bakFreshPrefix(run, what string) string { return fmt.Sprintf("quader-%s-%s", what, run) }
 
 func TestBackupDrain(t *testing.T) {
 	useBackupProfile(t)
@@ -201,7 +201,7 @@ func TestBackupDrain(t *testing.T) {
 		}
 	}
 	slow := func(prefix string) map[string]string {
-		return map[string]string{"TROVE_BACKUP_TARGET_PREFIX": prefix, "TROVE_BACKUP_COPY_BYTES_PER_SECOND": "1MiB", "TROVE_BACKUP_COPY_CONCURRENCY": "1"}
+		return map[string]string{"QUADER_BACKUP_TARGET_PREFIX": prefix, "QUADER_BACKUP_COPY_BYTES_PER_SECOND": "1MiB", "QUADER_BACKUP_COPY_CONCURRENCY": "1"}
 	}
 	zero := 0
 	var drainBackupID string
@@ -233,9 +233,9 @@ func TestBackupDrain(t *testing.T) {
 		job := "bak-kill-" + run
 		two := 2
 		env := slow(bakFreshPrefix(run, "kill"))
-		env["TROVE_BACKUP_LEASE_DURATION"] = "20s"
-		env["TROVE_BACKUP_HEARTBEAT_INTERVAL"] = "2s"
-		env["TROVE_BACKUP_FINALIZE_TIMEOUT"] = "5s"
+		env["QUADER_BACKUP_LEASE_DURATION"] = "20s"
+		env["QUADER_BACKUP_HEARTBEAT_INTERVAL"] = "2s"
+		env["QUADER_BACKUP_FINALIZE_TIMEOUT"] = "5s"
 		bakCreateJob(t, bakJob{name: job, backoff: &two, env: env})
 		bakWaitLog(t, cfg.namespace, job, "backup run started", 3*time.Minute)
 		time.Sleep(5 * time.Second)
@@ -260,7 +260,7 @@ func TestBackupDrain(t *testing.T) {
 
 	// The restore from the target the drain test wrote: every blob of the installation, streamed through the pod one at a time (the restore has no rate limit, so the server-side copy would end the step in seconds).
 	restoreWith := func(t *testing.T, backoff string) {
-		env := fmt.Sprintf(`restore.extraEnv=[{"name":"TROVE_BACKUP_COPY_SERVER_SIDE","value":"never"},{"name":"TROVE_BACKUP_COPY_CONCURRENCY","value":"1"},{"name":"TROVE_BACKUP_TARGET_PREFIX","value":%q}]`, bakFreshPrefix(run, "drain"))
+		env := fmt.Sprintf(`restore.extraEnv=[{"name":"QUADER_BACKUP_COPY_SERVER_SIDE","value":"never"},{"name":"QUADER_BACKUP_COPY_CONCURRENCY","value":"1"},{"name":"QUADER_BACKUP_TARGET_PREFIX","value":%q}]`, bakFreshPrefix(run, "drain"))
 		args := []string{"install", drainBackupID, "--set", "restore.backoffLimit=" + backoff, "--set-json", env}
 		restoreNSScript(t, args...)
 	}
@@ -302,7 +302,7 @@ func TestBackupDrain(t *testing.T) {
 		}
 		// once the pod is evicted the other nodes take the next one
 		waitFor(t, "the restore pod to leave "+node, 2*time.Minute, time.Second, func() bool {
-			p := bakPodOf(t, restoreNS, "trove-restore")
+			p := bakPodOf(t, restoreNS, "quader-restore")
 			// the evicted pod can be gone between the two lookups; a pod that no longer exists has left the node
 			return p == "" || podNodeIfAny(restoreNS, p) != node
 		})
@@ -314,9 +314,9 @@ func TestBackupDrain(t *testing.T) {
 		}
 		copyInterrupted(t, pod, rlog)
 		t.Logf("the drain of %s finished in %s while the restore copied blobs", node, time.Since(start).Round(time.Second))
-		end := bakWaitJob(t, restoreNS, "trove-restore", 20*time.Minute)
+		end := bakWaitJob(t, restoreNS, "quader-restore", 20*time.Minute)
 		if end.Condition != "Complete" {
-			t.Fatalf("the restore Job ended %s (exits %v, %d pods):\n%s", end.Condition, end.Exits, end.Pods, tail(bakJobLogs(restoreNS, "trove-restore"), 2500))
+			t.Fatalf("the restore Job ended %s (exits %v, %d pods):\n%s", end.Condition, end.Exits, end.Pods, tail(bakJobLogs(restoreNS, "quader-restore"), 2500))
 		}
 		if end.Pods < 2 {
 			t.Fatalf("the restore was not interrupted: %d pod(s)", end.Pods)
@@ -332,24 +332,24 @@ func TestBackupDrain(t *testing.T) {
 			t.Fatalf("kill %s: %v: %s", pod, err, out)
 		}
 		copyInterrupted(t, pod, rlog)
-		end := bakWaitJob(t, restoreNS, "trove-restore", 20*time.Minute)
+		end := bakWaitJob(t, restoreNS, "quader-restore", 20*time.Minute)
 		if end.Condition != "Complete" {
-			t.Fatalf("the restore Job ended %s (exits %v):\n%s", end.Condition, end.Exits, tail(bakJobLogs(restoreNS, "trove-restore"), 2500))
+			t.Fatalf("the restore Job ended %s (exits %v):\n%s", end.Condition, end.Exits, tail(bakJobLogs(restoreNS, "quader-restore"), 2500))
 		}
 		if end.Pods < 2 {
 			t.Fatalf("the restore was not killed: %d pod(s)", end.Pods)
 		}
-		logs := bakJobLogs(restoreNS, "trove-restore")
+		logs := bakJobLogs(restoreNS, "quader-restore")
 		for _, want := range []string{"restore checks passed"} {
 			if !strings.Contains(logs, want) {
 				t.Errorf("the log lacks %q", want)
 			}
 		}
 		// the restored database is whole: the anchor and the marker are gone and the schema is at the binary's step
-		if got := krSQL(t, `SELECT count(*) FROM trove.system_state WHERE key = 'restore_in_progress'`); got != "0" {
+		if got := krSQL(t, `SELECT count(*) FROM quader.system_state WHERE key = 'restore_in_progress'`); got != "0" {
 			t.Errorf("restore_in_progress is still set (%s)", got)
 		}
-		if got := krSQL(t, `SELECT coalesce(obj_description('trove'::regnamespace, 'pg_namespace'), '')`); got != "" {
+		if got := krSQL(t, `SELECT coalesce(obj_description('quader'::regnamespace, 'pg_namespace'), '')`); got != "" {
 			t.Errorf("the anchor remains: %q", got)
 		}
 	})

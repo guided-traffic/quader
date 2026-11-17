@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // R-VULN-006 acceptance: a record with "id": "../x", one with a details of 100 KiB and one with a javascript: reference: the
@@ -124,13 +124,13 @@ func TestR_VULN_006_AffectedEntriesAreStoredForTheMatcher(t *testing.T) {
 	e := newEnv(t, options{})
 	e.mustSucceed(taskOSV, nil)
 	if got := e.text("SELECT ranges::text || ' ' || array_to_string(fixed, ',') FROM vuln_affected WHERE ecosystem = 'npm' AND advisory_id = $1 AND name = $2", osvstub.IDVuln, osvstub.NPMVuln); !strings.Contains(got, `"introduced": "0"`) || !strings.Contains(got, `"fixed": "1.0.1"`) || !strings.HasSuffix(got, " 1.0.1") {
-		t.Errorf("trove-test-vuln: %s", got)
+		t.Errorf("quader-test-vuln: %s", got)
 	}
 	if got := e.text("SELECT ranges::text FROM vuln_affected WHERE ecosystem = 'npm' AND advisory_id = $1", osvstub.IDLeftPad); !strings.Contains(got, `"last_affected": "1.3.0"`) {
 		t.Errorf("left-pad: %s", got)
 	}
 	if got := e.text("SELECT array_to_string(versions, ',') FROM vuln_affected WHERE ecosystem = 'npm' AND advisory_id = $1", osvstub.IDList); got != "1.0.0,1.2.0" {
-		t.Errorf("versions[] of trove-test-list: %q", got)
+		t.Errorf("versions[] of quader-test-list: %q", got)
 	}
 	if got := e.text("SELECT array_to_string(versions, ',') || ' ' || every_version::text FROM vuln_affected WHERE ecosystem = 'npm' AND advisory_id = $1 AND name = $2", osvstub.IDMal, osvstub.NPMMal); got != "1.0.0 false" {
 		t.Errorf("versions[] of the malicious record: %q", got)
@@ -147,7 +147,7 @@ func TestR_VULN_006_AffectedEntriesAreStoredForTheMatcher(t *testing.T) {
 	}
 	// A range with a fixed event the format cannot parse is counted, stored, and the record's versions[] still count.
 	if got := e.stateOf("unevaluable", "osv", "npm"); got != "1" {
-		t.Errorf("unevaluable %s, want 1 (trove-test-badrange)", got)
+		t.Errorf("unevaluable %s, want 1 (quader-test-badrange)", got)
 	}
 	if got := e.text("SELECT ranges::text FROM vuln_affected WHERE ecosystem = 'npm' AND advisory_id = $1", osvstub.IDBadRange); !strings.Contains(got, "not-a-version") {
 		t.Errorf("badrange: %s", got)
@@ -186,7 +186,7 @@ func TestR_VULN_007_SeverityIsDecidedOncePerCanonicalIdentifier(t *testing.T) {
 	canonical := osvstub.Advisory{
 		ID: "GHSA-aaaa-zzzz-0001", Aliases: []string{"CVE-2026-7001", "CVE-2026-7002"},
 		DatabaseSpecific: map[string]any{"severity": "LOW"},
-		Affected:         []osvstub.Affected{{Package: osvstub.Package{Ecosystem: "npm", Name: "trove-test-rule3"}, Versions: []string{"1.0.0"}}},
+		Affected:         []osvstub.Affected{{Package: osvstub.Package{Ecosystem: "npm", Name: "quader-test-rule3"}, Versions: []string{"1.0.0"}}},
 	}
 	lowAlias := osvstub.Advisory{
 		ID: "CVE-2026-7001", Aliases: []string{"GHSA-aaaa-zzzz-0001"},

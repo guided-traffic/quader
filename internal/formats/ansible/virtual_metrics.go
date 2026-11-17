@@ -3,8 +3,8 @@ package ansible
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // virtualMetrics are the families of R-ANS-030 that the virtual class counts. The label repo is bounded by the repository limit
@@ -14,7 +14,7 @@ type virtualMetrics struct {
 	conflict *prometheus.CounterVec
 }
 
-const metricDigestConflicts = "trove_ansible_virtual_digest_conflicts_total"
+const metricDigestConflicts = "quader_ansible_virtual_digest_conflicts_total"
 
 func newVirtualMetrics(m *observability.Metrics) *virtualMetrics {
 	v := &virtualMetrics{

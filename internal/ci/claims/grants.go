@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // Action is an action of an inline grant (R-CI-013). `manage` is never grantable to a CI token and
@@ -110,7 +110,7 @@ type Spec struct {
 	// binding is stored once, in the policy's principal list (R-CI-013), and this field reads and
 	// writes that same binding.
 	Policies []string `json:"policies,omitempty"`
-	// Groups are trove groups whose grants the token also carries.
+	// Groups are quader groups whose grants the token also carries.
 	Groups []string `json:"groups,omitempty"`
 	// Inline are the grants defined in the mapping, rendered once at exchange time.
 	Inline []InlineGrant `json:"inline,omitempty"`
@@ -278,7 +278,7 @@ type Frozen struct {
 	Issuer   string `json:"issuer"`
 	IssuerID string `json:"issuerId"`
 	// ProjectID and ProjectPath are the verified GitLab project claims (ProjectPath is a display
-	// value); with the issuer they give the owner identity of R-CI-015. They are not a trove project.
+	// value); with the issuer they give the owner identity of R-CI-015. They are not a quader project.
 	ProjectID   string `json:"projectId"`
 	ProjectPath string `json:"projectPath,omitempty"`
 	// Mappings are the references "ci:<issuer>/<mapping>" of the matched mappings that contribute (a
@@ -307,7 +307,7 @@ type FrozenMapping struct {
 	ID  string `json:"id"`
 	// Tier is "system" or "project:<key>" (Q-CI-26).
 	Tier string `json:"tier"`
-	// Project is the trove project of a project tier, nil for the system tier. The evaluator compiles
+	// Project is the quader project of a project tier, nil for the system tier. The evaluator compiles
 	// Inline only against that project's repositories, so `@any` means "every repository of the
 	// project" (Q-CI-26, Q-AUTHZ-179).
 	Project *FrozenProject `json:"project,omitempty"`
@@ -324,7 +324,7 @@ type FrozenMapping struct {
 	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 }
 
-// FrozenProject names the trove project of a project-tier mapping by key and ID; the ID survives a
+// FrozenProject names the quader project of a project-tier mapping by key and ID; the ID survives a
 // rename of the key.
 type FrozenProject struct {
 	Key string `json:"key"`

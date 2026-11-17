@@ -12,7 +12,7 @@ export { COLLAPSE_AFTER_LINES } from './install-command';
  * repository offers a repository picker that starts at a virtual repository containing it, else its first local one.
  */
 @Component({
-  selector: 'trove-install-panel',
+  selector: 'quader-install-panel',
   imports: [RouterLink, InstallCommand],
   templateUrl: './install-panel.html',
   styleUrl: './install-panel.scss',

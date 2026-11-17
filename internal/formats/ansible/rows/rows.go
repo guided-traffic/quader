@@ -113,7 +113,7 @@ type ArchiveReader interface {
 // style UUID derived from the repository id and the collection name, so it is the same on every replica and after a restore and needs
 // no column.
 func CollectionUUID(repoID int64, name string) string {
-	sum := sha256.Sum256(fmt.Appendf(nil, "trove-ansible-collection/%d/%s", repoID, name))
+	sum := sha256.Sum256(fmt.Appendf(nil, "quader-ansible-collection/%d/%s", repoID, name))
 	b := sum[:16]
 	b[6] = b[6]&0x0f | 0x50 // version 5
 	b[8] = b[8]&0x3f | 0x80 // variant 10

@@ -19,7 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func s3Client(t *testing.T) (*s3.Client, testenv.S3) {
@@ -51,7 +51,7 @@ func TestS3PutGet(t *testing.T) {
 	for _, bucket := range []string{cfg.BlobsBucket, cfg.BackupsBucket} {
 		t.Run(bucket, func(t *testing.T) {
 			key := randomKey(t)
-			body := []byte("trove integration smoke " + key)
+			body := []byte("quader integration smoke " + key)
 			if _, err := client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(body)}); err != nil {
 				t.Fatalf("PutObject: %v", err)
 			}

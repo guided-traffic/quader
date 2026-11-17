@@ -13,7 +13,7 @@ import (
 )
 
 // specValuesBlock returns the YAML of the values block of docs/spec/ha-and-helm.md (the fenced block under
-// the summary deploy/helm/trove/values.yaml).
+// the summary deploy/helm/quader/values.yaml).
 func specValuesBlock(t *testing.T) string {
 	t.Helper()
 	spec, err := os.ReadFile(filepath.Join(repoRoot, "docs", "spec", "ha-and-helm.md"))
@@ -24,7 +24,7 @@ func specValuesBlock(t *testing.T) string {
 	state := 0
 	for _, l := range strings.Split(string(spec), "\n") {
 		switch {
-		case state == 0 && strings.Contains(l, "<summary>deploy/helm/trove/values.yaml</summary>"):
+		case state == 0 && strings.Contains(l, "<summary>deploy/helm/quader/values.yaml</summary>"):
 			state = 1
 		case state == 1 && strings.HasPrefix(l, "```yaml"):
 			state = 2

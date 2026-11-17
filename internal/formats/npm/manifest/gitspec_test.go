@@ -82,7 +82,7 @@ func TestCanonicalGitSpec(t *testing.T) {
 		{"git+file:///tmp/x", "git+file:///tmp/x"},
 		{"https://github.com/u", "https://github.com/u"},
 		{"https://github.com/", "https://github.com/"},
-		{"github:u", "github:u"}, // npm writes "github:null/u"; trove leaves a range it cannot place alone
+		{"github:u", "github:u"}, // npm writes "github:null/u"; quader leaves a range it cannot place alone
 		{"github:/u/r", "github:u/r"},
 		{"github:u/r/x", "github:u/r/x"},
 		{"u/r#c", "github:u/r#c"},

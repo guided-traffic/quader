@@ -5,9 +5,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // Cursor pagination, filtering and sorting of every list endpoint (R-API-010,

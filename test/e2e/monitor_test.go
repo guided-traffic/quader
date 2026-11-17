@@ -46,7 +46,7 @@ func startMonitor(t testing.TB) *monitor {
 		health: map[string]int{}, ready: map[string]int{}, seenOK: map[string]bool{}, degrade: map[string]int{}, stopCh: make(chan struct{}), restart: map[string]int{},
 		failed: map[string][]string{}, bad: map[string]int{}, started: time.Now(),
 	}
-	for _, p := range livePods(t, selTrove) {
+	for _, p := range livePods(t, selQuader) {
 		m.restart[p.Name] = p.Restarts
 	}
 	m.wg.Add(1)
@@ -61,7 +61,7 @@ func startMonitor(t testing.TB) *monitor {
 			}
 			if n%5 == 0 {
 				names = names[:0]
-				ps, err := kubectl("-n", cfg.namespace, "get", "pods", "-l", selTrove, "-o", "jsonpath={range .items[*]}{.metadata.name}{\"\\n\"}{end}")
+				ps, err := kubectl("-n", cfg.namespace, "get", "pods", "-l", selQuader, "-o", "jsonpath={range .items[*]}{.metadata.name}{\"\\n\"}{end}")
 				if err == nil {
 					names = append(names, strings.Fields(ps)...)
 				}
@@ -146,7 +146,7 @@ func (m *monitor) report(t testing.TB, restarted map[string]int) {
 			return
 		}
 		for _, previous := range []bool{false, true} {
-			args := []string{"-n", cfg.namespace, "logs", p, "-c", "trove", "--timestamps", "--since-time=" + since}
+			args := []string{"-n", cfg.namespace, "logs", p, "-c", "quader", "--timestamps", "--since-time=" + since}
 			file := p + ".log"
 			if previous {
 				if restarted[p] == 0 {
@@ -171,7 +171,7 @@ func (m *monitor) capture(pod string, at time.Time) {
 	m.cap.Add(1)
 	go func() {
 		defer m.cap.Done()
-		out, err := kubectl("-n", cfg.namespace, "logs", pod, "-c", "trove", "--timestamps", "--since-time="+m.started.Add(-time.Minute).UTC().Format(time.RFC3339))
+		out, err := kubectl("-n", cfg.namespace, "logs", pod, "-c", "quader", "--timestamps", "--since-time="+m.started.Add(-time.Minute).UTC().Format(time.RFC3339))
 		if err != nil {
 			out += "\n" + err.Error()
 		}
@@ -190,7 +190,7 @@ func (m *monitor) stop() {
 // restarts returns the pods whose restart count rose since the monitor started.
 func (m *monitor) restarts(t testing.TB) map[string]int {
 	out := map[string]int{}
-	for _, p := range livePods(t, selTrove) {
+	for _, p := range livePods(t, selQuader) {
 		if was, ok := m.restart[p.Name]; ok && p.Restarts > was {
 			out[p.Name] = p.Restarts - was
 		}

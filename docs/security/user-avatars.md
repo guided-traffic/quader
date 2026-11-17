@@ -88,7 +88,7 @@ deleted with its user.
 - **The response cannot be anything but a picture.** `Content-Type: image/png`, `X-Content-Type-Options: nosniff`,
   `Content-Security-Policy: default-src 'none'; sandbox`, `Content-Disposition: inline; filename="avatar.png"`,
   `Cross-Origin-Resource-Policy: same-origin`. The page that shows it admits it by `img-src 'self'` (R-UI-001); the URL is on
-  trove's origin and the route is served by the roles that serve `/api/v1/`.
+  Quader's origin and the route is served by the roles that serve `/api/v1/`.
 - `Cache-Control: private, max-age=31536000, immutable` and the digest as the strong ETag: the URL names the content. A replaced
   avatar has a new URL.
 
@@ -96,7 +96,7 @@ deleted with its user.
 
 | Operation | Who | Why |
 |---|---|---|
-| `PUT /api/v1/users/me/avatar` | the user, or the break-glass account, by a session or by a token that inherits the owner's rights | the caller's own record; a service account or a CI token has no user record and answers `403`, and so does a token whose scope is narrower than its owner's rights: the two operations declare `x-trove-owner-rights` and the shared authorization step refuses such a token before the handler runs (Q-API-213, Q-API-214, [authorize.go](../../internal/api/v1/authorize.go)) |
+| `PUT /api/v1/users/me/avatar` | the user, or the break-glass account, by a session or by a token that inherits the owner's rights | the caller's own record; a service account or a CI token has no user record and answers `403`, and so does a token whose scope is narrower than its owner's rights: the two operations declare `x-quader-owner-rights` and the shared authorization step refuses such a token before the handler runs (Q-API-213, Q-API-214, [authorize.go](../../internal/api/v1/authorize.go)) |
 | `DELETE /api/v1/users/me/avatar` | the same | the same |
 | `DELETE /api/v1/users/{username}/avatar` | the holder of `identities:write` (the role `admin`) | moderation: an unwelcome picture can be taken down by someone other than its owner |
 | setting another user's avatar | nobody | an administrator cannot put a picture into another person's profile |
@@ -191,10 +191,10 @@ Live today.
 
 When an avatar is replaced, removed or its user deleted, the route stops serving the old digest at once, but the object stays in
 the bucket until the collector has checked its references after `storage.gc.delete_settle` (R-STOR-024); someone with read access
-to the bucket can read it until then (the bucket is outside trove's authorization, H-11). A browser that loaded the picture keeps
+to the bucket can read it until then (the bucket is outside Quader's authorization, H-11). A browser that loaded the picture keeps
 it until its cache entry ends, up to a year (`immutable`, Q-API-209), and shows it for the same URL without asking. Two users who
 uploaded the same picture share one object, which stays until both have dropped it. What would make it matter is a picture that
-must be gone everywhere at once; nothing in trove can recall a copy a browser holds.
+must be gone everywhere at once; nothing in Quader can recall a copy a browser holds.
 
 ### H-640 · Only the decode has a deadline, and it is looked at only when the decoder reads
 
@@ -210,7 +210,7 @@ context once and then scales the centre square to 256 x 256 (Catmull-Rom, which 
 and `YCbCr` and reads a 16-bit PNG through its `RGBA64Image` interface path) and encodes the result; neither reads from the upload,
 and both keep the slot until they finish. All of it is bounded by the area limit, the visit allowance and the fixed output, and it
 is part of the figures of Q-UI-173; nothing enforces it at run time. The nightly test
-(`TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline` with `TROVE_PERF_GATE=1`) fails when the slowest input costs more
+(`TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline` with `QUADER_PERF_GATE=1`) fails when the slowest input costs more
 than one second of CPU in the least of seven decodes (the wall time is logged, not judged). What would make it matter is a change to the scaler, the
 decoders or the bounds that the nightly run has not yet judged, or a pod whose CPU limit is far below the 0.2 CPU the two slots
 need, where reconstruction, scale and encode alone can run for seconds after a decode that finished inside its 5 s.

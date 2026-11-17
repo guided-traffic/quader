@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // ServedVersion is one version as the package's document lists it now: the answer of

@@ -14,8 +14,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/tlsfiles"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // tlsServer serves "ok" with a certificate of ca and counts new connections.
@@ -145,7 +145,7 @@ func TestTrustReload(t *testing.T) {
 			t.Errorf("Err = %v: a bundle that loaded once keeps the factory usable", f.Err())
 		}
 		if v := seriesValue(t, reg, tlsfiles.FamilyReloadErrors, caFile); v != 1 {
-			t.Errorf("trove_tls_reload_errors_total = %v, want 1", v)
+			t.Errorf("quader_tls_reload_errors_total = %v, want 1", v)
 		}
 	})
 

@@ -1,0 +1,122 @@
+# Production-shaped: every optional Secret, the Ingress with TLS, a generic ephemeral spool,
+# static S3 credentials, a bearer token for /metrics, a certificate-authenticated Valkey and the
+# backup on, with a target bucket of its own and a login that only reads the blob bucket.
+image:
+  tag: 0.0.0-ci
+global:
+  imagePullSecrets:
+    - name: registry-pull
+backup:
+  enabled: true
+config:
+  backup:
+    target:
+      bucket: quader-backups
+  server:
+    base_url: https://quader.example.com
+    trusted_proxies: ["10.244.0.0/16"]
+  database:
+    host: quader-db-pooler-rw.quader.svc
+    session_host: quader-db-rw.quader.svc
+  storage:
+    s3:
+      bucket: quader-blobs
+      region: eu-central-1
+      credentials:
+        source: static
+    upload:
+      max_size: 10GiB
+  valkey:
+    sentinel:
+      addresses:
+        - quader-valkey-sentinel-0.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-1.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-2.quader-valkey-sentinel.quader.svc:26379
+      primary_name: quader
+  metrics:
+    auth: static
+  authz:
+    role_bindings:                                 # applied by the migration Job
+      - role: admin
+        group: gh-wds18-k8s-main-admins
+      - role: auditor
+        group: gh-wds18-k8s-main-auditors
+  ci:                                              # the GitLab CI OIDC federation
+    token:
+      max_ttl: 30m                                 # at most auth.tokens.cit.max_ttl
+    exchange:
+      rate_limit:
+        exempt_cidrs: ["10.20.0.0/16"]             # example: a runner network behind NAT
+    issuers:                                       # applied by the migration Job, read-only in the API and the UI
+      - name: gitlab-main
+        kind: gitlab
+        issuer: https://gitlab.example.com
+        public_issuer: false                       # example: an instance without open sign-up
+        allowed_audiences: ["https://packages.example.com"]
+        ca_bundle_ref: file:/var/run/secrets/gitlab-ca/ca.crt # example: an instance behind a private CA
+secrets:
+  backupSource:
+    existingSecret: quader-s3-read             # a login that only reads the blob bucket
+  database:
+    existingSecret: quader-db-app
+  databaseMigration:
+    existingSecret: quader-db-owner
+  databaseCA:
+    existingSecret: quader-db-ca
+  databaseClientCert:
+    existingSecret: quader-db-client
+  s3:
+    existingSecret: quader-s3
+  valkey:
+    existingSecret: quader-valkey
+  valkeySentinel:
+    existingSecret: quader-valkey-sentinel
+  valkeyCA:
+    existingSecret: quader-valkey-ca
+  valkeyClientCert:
+    existingSecret: quader-valkey-client
+  encryption:
+    existingSecret: quader-encryption-keys
+    keys: [2026-10.key, 2026-04.key]
+  metricsToken:
+    existingSecret: quader-metrics
+spool:
+  type: ephemeral
+  sizeLimit: 20Gi
+  ephemeral:
+    storageClassName: standard
+    size: 50Gi
+    accessModes: [ReadWriteOnce]
+tls:
+  secretName: quader-tls                           # example: a cert-manager Certificate's secret (tls.crt, tls.key, ca.crt)
+  minVersion: "1.3"
+  clientCA:
+    secretName: quader-edge-ca                     # example: mutual TLS from the edge
+  ops:
+    secretName: quader-ops-tls                     # example: separate certificate for the operations listener
+ingress:
+  enabled: true
+  className: haproxy
+  backendTLS:
+    controller: haproxy                            # example: HAProxy Ingress connects with HTTPS and verifies quader
+    caSecret: quader-tls                           # example: the cert-manager Secret carries ca.crt
+    clientCertSecret: quader-edge-client           # example: client certificate for the mutual TLS of tls.clientCA
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  tls:
+    - secretName: quader-tls
+      hosts: [quader.example.com]
+api:
+  podAnnotations:
+    example.com/note: api
+  extraEnv:
+    - name: QUADER_LOG_LEVEL
+      value: debug
+packages:
+  podAnnotations:
+    example.com/note: packages
+worker:
+  nodeSelector:
+    kubernetes.io/os: linux
+commonLabels:
+  team: platform

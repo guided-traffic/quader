@@ -17,35 +17,35 @@ import (
 
 // The names of R-VULN-024.
 const (
-	SourceLastSuccess  = "trove_vuln_source_last_success_timestamp_seconds"
-	SourceRecords      = "trove_vuln_source_records"
-	SourceFailures     = "trove_vuln_source_consecutive_failures"
-	SyncRuns           = "trove_vuln_sync_runs_total"
-	SyncRecords        = "trove_vuln_sync_records_total"
-	UnevaluableRanges  = "trove_vuln_unevaluable_ranges_total"
-	Evaluations        = "trove_vuln_evaluations_total"
-	EvaluationDuration = "trove_vuln_evaluation_duration_seconds"
-	Findings           = "trove_vuln_findings"
-	DownloadsBlocked   = "trove_vuln_downloads_blocked_total"
-	AuditRequests      = "trove_vuln_audit_requests_total"
-	ImageScans         = "trove_vuln_image_scans_total"
-	ImageScanDuration  = "trove_vuln_image_scan_duration_seconds"
-	ClaimedNameMatches = "trove_vuln_claimed_name_matches"
+	SourceLastSuccess  = "quader_vuln_source_last_success_timestamp_seconds"
+	SourceRecords      = "quader_vuln_source_records"
+	SourceFailures     = "quader_vuln_source_consecutive_failures"
+	SyncRuns           = "quader_vuln_sync_runs_total"
+	SyncRecords        = "quader_vuln_sync_records_total"
+	UnevaluableRanges  = "quader_vuln_unevaluable_ranges_total"
+	Evaluations        = "quader_vuln_evaluations_total"
+	EvaluationDuration = "quader_vuln_evaluation_duration_seconds"
+	Findings           = "quader_vuln_findings"
+	DownloadsBlocked   = "quader_vuln_downloads_blocked_total"
+	AuditRequests      = "quader_vuln_audit_requests_total"
+	ImageScans         = "quader_vuln_image_scans_total"
+	ImageScanDuration  = "quader_vuln_image_scan_duration_seconds"
+	ClaimedNameMatches = "quader_vuln_claimed_name_matches"
 )
 
 // Label values. The sets are closed: a value outside them is a defect, never a new series.
 const (
-	// kind of trove_vuln_sync_runs_total.
+	// kind of quader_vuln_sync_runs_total.
 	RunFull        = "full"
 	RunIncremental = "incremental"
 
-	// outcome of trove_vuln_sync_runs_total. A run whose job an operator cancelled is cancelled, not failed (Q-VULN-80).
+	// outcome of quader_vuln_sync_runs_total. A run whose job an operator cancelled is cancelled, not failed (Q-VULN-80).
 	RunChanged   = "changed"
 	RunUnchanged = "unchanged"
 	RunFailed    = "failed"
 	RunCancelled = "cancelled"
 
-	// result of trove_vuln_sync_records_total.
+	// result of quader_vuln_sync_records_total.
 	RecordWritten  = "written"
 	RecordSkipped  = "skipped"
 	RecordRejected = "rejected"
@@ -57,7 +57,7 @@ const (
 	RecordRejectedMalicious = "rejected_malicious"
 	RecordDeleted           = "deleted"
 
-	// mode of trove_vuln_downloads_blocked_total.
+	// mode of quader_vuln_downloads_blocked_total.
 	ModeEnforce = "enforce"
 	ModeReport  = "report"
 

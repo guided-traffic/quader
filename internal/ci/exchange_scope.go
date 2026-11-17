@@ -4,8 +4,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/ci/claims"
 )
 
 // The scope of the exchange (R-CI-007 step 8, Q-CI-2): the request's items narrow the bundle, the token stores

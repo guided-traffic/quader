@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // fillOnly declares the fill hook for one artifact path, as NuGet declares it for the .nupkg of a

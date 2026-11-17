@@ -22,18 +22,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/app"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/mirror"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/app"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/mirror"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -192,7 +192,7 @@ type env struct {
 
 // fastJobs makes the job framework quick: short leases, a quick reaper and polling.
 var fastJobs = []string{
-	"TROVE_JOBS_POLL_INTERVAL=200ms", "TROVE_JOBS_LEASE_DURATION=3s", "TROVE_JOBS_HEARTBEAT_INTERVAL=1s", "TROVE_JOBS_SCHEDULE_TICK=1s",
+	"QUADER_JOBS_POLL_INTERVAL=200ms", "QUADER_JOBS_LEASE_DURATION=3s", "QUADER_JOBS_HEARTBEAT_INTERVAL=1s", "QUADER_JOBS_SCHEDULE_TICK=1s",
 }
 
 // newEnv creates an installation with one mirrored remote repository.

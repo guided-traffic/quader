@@ -7,10 +7,10 @@ config:
     cache:
       backend: bucket
       bucket:
-        endpoint: https://trove-s3.trove.svc:9000    # SeaweedFS of the dev profile; the certificate names trove-s3.trove.svc
+        endpoint: https://quader-s3.quader.svc:9000  # SeaweedFS of the dev profile; the certificate names quader-s3.quader.svc
         region: us-east-1
-        bucket: trove-bastion-partners
-        prefix: trove-bastion
+        bucket: quader-bastion-partners
+        prefix: quader-bastion
         force_path_style: true
         credentials:
           source: static
@@ -18,9 +18,9 @@ config:
     mode: sentinel
     sentinel:
       addresses:
-        - bastion-valkey-sentinel-0.bastion-valkey-sentinel-headless.trove-bastion.svc.cluster.local:36379
-        - bastion-valkey-sentinel-1.bastion-valkey-sentinel-headless.trove-bastion.svc.cluster.local:36379
-        - bastion-valkey-sentinel-2.bastion-valkey-sentinel-headless.trove-bastion.svc.cluster.local:36379
+        - bastion-valkey-sentinel-0.bastion-valkey-sentinel-headless.quader-bastion.svc.cluster.local:36379
+        - bastion-valkey-sentinel-1.bastion-valkey-sentinel-headless.quader-bastion.svc.cluster.local:36379
+        - bastion-valkey-sentinel-2.bastion-valkey-sentinel-headless.quader-bastion.svc.cluster.local:36379
       primary_name: bastion-valkey
       tls: true
     tls:
@@ -43,4 +43,4 @@ secrets:
 ingress:
   tls:
     - secretName: bastion-bucket-edge-tls
-      hosts: [bastion-bucket.trove.localhost]
+      hosts: [bastion-bucket.quader.localhost]

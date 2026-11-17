@@ -10,8 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 func (in *install) migrateWithRole(t testing.TB, cfg config.Database, role string) {
@@ -29,7 +29,7 @@ func (in *install) migrateWithRole(t testing.TB, cfg config.Database, role strin
 
 func createRole(t testing.TB, maint *pgx.Conn, prefix string) string {
 	t.Helper()
-	role := "trove_bak_" + prefix + "_" + runID()
+	role := "quader_bak_" + prefix + "_" + runID()
 	if _, err := maint.Exec(context.Background(), `CREATE ROLE `+role+` LOGIN PASSWORD 'pw'`); err != nil {
 		t.Fatal(err)
 	}
@@ -54,54 +54,54 @@ func TestR_BAK_015_TheBackupLoginWritesItsOwnAuditEventsAndNoOthers(t *testing.T
 	role := createRole(t, maint, "a")
 	in := newInstall(t)
 	in.exec(`GRANT CONNECT ON DATABASE ` + in.dbName + ` TO ` + role)
-	in.exec(`GRANT USAGE ON SCHEMA trove TO ` + role)
+	in.exec(`GRANT USAGE ON SCHEMA quader TO ` + role)
 	// A release that granted INSERT on the audit trail left it on the role: the next migration run takes it back.
-	in.exec(`GRANT INSERT ON trove.audit_event TO ` + role)
+	in.exec(`GRANT INSERT ON quader.audit_event TO ` + role)
 	in.migrateWithRole(t, in.dbCfg, role)
-	if in.can(role, `SELECT has_table_privilege($1, 'trove.audit_event', 'INSERT')`) {
+	if in.can(role, `SELECT has_table_privilege($1, 'quader.audit_event', 'INSERT')`) {
 		t.Fatal("the backup role still holds INSERT on audit_event")
 	}
 
 	c := dialAs(t, in, role)
-	if _, err := c.Exec(ctx, `INSERT INTO trove.audit_event (id, occurred_at, action, category, outcome, actor_type) VALUES (gen_random_uuid(), now(), 'authz.role.bound', 'authz', 'success', 'user')`); err == nil || !strings.Contains(err.Error(), "42501") {
+	if _, err := c.Exec(ctx, `INSERT INTO quader.audit_event (id, occurred_at, action, category, outcome, actor_type) VALUES (gen_random_uuid(), now(), 'authz.role.bound', 'authz', 'success', 'user')`); err == nil || !strings.Contains(err.Error(), "42501") {
 		t.Fatalf("a direct insert = %v, want 42501", err)
 	}
 	for _, bad := range [][]any{{"authz.role.bound", "success"}, {"system.restored", "success"}, {"system.backup.completed", "denied"}} {
-		if _, err := c.Exec(ctx, `SELECT trove.backup_record_event($1, $2, 'pod', '', '{}')`, bad...); err == nil || !strings.Contains(err.Error(), "42501") {
+		if _, err := c.Exec(ctx, `SELECT quader.backup_record_event($1, $2, 'pod', '', '{}')`, bad...); err == nil || !strings.Contains(err.Error(), "42501") {
 			t.Fatalf("backup_record_event(%v) = %v, want 42501", bad, err)
 		}
 	}
-	if _, err := c.Exec(ctx, `SELECT trove.backup_record_event('system.backup.completed', 'success', 'pod-1', '', '{"backupId": "x"}')`); err != nil {
+	if _, err := c.Exec(ctx, `SELECT quader.backup_record_event('system.backup.completed', 'success', 'pod-1', '', '{"backupId": "x"}')`); err != nil {
 		t.Fatal(err)
 	}
-	if got := scalarText(in, `SELECT actor_type || '/' || actor_name || '/' || category || '/' || replica FROM trove.audit_event WHERE action = 'system.backup.completed'`); got != "system/backup/system/pod-1" {
+	if got := scalarText(in, `SELECT actor_type || '/' || actor_name || '/' || category || '/' || replica FROM quader.audit_event WHERE action = 'system.backup.completed'`); got != "system/backup/system/pod-1" {
 		t.Fatalf("event = %s", got)
 	}
 }
 
-// TestR_BAK_015_ChangingTheBackupRoleTakesBackWhatTroveGranted: grants of a role that database.backup_role no longer names are
+// TestR_BAK_015_ChangingTheBackupRoleTakesBackWhatQuaderGranted: grants of a role that database.backup_role no longer names are
 // revoked by the next migration run, down to none when the setting is emptied.
-func TestR_BAK_015_ChangingTheBackupRoleTakesBackWhatTroveGranted(t *testing.T) {
+func TestR_BAK_015_ChangingTheBackupRoleTakesBackWhatQuaderGranted(t *testing.T) {
 	maint := dialDB(t, "postgres")
 	first, second := createRole(t, maint, "f"), createRole(t, maint, "s")
 	in := newInstall(t)
 	holds := func(role string) bool {
-		return in.can(role, `SELECT has_table_privilege($1, 'trove.items', 'SELECT') OR has_table_privilege($1, 'trove.backup_run', 'INSERT')
-			OR has_function_privilege($1, 'trove.backup_record_event(text,text,text,text,jsonb)', 'EXECUTE')`)
+		return in.can(role, `SELECT has_table_privilege($1, 'quader.items', 'SELECT') OR has_table_privilege($1, 'quader.backup_run', 'INSERT')
+			OR has_function_privilege($1, 'quader.backup_record_event(text,text,text,text,jsonb)', 'EXECUTE')`)
 	}
 	in.migrateWithRole(t, in.dbCfg, first)
-	if !holds(first) || scalarText(in, `SELECT value #>> '{}' FROM trove.system_state WHERE key = 'backup_role'`) != first {
+	if !holds(first) || scalarText(in, `SELECT value #>> '{}' FROM quader.system_state WHERE key = 'backup_role'`) != first {
 		t.Fatal("the first role was not granted or not recorded")
 	}
 	in.migrateWithRole(t, in.dbCfg, second)
 	if holds(first) {
 		t.Fatal("the former backup role keeps its grants")
 	}
-	if !holds(second) || scalarText(in, `SELECT value #>> '{}' FROM trove.system_state WHERE key = 'backup_role'`) != second {
+	if !holds(second) || scalarText(in, `SELECT value #>> '{}' FROM quader.system_state WHERE key = 'backup_role'`) != second {
 		t.Fatal("the new role was not granted or not recorded")
 	}
 	in.migrateWithRole(t, in.dbCfg, "")
-	if holds(second) || in.number(`SELECT count(*) FROM trove.system_state WHERE key = 'backup_role'`) != 0 {
+	if holds(second) || in.number(`SELECT count(*) FROM quader.system_state WHERE key = 'backup_role'`) != 0 {
 		t.Fatal("emptying the setting must revoke the last role and forget it")
 	}
 }
@@ -113,7 +113,7 @@ func TestR_BAK_015_DefaultPrivilegesReachTablesTheMigrationLoginCreatesLater(t *
 	ctx := context.Background()
 	maint := dialDB(t, "postgres")
 	owner, bk := createRole(t, maint, "o"), createRole(t, maint, "b")
-	name := "trove_bak_" + runID()
+	name := "quader_bak_" + runID()
 	if _, err := maint.Exec(ctx, `CREATE DATABASE `+name+` OWNER `+owner+` ENCODING 'UTF8' TEMPLATE template0`); err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +128,7 @@ func TestR_BAK_015_DefaultPrivilegesReachTablesTheMigrationLoginCreatesLater(t *
 	admin := dialDB(t, name)
 	in.admin = admin
 	o := dialAs(t, in, owner)
-	if _, err := o.Exec(ctx, `SET search_path TO trove`); err != nil {
+	if _, err := o.Exec(ctx, `SET search_path TO quader`); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := o.Exec(ctx, `CREATE TABLE later (a int)`); err != nil {
@@ -137,7 +137,7 @@ func TestR_BAK_015_DefaultPrivilegesReachTablesTheMigrationLoginCreatesLater(t *
 	if _, err := o.Exec(ctx, `SELECT audit_attach_partition('2031-01-01'::timestamptz)`); err != nil {
 		t.Fatal(err)
 	}
-	for _, rel := range []string{"trove.later", "trove.audit_event_203101"} {
+	for _, rel := range []string{"quader.later", "quader.audit_event_203101"} {
 		if !in.can(bk, `SELECT has_table_privilege($1, '`+rel+`', 'SELECT')`) {
 			t.Errorf("the backup role cannot read %s, created after the grants", rel)
 		}

@@ -18,16 +18,16 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/backup/target/targettest"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/target/targettest"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // fakeSession records what the restore does to the database and answers the inspections from its fields.
@@ -69,7 +69,7 @@ func (f *fakeSession) Lock(ctx context.Context, _ time.Duration) error {
 	return f.lockErr
 }
 func (f *fakeSession) Close(context.Context) { f.rec("close") }
-func (f *fakeSession) Schema() string        { return "trove" }
+func (f *fakeSession) Schema() string        { return "quader" }
 func (f *fakeSession) Inspect(context.Context) (postgres.RestoreInspection, error) {
 	return f.inspect, nil
 }
@@ -249,7 +249,7 @@ func keyRing(t *testing.T, id string, key byte) *secrets.KeyRing {
 // a blob list with two blobs in the pool.
 func newEnv(t *testing.T) *env {
 	t.Helper()
-	e := &env{t: t, mem: targettest.New(), layout: format.Layout{Prefix: "trove"}, pool: map[format.Digest][]byte{}}
+	e := &env{t: t, mem: targettest.New(), layout: format.Layout{Prefix: "quader"}, pool: map[format.Digest][]byte{}}
 	e.id = "20261028T020000Z-7f3a"
 	e.ring = keyRing(t, "2026-10", 7)
 	sealed, err := e.ring.SealCanary("2026-10")
@@ -281,10 +281,10 @@ func newEnv(t *testing.T) *env {
 	e.mem.Set(e.layout.BlobList(e.id), list)
 	snap := time.Date(2026, 10, 28, 2, 0, 1, 0, time.UTC)
 	e.m = &format.Manifest{
-		Format: 1, BackupID: e.id, InstallationID: "inst", Incarnation: "inc", Trove: format.TroveInfo{Version: "0.4.0"},
+		Format: 1, BackupID: e.id, InstallationID: "inst", Incarnation: "inc", Quader: format.QuaderInfo{Version: "0.4.0"},
 		Schema:    format.SchemaInfo{Step: 2, Steps: []format.SchemaStep{{Step: 1, Name: "00001_a", SHA256: "aa"}, {Step: 2, Name: "00002_b", SHA256: "bb"}}},
 		StartedAt: snap, SnapshotAt: snap, CompletedAt: snap.Add(time.Minute),
-		Source: format.Source{Storage: format.StorageRef{Bucket: "blobs", Prefix: "trove"}, RevocationJournal: true},
+		Source: format.Source{Storage: format.StorageRef{Bucket: "blobs", Prefix: "quader"}, RevocationJournal: true},
 		Tables: []format.TableFile{
 			file("secret_key_canary", [][2]string{{"key_id", "text"}, {"ciphertext", "text"}, {"created_at", "timestamp with time zone"}},
 				"2026-10\t"+sealed+"\t2026-10-01 00:00:00+00\n"),
@@ -385,11 +385,11 @@ func TestR_BAK_020_Checks(t *testing.T) {
 	t.Run("R-BAK-023 check 2: a changed or a missing migration step exits 6 and names the step and a release", func(t *testing.T) {
 		e := newEnv(t)
 		e.sess.steps[1].SHA256 = "changed"
-		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 2", "step 2 (00002_b)", "trove 0.4.0")
+		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 2", "step 2 (00002_b)", "Quader 0.4.0")
 
 		e = newEnv(t)
 		e.sess.steps = e.sess.steps[:1]
-		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 2", "migration step 2", "trove 0.4.0")
+		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 2", "migration step 2", "Quader 0.4.0")
 	})
 	t.Run("R-BAK-020 check 3: a key ring without the backup's key ID", func(t *testing.T) {
 		e := newEnv(t)
@@ -430,8 +430,8 @@ func TestR_BAK_020_Checks(t *testing.T) {
 	})
 	t.Run("R-BAK-020 check 5: a foreign object under the blob prefix", func(t *testing.T) {
 		e := newEnv(t)
-		e.blobs.foreign = "trove/stray"
-		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 5", "trove/stray")
+		e.blobs.foreign = "quader/stray"
+		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 5", "quader/stray")
 	})
 	t.Run("R-BAK-020 check 6: an unsupported server and a credential that does not own the schema", func(t *testing.T) {
 		e := newEnv(t)
@@ -472,9 +472,9 @@ func TestR_BAK_020_Checks(t *testing.T) {
 func TestR_BAK_021_Exits(t *testing.T) {
 	t.Run("R-BAK-021 a migration lock held by another session exits 75 and writes nothing", func(t *testing.T) {
 		e := newEnv(t)
-		e.sess.lockErr = &postgres.LockWaitError{Wait: time.Second, Holders: "trove:other:migrate"}
+		e.sess.lockErr = &postgres.LockWaitError{Wait: time.Second, Holders: "quader:other:migrate"}
 		_, err := e.restorer().Restore(context.Background(), backup.RestoreOptions{ID: e.id})
-		wantExit(t, err, backup.ExitTemporary, "backup.database.migration_wait", "trove:other:migrate")
+		wantExit(t, err, backup.ExitTemporary, "backup.database.migration_wait", "quader:other:migrate")
 		if e.sess.called("anchor") {
 			t.Error("wrote while waiting")
 		}
@@ -630,7 +630,7 @@ func TestR_BAK_021_Blobs(t *testing.T) {
 		for d := range e.pool {
 			e.mem.Remove(e.layout.Pool(d))
 			err := run(e)
-			wantExit(t, err, backup.ExitFailed, d.Hex(), "trove backup verify")
+			wantExit(t, err, backup.ExitFailed, d.Hex(), "quader backup verify")
 			return
 		}
 	})

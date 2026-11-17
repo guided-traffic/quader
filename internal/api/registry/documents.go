@@ -3,8 +3,8 @@ package registry
 import (
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // Documents is how the registry decides on an image name: on the path of its package document, which the format places in the

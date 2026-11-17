@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // front is the ingress of the main installation as the Bastion meets it: a TLS listener (the Bastion talks to

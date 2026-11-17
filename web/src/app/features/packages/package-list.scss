@@ -1,9 +1,9 @@
 .view-tabs {
-  margin-block-end: var(--trove-space-4);
+  margin-block-end: var(--quader-space-4);
 }
 
 .plain-list {
-  margin: 0 0 var(--trove-space-4);
+  margin: 0 0 var(--quader-space-4);
   padding: 0;
   list-style: none;
 
@@ -11,21 +11,21 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--trove-space-3);
-    padding-block: var(--trove-space-2);
-    border-block-end: 1px solid var(--trove-border);
+    gap: var(--quader-space-3);
+    padding-block: var(--quader-space-2);
+    border-block-end: 1px solid var(--quader-border);
   }
 }
 
 .type-cell {
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 
   // The format's logo or the neutral glyph (shared/format-icon.ts); the colour reaches the glyph only.
-  trove-format-icon {
+  quader-format-icon {
     font-size: 1.25rem;
-    color: var(--trove-text-muted);
+    color: var(--quader-text-muted);
   }
 }
 
@@ -33,13 +33,13 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--trove-space-3);
-  margin-block-end: var(--trove-space-3);
+  gap: var(--quader-space-3);
+  margin-block-end: var(--quader-space-3);
 
   .field {
     display: flex;
     flex-direction: column;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
   }
 }
 
@@ -53,7 +53,7 @@ td .ellipsis {
 .check-list {
   display: flex;
   flex-direction: column;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
   max-block-size: 14rem;
   overflow-y: auto;
 }

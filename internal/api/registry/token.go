@@ -12,16 +12,16 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/api/registry/route"
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/api/registry/route"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // maxFormBytes bounds the body of the OAuth 2.0 form of a token request: its fields are a user name, a token, a service
@@ -39,7 +39,7 @@ type TokenOptions struct {
 	// Authenticate runs the one credential of a token request through the authentication stage of the endpoint the
 	// request arrived on (R-OCI-004 step 3, auth.Stage.AuthenticateTokenRequest) and converts the result to the caller the
 	// chain stores. The composition root builds it per endpoint and records the caller in the request log. Its error is
-	// the stage's refusal: 401 with Basic realm="trove", 429, 503.
+	// the stage's refusal: 401 with Basic realm="quader", 429, 503.
 	Authenticate func(r *http.Request, c auth.Presented) (httpserver.Principal, error)
 	// Signer issues the registry tokens (the auth area's, so that the stage verifies with the same keys and the same
 	// lifetime, oci.token_lifetime).
@@ -196,7 +196,7 @@ func (h *Token) readForm(w http.ResponseWriter, r *http.Request) (tokenRequest, 
 		return tokenRequest{}, oauthError{code: "unsupported_grant_type", text: "The token service serves the password grant only."}
 	}
 	if f.Get("password") == "" {
-		return tokenRequest{}, invalidRequest("The password grant needs a password: a trove token.")
+		return tokenRequest{}, invalidRequest("The password grant needs a password: a Quader token.")
 	}
 	if r.Header.Get("Authorization") != "" {
 		// One credential per request (R-AUTH-001): the form's.
@@ -225,7 +225,7 @@ func (h *Token) grant(r *http.Request, scopes []registrytoken.Scope) (registryto
 	return h.grantor.Grant(r.Context(), acc, scopes)
 }
 
-// issue signs the token and answers 200. The lifetime is oci.token_lifetime and never beyond the expiry of the trove token
+// issue signs the token and answers 200. The lifetime is oci.token_lifetime and never beyond the expiry of the quader token
 // that authenticated the request (R-OCI-005).
 func (h *Token) issue(w http.ResponseWriter, r *http.Request, p httpserver.Principal, tr tokenRequest, grant registrytoken.Grant) {
 	now := h.o.Now()
@@ -236,8 +236,8 @@ func (h *Token) issue(w http.ResponseWriter, r *http.Request, p httpserver.Princ
 		exp = e.Truncate(time.Second)
 	}
 	if !exp.After(iat) {
-		// The trove token expires within this second: no registry token outlives it. A refusal like an expired one.
-		h.denied(w, r, tr, errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "The token is not valid.", errs.WithChallenge(`Basic realm="trove"`)))
+		// The quader token expires within this second: no registry token outlives it. A refusal like an expired one.
+		h.denied(w, r, tr, errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "The token is not valid.", errs.WithChallenge(`Basic realm="quader"`)))
 		return
 	}
 	c := registrytoken.Claims{

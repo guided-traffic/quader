@@ -6,7 +6,7 @@ Priority: **MVP** · Covers: WID-001, WID-002
 Text.
 
 ### R-WID-002 · Own design
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 ## Decisions
 

@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // M4: a blob whose row is not 'ok' is recorded as damaged with its status and not copied, so that it is copied fresh once it is
@@ -40,7 +40,7 @@ func TestR_BAK_006_ABlobThatIsNotOkIsRecordedAsDamagedAndNotCopied(t *testing.T)
 			if len(m.Blobs.Damaged) != 1 || m.Blobs.Damaged[0].SHA256 != bad.Hex() || m.Blobs.Damaged[0].Status != status {
 				t.Fatalf("damaged = %+v", m.Blobs.Damaged)
 			}
-			if _, ok := e.mem.Data("trove/pool/sha256/" + bad.Hex()[:2] + "/" + bad.Hex()[2:4] + "/" + bad.Hex()); ok {
+			if _, ok := e.mem.Data("quader/pool/sha256/" + bad.Hex()[:2] + "/" + bad.Hex()[2:4] + "/" + bad.Hex()); ok {
 				t.Fatal("a blob that is not ok must not be copied into the pool")
 			}
 			// Repaired: the next run copies it, because the previous list names it as damaged.
@@ -54,7 +54,7 @@ func TestR_BAK_006_ABlobThatIsNotOkIsRecordedAsDamagedAndNotCopied(t *testing.T)
 			if err != nil || res2.BlobsCopied != 1 || res2.DamagedBlobs != 0 {
 				t.Fatalf("after the repair: %+v %v", res2, err)
 			}
-			if _, ok := e.mem.Data("trove/pool/sha256/" + bad.Hex()[:2] + "/" + bad.Hex()[2:4] + "/" + bad.Hex()); !ok {
+			if _, ok := e.mem.Data("quader/pool/sha256/" + bad.Hex()[:2] + "/" + bad.Hex()[2:4] + "/" + bad.Hex()); !ok {
 				t.Fatal("the repaired blob is not in the pool")
 			}
 		})
@@ -102,7 +102,7 @@ func TestR_BAK_006_AnAlteredPreviousBlobListFailsBeforeThePinnedHold(t *testing.
 		t.Fatal(err)
 	}
 	// A list with the same shape and one entry fewer: it decodes, it is sorted, and it is not the one the manifest names.
-	key := "trove/backups/" + first.BackupID + "/blobs.idx.zst"
+	key := "quader/backups/" + first.BackupID + "/blobs.idx.zst"
 	raw, _ := e.mem.Data(key)
 	rd, _ := format.NewBlobListReader(bytes.NewReader(raw))
 	entries, _ := format.ReadAll(rd)
@@ -138,7 +138,7 @@ func TestR_BAK_013_StalledWinsOverAnInnerExitError(t *testing.T) {
 // L3: a marker that does not decode is a target this lane did not write: exit 4.
 func TestR_BAK_002_AMarkerThatDoesNotDecodeIsExit4(t *testing.T) {
 	e := newEnv(t)
-	e.mem.Set("trove/trove-backup-target.json", []byte("<html>not a marker</html>"))
+	e.mem.Set("quader/quader-backup-target.json", []byte("<html>not a marker</html>"))
 	_, err := e.create(backup.CreateOptions{})
 	exitOf(t, err, backup.ExitForeignTarget, backup.CodeForeignTarget)
 	if e.hasManifest() {
@@ -258,7 +258,7 @@ func TestR_BAK_006_CopiesCarryTheProgressCallbackAndTheSizeHint(t *testing.T) {
 		if _, err := p.Create(context.Background(), backup.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
-		if got := spy.sizeHints[format.Layout{Prefix: "trove"}.Pool(d)]; got != int64(len("alpha-content")) {
+		if got := spy.sizeHints[format.Layout{Prefix: "quader"}.Pool(d)]; got != int64(len("alpha-content")) {
 			t.Fatalf("size hint = %d", got)
 		}
 	})

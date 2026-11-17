@@ -128,7 +128,7 @@ func TestJobsQueuesFromTheEnvironment(t *testing.T) {
 	}
 	t.Run("R-HA-062 a list-valued key is read from its environment variable as a JSON or YAML flow list", func(t *testing.T) {
 		for _, v := range []string{`["index","vuln"]`, `[index, vuln]`} {
-			l, err := load("TROVE_JOBS_QUEUES=" + v)
+			l, err := load("QUADER_JOBS_QUEUES=" + v)
 			if err != nil {
 				t.Fatalf("%s: %v", v, err)
 			}
@@ -136,14 +136,14 @@ func TestJobsQueuesFromTheEnvironment(t *testing.T) {
 				t.Fatalf("%s: %v", v, got)
 			}
 		}
-		l, err := load(`TROVE_JOBS_EXCLUDE_QUEUES=["index"]`)
+		l, err := load(`QUADER_JOBS_EXCLUDE_QUEUES=["index"]`)
 		if err != nil || len(l.Config.Jobs.ExcludeQueues) != 1 || l.Config.Jobs.Claims("index") {
 			t.Fatalf("exclude: %v %+v", err, l)
 		}
 	})
 	t.Run("R-HA-062 a bare name or a comma-separated list is refused", func(t *testing.T) {
 		for _, v := range []string{"index", "index,vuln"} {
-			if _, err := load("TROVE_JOBS_QUEUES=" + v); err == nil {
+			if _, err := load("QUADER_JOBS_QUEUES=" + v); err == nil {
 				t.Fatalf("%q was accepted", v)
 			} else {
 				t.Logf("%q: %v", v, err)
@@ -151,7 +151,7 @@ func TestJobsQueuesFromTheEnvironment(t *testing.T) {
 		}
 	})
 	t.Run("R-ARCH-016 both settings from the environment stop start-up and name the key", func(t *testing.T) {
-		_, err := load(`TROVE_JOBS_QUEUES=["index"]`, `TROVE_JOBS_EXCLUDE_QUEUES=["mirror"]`)
+		_, err := load(`QUADER_JOBS_QUEUES=["index"]`, `QUADER_JOBS_EXCLUDE_QUEUES=["mirror"]`)
 		if err == nil || !strings.Contains(err.Error(), "exclude_queues") {
 			t.Fatalf("%v", err)
 		}

@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // DefaultTrustCheckEvery is how often a client looks at its CA bundles again,

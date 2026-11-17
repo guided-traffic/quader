@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestDeleteTwice has no worker, so the job stays queued and the second delete

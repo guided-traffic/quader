@@ -38,7 +38,7 @@ a push stores them, so version 1.0.0 of every package has one finding: 10,000 fi
 make integration-up
 set -a; . .dev/integration/env; set +a
 go test -count=1 -p 1 -tags integration -timeout 115m -run 'TestR_VULN_028' ./perf/vuln/...     # reports
-TROVE_PERF_GATE=1 go test -count=1 -p 1 -tags integration -timeout 115m -run 'TestR_VULN_028' ./perf/vuln/...   # a miss fails
+QUADER_PERF_GATE=1 go test -count=1 -p 1 -tags integration -timeout 115m -run 'TestR_VULN_028' ./perf/vuln/...   # a miss fails
 ```
 
 It runs in the job `vuln-perf` of [HA and Performance (nightly)](../.github/workflows/performance.yml) with the gate on, and never in

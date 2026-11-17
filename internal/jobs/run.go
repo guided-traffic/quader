@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // A PostgreSQL switchover ends every connection for some seconds. The two writes a handler makes while it runs, its checkpoint and its

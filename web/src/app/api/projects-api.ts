@@ -8,7 +8,7 @@ import { Schema } from './types';
 /*
  * Projects and their members (R-AUTHZ-026, R-UI-041; docs/developer/projects.md). A project
  * carries an `ETag` (its version): the replace needs it (`If-Match` is required, 412 opens the
- * conflict dialog of R-UI-042). The member writes are plain PUT and DELETE without a tag. Every write answers `Trove-Authz-Epoch`, which the HTTP layer keeps (R-AUTHZ-032).
+ * conflict dialog of R-UI-042). The member writes are plain PUT and DELETE without a tag. Every write answers `Quader-Authz-Epoch`, which the HTTP layer keeps (R-AUTHZ-032).
  */
 
 export type Project = Schema<'Project'>;

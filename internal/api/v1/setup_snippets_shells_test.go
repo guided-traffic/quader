@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // nugetTemplates are the shapes NuGet needs and npm does not: a token reference in
@@ -130,12 +130,12 @@ func TestR_API_030_PowerShellAndCmdValuesAreQuoted(t *testing.T) {
 // alone, with hostname: no scheme, port or path (Q-ANS-48).
 func TestR_API_030_HostnameKeepsTheHostOfTheRegistryURL(t *testing.T) {
 	for in, want := range map[string]string{
-		"https://trove.example.com/api/ansible/p/k/": "trove.example.com",
-		"http://127.0.0.1:8080/api/ansible/p/k/":     "127.0.0.1",
-		"https://[::1]:8443/api/ansible/p/k/":        "::1",
-		"//no-scheme.example.com/":                   "//no-scheme.example.com/",
-		"ftp://x.example.com/":                       "ftp://x.example.com/",
-		"":                                           "",
+		"https://quader.example.com/api/ansible/p/k/": "quader.example.com",
+		"http://127.0.0.1:8080/api/ansible/p/k/":      "127.0.0.1",
+		"https://[::1]:8443/api/ansible/p/k/":         "::1",
+		"//no-scheme.example.com/":                    "//no-scheme.example.com/",
+		"ftp://x.example.com/":                        "ftp://x.example.com/",
+		"":                                            "",
 	} {
 		if got := hostname(in); got != want {
 			t.Errorf("hostname(%q) = %q, want %q", in, got, want)
@@ -148,11 +148,11 @@ func TestR_API_030_HostnameKeepsTheHostOfTheRegistryURL(t *testing.T) {
 // no field for it (Q-ARCH-257).
 func TestR_API_030_SchemelessDropsTheSchemeOfTheRegistryURL(t *testing.T) {
 	for in, want := range map[string]string{
-		"https://trove.example.com/api/npm/npm-all/": "//trove.example.com/api/npm/npm-all/",
-		"http://127.0.0.1:8080/api/npm/x/":           "//127.0.0.1:8080/api/npm/x/",
-		"//already.example.com/":                     "//already.example.com/",
-		"https:not-a-url":                            "https:not-a-url",
-		"":                                           "",
+		"https://quader.example.com/api/npm/npm-all/": "//quader.example.com/api/npm/npm-all/",
+		"http://127.0.0.1:8080/api/npm/x/":            "//127.0.0.1:8080/api/npm/x/",
+		"//already.example.com/":                      "//already.example.com/",
+		"https:not-a-url":                             "https:not-a-url",
+		"":                                            "",
 	} {
 		if got := schemeless(in); got != want {
 			t.Errorf("schemeless(%q) = %q, want %q", in, got, want)
@@ -163,9 +163,9 @@ func TestR_API_030_SchemelessDropsTheSchemeOfTheRegistryURL(t *testing.T) {
 			ID: "n.rc.configure", Client: "n", Section: "configure", Lang: "ini", File: ".rc",
 			Template: "{{schemeless .RegistryURL}}:token=" + formats.SetupTokenRef + "\n",
 		}},
-		Client: "n", Credentials: credEnv, TokenEnvVar: "TROVE_TOKEN", Data: testData(),
+		Client: "n", Credentials: credEnv, TokenEnvVar: "QUADER_TOKEN", Data: testData(),
 	})
-	if len(ss) != 1 || !strings.HasPrefix(ss[0].Content, "//trove.example.com/api/npm/npm-all/:token=") {
+	if len(ss) != 1 || !strings.HasPrefix(ss[0].Content, "//quader.example.com/api/npm/npm-all/:token=") {
 		t.Errorf("snippets = %+v", ss)
 	}
 }

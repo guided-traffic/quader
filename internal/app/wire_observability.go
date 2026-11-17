@@ -8,12 +8,12 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/buildinfo"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/buildinfo"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // telemetry bundles logging, metrics and tracing, the first things a replica
@@ -44,7 +44,7 @@ func newTelemetry(cfg *config.Config, id Identity, w io.Writer) (*telemetry, err
 	t.metrics = observability.NewMetrics(id.Role, observability.WithMetricsConfig(cfg.Metrics),
 		observability.WithEndpointNames(endpointNames(cfg)...))
 	t.metrics.ExportEndpoints()
-	t.passing = t.metrics.NewGaugeVec("trove_health_check_passing", "1 while the readiness check passes, 0 while it fails.", "name")
+	t.passing = t.metrics.NewGaugeVec("quader_health_check_passing", "1 while the readiness check passes, 0 while it fails.", "name")
 	t.window = observability.NewRequestWindow()
 	t.runtime = observability.NewRuntimeSampler(t.window, int64(cfg.Runtime.MemoryLimitBytes))
 	t.db = postgres.NewMetrics(t.metrics)
@@ -63,7 +63,7 @@ func newTelemetry(cfg *config.Config, id Identity, w io.Writer) (*telemetry, err
 	return t, nil
 }
 
-// checkObserver feeds trove_health_check_passing{name} (R-OPS-008).
+// checkObserver feeds quader_health_check_passing{name} (R-OPS-008).
 func (t *telemetry) checkObserver(name string, passing bool) {
 	v := 0.0
 	if passing {

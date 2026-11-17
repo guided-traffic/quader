@@ -11,17 +11,17 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/guided-traffic/trove/internal/app"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/restore"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/secrets"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/app"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/restore"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/secrets"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // source is an installation with seeded state and the backup taken of it, in a prefix of the stack's backup bucket.
@@ -44,7 +44,7 @@ func newSourceRows(t *testing.T, files, bulkAudit int) *source {
 	src := testenv.NewStack(t, testenv.StackOptions{Name: "bksrc"})
 	ring, _ := keyRingOf(t, src, "2026-10", 42)
 	seed := seedSource(t, src, files, bulkAudit, ring)
-	cfg := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), "none")
+	cfg := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), "none")
 	tgt := newTarget(t, cfg)
 	cleanup(t, tgt, cfg.Target.Prefix+"/")
 	layout := format.Layout{Prefix: cfg.Target.Prefix}
@@ -76,8 +76,8 @@ type destination struct {
 func (s *source) destination(env ...string) *destination {
 	s.t.Helper()
 	dst := testenv.NewStack(s.t, testenv.StackOptions{Name: "bkdst"})
-	dst.Exec("DROP SCHEMA trove CASCADE")
-	dst.Exec("CREATE SCHEMA trove")
+	dst.Exec("DROP SCHEMA quader CASCADE")
+	dst.Exec("CREATE SCHEMA quader")
 	return s.destinationOn(dst, env...)
 }
 
@@ -87,13 +87,13 @@ func (s *source) destinationOn(dst *testenv.Stack, env ...string) *destination {
 	d := &destination{t: s.t, stack: dst, src: s}
 	t := s.tgtCfg.Target
 	d.environ = append(dst.Environ(),
-		"TROVE_BACKUP_TARGET_ENDPOINT="+t.Endpoint, "TROVE_BACKUP_TARGET_REGION="+t.Region, "TROVE_BACKUP_TARGET_BUCKET="+t.Bucket,
-		"TROVE_BACKUP_TARGET_PREFIX="+t.Prefix, "TROVE_BACKUP_TARGET_FORCE_PATH_STYLE=true", "TROVE_BACKUP_TARGET_CA_FILE="+t.CAFile,
-		"TROVE_BACKUP_TARGET_CREDENTIALS_SOURCE=static",
-		"TROVE_BACKUP_TARGET_CREDENTIALS_ACCESS_KEY_ID_FILE="+t.Credentials.AccessKeyIDFile,
-		"TROVE_BACKUP_TARGET_CREDENTIALS_SECRET_ACCESS_KEY_FILE="+t.Credentials.SecretAccessKeyFile,
-		"TROVE_BACKUP_TARGET_SSE_MODE=none", "TROVE_BACKUP_DATABASE_MIGRATION_WAIT=2s", "TROVE_BACKUP_STALL_TIMEOUT=5m",
-		"TROVE_BACKUP_COPY_CONCURRENCY=4", "TROVE_BACKUP_TARGET_ALLOW_SAME_BUCKET=false")
+		"QUADER_BACKUP_TARGET_ENDPOINT="+t.Endpoint, "QUADER_BACKUP_TARGET_REGION="+t.Region, "QUADER_BACKUP_TARGET_BUCKET="+t.Bucket,
+		"QUADER_BACKUP_TARGET_PREFIX="+t.Prefix, "QUADER_BACKUP_TARGET_FORCE_PATH_STYLE=true", "QUADER_BACKUP_TARGET_CA_FILE="+t.CAFile,
+		"QUADER_BACKUP_TARGET_CREDENTIALS_SOURCE=static",
+		"QUADER_BACKUP_TARGET_CREDENTIALS_ACCESS_KEY_ID_FILE="+t.Credentials.AccessKeyIDFile,
+		"QUADER_BACKUP_TARGET_CREDENTIALS_SECRET_ACCESS_KEY_FILE="+t.Credentials.SecretAccessKeyFile,
+		"QUADER_BACKUP_TARGET_SSE_MODE=none", "QUADER_BACKUP_DATABASE_MIGRATION_WAIT=2s", "QUADER_BACKUP_STALL_TIMEOUT=5m",
+		"QUADER_BACKUP_COPY_CONCURRENCY=4", "QUADER_BACKUP_TARGET_ALLOW_SAME_BUCKET=false")
 	d.environ = append(d.environ, env...)
 	loaded, err := config.Load(config.Options{Environ: d.environ, Command: config.CommandBackup})
 	if err != nil {
@@ -117,13 +117,13 @@ type restorerOptions struct {
 	steps fs.FS
 	ring  *secrets.KeyRing
 	jrn   restore.Journal
-	// journalFn builds the journal from what the restore tells it (the real replay of cmd/trove), instead of the fixed jrn.
+	// journalFn builds the journal from what the restore tells it (the real replay of cmd/quader), instead of the fixed jrn.
 	journalFn func(context.Context, restore.JournalEnv) (restore.Journal, error)
 	// targetEndpoint replaces the target's endpoint in the copy source, so that the blob store sees another store.
 	targetEndpoint string
 }
 
-// restorer builds the Restorer the way cmd/trove does.
+// restorer builds the Restorer the way cmd/quader does.
 func (d *destination) restorer(o restorerOptions) (*restore.Restorer, *bytes.Buffer) {
 	d.t.Helper()
 	ctx := context.Background()
@@ -197,7 +197,7 @@ func (d *destination) blobObject(dg format.Digest) []byte {
 
 // relations is the number of relations the destination's schema holds.
 func (d *destination) relations() int64 {
-	return d.stack.Number("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'trove' AND c.relkind IN ('r','p','v','S')")
+	return d.stack.Number("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'quader' AND c.relkind IN ('r','p','v','S')")
 }
 
 // editedSteps is the embedded migrations with step n changed by a trailing comment: the binary of a later build in which a

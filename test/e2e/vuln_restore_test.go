@@ -2,10 +2,10 @@
 
 package e2e
 
-// E5.13 and R-VULN-026: the trove-backup drill restores blocks and triage and reconciles them after the first sync. Twelve packages
+// E5.13 and R-VULN-026: the quader-backup drill restores blocks and triage and reconciles them after the first sync. Twelve packages
 // of the vulnerability fixture are set into known states, a backup is taken from the installation, triage and the advisory source
-// change after it, the backup is restored with the restore Job into the namespace trove-restore (deploy/dev/restore-ns.sh with
-// TROVE_RESTORE_PROFILE=vuln: the restored installation reads the test advisory source and runs two packages replicas), and each
+// change after it, the backup is restored with the restore Job into the namespace quader-restore (deploy/dev/restore-ns.sh with
+// QUADER_RESTORE_PROFILE=vuln: the restored installation reads the test advisory source and runs two packages replicas), and each
 // replica is judged before the first synchronization and after it and the full evaluation (Q-VULN-125 to Q-VULN-127).
 //
 // The versions `cr` and `cm` are blocked by the evaluation after the snapshot (a re-detection and a first malicious finding). Their
@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // vrstPkg is one of the twelve packages of the drill.
@@ -88,13 +88,13 @@ func widenedRecord(id, ecosystem, name, fixed string) osvstub.Advisory {
 func awaitEvaluatedRestored(t testing.TB) {
 	t.Helper()
 	waitFor(t, "the evaluation of the restored installation to finish", 10*time.Minute, 2*time.Second, func() bool {
-		return krSQL(t, `SELECT (SELECT count(*) FROM trove.vuln_pending_evaluation)
-			+ (SELECT count(*) FROM trove.job WHERE kind IN ('vuln-evaluate', 'vuln-rescan') AND state IN ('queued', 'running', 'cancelling'))
-			+ (SELECT count(*) FROM trove.vuln_source_state WHERE full_evaluation_requested_at IS NOT NULL)`) == "0"
+		return krSQL(t, `SELECT (SELECT count(*) FROM quader.vuln_pending_evaluation)
+			+ (SELECT count(*) FROM quader.job WHERE kind IN ('vuln-evaluate', 'vuln-rescan') AND state IN ('queued', 'running', 'cancelling'))
+			+ (SELECT count(*) FROM quader.vuln_source_state WHERE full_evaluation_requested_at IS NOT NULL)`) == "0"
 	})
 }
 
-// downRestored removes the second installation when the test ends: its PostgreSQL instance carries the labels of the cluster trove-db,
+// downRestored removes the second installation when the test ends: its PostgreSQL instance carries the labels of the cluster quader-db,
 // which the drains of the variant tests select across namespaces.
 func downRestored() {
 	cmd := exec.Command(filepath.Join(cfg.repo, "deploy/dev", "restore-ns.sh"), "down")
@@ -192,7 +192,7 @@ func TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage(t *testing.T) {
 	// cr: the record no longer affects 1.0.0, the second sync resolves the blocked finding as no_longer_affected
 	e.addRecord(t, "npm", widenedRecord(pk["cr"].adv, "npm", pk["cr"].name, "1.0.0"))
 	e.syncIncremental(t) // sync 2
-	if got := sql(t, `SELECT status || '|' || coalesce(resolved_reason, '') || '|' || coalesce(status_before_resolution, '') FROM trove.vuln_finding WHERE id = '`+fid("cr")+`'`); got != "resolved|no_longer_affected|blocked" {
+	if got := sql(t, `SELECT status || '|' || coalesce(resolved_reason, '') || '|' || coalesce(status_before_resolution, '') FROM quader.vuln_finding WHERE id = '`+fid("cr")+`'`); got != "resolved|no_longer_affected|blocked" {
 		t.Fatalf("cr = %q after the second sync, want resolved|no_longer_affected|blocked", got)
 	}
 	for l, want := range map[string]string{"rb": "blocked", "rd": "dismissed", "rm": "needs_triage", "rn": "blocked", "jb": "needs_triage", "jl": "blocked", "js": "needs_triage", "jd": "blocked", "cw": "needs_triage"} {
@@ -249,20 +249,20 @@ func TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage(t *testing.T) {
 	if got := status(e.adm, "cw"); got != "resolved" {
 		t.Fatalf("the source has cw %s after its record was withdrawn, want resolved", got)
 	}
-	sourceRecords := sql(t, `SELECT string_agg(ecosystem || '=' || records, ',' ORDER BY ecosystem) FROM trove.vuln_source_state WHERE source = 'osv' AND ecosystem IN ('npm', 'NuGet')`)
+	sourceRecords := sql(t, `SELECT string_agg(ecosystem || '=' || records, ',' ORDER BY ecosystem) FROM quader.vuln_source_state WHERE source = 'osv' AND ecosystem IN ('npm', 'NuGet')`)
 	t.Logf("the source's record counts: %s", sourceRecords)
 	// the journal is shipped when no row is pending in the outbox (the shipper deletes what it wrote to the bucket)
 	waitFor(t, "the revocation journal to be shipped", 3*time.Minute, 2*time.Second, func() bool {
-		return sql(t, `SELECT count(*) FROM trove.revocation_outbox`) == "0"
+		return sql(t, `SELECT count(*) FROM quader.revocation_outbox`) == "0"
 	})
 
 	// ── the restore ──────────────────────────────────────────────────────────
-	t.Setenv("TROVE_RESTORE_PROFILE", "vuln")
+	t.Setenv("QUADER_RESTORE_PROFILE", "vuln")
 	t.Cleanup(downRestored)
 	restoreNSScript(t, "infra")
 	restoreNSScript(t, "install", backupID)
-	re := bakWaitJob(t, restoreNS, "trove-restore", 20*time.Minute)
-	logs := bakJobLogs(restoreNS, "trove-restore")
+	re := bakWaitJob(t, restoreNS, "quader-restore", 20*time.Minute)
+	logs := bakJobLogs(restoreNS, "quader-restore")
 	if re.Condition != "Complete" {
 		t.Fatalf("the restore Job ended %s:\n%s", re.Condition, tail(logs, 3000))
 	}
@@ -305,7 +305,7 @@ func TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage(t *testing.T) {
 	// rfinding reads the one finding of the package's version in the restored database, resolved ones included (the API's list leaves
 	// them out by default); ok is false when there is none
 	rfinding := func(l string) (vulnFinding, bool) {
-		out := krSQL(t, `SELECT string_agg(id || '|' || status || '|' || kind, ';') FROM trove.vuln_finding WHERE package_name = '`+pk[l].key()+`' AND version = '1.0.0'`)
+		out := krSQL(t, `SELECT string_agg(id || '|' || status || '|' || kind, ';') FROM quader.vuln_finding WHERE package_name = '`+pk[l].key()+`' AND version = '1.0.0'`)
 		if out == "" {
 			return vulnFinding{}, false
 		}
@@ -338,7 +338,7 @@ func TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage(t *testing.T) {
 
 	t.Run("R-VULN-026 R-BAK-004 the restored installation has no advisory data: the six transient tables are empty and no ecosystem has a source state", func(t *testing.T) {
 		for _, tbl := range []string{"vuln_advisory", "vuln_affected", "vuln_kev", "vuln_source_state", "vuln_pending_evaluation", "vuln_claimed_match"} {
-			if n := krSQL(t, `SELECT count(*) FROM trove.`+tbl); n != "0" {
+			if n := krSQL(t, `SELECT count(*) FROM quader.`+tbl); n != "0" {
 				t.Errorf("the restored table %s has %s rows, want 0", tbl, n)
 			}
 		}
@@ -355,7 +355,7 @@ func TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage(t *testing.T) {
 				t.Errorf("%s is %s on the restored installation, want blocked", l, got)
 			}
 		}
-		if n := krSQL(t, `SELECT count(*) FROM trove.vuln_finding_event WHERE finding_id = '`+snap["js"].id+`' AND change = 'status_changed'
+		if n := krSQL(t, `SELECT count(*) FROM quader.vuln_finding_event WHERE finding_id = '`+snap["js"].id+`' AND change = 'status_changed'
 			AND to_status = 'blocked' AND actor IS NULL AND details ? 'journal'`); n != "1" {
 			t.Errorf("js has %s history rows of a replayed block (status_changed to blocked, no principal, the entry in its details), want 1:\n%s", n, findingEvents(func(t testing.TB, q string) string { return krSQL(t, q) }, t, snap["js"].id))
 		}
@@ -384,7 +384,7 @@ func TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage(t *testing.T) {
 		if got := rstatus("cr"); got != "blocked" {
 			t.Errorf("cr is %s before the first sync, want blocked by the replay", got)
 		}
-		resolved := krSQL(t, `SELECT coalesce(string_agg(package_name, ',' ORDER BY package_name), '') FROM trove.vuln_finding WHERE status = 'resolved' AND package_name LIKE '%vrst%`+strings.ToLower(run)+`%'`)
+		resolved := krSQL(t, `SELECT coalesce(string_agg(package_name, ',' ORDER BY package_name), '') FROM quader.vuln_finding WHERE status = 'resolved' AND package_name LIKE '%vrst%`+strings.ToLower(run)+`%'`)
 		if resolved != "" {
 			t.Errorf("the findings %s of the drill's packages are resolved before the first sync: nothing resolves without data", resolved)
 		}
@@ -435,13 +435,13 @@ func TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage(t *testing.T) {
 		r.JSON(t, &j)
 		var st string
 		waitFor(t, "the first synchronization of the restored installation to end", 10*time.Minute, 2*time.Second, func() bool {
-			st = krSQL(t, `SELECT state FROM trove.job WHERE id = '`+j.Job.ID+`'`)
+			st = krSQL(t, `SELECT state FROM quader.job WHERE id = '`+j.Job.ID+`'`)
 			return st == "succeeded" || st == "failed" || st == "cancelled"
 		})
 		if st != "succeeded" {
-			t.Fatalf("the first synchronization ended %s: %s", st, krSQL(t, `SELECT coalesce(error::text, '') FROM trove.job WHERE id = '`+j.Job.ID+`'`))
+			t.Fatalf("the first synchronization ended %s: %s", st, krSQL(t, `SELECT coalesce(error::text, '') FROM quader.job WHERE id = '`+j.Job.ID+`'`))
 		}
-		got := krSQL(t, `SELECT string_agg(ecosystem || '=' || state || ':' || records, ',' ORDER BY ecosystem) FROM trove.vuln_source_state WHERE source = 'osv' AND ecosystem IN ('npm', 'NuGet')`)
+		got := krSQL(t, `SELECT string_agg(ecosystem || '=' || state || ':' || records, ',' ORDER BY ecosystem) FROM quader.vuln_source_state WHERE source = 'osv' AND ecosystem IN ('npm', 'NuGet')`)
 		var want []string
 		for _, kv := range strings.Split(sourceRecords, ",") {
 			want = append(want, strings.Replace(kv, "=", "=complete:", 1))
@@ -451,10 +451,10 @@ func TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage(t *testing.T) {
 			t.Errorf("the source state after the first synchronization is %q, want %q (complete, the source's record counts)", got, strings.Join(want, ","))
 		}
 		awaitEvaluatedRestored(t)
-		if n := krSQL(t, `SELECT count(*) FROM trove.job WHERE kind = 'vuln-evaluate' AND created_at >= '`+syncStart+`'`); n == "0" {
+		if n := krSQL(t, `SELECT count(*) FROM quader.job WHERE kind = 'vuln-evaluate' AND created_at >= '`+syncStart+`'`); n == "0" {
 			t.Error("the first synchronization requested no full evaluation: no vuln-evaluate job was made after it started")
 		}
-		if n := krSQL(t, `SELECT count(*) FROM trove.job WHERE kind IN ('vuln-evaluate', 'vuln-rescan') AND state IN ('queued', 'running', 'cancelling')`); n != "0" {
+		if n := krSQL(t, `SELECT count(*) FROM quader.job WHERE kind IN ('vuln-evaluate', 'vuln-rescan') AND state IN ('queued', 'running', 'cancelling')`); n != "0" {
 			t.Errorf("%s evaluation jobs are still queued or running", n)
 		}
 	})
@@ -467,7 +467,7 @@ func TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage(t *testing.T) {
 			}
 		}
 		if f, ok := rfinding("cw"); ok {
-			if got := krSQL(t, `SELECT coalesce(resolved_reason, '') FROM trove.vuln_finding WHERE id = '`+f.ID+`'`); got != "advisory_withdrawn" {
+			if got := krSQL(t, `SELECT coalesce(resolved_reason, '') FROM quader.vuln_finding WHERE id = '`+f.ID+`'`); got != "advisory_withdrawn" {
 				t.Errorf("cw is resolved with %q, want advisory_withdrawn", got)
 			}
 		}
@@ -488,7 +488,7 @@ func TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage(t *testing.T) {
 				t.Errorf("%s has the finding %+v after the first sync, want the ID %s of the source", l, f, s.id)
 			}
 		}
-		if n := krSQL(t, `SELECT count(*) FROM (SELECT 1 FROM trove.vuln_finding GROUP BY repo_id, ecosystem, package_name, version, advisory_id HAVING count(*) > 1) d`); n != "0" {
+		if n := krSQL(t, `SELECT count(*) FROM (SELECT 1 FROM quader.vuln_finding GROUP BY repo_id, ecosystem, package_name, version, advisory_id HAVING count(*) > 1) d`); n != "0" {
 			t.Errorf("%s finding identities exist twice", n)
 		}
 		for _, r := range reps {
@@ -522,7 +522,7 @@ func TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage(t *testing.T) {
 // revisionOf reads the revision of a finding.
 func revisionOf(t testing.TB, q func(testing.TB, string) string, id string) int64 {
 	t.Helper()
-	n, err := strconv.ParseInt(q(t, `SELECT revision FROM trove.vuln_finding WHERE id = '`+id+`'`), 10, 64)
+	n, err := strconv.ParseInt(q(t, `SELECT revision FROM quader.vuln_finding WHERE id = '`+id+`'`), 10, 64)
 	if err != nil {
 		t.Fatalf("the revision of finding %s: %v", id, err)
 	}
@@ -544,7 +544,7 @@ func replayApplied(logs, subject string) bool {
 func findingEvents(q func(testing.TB, string) string, t testing.TB, id string) string {
 	t.Helper()
 	return q(t, `SELECT coalesce(string_agg(change || ':' || coalesce(from_status, '') || '>' || coalesce(to_status, '') || '/' || coalesce(reason, '') || '/' || coalesce(comment, '') || '/' || (actor IS NOT NULL)::text, ' ; ' ORDER BY seq), '')
-		FROM trove.vuln_finding_event WHERE finding_id = '`+id+`'`)
+		FROM quader.vuln_finding_event WHERE finding_id = '`+id+`'`)
 }
 
 func describeSnapshot(snap map[string]vrstState, labels []string) string {

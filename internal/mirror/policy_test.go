@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // R-REPO-054: the window starts at 1, doubles after w successes in a row until the ceiling (slow start), halves once per wait
@@ -80,7 +80,7 @@ func TestR_REPO_054_TheWindowStartsSlowHalvesOncePerWaitAndGrowsByOne(t *testing
 }
 
 // R-REPO-054: the window a wait halved stays halved while the wait lasts: requests that were in flight when it began answer
-// successfully and do not grow it (trove_mirror_concurrency is at most half of its value before the answer).
+// successfully and do not grow it (quader_mirror_concurrency is at most half of its value before the answer).
 func TestR_REPO_054_SuccessesOfRequestsInFlightWhenTheWaitBeganDoNotGrowTheHalvedWindow(t *testing.T) {
 	th := newThrottle(newClock(), fixedJitter(0), 4, nil)
 	ctx := context.Background()

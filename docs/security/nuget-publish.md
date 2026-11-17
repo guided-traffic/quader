@@ -48,7 +48,7 @@ A version number of a local repository is immutable for the life of the reposito
   (below), and the deletion of the repository. The statement `NuGetDeleteTombstone` removes only when the digest of the stored package equals the digest
   the tombstone holds.
 - **A repeated push of identical bytes** answers 201 and writes nothing: no row, no revision, no audit event; the counter
-  `trove_nuget_push_replayed_total` counts it. The caller needs `deploy` and the ownership of the ID for it like for any push, so the answer tells a
+  `quader_nuget_push_replayed_total` counts it. The caller needs `deploy` and the ownership of the ID for it like for any push, so the answer tells a
   caller nothing it does not hold the right to learn.
 - **The lock order** is the package row first, the number second. A push racing a hard delete of the same number sees the version or its tombstone, never
   neither. The reads of the hook run in its own transaction (Q-NUGET-40); the integration test `TestR_NUGET_006_APushRacingAHardDeleteSeesTheVersionOrItsTombstone`

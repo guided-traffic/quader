@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	debdata "github.com/guided-traffic/trove/internal/formatdata/deb"
-	debformat "github.com/guided-traffic/trove/internal/formats/deb"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
-	"github.com/guided-traffic/trove/test/debstub"
+	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
+	debformat "github.com/guided-traffic/quader/internal/formats/deb"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/test/debstub"
 )
 
 // poolFile is a package file of the stub's stable suite: the path a client asks for and the stub's digest.
@@ -124,7 +124,7 @@ func TestR_DEB_022_AFileNoParsedIndexListsIsStoredUnverifiedOrRefusedByTheRequir
 	if a := e.get(rPlain, path); a.Status != http.StatusOK || sum(a.Body) != digest {
 		t.Fatalf("verify-if-available: %d", a.Status)
 	}
-	if !strings.Contains(e.r.Metrics(t), "trove_deb_unverified_fills_total") {
+	if !strings.Contains(e.r.Metrics(t), "quader_deb_unverified_fills_total") {
 		t.Error("the unverified fill was not counted")
 	}
 	// The policy require refuses it, before the upstream is asked.
@@ -234,11 +234,11 @@ func TestR_DEB_023_TheShadowingCheckAsksTheRowsOfTheScopeAndEnqueuesWhatSettlesI
 		return rows.NameScope{RepoID: id, Name: name, Suites: suites, Components: comps, Architectures: []string{"amd64"}}
 	}
 	// Nothing is fetched yet: the answer is undetermined and the fetch and the parse are enqueued through the background path.
-	served, known, err := st.ServesName(ctx, scope("trove-hello", []string{"stable"}, "main"))
+	served, known, err := st.ServesName(ctx, scope("quader-hello", []string{"stable"}, "main"))
 	if err != nil || served || known {
 		t.Fatalf("before: served %v known %v err %v", served, known, err)
 	}
-	if enq, err := st.EnsureParsed(ctx, scope("trove-hello", []string{"stable"}, "main")); err != nil || !enq {
+	if enq, err := st.EnsureParsed(ctx, scope("quader-hello", []string{"stable"}, "main")); err != nil || !enq {
 		t.Fatalf("EnsureParsed: %v %v", enq, err)
 	}
 	// The scope is settled when every index of it that the release lists is parsed (R-DEB-023). A name that an index lists is known
@@ -248,7 +248,7 @@ func TestR_DEB_023_TheShadowingCheckAsksTheRowsOfTheScopeAndEnqueuesWhatSettlesI
 		_, known, err := st.ServesName(ctx, scope("no-such-package", []string{"stable"}, "main"))
 		return err == nil && known
 	})
-	if served, known, err := st.ServesName(ctx, scope("trove-hello", []string{"stable"}, "main")); err != nil || !served || !known {
+	if served, known, err := st.ServesName(ctx, scope("quader-hello", []string{"stable"}, "main")); err != nil || !served || !known {
 		t.Errorf("a name the stub lists: served %v known %v err %v", served, known, err)
 	}
 	if served, known, err := st.ServesName(ctx, scope("acme-tool", []string{"stable"}, "main")); err != nil || served || !known {

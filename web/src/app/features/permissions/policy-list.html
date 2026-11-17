@@ -1,17 +1,17 @@
-<trove-page-header heading="Permission policies" i18n-heading="@@policies.heading">
+<quader-page-header heading="Permission policies" i18n-heading="@@policies.heading">
   @if (session.has('policies:write')) {
     <a actions class="btn btn-confirm" routerLink="/admin/permissions/new" i18n="@@policies.new">New policy</a>
   } @else {
     <button actions class="btn btn-confirm" type="button" disabled aria-describedby="needs-policies" i18n="@@policies.new-disabled">New policy</button>
   }
-</trove-page-header>
-<trove-needs id="needs-policies" capability="policies:write" />
+</quader-page-header>
+<quader-needs id="needs-policies" capability="policies:write" />
 
 <div class="list-layout" [class.panel-open]="panelOpen()">
   <div class="list-toolbar">
-    <trove-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
+    <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
   </div>
-  <trove-filter-panel
+  <quader-filter-panel
     #panel
     class="list-side"
     [(open)]="panelOpen"
@@ -19,8 +19,8 @@
     (apply)="apply()"
     (clearAll)="clear()"
   >
-    <trove-filter-category i18n-label="@@policies.principal" label="Principal" [active]="!!principalFilter().trim()" [expanded]="!!principalFilter().trim()">
-      <trove-text-field
+    <quader-filter-category i18n-label="@@policies.principal" label="Principal" [active]="!!principalFilter().trim()" [expanded]="!!principalFilter().trim()">
+      <quader-text-field
         width="name"
         i18n-label="@@policies.principal"
         label="Principal"
@@ -29,17 +29,17 @@
         i18n-hint="@@policies.principal-hint"
         hint="user:name, group:name or sa:name"
       />
-    </trove-filter-category>
-    <trove-filter-category i18n-label="@@policies.repository" label="Repository" [active]="!!repositoryFilter().trim()" [expanded]="!!repositoryFilter().trim()">
-      <trove-text-field width="name" i18n-label="@@policies.repository" label="Repository" name="repository" [(value)]="repositoryFilter" />
-    </trove-filter-category>
-    <trove-filter-category i18n-label="@@policies.project" label="Project" [active]="!!projectFilter().trim()" [expanded]="!!projectFilter().trim()">
-      <trove-text-field width="name" i18n-label="@@policies.project" label="Project" name="project" [(value)]="projectFilter" />
-    </trove-filter-category>
-  </trove-filter-panel>
+    </quader-filter-category>
+    <quader-filter-category i18n-label="@@policies.repository" label="Repository" [active]="!!repositoryFilter().trim()" [expanded]="!!repositoryFilter().trim()">
+      <quader-text-field width="name" i18n-label="@@policies.repository" label="Repository" name="repository" [(value)]="repositoryFilter" />
+    </quader-filter-category>
+    <quader-filter-category i18n-label="@@policies.project" label="Project" [active]="!!projectFilter().trim()" [expanded]="!!projectFilter().trim()">
+      <quader-text-field width="name" i18n-label="@@policies.project" label="Project" name="project" [(value)]="projectFilter" />
+    </quader-filter-category>
+  </quader-filter-panel>
 
   <div class="list-main">
-    <trove-data-table
+    <quader-data-table
       [caption]="caption"
       [columns]="columns"
       [sort]="sort()"
@@ -75,6 +75,6 @@
           <td class="wrap" translate="no">{{ actionSummary(p) }}</td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   </div>
 </div>

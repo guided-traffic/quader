@@ -28,7 +28,7 @@ var ErrValueTooLarge = errors.New("valkey value exceeds the 1 KiB limit")
 // errNoPrimary means the Sentinels do not know the configured primary name.
 var errNoPrimary = errors.New("no Sentinel knows the primary name")
 
-// ErrorKind is the value of the kind label of trove_valkey_errors_total
+// ErrorKind is the value of the kind label of quader_valkey_errors_total
 // (R-HA-057).
 type ErrorKind string
 

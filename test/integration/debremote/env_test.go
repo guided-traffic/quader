@@ -24,10 +24,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	_ "github.com/guided-traffic/trove/internal/formats/all"
-	"github.com/guided-traffic/trove/test/debstub"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	_ "github.com/guided-traffic/quader/internal/formats/all"
+	"github.com/guided-traffic/quader/test/debstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -80,10 +80,10 @@ func newEnv(t *testing.T) *denv {
 	}
 	e.keyA, e.keyB = ring("a"), ring("b")
 	e.st = testenv.NewStack(t, testenv.StackOptions{Name: "debremote", Env: []string{
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
-		"TROVE_API_RATE_LIMITS_ENABLED=false",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		"QUADER_API_RATE_LIMITS_ENABLED=false",
 	}})
 	e.repo(rKeyed, "/debian/", e.keyA, 300, "verify-if-available")
 	e.repo(rPlain, "/debian/", "", 300, "verify-if-available")

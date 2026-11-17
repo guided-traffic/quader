@@ -7,11 +7,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // Replay of the identity events of the revocation journal (R-HA-054, R-AUTH-016, R-AUTH-018, R-AUTH-019, R-AUTH-020,
@@ -168,7 +168,7 @@ func replayDeleteGroup(ctx context.Context, tx meta.Tx, env journal.Env, o journ
 		}
 		return o.Result(journal.SubjectUnknown, e.PrincipalID), nil
 	}
-	// The roles the group holds go with it (the binding rows cascade), and trove migrate must not bind them to the group it
+	// The roles the group holds go with it (the binding rows cascade), and quader migrate must not bind them to the group it
 	// would create again under a new ID: mark each by name (Q-AUTHZ-236).
 	roles, err := qs.IdentityGroupRoles(ctx, g.ID)
 	if err != nil {

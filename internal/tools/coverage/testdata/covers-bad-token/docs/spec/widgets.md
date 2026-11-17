@@ -6,7 +6,7 @@ Priority: **MVP** · Covers: WID-001, widget two
 Text.
 
 ### R-widget two · Own design
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 ## Decisions
 

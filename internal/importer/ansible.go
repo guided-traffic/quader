@@ -163,7 +163,7 @@ func galaxyRefusal(resp *Response) *Refusal {
 	return r
 }
 
-// Preflight implements Format: the discovery document of the target is a trove one and lists v3.
+// Preflight implements Format: the discovery document of the target is a quader one and lists v3.
 func (a *Ansible) Preflight(ctx context.Context, dst *TargetClient) error {
 	var doc struct {
 		Versions    map[string]string `json:"available_versions"`
@@ -174,10 +174,10 @@ func (a *Ansible) Preflight(ctx context.Context, dst *TargetClient) error {
 		return err
 	}
 	if !found {
-		return fmt.Errorf("the target answered 404: is the address an Ansible repository of trove that the token can read?")
+		return fmt.Errorf("the target answered 404: is the address an Ansible repository of Quader that the token can read?")
 	}
-	if !strings.HasPrefix(doc.Description, "trove") {
-		return fmt.Errorf("the target is not a trove Ansible repository: its discovery document does not say so")
+	if !strings.HasPrefix(doc.Description, "Quader") {
+		return fmt.Errorf("the target is not a Quader Ansible repository: its discovery document does not say so")
 	}
 	if _, ok := doc.Versions["v3"]; !ok {
 		return fmt.Errorf("the target lists no v3 API")
@@ -331,7 +331,7 @@ func (a *Ansible) notKept(ctx context.Context, src *SourceClient, root, ns, coll
 		Deprecated bool `json:"deprecated"`
 	}
 	if ok, err := src.GetJSON(ctx, collectionURL(root, ns, coll), "application/json", galaxyDocLimit, &c); err == nil && ok && c.Deprecated {
-		p.NotKept = append(p.NotKept, "deprecation flag of the collection (trove stores none for a local collection)")
+		p.NotKept = append(p.NotKept, "deprecation flag of the collection (Quader stores none for a local collection)")
 	}
 	a.mu.Lock()
 	done := a.rolesDone
@@ -388,7 +388,7 @@ func (*Ansible) Held(ctx context.Context, dst *TargetClient, name string) (map[s
 	return held, nil, nil
 }
 
-// pollTask waits for the import task of a publish to finish. The task of trove is final when it is created, so one read
+// pollTask waits for the import task of a publish to finish. The task of quader is final when it is created, so one read
 // is the rule; a 404 is tried again a few times, as the client does.
 func pollTask(ctx context.Context, dst *TargetClient, taskURL string) error {
 	const attempts = 30
@@ -433,7 +433,7 @@ func (*Ansible) Publish(ctx context.Context, dst *TargetClient, p *Plan, v Versi
 	if _, err := rand.Read(rnd[:]); err != nil {
 		return err
 	}
-	boundary := "trove-import-" + hex.EncodeToString(rnd[:])
+	boundary := "quader-import-" + hex.EncodeToString(rnd[:])
 	var head bytes.Buffer
 	mw := multipart.NewWriter(&head)
 	if err := mw.SetBoundary(boundary); err != nil {

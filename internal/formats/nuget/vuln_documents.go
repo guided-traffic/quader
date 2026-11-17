@@ -10,27 +10,27 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/document"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/document"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // The vulnerability information of the protocol's VulnerabilityInfo/6.7.0 resource (R-VULN-018): the index at
-// <feed>/vulnerabilities/index.json lists one page, <feed>/vulnerabilities/trove.json, which holds the advisories of trove's
+// <feed>/vulnerabilities/index.json lists one page, <feed>/vulnerabilities/quader.json, which holds the advisories of quader's
 // own NuGet data keyed by the lower-case package ID. Every repository class lists and serves it while nuget.vulnerabilityInfo
 // is local and the NuGet data is complete.
 
 // The resource and its documents.
 const (
 	resVulnerabilities = "vulnerabilities"
-	vulnPageFile       = "trove.json"
+	vulnPageFile       = "quader.json"
 	// vulnEcosystem is the OSV ecosystem of NuGet.
 	vulnEcosystem = "NuGet"
 	// vulnPageName is the @name of the one entry of the index.
-	vulnPageName    = "trove"
-	vulnPageComment = "Advisory data mirrored by trove"
+	vulnPageName    = "quader"
+	vulnPageComment = "Advisory data mirrored by Quader"
 	// vulnCacheControl is the Cache-Control of both documents (R-VULN-018): private, because the answer is per feed.
 	vulnCacheControl = "private, max-age=1800"
 )
@@ -93,7 +93,7 @@ func matchVulnerabilities(file string) func(string) (formats.Params, bool) {
 	}
 }
 
-// vulnAvailable decides whether the documents are served: 404 when the repository does not serve trove's data (the resource
+// vulnAvailable decides whether the documents are served: 404 when the repository does not serve quader's data (the resource
 // is not listed either), 503 vulnerability_data_unavailable while the NuGet data is not complete.
 func vulnAvailable(rq *formats.Request) (formats.VulnerabilityData, error) {
 	d := rq.Host.Vulnerabilities()
@@ -101,7 +101,7 @@ func vulnAvailable(rq *formats.Request) (formats.VulnerabilityData, error) {
 		return nil, errNoSuchResource()
 	}
 	if !d.State(vulnEcosystem).Complete {
-		return nil, errs.E(errs.Unavailable, errs.CodeVulnerabilityDataUnavailable, "trove's advisory data for NuGet is not imported yet.")
+		return nil, errs.E(errs.Unavailable, errs.CodeVulnerabilityDataUnavailable, "Quader's advisory data for NuGet is not imported yet.")
 	}
 	return d, nil
 }
@@ -155,7 +155,7 @@ func replyVuln(rq *formats.Request, w http.ResponseWriter, etag string, body fun
 	return err
 }
 
-// handleVulnIndex serves <feed>/vulnerabilities/index.json: an array of one entry, the page of trove's data (R-VULN-018).
+// handleVulnIndex serves <feed>/vulnerabilities/index.json: an array of one entry, the page of quader's data (R-VULN-018).
 func (f *Format) handleVulnIndex(_ context.Context, rq *formats.Request, w http.ResponseWriter) error {
 	d, err := vulnAvailable(rq)
 	if err != nil {
@@ -177,9 +177,9 @@ type vulnIndexEntry struct {
 	Comment string `json:"comment"`
 }
 
-// handleVulnPage serves <feed>/vulnerabilities/trove.json: from the replica's page cache, rendered on a miss (R-VULN-018).
+// handleVulnPage serves <feed>/vulnerabilities/quader.json: from the replica's page cache, rendered on a miss (R-VULN-018).
 func (f *Format) handleVulnPage(ctx context.Context, rq *formats.Request, w http.ResponseWriter) (err error) {
-	// The page is the audit's data request: it is counted with npm's audits in trove_vuln_audit_requests_total (R-VULN-024).
+	// The page is the audit's data request: it is counted with npm's audits in quader_vuln_audit_requests_total (R-VULN-024).
 	defer func() { rq.Host.Vulnerabilities().CountAudit(ID, VulnInfoLocal, vulnOutcome(err)) }()
 	d, err := vulnAvailable(rq)
 	if err != nil {
@@ -191,7 +191,7 @@ func (f *Format) handleVulnPage(ctx context.Context, rq *formats.Request, w http
 	})
 }
 
-// vulnOutcome is the outcome label of a page request: ok, refused (the repository does not serve trove's data),
+// vulnOutcome is the outcome label of a page request: ok, refused (the repository does not serve quader's data),
 // unavailable (the NuGet data is not complete) or error.
 func vulnOutcome(err error) string {
 	if err == nil {

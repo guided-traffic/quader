@@ -8,8 +8,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nuspec"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nuspec"
 )
 
 // Entry is an entry of the archive as its central directory declares it, with

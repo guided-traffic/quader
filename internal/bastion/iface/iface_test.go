@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 func TestR_BAS_013_SubjectHeaderRoundTrips(t *testing.T) {

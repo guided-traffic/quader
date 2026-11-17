@@ -1,1 +1,1 @@
-"trove" "trove-it"
+"quader" "quader-it"

@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 // jtiCount is the exchange count of a jti in the replay set, 0 when it has no row.
@@ -52,7 +52,7 @@ func count(statuses []int, status int) int {
 }
 
 func TestR_CI_018_SingleUse(t *testing.T) {
-	x := newXEnv(t, options{valkey: true, env: []string{"TROVE_CI_REPLAY_WARN_AFTER_EXCHANGES=2"}})
+	x := newXEnv(t, options{valkey: true, env: []string{"QUADER_CI_REPLAY_WARN_AFTER_EXCHANGES=2"}})
 	a, b := x.web("web-a"), x.web("web-b")
 	x.issuer(a, map[string]any{"singleUseSubjectTokens": true})
 	x.addMapping(a, releaseMapping("acme-release-publish", 100))
@@ -110,7 +110,7 @@ func TestR_CI_018_SingleUse(t *testing.T) {
 }
 
 func TestR_CI_018_RepeatedExchangesAreCountedWithoutSingleUse(t *testing.T) {
-	x := newXEnv(t, options{valkey: true, env: []string{"TROVE_CI_REPLAY_WARN_AFTER_EXCHANGES=2"}})
+	x := newXEnv(t, options{valkey: true, env: []string{"QUADER_CI_REPLAY_WARN_AFTER_EXCHANGES=2"}})
 	a, b := x.web("web-a"), x.web("web-b")
 	x.issuer(a)
 	if got := x.do(a, "GET", issuersPath+"/"+xIssuer, nil).JSON(t)["singleUseSubjectTokens"]; got != false {
@@ -157,7 +157,7 @@ func TestR_CI_018_TheRestoreCutOff(t *testing.T) {
 	x := newXEnv(t, options{valkey: true})
 	a := x.web("web-a")
 	x.issuer(a, map[string]any{"singleUseSubjectTokens": true})
-	off := startDouble(t, oidcstub.Config{Audience: troveAudience})
+	off := startDouble(t, oidcstub.Config{Audience: quaderAudience})
 	wantStatus(t, x.do(a, "POST", issuersPath, off.body("gitlab-reuse")), 201, "")
 	x.addMapping(a, releaseMapping("acme-release-publish", 100))
 	wantStatus(t, x.do(a, "POST", mappingsOf("gitlab-reuse"), releaseMapping("reuse-publish", 100)), 201, "")
@@ -194,8 +194,8 @@ func TestR_CI_018_TheRestoreCutOff(t *testing.T) {
 // "Pending criteria"); with Valkey stopped no replica can consult it at all, which is the case the replay set must not need.
 func TestR_CI_018_OneThousandSingleUseTokensOnTwoReplicasWithValkeyStopped(t *testing.T) {
 	x := newXEnv(t, options{valkey: false, env: []string{
-		`TROVE_CI_EXCHANGE_RATE_LIMIT_EXEMPT_CIDRS=["127.0.0.0/8"]`,
-		"TROVE_CI_EXCHANGE_RATE_LIMIT_PER_SUBJECT_PER_MINUTE=100000", "TROVE_CI_EXCHANGE_RATE_LIMIT_PER_SUBJECT_BURST=100000",
+		`QUADER_CI_EXCHANGE_RATE_LIMIT_EXEMPT_CIDRS=["127.0.0.0/8"]`,
+		"QUADER_CI_EXCHANGE_RATE_LIMIT_PER_SUBJECT_PER_MINUTE=100000", "QUADER_CI_EXCHANGE_RATE_LIMIT_PER_SUBJECT_BURST=100000",
 	}})
 	a, b := x.web("web-a"), x.web("web-b")
 	x.issuer(a, map[string]any{"singleUseSubjectTokens": true})

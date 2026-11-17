@@ -2,7 +2,7 @@
 
 package e2e
 
-// The npm side of the remote full mirror on kind (R-REPO-055, R-REPO-059; set `npm`, and the install-time ratio with TROVE_PERF_GATE=1 in the
+// The npm side of the remote full mirror on kind (R-REPO-055, R-REPO-059; set `npm`, and the install-time ratio with QUADER_PERF_GATE=1 in the
 // set `npm-ha-soak` of the nightly workflow): a pass runs while `npm ci` runs through the same remote on the three client-serving replicas,
 // the pass in the pool of two processes that claim the queue `mirror` alone, and a client installs what the mirror stored while the test
 // upstream is stopped. The NuGet side is nuget_mirror_test.go, the OCI one oci_mirror_test.go, the harness mirror_env_test.go.
@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // installBudget is the factor of R-REPO-055: the install through a remote that a pass fills takes at most this much of its time
@@ -88,7 +88,7 @@ func (e *mirrorEnv) clientsFirstNPM(t *testing.T) {
 			t.Errorf("the pass uses the method %q, want feed", st.Pass.Method)
 		}
 		pod, node := poolPodOfPass(t, st.Pass.Job.ID)
-		if !strings.HasPrefix(pod, "trove-worker-"+mirrorPoolName+"-") {
+		if !strings.HasPrefix(pod, "quader-worker-"+mirrorPoolName+"-") {
 			t.Errorf("the pass runs in %q (node %s), want a process of the pool %s", pod, node, mirrorPoolName)
 		}
 		rd.event(i, "pass-started", map[string]any{"pod": pod, "packages_done": st.Pass.PackagesDone})
@@ -106,7 +106,7 @@ func (e *mirrorEnv) clientsFirstNPM(t *testing.T) {
 		if end.Pass != nil {
 			passDuring = "still ran"
 		}
-		t.Logf("pair %d: npm ci of %d packages without a pass %s, with the pass (%s in %s, %d packages filled when it started) %s (%.0f %%); the pass %s when it ended; trove_mirror_preempted_total %v -> %v",
+		t.Logf("pair %d: npm ci of %d packages without a pass %s, with the pass (%s in %s, %d packages filled when it started) %s (%.0f %%); the pass %s when it ended; quader_mirror_preempted_total %v -> %v",
 			i, n, base.Dur.Round(time.Millisecond), st.Pass.Method, pod, st.Pass.PackagesDone, loaded.Dur.Round(time.Millisecond), float64(loaded.Dur)/float64(base.Dur)*100, passDuring, before, after)
 		if n2 != n {
 			t.Errorf("the install with the pass has %d packages, the baseline %d", n2, n)
@@ -134,13 +134,13 @@ func (e *mirrorEnv) clientsFirstNPM(t *testing.T) {
 	if slices.ContainsFunc(loads, func(d time.Duration) bool { return float64(d) > installBudget*float64(bestBase) }) {
 		captureClusterLogs(t)
 	}
-	// The time of an install is the CPU of the runner as much as trove's: per change the ratio is logged, and the nightly run
-	// enforces it with TROVE_PERF_GATE=1, as the latency bounds of Q-ARCH-220 (Q-REPO-197). The bound on the upstream's open
+	// The time of an install is the CPU of the runner as much as quader's: per change the ratio is logged, and the nightly run
+	// enforces it with QUADER_PERF_GATE=1, as the latency bounds of Q-ARCH-220 (Q-REPO-197). The bound on the upstream's open
 	// requests and the pre-emptions, which clients first is about, are enforced in every run.
 	switch {
 	case ratio <= installBudget:
-	case os.Getenv("TROVE_PERF_GATE") != "1":
-		t.Logf("R-REPO-055: npm ci with the pass took %s at the median of %d installs, %.0f %% of the best install without it (%s), above %.0f %%; enforced with TROVE_PERF_GATE=1 (Q-REPO-197)", medLoad, clientsFirstPairs, ratio*100, bestBase, installBudget*100)
+	case os.Getenv("QUADER_PERF_GATE") != "1":
+		t.Logf("R-REPO-055: npm ci with the pass took %s at the median of %d installs, %.0f %% of the best install without it (%s), above %.0f %%; enforced with QUADER_PERF_GATE=1 (Q-REPO-197)", medLoad, clientsFirstPairs, ratio*100, bestBase, installBudget*100)
 	default:
 		t.Errorf("R-REPO-055: npm ci with the pass took %s at the median of %d installs, %.0f %% of the best install without it (%s), want at most %.0f %%", medLoad, clientsFirstPairs, ratio*100, bestBase, installBudget*100)
 	}
@@ -148,7 +148,7 @@ func (e *mirrorEnv) clientsFirstNPM(t *testing.T) {
 	// the last pass goes on to its end through the same remote: every package stored once
 	done := e.awaitComplete(t, key, 20*time.Minute)
 	maxOpen = max(maxOpen, npmInflight(t).Max)
-	t.Logf("trove_mirror_preempted_total grew by %v over the %d pairs; the test upstream held at most %d requests open while a pass ran (bound %d = %d + %d - 1 + %d)",
+	t.Logf("quader_mirror_preempted_total grew by %v over the %d pairs; the test upstream held at most %d requests open while a pass ran (bound %d = %d + %d - 1 + %d)",
 		preemptions, clientsFirstPairs, maxOpen, bound, mirrorMaxFetches, mirrorServing, b)
 	if maxOpen > bound {
 		t.Errorf("R-REPO-055: the test upstream held %d requests open at once, want at most maxConcurrentFetches + n - 1 + B = %d", maxOpen, bound)
@@ -182,7 +182,7 @@ func median(d []time.Duration) time.Duration {
 // the whole stub, not per remote: it holds while this subtest runs, the subtests run one after another and each resets the stub), so the
 // pass's background fetches sit in their upstream exchange; then more distinct tarballs are requested through the three client-serving
 // replicas than the repository's budget lets through. The clients that find no slot raise mirror_yield and the pool's processes pre-empt
-// the pass's fetches: trove_mirror_preempted_total grows, and every client is served.
+// the pass's fetches: quader_mirror_preempted_total grows, and every client is served.
 //
 // The margin against the queue timeout (10 s): the binding limit is the repository's budget maxConcurrentFetches = 8, so 24 requests
 // make 3 waves of about 1.55 s (a tarball and, if the replica asks for it, a document of 20 ms); the last request waits about
@@ -230,11 +230,11 @@ func (e *mirrorEnv) clientsFirstPreemption(t *testing.T) {
 	}
 	wg.Wait()
 	var after float64
-	waitFor(t, "trove_mirror_preempted_total to grow", 30*time.Second, time.Second, func() bool {
+	waitFor(t, "quader_mirror_preempted_total to grow", 30*time.Second, time.Second, func() bool {
 		after = preempted(t, key)
 		return after > before
 	})
-	t.Logf("%d client fetches of tarballs the pass had not stored: trove_mirror_preempted_total %v -> %v", len(asked), before, after)
+	t.Logf("%d client fetches of tarballs the pass had not stored: quader_mirror_preempted_total %v -> %v", len(asked), before, after)
 	for i, code := range statuses {
 		if code != http.StatusOK {
 			t.Errorf("R-REPO-055: the client fetch of %s answered %d, want 200", asked[i], code)

@@ -1,5 +1,5 @@
 // Package listing reads the backups of a target (R-BAK-018): the scan that tells complete backups from incomplete
-// directories, and the Lister behind `trove backup list`. Retention, the pool sweep and verify use the same scan, so every
+// directories, and the Lister behind `quader backup list`. Retention, the pool sweep and verify use the same scan, so every
 // operation agrees on what a backup is: a directory whose manifest exists (R-BAK-002).
 package listing
 
@@ -10,8 +10,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // Backup is one directory below backups/. Manifest is nil for an incomplete directory.
@@ -24,7 +24,7 @@ type Backup struct {
 func (b Backup) Complete() bool { return b.Manifest != nil }
 
 // Scan lists backups/ once and reads the manifest of every directory that has one. The result is newest first. A key
-// below backups/ that is not <id>/<name> is ignored: only trove writes there, and a stray key must not stop an operation
+// below backups/ that is not <id>/<name> is ignored: only quader writes there, and a stray key must not stop an operation
 // that never touches it.
 //
 // A manifest that cannot be read, or that names another backup ID than its directory, fails the scan: retention could not

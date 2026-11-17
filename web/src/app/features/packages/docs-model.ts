@@ -302,9 +302,9 @@ export function unavailableText(reason: PackageDocTree['reason']): string {
     case 'upstream_error':
       return $localize`:@@docs.unavailable.upstream:The upstream did not deliver the documentation of this version.`;
     case 'too_large':
-      return $localize`:@@docs.unavailable.too-large:The documentation of this version is larger than trove keeps.`;
+      return $localize`:@@docs.unavailable.too-large:The documentation of this version is larger than Quader keeps.`;
     case 'invalid_document':
-      return $localize`:@@docs.unavailable.invalid:The upstream sent a documentation document that trove cannot read.`;
+      return $localize`:@@docs.unavailable.invalid:The upstream sent a documentation document that Quader cannot read.`;
     default:
       return $localize`:@@docs.unavailable.unknown:The documentation of this version is not available.`;
   }

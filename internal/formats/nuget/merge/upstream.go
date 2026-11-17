@@ -1,8 +1,8 @@
 package merge
 
 import (
-	"github.com/guided-traffic/trove/internal/formats/nuget/registration"
-	"github.com/guided-traffic/trove/internal/formats/nuget/remote"
+	"github.com/guided-traffic/quader/internal/formats/nuget/registration"
+	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
 )
 
 // FromRemote converts the versions of an upstream's registration, as the remote repository reads

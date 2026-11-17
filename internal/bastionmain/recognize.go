@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // RecognizeOptions configure [Recognize].
@@ -60,30 +60,30 @@ const ThrottleScope = "bastion:"
 // UnknownBastion is the bastion label of an interface request whose token named no registration.
 const UnknownBastion = "unknown"
 
-// maxReplicaName bounds the Trove-Bastion-Replica value taken into a Recognition: a pod name is at most 253
+// maxReplicaName bounds the Quader-Bastion-Replica value taken into a Recognition: a pod name is at most 253
 // characters.
 const maxReplicaName = 253
 
 // Recognize is the Recognize stage of the Bastion interface (R-BAS-008, R-BAS-009, Q-BAS-52): it runs before the
 // authentication and decides, for every request of the default endpoint, whether it is a request of a Bastion.
 //
-//   - A request that carries Trove-Bastion-Authorization is a forward, whatever its path; the token is the
+//   - A request that carries Quader-Bastion-Authorization is a forward, whatever its path; the token is the
 //     Bearer credential of that header. A request without it is an interface call when its path, decoded
 //     segment by segment as the router decodes it, lies below [iface.PathPrefix]; the token is then the
 //     Bearer credential of Authorization (Q-BAS-115). Only a value that has the prefix of a Bastion token is
 //     looked at: any other credential leaves the request ordinary, with no Recognition and no marking, and
-//     every Trove-Bastion-* header is ignored.
+//     every Quader-Bastion-* header is ignored.
 //   - A Bastion token the authenticator refuses answers 401 bastion_token_invalid; one it does not look up
 //     because the sender's address is throttled answers 429 rate_limited. A failure of the store is a 503, not
 //     a verdict on the token.
-//   - A request with a valid token whose Trove-Bastion-Interface is missing or not [iface.InterfaceVersion]
+//   - A request with a valid token whose Quader-Bastion-Interface is missing or not [iface.InterfaceVersion]
 //     answers 400 bastion_interface_mismatch with the member interfaceVersion, and is served in no other way.
 //   - A forward whose path is not one of the package clients' families (/api/<format>/ and /files/, decoded as
 //     the router decodes it) answers 404 not_found: a Bastion forwards nothing else, and no other route runs
 //     for it, with the caller's credential or without one (R-BAS-014, Q-BAS-115).
-//   - Otherwise the request carries a [Recognition]; every answer to it has Trove-Bastion-Interface. On an
+//   - Otherwise the request carries a [Recognition]; every answer to it has Quader-Bastion-Interface. On an
 //     interface route the validated token is taken out of Authorization, so no later stage sees it; on a
-//     forwarded request Trove-Bastion-Authorization is taken out of the request the stages behind receive
+//     forwarded request Quader-Bastion-Authorization is taken out of the request the stages behind receive
 //     (nothing downstream needs it, and a remote repository must never be able to forward it). The forwarded
 //     headers are re-derived with the Bastions' egress addresses trusted ([RecognizeOptions.Forwarded]).
 //
@@ -170,7 +170,7 @@ func (o RecognizeOptions) refuse(w http.ResponseWriter, r *http.Request, op stri
 		o.count(UnknownBastion, op, OutcomeInvalid)
 		o.problem(w, r, errs.E(errs.Unauthenticated, errs.CodeBastionTokenInvalid,
 			"The Bastion token is invalid, revoked, expired or its registration is disabled.",
-			errs.WithChallenge(`Bearer realm="trove", error="invalid_token"`)))
+			errs.WithChallenge(`Bearer realm="quader", error="invalid_token"`)))
 	default:
 		o.count(UnknownBastion, op, OutcomeError)
 		o.problem(w, r, storeError(err))
@@ -243,7 +243,7 @@ func storeError(err error) error {
 }
 
 // bastionCredential returns the raw credential of the request that may be a Bastion token: the Bearer value
-// of Authorization on an interface call, of Trove-Bastion-Authorization on any other request. Only the first
+// of Authorization on an interface call, of Quader-Bastion-Authorization on any other request. Only the first
 // header line counts, as for Authorization everywhere else; any other scheme is no credential of a Bastion.
 func bastionCredential(r *http.Request, route bool) string {
 	name := iface.HeaderAuthorization

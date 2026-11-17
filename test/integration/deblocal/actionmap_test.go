@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/debstub/debgen"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The action map of R-AUTHZ-007 for the Debian table of R-DEB-004 (local class), one case per row: a principal who holds exactly the

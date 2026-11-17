@@ -11,7 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 type fakeEpochs struct {
@@ -186,7 +186,7 @@ func TestChangesAndFlush(t *testing.T) {
 		if other.Len() != 1 {
 			t.Fatal("a change of another area flushed a cache")
 		}
-		if n := counter(t, reg, "trove_cache_flushes_total", "cache", "coarse", "reason", "change"); n != 1 {
+		if n := counter(t, reg, "quader_cache_flushes_total", "cache", "coarse", "reason", "change"); n != 1 {
 			t.Fatalf("flush counter = %v", n)
 		}
 	})
@@ -215,7 +215,7 @@ func TestChangesAndFlush(t *testing.T) {
 		c := Register[string, int](r, "gap", Options[string, int]{MaxEntries: 10, SafetyTTL: time.Minute, Areas: []string{"cache"}})
 		c.Set("a", 1)
 		r.FlushArea("cache", "epoch_regressed")
-		if c.Len() != 0 || counter(t, reg, "trove_cache_flushes_total", "cache", "gap", "reason", "epoch_regressed") != 1 {
+		if c.Len() != 0 || counter(t, reg, "quader_cache_flushes_total", "cache", "gap", "reason", "epoch_regressed") != 1 {
 			t.Fatal("not flushed with its reason")
 		}
 	})
@@ -232,7 +232,7 @@ func TestChangesAndFlush(t *testing.T) {
 		for _, e := range observability.CheckFamilies(fams) {
 			t.Error(e)
 		}
-		if counter(t, reg, "trove_cache_requests_total", "cache", "metrics", "result", "hit") != 1 {
+		if counter(t, reg, "quader_cache_requests_total", "cache", "metrics", "result", "hit") != 1 {
 			t.Error("hit not counted")
 		}
 	})

@@ -62,7 +62,7 @@ func TestNuGetRanges(t *testing.T) {
 
 func TestNuGetEnvironment(t *testing.T) {
 	t.Run("R-NUGET-010 an environment value reaches nuget.search.max_take", func(t *testing.T) {
-		l := mustLoad(t, Options{Environ: servableEnv("TROVE_NUGET_SEARCH_MAX_TAKE=50"), Command: CommandServe})
+		l := mustLoad(t, Options{Environ: servableEnv("QUADER_NUGET_SEARCH_MAX_TAKE=50"), Command: CommandServe})
 		if l.Config.NuGet.Search.MaxTake != 50 || l.Sources["nuget.search.max_take"].Kind != "env" {
 			t.Errorf("max_take = %d, source = %+v", l.Config.NuGet.Search.MaxTake, l.Sources["nuget.search.max_take"])
 		}

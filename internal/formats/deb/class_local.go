@@ -1,6 +1,6 @@
 package deb
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // The local class (R-DEB-001): a repository that takes uploads of .deb files, lists them in suites and components, and serves the
 // signed indexes it builds. It needs no adapter; its operations are the handlers of the routes it serves, which the work package of

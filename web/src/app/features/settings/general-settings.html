@@ -1,13 +1,13 @@
-<trove-page-header heading="General settings" i18n-heading="@@general.heading" />
-<trove-needs capability="settings:write" />
+<quader-page-header heading="General settings" i18n-heading="@@general.heading" />
+<quader-needs capability="settings:write" />
 
 @if (loadError(); as e) {
-  <trove-error-notice [error]="e" (retry)="load()" />
+  <quader-error-notice [error]="e" (retry)="load()" />
 }
 
 <div class="settings">
   @if (info(); as i) {
-    <trove-text-field
+    <quader-text-field
       width="full"
       i18n-label="@@general.base-url"
       label="Public base URL"
@@ -19,16 +19,16 @@
   }
 
   @if (visibility(); as v) {
-    <trove-disclosure
+    <quader-disclosure
       i18n-heading="@@general.visibility"
       heading="Visibility"
       [hint]="visibilitySummary()"
     >
       <form (submit)="saveVisibility($event)" novalidate>
         @if (visibilityError(); as e) {
-          <trove-error-notice [error]="e" />
+          <quader-error-notice [error]="e" />
         }
-        <trove-visibility-level
+        <quader-visibility-level
           i18n-label="@@general.visibility.default"
           label="Default visibility level"
           subject="new-projects"
@@ -74,13 +74,13 @@
           </div>
         }
       </form>
-    </trove-disclosure>
+    </quader-disclosure>
   } @else if (visibilityLoadError(); as e) {
-    <trove-error-notice [error]="e" (retry)="loadVisibility()" />
+    <quader-error-notice [error]="e" (retry)="loadVisibility()" />
   }
 
   @if (stored(); as s) {
-    <trove-disclosure
+    <quader-disclosure
       i18n-heading="@@general.banner"
       heading="Banner"
       i18n-hint="@@general.banner.intro"
@@ -89,15 +89,15 @@
       <form (submit)="saveBanner($event)" novalidate>
         @if (bannerError(); as e) {
           @if (bannerFieldError('/message') === null && bannerFieldError('/title') === null && bannerFieldError('/severity') === null) {
-            <trove-error-notice [error]="e" />
+            <quader-error-notice [error]="e" />
           }
         }
         <fieldset class="form-grid" [disabled]="!canWrite()">
           <legend class="visually-hidden" i18n="@@general.banner.legend">Banner settings</legend>
-          <trove-checkbox [checked]="bannerEnabled()" (checkedChange)="bannerEnabled.set($event)">
+          <quader-checkbox [checked]="bannerEnabled()" (checkedChange)="bannerEnabled.set($event)">
             <ng-container i18n="@@general.banner.enabled">Show the banner</ng-container>
-          </trove-checkbox>
-          <trove-select-field
+          </quader-checkbox>
+          <quader-select-field
             i18n-label="@@general.banner.severity"
             label="Severity"
             name="severity"
@@ -106,7 +106,7 @@
             (valueChange)="setSeverity($event)"
             [error]="bannerFieldError('/severity')"
           />
-          <trove-text-field
+          <quader-text-field
             width="name"
             i18n-label="@@general.banner.title"
             label="Title (optional)"
@@ -114,7 +114,7 @@
             [(value)]="title"
             [error]="bannerFieldError('/title')"
           />
-          <trove-text-field
+          <quader-text-field
             width="full"
             i18n-label="@@general.banner.message"
             label="Banner message"
@@ -148,11 +148,11 @@
           </div>
         }
       </form>
-    </trove-disclosure>
+    </quader-disclosure>
   }
 
   @if (storedMode(); as m) {
-    <trove-disclosure
+    <quader-disclosure
       i18n-heading="@@general.mode"
       heading="Maintenance mode"
       [hint]="modeSummary()"
@@ -184,16 +184,16 @@
       <form (submit)="saveMode($event)" novalidate>
         @if (modeError(); as e) {
           @if (modeFieldError('/message') === null && modeFieldError('/retryAfterSeconds') === null) {
-            <trove-error-notice [error]="e" />
+            <quader-error-notice [error]="e" />
           }
         }
         <fieldset class="form-grid" [disabled]="!canWrite()">
           <legend class="visually-hidden" i18n="@@general.mode.legend">Maintenance mode settings</legend>
-          <trove-checkbox [checked]="readOnly()" (checkedChange)="readOnly.set($event)">
+          <quader-checkbox [checked]="readOnly()" (checkedChange)="readOnly.set($event)">
             <ng-container i18n="@@general.mode.enabled">Read-only maintenance mode</ng-container>
-          </trove-checkbox>
+          </quader-checkbox>
           @if (readOnly()) {
-            <trove-text-field
+            <quader-text-field
               width="full"
               i18n-label="@@general.mode.message"
               label="Maintenance message"
@@ -203,10 +203,10 @@
               [hint]="modeMessageHint"
               [error]="modeFieldError('/message')"
             />
-            <trove-checkbox [checked]="cacheFill()" (checkedChange)="cacheFill.set($event)">
+            <quader-checkbox [checked]="cacheFill()" (checkedChange)="cacheFill.set($event)">
               <ng-container i18n="@@general.mode.cache-fill">Remote repositories keep filling their cache</ng-container>
-            </trove-checkbox>
-            <trove-text-field
+            </quader-checkbox>
+            <quader-text-field
               width="duration"
               i18n-label="@@general.mode.retry-after"
               label="Retry after (seconds)"
@@ -226,6 +226,6 @@
           </div>
         }
       </form>
-    </trove-disclosure>
+    </quader-disclosure>
   }
 </div>

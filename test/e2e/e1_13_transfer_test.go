@@ -47,7 +47,7 @@ func dataDir() string { return filepath.Join(filepath.Dir(filepath.Clean(cfg.out
 // 503 content_unavailable. The test content therefore depends on the store instance.
 func storeNonce(t testing.TB) string {
 	t.Helper()
-	uid := strings.TrimSpace(kn(t, "get", "pod", "-l", "app.kubernetes.io/name=trove-s3", "-o", "jsonpath={.items[0].metadata.uid}"))
+	uid := strings.TrimSpace(kn(t, "get", "pod", "-l", "app.kubernetes.io/name=quader-s3", "-o", "jsonpath={.items[0].metadata.uid}"))
 	if uid == "" {
 		t.Fatal("the object store pod has no UID")
 	}
@@ -257,7 +257,7 @@ func TestE1_13Transfers(t *testing.T) {
 	// A large transfer is not the management API's business: the write class does not apply to /files/ in the
 	// way a loop of small requests would hit it; the token is the one of the transfer account.
 
-	t.Run("R-HA-011 E1.13 no curl -T of 500 MB fails during kubectl rollout restart deploy/trove-packages", func(t *testing.T) {
+	t.Run("R-HA-011 E1.13 no curl -T of 500 MB fails during kubectl rollout restart deploy/quader-packages", func(t *testing.T) {
 		file, sum := dataFile(t, "xfer-500mb.bin", 500<<20)
 		type up struct {
 			path       string
@@ -286,8 +286,8 @@ func TestE1_13Transfers(t *testing.T) {
 		}
 		time.Sleep(8 * time.Second) // uploads in flight
 		restartAt := time.Now()
-		kn(t, "rollout", "restart", "deployment/trove-packages")
-		kn(t, "rollout", "status", "deployment/trove-packages", "--timeout=10m")
+		kn(t, "rollout", "restart", "deployment/quader-packages")
+		kn(t, "rollout", "status", "deployment/quader-packages", "--timeout=10m")
 		waitServingSettled(t)
 		restartDone := time.Now()
 		stop.Store(true)
@@ -335,7 +335,7 @@ func TestE1_13Transfers(t *testing.T) {
 	}
 	downloaded := filepath.Join(dataDir(), "download.bin")
 
-	t.Run("R-ARCH-024 E1.13 a download of a generic-local file survives a rollout restart of trove-packages and its SHA-256 matches", func(t *testing.T) {
+	t.Run("R-ARCH-024 E1.13 a download of a generic-local file survives a rollout restart of quader-packages and its SHA-256 matches", func(t *testing.T) {
 		upload(t)
 		_ = os.Remove(downloaded)
 		dump := filepath.Join(dataDir(), "download-1.hdr")
@@ -346,7 +346,7 @@ func TestE1_13Transfers(t *testing.T) {
 		// object store made the transfer outlast that timeout and the drain cut it, correctly.
 		c := startCurl(t, "--limit-rate", "6M", "-H", auth, "-D", dump, "-o", downloaded, base+"e2e-xfer/400MiB.bin")
 		hdr := waitDump(t, dump)
-		serving := headerOf(hdr, "X-Trove-Replica")
+		serving := headerOf(hdr, "X-Quader-Replica")
 		if serving == "" {
 			t.Fatalf("the download names no replica: %q", hdr)
 		}
@@ -368,8 +368,8 @@ func TestE1_13Transfers(t *testing.T) {
 			}
 		}()
 		restartAt := time.Now()
-		kn(t, "rollout", "restart", "deployment/trove-packages")
-		kn(t, "rollout", "status", "deployment/trove-packages", "--timeout=10m")
+		kn(t, "rollout", "restart", "deployment/quader-packages")
+		kn(t, "rollout", "status", "deployment/quader-packages", "--timeout=10m")
 		c.wait(t, 5*time.Minute)
 		lastBytes, timeline := stopTrace()
 		t.Logf("the file grew until +%s after the restart; timeline %v", lastBytes.Sub(restartAt).Round(time.Second), timeline)
@@ -398,7 +398,7 @@ func TestE1_13Transfers(t *testing.T) {
 		_ = os.Remove(dump) // the headers of an earlier run would pass for this one
 		c := startCurl(t, "--limit-rate", "2M", "-H", auth, "-D", dump, "-o", downloaded, base+"e2e-xfer/400MiB.bin")
 		hdr := waitDump(t, dump)
-		serving := headerOf(hdr, "X-Trove-Replica")
+		serving := headerOf(hdr, "X-Quader-Replica")
 		// The serving pod's own account of its shutdown, and when the bytes stopped arriving: the pod is gone after
 		// this, the log is what is left.
 		logf, _ := os.Create(filepath.Join(cfg.out, "e1-13-cut-download-"+serving+".log"))
@@ -448,7 +448,7 @@ func TestE1_13Transfers(t *testing.T) {
 		if c.exit == 0 || got >= 400<<20 {
 			t.Fatalf("the transfer was not cut (curl exit %d, %d bytes): it should outlast the 110 s shutdown timeout at 2 MB/s", c.exit, got)
 		}
-		// The cut is trove's: at the shutdown deadline (grace 120 s - drain delay 5 s - 5 s = 110 s after SIGTERM) the
+		// The cut is quader's: at the shutdown deadline (grace 120 s - drain delay 5 s - 5 s = 110 s after SIGTERM) the
 		// replica logs the request it cut and stops. The bytes stop arriving then, and the client is told at once:
 		// the replica resets the cut connection (Q-ARCH-187), so curl ends within seconds of the last bytes. Before
 		// that, the exit left the edge a silent backend and curl waited about 77 s for the edge's own timeout.
@@ -469,7 +469,7 @@ func TestE1_13Transfers(t *testing.T) {
 		r := startCurl(t, "-C", "-", "--limit-rate", "20M", "-H", auth, "-D", dump2, "-o", downloaded, base+"e2e-xfer/400MiB.bin")
 		r.wait(t, 5*time.Minute)
 		d2, _ := os.ReadFile(dump2)
-		line, replica := statusLine(d2), headerOf(d2, "X-Trove-Replica")
+		line, replica := statusLine(d2), headerOf(d2, "X-Quader-Replica")
 		t.Logf("resume: %s from %s, curl exit %d", line, replica, r.exit)
 		if r.exit != 0 {
 			t.Fatalf("the resume failed: curl exit %d: %s", r.exit, r.err.String())
@@ -523,11 +523,11 @@ func TestE1_13Transfers(t *testing.T) {
 		if !strings.Contains(webPod, "-api-") {
 			t.Errorf("the run was accepted by %q, want an api pod", webPod)
 		}
-		by := sql(t, `SELECT r.name FROM trove.job j JOIN trove.replica r ON r.instance_uid = j.ran_by WHERE j.id = '`+j.Job.ID+`'`)
+		by := sql(t, `SELECT r.name FROM quader.job j JOIN quader.replica r ON r.instance_uid = j.ran_by WHERE j.id = '`+j.Job.ID+`'`)
 		if !strings.Contains(by, "-worker-") {
 			t.Errorf("job.ran_by of the gc job resolves to %q, want a worker pod", by)
 		}
-		webRuns := sql(t, `SELECT count(*) FROM trove.job j JOIN trove.replica r ON r.instance_uid = j.ran_by WHERE r.roles && ARRAY['api','packages','web']`)
+		webRuns := sql(t, `SELECT count(*) FROM quader.job j JOIN quader.replica r ON r.instance_uid = j.ran_by WHERE r.roles && ARRAY['api','packages','web']`)
 		if n, _ := strconv.Atoi(webRuns); n != 0 {
 			t.Errorf("%d jobs were run by an api or packages replica", n)
 		}

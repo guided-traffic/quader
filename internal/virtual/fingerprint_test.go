@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/virtual"
-	vt "github.com/guided-traffic/trove/internal/virtual/virtualtest"
+	"github.com/guided-traffic/quader/internal/virtual"
+	vt "github.com/guided-traffic/quader/internal/virtual/virtualtest"
 )
 
 // readsMore is a format whose merge reads more of a member than the document the engine handed

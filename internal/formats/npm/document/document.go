@@ -16,8 +16,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
 )
 
 // RenderVersion is npmRenderVersion (R-NPM-013): a constant of the format that a

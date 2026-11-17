@@ -51,7 +51,7 @@ async function openAccess(options: {
     },
   });
   const group = (label: string) =>
-    [...r.root.querySelectorAll<HTMLFieldSetElement>('trove-repository-visibility fieldset')].find(
+    [...r.root.querySelectorAll<HTMLFieldSetElement>('quader-repository-visibility fieldset')].find(
       (f) => f.querySelector('legend')?.textContent?.trim() === label,
     );
   const radio = (label: string, level: string) =>
@@ -124,21 +124,21 @@ describe('The visibility block of a repository (R-UI-055)', () => {
     await settle(r.fixture);
     button(r.root, 'Save changes (visibility)').click();
     await settle(r.fixture);
-    expect(text(r.root.querySelector('trove-repository-visibility')!)).toContain(
+    expect(text(r.root.querySelector('quader-repository-visibility')!)).toContain(
       'Anyone can fill the cache of this remote repository from its upstream.',
     );
   });
 
   it('R-UI-055 a reader who may not write sees the levels read-only with the reason', async () => {
     const r = await openAccess({ capabilities: ['repositories:read-config'] });
-    expect(r.root.querySelector('trove-repository-visibility button[type="submit"]')).toBeNull();
+    expect(r.root.querySelector('quader-repository-visibility button[type="submit"]')).toBeNull();
     expect(r.group('Artifacts')!.disabled).toBe(true);
-    expect(text(r.root.querySelector('trove-repository-visibility')!)).toContain('Only the project\'s Owner');
+    expect(text(r.root.querySelector('quader-repository-visibility')!)).toContain('Only the project\'s Owner');
   });
 
   it('R-UI-055 the repository header shows the artifacts level as an icon with its name', async () => {
     const r = await openAccess({ artifacts: 'private', wiki: 'private' });
-    const icon = r.root.querySelector('.subject trove-visibility-icon [role="img"]')!;
+    const icon = r.root.querySelector('.subject quader-visibility-icon [role="img"]')!;
     expect(icon.getAttribute('aria-label')).toBe('Private');
   });
 });
@@ -171,7 +171,7 @@ describe('The visibility of a repository in the creation form (R-UI-055, R-UI-08
         }
       },
     });
-    const radios = () => [...r.root.querySelectorAll<HTMLInputElement>('trove-visibility-level input[type="radio"]')];
+    const radios = () => [...r.root.querySelectorAll<HTMLInputElement>('quader-visibility-level input[type="radio"]')];
     const create = async () => {
       button(r.root, 'Create repository').click();
       await settle(r.fixture);
@@ -211,7 +211,7 @@ describe('The visibility of a repository in the creation form (R-UI-055, R-UI-08
   it('R-UI-081 without the defaults the field is left out and the server applies its default', async () => {
     navigateSpy();
     const r = await openForm('public', 'unavailable');
-    expect(r.root.querySelector('trove-visibility-level')).toBeNull();
+    expect(r.root.querySelector('quader-visibility-level')).toBeNull();
     expect(r.root.querySelector<HTMLInputElement>('#f-key')!.value).toBe('');
     type(r.root.querySelector<HTMLInputElement>('#f-key')!, 'owner-repo');
     await settle(r.fixture);

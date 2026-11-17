@@ -1,6 +1,6 @@
 //go:build chart
 
-// The render assertions of the chart deploy/helm/trove-bastion (phase 5b, docs/spec/bastion.md R-BAS-002,
+// The render assertions of the chart deploy/helm/quader-bastion (phase 5b, docs/spec/bastion.md R-BAS-002,
 // R-BAS-025, R-BAS-030, R-BAS-033, R-BAS-038, R-BAS-040, R-BAS-041, R-BAS-043 to R-BAS-047). They share the
 // helpers of chart_test.go and need helm at the pinned version, no cluster. The rule tests with promtool are in
 // bastion_rules_test.go.
@@ -16,9 +16,9 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-const bastionRelease = "trove-bastion"
+const bastionRelease = "quader-bastion"
 
-func bastionDir() string { return filepath.Join(repoRoot, "deploy", "helm", "trove-bastion") }
+func bastionDir() string { return filepath.Join(repoRoot, "deploy", "helm", "quader-bastion") }
 
 func bastionSet(name string) string { return filepath.Join(bastionDir(), "ci", name+".yaml") }
 
@@ -33,7 +33,7 @@ func bastionArgs(release string, files []string, sets []string) []string {
 	return args
 }
 
-// bstRender renders the chart trove-bastion as the release trove-bastion and parses the documents.
+// bstRender renders the chart quader-bastion as the release quader-bastion and parses the documents.
 func bstRender(t *testing.T, files []string, sets ...string) (string, []doc) {
 	t.Helper()
 	out, stderr, err := helm(t, bastionArgs(bastionRelease, files, sets)...)
@@ -64,10 +64,10 @@ func bstConfig(t *testing.T, docs []doc) map[string]any {
 	t.Helper()
 	cm := find(docs, "ConfigMap", bastionRelease+"-config")
 	if cm == nil {
-		t.Fatal("no ConfigMap trove-bastion-config")
+		t.Fatal("no ConfigMap quader-bastion-config")
 	}
 	var cfg map[string]any
-	if err := yaml.Unmarshal([]byte(str(cm, "data", "trove.yaml")), &cfg); err != nil {
+	if err := yaml.Unmarshal([]byte(str(cm, "data", "quader.yaml")), &cfg); err != nil {
 		t.Fatal(err)
 	}
 	return cfg
@@ -80,7 +80,7 @@ func bstWorkload(t *testing.T, docs []doc) doc {
 		w = find(docs, "StatefulSet", bastionRelease)
 	}
 	if w == nil {
-		t.Fatal("no Deployment or StatefulSet trove-bastion")
+		t.Fatal("no Deployment or StatefulSet quader-bastion")
 	}
 	return w
 }
@@ -100,7 +100,7 @@ func bstIngressAnnotations(t *testing.T, files []string, sets ...string) map[str
 	_, docs := bstRender(t, files, sets...)
 	ing := find(docs, "Ingress", bastionRelease)
 	if ing == nil {
-		t.Fatal("no Ingress trove-bastion")
+		t.Fatal("no Ingress quader-bastion")
 	}
 	a, _ := at(ing, "metadata", "annotations").(map[string]any)
 	return a
@@ -144,7 +144,7 @@ func TestR_BAS_045_RequiredValuesRenderTheResources(t *testing.T) {
 	t.Run("a Deployment with two replicas, a PDB, the Ingress with the edge-limit annotations and a NetworkPolicy", func(t *testing.T) {
 		dep := find(docs, "Deployment", bastionRelease)
 		if dep == nil {
-			t.Fatal("no Deployment trove-bastion")
+			t.Fatal("no Deployment quader-bastion")
 		}
 		if got := at(dep, "spec", "replicas"); got != 2 {
 			t.Errorf("replicas = %v, want 2", got)
@@ -162,7 +162,7 @@ func TestR_BAS_045_RequiredValuesRenderTheResources(t *testing.T) {
 	t.Run("no Secret, no Role, no RoleBinding, no PersistentVolumeClaim, in any value set", func(t *testing.T) {
 		sets, _ := filepath.Glob(filepath.Join(bastionDir(), "ci", "*.yaml"))
 		if len(sets) < 5 {
-			t.Fatalf("found %d value sets under deploy/helm/trove-bastion/ci", len(sets))
+			t.Fatalf("found %d value sets under deploy/helm/quader-bastion/ci", len(sets))
 		}
 		for _, f := range sets {
 			_, d := bstRender(t, []string{f})
@@ -196,40 +196,40 @@ func TestR_BAS_045_RequiredValuesRenderTheResources(t *testing.T) {
 		if ports["https"] != 8443 || ports["ops"] != 8081 {
 			t.Errorf("ports = %v", ports)
 		}
-		if got := str(pod, "containers", "0", "image"); got != "docker.io/guidedtraffic/trove:0.0.0-dev" {
+		if got := str(pod, "containers", "0", "image"); got != "docker.io/guidedtraffic/quader:0.0.0-dev" {
 			t.Errorf("image = %q", got)
 		}
 	})
 	t.Run("the names of the table", func(t *testing.T) {
 		_, all := bstRender(t, []string{bastionSet("bucket-valkey")})
 		for kind, name := range map[string]string{
-			"Deployment": "trove-bastion", "ConfigMap": "trove-bastion-config", "Service": "trove-bastion",
-			"Ingress": "trove-bastion", "NetworkPolicy": "trove-bastion", "PodDisruptionBudget": "trove-bastion",
-			"ServiceAccount": "trove-bastion", "ServiceMonitor": "trove-bastion", "PrometheusRule": "trove-bastion",
+			"Deployment": "quader-bastion", "ConfigMap": "quader-bastion-config", "Service": "quader-bastion",
+			"Ingress": "quader-bastion", "NetworkPolicy": "quader-bastion", "PodDisruptionBudget": "quader-bastion",
+			"ServiceAccount": "quader-bastion", "ServiceMonitor": "quader-bastion", "PrometheusRule": "quader-bastion",
 		} {
 			if find(all, kind, name) == nil {
 				t.Errorf("no %s %s", kind, name)
 			}
 		}
-		if find(all, "Service", "trove-bastion-ops") == nil {
-			t.Error("no Service trove-bastion-ops")
+		if find(all, "Service", "quader-bastion-ops") == nil {
+			t.Error("no Service quader-bastion-ops")
 		}
 		_, withCert := bstRender(t, bstRequired())
-		if find(withCert, "Certificate", "trove-bastion-tls") == nil {
-			t.Error("no Certificate trove-bastion-tls")
+		if find(withCert, "Certificate", "quader-bastion-tls") == nil {
+			t.Error("no Certificate quader-bastion-tls")
 		}
 		_, scaled := bstRender(t, []string{bastionSet("autoscaling")})
-		if find(scaled, "HorizontalPodAutoscaler", "trove-bastion") == nil {
-			t.Error("no HorizontalPodAutoscaler trove-bastion")
+		if find(scaled, "HorizontalPodAutoscaler", "quader-bastion") == nil {
+			t.Error("no HorizontalPodAutoscaler quader-bastion")
 		}
 	})
-	t.Run("<fullname> is the release name, or <release>-trove-bastion", func(t *testing.T) {
+	t.Run("<fullname> is the release name, or <release>-quader-bastion", func(t *testing.T) {
 		out, stderr, err := helm(t, bastionArgs("partners", bstRequired(), nil)...)
 		if err != nil {
 			t.Fatalf("%v\n%s", err, stderr)
 		}
 		d := parse(t, out)
-		for _, n := range []string{"partners-trove-bastion", "partners-trove-bastion-config", "partners-trove-bastion-ops"} {
+		for _, n := range []string{"partners-quader-bastion", "partners-quader-bastion-config", "partners-quader-bastion-ops"} {
 			found := false
 			for _, o := range d {
 				if str(o, "metadata", "name") == n {
@@ -242,7 +242,7 @@ func TestR_BAS_045_RequiredValuesRenderTheResources(t *testing.T) {
 		}
 	})
 	t.Run("the Service has no session affinity", func(t *testing.T) {
-		for _, n := range []string{"trove-bastion", "trove-bastion-ops"} {
+		for _, n := range []string{"quader-bastion", "quader-bastion-ops"} {
 			svc := find(docs, "Service", n)
 			if svc == nil || str(svc, "spec", "sessionAffinity") != "None" {
 				t.Errorf("Service %s = %v", n, svc)
@@ -258,7 +258,7 @@ func TestR_BAS_045_RequiredValuesRenderTheResources(t *testing.T) {
 			{"base_url missing", []string{"config.server.base_url="}, []string{"config.server.base_url"}},
 			{"base_url http", []string{"config.server.base_url=http://packages.example.com"}, []string{"config.server.base_url", "https"}},
 			{"main url missing", []string{"config.bastion.main.url="}, []string{"config.bastion.main.url"}},
-			{"main url http", []string{"config.bastion.main.url=http://trove.example.com"}, []string{"config.bastion.main.url", "https"}},
+			{"main url http", []string{"config.bastion.main.url=http://quader.example.com"}, []string{"config.bastion.main.url", "https"}},
 			{"token Secret missing", []string{"secrets.mainToken.existingSecret="}, []string{"secrets.mainToken.existingSecret"}},
 			{"bucket backend without a signing key", []string{"config.bastion.cache.backend=bucket", "config.bastion.cache.bucket.bucket=b", "secrets.cacheBucket.existingSecret=s"}, []string{"secrets.signingKey.existingSecret"}},
 			{"Valkey without a signing key", []string{"config.valkey.mode=standalone", "config.valkey.address=v:6379", "highAvailability.enforce=false"}, []string{"secrets.signingKey.existingSecret"}},
@@ -271,7 +271,7 @@ func TestR_BAS_045_RequiredValuesRenderTheResources(t *testing.T) {
 			{"two trust bundle keys", []string{"trustedCA.existingSecret=a", "trustedCA.keys={a.crt,b.crt}"}, []string{"trustedCA.keys"}},
 			{"no ingress peer for the https port", []string{"networkPolicy.ingress.https.from=null"}, []string{"networkPolicy.ingress.https.from"}},
 			{"Sentinel without addresses", []string{"config.valkey.mode=sentinel"}, []string{"config.valkey.sentinel.addresses"}},
-			{"a typo in disabledAlerts", []string{"metrics.prometheusRule.disabledAlerts={TroveBastionNope}"}, []string{"metrics.prometheusRule.disabledAlerts", "TroveBastionNope"}},
+			{"a typo in disabledAlerts", []string{"metrics.prometheusRule.disabledAlerts={QuaderBastionNope}"}, []string{"metrics.prometheusRule.disabledAlerts", "QuaderBastionNope"}},
 			{"autoscaling without a metric", []string{"autoscaling.enabled=true", "autoscaling.targetCPUUtilizationPercentage=0"}, []string{"autoscaling.targetCPUUtilizationPercentage"}},
 			{"autoscaling max below min", []string{"autoscaling.enabled=true", "autoscaling.maxReplicas=1"}, []string{"autoscaling.maxReplicas", "autoscaling.minReplicas"}},
 			{"a ServiceMonitor in another namespace with TLS", []string{"metrics.serviceMonitor.enabled=true", "metrics.serviceMonitor.namespace=monitoring"}, []string{"metrics.serviceMonitor.namespace"}},
@@ -294,7 +294,7 @@ func TestR_BAS_046_ValuesReferenceIsTheSpecBlock(t *testing.T) {
 	state := 0
 	for _, l := range lines {
 		switch {
-		case state == 0 && strings.Contains(l, "<summary>deploy/helm/trove-bastion/values.yaml</summary>"):
+		case state == 0 && strings.Contains(l, "<summary>deploy/helm/quader-bastion/values.yaml</summary>"):
 			state = 1
 		case state == 1 && strings.HasPrefix(l, "```yaml"):
 			state = 2
@@ -333,23 +333,23 @@ func TestR_BAS_046_ValuesReferenceIsTheSpecBlock(t *testing.T) {
 	})
 }
 
-// TestR_BAS_002_ConfigurationOnlyThroughTheChart (R-BAS-002): config is rendered to /etc/trove/trove.yaml in
+// TestR_BAS_002_ConfigurationOnlyThroughTheChart (R-BAS-002): config is rendered to /etc/quader/quader.yaml in
 // <fullname>-config with the chart-managed keys; a managed key is refused; the checksum annotation rolls the
 // pods on a config change and not on a token Secret; the token is a mounted file.
 func TestR_BAS_002_ConfigurationOnlyThroughTheChart(t *testing.T) {
-	t.Run("the file is mounted at /etc/trove/trove.yaml from <fullname>-config", func(t *testing.T) {
+	t.Run("the file is mounted at /etc/quader/quader.yaml from <fullname>-config", func(t *testing.T) {
 		_, docs := bstRender(t, bstRequired())
 		pod := at(bstWorkload(t, docs), "spec", "template", "spec")
 		var found bool
 		for _, m := range list(pod, "containers", "0", "volumeMounts") {
-			if str(m, "mountPath") == "/etc/trove/trove.yaml" {
-				found = str(m, "subPath") == "trove.yaml" && at(m, "readOnly") == true
+			if str(m, "mountPath") == "/etc/quader/quader.yaml" {
+				found = str(m, "subPath") == "quader.yaml" && at(m, "readOnly") == true
 			}
 		}
 		if !found {
-			t.Error("trove.yaml is not mounted read-only at /etc/trove/trove.yaml")
+			t.Error("quader.yaml is not mounted read-only at /etc/quader/quader.yaml")
 		}
-		if got := str(volumeNamed(pod, "config"), "configMap", "name"); got != "trove-bastion-config" {
+		if got := str(volumeNamed(pod, "config"), "configMap", "name"); got != "quader-bastion-config" {
 			t.Errorf("config volume = %q", got)
 		}
 	})
@@ -382,24 +382,24 @@ func TestR_BAS_002_ConfigurationOnlyThroughTheChart(t *testing.T) {
 			}
 		}
 		for p, want := range map[string]any{
-			"bastion.main.token_file":             "/var/run/secrets/trove/main-token/token",
-			"bastion.main.ca_file":                "/etc/trove/trusted-ca/ca-bundle.crt",
-			"bastion.signing_key_file":            "/var/run/secrets/trove/signing-key/key",
-			"bastion.cache.bucket.ca_file":        "/etc/trove/trusted-ca/ca-bundle.crt",
-			"valkey.password_file":                "/var/run/secrets/trove/valkey/password",
-			"valkey.username_file":                "/var/run/secrets/trove/valkey/username",
-			"valkey.sentinel.password_file":       "/var/run/secrets/trove/valkey-sentinel/password",
-			"valkey.sentinel.username_file":       "/var/run/secrets/trove/valkey-sentinel/username",
-			"valkey.tls.ca_file":                  "/var/run/secrets/trove/valkey-ca/ca.crt",
+			"bastion.main.token_file":             "/var/run/secrets/quader/main-token/token",
+			"bastion.main.ca_file":                "/etc/quader/trusted-ca/ca-bundle.crt",
+			"bastion.signing_key_file":            "/var/run/secrets/quader/signing-key/key",
+			"bastion.cache.bucket.ca_file":        "/etc/quader/trusted-ca/ca-bundle.crt",
+			"valkey.password_file":                "/var/run/secrets/quader/valkey/password",
+			"valkey.username_file":                "/var/run/secrets/quader/valkey/username",
+			"valkey.sentinel.password_file":       "/var/run/secrets/quader/valkey-sentinel/password",
+			"valkey.sentinel.username_file":       "/var/run/secrets/quader/valkey-sentinel/username",
+			"valkey.tls.ca_file":                  "/var/run/secrets/quader/valkey-ca/ca.crt",
 			"bastion.replicas":                    2,
-			"server.tls.certificates.0.cert_file": "/var/run/secrets/trove/tls/tls.crt",
-			"server.tls.certificates.0.key_file":  "/var/run/secrets/trove/tls/tls.key",
+			"server.tls.certificates.0.cert_file": "/var/run/secrets/quader/tls/tls.crt",
+			"server.tls.certificates.0.key_file":  "/var/run/secrets/quader/tls/tls.key",
 		} {
 			if got := at(cfg, strings.Split(p, ".")...); got != want {
 				t.Errorf("%s = %v, want %v", p, got, want)
 			}
 		}
-		if got := at(cfg, "bastion", "cache", "bucket", "credentials", "access_key_id_file"); got != "/var/run/secrets/trove/cache-bucket/access-key-id" {
+		if got := at(cfg, "bastion", "cache", "bucket", "credentials", "access_key_id_file"); got != "/var/run/secrets/quader/cache-bucket/access-key-id" {
 			t.Errorf("bucket credentials file = %v", got)
 		}
 		if at(cfg, "bastion", "cache", "volume") != nil {
@@ -408,7 +408,7 @@ func TestR_BAS_002_ConfigurationOnlyThroughTheChart(t *testing.T) {
 	})
 	t.Run("the volume backend renders the fixed cache directory", func(t *testing.T) {
 		_, docs := bstRender(t, bstRequired())
-		if got := at(bstConfig(t, docs), "bastion", "cache", "volume", "dir"); got != "/var/cache/trove-bastion" {
+		if got := at(bstConfig(t, docs), "bastion", "cache", "volume", "dir"); got != "/var/cache/quader-bastion" {
 			t.Errorf("bastion.cache.volume.dir = %v", got)
 		}
 	})
@@ -421,7 +421,7 @@ func TestR_BAS_002_ConfigurationOnlyThroughTheChart(t *testing.T) {
 				secrets[s] = true
 			}
 		}
-		for _, s := range []string{"trove-bastion-token", "trove-bastion-signing", "trove-bastion-s3", "trove-bastion-valkey", "trove-bastion-valkey-sentinel", "trove-bastion-valkey-ca", "trove-bastion-listener"} {
+		for _, s := range []string{"quader-bastion-token", "quader-bastion-signing", "quader-bastion-s3", "quader-bastion-valkey", "quader-bastion-valkey-sentinel", "quader-bastion-valkey-ca", "quader-bastion-listener"} {
 			if !secrets[s] {
 				t.Errorf("Secret %s is not mounted", s)
 			}
@@ -512,7 +512,7 @@ func TestR_BAS_030_CacheVolumeKinds(t *testing.T) {
 		}
 		sts := find(docs, "StatefulSet", bastionRelease)
 		if sts == nil {
-			t.Fatal("no StatefulSet trove-bastion")
+			t.Fatal("no StatefulSet quader-bastion")
 		}
 		claim := list(sts, "spec", "volumeClaimTemplates")
 		if len(claim) != 1 || str(claim[0], "metadata", "name") != "cache" ||
@@ -525,10 +525,10 @@ func TestR_BAS_030_CacheVolumeKinds(t *testing.T) {
 		}
 		var mounted bool
 		for _, m := range list(pod, "containers", "0", "volumeMounts") {
-			mounted = mounted || str(m, "name") == "cache" && str(m, "mountPath") == "/var/cache/trove-bastion"
+			mounted = mounted || str(m, "name") == "cache" && str(m, "mountPath") == "/var/cache/quader-bastion"
 		}
 		if !mounted {
-			t.Error("the cache claim is not mounted at /var/cache/trove-bastion")
+			t.Error("the cache claim is not mounted at /var/cache/quader-bastion")
 		}
 		if len(ofKind(docs, "PersistentVolumeClaim")) != 0 {
 			t.Error("the chart renders a PersistentVolumeClaim")
@@ -641,7 +641,7 @@ func TestR_BAS_047_NetworkPolicy(t *testing.T) {
 		_, docs := bstRender(t, files, sets...)
 		np := find(docs, "NetworkPolicy", bastionRelease)
 		if np == nil {
-			t.Fatal("no NetworkPolicy trove-bastion")
+			t.Fatal("no NetworkPolicy quader-bastion")
 		}
 		return np
 	}
@@ -671,7 +671,7 @@ func TestR_BAS_047_NetworkPolicy(t *testing.T) {
 	t.Run("ingress only in every value set: policyTypes [Ingress], no egress key, one port per rule, no empty peer list", func(t *testing.T) {
 		sets, _ := filepath.Glob(filepath.Join(bastionDir(), "ci", "*.yaml"))
 		if len(sets) < 5 {
-			t.Fatalf("found %d value sets under deploy/helm/trove-bastion/ci", len(sets))
+			t.Fatalf("found %d value sets under deploy/helm/quader-bastion/ci", len(sets))
 		}
 		for _, f := range sets {
 			np := policy(t, []string{f})
@@ -810,24 +810,24 @@ func TestR_BAS_043_PodDisruptionBudgetAndSpreading(t *testing.T) {
 func TestR_BAS_044_TLS(t *testing.T) {
 	t.Run("the Certificate is rendered for the Service names and mounted", func(t *testing.T) {
 		_, docs := bstRender(t, bstRequired())
-		cert := find(docs, "Certificate", "trove-bastion-tls")
+		cert := find(docs, "Certificate", "quader-bastion-tls")
 		if cert == nil {
 			t.Fatal("no Certificate")
 		}
-		if str(cert, "spec", "secretName") != "trove-bastion-tls" || str(cert, "spec", "issuerRef", "name") != "internal-ca" || str(cert, "spec", "issuerRef", "kind") != "ClusterIssuer" {
+		if str(cert, "spec", "secretName") != "quader-bastion-tls" || str(cert, "spec", "issuerRef", "name") != "internal-ca" || str(cert, "spec", "issuerRef", "kind") != "ClusterIssuer" {
 			t.Errorf("Certificate spec = %v", at(cert, "spec"))
 		}
 		names := map[string]bool{}
 		for _, n := range list(cert, "spec", "dnsNames") {
 			names[n.(string)] = true
 		}
-		for _, n := range []string{"trove-bastion.default.svc", "trove-bastion-ops.default.svc"} {
+		for _, n := range []string{"quader-bastion.default.svc", "quader-bastion-ops.default.svc"} {
 			if !names[n] {
 				t.Errorf("dnsNames lack %s: %v", n, names)
 			}
 		}
 		pod := at(bstWorkload(t, docs), "spec", "template", "spec")
-		if got := str(volumeNamed(pod, "secret-tls"), "secret", "secretName"); got != "trove-bastion-tls" {
+		if got := str(volumeNamed(pod, "secret-tls"), "secret", "secretName"); got != "quader-bastion-tls" {
 			t.Errorf("tls volume Secret = %q", got)
 		}
 	})
@@ -837,13 +837,13 @@ func TestR_BAS_044_TLS(t *testing.T) {
 			t.Error("a Certificate is rendered next to tls.existingSecret")
 		}
 		pod := at(bstWorkload(t, docs), "spec", "template", "spec")
-		if got := str(volumeNamed(pod, "secret-tls"), "secret", "secretName"); got != "trove-bastion-listener" {
+		if got := str(volumeNamed(pod, "secret-tls"), "secret", "secretName"); got != "quader-bastion-listener" {
 			t.Errorf("tls volume Secret = %q", got)
 		}
 	})
 	t.Run("the Ingress verifies the pods against the listener's Secret", func(t *testing.T) {
 		a := bstIngressAnnotations(t, []string{bastionSet("existing-tls")})
-		if a[hp+"secure-backends"] != "true" || a[hp+"secure-verify-ca-secret"] != "trove-bastion-listener" || a[hp+"secure-sni"] != "trove-bastion.default.svc" {
+		if a[hp+"secure-backends"] != "true" || a[hp+"secure-verify-ca-secret"] != "quader-bastion-listener" || a[hp+"secure-sni"] != "quader-bastion.default.svc" {
 			t.Errorf("annotations = %v", a)
 		}
 		a = bstIngressAnnotations(t, bstRequired(), "ingress.backendTLS.caSecret=edge-ca")
@@ -858,7 +858,7 @@ func TestR_BAS_044_TLS(t *testing.T) {
 	t.Run("trust bundles from a Secret or a ConfigMap give ca_file to the main installation and the bucket", func(t *testing.T) {
 		_, docs := bstRender(t, []string{bastionSet("existing-tls")})
 		cfg := bstConfig(t, docs)
-		if got := at(cfg, "bastion", "main", "ca_file"); got != "/etc/trove/trusted-ca/ca-bundle.crt" {
+		if got := at(cfg, "bastion", "main", "ca_file"); got != "/etc/quader/trusted-ca/ca-bundle.crt" {
 			t.Errorf("bastion.main.ca_file = %v", got)
 		}
 		pod := at(bstWorkload(t, docs), "spec", "template", "spec")
@@ -867,7 +867,7 @@ func TestR_BAS_044_TLS(t *testing.T) {
 		}
 		_, bucket := bstRender(t, []string{bastionSet("bucket-valkey")})
 		bcfg := bstConfig(t, bucket)
-		if at(bcfg, "bastion", "cache", "bucket", "ca_file") != "/etc/trove/trusted-ca/ca-bundle.crt" {
+		if at(bcfg, "bastion", "cache", "bucket", "ca_file") != "/etc/quader/trusted-ca/ca-bundle.crt" {
 			t.Errorf("bastion.cache.bucket.ca_file = %v", at(bcfg, "bastion", "cache", "bucket", "ca_file"))
 		}
 		_, plain := bstRender(t, bstRequired())
@@ -877,7 +877,7 @@ func TestR_BAS_044_TLS(t *testing.T) {
 	})
 	t.Run("Valkey takes its own CA, else the trust bundle", func(t *testing.T) {
 		_, docs := bstRender(t, []string{bastionSet("bucket-valkey")}, "secrets.valkeyCA.existingSecret=")
-		if got := at(bstConfig(t, docs), "valkey", "tls", "ca_file"); got != "/etc/trove/trusted-ca/ca-bundle.crt" {
+		if got := at(bstConfig(t, docs), "valkey", "tls", "ca_file"); got != "/etc/quader/trusted-ca/ca-bundle.crt" {
 			t.Errorf("valkey.tls.ca_file = %v", got)
 		}
 	})
@@ -901,8 +901,8 @@ func TestR_BAS_044_TLS(t *testing.T) {
 	t.Run("the ServiceMonitor scrapes over https and verifies the pods", func(t *testing.T) {
 		_, docs := bstRender(t, []string{bastionSet("bucket-valkey")})
 		ep := at(find(docs, "ServiceMonitor", bastionRelease), "spec", "endpoints", "0")
-		if str(ep, "scheme") != "https" || str(ep, "tlsConfig", "serverName") != "trove-bastion-ops.default.svc" ||
-			str(ep, "tlsConfig", "ca", "secret", "name") != "trove-bastion-listener" {
+		if str(ep, "scheme") != "https" || str(ep, "tlsConfig", "serverName") != "quader-bastion-ops.default.svc" ||
+			str(ep, "tlsConfig", "ca", "secret", "name") != "quader-bastion-listener" {
 			t.Errorf("endpoint = %v", ep)
 		}
 	})
@@ -957,10 +957,10 @@ func ruleNames(t *testing.T, files []string, sets ...string) []string {
 // expressions are tested with promtool in TestR_BAS_041_PromtoolRules.
 func TestR_BAS_041_PrometheusRuleAlerts(t *testing.T) {
 	all := []string{
-		"TroveBastionInterfaceMismatch", "TroveBastionMainUnreachable", "TroveBastionMainUnreachableSingleReplica",
-		"TroveBastionGraceExhausted", "TroveBastionBaseURLMismatch", "TroveBastionTokenExpiresSoon", "TroveBastionTokenRefused",
-		"TroveBastionFeedStale", "TroveBastionMainBudgetSaturated", "TroveBastionAuditEventsDropped", "TroveBastionCacheCorrupt",
-		"TroveBastionValkeyUnavailable", "TroveBastionReplicasNotReady",
+		"QuaderBastionInterfaceMismatch", "QuaderBastionMainUnreachable", "QuaderBastionMainUnreachableSingleReplica",
+		"QuaderBastionGraceExhausted", "QuaderBastionBaseURLMismatch", "QuaderBastionTokenExpiresSoon", "QuaderBastionTokenRefused",
+		"QuaderBastionFeedStale", "QuaderBastionMainBudgetSaturated", "QuaderBastionAuditEventsDropped", "QuaderBastionCacheCorrupt",
+		"QuaderBastionValkeyUnavailable", "QuaderBastionReplicasNotReady",
 	}
 	t.Run("every alert is rendered with Valkey", func(t *testing.T) {
 		got := ruleNames(t, []string{bastionSet("bucket-valkey")})
@@ -974,18 +974,18 @@ func TestR_BAS_041_PrometheusRuleAlerts(t *testing.T) {
 			t.Errorf("alerts = %v", got)
 		}
 		for _, n := range got {
-			if n == "TroveBastionValkeyUnavailable" {
+			if n == "QuaderBastionValkeyUnavailable" {
 				t.Error("the Valkey alert is rendered without Valkey")
 			}
 		}
 	})
 	t.Run("disabledAlerts removes an alert", func(t *testing.T) {
-		got := ruleNames(t, []string{bastionSet("bucket-valkey")}, "metrics.prometheusRule.disabledAlerts={TroveBastionCacheCorrupt,TroveBastionFeedStale}")
+		got := ruleNames(t, []string{bastionSet("bucket-valkey")}, "metrics.prometheusRule.disabledAlerts={QuaderBastionCacheCorrupt,QuaderBastionFeedStale}")
 		if len(got) != len(all)-2 {
 			t.Errorf("alerts = %v", got)
 		}
 		for _, n := range got {
-			if n == "TroveBastionCacheCorrupt" || n == "TroveBastionFeedStale" {
+			if n == "QuaderBastionCacheCorrupt" || n == "QuaderBastionFeedStale" {
 				t.Errorf("%s is rendered although disabled", n)
 			}
 		}
@@ -1002,11 +1002,11 @@ func TestR_BAS_041_PrometheusRuleAlerts(t *testing.T) {
 		for _, r := range list(find(docs, "PrometheusRule", bastionRelease), "spec", "groups", "0", "rules") {
 			exprs[str(r, "alert")] = str(r, "expr")
 		}
-		if !strings.Contains(exprs["TroveBastionTokenExpiresSoon"], "trove_bastion_token_warn_before_seconds") {
-			t.Errorf("expr = %s", exprs["TroveBastionTokenExpiresSoon"])
+		if !strings.Contains(exprs["QuaderBastionTokenExpiresSoon"], "quader_bastion_token_warn_before_seconds") {
+			t.Errorf("expr = %s", exprs["QuaderBastionTokenExpiresSoon"])
 		}
-		g := exprs["TroveBastionGraceExhausted"]
-		if !strings.Contains(g, "trove_bastion_answer_period_seconds") || !strings.Contains(g, "trove_bastion_grace_period_seconds") {
+		g := exprs["QuaderBastionGraceExhausted"]
+		if !strings.Contains(g, "quader_bastion_answer_period_seconds") || !strings.Contains(g, "quader_bastion_grace_period_seconds") {
 			t.Errorf("expr = %s", g)
 		}
 		for n, e := range exprs {
@@ -1019,7 +1019,7 @@ func TestR_BAS_041_PrometheusRuleAlerts(t *testing.T) {
 		_, docs := bstRender(t, bstRequired(), "metrics.prometheusRule.enabled=true", "cacheVolume.type=persistent")
 		var expr string
 		for _, r := range list(find(docs, "PrometheusRule", bastionRelease), "spec", "groups", "0", "rules") {
-			if str(r, "alert") == "TroveBastionReplicasNotReady" {
+			if str(r, "alert") == "QuaderBastionReplicasNotReady" {
 				expr = str(r, "expr")
 			}
 		}

@@ -17,7 +17,7 @@ const (
 )
 
 // ValidRole reports whether role is one of the values a replica registers with, the value of --role, of the replica
-// registry, of trove_build_info{role} and of the `role` of every log record (R-OPS-003, R-OPS-006, Q-OPS-161): one
+// registry, of quader_build_info{role} and of the `role` of every log record (R-OPS-003, R-OPS-006, Q-OPS-161): one
 // vocabulary for all of them.
 func ValidRole(role string) bool {
 	switch role {
@@ -29,12 +29,12 @@ func ValidRole(role string) bool {
 
 // Process selects what one replica runs (R-ARCH-001).
 type Process struct {
-	// Role has no default: the chart sets it per Deployment and `trove serve
+	// Role has no default: the chart sets it per Deployment and `quader serve
 	// --role` overrides it.
 	Role string `yaml:"role" validate:"oneof=api|packages|worker|web|all" doc:"Role of this replica: api, packages, worker, web (the bridge of the upgrade across the cut) or all (local development only). No default."`
 }
 
-// RoleError is the message `trove serve` prints when no valid role is set.
+// RoleError is the message `quader serve` prints when no valid role is set.
 const RoleError = "process.role must be api, packages, worker, web or all"
 
 // ServesClients reports whether a role opens client listeners: every role but worker.

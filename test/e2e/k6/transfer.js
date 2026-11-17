@@ -26,7 +26,7 @@ import { sleep } from 'k6';
 import exec from 'k6/execution';
 import crypto from 'k6/crypto';
 
-const TARGET = __ENV.TARGET || 'http://trove-control-plane:30080';
+const TARGET = __ENV.TARGET || 'http://quader-control-plane:30080';
 const HOST = __ENV.HOST || 'localhost';
 const SIZE = Number(__ENV.SIZE || 262144);
 const TOKEN = open('/out/token').trim();
@@ -45,7 +45,7 @@ export const options = {
 };
 
 function line(op, t0, res, path, note) {
-  const replica = res.status === 0 ? `${res.error_code || 0}:${res.error || 'error'}` : (res.headers['X-Trove-Replica'] || '-');
+  const replica = res.status === 0 ? `${res.error_code || 0}:${res.error || 'error'}` : (res.headers['X-Quader-Replica'] || '-');
   console.log(`T ${t0} ${op} ${res.status} ${String(replica).replace(/\s+/g, '_')} ${Date.now() - t0} ${path} ${note}`);
   if (res.status === 429) {
     // not a transfer line (the prefix is H): what the refusal said, for the reader of the artifact

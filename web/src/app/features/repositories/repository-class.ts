@@ -19,7 +19,7 @@ export function classLabel(cls: string): string {
 export function classHelp(cls: string): string {
   switch (cls) {
     case 'local':
-      return $localize`:@@repo.class.local.help:Holds content that is deployed to trove.`;
+      return $localize`:@@repo.class.local.help:Holds content that is deployed to Quader.`;
     case 'remote':
       return $localize`:@@repo.class.remote.help:Caches content from an upstream registry.`;
     case 'virtual':

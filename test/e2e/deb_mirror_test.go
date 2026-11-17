@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/debstub"
+	"github.com/guided-traffic/quader/test/debstub"
 )
 
 // debMirrorBuilt says whether the mirror lister of the Debian format is on main. While it is not, the row is skipped, with this reason.
@@ -35,8 +35,8 @@ func TestDebMirror(t *testing.T) {
 			// the architecture is the one of the client pods (all is always kept)
 			"mirror": map[string]any{"concurrency": 2, "maxVersionsPerPackage": 2},
 		},
-		// the names of the stub: trove-* and libtrove1, which trove-hello depends on (a pattern that leaves a dependency out leaves it out of the mirror)
-		"includePatterns": []string{"trove-*", "libtrove1"},
+		// the names of the stub: quader-* and libquader1, which quader-hello depends on (a pattern that leaves a dependency out leaves it out of the mirror)
+		"includePatterns": []string{"quader-*", "libquader1"},
 		"deb": map[string]any{
 			"upstreamKeys": string(s.keyring(t, "a")),
 			"mirror":       map[string]any{"suites": []string{"stable"}, "components": []string{"main"}, "architectures": []string{arch}},
@@ -51,7 +51,7 @@ func TestDebMirror(t *testing.T) {
 	done := e.awaitComplete(t, key, 10*time.Minute)
 	sum := done.LastCompletePass
 	if sum.Outcome != "complete" || sum.PackagesFailed != 0 || sum.Packages == 0 {
-		t.Fatalf("the pass ended %+v, want complete with the trove-* packages and no failed package", *sum)
+		t.Fatalf("the pass ended %+v, want complete with the quader-* packages and no failed package", *sum)
 	}
 	t.Logf("the pass ended %s: %d packages, %d items, %d bytes, method %s", sum.Outcome, sum.Packages, sum.ItemsStored, sum.BytesStored, sum.Method)
 
@@ -70,15 +70,15 @@ func TestDebMirror(t *testing.T) {
 	before := delivered()
 
 	for _, img := range aptImages {
-		t.Run("R-DEB-024 R-REPO-050 R-DEB-035 "+img.name+" updates and installs trove-hello from the mirror with the upstream stopped", func(t *testing.T) {
+		t.Run("R-DEB-024 R-REPO-050 R-DEB-035 "+img.name+" updates and installs quader-hello from the mirror with the upstream stopped", func(t *testing.T) {
 			c := fx.client(t, img)
 			c.configure(key)
 			c.mustUpdate()
-			if out, err := c.install("trove-hello"); err != nil {
-				t.Fatalf("apt-get install trove-hello on %s: %v\n%s", img.name, err, tailLines(out, 30))
+			if out, err := c.install("quader-hello"); err != nil {
+				t.Fatalf("apt-get install quader-hello on %s: %v\n%s", img.name, err, tailLines(out, 30))
 			}
-			if out := c.must(`/usr/bin/trove-hello`); trimLine(out) == "" {
-				t.Fatalf("trove-hello printed nothing")
+			if out := c.must(`/usr/bin/quader-hello`); trimLine(out) == "" {
+				t.Fatalf("quader-hello printed nothing")
 			}
 		})
 	}

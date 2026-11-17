@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // WriteError renders a core error in the shape of R-DEB-005: the standard status of the error with the problem details of R-ARCH-023.

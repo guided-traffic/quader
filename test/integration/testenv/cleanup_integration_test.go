@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 // A stack leaves nothing in the shared blob bucket when its test ends (F-113): not its objects, not the noncurrent

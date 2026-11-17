@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/proxy/invalidation"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/proxy/invalidation"
 )
 
 // CacheNegativeL1 is the name of the registered cache that holds a replica's copy of
@@ -35,7 +35,7 @@ type negEntry struct {
 }
 
 // negatives is a replica's side of the negative cache: the L1 in memory, and the
-// Valkey store behind it (R-REPO-028). A negative entry can make trove answer 404
+// Valkey store behind it (R-REPO-028). A negative entry can make quader answer 404
 // and nothing else.
 type negatives struct {
 	l1      *cache.Cache[negKey, negEntry]
@@ -46,7 +46,7 @@ type negatives struct {
 }
 
 // LookupCounter counts a lookup of a Valkey-backed cache that the reader refused
-// (trove_valkey_cache_lookups_total); *cluster.Valkey implements it.
+// (quader_valkey_cache_lookups_total); *cluster.Valkey implements it.
 type LookupCounter interface {
 	CountCacheLookup(cache, result string)
 }

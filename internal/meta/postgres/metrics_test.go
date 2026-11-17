@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 func family(t *testing.T, m *observability.Metrics, name string) *dto.MetricFamily {
@@ -91,8 +91,8 @@ func TestDBMetrics(t *testing.T) {
 				if err != nil || calls != 3 {
 					t.Fatalf("calls = %d, err = %v", calls, err)
 				}
-				if got := counterOf(t, m, "trove_db_retries_total", c.kind); got != 2 {
-					t.Fatalf("trove_db_retries_total{kind=%q} = %v, want 2", c.kind, got)
+				if got := counterOf(t, m, "quader_db_retries_total", c.kind); got != 2 {
+					t.Fatalf("quader_db_retries_total{kind=%q} = %v, want 2", c.kind, got)
 				}
 			})
 		}
@@ -102,7 +102,7 @@ func TestDBMetrics(t *testing.T) {
 		m := observability.NewMetrics("api")
 		r := newR(NewMetrics(m))
 		_ = r.do(context.Background(), func() error { return &pgconn.PgError{Code: "23505"} })
-		if f := family(t, m, "trove_db_retries_total"); f != nil && len(f.GetMetric()) != 0 {
+		if f := family(t, m, "quader_db_retries_total"); f != nil && len(f.GetMetric()) != 0 {
 			t.Fatalf("a constraint violation was counted: %v", f)
 		}
 	})
@@ -115,10 +115,10 @@ func TestDBMetrics(t *testing.T) {
 		if calls != 1 {
 			t.Fatalf("calls = %d", calls)
 		}
-		if got := counterOf(t, m, "trove_db_commit_unknown_total", ""); got != 1 {
-			t.Fatalf("trove_db_commit_unknown_total = %v, want 1", got)
+		if got := counterOf(t, m, "quader_db_commit_unknown_total", ""); got != 1 {
+			t.Fatalf("quader_db_commit_unknown_total = %v, want 1", got)
 		}
-		if got := counterOf(t, m, "trove_db_retries_total", "connection"); got != 0 {
+		if got := counterOf(t, m, "quader_db_retries_total", "connection"); got != 0 {
 			t.Fatalf("an unknown commit counted as a retry: %v", got)
 		}
 	})
@@ -148,7 +148,7 @@ func TestAcquireDuration(t *testing.T) {
 		time.Sleep(30 * time.Millisecond)
 		tr.TraceAcquireEnd(ctx, nil, pgxpool.TraceAcquireEndData{})
 
-		f := family(t, m, "trove_db_pool_acquire_duration_seconds")
+		f := family(t, m, "quader_db_pool_acquire_duration_seconds")
 		if f == nil || len(f.GetMetric()) != 1 {
 			t.Fatalf("family = %v", f)
 		}
@@ -175,7 +175,7 @@ func TestAcquireDuration(t *testing.T) {
 		}
 		for _, want := range []float64{0.1, 1} {
 			if !have[want] {
-				t.Errorf("no bucket le=%v: the quantile of TroveDatabasePoolSaturated or TroveControlConnectionWaits would interpolate across it", want)
+				t.Errorf("no bucket le=%v: the quantile of QuaderDatabasePoolSaturated or QuaderControlConnectionWaits would interpolate across it", want)
 			}
 		}
 	})

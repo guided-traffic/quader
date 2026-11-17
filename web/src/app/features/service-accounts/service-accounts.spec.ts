@@ -25,7 +25,7 @@ describe('Service accounts (R-UI-026)', () => {
     const { fixture, root, get } = await renderScreen(ServiceAccountList);
     buttonByText(root, 'New service account').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-service-account-create-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-service-account-create-dialog') as HTMLElement;
     typeInto(dialog, 'Name', 'release-bot');
     buttonByText(dialog, 'Create service account').click();
     await settle(fixture);
@@ -38,7 +38,7 @@ describe('Service accounts (R-UI-026)', () => {
     const { fixture, root, get } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
     buttonByText(root, 'Disable').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'Disable').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Disable').click();
     await sleep(fixture, 300);
     expect((get(IdentityApi) as FakeIdentityApi).calls).toContain('disableServiceAccount ci-bot revokeTokens=false');
     expect(text(root)).toContain('Disabled');
@@ -58,30 +58,30 @@ describe('Service accounts (R-UI-026)', () => {
     await settle(fixture);
     buttonByText(root, 'Save changes').click();
     await settle(fixture);
-    expect(overlay().querySelector('trove-conflict-dialog')).toBeTruthy();
+    expect(overlay().querySelector('quader-conflict-dialog')).toBeTruthy();
   });
 
   it('R-UI-026 issues a token on the Tokens section, shows it once and never stores it', async () => {
     const { fixture, root, get } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    typeInto(root.querySelector('trove-token-form')!, 'Description', 'nightly deploy');
+    typeInto(root.querySelector('quader-token-form')!, 'Description', 'nightly deploy');
     // A service-account token may be non-expiring.
     expect(text(root)).toContain('Never expires');
-    buttonByText(root.querySelector('trove-token-form')!, 'Create token').click();
+    buttonByText(root.querySelector('quader-token-form')!, 'Create token').click();
     await settle(fixture);
     const tokens = get(TokensApi) as FakeTokensApi;
     expect(tokens.calls).toContain('createForServiceAccount ci-bot nightly deploy');
-    const secret = root.querySelector('trove-token-secret') as HTMLElement;
+    const secret = root.querySelector('quader-token-secret') as HTMLElement;
     expect(secret).toBeTruthy();
     expect((secret.querySelector('input') as HTMLInputElement).value).toBe(SECRET_VALUE);
     expect(text(secret)).toContain('shown only once');
     // R-UI-043: the value is in the component only.
-    expect(storedText()).not.toContain('trv_');
+    expect(storedText()).not.toContain('qdr_');
     expect(await seriousViolations(root)).toEqual([]);
     buttonByText(secret, 'I have copied it').click();
     await settle(fixture);
-    expect(root.querySelector('trove-token-secret')).toBeNull();
+    expect(root.querySelector('quader-token-secret')).toBeNull();
     expect(root.innerHTML).not.toContain(SECRET_VALUE);
   });
 
@@ -89,13 +89,13 @@ describe('Service accounts (R-UI-026)', () => {
     const { fixture, root, get } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    typeInto(root.querySelector('trove-token-form')!, 'Description', 'x');
+    typeInto(root.querySelector('quader-token-form')!, 'Description', 'x');
     (get(TokensApi) as FakeTokensApi).failure = problem(422, 'ttl_exceeds_maximum');
-    buttonByText(root.querySelector('trove-token-form')!, 'Create token').click();
+    buttonByText(root.querySelector('quader-token-form')!, 'Create token').click();
     await settle(fixture);
     expect(text(root)).toContain('longer than the maximum');
-    expect(root.querySelector('trove-token-form')).toBeTruthy();
-    expect(root.querySelector('trove-token-secret')).toBeNull();
+    expect(root.querySelector('quader-token-form')).toBeTruthy();
+    expect(root.querySelector('quader-token-secret')).toBeNull();
   });
 
   const asRole = (roles: AuthzMe['roles'], capabilities: string[]) => ({
@@ -118,7 +118,7 @@ describe('Service accounts (R-UI-026)', () => {
     expect(root.textContent).not.toContain('Create token');
     expect(root.textContent).not.toContain('Rotate');
     // Revoking is a capability (tokens:revoke) the server checks as well.
-    expect(root.querySelector('trove-token-table')).toBeTruthy();
+    expect(root.querySelector('quader-token-table')).toBeTruthy();
   });
 
   it('R-AUTH-027 the admin role sees Create token and Rotate', async () => {
@@ -133,28 +133,28 @@ describe('Service accounts (R-UI-026)', () => {
   it('R-UI-026 Q-UI-333 the tokens are a quiet section like the page\'s other sections, with the token list inside', async () => {
     const { root } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
     expect(root.querySelector('section.tokens, h2#sa-tokens')).toBeNull();
-    const tokens = [...root.querySelectorAll('trove-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))!;
-    expect(tokens.querySelector('trove-token-manager')).toBeTruthy();
+    const tokens = [...root.querySelectorAll('quader-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))!;
+    expect(tokens.querySelector('quader-token-manager')).toBeTruthy();
   });
 
   it('R-UI-026 Q-UI-333 the section Tokens of an account without one is closed; opened, it stays open after its new token is revoked', async () => {
     const { fixture, root } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
     await settle(fixture);
-    const tokens = [...root.querySelectorAll('trove-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))!;
+    const tokens = [...root.querySelectorAll('quader-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))!;
     const toggle = tokens.querySelector<HTMLButtonElement>('.toggle')!;
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     toggle.click();
     await settle(fixture);
     buttonByText(tokens, 'Create token').click();
     await settle(fixture);
-    typeInto(tokens.querySelector('trove-token-form')!, 'Description', 'browser journey');
-    buttonByText(tokens.querySelector('trove-token-form')!, 'Create token').click();
+    typeInto(tokens.querySelector('quader-token-form')!, 'Description', 'browser journey');
+    buttonByText(tokens.querySelector('quader-token-form')!, 'Create token').click();
     await settle(fixture);
     buttonByText(tokens, 'I have copied it').click();
     await settle(fixture);
     buttonByText(tokens, 'Revoke').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'Revoke').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Revoke').click();
     await sleep(fixture, 300);
     expect(text(tokens)).toContain('No active tokens.');
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
@@ -164,11 +164,11 @@ describe('Service accounts (R-UI-026)', () => {
     const { fixture, root, get } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    const form = root.querySelector('trove-token-form') as HTMLElement;
+    const form = root.querySelector('quader-token-form') as HTMLElement;
     expect(text(form)).toContain('Endpoints');
     typeInto(form, 'Description', 'customer acme');
     const boxes = Array.from(form.querySelectorAll<HTMLInputElement>('.endpoints input[type="checkbox"]'));
-    expect(boxes.map((b) => b.closest('trove-checkbox')?.textContent?.trim())).toEqual(['default', 'customers']);
+    expect(boxes.map((b) => b.closest('quader-checkbox')?.textContent?.trim())).toEqual(['default', 'customers']);
     boxes[1]!.click();
     await settle(fixture);
     buttonByText(form, 'Create token').click();
@@ -188,7 +188,7 @@ describe('Service accounts (R-UI-026)', () => {
       },
     });
     const radios = (root: HTMLElement): string[] =>
-      [...root.querySelectorAll('trove-token-form input[type="radio"]')].map((r) => text(r.closest('label')!));
+      [...root.querySelectorAll('quader-token-form input[type="radio"]')].map((r) => text(r.closest('label')!));
 
     it('an administrator is offered the Administrator choice for an account that holds the role, and it sends admin with inherit', async () => {
       const { fixture, root, get } = await renderScreen(ServiceAccountDetail, withAccount(true, ['admin']));
@@ -196,10 +196,10 @@ describe('Service accounts (R-UI-026)', () => {
       buttonByText(root, 'Create token').click();
       await settle(fixture);
       expect(radios(root)[0]).toContain('Administrator: everything on this installation');
-      typeInto(root.querySelector('trove-token-form')!, 'Description', 'ops');
-      root.querySelector<HTMLInputElement>('trove-token-form input[type="radio"]')!.click();
+      typeInto(root.querySelector('quader-token-form')!, 'Description', 'ops');
+      root.querySelector<HTMLInputElement>('quader-token-form input[type="radio"]')!.click();
       await settle(fixture);
-      buttonByText(root.querySelector('trove-token-form')!, 'Create token').click();
+      buttonByText(root.querySelector('quader-token-form')!, 'Create token').click();
       await settle(fixture);
       expect((get(TokensApi) as FakeTokensApi).lastRequest?.scope).toEqual({ inherit: true, admin: true });
     });
@@ -238,6 +238,6 @@ describe('Service accounts (R-UI-026)', () => {
     );
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    expect(text(root.querySelector('trove-token-form')!)).not.toContain('Endpoints');
+    expect(text(root.querySelector('quader-token-form')!)).not.toContain('Endpoints');
   });
 });

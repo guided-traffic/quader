@@ -6,14 +6,14 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // guideSnippetSections are the setup sections a guide section may attach
 // (formats.GuideSection.Snippets).
 func guideSnippetSections() []string { return []string{"configure", "install", "publish"} }
 
-var tokenShape = regexp.MustCompile(`trv_(pat|sat|cit)_`)
+var tokenShape = regexp.MustCompile(`qdr_(pat|sat|cit)_`)
 
 // guide is the guide half of check 8 (R-UI-049): a format with clients ships a
 // guide that covers every class and client with the required topics, attaches the
@@ -172,7 +172,7 @@ func (r *run) guideVariants(class formats.Class, client string) []formats.GuideD
 							RequiresAuth: !anonymous,
 						},
 						Class: class, Client: client, PublishTarget: target, Anonymous: anonymous,
-						ExposureRules: rules, TokenEnvVar: "TROVE_TOKEN",
+						ExposureRules: rules, TokenEnvVar: "QUADER_TOKEN",
 					})
 				}
 			}

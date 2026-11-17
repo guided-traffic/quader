@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 // Reader is the [journal.Reader] over a [journal.Store].
@@ -83,7 +83,7 @@ func (r *Reader) Entries(ctx context.Context, since time.Time) ([]journal.Object
 			}
 			readable = append(readable, o)
 		}
-		// trove writes a key only with the same bytes (R-HA-054), so a second content is somebody else's write.
+		// quader writes a key only with the same bytes (R-HA-054), so a second content is somebody else's write.
 		if len(readable) > 1 {
 			for i := range readable {
 				readable[i].Warning = "the versions of " + key + " diverge; every version is replayed"

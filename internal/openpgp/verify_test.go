@@ -13,11 +13,11 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 )
 
-const release = "Origin: trove\nSuite: stable\nDate: Sun, 08 Nov 2026 11:59:00 UTC\nSHA256:\n e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 0 main/binary-amd64/Packages\n"
+const release = "Origin: quader\nSuite: stable\nDate: Sun, 08 Nov 2026 11:59:00 UTC\nSHA256:\n e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 0 main/binary-amd64/Packages\n"
 
 func TestR_DEB_016_ClearSignVerifiesWithTheModuleAndWithItself(t *testing.T) {
 	created := base.Add(-time.Hour)
-	k, c := mustGenerate(t, "trove p/r", created)
+	k, c := mustGenerate(t, "quader p/r", created)
 	at := base.Add(-time.Minute)
 
 	signed, err := ClearSign([]byte(release), []*Key{k}, at)
@@ -68,7 +68,7 @@ func firstSignature(t *testing.T, r interface{ Read([]byte) (int, error) }) *pac
 }
 
 func TestR_DEB_016_DetachSignVerifiesWithTheModuleAndWithItself(t *testing.T) {
-	k, c := mustGenerate(t, "trove p/r", base.Add(-time.Hour))
+	k, c := mustGenerate(t, "quader p/r", base.Add(-time.Hour))
 	at := base.Add(-time.Minute)
 	sig, err := DetachSign([]byte(release), []*Key{k}, at)
 	if err != nil {
@@ -93,8 +93,8 @@ func TestR_DEB_016_DetachSignVerifiesWithTheModuleAndWithItself(t *testing.T) {
 // While a next key exists each file carries two signatures, and either key alone verifies it (R-DEB-017).
 func TestR_DEB_016_CoSignedFilesVerifyWithEitherKey(t *testing.T) {
 	created := base.Add(-time.Hour)
-	k1, c1 := mustGenerate(t, "trove p/r", created)
-	k2, c2 := mustGenerate(t, "trove p/r", created)
+	k1, c1 := mustGenerate(t, "quader p/r", created)
+	k2, c2 := mustGenerate(t, "quader p/r", created)
 	at := base.Add(-time.Minute)
 	clear, err := ClearSign([]byte(release), []*Key{k1, k2}, at)
 	if err != nil {
@@ -112,7 +112,7 @@ func TestR_DEB_016_CoSignedFilesVerifyWithEitherKey(t *testing.T) {
 			t.Errorf("Release.gpg with %s: %q, %v", name, signer, err)
 		}
 	}
-	_, other := mustGenerate(t, "trove x/x", created)
+	_, other := mustGenerate(t, "quader x/x", created)
 	_, _, err = VerifyClear(clear, []Certificate{other}, base, Limits{})
 	if !errors.Is(err, ErrVerify) || Reason(err) != ReasonUnknownKey {
 		t.Errorf("a foreign keyring: %v", err)
@@ -262,7 +262,7 @@ func TestR_DEB_034_SignatureAndMessageBounds(t *testing.T) {
 	var keys []*Key
 	var certs []Certificate
 	for i := 0; i < 33; i++ {
-		k, c := mustGenerate(t, "trove p/r", created)
+		k, c := mustGenerate(t, "quader p/r", created)
 		keys = append(keys, k)
 		certs = append(certs, c)
 	}

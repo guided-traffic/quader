@@ -177,6 +177,6 @@ describe('General settings (R-UI-033)', () => {
         api.bannerResult = new ApiError(503, { code: 'unavailable', detail: 'The system settings are not available.' }, null);
       },
     });
-    expect(root.querySelector('trove-error-notice')).toBeTruthy();
+    expect(root.querySelector('quader-error-notice')).toBeTruthy();
   });
 });

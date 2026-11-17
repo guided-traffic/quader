@@ -1,6 +1,6 @@
 // Package observability holds the logging, metrics and tracing primitives of a
 // replica (R-OPS-006 to R-OPS-013, R-OPS-018): the slog logger with its secret
-// redaction and ring buffer, the Prometheus registry with the trove_ naming
+// redaction and ring buffer, the Prometheus registry with the quader_ naming
 // and label rules, the request log middleware, the W3C trace context and the
 // OpenTelemetry export, and the runtime snapshot that the replica registry's
 // heartbeat writes (Q-OPS-175).

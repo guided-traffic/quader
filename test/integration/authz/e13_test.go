@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 type itCase struct {
@@ -25,7 +25,7 @@ type itCase struct {
 // PostgreSQL: the policies are written through the service (so the 422 rules, the
 // expansion of presets and the change log are part of the path), and every
 // decision is made on an index built from the database, named by
-// Trove-Authz-Min-Epoch.
+// Quader-Authz-Min-Epoch.
 func TestE1_3_AuthorizationAgainstPostgreSQL(t *testing.T) {
 	e := newEnv(t)
 	a := e.newReplica("a", replicaOpts{})
@@ -59,7 +59,7 @@ func TestE1_3_AuthorizationAgainstPostgreSQL(t *testing.T) {
 	}
 	run := func(cases []itCase) {
 		t.Helper()
-		// An anonymous request ignores Trove-Authz-Min-Epoch (R-AUTHZ-032), so the
+		// An anonymous request ignores Quader-Authz-Min-Epoch (R-AUTHZ-032), so the
 		// replica has to have applied the writes before such a case runs.
 		waitFor(t, "the replica applying the last write", 5*time.Second, func() bool { return a.engine.Epoch() >= epoch })
 		for _, tc := range cases {

@@ -28,8 +28,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // ── R-NPM-038: the drain of the pod that forwards an audit ───────────────────
@@ -43,7 +43,7 @@ func TestHASuite_AuditDrain(t *testing.T) {
 
 	t.Run("R-NPM-038 R-NPM-046 R-ARCH-024 the packages pod that forwards an npm audit is deleted 1 s after the request reached the provider, which answers after 20 s: npm audit succeeds and the kubelet records no SIGKILL", func(t *testing.T) {
 		const providerDelay, afterArrival = 20 * time.Second, time.Second
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		c := newNPMClient(t, fx, haRow, 0)
 		dir := c.project("audit-drain", nil)
 		c.configure(dir)
@@ -57,7 +57,7 @@ func TestHASuite_AuditDrain(t *testing.T) {
 		t.Cleanup(func() { s.resetAll(t) })
 		s.setMode(t, npmstub.Mode{DelayMS: map[string]int{"audit": int(providerDelay.Milliseconds())}})
 
-		watch := startPodWatch(t, selTrove)
+		watch := startPodWatch(t, selQuader)
 		type auditRun struct {
 			r        npmRun
 			from, to time.Time
@@ -115,7 +115,7 @@ func TestHASuite_AuditDrain(t *testing.T) {
 			t.Errorf("the provider logged %d audit requests (asking about %s: %v), want exactly 1 that asks about it (npm does not retry a POST)", len(log), pkg, npmstub.Asked(log, pkg))
 		}
 		waitFor(t, "the deleted pod to be gone", 3*time.Minute, 2*time.Second, func() bool {
-			for _, p := range podsOf(t, selTrove) {
+			for _, p := range podsOf(t, selQuader) {
 				if p.Name == forwarder {
 					return false
 				}
@@ -130,7 +130,7 @@ func TestHASuite_AuditDrain(t *testing.T) {
 		noteResult(t, "ha-suite-audit-drain", map[string]any{
 			"pod": forwarder, "delete_after_arrival_ms": deletedAt.Sub(arrived).Milliseconds(), "audit_seconds": took.Seconds(), "killed": watch.killed,
 		})
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 	})
 }
 
@@ -149,7 +149,7 @@ func podWithClientRequestInFlight(t testing.TB) string {
 				return
 			}
 			for _, l := range strings.Split(body, "\n") {
-				if !strings.HasPrefix(l, "trove_http_requests_in_flight{") || !strings.Contains(l, `listener="client"`) {
+				if !strings.HasPrefix(l, "quader_http_requests_in_flight{") || !strings.Contains(l, `listener="client"`) {
 					continue
 				}
 				if v, err := strconv.ParseFloat(l[strings.LastIndex(l, " ")+1:], 64); err == nil && v > 0 {
@@ -169,7 +169,7 @@ func podWithClientRequestInFlight(t testing.TB) string {
 
 func podByName(t testing.TB, name string) pod {
 	t.Helper()
-	for _, p := range podsOf(t, selTrove) {
+	for _, p := range podsOf(t, selQuader) {
 		if p.Name == name {
 			return p
 		}
@@ -343,7 +343,7 @@ func objectStoreOutage(t *testing.T, h *npmHAFixture, d time.Duration, deleteRep
 	var replacementSamples int
 
 	r := runNPMFault(t, h, fmt.Sprintf("s3-outage-%ds", int(d.Seconds())), haFullLoad(), time.Minute, 2*time.Minute, func() {
-		for _, p := range livePods(t, selTrove) {
+		for _, p := range livePods(t, selQuader) {
 			initial[p.Name] = true
 		}
 		prober = startS3Prober(t, h, uploadFile, transfer)
@@ -360,8 +360,8 @@ func objectStoreOutage(t *testing.T, h *npmHAFixture, d time.Duration, deleteRep
 		if deleteReplica {
 			time.Sleep(time.Minute)
 			deleted = deletePackagesPod(t)
-			waitFor(t, "a replacement trove pod", 2*time.Minute, 2*time.Second, func() bool {
-				for _, p := range livePods(t, selTrove) {
+			waitFor(t, "a replacement quader pod", 2*time.Minute, 2*time.Second, func() bool {
+				for _, p := range livePods(t, selQuader) {
 					if !initial[p.Name] {
 						replacement = p.Name
 						return true
@@ -507,7 +507,7 @@ func objectStoreOutage(t *testing.T, h *npmHAFixture, d time.Duration, deleteRep
 	// the npm loops (Q-STOR-148)
 	r.res.outageCommands(t, window)
 	r.res.installPublished(t, h)
-	troveSettled(t, 3, 3, 4)
+	quaderSettled(t, 3, 3, 4)
 }
 
 // networkFailure matches what npm prints of a connection that was cut or never answered.
@@ -580,11 +580,11 @@ func TestHASuite_NodeLoss(t *testing.T) {
 		if err := jsonUnmarshal(driver(t, "info"), &info); err != nil {
 			t.Fatal(err)
 		}
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		node := nodeLossNode(t) // Q-HA-104
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		var onNode []pod
-		for _, p := range livePods(t, selTrove) {
+		for _, p := range livePods(t, selQuader) {
 			if p.Node == node {
 				onNode = append(onNode, p)
 			}
@@ -627,7 +627,7 @@ func TestHASuite_NodeLoss(t *testing.T) {
 				if len(hs) != 1 {
 					return false
 				}
-				for _, p := range podsOf(t, selTrove) {
+				for _, p := range podsOf(t, selQuader) {
 					if p.Name == hs[0] {
 						return p.Node != node && p.Ready && !p.Deleting
 					}
@@ -644,14 +644,14 @@ func TestHASuite_NodeLoss(t *testing.T) {
 				return strings.TrimSpace(kn2(t, "get", "node", node, "-o", `jsonpath={.status.conditions[?(@.type=="Ready")].status}`)) == "True"
 			})
 			waitFor(t, "the pods of the lost node to be removed", 5*time.Minute, 2*time.Second, func() bool {
-				for _, p := range podsOf(t, selTrove) {
+				for _, p := range podsOf(t, selQuader) {
 					if p.Node == node {
 						return false
 					}
 				}
 				return true
 			})
-			troveSettled(t, 3, 3, 4)
+			quaderSettled(t, 3, 3, 4)
 			clusterWhole(t)
 		})
 		samples := watch.stop()
@@ -680,10 +680,10 @@ func TestHASuite_NodeLoss(t *testing.T) {
 				t.Errorf("R-HA-006: the scheduler lease of the lost node moved %s after the stop, bound idle + interval x count of the server keepalive + 30 s = %s (+ %d s toleration)", leaseAt.Sub(stopAt).Round(time.Second), lim, tol)
 			}
 		}
-		if n := sql(t, `SELECT count(*) FROM (SELECT task, scheduled_for FROM trove.job WHERE task IS NOT NULL GROUP BY 1, 2 HAVING count(*) > 1) d`); n != "0" {
+		if n := sql(t, `SELECT count(*) FROM (SELECT task, scheduled_for FROM quader.job WHERE task IS NOT NULL GROUP BY 1, 2 HAVING count(*) > 1) d`); n != "0" {
 			t.Errorf("R-HA-006: %s scheduler slots were enqueued twice", n)
 		}
-		if n := sql(t, `SELECT count(*) FROM trove.job j JOIN trove.replica r ON r.instance_uid = j.locked_by WHERE r.roles && ARRAY['api','packages','web']`); n != "0" {
+		if n := sql(t, `SELECT count(*) FROM quader.job j JOIN quader.replica r ON r.instance_uid = j.locked_by WHERE r.roles && ARRAY['api','packages','web']`); n != "0" {
 			t.Errorf("%s jobs are locked by an api or packages replica", n)
 		}
 		// the running replicas outside the lost node stay ready
@@ -713,8 +713,8 @@ func TestHASuite_NodeLoss(t *testing.T) {
 	})
 }
 
-// nodeLossNode picks the node whose loss is trove's to survive (Q-HA-104): it hosts an api, a packages and a worker pod
-// and none of what the loss of a node takes away from trove's own dependencies for longer than the scenario's bound. That is
+// nodeLossNode picks the node whose loss is quader's to survive (Q-HA-104): it hosts an api, a packages and a worker pod
+// and none of what the loss of a node takes away from quader's own dependencies for longer than the scenario's bound. That is
 // the PostgreSQL primary (the PostgreSQL row of R-HA-052), the Valkey primary (the Valkey row), the PostgreSQL standby
 // (the primary's commits wait for it until the operator drops it from the synchronous set, which needs the operator) and
 // the pods of the two operators, which the dev profile runs once and which Kubernetes replaces only after its default 300 s
@@ -819,7 +819,7 @@ func tolerationSecondsOf(t testing.TB, podName string) int {
 			}
 		}
 	}
-	if err := json.Unmarshal([]byte(kn(t, "get", "deployments", "-l", "app.kubernetes.io/instance=trove", "-o", "json")), &l); err != nil {
+	if err := json.Unmarshal([]byte(kn(t, "get", "deployments", "-l", "app.kubernetes.io/instance=quader", "-o", "json")), &l); err != nil {
 		t.Fatal(err)
 	}
 	best, secs := "", -1
@@ -870,14 +870,14 @@ func unreachableTaintAt(t testing.TB, node string) (time.Time, bool) {
 // a pod on an unreachable node is stale, so it is never counted.
 func readyRoles(t testing.TB, lost string) (api, packages, worker int) {
 	t.Helper()
-	for _, p := range livePods(t, selTrove) {
+	for _, p := range livePods(t, selQuader) {
 		if p.Node == lost || !p.Ready {
 			continue
 		}
 		switch {
-		case strings.HasPrefix(p.Name, "trove-api-"):
+		case strings.HasPrefix(p.Name, "quader-api-"):
 			api++
-		case strings.HasPrefix(p.Name, "trove-packages-"):
+		case strings.HasPrefix(p.Name, "quader-packages-"):
 			packages++
 		default:
 			worker++
@@ -891,10 +891,10 @@ func readyRoles(t testing.TB, lost string) (api, packages, worker int) {
 func clusterWhole(t testing.TB) {
 	t.Helper()
 	waitFor(t, "PostgreSQL, Valkey and the Sentinels to be whole", 10*time.Minute, 3*time.Second, func() bool {
-		ready := strings.TrimSpace(kn2(t, "get", "cluster", "trove-db", "-o", "jsonpath={.status.readyInstances}"))
-		phase := strings.TrimSpace(kn2(t, "get", "cluster", "trove-db", "-o", "jsonpath={.status.phase}"))
-		vk := strings.TrimSpace(kn2(t, "get", "statefulset", "trove-valkey", "-o", "jsonpath={.status.readyReplicas}"))
-		sn := strings.TrimSpace(kn2(t, "get", "statefulset", "trove-valkey-sentinel", "-o", "jsonpath={.status.readyReplicas}"))
+		ready := strings.TrimSpace(kn2(t, "get", "cluster", "quader-db", "-o", "jsonpath={.status.readyInstances}"))
+		phase := strings.TrimSpace(kn2(t, "get", "cluster", "quader-db", "-o", "jsonpath={.status.phase}"))
+		vk := strings.TrimSpace(kn2(t, "get", "statefulset", "quader-valkey", "-o", "jsonpath={.status.readyReplicas}"))
+		sn := strings.TrimSpace(kn2(t, "get", "statefulset", "quader-valkey-sentinel", "-o", "jsonpath={.status.readyReplicas}"))
 		_, sentinelOK := sentinelPrimary()
 		return ready == "2" && phase == "Cluster in healthy state" && vk == "2" && sn == "3" && sentinelOK
 	})
@@ -948,7 +948,7 @@ func TestHASuite_PostgresPrimaryLoss(t *testing.T) {
 			t.Errorf("ping after the recovery: %d %q %v", code, body, err)
 		}
 		r.res.installPublished(t, h)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 	})
 }
 
@@ -975,6 +975,6 @@ func TestHASuite_ValkeyPrimaryLoss(t *testing.T) {
 		}
 		t.Logf("replicas that reported degraded while ready (samples about one second apart): %v", r.mon.degrade)
 		r.res.installPublished(t, h)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 	})
 }

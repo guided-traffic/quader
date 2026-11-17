@@ -39,7 +39,7 @@ const (
 // UserContent is the prefix of every id and name a README keeps.
 const UserContent = "user-content-"
 
-// ExternalRel is the rel of every link that leaves trove.
+// ExternalRel is the rel of every link that leaves quader.
 const ExternalRel = "nofollow noopener noreferrer"
 
 // Options configure [New].
@@ -49,7 +49,7 @@ type Options struct {
 	// ImageOrigins are the exact https origins whose images stay
 	// (ui.readme.external_image_origins).
 	ImageOrigins []string
-	// OwnOrigins are the origins of trove itself (server.base_url and the endpoint
+	// OwnOrigins are the origins of quader itself (server.base_url and the endpoint
 	// base URLs): an image from one of them is dropped, so that a README cannot make
 	// the viewer's browser send authenticated requests to package or file endpoints
 	// (R-AUTHZ-008).
@@ -377,7 +377,7 @@ func absolute(s string) bool {
 }
 
 // image applies the image policy of Q-UI-6: an https image of a listed origin
-// stays, an image of trove's own origin and a relative or other source is dropped,
+// stays, an image of quader's own origin and a relative or other source is dropped,
 // and every other image becomes a link, or only its text inside a link.
 func (f *finisher) image(n *xhtml.Node) {
 	src := strings.TrimSpace(attr(n, "src"))

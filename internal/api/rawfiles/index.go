@@ -5,18 +5,18 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/files"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/files"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // index answers GET and HEAD of a folder (R-STOR-017): HTML for a client that
 // prefers text/html, JSON with the same entries otherwise. The page is rendered
-// by trove, not stored content, so it is written through the index header set
+// by quader, not stored content, so it is written through the index header set
 // (nosniff, same-site, the policy without sandbox, no Content-Disposition). Every
 // name is HTML-escaped, and every link is `./` followed by the percent-encoded
 // name, so a name such as `javascript:x` stays a relative path. The listing holds

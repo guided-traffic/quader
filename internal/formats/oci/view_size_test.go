@@ -3,7 +3,7 @@ package oci
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 )
 
 // TestR_OCI_031_TheMetadataSizeIsTheStoredImageSize: the size of the tag's metadata is the content size the push stored for the

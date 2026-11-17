@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
 )
 
 // TestR_BAS_035_PerAddressLimits: requests per address are limited in two classes, a second address is not
@@ -119,14 +119,14 @@ func TestR_BAS_036_FailedAuthenticationTimeout(t *testing.T) {
 			}
 			for i := 0; i < 3; i++ {
 				r := b.reps[i%len(b.reps)]
-				got := r.do(t, "GET", path, callOpts{token: maintest.GenerateTokenWithPrefix(t, "trv_pat_"), addr: addr})
+				got := r.do(t, "GET", path, callOpts{token: maintest.GenerateTokenWithPrefix(t, "qdr_pat_"), addr: addr})
 				if got.Status != http.StatusUnauthorized {
 					t.Fatalf("unknown token %d: %d", i+1, got.Status)
 				}
 			}
 			m := w.front.Mark()
 			for _, r := range b.reps {
-				got := r.do(t, "GET", path, callOpts{token: maintest.GenerateTokenWithPrefix(t, "trv_pat_"), addr: addr})
+				got := r.do(t, "GET", path, callOpts{token: maintest.GenerateTokenWithPrefix(t, "qdr_pat_"), addr: addr})
 				if got.Status != http.StatusTooManyRequests || got.Code() != "auth_timeout" || got.Header.Get("Retry-After") == "" {
 					t.Fatalf("%s: unknown token in the timeout: %d %s", r.name, got.Status, got.Code())
 				}
@@ -138,7 +138,7 @@ func TestR_BAS_036_FailedAuthenticationTimeout(t *testing.T) {
 				if got := r.do(t, "GET", path, callOpts{token: w.full.token, addr: addr}); got.Status != http.StatusOK {
 					t.Fatalf("%s: $FULL from the address in the timeout: %d", r.name, got.Status)
 				}
-				if got := r.do(t, "GET", path, callOpts{token: maintest.GenerateTokenWithPrefix(t, "trv_pat_"), addr: other}); got.Status != http.StatusUnauthorized {
+				if got := r.do(t, "GET", path, callOpts{token: maintest.GenerateTokenWithPrefix(t, "qdr_pat_"), addr: other}); got.Status != http.StatusUnauthorized {
 					t.Fatalf("%s: another address got %d, want the main installation's 401", r.name, got.Status)
 				}
 			}
@@ -196,8 +196,8 @@ func TestR_BAS_037_BlockingOfFloodingAddresses(t *testing.T) {
 			if n := strings.Count(b.reps[0].logs.String(), "bastion address blocked"); n != 1 {
 				t.Fatalf("%d log lines for the block, want one", n)
 			}
-			if sumMetric(b.reps[0].metrics(t), "trove_bastion_blocks_total", `reason="refusals"`) != 1 {
-				t.Fatal("trove_bastion_blocks_total{reason=\"refusals\"} is not 1")
+			if sumMetric(b.reps[0].metrics(t), "quader_bastion_blocks_total", `reason="refusals"`) != 1 {
+				t.Fatal("quader_bastion_blocks_total{reason=\"refusals\"} is not 1")
 			}
 		})
 	}

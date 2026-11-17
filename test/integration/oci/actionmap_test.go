@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_AUTHZ_007_OCIActionMap proves the OCI table of R-AUTHZ-007 row by row against two replicas: for each client operation the

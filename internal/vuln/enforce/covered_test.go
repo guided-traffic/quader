@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln"
 )
 
 // R-VULN-015, Q-VULN-75: the missing-data rule applies only to a covered policy, whatever the data state; a repository whose

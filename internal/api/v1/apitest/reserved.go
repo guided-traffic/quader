@@ -11,7 +11,7 @@ import (
 // ReservedNameProblems is the CI check of R-API-004: a literal path segment at
 // the position where a collection's key or name sits (/users/me next to
 // /users/{username}) is a reserved name of that collection, and the key schema
-// lists it as x-trove-reserved-names. It derives every literal sibling of a
+// lists it as x-quader-reserved-names. It derives every literal sibling of a
 // {key} segment from the document and reports each that the parameter's schema
 // does not list. A collection addressed by a server-generated identifier has no
 // literal sibling and needs no list.
@@ -41,7 +41,7 @@ func ReservedNameProblems(spec []byte) ([]string, error) {
 			listed := reservedList(doc, paths[p], strings.Trim(seg, "{}"))
 			for _, l := range literals {
 				if !contains(listed, l) {
-					problems = append(problems, fmt.Sprintf("%s: the literal segment %q next to {%s} is not in x-trove-reserved-names of the parameter's schema",
+					problems = append(problems, fmt.Sprintf("%s: the literal segment %q next to {%s} is not in x-quader-reserved-names of the parameter's schema",
 						p, l, strings.Trim(seg, "{}")))
 				}
 			}
@@ -70,7 +70,7 @@ func literalSiblings(templates, segs []string, i int) []string {
 	return out
 }
 
-// reservedList returns the x-trove-reserved-names of the named path parameter of
+// reservedList returns the x-quader-reserved-names of the named path parameter of
 // a path item (declared on the item or on one of its operations), following a
 // $ref of the parameter or of its schema.
 func reservedList(doc map[string]any, item any, name string) []string {
@@ -92,7 +92,7 @@ func reservedList(doc map[string]any, item any, name string) []string {
 			continue
 		}
 		schema := resolve(doc, pm["schema"])
-		if raw, ok := schema["x-trove-reserved-names"].([]any); ok {
+		if raw, ok := schema["x-quader-reserved-names"].([]any); ok {
 			var out []string
 			for _, r := range raw {
 				if s, ok := r.(string); ok {

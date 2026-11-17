@@ -3,7 +3,7 @@ package nupkg
 import (
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/nuget/nuspec"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nuspec"
 )
 
 // The defaults of Limits: the nuget.archive settings of R-NUGET-005 and the

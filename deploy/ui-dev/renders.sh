@@ -3,7 +3,7 @@
 # three widths, into .out/ui-renders with the contact sheet index.html (docs/developer/web-ui.md#renders-of-every-screen).
 #
 # Starts what is not running and stops again only what it started: the services of the UI development profile
-# (up.sh, always: it is idempotent), trove with the profile's sign-in provider (serve.sh) and the Angular dev server.
+# (up.sh, always: it is idempotent), quader with the profile's sign-in provider (serve.sh) and the Angular dev server.
 # The seed and the pictures are web/e2e/playwright.renders.config.ts; arguments go to Playwright (--grep <screen>).
 # Local only: no CI job runs it.
 set -euo pipefail
@@ -39,10 +39,10 @@ wait_for() { # wait_for <what> <seconds> <url> <log> <pid>: until the URL answer
 }
 
 if ! curl -skf -o /dev/null https://127.0.0.1:19081/readyz; then
-  echo "ui-renders: starting trove and the sign-in provider (log: $backend_log)"
+  echo "ui-renders: starting quader and the sign-in provider (log: $backend_log)"
   deploy/ui-dev/serve.sh > "$backend_log" 2>&1 &
   started+=("$!")
-  wait_for trove 600 https://127.0.0.1:19081/readyz "$backend_log" "$!"
+  wait_for quader 600 https://127.0.0.1:19081/readyz "$backend_log" "$!"
 fi
 
 if ! curl -skf -o /dev/null https://localhost:4200/ui/; then

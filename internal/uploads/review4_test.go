@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 func TestR_STOR_011_AnAbortThatRemovedTheObjectsDeletesTheRowAndOneThatDidNotLeavesItForTheRun(t *testing.T) {

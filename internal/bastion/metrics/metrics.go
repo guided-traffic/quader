@@ -1,10 +1,10 @@
-// Package metrics defines every metric of the trove Bastion in one place (R-BAS-040, INV-16): the names, the
+// Package metrics defines every metric of the quader Bastion in one place (R-BAS-040, INV-16): the names, the
 // label values and the collectors. The packages of the Bastion reference the fields of [Metrics] and add no
 // metric of their own; a new one is a new line here and a new row in R-BAS-040. No label carries an address, a
 // token, a path or a repository key (R-BAS-040).
 //
-// The request metrics of R-OPS-008 (duration, in flight, bytes by handler) and trove_valkey_available and
-// trove_ratelimit_fallback are the shared ones of internal/observability and internal/cluster, not defined here.
+// The request metrics of R-OPS-008 (duration, in flight, bytes by handler) and quader_valkey_available and
+// quader_ratelimit_fallback are the shared ones of internal/observability and internal/cluster, not defined here.
 package metrics
 
 import (
@@ -15,45 +15,45 @@ import (
 
 // The names of R-BAS-040.
 const (
-	RequestsTotal            = "trove_bastion_requests_total"
-	BytesServedTotal         = "trove_bastion_bytes_served_total"
-	MainRequestsTotal        = "trove_bastion_main_requests_total"
-	MainRequestDuration      = "trove_bastion_main_request_duration_seconds"
-	MainInFlight             = "trove_bastion_main_in_flight"
-	MainBudget               = "trove_bastion_main_budget"
-	MainBudgetExhaustedTotal = "trove_bastion_main_budget_exhausted_total"
-	MainReachable            = "trove_bastion_main_reachable"
-	MainUnreachableSince     = "trove_bastion_main_unreachable_since_timestamp_seconds"
-	BaseURLMismatch          = "trove_bastion_base_url_mismatch"
-	InterfaceMismatch        = "trove_bastion_interface_mismatch"
-	InterfaceVersion         = "trove_bastion_interface_version"
-	GracePeriodSeconds       = "trove_bastion_grace_period_seconds"
-	AnswerPeriodSeconds      = "trove_bastion_answer_period_seconds"
-	Answers                  = "trove_bastion_answers"
-	AnswersTotal             = "trove_bastion_answers_total"
-	FeedLagSeconds           = "trove_bastion_feed_lag_seconds"
-	FeedEntriesAppliedTotal  = "trove_bastion_feed_entries_applied_total"
-	FeedResetsTotal          = "trove_bastion_feed_resets_total"
-	TokenRemainingSeconds    = "trove_bastion_token_remaining_seconds"   //nolint:gosec // G101: a metric name, not a credential
-	TokenWarnBeforeSeconds   = "trove_bastion_token_warn_before_seconds" //nolint:gosec // G101: a metric name, not a credential
-	MainTokenRefused         = "trove_bastion_main_token_refused"        //nolint:gosec // G101: a metric name, not a credential
-	TokenReloadsTotal        = "trove_bastion_token_reloads_total"       //nolint:gosec // G101: a metric name, not a credential
-	CacheBytes               = "trove_bastion_cache_bytes"
-	CacheCapacityBytes       = "trove_bastion_cache_capacity_bytes"
-	CacheEvictionsTotal      = "trove_bastion_cache_evictions_total"
-	CacheCorruptTotal        = "trove_bastion_cache_corrupt_total"
-	CacheErrorsTotal         = "trove_bastion_cache_errors_total"
-	RefusedTotal             = "trove_bastion_refused_total"
-	BlocksTotal              = "trove_bastion_blocks_total"
-	BlockedAddresses         = "trove_bastion_blocked_addresses"
-	AuditEventsTotal         = "trove_bastion_audit_events_total"
-	AuditBufferEvents        = "trove_bastion_audit_buffer_events"
-	AuditEventsDroppedTotal  = "trove_bastion_audit_events_dropped_total"
+	RequestsTotal            = "quader_bastion_requests_total"
+	BytesServedTotal         = "quader_bastion_bytes_served_total"
+	MainRequestsTotal        = "quader_bastion_main_requests_total"
+	MainRequestDuration      = "quader_bastion_main_request_duration_seconds"
+	MainInFlight             = "quader_bastion_main_in_flight"
+	MainBudget               = "quader_bastion_main_budget"
+	MainBudgetExhaustedTotal = "quader_bastion_main_budget_exhausted_total"
+	MainReachable            = "quader_bastion_main_reachable"
+	MainUnreachableSince     = "quader_bastion_main_unreachable_since_timestamp_seconds"
+	BaseURLMismatch          = "quader_bastion_base_url_mismatch"
+	InterfaceMismatch        = "quader_bastion_interface_mismatch"
+	InterfaceVersion         = "quader_bastion_interface_version"
+	GracePeriodSeconds       = "quader_bastion_grace_period_seconds"
+	AnswerPeriodSeconds      = "quader_bastion_answer_period_seconds"
+	Answers                  = "quader_bastion_answers"
+	AnswersTotal             = "quader_bastion_answers_total"
+	FeedLagSeconds           = "quader_bastion_feed_lag_seconds"
+	FeedEntriesAppliedTotal  = "quader_bastion_feed_entries_applied_total"
+	FeedResetsTotal          = "quader_bastion_feed_resets_total"
+	TokenRemainingSeconds    = "quader_bastion_token_remaining_seconds"   //nolint:gosec // G101: a metric name, not a credential
+	TokenWarnBeforeSeconds   = "quader_bastion_token_warn_before_seconds" //nolint:gosec // G101: a metric name, not a credential
+	MainTokenRefused         = "quader_bastion_main_token_refused"        //nolint:gosec // G101: a metric name, not a credential
+	TokenReloadsTotal        = "quader_bastion_token_reloads_total"       //nolint:gosec // G101: a metric name, not a credential
+	CacheBytes               = "quader_bastion_cache_bytes"
+	CacheCapacityBytes       = "quader_bastion_cache_capacity_bytes"
+	CacheEvictionsTotal      = "quader_bastion_cache_evictions_total"
+	CacheCorruptTotal        = "quader_bastion_cache_corrupt_total"
+	CacheErrorsTotal         = "quader_bastion_cache_errors_total"
+	RefusedTotal             = "quader_bastion_refused_total"
+	BlocksTotal              = "quader_bastion_blocks_total"
+	BlockedAddresses         = "quader_bastion_blocked_addresses"
+	AuditEventsTotal         = "quader_bastion_audit_events_total"
+	AuditBufferEvents        = "quader_bastion_audit_buffer_events"
+	AuditEventsDroppedTotal  = "quader_bastion_audit_events_dropped_total"
 )
 
 // Label values. The sets are closed: a value outside them is a defect, never a new series.
 const (
-	// class of trove_bastion_requests_total: the classes of the marking (iface.Class) and refused.
+	// class of quader_bastion_requests_total: the classes of the marking (iface.Class) and refused.
 	ClassArtifact = "artifact"
 	ClassShared   = "shared"
 	ClassPrivate  = "private"
@@ -61,18 +61,18 @@ const (
 	ClassPass     = "pass"
 	ClassRefused  = "refused"
 
-	// result of trove_bastion_requests_total.
+	// result of quader_bastion_requests_total.
 	ResultHit     = "hit"
 	ResultChecked = "checked"
 	ResultMiss    = "miss"
 	ResultRefused = "refused"
 	ResultError   = "error"
 
-	// source of trove_bastion_bytes_served_total.
+	// source of quader_bastion_bytes_served_total.
 	SourceCache = "cache"
 	SourceMain  = "main"
 
-	// kind of trove_bastion_main_requests_total and of the main request duration.
+	// kind of quader_bastion_main_requests_total and of the main request duration.
 	KindForward     = "forward"
 	KindConditional = "conditional"
 	KindCheck       = "check"
@@ -81,7 +81,7 @@ const (
 	KindHandshake   = "handshake"
 	KindDownloads   = "downloads"
 
-	// outcome of trove_bastion_main_requests_total: the status class of the answer, or how the request failed.
+	// outcome of quader_bastion_main_requests_total: the status class of the answer, or how the request failed.
 	Outcome2xx     = "2xx"
 	Outcome3xx     = "3xx"
 	Outcome4xx     = "4xx"
@@ -94,36 +94,36 @@ const (
 	BudgetAuthenticated = "authenticated"
 	BudgetAnonymous     = "anonymous"
 
-	// side of trove_bastion_interface_version.
+	// side of quader_bastion_interface_version.
 	SideBastion = "bastion"
 	SideMain    = "main"
 
-	// kind of trove_bastion_answers and trove_bastion_answers_total.
+	// kind of quader_bastion_answers and quader_bastion_answers_total.
 	AnswerCredential = "credential"
 	AnswerShape      = "shape"
 	AnswerURL        = "url"
 
-	// result of trove_bastion_answers_total.
+	// result of quader_bastion_answers_total.
 	AnswerHit          = "hit"
 	AnswerMiss         = "miss"
 	AnswerExpired      = "expired"
 	AnswerDropped      = "dropped"
 	AnswerBadSignature = "bad_signature"
 
-	// outcome of trove_bastion_token_reloads_total.
+	// outcome of quader_bastion_token_reloads_total.
 	ReloadLoaded  = "loaded"
 	ReloadRefused = "refused"
 
-	// area of trove_bastion_cache_bytes and trove_bastion_cache_capacity_bytes.
+	// area of quader_bastion_cache_bytes and quader_bastion_cache_capacity_bytes.
 	AreaArtifacts = "artifacts"
 	AreaDocuments = "documents"
 
-	// reason of trove_bastion_cache_evictions_total.
+	// reason of quader_bastion_cache_evictions_total.
 	EvictSize    = "size"
 	EvictStale   = "stale"
 	EvictMissing = "missing"
 
-	// reason of trove_bastion_refused_total.
+	// reason of quader_bastion_refused_total.
 	RefusedBlocked     = "blocked"
 	RefusedRateLimited = "rate_limited"
 	RefusedMissLimited = "miss_limited"
@@ -134,16 +134,16 @@ const (
 	RefusedNotServed   = "not_served"
 	RefusedReadOnly    = "read_only"
 
-	// reason of trove_bastion_blocks_total.
+	// reason of quader_bastion_blocks_total.
 	BlockRefusals = "refusals"
 
-	// outcome of trove_bastion_audit_events_total.
+	// outcome of quader_bastion_audit_events_total.
 	AuditSent    = "sent"
 	AuditSpooled = "spooled"
 	AuditDropped = "dropped"
 )
 
-// Cache operations of the op label of trove_bastion_cache_errors_total.
+// Cache operations of the op label of quader_bastion_cache_errors_total.
 const (
 	OpGet    = "get"
 	OpPut    = "put"
@@ -177,7 +177,7 @@ type Metrics struct {
 	InterfaceMismatch    prometheus.Gauge
 	// InterfaceVersion is the two versions by side (R-BAS-028).
 	InterfaceVersion *prometheus.GaugeVec
-	// GracePeriod and AnswerPeriod export the configured seconds, which the rule TroveBastionGraceExhausted
+	// GracePeriod and AnswerPeriod export the configured seconds, which the rule QuaderBastionGraceExhausted
 	// reads (R-BAS-041).
 	GracePeriod  prometheus.Gauge
 	AnswerPeriod prometheus.Gauge

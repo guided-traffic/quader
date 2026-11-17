@@ -1,10 +1,10 @@
 {
-  "name": "trove",
+  "name": "quader",
   "version": "0.0.0-development",
-  "description": "Release tooling only (semantic-release in CI); trove itself is Go, the UI is web/",
+  "description": "Release tooling only (semantic-release in CI); quader itself is Go, the UI is web/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/guided-traffic/trove.git"
+    "url": "https://github.com/guided-traffic/quader.git"
   },
   "author": "Guided Traffic",
   "license": "Apache-2.0",

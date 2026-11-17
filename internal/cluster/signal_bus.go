@@ -21,8 +21,8 @@ type Bus interface {
 
 var _ Bus = (*Valkey)(nil)
 
-// The channel families of R-ARCH-018: trove:<ks>:inv:v1 carries the change
-// messages, trove:<ks>:sig:v1:<area> the signals.
+// The channel families of R-ARCH-018: quader:<ks>:inv:v1 carries the change
+// messages, quader:<ks>:sig:v1:<area> the signals.
 var (
 	invChannels = registerChannelFamily("inv", 1)
 	sigChannels = registerChannelFamily("sig", 1)

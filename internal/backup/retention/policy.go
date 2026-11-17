@@ -1,5 +1,5 @@
 // Package retention deletes backups by policy and sweeps the pool (R-BAK-016, R-BAK-017). [Stage] is the pruning phase of a
-// create run; [Runner] is `trove backup prune` and `trove backup delete`, which are target-writing runs of their own
+// create run; [Runner] is `quader backup prune` and `quader backup delete`, which are target-writing runs of their own
 // (R-BAK-010) and use the same stage code.
 package retention
 
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/listing"
+	"github.com/guided-traffic/quader/internal/backup/listing"
 )
 
 // Policy is backup.retention.keep_last and keep_within (R-BAK-016).

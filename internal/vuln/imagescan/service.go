@@ -1,4 +1,4 @@
-// Package imagescan scans the container images trove stores for known vulnerabilities (docs/spec/vulnerability-scanning.md R-VULN-033 to
+// Package imagescan scans the container images quader stores for known vulnerabilities (docs/spec/vulnerability-scanning.md R-VULN-033 to
 // R-VULN-037). A scan has two steps, kept apart on purpose:
 //
 //	analysis   the layers of a manifest are read by the analyser and reduced to the list of what the image contains. It needs no database,
@@ -26,13 +26,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/evaluate"
-	vmetrics "github.com/guided-traffic/trove/internal/vuln/metrics"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/evaluate"
+	vmetrics "github.com/guided-traffic/quader/internal/vuln/metrics"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // The working bounds of the job.

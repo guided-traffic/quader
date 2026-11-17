@@ -1,6 +1,6 @@
 // The shared look of list screens: the data table, the filter toggle and the filter panel, and the
 // layout that puts the panel to the right of the table. Global on purpose: the table frame belongs to
-// <trove-data-table>, but its rows are projected from the screens, so scoped component styles
+// <quader-data-table>, but its rows are projected from the screens, so scoped component styles
 // would not reach them. Colours and lengths come from the tokens only (R-UI-044).
 
 // The toolbar with the Filters button, the panel and the list, in this order in the page, so that the panel opens where it
@@ -9,7 +9,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: 'bar' 'main';
-  column-gap: var(--trove-space-4);
+  column-gap: var(--quader-space-4);
   align-items: start;
 
   > .list-toolbar {
@@ -41,7 +41,7 @@
       grid-template-areas: 'bar' 'side' 'main';
 
       > .list-side {
-        margin-block-end: var(--trove-space-4);
+        margin-block-end: var(--quader-space-4);
       }
     }
   }
@@ -68,9 +68,9 @@
 }
 
 // The column of client addresses (Q-UI-300, Q-UI-330): one width for every field of the list, that of the list's longest address
-// (`--trove-address-chars`, set by the list) in the field's own face and size, with the field's padding, border and copy button;
-// at most its share (`--trove-address-share`, 46 characters unless the list sets it), and at most what the list's other columns
-// leave (`--trove-list-others`, which the data table sums from the columns' widths, a column's `prefer`red width where it has one,
+// (`--quader-address-chars`, set by the list) in the field's own face and size, with the field's padding, border and copy button;
+// at most its share (`--quader-address-share`, 46 characters unless the list sets it), and at most what the list's other columns
+// leave (`--quader-list-others`, which the data table sums from the columns' widths, a column's `prefer`red width where it has one,
 // Q-UI-308), never under 10 rem (the field's input keeps 8 rem, the copy button 2). A project's repository list and the search
 // results set the share to their longest address: there the address takes what is left after the repository's 20 rem, up to its
 // whole length, and the repository takes what is left over after that. `cqi` is the width of the table's scroll region, which a
@@ -78,21 +78,21 @@
 // scrolled sideways. The field fills the cell and shows the address from its start; a longer address scrolls inside its field.
 td.address-cell {
   // Resolved where it is used, so `ch` is the monospace face's at the field's size, and `cqi` the rows' width.
-  --trove-address-column: min(
+  --quader-address-column: min(
     calc(
-      min(var(--trove-address-chars, 46), var(--trove-address-share, 46)) * 1ch + 2 * var(--trove-space-3) + 2px +
-        var(--trove-control-height)
+      min(var(--quader-address-chars, 46), var(--quader-address-share, 46)) * 1ch + 2 * var(--quader-space-3) + 2px +
+        var(--quader-control-height)
     ),
-    max(10rem, 100cqi - var(--trove-list-others, 34rem))
+    max(10rem, 100cqi - var(--quader-list-others, 34rem))
   );
 
-  inline-size: var(--trove-address-column);
-  font-family: var(--trove-font-mono);
+  inline-size: var(--quader-address-column);
+  font-family: var(--quader-font-mono);
   font-size: 0.875rem;
 
   // The field's width is also the column's least, so every field of the list has one width.
-  trove-address-field {
-    min-inline-size: var(--trove-address-column);
+  quader-address-field {
+    min-inline-size: var(--quader-address-column);
     max-inline-size: none;
   }
 }
@@ -100,17 +100,17 @@ td.address-cell {
 // Below 64 rem of the list's width a column marked `narrow` (the data table's `narrow-drop`) is hidden and gives its room to the
 // others (Q-UI-308): the admin area's repository list at 1280 px shows the last activity no more.
 @container table (max-width: 64rem) {
-  .trove-data-table .narrow-drop {
+  .quader-data-table .narrow-drop {
     display: none;
   }
 
-  .trove-data-table td.address-cell {
-    --trove-address-column: min(
+  .quader-data-table td.address-cell {
+    --quader-address-column: min(
       calc(
-        min(var(--trove-address-chars, 46), var(--trove-address-share, 46)) * 1ch + 2 * var(--trove-space-3) + 2px +
-          var(--trove-control-height)
+        min(var(--quader-address-chars, 46), var(--quader-address-share, 46)) * 1ch + 2 * var(--quader-space-3) + 2px +
+          var(--quader-control-height)
       ),
-      max(10rem, 100cqi - var(--trove-list-others, 34rem) + var(--trove-list-narrow, 0px))
+      max(10rem, 100cqi - var(--quader-list-others, 34rem) + var(--quader-list-narrow, 0px))
     );
   }
 }
@@ -121,25 +121,25 @@ td.format-cell .format-name,
 td.class-cell .class-name {
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
   white-space: nowrap;
 }
 
-td.format-cell trove-format-icon {
+td.format-cell quader-format-icon {
   font-size: 1.25rem;
 }
 
 td.class-cell .material-icons {
   font-size: 1.25rem;
-  color: var(--trove-text-muted);
+  color: var(--quader-text-muted);
 }
 
 .list-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-3);
-  margin-block-end: var(--trove-space-3);
+  gap: var(--quader-space-3);
+  margin-block-end: var(--quader-space-3);
 
   .list-toolbar-spacer {
     flex: 1 1 auto;
@@ -149,7 +149,7 @@ td.class-cell .material-icons {
 .filter-toggle {
   .material-icons {
     font-size: 1.125rem;
-    margin-inline-end: var(--trove-space-1);
+    margin-inline-end: var(--quader-space-1);
   }
 }
 
@@ -158,23 +158,23 @@ td.class-cell .material-icons {
   align-items: center;
   justify-content: center;
   min-inline-size: 1.25rem;
-  margin-inline-start: var(--trove-space-2);
-  padding-inline: var(--trove-space-1);
-  border-radius: var(--trove-radius-full);
-  background: var(--trove-accent);
-  color: var(--trove-on-accent);
+  margin-inline-start: var(--quader-space-2);
+  padding-inline: var(--quader-space-1);
+  border-radius: var(--quader-radius-full);
+  background: var(--quader-accent);
+  color: var(--quader-on-accent);
   font-size: 0.75rem;
   font-weight: 600;
 }
 
 // ---- Data table --------------------------------------------------------------------------
 
-.trove-data-table {
+.quader-data-table {
   display: block;
 
   // The reference's table (Q-UI-128): no frame, on the page's fill, hairlines above and below the head and under every row.
   .table-frame {
-    background: var(--trove-surface);
+    background: var(--quader-surface);
     // The list's width, which its narrow columns and its stacked rows follow (Q-UI-306, Q-UI-308), beside the filter panel or
     // without it, inside a list screen or a detail page.
     container: table / inline-size;
@@ -190,7 +190,7 @@ td.class-cell .material-icons {
     overflow: auto;
 
     &:focus-visible {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: -2px;
     }
   }
@@ -204,15 +204,15 @@ td.class-cell .material-icons {
     // centred on the first line of text (16 px), so a row reads along one line whatever the height of its first cell.
     th,
     td {
-      padding: var(--trove-space-4);
+      padding: var(--quader-space-4);
       text-align: start;
       vertical-align: top;
-      border-block-end: 1px solid var(--trove-border);
+      border-block-end: 1px solid var(--quader-border);
       line-height: 1rem;
     }
 
-    tbody :is(th, td) > :is(.btn, trove-address-field, select, .select-input, .text-input, trove-copy-button, .row-actions) {
-      margin-block: calc((1rem - var(--trove-control-height)) / 2);
+    tbody :is(th, td) > :is(.btn, quader-address-field, select, .select-input, .text-input, quader-copy-button, .row-actions) {
+      margin-block: calc((1rem - var(--quader-control-height)) / 2);
     }
 
     thead th {
@@ -223,9 +223,9 @@ td.class-cell .material-icons {
       position: sticky;
       inset-block-start: 0;
       z-index: 1;
-      background: var(--trove-surface);
-      border-block-start: 1px solid var(--trove-border);
-      color: var(--trove-heading);
+      background: var(--quader-surface);
+      border-block-start: 1px solid var(--quader-border);
+      color: var(--quader-heading);
       font-weight: 600;
       white-space: nowrap;
     }
@@ -241,7 +241,7 @@ td.class-cell .material-icons {
     }
 
     tbody tr:hover > * {
-      background: var(--trove-row-hover);
+      background: var(--quader-row-hover);
     }
 
     td.actions {
@@ -255,7 +255,7 @@ td.class-cell .material-icons {
 
       // A row's copy button (Q-UI-330) is a box of its own, so that the rule above centres it on the row's first line as it
       // does a menu button.
-      trove-copy-button {
+      quader-copy-button {
         display: inline-flex;
         vertical-align: top;
       }
@@ -277,7 +277,7 @@ td.class-cell .material-icons {
     td > .warn {
       display: inline-flex;
       align-items: center;
-      gap: var(--trove-space-1);
+      gap: var(--quader-space-1);
     }
 
     // A long address, target or URL is cut with an ellipsis; its full text is the title.
@@ -298,19 +298,19 @@ td.class-cell .material-icons {
     // Secondary text: the second line of a cell, a hint, a technical name.
     .secondary {
       display: block;
-      color: var(--trove-text-muted);
-      font-size: var(--trove-text-muted-size);
+      color: var(--quader-text-muted);
+      font-size: var(--quader-text-muted-size);
       font-weight: 400;
     }
 
     .type-cell {
       display: inline-flex;
       align-items: center;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
 
       .material-icons {
         font-size: 1.25rem;
-        color: var(--trove-text-muted);
+        color: var(--quader-text-muted);
       }
     }
   }
@@ -318,35 +318,35 @@ td.class-cell .material-icons {
   .th-inner {
     display: inline-flex;
     align-items: center;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
   }
 
   .th-sort,
   .th-help {
     display: inline-flex;
     align-items: center;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
     min-block-size: 24px;
-    padding: 0 var(--trove-space-1);
+    padding: 0 var(--quader-space-1);
     border: 0;
-    border-radius: var(--trove-radius-s);
+    border-radius: var(--quader-radius-s);
     background: none;
     color: inherit;
     font: inherit;
     cursor: pointer;
 
     &:hover {
-      background: var(--trove-row-hover);
+      background: var(--quader-row-hover);
     }
 
     &:focus-visible {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: 1px;
     }
   }
 
   .th-help {
-    color: var(--trove-text-muted);
+    color: var(--quader-text-muted);
 
     .material-icons {
       font-size: 1.125rem;
@@ -355,53 +355,53 @@ td.class-cell .material-icons {
 
   .th-arrow {
     font-size: 1.125rem;
-    color: var(--trove-text-muted);
+    color: var(--quader-text-muted);
 
     &.sorted {
-      color: var(--trove-accent);
+      color: var(--quader-accent);
     }
   }
 
   .table-status,
   .table-empty {
-    margin-block: var(--trove-space-6);
-    padding: var(--trove-space-6);
-    border: 1px dashed var(--trove-border);
-    border-radius: var(--trove-radius-m);
-    color: var(--trove-text-muted);
+    margin-block: var(--quader-space-6);
+    padding: var(--quader-space-6);
+    border: 1px dashed var(--quader-border);
+    border-radius: var(--quader-radius-m);
+    color: var(--quader-text-muted);
     text-align: center;
   }
 
   .table-more {
-    margin-block: var(--trove-space-3) 0;
+    margin-block: var(--quader-space-3) 0;
   }
 }
 
 // ---- Filter panel --------------------------------------------------------------------------
 
-.trove-filter-panel {
+.quader-filter-panel {
   display: block;
 
   .panel {
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--trove-border);
-    border-radius: var(--trove-radius-m);
-    background: var(--trove-surface-raised);
-    box-shadow: var(--trove-elevation-1);
+    border: 1px solid var(--quader-border);
+    border-radius: var(--quader-radius-m);
+    background: var(--quader-surface-raised);
+    box-shadow: var(--quader-elevation-1);
   }
 
   .panel-head {
     display: flex;
     align-items: center;
-    gap: var(--trove-space-2);
-    padding: var(--trove-space-3) var(--trove-space-3) var(--trove-space-3) var(--trove-space-4);
-    border-block-end: 1px solid var(--trove-border);
+    gap: var(--quader-space-2);
+    padding: var(--quader-space-3) var(--quader-space-3) var(--quader-space-3) var(--quader-space-4);
+    border-block-end: 1px solid var(--quader-border);
 
     h2 {
       flex: 1 1 auto;
       margin: 0;
-      font: var(--trove-type-title-medium);
+      font: var(--quader-type-title-medium);
       outline: none;
     }
   }
@@ -409,13 +409,13 @@ td.class-cell .material-icons {
   .panel-body {
     display: flex;
     flex-direction: column;
-    gap: var(--trove-space-2);
-    padding: var(--trove-space-3);
+    gap: var(--quader-space-2);
+    padding: var(--quader-space-3);
   }
 
   .panel-foot {
-    padding: var(--trove-space-3);
-    border-block-start: 1px solid var(--trove-border);
+    padding: var(--quader-space-3);
+    border-block-start: 1px solid var(--quader-border);
 
     button {
       inline-size: 100%;
@@ -423,22 +423,22 @@ td.class-cell .material-icons {
   }
 }
 
-.trove-filter-panel {
+.quader-filter-panel {
   .text-input,
   .select-input {
     inline-size: 100%;
   }
 
   // A select of the panel takes the panel's width (Q-UI-334).
-  trove-select-field {
+  quader-select-field {
     display: block;
   }
 
   .field {
     display: flex;
     flex-direction: column;
-    gap: var(--trove-space-1);
-    margin-block-end: var(--trove-space-2);
+    gap: var(--quader-space-1);
+    margin-block-end: var(--quader-space-2);
   }
 }
 
@@ -447,13 +447,13 @@ td.class-cell .material-icons {
   display: none;
 }
 
-.trove-filter-category {
+.quader-filter-category {
   display: block;
 
   .category {
-    border: 1px solid var(--trove-border);
-    border-radius: var(--trove-radius-s);
-    background: var(--trove-table-head-bg);
+    border: 1px solid var(--quader-border);
+    border-radius: var(--quader-radius-s);
+    background: var(--quader-table-head-bg);
   }
 
   .category-heading {
@@ -464,20 +464,20 @@ td.class-cell .material-icons {
   .category-toggle {
     display: flex;
     align-items: center;
-    gap: var(--trove-space-2);
+    gap: var(--quader-space-2);
     inline-size: 100%;
     min-block-size: 2.5rem;
-    padding: var(--trove-space-2) var(--trove-space-3);
+    padding: var(--quader-space-2) var(--quader-space-3);
     border: 0;
-    border-radius: var(--trove-radius-s);
+    border-radius: var(--quader-radius-s);
     background: none;
     color: inherit;
-    font: var(--trove-type-label-large);
+    font: var(--quader-type-label-large);
     text-align: start;
     cursor: pointer;
 
     &:focus-visible {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: -2px;
     }
 
@@ -487,7 +487,7 @@ td.class-cell .material-icons {
 
     .chevron {
       font-size: 1.25rem;
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
   }
 
@@ -495,11 +495,11 @@ td.class-cell .material-icons {
     inline-size: 0.5rem;
     block-size: 0.5rem;
     border-radius: 50%;
-    background: var(--trove-accent);
+    background: var(--quader-accent);
   }
 
   .category-body {
-    padding: var(--trove-space-2) var(--trove-space-3) var(--trove-space-3);
+    padding: var(--quader-space-2) var(--quader-space-3) var(--quader-space-3);
 
     &[hidden] {
       display: none;
@@ -509,8 +509,8 @@ td.class-cell .material-icons {
 .chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2);
-  margin: 0 0 var(--trove-space-3);
+  gap: var(--quader-space-2);
+  margin: 0 0 var(--quader-space-3);
   padding: 0;
   list-style: none;
 }
@@ -518,24 +518,24 @@ td.class-cell .material-icons {
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-1);
-  padding: 0 var(--trove-space-1) 0 var(--trove-space-3);
-  border: 1px solid var(--trove-border-strong);
-  border-radius: var(--trove-radius-full);
-  background: var(--trove-surface-raised);
+  gap: var(--quader-space-1);
+  padding: 0 var(--quader-space-1) 0 var(--quader-space-3);
+  border: 1px solid var(--quader-border-strong);
+  border-radius: var(--quader-radius-full);
+  background: var(--quader-surface-raised);
   font-size: 0.8125rem;
 
   button {
     display: inline-flex;
-    padding: var(--trove-space-1);
+    padding: var(--quader-space-1);
     border: 0;
-    border-radius: var(--trove-radius-full);
+    border-radius: var(--quader-radius-full);
     background: transparent;
     color: inherit;
     cursor: pointer;
 
     &:hover {
-      background: var(--trove-row-hover);
+      background: var(--quader-row-hover);
     }
 
     .material-icons {
@@ -547,7 +547,7 @@ td.class-cell .material-icons {
 
 // ---- Stacked rows ------------------------------------------------------------------------------
 
-// Every list (`<trove-data-table>`, unless `[stack]="false"`) shows each row as a block below 48 rem of the list's width
+// Every list (`<quader-data-table>`, unless `[stack]="false"`) shows each row as a block below 48 rem of the list's width
 // (Q-UI-306): the name with its description and the row's menu on the first line, then each other cell on a line of its own,
 // the address field across the full width. The head shows only its sort buttons, one row above the blocks (Q-UI-391); the data
 // table gives every cell its column's name in `data-label`, shown before the value, and marks an empty one (`data-empty`),
@@ -570,9 +570,9 @@ td.class-cell .material-icons {
       tr {
         display: flex;
         flex-wrap: wrap;
-        gap: var(--trove-space-1) var(--trove-space-4);
-        padding-block: var(--trove-space-2);
-        border-block-end: 1px solid var(--trove-border);
+        gap: var(--quader-space-1) var(--quader-space-4);
+        padding-block: var(--quader-space-2);
+        border-block-end: 1px solid var(--quader-border);
       }
 
       th {
@@ -609,9 +609,9 @@ td.class-cell .material-icons {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
-      gap: var(--trove-space-2) var(--trove-space-3);
-      padding-block: var(--trove-space-3);
-      border-block-end: 1px solid var(--trove-border);
+      gap: var(--quader-space-2) var(--quader-space-3);
+      padding-block: var(--quader-space-3);
+      border-block-end: 1px solid var(--quader-border);
     }
 
     // A row that only carries an expansion of the row above (one cell across the table) adds no block of its own.
@@ -623,7 +623,7 @@ td.class-cell .material-icons {
     tbody tr > * {
       display: block;
       grid-column: 1 / -1;
-      padding: 0 var(--trove-space-2);
+      padding: 0 var(--quader-space-2);
       border-block-end: 0;
     }
 
@@ -646,14 +646,14 @@ td.class-cell .material-icons {
     td.address-cell {
       inline-size: auto;
 
-      trove-address-field {
+      quader-address-field {
         min-inline-size: 0;
       }
     }
 
     td[data-label]::before {
       content: attr(data-label) ' ';
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
 
     // A format or a class with its icon: the column's name on the same middle as the icon and the name.
@@ -661,7 +661,7 @@ td.class-cell .material-icons {
     td.class-cell {
       display: flex;
       align-items: center;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
     }
 
     td[data-empty] {
@@ -672,7 +672,7 @@ td.class-cell .material-icons {
       text-align: start;
     }
 
-    tbody :is(th, td) > :is(.btn, trove-address-field, select, .select-input, .text-input, trove-copy-button, .row-actions) {
+    tbody :is(th, td) > :is(.btn, quader-address-field, select, .select-input, .text-input, quader-copy-button, .row-actions) {
       margin-block: 0;
     }
   }
@@ -681,7 +681,7 @@ td.class-cell .material-icons {
 // The query asks the list's frame, which holds the scrollbar beside the rows (up to 1 rem where the scrollbars are shown): the
 // rows stack below 48 rem of columns and that room, so a list whose least widths sum to 48 rem never scrolls sideways (Q-UI-330).
 @container table (max-width: 49rem) {
-  .trove-data-table.stack {
+  .quader-data-table.stack {
     @include stacked-rows;
   }
 }
@@ -689,7 +689,7 @@ td.class-cell .material-icons {
 // A list whose least widths need more than 48 rem stacks below 64 rem of columns and that room (`stackWide`, the administrator's
 // list of everyone's tokens, Q-UI-332), so it never scrolls sideways before it stacks.
 @container table (max-width: 65rem) {
-  .trove-data-table.stack.stack-wide {
+  .quader-data-table.stack.stack-wide {
     @include stacked-rows;
   }
 }

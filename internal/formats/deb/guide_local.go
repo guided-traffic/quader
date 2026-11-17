@@ -3,7 +3,7 @@ package deb
 import (
 	"embed"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // guideFiles are the Markdown templates of the guide, one file per section.

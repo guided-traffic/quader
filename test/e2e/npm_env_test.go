@@ -33,7 +33,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // ── fixture ──────────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ type npmFixture struct {
 	// clients reached the endpoint's rate budget, whose 429 the clients rightly retried (R-API-016).
 	rowTokens map[string]string
 	run       string // six hex digits, part of every package name this run publishes
-	stubHost  string // npmstub.<ns>.svc, where the counting test upstream is (deploy/dev/e2e.sh, TROVE_E2E_NPMSTUB=1)
+	stubHost  string // npmstub.<ns>.svc, where the counting test upstream is (deploy/dev/e2e.sh, QUADER_E2E_NPMSTUB=1)
 }
 
 var (
@@ -80,7 +80,7 @@ func buildNPMFixture(t testing.TB) (*npmFixture, error) {
 	adm := adminAPI(t)
 	b := make([]byte, 3)
 	_, _ = rand.Read(b)
-	fx := &npmFixture{adm: adm, run: hex.EncodeToString(b), stubHost: os.Getenv("TROVE_E2E_NPMSTUB_HOST")}
+	fx := &npmFixture{adm: adm, run: hex.EncodeToString(b), stubHost: os.Getenv("QUADER_E2E_NPMSTUB_HOST")}
 
 	create := func(body map[string]any) (reply, error) {
 		return adm.send(http.MethodPost, reposRoute, body)
@@ -93,7 +93,7 @@ func buildNPMFixture(t testing.TB) (*npmFixture, error) {
 		return nil, fmt.Errorf("create %s: %s", npmLocalKey, r)
 	}
 	if fx.stubHost == "" {
-		return nil, fmt.Errorf("TROVE_E2E_NPMSTUB_HOST is not set: the test upstream is not deployed (run the npm sets of deploy/dev/e2e.sh)")
+		return nil, fmt.Errorf("QUADER_E2E_NPMSTUB_HOST is not set: the test upstream is not deployed (run the npm sets of deploy/dev/e2e.sh)")
 	}
 	for _, body := range []map[string]any{
 		{"key": npmRemoteKey, "class": "remote", "format": "npm", "remote": map[string]any{"url": "https://" + fx.stubHost + "/"}},
@@ -165,7 +165,7 @@ func (fx *npmFixture) pkgName(label, role string, scoped bool) string {
 // ── the counting test upstream ───────────────────────────────────────────────
 
 // stubControl is the client of the control API below /-/stub/ (docs/developer/e2e.md, "Control API"): a
-// port-forward to the Service, the token of Secret trove-npmstub, the certificate verified for the Service name.
+// port-forward to the Service, the token of Secret quader-npmstub, the certificate verified for the Service name.
 type stubControl struct {
 	base string
 	tok  string
@@ -180,11 +180,11 @@ var (
 
 func stub(t testing.TB) *stubControl {
 	t.Helper()
-	host := os.Getenv("TROVE_E2E_NPMSTUB_HOST")
+	host := os.Getenv("QUADER_E2E_NPMSTUB_HOST")
 	if host == "" {
-		t.Fatal("TROVE_E2E_NPMSTUB_HOST is not set; run the npm sets of deploy/dev/e2e.sh")
+		t.Fatal("QUADER_E2E_NPMSTUB_HOST is not set; run the npm sets of deploy/dev/e2e.sh")
 	}
-	stubOnce.Do(func() { stubVal = newStubControl(t, "svc/npmstub", host, "trove-npmstub", 30*time.Second) })
+	stubOnce.Do(func() { stubVal = newStubControl(t, "svc/npmstub", host, "quader-npmstub", 30*time.Second) })
 	return stubVal
 }
 
@@ -381,7 +381,7 @@ type npmClient struct {
 	row string
 	pod int
 	tag string
-	// token is what ${TROVE_TOKEN} expands to; empty runs the client anonymously.
+	// token is what ${QUADER_TOKEN} expands to; empty runs the client anonymously.
 	token string
 	// registryKey is the repository the snippets point the client at.
 	registryKey string
@@ -435,9 +435,9 @@ func (c *npmClient) dir(name string) string { return "/work/" + c.tag + "/" + na
 // the row's caches, and the switches that keep the clients quiet and deterministic. None of it changes the
 // registry configuration, which comes from the snippet files alone.
 func (c *npmClient) environment() []string {
-	env := []string{"HOME=" + c.home(), "NODE_EXTRA_CA_CERTS=/etc/trove-ca/ca.crt"}
+	env := []string{"HOME=" + c.home(), "NODE_EXTRA_CA_CERTS=/etc/quader-ca/ca.crt"}
 	if c.token != "" {
-		env = append(env, "TROVE_TOKEN="+c.token)
+		env = append(env, "QUADER_TOKEN="+c.token)
 	}
 	switch c.family() {
 	case "npm":

@@ -51,7 +51,7 @@ interface Chip {
  * disappear where storage is blocked.
  */
 @Component({
-  selector: 'trove-package-list',
+  selector: 'quader-package-list',
   imports: [
     PageHeader,
     DatePipe,

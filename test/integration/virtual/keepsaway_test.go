@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/repository"
-	vt "github.com/guided-traffic/trove/internal/virtual/virtualtest"
+	"github.com/guided-traffic/quader/internal/repository"
+	vt "github.com/guided-traffic/quader/internal/virtual/virtualtest"
 )
 
 // keeps asks a replica's routing whether the configuration keeps a term away from a member of the

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Reasons of a request the in-flight stage refused (trove_http_requests_shed_total).
+// Reasons of a request the in-flight stage refused (quader_http_requests_shed_total).
 const (
 	ShedInFlight    = "in_flight"    // the endpoint's max_in_flight
 	ShedMemorySlots = "memory_slots" // the replica's memory charges

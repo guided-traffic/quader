@@ -21,5 +21,5 @@ RUN set -eu; \
     rm -rf /var/lib/apt/lists/*
 COPY --from=fwd fwd-linux-${TARGETARCH} /usr/local/bin/fwd
 COPY sudo.sh /usr/local/bin/sudo
-COPY entrypoint.sh /usr/local/bin/trove-entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/trove-entrypoint.sh"]
+COPY entrypoint.sh /usr/local/bin/quader-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/quader-entrypoint.sh"]

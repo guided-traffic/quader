@@ -10,9 +10,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // The settings of a remote repository (R-REPO-024) live in the `remote` section of
@@ -182,7 +182,7 @@ type RemoteLimits struct {
 
 // SecretRef points at a secret that lives outside the database (R-REPO-033,
 // R-OPS-029): a file directly under config_as_code.secrets_dir, or an
-// environment variable named TROVE_CAC_<NAME>. Exactly one member is set.
+// environment variable named QUADER_CAC_<NAME>. Exactly one member is set.
 type SecretRef struct {
 	File string `json:"file,omitempty"`
 	Env  string `json:"env,omitempty"`
@@ -243,17 +243,17 @@ func (f *SecretField) UnmarshalJSON(b []byte) error {
 
 var (
 	secretFileName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,254}$`)
-	secretEnvName  = regexp.MustCompile(`^TROVE_CAC_[A-Z0-9_]{1,200}$`)
+	secretEnvName  = regexp.MustCompile(`^QUADER_CAC_[A-Z0-9_]{1,200}$`)
 )
 
 // SecretEnvPrefix is the prefix of the only environment variables a secretRef may
-// name, so that trove's own secrets can never be routed to an upstream
+// name, so that quader's own secrets can never be routed to an upstream
 // (R-REPO-033, R-OPS-029).
-const SecretEnvPrefix = "TROVE_CAC_" //nolint:gosec // G101: the prefix of a variable name, not a credential
+const SecretEnvPrefix = "QUADER_CAC_" //nolint:gosec // G101: the prefix of a variable name, not a credential
 
 // Valid reports whether the reference follows the rules of R-OPS-029: exactly one
 // of a file name without path separators and without "..", and a variable with the
-// TROVE_CAC_ prefix. The reason is empty when it does.
+// QUADER_CAC_ prefix. The reason is empty when it does.
 func (r SecretRef) Valid() (reason string) {
 	switch {
 	case r.File != "" && r.Env != "":
@@ -265,7 +265,7 @@ func (r SecretRef) Valid() (reason string) {
 			return "file must be a plain name directly under config_as_code.secrets_dir: no path separators, no \"..\""
 		}
 	case !secretEnvName.MatchString(r.Env):
-		return "env must be a variable named " + SecretEnvPrefix + "<NAME>; trove's own variables cannot be referenced"
+		return "env must be a variable named " + SecretEnvPrefix + "<NAME>; Quader's own variables cannot be referenced"
 	}
 	return ""
 }

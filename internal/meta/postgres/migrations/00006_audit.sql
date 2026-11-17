@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Audit trail and revocation journal (M1, WP1.7). audit_event holds the audit
 -- events (R-OPS-015, R-OPS-016), one partition per calendar month (UTC), and is
@@ -43,7 +43,7 @@ CREATE INDEX audit_event_repository_idx ON audit_event (repository, occurred_at 
 CREATE INDEX audit_event_project_idx    ON audit_event (project, occurred_at DESC) WHERE project IS NOT NULL;
 CREATE INDEX audit_event_trace_idx      ON audit_event (trace_id) WHERE trace_id IS NOT NULL;
 
--- Retention is owner data: trove migrate writes audit.retention_days into the
+-- Retention is owner data: quader migrate writes audit.retention_days into the
 -- row on every run, and the runtime role can read it only. The row is seeded with
 -- the default of audit.retention_days so that the function below works from the
 -- first migration on.
@@ -86,8 +86,8 @@ BEGIN
                    sch, sch, part,
                    to_char(lo, 'YYYY-MM-DD HH24:MI:SS') || '+00',
                    to_char(hi, 'YYYY-MM-DD HH24:MI:SS') || '+00');
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trove_app') THEN
-        EXECUTE format('REVOKE ALL ON %I.%I FROM trove_app', sch, part);
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'quader_app') THEN
+        EXECUTE format('REVOKE ALL ON %I.%I FROM quader_app', sch, part);
     END IF;
 END $$;
 
@@ -113,7 +113,7 @@ BEGIN
         WHEN lock_not_available THEN
             RETURN;
         WHEN no_data_found THEN
-            RAISE EXCEPTION 'audit_policy has no row; run trove migrate';
+            RAISE EXCEPTION 'audit_policy has no row; run quader migrate';
     END;
 
     FOR k IN 0..3 LOOP
@@ -188,10 +188,10 @@ END $$;
 -- role does not exist and nothing is revoked.
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trove_app') THEN
-        EXECUTE format('REVOKE UPDATE, DELETE, TRUNCATE ON %I.audit_event FROM trove_app', current_schema());
-        EXECUTE format('REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON %I.audit_policy FROM trove_app', current_schema());
-        EXECUTE format('GRANT EXECUTE ON FUNCTION %I.audit_maintain_partitions() TO trove_app', current_schema());
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'quader_app') THEN
+        EXECUTE format('REVOKE UPDATE, DELETE, TRUNCATE ON %I.audit_event FROM quader_app', current_schema());
+        EXECUTE format('REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON %I.audit_policy FROM quader_app', current_schema());
+        EXECUTE format('GRANT EXECUTE ON FUNCTION %I.audit_maintain_partitions() TO quader_app', current_schema());
     END IF;
 END $$;
 

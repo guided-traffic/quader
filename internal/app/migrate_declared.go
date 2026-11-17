@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
-// DeclaredState is the step of `trove migrate` that applies the state the system
+// DeclaredState is the step of `quader migrate` that applies the state the system
 // configuration declares, after the schema steps and under the migration lock
 // (postgres.MigrateOptions.Declared): the role bindings of authz.role_bindings
 // (R-AUTHZ-010, Q-AUTHZ-170). The writers are the ones a replica uses, built over

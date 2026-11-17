@@ -1,5 +1,5 @@
--- trove:phase contract
--- trove:requires-app >= 0.1.0
+-- quader:phase contract
+-- quader:requires-app >= 0.1.0
 --
 -- The key grammar of Q-OCI-3 (R-OCI-002): a repository key and a project key are path components of every image reference, so both
 -- are valid OCI name components for every format. A repository key is 2 to 64 characters of ^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$

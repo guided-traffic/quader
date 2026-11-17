@@ -3,10 +3,10 @@ package oci
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci/manifest"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // Inspect reads an upload that enters the repository (R-OCI-020): a manifest, at the path of a manifest or a tag item, is untrusted

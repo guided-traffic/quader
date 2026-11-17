@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup"
 )
 
 // TestR_BAK_029_ConsistencyUnderLoad is scenario 1 of R-BAK-029 without a cluster: a loop publishes files, deletes some, trashes
@@ -65,20 +65,20 @@ func TestR_BAK_029_ConsistencyUnderLoad(t *testing.T) {
 			mu.Unlock()
 			switch i % 3 {
 			case 0:
-				if _, err := in.admin.Exec(ctx, `DELETE FROM trove.items WHERE id = (SELECT id FROM trove.items WHERE trashed_at IS NULL ORDER BY random() LIMIT 1)`); err != nil {
+				if _, err := in.admin.Exec(ctx, `DELETE FROM quader.items WHERE id = (SELECT id FROM quader.items WHERE trashed_at IS NULL ORDER BY random() LIMIT 1)`); err != nil {
 					fail(err)
 					return
 				}
 				deleted++
 			case 1:
-				if _, err := in.admin.Exec(ctx, `UPDATE trove.items SET trashed_at = now() WHERE id = (SELECT id FROM trove.items WHERE trashed_at IS NULL ORDER BY random() LIMIT 1)`); err != nil {
+				if _, err := in.admin.Exec(ctx, `UPDATE quader.items SET trashed_at = now() WHERE id = (SELECT id FROM quader.items WHERE trashed_at IS NULL ORDER BY random() LIMIT 1)`); err != nil {
 					fail(err)
 					return
 				}
 				trashed++
 			}
 			if i%15 == 14 {
-				if _, err := in.admin.Exec(ctx, `DELETE FROM trove.items WHERE trashed_at IS NOT NULL AND random() < 0.5`); err != nil {
+				if _, err := in.admin.Exec(ctx, `DELETE FROM quader.items WHERE trashed_at IS NOT NULL AND random() < 0.5`); err != nil {
 					fail(err)
 					return
 				}

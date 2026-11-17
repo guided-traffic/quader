@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_VULN_011_RescanAnswers202ThenTheRunningJobWith409: the first request enqueues the exclusive vuln-rescan job of the

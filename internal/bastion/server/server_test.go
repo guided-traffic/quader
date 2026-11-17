@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // syncBuffer is a log sink the server and the test may both touch.
@@ -58,9 +58,9 @@ func writeTokenFile(t *testing.T, dir string) string {
 func load(t *testing.T, file string, env ...string) (*config.BastionLoaded, error) {
 	t.Helper()
 	return config.LoadBastion(config.Options{
-		File: "/etc/trove/trove.yaml", Environ: env, Command: config.CommandServe,
+		File: "/etc/quader/quader.yaml", Environ: env, Command: config.CommandServe,
 		ReadFile: func(name string) ([]byte, error) {
-			if name == "/etc/trove/trove.yaml" {
+			if name == "/etc/quader/quader.yaml" {
 				return []byte(file), nil
 			}
 			return nil, os.ErrNotExist
@@ -82,7 +82,7 @@ bastion:
     volume:
       dir: %s
   main:
-    url: https://trove.example.com
+    url: https://quader.example.com
     token_file: %s
 `, extra, filepath.Join(filepath.Dir(tokenFile), "cache"), tokenFile)
 }
@@ -94,7 +94,7 @@ func start(t *testing.T, cfgYAML string) *harness {
 		t.Fatalf("config: %v", err)
 	}
 	logs := &syncBuffer{}
-	srv, err := New(Options{Loaded: loaded, Environ: []string{"TROVE_POD_NAME=trove-bastion-test"}, LogWriter: logs, DrainDelay: 10 * time.Millisecond})
+	srv, err := New(Options{Loaded: loaded, Environ: []string{"QUADER_POD_NAME=quader-bastion-test"}, LogWriter: logs, DrainDelay: 10 * time.Millisecond})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -208,9 +208,9 @@ func TestR_BAS_001_TheOpsListenerExportsTheBastionMetricsFromTheStart(t *testing
 	waitReady(t, h)
 	_, _, body := get(t, "http://"+h.srv.OpsAddr().String()+"/metrics")
 	for _, want := range []string{
-		"trove_bastion_requests_total", "trove_bastion_main_reachable 0", "trove_bastion_answer_period_seconds 300",
-		"trove_bastion_grace_period_seconds 900", "trove_bastion_token_warn_before_seconds 2.592e+06",
-		fmt.Sprintf(`trove_bastion_interface_version{side="bastion"} %d`, iface.InterfaceVersion), `trove_bastion_token_reloads_total{outcome="loaded"} 1`,
+		"quader_bastion_requests_total", "quader_bastion_main_reachable 0", "quader_bastion_answer_period_seconds 300",
+		"quader_bastion_grace_period_seconds 900", "quader_bastion_token_warn_before_seconds 2.592e+06",
+		fmt.Sprintf(`quader_bastion_interface_version{side="bastion"} %d`, iface.InterfaceVersion), `quader_bastion_token_reloads_total{outcome="loaded"} 1`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("metrics lack %q", want)
@@ -219,8 +219,8 @@ func TestR_BAS_001_TheOpsListenerExportsTheBastionMetricsFromTheStart(t *testing
 	// A client request leaves its mark in the Bastion's own counters.
 	get(t, "http://"+h.srv.ClientAddr().String()+"/api/v1/system/ping")
 	_, _, body = get(t, "http://"+h.srv.OpsAddr().String()+"/metrics")
-	if !strings.Contains(body, `trove_bastion_refused_total{reason="not_served"} 1`) {
-		t.Errorf("not_served not counted:\n%s", grepLines(body, "trove_bastion_refused_total"))
+	if !strings.Contains(body, `quader_bastion_refused_total{reason="not_served"} 1`) {
+		t.Errorf("not_served not counted:\n%s", grepLines(body, "quader_bastion_refused_total"))
 	}
 }
 
@@ -229,7 +229,7 @@ func TestR_BAS_001_TheOpsListenerExportsTheBastionMetricsFromTheStart(t *testing
 func TestR_BAS_006_AMalformedTokenFileStopsStartup(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "token")
-	secret := "trv_bst_" + strings.Repeat("A", 49)
+	secret := "qdr_bst_" + strings.Repeat("A", 49)
 	if err := os.WriteFile(path, []byte(secret), 0o600); err != nil {
 		t.Fatal(err)
 	}

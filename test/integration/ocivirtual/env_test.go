@@ -25,10 +25,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	_ "github.com/guided-traffic/trove/internal/formats/all"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	_ "github.com/guided-traffic/quader/internal/formats/all"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -106,11 +106,11 @@ func newEnv(t *testing.T, o options) *venv {
 
 	ca := testenv.WriteFile(t, t.TempDir(), "stub-ca.pem", string(ss.CAPEM))
 	e.st = testenv.NewStack(t, testenv.StackOptions{Name: "ocivirtual", Env: []string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(filepath.ToSlash(ca)) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
-		"TROVE_API_RATE_LIMITS_ENABLED=false",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(filepath.ToSlash(ca)) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		"QUADER_API_RATE_LIMITS_ENABLED=false",
 	}})
 
 	host := func(h string) map[string]any { return map[string]any{"pattern": h, "sendCredentials": false} }
@@ -179,7 +179,7 @@ func (e *venv) remote(key, upstream string, extra ...map[string]any) {
 	e.st.Repository(key, "remote", "oci", string(doc))
 }
 
-// do sends a request below /v2/<project>/<repo>/ with a registry token for the image the path names, as the trove token's holder.
+// do sends a request below /v2/<project>/<repo>/ with a registry token for the image the path names, as the quader token's holder.
 func (e *venv) do(who, actions, method, repo, path string, body []byte, hdr ...string) testenv.Answer {
 	e.t.Helper()
 	tok := e.registryToken(who, repo, imageOf(path), actions)
@@ -208,9 +208,9 @@ func imageOf(path string) string {
 }
 
 // registryToken asks the token service for a token for the actions on an image of a repository, as `docker login` and a pull or a push do.
-func (e *venv) registryToken(trove, repo, image, actions string) string {
+func (e *venv) registryToken(quader, repo, image, actions string) string {
 	e.t.Helper()
-	key := trove + "|" + repo + "|" + image + "|" + actions
+	key := quader + "|" + repo + "|" + image + "|" + actions
 	e.mu.Lock()
 	if c, ok := e.tokens[key]; ok && time.Since(c.at) < time.Minute {
 		e.mu.Unlock()
@@ -218,7 +218,7 @@ func (e *venv) registryToken(trove, repo, image, actions string) string {
 	}
 	e.mu.Unlock()
 	q := url.Values{"scope": {"repository:" + testenv.DefaultProject + "/" + repo + "/" + image + ":" + actions}}
-	a := e.st.Do(e.rep, http.MethodGet, "/v2/_token?"+q.Encode(), trove, nil)
+	a := e.st.Do(e.rep, http.MethodGet, "/v2/_token?"+q.Encode(), quader, nil)
 	var body struct {
 		Token string `json:"token"`
 	}

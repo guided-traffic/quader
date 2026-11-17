@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // downloadStatements runs n downloads of a path against a replica and returns the statements the window logged, by name.
@@ -95,7 +95,7 @@ func TestR_VULN_015_ScanningAddsNoQueryToADownload(t *testing.T) {
 	e := newEnv(t, options{})
 	e.st.LogStatements(t)
 	on := e.replica("scan-on")
-	off := e.replica("scan-off", "TROVE_VULNERABILITIES_ENABLED=false")
+	off := e.replica("scan-off", "QUADER_VULNERABILITIES_ENABLED=false")
 	e.publish(on, rNPM, mal, "1.0.0")
 	e.publish(on, rNPM, mal, "1.0.1")
 	e.finding(rNPM, "npm", mal, "1.0.0", malA, "malicious", "dismissed")
@@ -114,7 +114,7 @@ func TestR_VULN_015_ScanningAddsNoQueryToARemoteHit(t *testing.T) {
 	e := newEnv(t, options{})
 	e.st.LogStatements(t)
 	on := e.replica("scan-on")
-	off := e.replica("scan-off", "TROVE_VULNERABILITIES_ENABLED=false")
+	off := e.replica("scan-off", "QUADER_VULNERABILITIES_ENABLED=false")
 	if a := e.do(on, "GET", "/api/npm/it/"+rRemote+"/"+e.pkg, e.tokReader); a.Status != 200 {
 		t.Fatalf("document: %d %s", a.Status, a.Body)
 	}

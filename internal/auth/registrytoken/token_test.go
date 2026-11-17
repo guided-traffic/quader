@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // keyFile writes a key file <id>.key of 32 bytes filled from fill and returns its path.
@@ -60,7 +60,7 @@ var (
 func patClaims() Claims {
 	return Claims{
 		PrincipalKind: "user", PrincipalID: "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10",
-		Binding:  Binding{TokenID: "0192f0c4-0000-7000-8000-000000000001", TokenType: "pat", SecretSHA256: sha256.Sum256([]byte("trv_pat_x"))},
+		Binding:  Binding{TokenID: "0192f0c4-0000-7000-8000-000000000001", TokenType: "pat", SecretSHA256: sha256.Sum256([]byte("qdr_pat_x"))},
 		Endpoint: "default", IssuedAt: t0, ExpiresAt: t0.Add(5 * time.Minute),
 		Grant: Grant{Entries: []Entry{{Repo: webRepo, Name: "app", Actions: Pull | Push}}},
 	}
@@ -75,7 +75,7 @@ func TestRegistryTokenForm(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Run("trv_rgt_, the payload 1:<key id>:<claims>, a dot and the base64url HMAC-SHA-256 of the signed part", func(t *testing.T) {
+	t.Run("qdr_rgt_, the payload 1:<key id>:<claims>, a dot and the base64url HMAC-SHA-256 of the signed part", func(t *testing.T) {
 		if !strings.HasPrefix(tok, Prefix) || len(tok) > MaxLength {
 			t.Fatalf("token %q", tok)
 		}
@@ -87,9 +87,9 @@ func TestRegistryTokenForm(t *testing.T) {
 		if err != nil || !strings.HasPrefix(string(payload), "1:k1:{") {
 			t.Fatalf("payload %q %v", payload, err)
 		}
-		for _, secret := range []string{"trv_pat_x", "trv_pat_"} {
+		for _, secret := range []string{"qdr_pat_x", "qdr_pat_"} {
 			if strings.Contains(string(payload), secret) {
-				t.Fatal("the payload carries the trove token")
+				t.Fatal("the payload carries the quader token")
 			}
 		}
 	})
@@ -139,7 +139,7 @@ func TestRegistryTokenForm(t *testing.T) {
 	})
 	t.Run("values that are no registry token are malformed before any key is asked", func(t *testing.T) {
 		for _, raw := range []string{
-			"", "trv_rgt_", "trv_rgt_abc", "trv_rgt_a.b.c", Prefix + strings.Repeat("A", MaxLength), "trv_pat_" + tok[8:],
+			"", "qdr_rgt_", "qdr_rgt_abc", "qdr_rgt_a.b.c", Prefix + strings.Repeat("A", MaxLength), "qdr_pat_" + tok[8:],
 			tok + "=", strings.Replace(tok, ".", "..", 1),
 			Prefix + base64.RawURLEncoding.EncodeToString([]byte("2:k1:{}")) + "." + strings.Repeat("A", 43),
 			Prefix + base64.RawURLEncoding.EncodeToString([]byte("1::{}")) + "." + strings.Repeat("A", 43),
@@ -149,8 +149,8 @@ func TestRegistryTokenForm(t *testing.T) {
 			}
 		}
 	})
-	t.Run("the scanner pattern and the syntax step of a trove token (R-AUTH-022) do not match a registry token", func(t *testing.T) {
-		scanner := regexp.MustCompile(`\btrv_(?:pat|sat|cit|bst)_[0-9A-Za-z]{49}\b`)
+	t.Run("the scanner pattern and the syntax step of a quader token (R-AUTH-022) do not match a registry token", func(t *testing.T) {
+		scanner := regexp.MustCompile(`\bqdr_(?:pat|sat|cit|bst)_[0-9A-Za-z]{49}\b`)
 		if scanner.MatchString(tok) {
 			t.Fatal("the scanner pattern matches")
 		}
@@ -237,7 +237,7 @@ func TestRegistryTokenClaimsRules(t *testing.T) {
 			t.Error("NewSigner without a ring succeeded")
 		}
 	})
-	t.Run("an anonymous token names no principal and no trove token", func(t *testing.T) {
+	t.Run("an anonymous token names no principal and no quader token", func(t *testing.T) {
 		tok, err := s.Issue(Claims{Anonymous: true, Endpoint: "default", IssuedAt: t0, ExpiresAt: t0.Add(time.Minute), Grant: Grant{Catalog: true}})
 		if err != nil {
 			t.Fatal(err)
@@ -303,7 +303,7 @@ func TestTheLogScrubberHidesARegistryToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	scrub := observability.NewScrubber(observability.DefaultQueryParams())
-	long := regexp.MustCompile(`trv_rgt_[0-9A-Za-z_\-]{5,}`)
+	long := regexp.MustCompile(`qdr_rgt_[0-9A-Za-z_\-]{5,}`)
 	for _, line := range []string{
 		"Authorization: Bearer " + tok,
 		"GET /v2/web/docker-local/app/manifests/1?access_token=" + tok,

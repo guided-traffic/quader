@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/servefacts"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/servefacts"
 )
 
 // The contract-level tests of the skeleton. They carry no requirement ID: the requirements of the OCI page are counted as
@@ -207,8 +207,8 @@ func TestR_OCI_008_WriteErrorMapsEveryRowOfTheTable(t *testing.T) {
 		{"too large", errs.E(errs.TooLarge, errs.CodeOCISizeInvalid, "x"), 413, "SIZE_INVALID", nil},
 		{"quota", errs.E(errs.InsufficientStorage, errs.CodeInsufficientStorage, "x"), 413, "SIZE_INVALID", nil},
 		{
-			"unauthenticated", errs.E(errs.Unauthenticated, errs.CodeUnauthenticated, "x", errs.WithChallenge(`Bearer realm="https://trove.example.com/v2/_token"`)), 401, "UNAUTHORIZED",
-			map[string]string{"WWW-Authenticate": `Bearer realm="https://trove.example.com/v2/_token"`},
+			"unauthenticated", errs.E(errs.Unauthenticated, errs.CodeUnauthenticated, "x", errs.WithChallenge(`Bearer realm="https://quader.example.com/v2/_token"`)), 401, "UNAUTHORIZED",
+			map[string]string{"WWW-Authenticate": `Bearer realm="https://quader.example.com/v2/_token"`},
 		},
 		{"denied", errs.E(errs.Forbidden, errs.CodeForbidden, "x"), 403, "DENIED", nil},
 		{"not offered", errs.E(errs.Invalid, errs.CodeOCIUnsupported, "x"), 400, "UNSUPPORTED", nil},

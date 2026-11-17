@@ -15,8 +15,8 @@ import (
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // fakeBackend completes the startup of every connection and then answers
@@ -70,7 +70,7 @@ func TestReadPanic(t *testing.T) {
 		c := testConfig()
 		c.Host, c.Port, c.SSLMode, c.ConnectTimeout, c.TargetSessionAttrs = "127.0.0.1", port, "disable", 2*time.Second, "any"
 		c.UsernameFile = filepath.Join(dir, "user")
-		tlstest.WriteFile(t, c.UsernameFile, []byte("trove\n"))
+		tlstest.WriteFile(t, c.UsernameFile, []byte("quader\n"))
 		pc, err := newPoolConfig(c, poolSpec{
 			kind: connKind{class: classMain}, ep: mainEndpoint(c), instance: "u", maxConns: 2,
 			lifetime: time.Minute, idleTime: time.Minute, healthEach: time.Minute,
@@ -116,7 +116,7 @@ func TestTLSVerificationIsNotAnOutage(t *testing.T) {
 		c := testConfig()
 		c.Host, c.Port, c.ConnectTimeout = "127.0.0.1", port, 2*time.Second
 		c.UsernameFile = filepath.Join(dir, "user")
-		tlstest.WriteFile(t, c.UsernameFile, []byte("trove\n"))
+		tlstest.WriteFile(t, c.UsernameFile, []byte("quader\n"))
 		c.SSLRootCertFile = otherCA.WriteCA(t, dir, "ca.crt")
 		tt, err := newDBTLS(c)
 		if err != nil {
@@ -215,7 +215,7 @@ func TestReadyStandby(t *testing.T) {
 		c := testConfig()
 		c.Host, c.Port, c.SSLMode, c.ConnectTimeout, c.TargetSessionAttrs = "127.0.0.1", port, "disable", 2*time.Second, "any"
 		c.UsernameFile = filepath.Join(dir, "user")
-		tlstest.WriteFile(t, c.UsernameFile, []byte("trove\n"))
+		tlstest.WriteFile(t, c.UsernameFile, []byte("quader\n"))
 		pc, err := newPoolConfig(c, poolSpec{
 			kind: connKind{class: classMain}, ep: controlEndpoint(c), instance: "u", maxConns: 1,
 			lifetime: time.Hour, idleTime: time.Hour, healthEach: time.Hour,

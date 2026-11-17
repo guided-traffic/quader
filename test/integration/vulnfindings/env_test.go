@@ -16,13 +16,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/formats/npm"
-	"github.com/guided-traffic/trove/internal/formats/nuget"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/evaluate"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/formats/npm"
+	"github.com/guided-traffic/quader/internal/formats/nuget"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/evaluate"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -75,7 +75,7 @@ func newEnvRole(t *testing.T, role string, extra ...string) *env {
 	st.Repository("nuget-remote", "remote", "nuget", remoteCfg("https://api.nuget.org/", ""))
 	st.Repository("nuget-local", "local", "nuget", `{"vulnerabilities":{"matchPublicAdvisories":"always"}}`)
 	st.Repository("files-internal", "local", "generic", `{}`)
-	rep := st.Start(t, testenv.ReplicaOptions{Name: "rep-a", Role: role, Env: append([]string{"TROVE_JOBS_POLL_INTERVAL=200ms"}, extra...)})
+	rep := st.Start(t, testenv.ReplicaOptions{Name: "rep-a", Role: role, Env: append([]string{"QUADER_JOBS_POLL_INTERVAL=200ms"}, extra...)})
 	return &env{t: t, st: st, rep: rep, adm: adm}
 }
 

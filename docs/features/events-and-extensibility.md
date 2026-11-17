@@ -471,7 +471,7 @@ For standard handlers (EVT-023) the optional secret authenticates deliveries in 
 - **Signing off.** The secret itself is sent in a dedicated request header on every delivery.
 
 Unspecified: the header that carries the signature, any prefix on the signature value, and
-whether a timestamp is included to prevent replay. trove must define its own header names.
+whether a timestamp is included to prevent replay. Quader must define its own header names.
 
 Security note: with signing off, the secret travels in clear text inside the TLS connection on
 every request; signing should be preferred.
@@ -622,7 +622,7 @@ response, event and error tabs.
 
 Security note: the stored request includes headers and body as sent; whether rendered secrets
 (for example an `Authorization` header built from a secret) are masked in the record is
-unspecified. trove must mask them.
+unspecified. Quader must mask them.
 
 ### EVT-033 · Delivery log storage and streaming
 Priority: **P1**
@@ -1047,7 +1047,7 @@ cleanup, scanning. Long batch jobs must respect the execution limits (EVT-055); 
 pattern is processing in bounded chunks and remembering progress in the state store (EVT-054).
 
 Edge case: in a cluster, how a single execution per schedule is guaranteed is unspecified
-(trove: advisory-lock lease per INV-12).
+(Quader: advisory-lock lease per INV-12).
 
 ### EVT-053 · Script runtime API
 Priority: **Later**
@@ -1450,7 +1450,7 @@ and, where enabled, an interactive "try it" console. Each operation states its a
 
 Edge cases: open whether the documents declare OpenAPI 3.0 or 3.1.0; the spec decides.
 Deprecated operations get no OpenAPI description (EVT-072).
-Interactions: trove's OpenAPI 3.1 document is the source of truth for its API (INV-6 in
+Interactions: Quader's OpenAPI 3.1 document is the source of truth for its API (INV-6 in
 [../spec/README.md](../spec/README.md)); operation catalogs in
 [api-content-operations.md](api-content-operations.md) and
 [api-admin-operations.md](api-admin-operations.md).
@@ -1626,7 +1626,7 @@ Priority: **P2**
 <details>
 <summary>Toolsets</summary>
 
-| Toolset | Tools (capability level) | trove relevance |
+| Toolset | Tools (capability level) | Quader relevance |
 |---|---|---|
 | Tokens | Create a token (grant type, refresh token, user, scope, lifetime, refreshable, audience, description, reference token, revocable, project); list tokens with filters and ordering | [access-tokens.md](access-tokens.md) |
 | OIDC providers | Create an OIDC identity provider configuration (name, issuer, audience, description, provider type, token issuer, permissive validation, default proxy) | [oidc-ci-integration.md](oidc-ci-integration.md) |
@@ -1678,7 +1678,7 @@ Two client libraries wrap the API:
 | Java | Upload and download; file, folder and repository information; searches; builds; item management; repository, user, group and permission management; system configuration. | Published to Maven Central; builder-style client with URL, credentials and custom trust settings; Apache License 2.0; integration tests run against a live instance. |
 | Go | Services for the artifact store, token management, distribution, scanning, CI pipelines and release lifecycle, each created through a service manager. | Used as a Go module; its APIs change frequently between releases; tests need a running instance and create and empty a test repository. |
 
-For trove a Go client is cheapest generated from the OpenAPI description (EVT-070).
+For Quader a Go client is cheapest generated from the OpenAPI description (EVT-070).
 
 ## Notes for implementers
 
@@ -1691,14 +1691,14 @@ For trove a Go client is cheapest generated from the OpenAPI description (EVT-07
   partial-update shortcut would silently delete secrets of existing clients.
 - **Enabled defaults differ between webhooks and hooks.** Both create operations list the
   enabled flag as required, but the declared default is off for subscriptions (EVT-018) and on
-  for hooks (EVT-040), and the AI tool server creates both disabled. trove should require the
+  for hooks (EVT-040), and the AI tool server creates both disabled. Quader should require the
   flag explicitly on create rather than inherit either default silently.
 - **"Any local/remote" is dynamic and move/copy match on the source.** New repositories join
   "any" filters automatically (EVT-019); moved, copied and promoted events are matched against
   the repository they leave (EVT-004, EVT-006).
 - **Signatures are over the raw body bytes.** Receivers verify HMAC-SHA256 over exactly the
   bytes sent (EVT-024); re-serializing JSON before signing or sending breaks verification.
-  trove must define and document its own signature header and encoding, which EVT-024 leaves
+  Quader must define and document its own signature header and encoding, which EVT-024 leaves
   unspecified.
 - **Templates are not escaped.** Payload templates (EVT-026) insert raw scalars; an artifact
   path containing a quote breaks a JSON body unless the `json` function is used. The template
@@ -1712,5 +1712,5 @@ For trove a Go client is cheapest generated from the OpenAPI description (EVT-07
   repository operation aborts the batch (EVT-048), while token revocation runs the hook per
   token (EVT-049); duplicate scan status events (EVT-015) require idempotent consumers.
 - **Event identifiers are a public contract.** Domain names, event type names, filter keys and
-  payload field names are what integrations parse; trove defines its own names once, keeps
+  payload field names are what integrations parse; Quader defines its own names once, keeps
   them stable, and settles the open naming questions (EVT-012) before the first release.

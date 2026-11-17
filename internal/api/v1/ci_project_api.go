@@ -3,9 +3,9 @@ package v1
 import (
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The CI operations of a project (Q-CI-26), work packages W1 (the issuer choices), W3 (the mappings, the dry

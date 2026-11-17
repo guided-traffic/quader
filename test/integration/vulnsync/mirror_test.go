@@ -13,15 +13,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // mirrorOptions configure the sources of mode repository.
 func mirrorOptions(extra ...string) options {
 	return options{Filler: 100, Env: append([]string{
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=repository", "TROVE_VULNERABILITIES_SOURCES_OSV_REPOSITORY=" + mirrorName,
-		"TROVE_VULNERABILITIES_SOURCES_KEV_MODE=repository", "TROVE_VULNERABILITIES_SOURCES_KEV_REPOSITORY=" + mirrorName,
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=repository", "QUADER_VULNERABILITIES_SOURCES_OSV_REPOSITORY=" + mirrorName,
+		"QUADER_VULNERABILITIES_SOURCES_KEV_MODE=repository", "QUADER_VULNERABILITIES_SOURCES_KEV_REPOSITORY=" + mirrorName,
 	}, extra...)}
 }
 
@@ -195,7 +195,7 @@ func TestR_VULN_005_TheMirrorRepositoryMustBeAGenericLocalRepository(t *testing.
 			e.st.Repository("npm-local", "local", "npm", "{}")
 			e.worker = e.st.Start(t, testenv.ReplicaOptions{
 				Name: "worker", Role: "worker",
-				Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_REPOSITORY=" + tc.repo},
+				Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_REPOSITORY=" + tc.repo},
 			})
 			if got := e.mustFail(taskOSV, "osv", "npm", nil); got != "mirror_repository_invalid" {
 				t.Errorf("code %q", got)

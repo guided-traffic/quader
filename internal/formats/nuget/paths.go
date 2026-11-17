@@ -3,9 +3,9 @@ package nuget
 import (
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/id"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/id"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // Two kinds of path meet in this format and must not be mixed up (Q-NUGET-29).

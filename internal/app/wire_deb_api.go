@@ -5,13 +5,13 @@ import (
 	"slices"
 	"time"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	debformat "github.com/guided-traffic/trove/internal/formats/deb"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/packages"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	debformat "github.com/guided-traffic/quader/internal/formats/deb"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/packages"
 )
 
 // debAPI is the services of the Debian operations of the management API (wire_deb_api.go). Without a database or without the Debian
@@ -114,7 +114,7 @@ func (d debCoordinates) Replace(ctx context.Context, in v1.DebCoordinateChange) 
 		return nil, err
 	} else if tomb && t.SHA256 == b.SHA256 {
 		return nil, errs.E(errs.Conflict, errs.CodeDebWithheld,
-			"This file was deleted before a restore and is withheld; an administrator reinstates it with trove admin deb reinstate.")
+			"This file was deleted before a restore and is withheld; an administrator reinstates it with quader admin deb reinstate.")
 	}
 	var res rows.CoordinatesChanged
 	err = d.run.InTx(ctx, func(tx meta.Tx) error {

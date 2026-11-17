@@ -3,8 +3,8 @@
 Status: implemented in M0 for the credentials of every connection, the stored-secret key ring and its envelope, and the
 redaction of logs, spans and error texts, and in M2 for the upstream credentials of remote repositories: their sealed rows, the
 secret references and the clients that send them, and for the names an npm audit forwards to an advisory provider; the release
-pipeline's secrets as the workflows hold them. Package bytes are blobs in the object store; who can read them there besides trove is
-[H-11](../spec/storage.md#h-11--object-store-principals-bypass-troves-authorization-and-integrity-checks) on
+pipeline's secrets as the workflows hold them. Package bytes are blobs in the object store; who can read them there besides Quader is
+[H-11](../spec/storage.md#h-11--object-store-principals-bypass-quaders-authorization-and-integrity-checks) on
 [file-transfer.md](file-transfer.md).
 
 This page says where each credential lives inside the running installation, when a process reads it, what a process holds in
@@ -15,24 +15,24 @@ The rules are the code's; the requirement pages are linked.
 
 Credentials are files. The chart mounts each one from an existing Secret and names only the path in the configuration.
 No credential is an environment variable: the chart injects only non-secret object-store settings from the provisioner's
-Secret through `secretKeyRef` (`TROVE_STORAGE_S3_BUCKET`, `TROVE_STORAGE_S3_ENDPOINT`, `TROVE_STORAGE_S3_REGION`;
-[_endpoints.tpl](../../deploy/helm/trove/templates/_endpoints.tpl), `trove.s3EnvFromSecret`). The chart never creates a Secret
-([values.yaml](../../deploy/helm/trove/values.yaml), `secrets`).
+Secret through `secretKeyRef` (`QUADER_STORAGE_S3_BUCKET`, `QUADER_STORAGE_S3_ENDPOINT`, `QUADER_STORAGE_S3_REGION`;
+[_endpoints.tpl](../../deploy/helm/quader/templates/_endpoints.tpl), `quader.s3EnvFromSecret`). The chart never creates a Secret
+([values.yaml](../../deploy/helm/quader/values.yaml), `secrets`).
 
 | Credential | Where it lives | When a process reads it | Where it is not |
 |---|---|---|---|
-| PostgreSQL user and password | files under `/var/run/secrets/trove/database/` | on every new connection ([postgres/connect.go](../../internal/meta/postgres/connect.go), `beforeConnect`) | the connection string carries neither ([connString](../../internal/meta/postgres/connect.go)) |
-| Valkey user and password, Sentinel user and password | files under `/var/run/secrets/trove/valkey/` and `valkey-sentinel/` | on every connection attempt, through `AuthCredentialsFn` ([cluster/valkey_auth.go](../../internal/cluster/valkey_auth.go)) | the process holds the values only while it authenticates |
-| Object-store access key and secret | files under `/var/run/secrets/trove/s3/` (`static`), or the SDK's default chain, or a web-identity token file | the static files at most once per second ([blob/s3/credentials.go](../../internal/blob/s3/credentials.go), `fileReread`) | the default chain: see [H-74](privilege-footprint.md#h-74--the-default-object-store-credential-chain-can-reach-node-metadata) |
+| PostgreSQL user and password | files under `/var/run/secrets/quader/database/` | on every new connection ([postgres/connect.go](../../internal/meta/postgres/connect.go), `beforeConnect`) | the connection string carries neither ([connString](../../internal/meta/postgres/connect.go)) |
+| Valkey user and password, Sentinel user and password | files under `/var/run/secrets/quader/valkey/` and `valkey-sentinel/` | on every connection attempt, through `AuthCredentialsFn` ([cluster/valkey_auth.go](../../internal/cluster/valkey_auth.go)) | the process holds the values only while it authenticates |
+| Object-store access key and secret | files under `/var/run/secrets/quader/s3/` (`static`), or the SDK's default chain, or a web-identity token file | the static files at most once per second ([blob/s3/credentials.go](../../internal/blob/s3/credentials.go), `fileReread`) | the default chain: see [H-74](privilege-footprint.md#h-74--the-default-object-store-credential-chain-can-reach-node-metadata) |
 | Metrics bearer token | file `metrics.bearer_token_file` | on every request to `/metrics` with `auth: static` ([observability/metrics.go](../../internal/observability/metrics.go), `authorized`) | not logged |
 | OTLP headers | file `tracing.headers_file`, `Name: value` per line | once, when the exporter is built ([observability/otlp.go](../../internal/observability/otlp.go)) | not in the configuration |
-| Stored-secret key ring | files under `/var/run/secrets/trove/encryption/`, one per key | once, at start ([wire_keys.go](../../internal/app/wire_keys.go), `secrets.Load`) | see [H-55](../spec/architecture.md#h-55--key-files-of-the-stored-secret-key-ring-are-read-once-at-start-up) |
-| Break-glass password | one file, `/var/run/secrets/trove/break-glass/password`, from `secrets.breakGlass`; plaintext (at least 20 characters) or an Argon2id hash | at start and again whenever its modification time changes, looked at every `auth.break_glass.check_interval` ([oidc/breakglass.go](../../internal/auth/oidc/breakglass.go)); read by `api` replicas only, and by `web` in the bridge of the upgrade across the cut (R-AUTH-042) | not in PostgreSQL, not in `packages`, `worker`, the migration Job or the backup, restore and post-restore pods; not logged |
-| Upstream password or token of a remote repository | sealed in `repository_secrets.sealed`, or a reference to a file under `config_as_code.secrets_dir` or to a `TROVE_CAC_` variable | a sealed value when the repository's client is built; a reference at most every 10 s ([upstream/secret.go](../../internal/proxy/upstream/secret.go)); both only by the replica that sends a request to that upstream | not in `repositories.config` (it holds `{"set": true}` or the reference), not in an audit event, a log line or an error text, not in any API answer |
-| Signing key of a Debian repository | sealed in `deb_signing_keys.private_key`, bound to the row's id; generated by trove or imported (the passphrase of an import is used once and not kept) | opened by the index build for one signing call and by the self-test at generation and import, on the replica that does it ([formatdata/deb/keys_store.go](../../internal/formatdata/deb/keys_store.go), `SigningKeys`) | not in an API answer, an audit event, a journal entry, a log line or an error text; see [deb-signing.md](deb-signing.md) |
-| OIDC client secrets | one file per provider, `/var/run/secrets/trove/oidc-<providerId>/client-secret`, from `secrets.oidc[]` | when the file's modification time changes ([oidc/provider.go](../../internal/auth/oidc/provider.go)); `api` replicas only, and `web` in the bridge | not in PostgreSQL, not in `packages`, `worker` or any Job |
+| Stored-secret key ring | files under `/var/run/secrets/quader/encryption/`, one per key | once, at start ([wire_keys.go](../../internal/app/wire_keys.go), `secrets.Load`) | see [H-55](../spec/architecture.md#h-55--key-files-of-the-stored-secret-key-ring-are-read-once-at-start-up) |
+| Break-glass password | one file, `/var/run/secrets/quader/break-glass/password`, from `secrets.breakGlass`; plaintext (at least 20 characters) or an Argon2id hash | at start and again whenever its modification time changes, looked at every `auth.break_glass.check_interval` ([oidc/breakglass.go](../../internal/auth/oidc/breakglass.go)); read by `api` replicas only, and by `web` in the bridge of the upgrade across the cut (R-AUTH-042) | not in PostgreSQL, not in `packages`, `worker`, the migration Job or the backup, restore and post-restore pods; not logged |
+| Upstream password or token of a remote repository | sealed in `repository_secrets.sealed`, or a reference to a file under `config_as_code.secrets_dir` or to a `QUADER_CAC_` variable | a sealed value when the repository's client is built; a reference at most every 10 s ([upstream/secret.go](../../internal/proxy/upstream/secret.go)); both only by the replica that sends a request to that upstream | not in `repositories.config` (it holds `{"set": true}` or the reference), not in an audit event, a log line or an error text, not in any API answer |
+| Signing key of a Debian repository | sealed in `deb_signing_keys.private_key`, bound to the row's id; generated by Quader or imported (the passphrase of an import is used once and not kept) | opened by the index build for one signing call and by the self-test at generation and import, on the replica that does it ([formatdata/deb/keys_store.go](../../internal/formatdata/deb/keys_store.go), `SigningKeys`) | not in an API answer, an audit event, a journal entry, a log line or an error text; see [deb-signing.md](deb-signing.md) |
+| OIDC client secrets | one file per provider, `/var/run/secrets/quader/oidc-<providerId>/client-secret`, from `secrets.oidc[]` | when the file's modification time changes ([oidc/provider.go](../../internal/auth/oidc/provider.go)); `api` replicas only, and `web` in the bridge | not in PostgreSQL, not in `packages`, `worker` or any Job |
 
-The chart mounts each Secret into the pods that need it and nowhere else ([_secrets.tpl](../../deploy/helm/trove/templates/_secrets.tpl)):
+The chart mounts each Secret into the pods that need it and nowhere else ([_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl)):
 
 - the key ring (`encryption`) in the pods of every role and in the restore Job, which checks that it opens every key ID of the backup;
   never in the migration Job or the backup pods, which never seal or open a value;
@@ -55,7 +55,7 @@ A remote repository's password (the token with `authMode: bearer`) is a secret f
 | Form | In the request | In `repositories.config` and in every read | In `repository_secrets` |
 |---|---|---|---|
 | inline value | `{"value": "…"}`, through the API only | `{"set": true}` | `sealed`: AES-256-GCM under the active key, associated data `(table, column, repo_id, field)` |
-| reference | `{"secretRef": {"file": "<name>"}}` or `{"env": "TROVE_CAC_<NAME>"}` | the reference | `secret_ref` |
+| reference | `{"secretRef": {"file": "<name>"}}` or `{"env": "QUADER_CAC_<NAME>"}` | the reference | `secret_ref` |
 | keep | `{"set": true}` | `{"set": true}` | unchanged; 422 `invalid_secret` when there is no sealed value |
 
 The plaintext of a request exists in `Settings.pending` between the validation and the write, in an `observability.Secret`, and is
@@ -68,7 +68,7 @@ The associated data binds a sealed value to its repository and field: copying th
 makes that repository's client fail with `502 upstream_secret_unavailable` and leaves every other repository working
 ([upstream/clients.go](../../internal/proxy/upstream/clients.go), `secretOf`). A reference is checked twice, when the document is written
 and when the client reads it (`SecretRef.Valid`): a file name has no path separator, no `..` and no leading dot, a variable carries the
-prefix `TROVE_CAC_`, so `TROVE_DATABASE_PASSWORD` and the files of the key ring cannot be routed to an upstream whatever a row says.
+prefix `QUADER_CAC_`, so `QUADER_DATABASE_PASSWORD` and the files of the key ring cannot be routed to an upstream whatever a row says.
 
 An Owner of a project without `repositories:write-config` (R-AUTHZ-026) gives a secret as a value only: its writes and its unsaved
 upstream test refuse a reference other than the one the repository holds (422 `secret_value_required`), and a write of it that changes
@@ -95,9 +95,9 @@ A key ring holds the keys with which the database's sealed columns are encrypted
   ([keyring.go](../../internal/secrets/keyring.go), `Load`).
 - **Ring.** Every listed key opens values; only the active key seals. The active ID must be one of the listed keys
   ([config/secrets.go](../../internal/config/secrets.go), `Validate`). The chart takes the first key of `secrets.encryption.keys`
-  as active ([_helpers.tpl](../../deploy/helm/trove/templates/_helpers.tpl)).
+  as active ([_helpers.tpl](../../deploy/helm/quader/templates/_helpers.tpl)).
 - **Fingerprint.** `Fingerprint` is an HMAC-SHA-256 under a key derived with HKDF-SHA-256 from the active key, info
-  `trove fingerprint v1`. It has no call site.
+  `quader fingerprint v1`. It has no call site.
 - **Canary.** `SealCanary` and `CheckCanary` seal and open a known text in the `secret_key_canary` row of a key. Every role checks
   them at start, before it serves ([wire_api.go](../../internal/app/wire_api.go), `wireKeyRing`, `verifyKeyRingCanaries`): a replica
   refuses to start when sealed rows reference a key ID its ring lacks (`RequireKeys`, which names the missing IDs), and when its ring
@@ -116,7 +116,7 @@ A sealed value is stored as `v1:<key ID>:<base64(nonce ‖ ciphertext ‖ tag)>`
 - the key ID is in clear, so a value under an old key is found and re-sealed by its ID, and an unknown ID names only the ID
   (`ErrUnknownKey`);
 - the additional data binds the value to its row and column. It is the count of primary-key parts, then the strings
-  `trove/sealed/v1`, the table name, the column name and each primary-key part, every string prefixed with its length as
+  `quader/sealed/v1`, the table name, the column name and each primary-key part, every string prefixed with its length as
   an unsigned varint ([keyring.go](../../internal/secrets/keyring.go), `aad`). A value moved to another row or column fails
   authentication (`ErrAuthentication`), and two different row keys do not encode alike (`("a:b")` and `("a", "b")` differ);
 - a row key with the wrong number of parts is refused (`ErrRowKey`), and a column that is not registered cannot be sealed or
@@ -135,7 +135,7 @@ Secrets are kept out of every log record, span attribute, error text and ring-bu
   send it calls that. `config.Secret` does the same for configuration values ([config/secret.go](../../internal/config/secret.go));
 - attribute keys containing `password`, `secret`, `token`, `authorization`, `cookie`, `api_key`, `apikey`, `private_key` or
   `credential` have their value replaced (`token_id` and `token_type` are exempt);
-- free text: `trv_<prefix>_<value>` tokens keep the prefix and lose the value, `Bearer` and `Basic` values are replaced, URL user
+- free text: `qdr_<prefix>_<value>` tokens keep the prefix and lose the value, `Bearer` and `Basic` values are replaced, URL user
   information is replaced up to the last `@` before the authority ends, the poll secret of a `/auth/cli/` path is replaced, and
   the values of the configured query parameters (`log.request.redact_query_params`) are replaced.
 
@@ -154,12 +154,12 @@ The in-memory ring buffer holds the same lines the log handler writes, bounded b
 ## What a process holds, and what Valkey may hold
 
 A replica holds in memory the key ring and the credentials it has read, for as long as it uses them. The plaintext of a sealed
-value exists only while a request needs it. Nothing trove writes to disk holds a credential: the spool holds bodies of running
-uploads, with mode `0600` and UUID names ([spool.go](../../internal/blob/spool.go)), and its contents are not encrypted by trove
-([H-2](../spec/architecture.md#h-2--the-upload-spool-is-not-encrypted-by-trove)).
+value exists only while a request needs it. Nothing Quader writes to disk holds a credential: the spool holds bodies of running
+uploads, with mode `0600` and UUID names ([spool.go](../../internal/blob/spool.go)), and its contents are not encrypted by Quader
+([H-2](../spec/architecture.md#h-2--the-upload-spool-is-not-encrypted-by-quader)).
 
 Valkey holds coordination state and the negative cache of remote repositories. Keys are built from registered families with a
-mandatory expiry ([valkey_keys.go](../../internal/cluster/valkey_keys.go)); their parts match `[A-Za-z0-9_-]`. Nothing trove
+mandatory expiry ([valkey_keys.go](../../internal/cluster/valkey_keys.go)); their parts match `[A-Za-z0-9_-]`. Nothing Quader
 serves is read from Valkey and no positive authentication or authorization result is ([spec Q-ARCH-16](../spec/architecture.md#q-arch-16--what-valkey-may-hold)).
 What a Valkey writer can do is on [roles-and-trust-boundaries.md](roles-and-trust-boundaries.md).
 
@@ -168,7 +168,7 @@ What a Valkey writer can do is on [roles-and-trust-boundaries.md](roles-and-trus
 `npm audit`, `pnpm audit` (pnpm 11 and later) and `yarn npm audit` post a project's dependency names and versions to the
 registry. A remote repository forwards them to its advisory provider ([R-NPM-038](../spec/formats/npm.md#r-npm-038--security-audit-endpoints),
 [handlers_audit.go](../../internal/formats/npm/handlers_audit.go)); a virtual repository forwards through its first forwarding
-remote member. This is the one place where trove sends data a client posted to a third party.
+remote member. This is the one place where Quader sends data a client posted to a third party.
 
 | What | Leaves the installation | Is withheld |
 |---|---|---|
@@ -180,7 +180,7 @@ remote member. This is the one place where trove sends data a client posted to a
 
 One statement decides all of it before the provider is asked (`NPMAuditNames` in
 [npm_remote.sql](../../internal/meta/postgres/queries/npm_remote.sql)), on committed rows, so a claim made a moment ago on another
-replica withholds already. The withheld names are counted in `trove_npm_audit_names_withheld_total{repo,reason}` and named, as a
+replica withholds already. The withheld names are counted in `quader_npm_audit_names_withheld_total{repo,reason}` and named, as a
 count, in the `npm-notice` header of the answer. Nothing of the request is stored, logged beyond the access record, or kept in Valkey.
 
 Where the request goes and what travels with it:
@@ -193,16 +193,16 @@ Where the request goes and what travels with it:
 - **The credential** is the remote's sealed upstream credential, added by the client's credential policy only on a request to the
   upstream origin or to an `extraHosts` entry with `sendCredentials: true`
   ([egress.md](egress.md#which-hosts-receive-credentials)). A `providerURL` on another host gets no credential.
-- **The answer** is the provider's body, passed to the client unchanged and bounded to 128 MiB; trove does not check what it says
+- **The answer** is the provider's body, passed to the client unchanged and bounded to 128 MiB; Quader does not check what it says
   ([H-300](#h-300--the-advisory-providers-answer-is-trusted-as-it-is)).
 
-What the audit does not send: the client's own credential (the request to the provider is trove's), the `npm-command`, `npm-session`
+What the audit does not send: the client's own credential (the request to the provider is Quader's), the `npm-command`, `npm-session`
 and other client headers, the project's name, and any name of the table's lower rows. What it does send is still the combination of
 public names a project uses: [H-34](../spec/formats/npm.md#h-34--audit-forwarding-discloses-the-dependency-set).
 
 ## The release pipeline's credentials
 
-The workflows that test, release and publish trove hold credentials that the running installation never sees, but that
+The workflows that test, release and publish Quader hold credentials that the running installation never sees, but that
 decide what every installation pulls: the image and the chart. They are secrets of the organisation
 ([releasing.md](../developer/releasing.md#secrets-and-settings)), and each job that names one receives it. Every action is
 referenced by a tag, not by a commit (the owner's decision of 2026-10-31,
@@ -211,7 +211,7 @@ what that job holds:
 
 | Credential | What it can do | Jobs that hold it | Third-party actions in those jobs |
 |---|---|---|---|
-| `DOCKERHUB_PAT`, the access token of the Docker Hub user `guidedtraffic` | push `docker.io/guidedtraffic/trove` under any tag | `Build Docker Image` ([build.yml](../../.github/workflows/build.yml)); in [release.yml](../../.github/workflows/release.yml) `image`, `container-scan`, `integration`, `s3-conformance`, `e2e`, `e2e-npm`, `e2e-nuget`, `e2e-ci`, `e2e-bastion`, `e2e-vuln` and `e2e-oci`, which log in for base-image pulls, on pull requests from this repository's branches too ([H-80](../spec/ha-and-helm.md#h-80--self-hosted-runners-build-the-code-of-every-pull-request)); the five before `e2e-oci` run on GitHub-hosted runners (`ubuntu-24.04`), `e2e-oci` on a large runner; in [performance.yml](../../.github/workflows/performance.yml) the fifteen jobs `latency`, `vuln-perf`, `npm-ha-soak`, `e2e`, `e2e-npm`, `e2e-nuget`, `e2e-oci`, `e2e-ci`, `e2e-bastion`, `e2e-vuln`, `e2e-backup`, `e2e-edge`, `e2e-alerts` and `e2e-upgrade`, which log in for image pulls, every night and on a dispatch of any ref the dispatcher can push to | `Build Docker Image`: the `docker/*` actions, `anchore/sbom-action@v0`, `softprops/action-gh-release@v3`, `docker/scout-action@v1` (the token as an input), and the throwaway registry container (the image `SBOM_GENERATOR_REGISTRY_IMAGE`, by digest) that holds no credential and shares Docker's default bridge network with the builder and the `RUN` steps of the image build (the generator is referenced by digest, so none of them can replace what the builder runs) (the job `sbom-generator` of release.yml pulls anonymously and holds no secret); `container-scan`: `aquasecurity/trivy-action@v0.36.0`, after `docker/login-action` has stored the login on the runner; the other jobs of release.yml and performance.yml: `docker/*`, `azure/setup-helm@v5`, `azure/setup-kubectl@v5` |
+| `DOCKERHUB_PAT`, the access token of the Docker Hub user `guidedtraffic` | push `docker.io/guidedtraffic/quader` under any tag | `Build Docker Image` ([build.yml](../../.github/workflows/build.yml)); in [release.yml](../../.github/workflows/release.yml) `image`, `container-scan`, `integration`, `s3-conformance`, `e2e`, `e2e-npm`, `e2e-nuget`, `e2e-ci`, `e2e-bastion`, `e2e-vuln` and `e2e-oci`, which log in for base-image pulls, on pull requests from this repository's branches too ([H-80](../spec/ha-and-helm.md#h-80--self-hosted-runners-build-the-code-of-every-pull-request)); the five before `e2e-oci` run on GitHub-hosted runners (`ubuntu-24.04`), `e2e-oci` on a large runner; in [performance.yml](../../.github/workflows/performance.yml) the fifteen jobs `latency`, `vuln-perf`, `npm-ha-soak`, `e2e`, `e2e-npm`, `e2e-nuget`, `e2e-oci`, `e2e-ci`, `e2e-bastion`, `e2e-vuln`, `e2e-backup`, `e2e-edge`, `e2e-alerts` and `e2e-upgrade`, which log in for image pulls, every night and on a dispatch of any ref the dispatcher can push to | `Build Docker Image`: the `docker/*` actions, `anchore/sbom-action@v0`, `softprops/action-gh-release@v3`, `docker/scout-action@v1` (the token as an input), and the throwaway registry container (the image `SBOM_GENERATOR_REGISTRY_IMAGE`, by digest) that holds no credential and shares Docker's default bridge network with the builder and the `RUN` steps of the image build (the generator is referenced by digest, so none of them can replace what the builder runs) (the job `sbom-generator` of release.yml pulls anonymously and holds no secret); `container-scan`: `aquasecurity/trivy-action@v0.36.0`, after `docker/login-action` has stored the login on the runner; the other jobs of release.yml and performance.yml: `docker/*`, `azure/setup-helm@v5`, `azure/setup-kubectl@v5` |
 | `APP_CLIENT_ID`, `APP_PRIVATE_KEY`, the organisation's GitHub App | an installation token for this repository: tags, releases (a release starts build.yml), commits | `Semantic Release` (release.yml, token with `contents: write`), `renovate` ([renovate.yml](../../.github/workflows/renovate.yml), token with every permission of the App) | `Semantic Release`: none, only `actions/*`; `renovate`: `renovatebot/github-action@v46.3.10` |
 | `GITHUB_TOKEN` of build.yml (the workflow default is `contents: read`) | `Build Docker Image`: `contents: write`, for the release's assets; `Release Helm Chart to GitHub Pages`: `contents: write`, for the release's assets and the push of the `gh-pages` branch that serves the chart repository, and `pages: write`, which no step of the job uses (GitHub Pages builds the site from the push). No job holds `id-token`, `attestations` or `actions` | both jobs of build.yml | as for `DOCKERHUB_PAT`, and `azure/setup-helm@v5` and `softprops/action-gh-release@v3` in the chart job |
 | `GITHUB_TOKEN` of performance.yml (the workflow default is `contents: read`) | `vuln-perf`: `issues: write`, to open a regression issue after a miss or a failed run; it can open, edit and comment on every issue of the repository. The other jobs: `contents: read` | `vuln-perf` | `docker/login-action@v4` (with `DOCKERHUB_PAT` in the same job) |
@@ -224,7 +224,7 @@ No job runs in a GitHub environment with protection rules, so the secrets are bo
 
 The gaps of the spec pages whose mechanism this page describes:
 
-- [H-2](../spec/architecture.md#h-2--the-upload-spool-is-not-encrypted-by-trove): the upload spool is not encrypted by trove.
+- [H-2](../spec/architecture.md#h-2--the-upload-spool-is-not-encrypted-by-quader): the upload spool is not encrypted by Quader.
 - [H-8](../spec/repositories-and-proxy.md#h-8--the-stored-secret-key-sits-on-every-replica): the stored-secret key sits on every replica.
 - [H-55](../spec/architecture.md#h-55--key-files-of-the-stored-secret-key-ring-are-read-once-at-start-up): key files of the stored-secret key ring are read once at start-up.
 - [H-34](../spec/formats/npm.md#h-34--audit-forwarding-discloses-the-dependency-set): the audit forward discloses the dependency set.
@@ -233,11 +233,11 @@ The gaps of the spec pages whose mechanism this page describes:
 
 ### H-768 · The dev stack archives PostgreSQL with the blob bucket's login
 
-Stage: the WAL archive and the base backups of `TROVE_PITR=1` ([pitr.yaml](../../deploy/dev/pitr.yaml)), which R-HA-023 asks to keep in a bucket
+Stage: the WAL archive and the base backups of `QUADER_PITR=1` ([pitr.yaml](../../deploy/dev/pitr.yaml)), which R-HA-023 asks to keep in a bucket
 other than the blob bucket and under different credentials.
 
-Live in the dev profile only: the `ObjectStore trove-pg-archive` reads the Secret `trove-s3`, the one SeaweedFS identity that also writes and
-deletes the blob bucket and the backup target, so a compromised trove replica that holds that login could delete the archive. The bucket is
+Live in the dev profile only: the `ObjectStore quader-pg-archive` reads the Secret `quader-s3`, the one SeaweedFS identity that also writes and
+deletes the blob bucket and the backup target, so a compromised Quader replica that holds that login could delete the archive. The bucket is
 separate, the link is TLS against the dev CA. A production installation gives the archive its own login; the dev SeaweedFS identity file
 (one identity) has no second one. Subject: the archive of the dev cluster, which holds nothing but test data.
 
@@ -274,8 +274,8 @@ choice of the upstream URL.
 
 Live: whoever may create or change a remote repository chooses both the URL and the reference, so a reference to a file that belongs to
 another repository's upstream, with this repository's URL pointing at a host the holder controls, sends that file's content there in
-the `Authorization` header. The same holds for every variable with the prefix `TROVE_CAC_`. The rules of R-OPS-029 confine the reference
-to the directory and the prefix, so trove's own secrets are out of reach, but they do not separate the secrets inside them. Subject: the
+the `Authorization` header. The same holds for every variable with the prefix `QUADER_CAC_`. The rules of R-OPS-029 confine the reference
+to the directory and the prefix, so Quader's own secrets are out of reach, but they do not separate the secrets inside them. Subject: the
 upstream tokens that the operator mounts under `config_as_code.secrets_dir`, one per partner.
 
 What makes it real: one `secrets_dir` that holds the tokens of several upstreams and a repository administrator who is not meant to
@@ -292,7 +292,7 @@ What an Owner still reaches of an upstream an administrator configured is
 Stage: the answer of an audit forward ([handlers_audit.go](../../internal/formats/npm/handlers_audit.go), `handleAudit`,
 [R-NPM-038](../spec/formats/npm.md#r-npm-038--security-audit-endpoints)).
 
-Live wherever a remote forwards (the default). trove passes the provider's 200 body to the client unchanged; it checks neither its
+Live wherever a remote forwards (the default). Quader passes the provider's 200 body to the client unchanged; it checks neither its
 shape nor a signature. Subject: what `npm audit`, `pnpm audit` and `yarn npm audit` report to developers and CI gates. A provider, or
 whoever controls the path to it, can leave out advisories (a vulnerable package reported clean) or add false ones (a build blocked).
 The TLS verification of the upstream client protects the path; the provider itself is the operator's choice, by default the upstream.
@@ -323,9 +323,9 @@ names were withheld; pnpm 11 and 12 and Yarn 4 do not print it on a successful a
 Subject: the developers and CI jobs that audit with pnpm or Yarn. A package installed from elsewhere (a lockfile resolved against
 another registry, a tarball dependency) that a remote never fetched is reported clean, whatever advisories exist for it.
 
-What makes it real: lockfiles that were not resolved through trove, and audit gates in CI that run `pnpm audit` or `yarn npm audit`.
-Mitigation: install through trove before auditing (an install fetches every public package of the tree), and watch
-`trove_npm_audit_names_withheld_total{reason="not_proxied"}`, whose sustained growth is the revisit condition of
+What makes it real: lockfiles that were not resolved through Quader, and audit gates in CI that run `pnpm audit` or `yarn npm audit`.
+Mitigation: install through Quader before auditing (an install fetches every public package of the tree), and watch
+`quader_npm_audit_names_withheld_total{reason="not_proxied"}`, whose sustained growth is the revisit condition of
 [Q-NPM-3](../spec/formats/npm.md#q-npm-3--audit-forwarding-on-by-default).
 
 ### H-530 · The mirror status shows the engine's failure text as stored

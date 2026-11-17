@@ -33,7 +33,7 @@ func armoredDebianKeyring(tb testing.TB) []byte {
 
 func seedKeys(f *testing.F) (secret, public []byte) {
 	f.Helper()
-	secret, public, _, err := Generate("trove p/r", base.Add(-time.Hour))
+	secret, public, _, err := Generate("quader p/r", base.Add(-time.Hour))
 	if err != nil {
 		f.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func FuzzParseSecret(f *testing.F) {
 }
 
 func FuzzVerifyClear(f *testing.F) {
-	secret, public, _, err := Generate("trove p/r", base.Add(-time.Hour))
+	secret, public, _, err := Generate("quader p/r", base.Add(-time.Hour))
 	if err != nil {
 		f.Fatal(err)
 	}

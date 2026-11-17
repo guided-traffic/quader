@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The tests of the per-request contract (Decider, Q-AUTHZ-159) and of the

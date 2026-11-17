@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // packageRoutes stands in for the package formats that do not exist yet: one
@@ -68,7 +68,7 @@ func endpointsJSON(listen string, more string) string {
 
 func TestEndpointRefusesAnonymousByDefault(t *testing.T) {
 	h := startEndpoints(t, "web", map[string]string{
-		"TROVE_SERVER_ENDPOINTS": fmt.Sprintf(`{"customers":{"listen":%q,"base_url":"https://packages.example.com"}}`, anyPort),
+		"QUADER_SERVER_ENDPOINTS": fmt.Sprintf(`{"customers":{"listen":%q,"base_url":"https://packages.example.com"}}`, anyPort),
 	})
 	cust := h.app.EndpointAddr("customers")
 	t.Run("R-EP-010 R-EP-005 a further endpoint answers every request without a credential with the same 401", func(t *testing.T) {
@@ -121,7 +121,7 @@ func requestRecords(logs *syncBuffer) []map[string]any {
 }
 
 func TestEndpointsOnOneReplica(t *testing.T) {
-	h := startEndpoints(t, "web", map[string]string{"TROVE_SERVER_ENDPOINTS": endpointsJSON(anyPort, "")})
+	h := startEndpoints(t, "web", map[string]string{"QUADER_SERVER_ENDPOINTS": endpointsJSON(anyPort, "")})
 	def := h.app.EndpointAddr("default")
 	cust := h.app.EndpointAddr("customers")
 	if def == "" || cust == "" {
@@ -135,7 +135,7 @@ func TestEndpointsOnOneReplica(t *testing.T) {
 	})
 
 	t.Run("R-EP-003 a request on the second listener with the host of the default endpoint answers 421", func(t *testing.T) {
-		code, body := hostGet(t, cust, "trove.example.com", "/api/npm/it/npm-all/")
+		code, body := hostGet(t, cust, "quader.example.com", "/api/npm/it/npm-all/")
 		var p map[string]any
 		_ = json.Unmarshal([]byte(body), &p)
 		if code != 421 || p["code"] != "misdirected_request" {
@@ -148,7 +148,7 @@ func TestEndpointsOnOneReplica(t *testing.T) {
 
 	t.Run("R-EP-002 R-EP-009 the endpoint in the request log and the metrics comes from the listener, not from Host or a forwarded host", func(t *testing.T) {
 		hostGet(t, def, "packages.example.com", "/api/v1/system/ping", "X-Forwarded-Host", "packages.example.com")
-		hostGet(t, cust, "trove.example.com", "/api/npm/it/xx/", "X-Forwarded-Host", "trove.example.com")
+		hostGet(t, cust, "quader.example.com", "/api/npm/it/xx/", "X-Forwarded-Host", "quader.example.com")
 		hostGet(t, cust, "pkgs.example.org", "/api/npm/it/xx/")
 		deadline := time.Now().Add(startGuard)
 		var onDefault, mis, own map[string]any
@@ -168,7 +168,7 @@ func TestEndpointsOnOneReplica(t *testing.T) {
 		if onDefault == nil || onDefault["host"] != "packages.example.com" {
 			t.Errorf("default record = %v", onDefault)
 		}
-		if mis == nil || mis["endpoint"] != "customers" || mis["host"] != "trove.example.com" {
+		if mis == nil || mis["endpoint"] != "customers" || mis["host"] != "quader.example.com" {
 			t.Errorf("misdirected record = %v", mis)
 		}
 		if own == nil || own["endpoint"] != "customers" || own["host"] != "pkgs.example.org" {
@@ -176,15 +176,15 @@ func TestEndpointsOnOneReplica(t *testing.T) {
 		}
 		_, _, metrics := get(t, h.ops+"/metrics")
 		for _, want := range []string{
-			`trove_http_requests_total{code="200",endpoint="default",handler="GET /api/v1/system/ping",listener="client",method="GET"}`,
-			`trove_http_requests_total{code="200",endpoint="customers",handler="GET /api/npm/{projectKey}/{repoKey}/{rest...}",listener="client",method="GET"}`,
-			`trove_endpoint_misdirected_total{endpoint="customers"} 2`,
-			`trove_endpoint_misdirected_total{endpoint="default"} 0`,
-			`trove_endpoint_listener_up{endpoint="customers"} 1`,
-			`trove_endpoint_listener_up{endpoint="default"} 1`,
+			`quader_http_requests_total{code="200",endpoint="default",handler="GET /api/v1/system/ping",listener="client",method="GET"}`,
+			`quader_http_requests_total{code="200",endpoint="customers",handler="GET /api/npm/{projectKey}/{repoKey}/{rest...}",listener="client",method="GET"}`,
+			`quader_endpoint_misdirected_total{endpoint="customers"} 2`,
+			`quader_endpoint_misdirected_total{endpoint="default"} 0`,
+			`quader_endpoint_listener_up{endpoint="customers"} 1`,
+			`quader_endpoint_listener_up{endpoint="default"} 1`,
 		} {
 			if !strings.Contains(metrics, want) {
-				t.Errorf("metrics lack %s\n%s", want, grepLines(metrics, "trove_http_requests_total"))
+				t.Errorf("metrics lack %s\n%s", want, grepLines(metrics, "quader_http_requests_total"))
 			}
 		}
 		if strings.Contains(metrics, `listener="ops",endpoint`) || strings.Contains(metrics, `endpoint="customers",handler="GET /readyz"`) {
@@ -193,7 +193,7 @@ func TestEndpointsOnOneReplica(t *testing.T) {
 	})
 
 	t.Run("R-EP-003 a forwarded host from a peer outside the trusted proxies is not read", func(t *testing.T) {
-		code, _ := hostGet(t, cust, "trove.example.com", "/api/npm/it/xx/", "X-Forwarded-Host", "packages.example.com", "X-Forwarded-Proto", "https")
+		code, _ := hostGet(t, cust, "quader.example.com", "/api/npm/it/xx/", "X-Forwarded-Host", "packages.example.com", "X-Forwarded-Proto", "https")
 		if code != 421 {
 			t.Fatalf("%d", code)
 		}
@@ -212,10 +212,10 @@ func TestEndpointsOnOneReplica(t *testing.T) {
 			t.Errorf("package route: %d", code)
 		}
 		// the default endpoint keeps every family
-		if code, _ := hostGet(t, def, "trove.example.com", "/api/v1/system/info"); code != 200 && code != 401 && code != 403 {
+		if code, _ := hostGet(t, def, "quader.example.com", "/api/v1/system/info"); code != 200 && code != 401 && code != 403 {
 			t.Errorf("default api: %d", code)
 		}
-		if code, _ := hostGet(t, def, "trove.example.com", "/api/v1/system/ping"); code != 200 {
+		if code, _ := hostGet(t, def, "quader.example.com", "/api/v1/system/ping"); code != 200 {
 			t.Errorf("default ping: %d", code)
 		}
 	})
@@ -241,13 +241,13 @@ func TestEndpointsOnOneReplica(t *testing.T) {
 
 	t.Run("R-EP-003 the default endpoint answers 421 once hosts are configured for it", func(t *testing.T) {
 		h := startEndpoints(t, "web", map[string]string{
-			"TROVE_SERVER_ENDPOINTS": fmt.Sprintf(`{"default":{"hosts":["trove.example.com"]},"customers":{"listen":%q,"base_url":"https://packages.example.com","auth":{"anonymous":true}}}`, anyPort),
+			"QUADER_SERVER_ENDPOINTS": fmt.Sprintf(`{"default":{"hosts":["quader.example.com"]},"customers":{"listen":%q,"base_url":"https://packages.example.com","auth":{"anonymous":true}}}`, anyPort),
 		})
 		def := h.app.EndpointAddr("default")
 		if code, _ := hostGet(t, def, "packages.example.com", "/api/v1/system/ping"); code != 421 {
 			t.Errorf("foreign host on :8080: %d", code)
 		}
-		if code, _ := hostGet(t, def, "trove.example.com", "/api/v1/system/ping"); code != 200 {
+		if code, _ := hostGet(t, def, "quader.example.com", "/api/v1/system/ping"); code != 200 {
 			t.Errorf("own host on :8080: %d", code)
 		}
 	})
@@ -257,7 +257,7 @@ func TestEndpointProcesses(t *testing.T) {
 	// A listener a process must open binds anyPort and is read back; a listener it must not open is a port the test holds, so a
 	// bind attempt fails the start-up (F-109: no port is picked first and bound later).
 	pooled := func(custListen string, extra map[string]string) map[string]string {
-		m := map[string]string{"TROVE_SERVER_ENDPOINTS": endpointsJSON(custListen, `,"pool":"ep-customers"`)}
+		m := map[string]string{"QUADER_SERVER_ENDPOINTS": endpointsJSON(custListen, `,"pool":"ep-customers"`)}
 		for k, v := range extra {
 			m[k] = v
 		}
@@ -275,7 +275,7 @@ func TestEndpointProcesses(t *testing.T) {
 	}
 
 	t.Run("R-EP-002 a process of the endpoint's pool opens that endpoint's listener and not :8080", func(t *testing.T) {
-		h := startEndpoints(t, "web", pooled(anyPort, map[string]string{"TROVE_POOL_NAME": "ep-customers", "TROVE_SERVER_LISTEN": heldPort(t)}))
+		h := startEndpoints(t, "web", pooled(anyPort, map[string]string{"QUADER_POOL_NAME": "ep-customers", "QUADER_SERVER_LISTEN": heldPort(t)}))
 		if got := h.app.EndpointNames(); len(got) != 1 || got[0] != "customers" {
 			t.Fatalf("endpoints = %v", got)
 		}
@@ -299,7 +299,7 @@ func TestEndpointProcesses(t *testing.T) {
 	})
 
 	t.Run("R-EP-002 a process in a pool that no endpoint names serves the endpoints without a pool", func(t *testing.T) {
-		h := startEndpoints(t, "web", pooled(heldPort(t), map[string]string{"TROVE_POOL_NAME": "path-pool"}))
+		h := startEndpoints(t, "web", pooled(heldPort(t), map[string]string{"QUADER_POOL_NAME": "path-pool"}))
 		if got := h.app.EndpointNames(); len(got) != 1 || got[0] != "default" {
 			t.Fatalf("endpoints = %v", got)
 		}
@@ -310,7 +310,7 @@ func TestEndpointProcesses(t *testing.T) {
 		if got := h.app.EndpointNames(); len(got) != 2 || !listening(h.app.EndpointAddr("customers")) {
 			t.Fatalf("all: %v", got)
 		}
-		w := startEndpoints(t, "worker", pooled(heldPort(t), map[string]string{"TROVE_SERVER_LISTEN": heldPort(t)}))
+		w := startEndpoints(t, "worker", pooled(heldPort(t), map[string]string{"QUADER_SERVER_LISTEN": heldPort(t)}))
 		if w.app.EndpointAddr("customers") != "" || w.app.EndpointAddr("default") != "" {
 			t.Fatal("a worker opened an endpoint listener")
 		}
@@ -322,7 +322,7 @@ func TestEndpointProcesses(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer busy.Close()
-		env := baseEnv(t, map[string]string{"TROVE_SERVER_ENDPOINTS": endpointsJSON(busy.Addr().String(), "")})
+		env := baseEnv(t, map[string]string{"QUADER_SERVER_ENDPOINTS": endpointsJSON(busy.Addr().String(), "")})
 		a, err := New(Options{Loaded: loadCfg(t, "web", env), Role: "web", Environ: env, LogWriter: io.Discard, SkipInfrastructure: true})
 		if err != nil {
 			t.Fatal(err)
@@ -349,11 +349,11 @@ func TestEndpointListenerTLS(t *testing.T) {
 	dir := t.TempDir()
 	exact, exactKey := ca.Issue(t, tlstest.Options{DNSNames: []string{"packages.example.com"}, Serial: big.NewInt(1001)}).Files(t, dir, "exact")
 	wild, wildKey := ca.Issue(t, tlstest.Options{DNSNames: []string{"*.packages.example.com"}, Serial: big.NewInt(1002)}).Files(t, dir, "wild")
-	def, defKey := ca.Issue(t, tlstest.Options{DNSNames: []string{"trove.example.com", "localhost"}, IPs: []net.IP{net.IPv4(127, 0, 0, 1)}, Serial: big.NewInt(1003)}).Files(t, dir, "default")
+	def, defKey := ca.Issue(t, tlstest.Options{DNSNames: []string{"quader.example.com", "localhost"}, IPs: []net.IP{net.IPv4(127, 0, 0, 1)}, Serial: big.NewInt(1003)}).Files(t, dir, "default")
 	h := startEndpoints(t, "web", map[string]string{
-		"TROVE_SERVER_TLS_CERTIFICATES":    certificatesEnv(def, defKey),
-		"TROVE_SERVER_TLS_RELOAD_INTERVAL": "1s",
-		"TROVE_SERVER_ENDPOINTS": fmt.Sprintf(`{"customers":{"listen":%q,"base_url":"https://packages.example.com","tls":{"certificates":[{"cert_file":%q,"key_file":%q},{"cert_file":%q,"key_file":%q}]}}}`,
+		"QUADER_SERVER_TLS_CERTIFICATES":    certificatesEnv(def, defKey),
+		"QUADER_SERVER_TLS_RELOAD_INTERVAL": "1s",
+		"QUADER_SERVER_ENDPOINTS": fmt.Sprintf(`{"customers":{"listen":%q,"base_url":"https://packages.example.com","tls":{"certificates":[{"cert_file":%q,"key_file":%q},{"cert_file":%q,"key_file":%q}]}}}`,
 			anyPort, exact, exactKey, wild, wildKey),
 	})
 	def8080 := h.app.EndpointAddr("default")
@@ -375,7 +375,7 @@ func TestEndpointListenerTLS(t *testing.T) {
 				t.Errorf("customers SNI %q: %d %v, want %d", sni, got, err, want)
 			}
 		}
-		for _, sni := range []string{"packages.example.com", "a.packages.example.com", "trove.example.com"} {
+		for _, sni := range []string{"packages.example.com", "a.packages.example.com", "quader.example.com"} {
 			if got, _, err := served(def8080, sni); err != nil || got != 1003 {
 				t.Errorf("default SNI %q: %d %v", sni, got, err)
 			}
@@ -388,9 +388,9 @@ func TestEndpointListenerTLS(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, f := range []string{exact, wild} {
-			want := fmt.Sprintf(`trove_tls_certificate_expiry_timestamp_seconds{kind="listener",listener="client:customers",name=%q}`, f)
+			want := fmt.Sprintf(`quader_tls_certificate_expiry_timestamp_seconds{kind="listener",listener="client:customers",name=%q}`, f)
 			if !strings.Contains(m, want) {
-				t.Errorf("metrics lack %s\n%s", want, grepLines(m, "trove_tls_certificate"))
+				t.Errorf("metrics lack %s\n%s", want, grepLines(m, "quader_tls_certificate"))
 			}
 		}
 	})
@@ -416,11 +416,11 @@ func TestEndpointListenerTLS(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		want := fmt.Sprintf(`trove_tls_reload_errors_total{kind="listener",listener="client:customers",name=%q} 1`, wild)
+		want := fmt.Sprintf(`quader_tls_reload_errors_total{kind="listener",listener="client:customers",name=%q} 1`, wild)
 		if !strings.Contains(m, want) {
-			t.Errorf("the refused rotation is not counted\n%s", grepLines(m, "trove_tls_reload"))
+			t.Errorf("the refused rotation is not counted\n%s", grepLines(m, "quader_tls_reload"))
 		}
-		if got, _, _ := served(def8080, "trove.example.com"); got != 1003 {
+		if got, _, _ := served(def8080, "quader.example.com"); got != 1003 {
 			t.Errorf("default listener changed: %d", got)
 		}
 	})

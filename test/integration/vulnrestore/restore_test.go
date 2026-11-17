@@ -8,16 +8,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // The findings the restored installation holds. The ids are fixed so that a test can name them.
 const (
-	fDismissed = "018f4c1e-0000-7000-8000-000000000001" // trove-test-vuln@1.0.0 in npm-local, dismissed (risk_accepted)
-	fBlocked   = "018f4c1e-0000-7000-8000-000000000002" // trove-test-vuln@1.0.0 in npm-blocked, blocked by a triager
-	fMalicious = "018f4c1e-0000-7000-8000-000000000003" // trove-test-mal@1.0.0 in npm-local, open, malicious
+	fDismissed = "018f4c1e-0000-7000-8000-000000000001" // quader-test-vuln@1.0.0 in npm-local, dismissed (risk_accepted)
+	fBlocked   = "018f4c1e-0000-7000-8000-000000000002" // quader-test-vuln@1.0.0 in npm-blocked, blocked by a triager
+	fMalicious = "018f4c1e-0000-7000-8000-000000000003" // quader-test-mal@1.0.0 in npm-local, open, malicious
 )
 
 // seedInstallation reproduces an installation that had synced and triaged, then the state a restore leaves of it
@@ -33,7 +33,7 @@ func (e *env) seedInstallation() {
 	e.publish(pub, repoLocal, osvstub.NPMVuln, "1.0.0")
 	e.publish(pub, repoBlocked, osvstub.NPMVuln, "1.0.0")
 	e.publish(pub, repoLocal, osvstub.NPMMal, "1.0.0")
-	e.publish(pub, repoLocal, "trove-test-clean", "1.0.0")
+	e.publish(pub, repoLocal, "quader-test-clean", "1.0.0")
 	if err := pub.Stop(); err != nil {
 		e.t.Fatal(err)
 	}
@@ -211,22 +211,22 @@ func TestR_VULN_026_FailSafeBeforeTheFirstSync(t *testing.T) {
 		var text string
 		testenv.WaitFor(t, "the database gauges of the scanning", 20*time.Second, func() bool {
 			text = web.Metrics(t)
-			return testenv.MetricValue(text, `trove_vuln_findings{kind="malicious",severity="critical",status="needs_triage"}`) >= 0
+			return testenv.MetricValue(text, `quader_vuln_findings{kind="malicious",severity="critical",status="needs_triage"}`) >= 0
 		})
-		// last success 0: the series exists for the configured source, so TroveVulnerabilityDataStale fires on it.
-		if v := testenv.MetricValue(text, `trove_vuln_source_last_success_timestamp_seconds{ecosystem="npm",source="osv"}`); v != 0 {
+		// last success 0: the series exists for the configured source, so QuaderVulnerabilityDataStale fires on it.
+		if v := testenv.MetricValue(text, `quader_vuln_source_last_success_timestamp_seconds{ecosystem="npm",source="osv"}`); v != 0 {
 			t.Errorf("last success of osv/npm = %v, want a series with 0", v)
 		}
-		if v := testenv.MetricValue(text, `trove_vuln_source_records{ecosystem="npm",source="osv"}`); v != 0 {
+		if v := testenv.MetricValue(text, `quader_vuln_source_records{ecosystem="npm",source="osv"}`); v != 0 {
 			t.Errorf("records of osv/npm = %v, want 0", v)
 		}
-		if v := testenv.MetricValue(text, `trove_vuln_findings{kind="malicious",severity="critical",status="needs_triage"}`); v != 1 {
+		if v := testenv.MetricValue(text, `quader_vuln_findings{kind="malicious",severity="critical",status="needs_triage"}`); v != 1 {
 			t.Errorf("open malicious critical findings = %v, want 1", v)
 		}
-		if v := testenv.MetricValue(text, `trove_vuln_findings{kind="vulnerability",severity="high",status="dismissed"}`); v != 1 {
+		if v := testenv.MetricValue(text, `quader_vuln_findings{kind="vulnerability",severity="high",status="dismissed"}`); v != 1 {
 			t.Errorf("dismissed high findings = %v, want 1", v)
 		}
-		if v := testenv.MetricValue(text, `trove_vuln_findings{kind="vulnerability",severity="high",status="blocked"}`); v != 1 {
+		if v := testenv.MetricValue(text, `quader_vuln_findings{kind="vulnerability",severity="high",status="blocked"}`); v != 1 {
 			t.Errorf("blocked high findings = %v, want 1", v)
 		}
 		if strings.Contains(text, `source="kev"`) {
@@ -244,7 +244,7 @@ func TestR_VULN_026_FailSafeBeforeTheFirstSync(t *testing.T) {
 		if a := e.download(web, repoLocal, osvstub.NPMVuln, "1.0.0"); a.Status != 200 {
 			t.Errorf("the dismissed version answers %d, want 200: %s", a.Status, a.Body)
 		}
-		if a := e.download(web, repoLocal, "trove-test-clean", "1.0.0"); a.Status != 200 {
+		if a := e.download(web, repoLocal, "quader-test-clean", "1.0.0"); a.Status != 200 {
 			t.Errorf("a version without a finding answers %d, want 200: %s", a.Status, a.Body)
 		}
 	})
@@ -253,7 +253,7 @@ func TestR_VULN_026_FailSafeBeforeTheFirstSync(t *testing.T) {
 		// The worker has no source (mode off), so the data stays empty. The pending row names an advisory that is not in
 		// vuln_advisory: an evaluation that read the absence as "no longer affected" would resolve the findings of
 		// GHSA-aaaa-aaaa-0001, which is what R-VULN-011 forbids until an import has completed.
-		w := e.st.Start(t, testenv.ReplicaOptions{Name: "worker-off", Role: "worker", Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
+		w := e.st.Start(t, testenv.ReplicaOptions{Name: "worker-off", Role: "worker", Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
 		e.st.Exec(`INSERT INTO vuln_pending_evaluation (ecosystem, advisory_id) VALUES ('npm', $1)`, osvstub.IDVuln)
 		e.st.Exec(`INSERT INTO job (id, kind, queue, args, dedup_key, dedup_mode, max_attempts)
 			VALUES (gen_random_uuid(), 'vuln-evaluate', 'default', '{}', 'vuln-evaluate', 'coalesce', 3)`)
@@ -327,12 +327,12 @@ func TestR_VULN_026_AfterTheSyncAndTheFullEvaluation(t *testing.T) {
 		var text string
 		testenv.WaitFor(t, "the last success gauge", 20*time.Second, func() bool {
 			text = web.Metrics(t)
-			return testenv.MetricValue(text, `trove_vuln_source_last_success_timestamp_seconds{ecosystem="npm",source="osv"}`) > 1e9
+			return testenv.MetricValue(text, `quader_vuln_source_last_success_timestamp_seconds{ecosystem="npm",source="osv"}`) > 1e9
 		})
-		if v := testenv.MetricValue(text, `trove_vuln_source_consecutive_failures{ecosystem="npm",source="osv"}`); v != 0 {
+		if v := testenv.MetricValue(text, `quader_vuln_source_consecutive_failures{ecosystem="npm",source="osv"}`); v != 0 {
 			t.Errorf("failures = %v", v)
 		}
-		if v := testenv.MetricValue(text, `trove_vuln_source_records{ecosystem="npm",source="osv"}`); v < 2 {
+		if v := testenv.MetricValue(text, `quader_vuln_source_records{ecosystem="npm",source="osv"}`); v < 2 {
 			t.Errorf("records = %v, want at least the two test advisories", v)
 		}
 	})

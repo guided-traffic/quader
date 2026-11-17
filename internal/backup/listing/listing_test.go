@@ -7,17 +7,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/listing"
-	"github.com/guided-traffic/trove/internal/backup/listing/fixture"
-	"github.com/guided-traffic/trove/internal/backup/target/targettest"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/listing"
+	"github.com/guided-traffic/quader/internal/backup/listing/fixture"
+	"github.com/guided-traffic/quader/internal/backup/target/targettest"
 )
 
 func setup(t *testing.T) (*targettest.Mem, format.Layout, *listing.Lister) {
 	t.Helper()
 	mem := targettest.New()
-	l := format.Layout{Prefix: "trove"}
+	l := format.Layout{Prefix: "quader"}
 	return mem, l, &listing.Lister{Store: mem, Layout: l}
 }
 
@@ -33,7 +33,7 @@ func TestR_BAK_018_ListsCompleteBackupsNewestFirst(t *testing.T) {
 	if n.BackupID != fixture.ID(2) || o.BackupID != fixture.ID(1) {
 		t.Fatalf("order: %s, %s", n.BackupID, o.BackupID)
 	}
-	if !n.Complete || !n.Damaged || o.Damaged || n.SchemaStep != 46 || n.BlobCount != 3 || n.TroveVersion != "0.1.0" || n.Incarnation != "inc-1" {
+	if !n.Complete || !n.Damaged || o.Damaged || n.SchemaStep != 46 || n.BlobCount != 3 || n.QuaderVersion != "0.1.0" || n.Incarnation != "inc-1" {
 		t.Fatalf("newest = %+v", n)
 	}
 	if n.DatabaseBytes == 0 || n.BlobsCopied != 2 || n.Options == nil || n.Encryption == nil || n.Encryption.SSE != "AES256" {
@@ -56,7 +56,7 @@ func TestR_BAK_018_IncompleteDirectoriesOnlyWithAll(t *testing.T) {
 		t.Fatalf("default list = %+v", out)
 	}
 	out, _ = lister.List(context.Background(), backup.ListOptions{All: true})
-	if len(out) != 2 || out[1].BackupID != fixture.ID(1) || out[1].Complete || out[1].TroveVersion != "" {
+	if len(out) != 2 || out[1].BackupID != fixture.ID(1) || out[1].Complete || out[1].QuaderVersion != "" {
 		t.Fatalf("--all list = %+v", out)
 	}
 }
@@ -77,7 +77,7 @@ func TestR_BAK_018_JSONShape(t *testing.T) {
 	if arr[1]["backupId"] != string(fixture.ID(1)) || arr[1]["schemaStep"] != float64(46) || arr[1]["incarnation"] != "inc-1" {
 		t.Fatalf("complete entry: %v", arr[1])
 	}
-	if _, ok := arr[0]["troveVersion"]; ok || arr[0]["complete"] != false {
+	if _, ok := arr[0]["quaderVersion"]; ok || arr[0]["complete"] != false {
 		t.Fatalf("incomplete entry carries manifest fields: %v", arr[0])
 	}
 }

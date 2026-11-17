@@ -1,8 +1,8 @@
 | What you see | Why, and what to do |
 |---|---|
-| `HTTP Error 401` at the first request, naming the server | The repository needs a credential and the client sent none or a wrong one. Check that `ANSIBLE_GALAXY_SERVER_TROVE_TOKEN` is set in the shell that runs the command, and that the server in `ansible.cfg` is named `trove`; the variable is read for that name only. |
+| `HTTP Error 401` at the first request, naming the server | The repository needs a credential and the client sent none or a wrong one. Check that `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN` is set in the shell that runs the command, and that the server in `ansible.cfg` is named `quader`; the variable is read for that name only. |
 | `HTTP Error 403` or `permission_denied` on a publish | The token may read but not deploy to the repository, or the namespace belongs to another publisher. Ask for the deploy permission on the repository. |
-| `Mismatch artifact hash` | The archive the client downloaded does not match the SHA-256 in the version document. On a remote repository the upstream changed a version after it was announced; trove refuses to serve the changed bytes. Report it to the operator; do not work around it. |
+| `Mismatch artifact hash` | The archive the client downloaded does not match the SHA-256 in the version document. On a remote repository the upstream changed a version after it was announced; Quader refuses to serve the changed bytes. Report it to the operator; do not work around it. |
 | `Galaxy import process failed` with a description | The server refused the archive: not a collection archive, a name or version that breaks the rules, or a manifest that disagrees with the file name. The description names the reason. |
 | `409 version_exists` | That version is published with other bytes. Publish a new version number. |
 | `409 version_tombstoned` | That version was deleted. A number is never reused until an administrator clears the tombstone. |

@@ -2,9 +2,9 @@
 
 // Package uploads tests the multi-request upload sessions (R-STOR-011) against the integration stack: PostgreSQL for the session
 // rows, the S3 store for the multipart uploads and the staging objects, and several replicas (each with its own blob store, spool
-// and session service) on both. Nothing here reads TROVE_TEST_VALKEY_*: a session needs no Valkey (R-OCI-032).
+// and session service) on both. Nothing here reads QUADER_TEST_VALKEY_*: a session needs no Valkey (R-OCI-032).
 //
-// Variables read (testenv): TROVE_TEST_PG_*, TROVE_TEST_S3_ENDPOINT, _REGION, _ACCESS_KEY, _SECRET_KEY, _BUCKET_BLOBS and
+// Variables read (testenv): QUADER_TEST_PG_*, QUADER_TEST_S3_ENDPOINT, _REGION, _ACCESS_KEY, _SECRET_KEY, _BUCKET_BLOBS and
 // _FORCE_PATH_STYLE.
 package uploads
 
@@ -25,14 +25,14 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -64,17 +64,17 @@ func newS3(tb testing.TB) *s3Env {
 		return p
 	}
 	cfg := blobtest.Storage(tb, dir).S3
-	cfg.Endpoint = testenv.Get(tb, "TROVE_TEST_S3_ENDPOINT")
-	cfg.Region = testenv.Get(tb, "TROVE_TEST_S3_REGION")
-	cfg.Bucket = testenv.Get(tb, "TROVE_TEST_S3_BUCKET_BLOBS")
-	cfg.ForcePathStyle = testenv.Get(tb, "TROVE_TEST_S3_FORCE_PATH_STYLE") == "true"
+	cfg.Endpoint = testenv.Get(tb, "QUADER_TEST_S3_ENDPOINT")
+	cfg.Region = testenv.Get(tb, "QUADER_TEST_S3_REGION")
+	cfg.Bucket = testenv.Get(tb, "QUADER_TEST_S3_BUCKET_BLOBS")
+	cfg.ForcePathStyle = testenv.Get(tb, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true"
 	cfg.AllowInsecureEndpoint = false
 	cfg.CAFile = testenv.CAFile(tb)
 	cfg.Prefix = "it-uploads/" + runID(tb)
 	cfg.Credentials = config.StorageS3Credentials{
 		Source:              "static",
-		AccessKeyIDFile:     writeSecret("access-key", testenv.Get(tb, "TROVE_TEST_S3_ACCESS_KEY")),
-		SecretAccessKeyFile: writeSecret("secret-key", testenv.Get(tb, "TROVE_TEST_S3_SECRET_KEY")),
+		AccessKeyIDFile:     writeSecret("access-key", testenv.Get(tb, "QUADER_TEST_S3_ACCESS_KEY")),
+		SecretAccessKeyFile: writeSecret("secret-key", testenv.Get(tb, "QUADER_TEST_S3_SECRET_KEY")),
 	}
 	f := outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true}})
 	c, err := s3.NewFromFactory(context.Background(), cfg, f)
@@ -135,7 +135,7 @@ var template struct {
 func templateDB(tb testing.TB, maint *pgx.Conn, base config.Database) string {
 	tb.Helper()
 	template.once.Do(func() {
-		name := "trove_uploads_tmpl_" + runID(tb)
+		name := "quader_uploads_tmpl_" + runID(tb)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 		if _, err := maint.Exec(ctx, "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
@@ -164,7 +164,7 @@ func dropTemplate() {
 	if template.name == "" {
 		return
 	}
-	cfg, err := pgx.ParseConfig(os.Getenv("TROVE_TEST_PG_DSN"))
+	cfg, err := pgx.ParseConfig(os.Getenv("QUADER_TEST_PG_DSN"))
 	if err != nil {
 		return
 	}
@@ -181,10 +181,10 @@ func dropTemplate() {
 
 func newPG(tb testing.TB) *pgEnv {
 	tb.Helper()
-	host, user, secret := testenv.Get(tb, "TROVE_TEST_PG_HOST"), testenv.Get(tb, "TROVE_TEST_PG_USER"), testenv.Get(tb, "TROVE_TEST_PG_PASSWORD")
-	port, err := strconv.Atoi(testenv.Get(tb, "TROVE_TEST_PG_PORT"))
+	host, user, secret := testenv.Get(tb, "QUADER_TEST_PG_HOST"), testenv.Get(tb, "QUADER_TEST_PG_USER"), testenv.Get(tb, "QUADER_TEST_PG_PASSWORD")
+	port, err := strconv.Atoi(testenv.Get(tb, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		tb.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		tb.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
 	connect := func(database string) *pgx.Conn {
 		c, err := pgx.Connect(context.Background(), testenv.PgDSN(tb, database))
@@ -194,7 +194,7 @@ func newPG(tb testing.TB) *pgEnv {
 		tb.Cleanup(func() { _ = c.Close(context.Background()) })
 		return c
 	}
-	name := "trove_uploads_" + runID(tb)
+	name := "quader_uploads_" + runID(tb)
 	maint := connect("postgres")
 
 	dir := tb.TempDir()
@@ -206,7 +206,7 @@ func newPG(tb testing.TB) *pgEnv {
 		tb.Fatal(err)
 	}
 	base := config.Database{
-		Host: host, Port: port, Name: name, Schema: "trove",
+		Host: host, Port: port, Name: name, Schema: "quader",
 		UsernameFile: userFile, PasswordFile: passFile,
 		SSLMode: "verify-full", SSLRootCertFile: testenv.CAFile(tb),
 		ConnectTimeout: 5 * time.Second, TargetSessionAttrs: "read-write",
@@ -243,7 +243,7 @@ func newPG(tb testing.TB) *pgEnv {
 	}
 	tb.Cleanup(db.Close)
 	p := &pgEnv{db: db, admin: connect(name)}
-	if _, err := p.admin.Exec(ctx, "SET search_path TO trove"); err != nil {
+	if _, err := p.admin.Exec(ctx, "SET search_path TO quader"); err != nil {
 		tb.Fatal(err)
 	}
 	p.repo = p.newRepo(tb, "docker-local")
@@ -253,8 +253,8 @@ func newPG(tb testing.TB) *pgEnv {
 
 func (p *pgEnv) newRepo(tb testing.TB, key string) int64 {
 	tb.Helper()
-	p.exec(tb, `INSERT INTO trove.project (id, key, display_name) VALUES (gen_random_uuid(), $1, $1) ON CONFLICT (key) DO NOTHING`, testenv.DefaultProject)
-	return p.scalarInt(tb, `INSERT INTO trove.repositories (key, format, class, project_id) SELECT $1, 'generic', 'local', id FROM trove.project WHERE key = $2 RETURNING id`, key, testenv.DefaultProject)
+	p.exec(tb, `INSERT INTO quader.project (id, key, display_name) VALUES (gen_random_uuid(), $1, $1) ON CONFLICT (key) DO NOTHING`, testenv.DefaultProject)
+	return p.scalarInt(tb, `INSERT INTO quader.repositories (key, format, class, project_id) SELECT $1, 'generic', 'local', id FROM quader.project WHERE key = $2 RETURNING id`, key, testenv.DefaultProject)
 }
 
 func (p *pgEnv) exec(tb testing.TB, sql string, args ...any) {
@@ -275,13 +275,13 @@ func (p *pgEnv) scalarInt(tb testing.TB, sql string, args ...any) int64 {
 
 func (p *pgEnv) count(tb testing.TB, from string, args ...any) int64 {
 	tb.Helper()
-	return p.scalarInt(tb, "SELECT count(*) FROM trove."+from, args...)
+	return p.scalarInt(tb, "SELECT count(*) FROM quader."+from, args...)
 }
 
 func (p *pgEnv) sessionState(tb testing.TB, id string) string {
 	tb.Helper()
 	var s string
-	err := p.admin.QueryRow(context.Background(), "SELECT state FROM trove.upload_sessions WHERE id = $1::uuid", id).Scan(&s)
+	err := p.admin.QueryRow(context.Background(), "SELECT state FROM quader.upload_sessions WHERE id = $1::uuid", id).Scan(&s)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ""
 	}

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The dry run (R-CI-019, R-UI-036): a claim set in, the decision trace out; nothing issued, no jti recorded.

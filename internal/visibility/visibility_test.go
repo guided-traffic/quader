@@ -3,7 +3,7 @@ package visibility
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_AUTHZ_033_TheOrderOfTheLevels: private comes before internal before public, and a string that is no level is none of them.

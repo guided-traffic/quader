@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // answer is what a client sees of one request, without the fields that name the request or the replica: the header
@@ -157,7 +157,7 @@ func TestR_ARCH_001_RouteFamiliesPerRole(t *testing.T) {
 // pool and the intersection of the endpoint's surface with the role's families allow it, with those families only.
 func TestR_ARCH_001_ListenerRule(t *testing.T) {
 	srv := config.Server{
-		BaseURL: "https://trove.example.com",
+		BaseURL: "https://quader.example.com",
 		Endpoints: map[string]config.Endpoint{
 			"customers": {Listen: ":8443", BaseURL: "https://packages.example.com", Surface: []string{"packages", "files", "api"}},
 			"mirror":    {Listen: ":8444", BaseURL: "https://mirror.example.com", Surface: []string{"packages"}},

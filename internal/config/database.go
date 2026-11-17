@@ -14,10 +14,10 @@ type Database struct {
 	ControlPort        int                     `yaml:"control_port" default:"0" validate:"min=0,max=65535" doc:"0 means port."`
 	ControlName        string                  `yaml:"control_name" default:"" doc:"Database entry of the control pooler; empty means name."`
 	Name               string                  `yaml:"name" validate:"required"`
-	Schema             string                  `yaml:"schema" default:"trove"`
+	Schema             string                  `yaml:"schema" default:"quader"`
 	BackupRole         string                  `yaml:"backup_role" default:""`
-	UsernameFile       string                  `yaml:"username_file" default:"/var/run/secrets/trove/database/username" secret:"file"`
-	PasswordFile       string                  `yaml:"password_file" default:"/var/run/secrets/trove/database/password" secret:"file"`
+	UsernameFile       string                  `yaml:"username_file" default:"/var/run/secrets/quader/database/username" secret:"file"`
+	PasswordFile       string                  `yaml:"password_file" default:"/var/run/secrets/quader/database/password" secret:"file"`
 	SSLMode            string                  `yaml:"ssl_mode" default:"verify-full" validate:"oneof=verify-full|verify-ca|require|disable|allow|prefer"`
 	SSLRootCertFile    string                  `yaml:"ssl_root_cert_file" default:""`
 	SSLCertFile        string                  `yaml:"ssl_cert_file" default:""`

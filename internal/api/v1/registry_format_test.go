@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // The descriptor of GET /api/v1/formats carries the base path of the registry root for the OCI format, and the setup address of
@@ -103,8 +103,8 @@ func TestImagePrefixIsTheHostAndTheRepositoryOfARegistryRootFormat(t *testing.T)
 		t.Fatal("oci is not registered")
 	}
 	for registry, want := range map[string]string{
-		"https://trove.example.com/v2/web/docker/":         "trove.example.com/web/docker",
-		"https://trove.example.com:8443/v2/web/docker/":    "trove.example.com:8443/web/docker",
+		"https://quader.example.com/v2/web/docker/":        "quader.example.com/web/docker",
+		"https://quader.example.com:8443/v2/web/docker/":   "quader.example.com:8443/web/docker",
 		"http://localhost:5000/v2/<project>/<repository>/": "localhost:5000/<project>/<repository>",
 	} {
 		if got := imagePrefix(f, registry); got != want {
@@ -112,7 +112,7 @@ func TestImagePrefixIsTheHostAndTheRepositoryOfARegistryRootFormat(t *testing.T)
 		}
 	}
 	npm, _ := formats.Lookup("npm")
-	if got := imagePrefix(npm, "https://trove.example.com/api/npm/web/npm-all/"); got != "" {
+	if got := imagePrefix(npm, "https://quader.example.com/api/npm/web/npm-all/"); got != "" {
 		t.Errorf("a format without the registry root has the image prefix %q", got)
 	}
 }

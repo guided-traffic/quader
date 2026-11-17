@@ -93,7 +93,7 @@ describe('Debian signing keys panel', () => {
     expect(sent).toEqual([
       { privateKey: '-----BEGIN PGP PRIVATE KEY BLOCK-----\nabc\n-----END PGP PRIVATE KEY BLOCK-----', passphrase: 'hunter2' },
     ]);
-    expect(text(r.root.querySelector('[data-testid="deb-key-error"]')!)).toContain('already known to trove');
+    expect(text(r.root.querySelector('[data-testid="deb-key-error"]')!)).toContain('already known to Quader');
     expect(r.root.querySelector<HTMLTextAreaElement>('#deb-import-key')!.value).toBe('');
     expect(r.root.querySelector<HTMLInputElement>('#deb-import-pass')!.value).toBe('');
     expect(states(r.root)).toEqual(['primary']);

@@ -87,9 +87,9 @@ func (e hold) name() string {
 	for {
 		f, more := frames.Next()
 		fn := f.Function
-		if fn != "" && !strings.HasPrefix(fn, "github.com/jackc/") && !strings.HasPrefix(fn, "github.com/guided-traffic/trove/internal/meta/postgres.") &&
+		if fn != "" && !strings.HasPrefix(fn, "github.com/jackc/") && !strings.HasPrefix(fn, "github.com/guided-traffic/quader/internal/meta/postgres.") &&
 			!strings.HasPrefix(fn, "runtime.") {
-			return strings.TrimPrefix(fn, "github.com/guided-traffic/trove/internal/")
+			return strings.TrimPrefix(fn, "github.com/guided-traffic/quader/internal/")
 		}
 		if !more {
 			return "unknown borrower"

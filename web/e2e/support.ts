@@ -5,13 +5,13 @@ import { APIRequestContext, expect, Page, Request, request, test as base } from 
 interface Fixtures {
   /** The management API with the administrator token: data is prepared and cleaned up here, not in the UI (INV-17). */
   admin: APIRequestContext;
-  /** The `X-Trove-Replica` values of every response the page received; filled while the test runs. */
+  /** The `X-Quader-Replica` values of every response the page received; filled while the test runs. */
   replicas: Set<string>;
 }
 
-export const alicePassword = required('TROVE_E2E_ALICE_PASSWORD');
-export const bobPassword = required('TROVE_E2E_BOB_PASSWORD');
-export const breakGlassPassword = required('TROVE_E2E_BREAKGLASS_PASSWORD');
+export const alicePassword = required('QUADER_E2E_ALICE_PASSWORD');
+export const bobPassword = required('QUADER_E2E_BOB_PASSWORD');
+export const breakGlassPassword = required('QUADER_E2E_BREAKGLASS_PASSWORD');
 
 function required(name: string): string {
   const v = process.env[name];
@@ -54,7 +54,7 @@ export const test = base.extend<Fixtures>({
     const ctx = await request.newContext({
       baseURL,
       ignoreHTTPSErrors: true,
-      extraHTTPHeaders: { Authorization: `Bearer ${required('TROVE_E2E_ADMIN_TOKEN')}` },
+      extraHTTPHeaders: { Authorization: `Bearer ${required('QUADER_E2E_ADMIN_TOKEN')}` },
     });
     await use(ctx);
     await ctx.dispose();
@@ -63,7 +63,7 @@ export const test = base.extend<Fixtures>({
   replicas: async ({ page }, use) => {
     const seen = new Set<string>();
     page.on('response', (r) => {
-      const id = r.headers()['x-trove-replica'];
+      const id = r.headers()['x-quader-replica'];
       if (id) seen.add(id);
     });
     await use(seen);
@@ -83,10 +83,10 @@ export const test = base.extend<Fixtures>({
  */
 export async function watchCsp(page: Page): Promise<() => Promise<string[]>> {
   const seen: string[] = [];
-  await page.exposeFunction('troveCspViolation', (text: string) => seen.push(text));
+  await page.exposeFunction('quaderCspViolation', (text: string) => seen.push(text));
   await page.addInitScript(() => {
     document.addEventListener('securitypolicyviolation', (e) => {
-      void (window as unknown as { troveCspViolation(t: string): void }).troveCspViolation(
+      void (window as unknown as { quaderCspViolation(t: string): void }).quaderCspViolation(
         `${e.violatedDirective} blocked ${e.blockedURI} at ${e.sourceFile}:${e.lineNumber}`,
       );
     });
@@ -156,7 +156,7 @@ const isLoginPost = (r: { url(): string; method(): string }): boolean => r.url()
 
 /**
  * Submits the local sign-in form with `submit` (the click on its button) and waits out the break-glass rotation
- * hold: for `login.break_glass.rotation_hold` after the operator rotated `trove-break-glass`, the local login
+ * hold: for `login.break_glass.rotation_hold` after the operator rotated `quader-break-glass`, the local login
  * answers `503 break_glass_rotating` with a `Retry-After` (R-AUTH-014, Q-AUTH-14). A long-lived dev cluster meets
  * that window once a day; the sign-in then waits for the Retry-After and submits again, for at most
  * `rotationHoldCapMs` in total (Q-AUTH-194). Any other answer, 503 or not, ends the wait and is left to the

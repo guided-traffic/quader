@@ -38,7 +38,7 @@ func newPartnerProject(t *testing.T, adm *api, label string) *partnerProject {
 	p := &partnerProject{t: t, adm: adm, key: label + "-" + hex.EncodeToString(b), sa: "ci"}
 
 	p.bob = newBrowser(t)
-	p.bob.oidcLogin("bob", secretValue(t, "trove-keycloak", "bob-password"))
+	p.bob.oidcLogin("bob", secretValue(t, "quader-keycloak", "bob-password"))
 
 	adm.do(http.MethodPost, "/api/v1/projects", map[string]any{
 		"key": p.key, "displayName": "Partner " + p.key,

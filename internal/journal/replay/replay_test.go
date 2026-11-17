@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 type memStore struct {
@@ -40,7 +40,7 @@ func (m *memStore) Get(_ context.Context, k string) ([]byte, error) {
 	return nil, errors.New("missing")
 }
 
-const prefix = "trove"
+const prefix = "quader"
 
 func id(n int) string { return fmt.Sprintf("0192f0c4-0000-7000-8000-%012d", n) }
 

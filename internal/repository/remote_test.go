@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 func intp(n int) *int { return &n }
@@ -454,13 +454,13 @@ func TestRemoteSecrets(t *testing.T) {
 
 	invalid := map[string]string{
 		"both value and secretRef":      `{"authMode":"bearer","password":{"value":"x","secretRef":{"file":"t"}}}`,
-		"a trove variable":              `{"authMode":"bearer","password":{"secretRef":{"env":"TROVE_DATABASE_PASSWORD"}}}`,
+		"a quader variable":             `{"authMode":"bearer","password":{"secretRef":{"env":"QUADER_DATABASE_PASSWORD"}}}`,
 		"a variable without the prefix": `{"authMode":"bearer","password":{"secretRef":{"env":"HOME"}}}`,
 		"a path in the file name":       `{"authMode":"bearer","password":{"secretRef":{"file":"../db-password"}}}`,
 		"a nested path":                 `{"authMode":"bearer","password":{"secretRef":{"file":"a/b"}}}`,
 		"an absolute path":              `{"authMode":"bearer","password":{"secretRef":{"file":"/etc/passwd"}}}`,
 		"a hidden file":                 `{"authMode":"bearer","password":{"secretRef":{"file":".data"}}}`,
-		"a reference naming both":       `{"authMode":"bearer","password":{"secretRef":{"file":"a","env":"TROVE_CAC_A"}}}`,
+		"a reference naming both":       `{"authMode":"bearer","password":{"secretRef":{"file":"a","env":"QUADER_CAC_A"}}}`,
 		"a reference naming neither":    `{"authMode":"bearer","password":{"secretRef":{}}}`,
 		"an empty value":                `{"authMode":"bearer","password":{"value":""}}`,
 		"a value with a line break":     `{"authMode":"bearer","password":{"value":"a\nb"}}`,
@@ -480,8 +480,8 @@ func TestRemoteSecrets(t *testing.T) {
 			t.Fatalf("fields = %v", fieldsOf(v.err()))
 		})
 	}
-	t.Run("R-REPO-033 a TROVE_CAC_ variable and a plain file name are accepted", func(t *testing.T) {
-		for _, ref := range []string{`{"env":"TROVE_CAC_NPM_TOKEN"}`, `{"file":"npm-partner-token"}`, `{"file":"token.v2"}`} {
+	t.Run("R-REPO-033 a QUADER_CAC_ variable and a plain file name are accepted", func(t *testing.T) {
+		for _, ref := range []string{`{"env":"QUADER_CAC_NPM_TOKEN"}`, `{"file":"npm-partner-token"}`, `{"file":"token.v2"}`} {
 			if _, v := validateRemoteDoc(t, `{"authMode":"bearer","password":{"secretRef":`+ref+`}}`); v.err() != nil {
 				t.Errorf("%s: %v", ref, v.err())
 			}
@@ -517,7 +517,7 @@ func TestRemoteSecrets(t *testing.T) {
 
 func TestRepositoryRemote(t *testing.T) {
 	t.Run("R-REPO-024 the snapshot entry carries the parsed settings of a remote repository", func(t *testing.T) {
-		d, v := validateRemoteDoc(t, `{"url":"https://registry.example.com/","authMode":"bearer","password":{"secretRef":{"env":"TROVE_CAC_T"}},"sourceNetwork":"10.99.0.0/24","extraHosts":[{"pattern":"*.cdn.example.com","sendCredentials":true}]}`)
+		d, v := validateRemoteDoc(t, `{"url":"https://registry.example.com/","authMode":"bearer","password":{"secretRef":{"env":"QUADER_CAC_T"}},"sourceNetwork":"10.99.0.0/24","extraHosts":[{"pattern":"*.cdn.example.com","sendCredentials":true}]}`)
 		if err := v.err(); err != nil {
 			t.Fatal(err)
 		}
@@ -530,7 +530,7 @@ func TestRepositoryRemote(t *testing.T) {
 			t.Fatal(err)
 		}
 		s, ok := repo.Remote()
-		if !ok || s.URL != "https://registry.example.com/" || s.AuthMode != "bearer" || s.Password == nil || s.Password.Ref.Env != "TROVE_CAC_T" ||
+		if !ok || s.URL != "https://registry.example.com/" || s.AuthMode != "bearer" || s.Password == nil || s.Password.Ref.Env != "QUADER_CAC_T" ||
 			s.SourceNetwork == nil || s.SourceNetwork.String() != "10.99.0.0/24" || !s.ExtraHosts[0].SendCredentials {
 			t.Fatalf("settings = %+v", s)
 		}

@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	clientID = "trove-ui-dev"
+	clientID = "quader-ui-dev"
 	secret   = "client-secret"
 	verifier = "a-verifier-of-enough-length-for-pkce-0123456789"
 	redirect = "https://localhost:4200/auth/oidc/ui-dev/callback"

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func serve(t *testing.T, h http.Handler, r *http.Request) *httptest.ResponseRecorder {
@@ -114,7 +114,7 @@ func TestRequestLog(t *testing.T) {
 	t.Run("R-OPS-010 a token in the path or user agent never reaches the record", func(t *testing.T) {
 		var buf bytes.Buffer
 		h, _ := newStack(t, &buf, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-		req := httptest.NewRequest(http.MethodGet, "/f/trv_pat_ABCDEFGHIJKLMNOPQRST/x", nil)
+		req := httptest.NewRequest(http.MethodGet, "/f/qdr_pat_ABCDEFGHIJKLMNOPQRST/x", nil)
 		serve(t, h, req)
 		if strings.Contains(buf.String(), "ABCDEFGHIJ") {
 			t.Errorf("token leaked: %s", buf.String())
@@ -128,7 +128,7 @@ func TestRequestLog(t *testing.T) {
 		if buf.Len() != 0 {
 			t.Errorf("record written: %s", buf.String())
 		}
-		if !strings.Contains(scrapeBody(t, m, ""), `trove_http_requests_total{code="200",endpoint="",handler="unmatched",listener="ops",method="GET"} 1`) {
+		if !strings.Contains(scrapeBody(t, m, ""), `quader_http_requests_total{code="200",endpoint="",handler="unmatched",listener="ops",method="GET"} 1`) {
 			t.Error("request not counted")
 		}
 	})

@@ -1,6 +1,6 @@
 package formathost
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // Markup implements [formats.Host]: the renderer the composition root wired (Options.Markup), or [formats.NoMarkup] for a replica that
 // has not wired it.

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // The token handshake of a registry (R-OCI-021): the upstream answers 401 with `WWW-Authenticate: Bearer realm=…,service=…`, the

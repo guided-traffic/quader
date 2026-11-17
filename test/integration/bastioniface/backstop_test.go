@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_BAS_014_AForwardOutsideThePackageFamiliesReachesNoRoute: through the real chain, the real authentication
 // stage and the real routes of the management API (Q-BAS-115). A forward - a request with the Bastion token in
-// Trove-Bastion-Authorization - whose path the router decodes to a route of /api/v1/ answers 404 not_found and runs
+// Quader-Bastion-Authorization - whose path the router decodes to a route of /api/v1/ answers 404 not_found and runs
 // nothing with the caller's credential, also when the path decodes to an interface route; that answer is never
 // bastion_token_invalid, which a Bastion would read as the refusal of its own token. The same paths without the
 // forward header are routed as the router decodes them, which proves the escapes reach those routes.

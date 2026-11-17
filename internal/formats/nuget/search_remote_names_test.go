@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/nuget/search"
+	"github.com/guided-traffic/quader/internal/formats/nuget/search"
 )
 
 // TestR_NUGET_016_TheWithheldRuleAsksAboutEveryNameAQueryCarries: the names the withheld-query

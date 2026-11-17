@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/webui"
+	"github.com/guided-traffic/quader/internal/webui"
 )
 
 const (

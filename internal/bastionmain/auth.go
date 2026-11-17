@@ -9,7 +9,7 @@ import (
 // BastionToken is what the validation of a Bastion token yields (R-BAS-004, R-BAS-005): the token and the
 // enabled registration it belongs to. It holds no secret and no hash.
 type BastionToken struct {
-	// TokenID is the token's ID and Hint its public hint (trv_bst_ and the first four characters).
+	// TokenID is the token's ID and Hint its public hint (qdr_bst_ and the first four characters).
 	TokenID string
 	Hint    string
 	// BastionID is the registration's principal ID and Name its name.
@@ -49,7 +49,7 @@ type AuthRequest struct {
 // revocation bound.
 //
 // Only the recognition stage (work package 2) calls it, and only for a token that arrives in
-// Trove-Bastion-Authorization or on an interface route. Every other route refuses the type before any
+// Quader-Bastion-Authorization or on an interface route. Every other route refuses the type before any
 // database lookup (R-BAS-005), which internal/auth/token does in its validation (built).
 type TokenAuthenticator interface {
 	// Authenticate returns the registration of the token, [ErrTokenInvalid], or [ErrThrottled]. Any other

@@ -1,9 +1,9 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Role bindings declared in the system configuration (R-AUTHZ-010, Q-AUTHZ-170).
 -- source says who keeps a binding: 'api' for one made through the management API
--- or an administration command, 'configuration' for one that trove migrate applied
--- from authz.role_bindings. trove migrate is the only writer of 'configuration':
+-- or an administration command, 'configuration' for one that quader migrate applied
+-- from authz.role_bindings. quader migrate is the only writer of 'configuration':
 -- it inserts a declared binding or turns an existing one to 'configuration', and
 -- removes a 'configuration' binding that is no longer declared. The API refuses to
 -- remove one (409 role_binding_managed_by_configuration). A binary of the

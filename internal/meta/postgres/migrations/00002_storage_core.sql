@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Storage core (R-STOR-003): repositories, blobs, packages, versions, items,
 -- properties, download statistics, the garbage-collection queue and the

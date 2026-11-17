@@ -5,16 +5,16 @@ import (
 	"errors"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/platform"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/platform"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The wiring of the platform backup check (R-HA-023, R-OPS-019): the task backup-check verifies the declared point-in-time
 // recovery and bucket versioning once a day and stores the report in system_state; every replica exports the report as
-// trove_backup_check_ok (registerBackupGauges). Only a replica that claims jobs needs the bucket client, which wireBlob
+// quader_backup_check_ok (registerBackupGauges). Only a replica that claims jobs needs the bucket client, which wireBlob
 // hands to wireBackupCheck.
 
 // KindBackupCheck is the job kind and task of the check.
@@ -57,7 +57,7 @@ func (a *App) registerBackupCheckJob(r *jobs.Registry) {
 	r.RegisterTask(KindBackupCheck, spec)
 }
 
-// exportBackupCheck sets trove_backup_check_ok from the stored report. A replica without a report exports no series.
+// exportBackupCheck sets quader_backup_check_ok from the stored report. A replica without a report exports no series.
 func exportBackupCheck(ctx context.Context, db q.DBTX, m *backup.Metrics) error {
 	rep, ok, err := platform.Load(ctx, db)
 	if err != nil {

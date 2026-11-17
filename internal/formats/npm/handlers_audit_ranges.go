@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // The text of vulnerable_versions of the answer (R-VULN-017): the affected ranges of an advisory as node-semver text, which

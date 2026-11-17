@@ -19,12 +19,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/app"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/mirror"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/internal/app"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/mirror"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // The real stack of the mirror (E6b.2 to E6b.5): replicas through the composition root with the real host (the remote engine's side,
@@ -40,7 +40,7 @@ const (
 	publicHost     = "registry.npmjs.org"
 	replicationSvc = "replicate.npmjs.com"
 	// upstreamSecretEnv holds the bearer credential of a remote that has one (rigOptions.token).
-	upstreamSecretEnv = "TROVE_CAC_MIRROR_IT_UPSTREAM_TOKEN"
+	upstreamSecretEnv = "QUADER_CAC_MIRROR_IT_UPSTREAM_TOKEN"
 )
 
 // hit is one request the stub's listener received.
@@ -285,11 +285,11 @@ func newRig(t *testing.T, o rigOptions) *rig {
 
 	ca := testenv.WriteFile(t, t.TempDir(), "stub-ca.pem", string(ss.CAPEM))
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "mirrorit", Valkey: o.valkey, Env: append(append([]string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(filepath.ToSlash(ca)) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
-		"TROVE_API_RATE_LIMITS_ENABLED=false",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(filepath.ToSlash(ca)) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		"QUADER_API_RATE_LIMITS_ENABLED=false",
 	}, fastJobs...), o.env...)})
 
 	mode := o.mode
@@ -358,7 +358,7 @@ func (r *rig) replica(name, role string, extra ...string) *testenv.Replica {
 // runs (Q-ARCH-321): the suite has no other worker.
 func (r *rig) runner(name string, extra ...string) *testenv.Replica {
 	r.t.Helper()
-	return r.replica(name, "worker", append([]string{`TROVE_JOBS_QUEUES=["mirror","maintenance"]`}, extra...)...)
+	return r.replica(name, "worker", append([]string{`QUADER_JOBS_QUEUES=["mirror","maintenance"]`}, extra...)...)
 }
 
 // web is a client-serving process: the package protocols and the management API, no jobs.

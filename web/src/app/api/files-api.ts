@@ -208,7 +208,7 @@ export class HttpFilesApi extends FilesApi {
 
   /**
    * Uploads go through an XHR-based client, because the fetch backend reports no upload progress
-   * (R-UI-012). The client has no trove interceptors of its own; it keeps the XSRF protection (the content
+   * (R-UI-012). The client has no Quader interceptors of its own; it keeps the XSRF protection (the content
    * route is a session route, so a PUT carries the CSRF token), maps a failure to `ApiError` and ends the
    * session on a 401.
    */

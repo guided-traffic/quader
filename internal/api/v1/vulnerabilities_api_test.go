@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/packages/readme"
-	"github.com/guided-traffic/trove/internal/vuln/report"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/packages/readme"
+	"github.com/guided-traffic/quader/internal/vuln/report"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // TestR_VULN_020_DetailsAreSanitized: the advisory's Markdown is untrusted; the HTML member is the README sanitizer's output.

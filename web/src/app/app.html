@@ -22,14 +22,14 @@
         </button>
       }
       <a class="product" routerLink="/">
-        <trove-mark class="product-mark" />
-        <span class="product-name" translate="no">trove</span>
+        <quader-mark class="product-mark" />
+        <span class="product-name" translate="no">Quader</span>
       </a>
     </div>
 
     <!-- The one search, for every signed-in caller and the anonymous UI (R-UI-095); a button below 36 rem. -->
     @if (showNav()) {
-      <trove-search-field />
+      <quader-search-field />
     } @else {
       <span></span>
     }
@@ -64,7 +64,7 @@
       @switch (session.state()) {
         @case ('authenticated') {
           <button type="button" class="user-button" [cdkMenuTriggerFor]="userMenu">
-            <trove-avatar class="avatar" aria-hidden="true" [seed]="session.whoami()?.principal?.id ?? ''" [imageUrl]="avatars.url()" />
+            <quader-avatar class="avatar" aria-hidden="true" [seed]="session.whoami()?.principal?.id ?? ''" [imageUrl]="avatars.url()" />
             <!-- The name is the first part of the accessible name; the avatar is the user's generated robot. -->
             <span class="visually-hidden"
               ><span class="user-name" translate="no">{{ session.whoami()?.principal?.name }}</span
@@ -93,7 +93,7 @@
       Guides
     </button>
     <!-- <<< M2 ui-packages -->
-    <button type="button" class="menu-item" cdkMenuItem [cdkMenuTriggerFor]="languageMenu" troveOpenSubmenuOnClick>
+    <button type="button" class="menu-item" cdkMenuItem [cdkMenuTriggerFor]="languageMenu" quaderOpenSubmenuOnClick>
       <span i18n="@@shell.menu.language">Language</span>
       <span class="material-icons menu-chevron" aria-hidden="true">chevron_right</span>
     </button>
@@ -153,7 +153,7 @@
     >
       @if (sidebarArea(); as a) {
         @if (a.id === 'project') {
-          <trove-project-switcher class="project-switcher" [label]="a.label" />
+          <quader-project-switcher class="project-switcher" [label]="a.label" />
         } @else {
           <p class="context-title" [id]="'nav-' + a.id">{{ a.label }}</p>
         }
@@ -223,7 +223,7 @@
   <!-- The content panel, set into the frame; one router outlet for both forms, so a screen is never created twice. -->
   <div class="panel">
     @if (shell()) {
-      <trove-banner />
+      <quader-banner />
       @if (breadcrumbs.trail().length > 0) {
         <nav class="breadcrumbs" i18n-aria-label="@@shell.breadcrumbs" aria-label="Breadcrumb">
           <ol>
@@ -242,11 +242,11 @@
     }
     <main #main id="main" tabindex="-1" [class.content]="shell()" [class.bare]="!shell()">
       @if (shell() && loadFailure(); as failure) {
-        <trove-error-notice [error]="failure" (retry)="retrySession()" />
+        <quader-error-notice [error]="failure" (retry)="retrySession()" />
       }
       <router-outlet />
     </main>
   </div>
 </div>
 
-<trove-notices />
+<quader-notices />

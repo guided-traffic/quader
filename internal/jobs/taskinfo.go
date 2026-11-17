@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // TaskInfo is a registered task with the configuration applied: whether it is

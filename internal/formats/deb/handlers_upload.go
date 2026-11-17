@@ -8,9 +8,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 func init() {
@@ -225,7 +225,7 @@ func (f *Format) checkWithheld(ctx context.Context, st Store, repo formats.RepoR
 	}
 	if found && string(t.SHA256[:]) == string(sum) {
 		return errs.E(errs.Conflict, errs.CodeDebWithheld,
-			"These bytes were deleted before a restore and are withheld; an administrator reinstates them with trove admin deb reinstate.")
+			"These bytes were deleted before a restore and are withheld; an administrator reinstates them with quader admin deb reinstate.")
 	}
 	return nil
 }

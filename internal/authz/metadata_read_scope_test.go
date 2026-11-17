@@ -3,7 +3,7 @@ package authz
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/scope"
 )
 
 // TestQ_AUTHZ_172_AuditorReadScope: the read scope of a listing (R-API-029) holds

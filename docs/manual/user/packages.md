@@ -57,7 +57,7 @@ Both are kept in this browser only, separately for each user. They are not avail
 
 ## Package details
 
-Select a package name to open its page. The page shows the name, the format and **All packages** to return to the list. The address of a package is `/projects/<project>/packages/<format>/<name>`, for example `https://trove.example.com/ui/en/projects/web/packages/npm/@team-a/ui`.
+Select a package name to open its page. The page shows the name, the format and **All packages** to return to the list. The address of a package is `/projects/<project>/packages/<format>/<name>`, for example `https://quader.example.com/ui/en/projects/web/packages/npm/@team-a/ui`.
 
 ### Choose a version
 
@@ -100,14 +100,14 @@ You change tags with your package manager, not in the UI, for example `npm dist-
 The panel **Install** sits beside the tabs on a wide screen and above them on a narrow one. It shows the command that installs the chosen version.
 
 1. Under **Client**, choose npm, pnpm, Yarn Berry (2 and later) or Yarn Classic (1.x).
-2. Under **Repository**, choose the repository to install from. The picker appears only when several repositories hold the version; trove preselects a virtual repository, otherwise a local one.
+2. Under **Repository**, choose the repository to install from. The picker appears only when several repositories hold the version; Quader preselects a virtual repository, otherwise a local one.
 3. Select **Copy install command** beside the **Install command**. A command of several lines is shown as a block; one longer than three lines is collapsed, **Show the whole command** expands it and **Show less** collapses it again.
 
 The command assumes that your package manager is already configured for the repository; it never contains a token. **Set up your client for this repository** opens the client setup for the chosen repository and client, where you configure that once; see [Connecting a package client](client-setup.md).
 
 ## The README
 
-trove renders the README on the server from the package's own Markdown, with tables, task lists and code blocks, and removes anything that could run in your browser. Links to other sites carry no referrer, and the links of a README's table of contents jump within the README.
+Quader renders the README on the server from the package's own Markdown, with tables, task lists and code blocks, and removes anything that could run in your browser. Links to other sites carry no referrer, and the links of a README's table of contents jump within the README.
 
 - A README larger than the display limit is shortened, and the tab says **This README is shortened because it is larger than the display limit.**
 - Images from other sites are shown only from sites your administrators allowed; every other external image is replaced by a link, and the tab says how many.

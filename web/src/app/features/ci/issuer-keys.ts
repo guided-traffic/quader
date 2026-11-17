@@ -16,7 +16,7 @@ import { ErrorNotice } from '../../shared/error-notice';
  * not meet the key rules is ignored and says why.
  */
 @Component({
-  selector: 'trove-ci-issuer-keys',
+  selector: 'quader-ci-issuer-keys',
   imports: [DatePipe, ErrorNotice, DataTable, Needs],
   template: `
     <div class="toolbar">
@@ -24,9 +24,9 @@ import { ErrorNotice } from '../../shared/error-notice';
         Refresh keys
       </button>
     </div>
-    <trove-needs id="needs-ci-keys" capability="ci:write" />
+    <quader-needs id="needs-ci-keys" capability="ci:write" />
     @if (error(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     }
     @if (status(); as s) {
       <dl class="facts">
@@ -48,7 +48,7 @@ import { ErrorNotice } from '../../shared/error-notice';
           }
         </dd>
       </dl>
-      <trove-data-table
+      <quader-data-table
         [caption]="caption"
         [columns]="columns"
         [loaded]="true"
@@ -71,7 +71,7 @@ import { ErrorNotice } from '../../shared/error-notice';
             </td>
           </tr>
         }
-      </trove-data-table>
+      </quader-data-table>
     }
   `,
   styleUrl: '../../shared/access/access.scss',

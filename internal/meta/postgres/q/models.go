@@ -279,7 +279,7 @@ type BackupRun struct {
 	Trigger        string
 	Target         string
 	Pod            string
-	TroveVersion   string
+	QuaderVersion  string
 	SnapshotAt     pgtype.Timestamptz
 	Progress       json.RawMessage
 	Result         json.RawMessage

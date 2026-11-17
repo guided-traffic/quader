@@ -11,7 +11,7 @@ let nextPickerId = 1;
  * where the options could not be read (`options` null) that is the only way.
  */
 @Component({
-  selector: 'trove-ci-name-picker',
+  selector: 'quader-ci-name-picker',
   imports: [],
   template: `
     <div class="picker">
@@ -66,15 +66,15 @@ let nextPickerId = 1;
     .picker {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
     }
     .label {
-      font: var(--trove-type-label-large);
+      font: var(--quader-type-label-large);
     }
     .chips {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       margin: 0;
       padding: 0;
       list-style: none;
@@ -82,11 +82,11 @@ let nextPickerId = 1;
     .chip {
       display: inline-flex;
       align-items: center;
-      gap: var(--trove-space-1);
-      padding: 0 var(--trove-space-2);
-      border: 1px solid var(--trove-border-strong);
-      border-radius: var(--trove-radius-full);
-      background: var(--trove-surface-raised);
+      gap: var(--quader-space-1);
+      padding: 0 var(--quader-space-2);
+      border: 1px solid var(--quader-border-strong);
+      border-radius: var(--quader-radius-full);
+      background: var(--quader-surface-raised);
     }
     .chip-remove {
       display: inline-flex;
@@ -101,22 +101,22 @@ let nextPickerId = 1;
     }
     .none {
       margin: 0;
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
     .add {
       display: flex;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       align-items: center;
     }
     /* The field keeps its width and gives way on a narrow line, so **Add** stays beside it. */
     .add .text-input {
-      flex: 0 1 var(--trove-field-width-name);
+      flex: 0 1 var(--quader-field-width-name);
       min-inline-size: 0;
     }
     .field-error {
       margin: 0;
-      color: var(--trove-status-bad);
-      font: var(--trove-type-body-small);
+      color: var(--quader-status-bad);
+      font: var(--quader-type-body-small);
     }
     .visually-hidden {
       position: absolute;
@@ -139,7 +139,7 @@ export class NamePicker {
   readonly readonly = input(false);
   readonly error = input<string | null>(null);
 
-  protected readonly id = `trove-ci-picker-${nextPickerId++}`;
+  protected readonly id = `quader-ci-picker-${nextPickerId++}`;
   protected readonly typed = signal('');
   protected readonly available = computed(() => (this.options() ?? []).filter((o) => !this.value().includes(o)));
 

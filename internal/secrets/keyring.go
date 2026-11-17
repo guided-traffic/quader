@@ -18,14 +18,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 const (
 	envelopeVersion = "v1"
 	keyBytes        = 32
-	canaryPlain     = "trove key canary v1"
-	fingerprintInfo = "trove fingerprint v1"
+	canaryPlain     = "quader key canary v1"
+	fingerprintInfo = "quader fingerprint v1"
 )
 
 // Errors returned by Open. They never contain key material or plaintext.
@@ -189,7 +189,7 @@ func aad(c Column, row RowKey) []byte {
 		var l [binary.MaxVarintLen64]byte
 		b.Write(l[:binary.PutUvarint(l[:], n)])
 	}
-	for _, p := range []string{"trove/sealed/v1", c.table, c.column} {
+	for _, p := range []string{"quader/sealed/v1", c.table, c.column} {
 		put(uint64(len(p)))
 		b.WriteString(p)
 	}
@@ -311,7 +311,7 @@ func (r *KeyRing) Reseal(c Column, row RowKey, sealed string) (string, bool, err
 }
 
 // Fingerprint returns the HMAC-SHA-256 of value under a key derived with
-// HKDF-SHA-256 from the active key (info "trove fingerprint v1"). After a
+// HKDF-SHA-256 from the active key (info "quader fingerprint v1"). After a
 // rotation of the active key every fingerprint changes once.
 func (r *KeyRing) Fingerprint(value []byte) []byte {
 	h := hmac.New(sha256.New, r.fpKey)
@@ -346,7 +346,7 @@ func (d *DerivedKeys) LogValue() slog.Value {
 
 // Derive returns a key of size bytes for every key of the ring, derived with HKDF-SHA-256 (RFC 5869, no salt) and the
 // purpose as info, so that a purpose never uses a key of the ring directly and two purposes never share a key (R-ARCH-021:
-// the content URLs use "trove content-url v1", the registry tokens "trove registry token v1"). The active key's derivation
+// the content URLs use "quader content-url v1", the registry tokens "quader registry token v1"). The active key's derivation
 // signs; every key's derivation verifies, so a rotation of the ring needs no new secret for the purpose. info must be
 // non-empty and size between 16 and 64 bytes.
 func (r *KeyRing) Derive(info string, size int) (*DerivedKeys, error) {

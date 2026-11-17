@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 // eventually polls until the condition holds: the tests wait for a period of the cache to pass
@@ -107,7 +107,7 @@ func TestR_NUGET_015_RegistrationsAreRenderedOnTheServingRepository(t *testing.T
 	}
 
 	// Every address of the document except the web links of people (projectUrl, licenseUrl,
-	// iconUrl, advisoryUrl) is a trove address; the upstream's deprecation and advisory of 13.0.1
+	// iconUrl, advisoryUrl) is a quader address; the upstream's deprecation and advisory of 13.0.1
 	// come without its @id and @type (Q-NUGET-85).
 	a := e.get(rep, rRemote, "v3/registration-semver2/newtonsoft.json/index.json")
 	if !strings.Contains(string(a.Body), `"deprecation":{"alternatePackage":{"id":"Newtonsoft.Json","range":"[13.0.3, )"},"message":"Use 13.0.3 or later.","reasons":["Legacy","CriticalBugs"]}`) ||
@@ -169,7 +169,7 @@ func TestR_NUGET_015_AnIDWithManyVersionsIsRePagedAndCollapsed(t *testing.T) {
 	total := 0
 	for _, p := range d.Items {
 		if len(p.Items) != 0 {
-			t.Errorf("page %s..%s is inlined: trove's paging does not inline 200 versions", p.Lower, p.Upper)
+			t.Errorf("page %s..%s is inlined: quader's paging does not inline 200 versions", p.Lower, p.Upper)
 		}
 		path := strings.TrimPrefix(p.ID, feedBase+"/api/nuget/it/"+rRemote+"/")
 		pg := e.get(rep, rRemote, path)
@@ -515,12 +515,12 @@ func (m *manyPages) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.next.ServeHTTP(w, r)
 }
 
-// TestR_NUGET_015_AnIndexOfMorePagesThanTroveReadsIs502AndFetchesNoPage (Q-NUGET-83): an upstream
+// TestR_NUGET_015_AnIndexOfMorePagesThanQuaderReadsIs502AndFetchesNoPage (Q-NUGET-83): an upstream
 // whose registration index of an ID lists more pages than one rendering reads is answered 502
 // nuget_invalid_upstream_document before a page is fetched, and nothing of the index is stored,
 // so the next request is refused the same way and costs one index request, not one per page.
 // Before, every page was fetched, stored and mapped, each retry paying again.
-func TestR_NUGET_015_AnIndexOfMorePagesThanTroveReadsIs502AndFetchesNoPage(t *testing.T) {
+func TestR_NUGET_015_AnIndexOfMorePagesThanQuaderReadsIs502AndFetchesNoPage(t *testing.T) {
 	mp := &manyPages{pages: 600}
 	e := newRemoteEnv(t, remoteOptions{Wrap: mp.wrap})
 	rep := e.start(1)[0]
@@ -692,7 +692,7 @@ func TestR_NUGET_015_APackageTheFlatContainerDoesNotHaveIsFetchedFromThePackageC
 }
 
 // TestR_NUGET_003_ANonASCIIIDOnARemoteIsServedAndCached: a legacy ID outside ASCII is served and cached under the path a
-// client builds, which lowercases every character (.NET ToLowerInvariant); trove lowercases nothing of it but its ASCII
+// client builds, which lowercases every character (.NET ToLowerInvariant); quader lowercases nothing of it but its ASCII
 // letters. The same ID with its capital letter left in the path comes from no client and is the 404 of a missing
 // resource (id.ClientForm, R-NUGET-003).
 func TestR_NUGET_003_ANonASCIIIDOnARemoteIsServedAndCached(t *testing.T) {
@@ -705,7 +705,7 @@ func TestR_NUGET_003_ANonASCIIIDOnARemoteIsServedAndCached(t *testing.T) {
 	if l := e.get(rep, rRemote, "v3/flatcontainer/"+url.PathEscape("Ünïcode.pkg")+"/index.json"); l.Status != 404 {
 		t.Errorf("a path with the capital Ü no client sends: %d %s, want 404", l.Status, l.Body)
 	}
-	escaped := url.PathEscape("ünïcode.pkg") // the client's lowercase form; trove lowercases only ASCII letters itself
+	escaped := url.PathEscape("ünïcode.pkg") // the client's lowercase form; quader lowercases only ASCII letters itself
 	l := e.get(rep, rRemote, "v3/flatcontainer/"+escaped+"/index.json")
 	if l.Status != 200 || strings.Join(versionsOf(t, l), ",") != "1.0.0" {
 		t.Fatalf("version list: %d %s", l.Status, l.Body)
@@ -860,8 +860,8 @@ func TestR_NUGET_015_APackageThatIsNoPackageIsServedAsItCameCountedAndGetsNoRows
 	if got := e.cacheRows(rRemote, abstract); got != 0 {
 		t.Errorf("%d NuGet rows for bytes that are no package", got)
 	}
-	if got := sumSeries(rep.Metrics(t), "trove_nuget_remote_unparseable_packages_total{"); got != 1 {
-		t.Errorf("trove_nuget_remote_unparseable_packages_total = %v, want 1", got)
+	if got := sumSeries(rep.Metrics(t), "quader_nuget_remote_unparseable_packages_total{"); got != 1 {
+		t.Errorf("quader_nuget_remote_unparseable_packages_total = %v, want 1", got)
 	}
 	// A second request is served from the cache.
 	if b := e.get(rep, rRemote, nupkgPath("Contoso.Core.Abstractions", "1.0.0")); b.Status != 200 || string(b.Body) != "this is not a package" {
@@ -916,12 +916,12 @@ func (m *wideLeaves) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.next.ServeHTTP(w, r)
 }
 
-// TestR_NUGET_015_APageOfMoreLeavesThanTroveReadsIs502AndMapsNothing (Q-NUGET-83): a registration
+// TestR_NUGET_015_APageOfMoreLeavesThanQuaderReadsIs502AndMapsNothing (Q-NUGET-83): a registration
 // page that holds more leaves than one rendering reads is refused at its fill with 502
 // nuget_invalid_upstream_document, before a leaf is converted or an address mapped: no URL-map
 // row is written. Before, the fill wrote one row per leaf in its transaction (40,000 here) and
 // only the rendering afterwards refused the page.
-func TestR_NUGET_015_APageOfMoreLeavesThanTroveReadsIs502AndMapsNothing(t *testing.T) {
+func TestR_NUGET_015_APageOfMoreLeavesThanQuaderReadsIs502AndMapsNothing(t *testing.T) {
 	e := newRemoteEnv(t, remoteOptions{Wrap: (&wideLeaves{leaves: 40_000}).wrap})
 	rep := e.start(1)[0]
 	a := e.get(rep, rRemote, "v3/registration-semver2/contoso.wide/index.json")

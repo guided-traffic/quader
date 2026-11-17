@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
 )
 
 // asBastion sends a request to the main installation through the front the way the Bastion does: the caller's
-// credential in Authorization, the Bastion token in Trove-Bastion-Authorization, the interface version and the
+// credential in Authorization, the Bastion token in Quader-Bastion-Authorization, the interface version and the
 // forwarded headers of R-BAS-017.
 func (w *world) asBastion(method, path, caller, bst string, hdr ...string) (int, http.Header, []byte) {
 	w.t.Helper()
@@ -105,7 +105,7 @@ func TestR_BAS_013_TheMarkingContractAtTheWire(t *testing.T) {
 		}
 	})
 	t.Run("an invalid credential is subject invalid", func(t *testing.T) {
-		status, h, _ := w.asBastion("GET", tgz, "trv_pat_"+strings.Repeat("0", 40), w.bst)
+		status, h, _ := w.asBastion("GET", tgz, "qdr_pat_"+strings.Repeat("0", 40), w.bst)
 		if status != http.StatusUnauthorized || h.Get(iface.HeaderSubject) != "invalid" {
 			t.Fatalf("%d, subject %q", status, h.Get(iface.HeaderSubject))
 		}
@@ -201,7 +201,7 @@ func TestR_BAS_017_TheClientAddressAndTheBastionsHost(t *testing.T) {
 	}
 	// A failed credential from the caller is the caller's failure at the main installation: its request log names the
 	// caller's address (R-AUTH-038 counts that address).
-	r.get(t, tarballPath(npmAll, "@acme/sdk", "1.0.0"), maintest.GenerateTokenWithPrefix(t, "trv_pat_"), "X-Forwarded-For", "192.0.2.1, "+caller)
+	r.get(t, tarballPath(npmAll, "@acme/sdk", "1.0.0"), maintest.GenerateTokenWithPrefix(t, "qdr_pat_"), "X-Forwarded-For", "192.0.2.1, "+caller)
 	testWait(t, "the main installation's request log of the refused credential", func() bool {
 		for _, line := range strings.Split(w.main.Logs.String(), "\n") {
 			if strings.Contains(line, `"request completed"`) && strings.Contains(line, `"status":401`) && strings.Contains(line, `"remote_addr":"`+caller+`"`) {

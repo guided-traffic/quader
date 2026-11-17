@@ -11,7 +11,7 @@ import (
 )
 
 // TestDeclaredCIIssuersReachTheMigrationJob (R-CI-001): ci.issuers and the other ci.* keys under
-// config are rendered into the file of the migration Job, which applies the issuers (trove migrate,
+// config are rendered into the file of the migration Job, which applies the issuers (quader migrate,
 // R-CI-001, Q-CI-16), and into the file of the replicas unchanged.
 // Contract of R-CI-001 (phase 5); the requirement's evidence comes from the tests of its work package.
 func TestDeclaredCIIssuersReachTheMigrationJob(t *testing.T) {
@@ -23,7 +23,7 @@ func TestDeclaredCIIssuersReachTheMigrationJob(t *testing.T) {
 			t.Fatalf("no ConfigMap %s", configMap)
 		}
 		var cfg map[string]any
-		if err := yaml.Unmarshal([]byte(str(cm, "data", "trove.yaml")), &cfg); err != nil {
+		if err := yaml.Unmarshal([]byte(str(cm, "data", "quader.yaml")), &cfg); err != nil {
 			t.Fatal(err)
 		}
 		got, _ := cfg["ci"].(map[string]any)
@@ -36,7 +36,7 @@ func TestDeclaredCIIssuersReachTheMigrationJob(t *testing.T) {
 		"name": "gitlab-main", "kind": "gitlab", "issuer": "https://gitlab.example.com", "public_issuer": false,
 		"allowed_audiences": []any{"https://packages.example.com"}, "ca_bundle_ref": "file:/var/run/secrets/gitlab-ca/ca.crt",
 	}}
-	for _, name := range []string{"trove-migrate", "trove-config"} {
+	for _, name := range []string{"quader-migrate", "quader-config"} {
 		t.Run("the file of "+name+" carries ci.issuers and the ci keys", func(t *testing.T) { // R-CI-001
 			ci := ciOf(t, name)
 			if !reflect.DeepEqual(ci["issuers"], wantIssuers) {

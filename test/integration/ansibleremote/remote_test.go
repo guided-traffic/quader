@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ansiblestub"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/ansiblestub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func sum(b []byte) string { h := sha256.Sum256(b); return hex.EncodeToString(h[:]) }

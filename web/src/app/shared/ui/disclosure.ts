@@ -8,7 +8,7 @@ let nextDisclosureId = 1;
  * muted line of hint, and the content that folds with the animation of the style guide.
  */
 @Component({
-  selector: 'trove-disclosure',
+  selector: 'quader-disclosure',
   template: `
     <div class="disclosure">
       <h2 class="heading">
@@ -33,51 +33,51 @@ let nextDisclosureId = 1;
       display: block;
     }
     .disclosure {
-      padding-block: var(--trove-space-3);
-      border-block-start: 1px solid var(--trove-border);
+      padding-block: var(--quader-space-3);
+      border-block-start: 1px solid var(--quader-border);
     }
     .heading {
       margin: 0;
-      font-size: var(--trove-text-size);
+      font-size: var(--quader-text-size);
       font-weight: 600;
     }
     .toggle {
       display: inline-flex;
       align-items: center;
-      gap: var(--trove-space-1);
+      gap: var(--quader-space-1);
       padding: 0;
       border: 0;
       background: none;
-      color: var(--trove-heading);
+      color: var(--quader-heading);
       font: inherit;
       cursor: pointer;
     }
     .toggle:focus-visible {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: 2px;
     }
     .chevron {
       font-size: 1.25rem;
-      transition: transform var(--trove-motion-duration) var(--trove-motion-easing);
+      transition: transform var(--quader-motion-duration) var(--quader-motion-easing);
     }
     .note {
-      margin-inline-start: var(--trove-space-2);
-      color: var(--trove-text-muted);
-      font-size: var(--trove-text-muted-size);
+      margin-inline-start: var(--quader-space-2);
+      color: var(--quader-text-muted);
+      font-size: var(--quader-text-muted-size);
       font-weight: 400;
     }
     .toggle[aria-expanded='true'] .chevron {
       transform: rotate(90deg);
     }
     .hint {
-      margin: var(--trove-space-1) 0 0;
-      padding-inline-start: calc(1.25rem + var(--trove-space-1));
-      color: var(--trove-text-muted);
-      font-size: var(--trove-text-muted-size);
+      margin: var(--quader-space-1) 0 0;
+      padding-inline-start: calc(1.25rem + var(--quader-space-1));
+      color: var(--quader-text-muted);
+      font-size: var(--quader-text-muted-size);
     }
     .body {
-      padding-block-start: var(--trove-space-3);
-      padding-inline-start: calc(1.25rem + var(--trove-space-1));
+      padding-block-start: var(--quader-space-3);
+      padding-inline-start: calc(1.25rem + var(--quader-space-1));
     }
   `,
 })
@@ -89,5 +89,5 @@ export class Disclosure {
   readonly note = input('');
   readonly expanded = model(false);
 
-  protected readonly bodyId = `trove-disclosure-${nextDisclosureId++}`;
+  protected readonly bodyId = `quader-disclosure-${nextDisclosureId++}`;
 }

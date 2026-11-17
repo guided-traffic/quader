@@ -9,15 +9,15 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/ci/subject"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/subject"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The exchange's one transaction (R-CI-007 steps 3 to 10, R-CI-018, R-CI-020, Q-CI-15, Q-CI-49): the issuer row FOR
@@ -214,7 +214,7 @@ func (s *ExchangeService) replay(ctx context.Context, qs exchangeQueries, row Is
 			return s.unavailable(err)
 		}
 		if predatesRestore(v.IssuedAt, restoredAtOf(us), time.Duration(row.ClockSkewSeconds)*time.Second) {
-			return refuse(reason.SubjectTokenPredatesRestore, "the subject token was issued before the last restore of trove finished; request a new one")
+			return refuse(reason.SubjectTokenPredatesRestore, "the subject token was issued before the last restore of Quader finished; request a new one")
 		}
 	}
 	if v.JTI == "" {

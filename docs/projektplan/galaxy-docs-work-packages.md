@@ -7,7 +7,7 @@ The plan of owner task T-19 ([promt.md](promt.md) section 10), written by the pl
 migrations **00071** and **00072**.
 
 What the owner asked: galaxy_ng shows a collection's documentation (Install, Documentation with a search field and a tree, Contents, Import log,
-Dependencies, Distributions, the links); trove shows it for local, remote and virtual repositories, as the **wiki** part of T-18. The spec decides
+Dependencies, Distributions, the links); Quader shows it for local, remote and virtual repositories, as the **wiki** part of T-18. The spec decides
 everything below; a builder takes no design decision of its own, and a question the spec leaves open is reported, not decided.
 
 ## 0 · What was found, and what it decides
@@ -17,7 +17,7 @@ Verified in this repository and against the public Galaxy (2026-11-11):
 - The documentation is the sub-resource `…/versions/<v>/docs-blob/` on the public Galaxy and on the owner's galaxy_ng, not a member of the version document.
   `ansible.netcommon` 8.7.1: 154,868 bytes, 65 entries, keys `collection_readme`, `contents`, `documentation_files` (read again for this plan);
   community.general 10.0.0: 3.5 MB, 833 entries; fortinet.fortios 2.6.0: 6.5 MB; the owner's `hans_fischer.common` 1.5.0: 4,122 bytes, 32 entries, every `doc_strings` null.
-- galaxy-importer builds the document at import with `ansible-doc` and renders only Markdown (Q-ANS-56, Q-ANS-64). trove generates the entries for a local publish
+- galaxy-importer builds the document at import with `ansible-doc` and renders only Markdown (Q-ANS-56, Q-ANS-64). Quader generates the entries for a local publish
   from the archive's text and passes an upstream's document through (Q-ANS-56, Q-ANS-58).
 - **A format cannot import the README renderer** (`internal/archtest/imports.go`, `formatAllowed`): the Host gains `Markup()` (Q-ANS-66, ADR-196). The
   first draft of this plan put a renderer glue package into the format; that would have failed the architecture test.
@@ -27,7 +27,7 @@ Verified in this repository and against the public Galaxy (2026-11-11):
 - The API layer already reaches the Ansible store (`Options.Ansible`, `internal/api/v1/ansible_api.go`) and the README renderer (`ps.Readme`); the three operations live there.
 - The package page already shows Requires Ansible, licences, tags, links and dependencies for the format (`web/src/app/features/packages/package-detail.ts`, `ansibleFacts`, `links`).
 
-Not verified, and this is the gap: that `ansible-doc` never loads plugin code for some plugin types (not needed: trove runs none); the compression ratio of the rows (H-890); T-18's Go
+Not verified, and this is the gap: that `ansible-doc` never loads plugin code for some plugin types (not needed: Quader runs none); the compression ratio of the rows (H-890); T-18's Go
 name and marker for the wiki check (the contract below names it "the wiki check of R-AUTHZ-034 (Go name fixed by T-18's WP0)" and the development agent aligns the names when both
 plans are merged); that the view service can list a version's repositories in a virtual repository's plan order without a change (B1's first task of step 6 reads it, section 3).
 
@@ -160,7 +160,7 @@ type Markup interface {
 
 ### 2.6 OpenAPI (`api/openapi.yaml`, written complete in WP0; every operation answers `501 ansible_not_implemented` until B1 builds it)
 
-All three operations: `tags: [packages]`, `x-trove-permission: {public: true}` (the handler decides visibility as the README operation does, R-API-029), `x-trove-part: wiki` (Q-API-260),
+All three operations: `tags: [packages]`, `x-quader-permission: {public: true}` (the handler decides visibility as the README operation does, R-API-029), `x-quader-part: wiki` (Q-API-260),
 parameters `PackageId`, `PackageVersionPath`, the query parameter `repository` (`<projectKey>/<repoKey>`, optional), `IfNoneMatch`; responses 200, 304, 400, 401, 404, 422 (tree only), 429, 500, 503.
 
 | operationId | Path | Query | 200 schema |
@@ -196,7 +196,7 @@ PackageDocFile:
 ```
 
 `listAnsibleImportTasks` gains the optional query parameters `package` and `version` (Q-API-262). The version details schema gains the optional `metadata.docs` (`state`, `source`, `entries`; Q-API-263).
-The repository document's `ansible` member gains `fetchDocumentation` (boolean, default `true`, remote only; also in `settings.schema.json`). The document validator reads `x-trove-part` (value `wiki`; any other value refused)
+The repository document's `ansible` member gains `fetchDocumentation` (boolean, default `true`, remote only; also in `settings.schema.json`). The document validator reads `x-quader-part` (value `wiki`; any other value refused)
 into `Operation.Part` in `internal/api/v1/document.go`. The generated code (`make generate`) is committed with WP0.
 
 ### 2.7 The route, the call site of the wiki check and the job
@@ -210,7 +210,7 @@ into `Operation.Part` in `internal/api/v1/document.go`. The generated code (`mak
   API-side form of the same check (T-18 names it); the call is one function of `ansible_docs.go`.
 - `internal/formatdata/ansible/jobs.go`: the kind `ansible-docs-fill` registered with `Handlers.DocsFill` (nil answers the permanent "not built" like `Reindex`), `DocsFillJobKind`, the key
   `ansible-docs:<repoId>:<name>:<version>` (R-ANS-042).
-- Migrations: **00071_ansible_doc_tables.sql** (`ansible_version_docs`, `ansible_doc_entries`, `ansible_doc_files`, the GIN index on `search`) and **00072_ansible_doc_fetches.sql**, `-- trove:phase expand`, columns as
+- Migrations: **00071_ansible_doc_tables.sql** (`ansible_version_docs`, `ansible_doc_entries`, `ansible_doc_files`, the GIN index on `search`) and **00072_ansible_doc_fetches.sql**, `-- quader:phase expand`, columns as
   R-ANS-033. The backup table registry marks all four derived (not exported, R-BAK-004).
 
 ## 3 · What each builder does
@@ -283,6 +283,6 @@ The e2e rows are the proof against the defect class that integration missed in F
 ## 7 · Lines the development agent applies (no builder edits these files)
 
 - `promt.md` section 10, T-19: "specified 2026-11-11 (R-ANS-033 to R-ANS-046, R-UI-060 to R-UI-064, Q-ANS-56 to Q-ANS-70, Q-UI-240 to Q-UI-247, Q-API-260 to Q-API-263, ADR-196, ADR-197, H-890 to H-899); plan:
-  galaxy-docs-work-packages.md; two builders; align `wikigate.go` and the `x-trove-part` marker with T-18's WP0 at the merge".
+  galaxy-docs-work-packages.md; two builders; align `wikigate.go` and the `x-quader-part` marker with T-18's WP0 at the merge".
 - `FULL.md` block F0 gains: "🟡 Documentation of collections (Documentation, Contents and Import log tabs, `docs-blob/`, generated for local, kept for remote, wiki gated)".
 - The "Changes to other pages" table of ansible.md is applied by the builder named in it (B1 for backup, architecture, operations; the development agent for authorization).

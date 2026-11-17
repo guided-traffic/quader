@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 type ctxKey int
@@ -157,7 +157,7 @@ func PackageChallenge(r *http.Request, err error) error {
 		return err
 	}
 	c := *e
-	c.Challenge = `Basic realm="trove"`
+	c.Challenge = `Basic realm="quader"`
 	return &c
 }
 

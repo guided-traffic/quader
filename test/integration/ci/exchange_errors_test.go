@@ -21,16 +21,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 func TestR_CI_008_EveryReasonOfTheErrorTable(t *testing.T) {
 	x := newXEnv(t, options{valkey: true, env: []string{
-		"TROVE_DATABASE_SESSION_LOCK_TIMEOUT=1s", "TROVE_CI_SIGNING_KEYS_MAX_STALE=2m", "TROVE_CI_SIGNING_KEYS_MAX_REFRESH_INTERVAL=1m",
-		"TROVE_CI_SIGNING_KEYS_DEFAULT_REFRESH_INTERVAL=1m", "TROVE_CI_SIGNING_KEYS_MIN_REFRESH_INTERVAL=30s",
+		"QUADER_DATABASE_SESSION_LOCK_TIMEOUT=1s", "QUADER_CI_SIGNING_KEYS_MAX_STALE=2m", "QUADER_CI_SIGNING_KEYS_MAX_REFRESH_INTERVAL=1m",
+		"QUADER_CI_SIGNING_KEYS_DEFAULT_REFRESH_INTERVAL=1m", "QUADER_CI_SIGNING_KEYS_MIN_REFRESH_INTERVAL=30s",
 	}})
 	a := x.web("web-a")
 	x.issuer(a)
@@ -38,9 +38,9 @@ func TestR_CI_008_EveryReasonOfTheErrorTable(t *testing.T) {
 	// A mapping whose grant renders the environment claim: a token without one fails to render (R-CI-014).
 	x.addMapping(a, mapping("env-read", 200, all(eq("project_id", "5555")), grants(inline("it/npm-internal", []string{"@{{ environment | slug }}/*"}, "read"))))
 	// The other issuers of the destructive cases, each of a double of its own.
-	other := startDouble(t, oidcstub.Config{Audience: troveAudience})
-	stale := startDouble(t, oidcstub.Config{Audience: troveAudience})
-	broken := startDouble(t, oidcstub.Config{Audience: troveAudience})
+	other := startDouble(t, oidcstub.Config{Audience: quaderAudience})
+	stale := startDouble(t, oidcstub.Config{Audience: quaderAudience})
+	broken := startDouble(t, oidcstub.Config{Audience: quaderAudience})
 	for name, d := range map[string]*double{"gitlab-other": other, "gitlab-stale": stale, "gitlab-broken": broken} {
 		wantStatus(t, x.do(a, "POST", issuersPath, d.body(name)), 201, "")
 		wantStatus(t, x.do(a, "POST", mappingsOf(name), readOnlyMapping("all-read", 1, releaseCondition(), "it/npm-internal")), 201, "")
@@ -79,7 +79,7 @@ func TestR_CI_008_EveryReasonOfTheErrorTable(t *testing.T) {
 			return x.post(a, "text/plain", []byte(form(good()).Encode()))
 		}},
 		{"the job-token subject type (P2)", "invalid_request", "unsupported_subject_token_type", 400, func() testenv.Answer {
-			return x.exchange(a, good(), "subject_token_type", "urn:trove:token-type:gitlab-job-token")
+			return x.exchange(a, good(), "subject_token_type", "urn:quader:token-type:gitlab-job-token")
 		}},
 		{"another subject type", "invalid_request", "unsupported_subject_token_type", 400, func() testenv.Answer {
 			return x.exchange(a, good(), "subject_token_type", "urn:ietf:params:oauth:token-type:saml2")
@@ -144,7 +144,7 @@ func TestR_CI_008_EveryReasonOfTheErrorTable(t *testing.T) {
 			return x.exchange(a, x.mint(oidcstub.MintOptions{Claims: map[string]any{"aud": "https://other.example.com"}}))
 		}},
 		{"an aud that also names another service", "invalid_request", "audience_not_exclusive", 400, func() testenv.Answer {
-			return x.exchange(a, x.mint(oidcstub.MintOptions{Claims: map[string]any{"aud": []string{troveAudience, "https://vault.example.com"}}}))
+			return x.exchange(a, x.mint(oidcstub.MintOptions{Claims: map[string]any{"aud": []string{quaderAudience, "https://vault.example.com"}}}))
 		}},
 		{"exp 61 s ago", "invalid_request", "token_expired", 400, func() testenv.Answer {
 			return x.exchange(a, x.mint(oidcstub.MintOptions{Claims: map[string]any{"exp": now - 61, "iat": now - 900, "nbf": now - 905}}))
@@ -288,14 +288,14 @@ func TestR_CI_008_EveryReasonOfTheErrorTable(t *testing.T) {
 				t.Errorf("%s is not counted", s)
 			}
 		}
-		if testenv.MetricValue(m, `trove_ci_exchange_duration_seconds_count{issuer="`+xIssuer+`"}`) < 1 {
+		if testenv.MetricValue(m, `quader_ci_exchange_duration_seconds_count{issuer="`+xIssuer+`"}`) < 1 {
 			t.Error("the duration of the exchanges is not observed")
 		}
 	})
 }
 
 func TestR_CI_008_ExposeReasonFalseHidesTheReasonButNotTheRequestID(t *testing.T) {
-	x := newXEnv(t, options{valkey: true, env: []string{"TROVE_CI_EXCHANGE_EXPOSE_REASON=false"}})
+	x := newXEnv(t, options{valkey: true, env: []string{"QUADER_CI_EXCHANGE_EXPOSE_REASON=false"}})
 	a := x.web("web-a")
 	x.issuer(a)
 	r := x.exchangeFrom(a, "198.51.100.20", x.mint(oidcstub.MintOptions{Claims: map[string]any{"aud": "https://other.example.com"}}))
@@ -331,7 +331,7 @@ func TestR_CI_007_TheEndpointsOtherAnswers(t *testing.T) {
 		}
 	})
 	t.Run("R-CI-007 ci.exchange.enabled false answers 404 and counts nothing", func(t *testing.T) {
-		x := newXEnv(t, options{valkey: true, env: []string{"TROVE_CI_EXCHANGE_ENABLED=false"}})
+		x := newXEnv(t, options{valkey: true, env: []string{"QUADER_CI_EXCHANGE_ENABLED=false"}})
 		a := x.web("web-a")
 		x.issuer(a)
 		r := x.exchange(a, x.mint(oidcstub.MintOptions{}))

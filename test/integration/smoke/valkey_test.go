@@ -15,7 +15,7 @@ import (
 
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func tlsConfig(t *testing.T, caFile string) *tls.Config {
@@ -31,7 +31,7 @@ func tlsConfig(t *testing.T, caFile string) *tls.Config {
 	return &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}
 }
 
-// sentinelClient is a client built the way trove builds its own: Sentinel
+// sentinelClient is a client built the way quader builds its own: Sentinel
 // discovery, TLS with certificate verification, the least-privilege ACL user.
 func sentinelClient(t *testing.T, v testenv.Valkey) valkey.Client {
 	t.Helper()
@@ -40,14 +40,14 @@ func sentinelClient(t *testing.T, v testenv.Valkey) valkey.Client {
 		InitAddress:  v.Sentinels,
 		Username:     v.Username,
 		Password:     v.Password,
-		ClientName:   "trove:smoke:main",
+		ClientName:   "quader:smoke:main",
 		TLSConfig:    tc,
 		DisableCache: true,
 		Sentinel: valkey.SentinelOption{
 			MasterSet:               v.PrimaryName,
 			Password:                v.SentinelPassword,
 			TLSConfig:               tc,
-			ClientName:              "trove:smoke:sentinel",
+			ClientName:              "quader:smoke:sentinel",
 			TopologyRefreshInterval: 2 * time.Second,
 		},
 	})
@@ -152,7 +152,7 @@ func TestValkeyServerLineAndTLSOnly(t *testing.T) {
 	}
 }
 
-// TestValkeyExampleACLRuleHasNoDenial runs every command trove needs as the
+// TestValkeyExampleACLRuleHasNoDenial runs every command quader needs as the
 // least-privilege user and asserts that ACL LOG stays empty (R-ARCH-031's example
 // rule), and that a command outside the rule is denied.
 func TestValkeyExampleACLRuleHasNoDenial(t *testing.T) {
@@ -223,7 +223,7 @@ func TestValkeyExampleACLRuleHasNoDenial(t *testing.T) {
 		t.Fatalf("ACL LOG: %v", err)
 	}
 	if len(log) != 0 {
-		t.Errorf("ACL LOG holds %d denials after trove's commands; the example rule is too narrow: %v", len(log), log)
+		t.Errorf("ACL LOG holds %d denials after quader's commands; the example rule is too narrow: %v", len(log), log)
 	}
 
 	// The rule is a real restriction: a command outside it is refused.

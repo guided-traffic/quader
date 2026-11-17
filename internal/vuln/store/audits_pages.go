@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/vuln"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/vuln"
 )
 
 // PagesSafetyTTL is the safety TTL of the cache vuln_nuget_page: the bound on how long a replica that missed every change

@@ -3,7 +3,7 @@ package npm
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/publish"
+	"github.com/guided-traffic/quader/internal/formats/npm/publish"
 )
 
 // R-NPM-007 step 2: a publish whose parts are each within their limit (the tarball, the metadata

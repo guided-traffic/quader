@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // sourceOf takes a backup of an installation that is already running (the formats fixture), with the remote caches left out of
@@ -42,7 +42,7 @@ func sourceOf(t *testing.T, stack *testenv.Stack, excludeCaches bool) *source {
 		}
 		return b
 	}
-	tcfg := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), "none")
+	tcfg := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), "none")
 	tgt := newTarget(t, tcfg)
 	cleanup(t, tgt, tcfg.Target.Prefix+"/")
 	layout := format.Layout{Prefix: tcfg.Target.Prefix}

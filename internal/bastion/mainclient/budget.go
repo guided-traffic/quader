@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
 )
 
 // BudgetOptions are the keys of R-BAS-025.
@@ -46,7 +46,7 @@ type waiter struct {
 	ch      chan struct{}
 }
 
-// NewBudget returns the budget of one replica and exports its size as trove_bastion_main_budget.
+// NewBudget returns the budget of one replica and exports its size as quader_bastion_main_budget.
 func NewBudget(o BudgetOptions) *SlotBudget {
 	replicas := max(o.Replicas, 1)
 	total := max(int(math.Ceil(float64(max(o.MaxConcurrent, 1))/float64(replicas))), 1)

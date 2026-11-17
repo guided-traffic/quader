@@ -16,7 +16,7 @@ import (
 )
 
 // s3Multipart lists the multipart uploads of the blob bucket with the AWS CLI of the dev profile, run as a Job in the namespace of the release
-// with the credentials of Secret trove-s3 (the pattern of the restore drill).
+// with the credentials of Secret quader-s3 (the pattern of the restore drill).
 func s3Multipart(t *testing.T, name string) string {
 	t.Helper()
 	image := readVersionPin(t, "DEV_AWSCLI_IMAGE")
@@ -28,10 +28,10 @@ func s3Multipart(t *testing.T, name string) string {
 "securityContext":{"allowPrivilegeEscalation":false,"readOnlyRootFilesystem":true,"capabilities":{"drop":["ALL"]}},
 "command":["sh","-c",%q],
 "volumeMounts":[{"name":"tmp","mountPath":"/tmp"},{"name":"s3","mountPath":"/secrets"},{"name":"tls","mountPath":"/tls"}]}],
-"volumes":[{"name":"tmp","emptyDir":{}},{"name":"s3","secret":{"secretName":"trove-s3"}},{"name":"tls","secret":{"secretName":"trove-s3-tls"}}]}}}}`,
+"volumes":[{"name":"tmp","emptyDir":{}},{"name":"s3","secret":{"secretName":"quader-s3"}},{"name":"tls","secret":{"secretName":"quader-s3-tls"}}]}}}}`,
 		name, image, `set -eu
 export AWS_ACCESS_KEY_ID="$(cat /secrets/access-key-id)" AWS_SECRET_ACCESS_KEY="$(cat /secrets/secret-access-key)" AWS_DEFAULT_REGION=us-east-1 AWS_CA_BUNDLE=/tls/ca.crt
-aws --endpoint-url https://trove-s3.trove.svc:9000 s3api list-multipart-uploads --bucket trove-blobs --query 'length(Uploads || `+"`[]`"+`)' --output text`)
+aws --endpoint-url https://quader-s3.quader.svc:9000 s3api list-multipart-uploads --bucket quader-blobs --query 'length(Uploads || `+"`[]`"+`)' --output text`)
 	create := exec.Command("kubectl", "--context", cfg.kubeContext, "-n", cfg.namespace, "create", "-f", "-")
 	create.Stdin = strings.NewReader(manifest)
 	if b, err := create.CombinedOutput(); err != nil {
@@ -82,7 +82,7 @@ func TestOCILong_R_OCI_011_DrainOfThePodThatReceivesAPush(t *testing.T) {
 	}()
 
 	received := func() string {
-		return sql(t, `SELECT coalesce(max(s.received), 0) FROM trove.upload_sessions s JOIN trove.repositories r ON r.id = s.repo_id WHERE r.key = '`+key+`' AND s.state = 'open'`)
+		return sql(t, `SELECT coalesce(max(s.received), 0) FROM quader.upload_sessions s JOIN quader.repositories r ON r.id = s.repo_id WHERE r.key = '`+key+`' AND s.state = 'open'`)
 	}
 	waitFor(t, "the upload session to have received 48 MiB", 5*time.Minute, time.Second, func() bool {
 		var n int64
@@ -127,9 +127,9 @@ func TestOCILong_R_OCI_011_DrainOfThePodThatReceivesAPush(t *testing.T) {
 
 	// The session the drain cut stays open until it expires (storage.uploads.session_ttl, four hours): the clock of the test moves its last
 	// activity back, the collection run (R-STOR-011 Expiry) aborts it, and the bucket keeps no part of it.
-	if open := sql(t, `SELECT count(*) FROM trove.upload_sessions s JOIN trove.repositories r ON r.id = s.repo_id WHERE r.key = '`+key+`' AND s.state IN ('open', 'completing', 'assembled')`); open != "0" {
+	if open := sql(t, `SELECT count(*) FROM quader.upload_sessions s JOIN quader.repositories r ON r.id = s.repo_id WHERE r.key = '`+key+`' AND s.state IN ('open', 'completing', 'assembled')`); open != "0" {
 		t.Logf("%s abandoned session(s) of the drained push: aging them past the session TTL", open)
-		sql(t, `UPDATE trove.upload_sessions SET last_activity_at = now() - interval '25 hours' WHERE state IN ('open', 'completing', 'assembled') AND repo_id = (SELECT id FROM trove.repositories WHERE key = '`+key+`')`)
+		sql(t, `UPDATE quader.upload_sessions SET last_activity_at = now() - interval '25 hours' WHERE state IN ('open', 'completing', 'assembled') AND repo_id = (SELECT id FROM quader.repositories WHERE key = '`+key+`')`)
 	}
 	waitFor(t, "a collection run to remove the multipart uploads of the abandoned session", 10*time.Minute, 15*time.Second, func() bool {
 		r, err := fx.adm.send("POST", "/api/v1/system/tasks/gc/run", nil)

@@ -13,7 +13,7 @@ export function describeCiProblem(code: string | null): string | null {
     case 'issuer_mismatch':
       return $localize`:@@problem.ci.issuer-mismatch:The discovery document names a different issuer than the one entered. The issuer URL must match the document exactly.`;
     case 'no_usable_keys':
-      return $localize`:@@problem.ci.no-usable-keys:The issuer publishes no signing key that trove can use. Keys that are too weak or of an unknown type are ignored.`;
+      return $localize`:@@problem.ci.no-usable-keys:The issuer publishes no signing key that Quader can use. Keys that are too weak or of an unknown type are ignored.`;
     case 'algorithms_not_offered':
       return $localize`:@@problem.ci.algorithms-not-offered:The issuer does not offer any of the allowed signing algorithms.`;
     case 'pin_claim_not_immutable':

@@ -16,7 +16,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The resource types R-NUGET-014 picks from the service index, in order of preference. They are
@@ -104,7 +104,7 @@ func ParseDiscovery(doc []byte) (*Discovery, error) {
 		return nil, err
 	}
 	if d.Content == nil {
-		return nil, upstream("The upstream's service index lacks the resource PackageBaseAddress/3.0.0; trove cannot restore packages from it. A NuGet v2 feed is not supported.")
+		return nil, upstream("The upstream's service index lacks the resource PackageBaseAddress/3.0.0; Quader cannot restore packages from it. A NuGet v2 feed is not supported.")
 	}
 	if d.RegistrationType, d.Registration, err = pick(typesRegistration()); err != nil {
 		return nil, err
@@ -204,7 +204,7 @@ func (d *Discovery) CatalogURL() *url.URL {
 	return &c
 }
 
-// upstream is the error of an upstream document trove cannot use.
+// upstream is the error of an upstream document quader cannot use.
 func upstream(detail string) error {
 	return errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, detail)
 }

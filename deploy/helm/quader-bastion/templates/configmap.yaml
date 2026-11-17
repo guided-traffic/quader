@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "quader-bastion.fullname" . }}-config
+  labels:
+    {{- include "quader-bastion.labels" (dict "root" . "component" "config") | nindent 4 }}
+  {{- with (include "quader-bastion.commonAnnotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+data:
+  quader.yaml: |
+    {{- include "quader-bastion.config" . | nindent 4 }}

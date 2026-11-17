@@ -4,11 +4,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/api/dispatch"
-	"github.com/guided-traffic/trove/internal/api/registry/route"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/api/dispatch"
+	"github.com/guided-traffic/quader/internal/api/registry/route"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Pattern is the one pattern of the registry root on a router (R-OCI-003, Q-OCI-100): the whole subtree below /v2/, with every

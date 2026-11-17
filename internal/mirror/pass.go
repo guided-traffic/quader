@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // A pass attempt: the claim, the discovery and the fill, the stops and the end (R-REPO-053). One pass runs in one goroutine

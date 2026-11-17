@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/formathost"
-	"github.com/guided-traffic/trove/internal/vuln/evaluate"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/vuln/evaluate"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // The wiring of the client audits (R-VULN-017, R-VULN-018): the rule of the internal names over the claim

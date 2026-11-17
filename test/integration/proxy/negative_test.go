@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestNegativeCache is R-REPO-028: the L1, Valkey behind it, the validation window and
@@ -28,14 +28,14 @@ func TestNegativeCache(t *testing.T) {
 		}
 		for _, r := range []*replica{a, b} {
 			s := r.metadata(rem, path)
-			if s.status != 404 || s.cacheStatus() != "trove; hit; detail=negative" {
+			if s.status != 404 || s.cacheStatus() != "quader; hit; detail=negative" {
 				t.Fatalf("%s: %d %q", r.name, s.status, s.cacheStatus())
 			}
 		}
 		if n := up.Count("GET", "/"+path); n != 1 {
 			t.Fatalf("the upstream saw %d requests, want one for both replicas", n)
 		}
-		if got := b.metric("trove_remote_cache_lookups_total", "repo", "neg", "result", "negative_hit"); got != 1 {
+		if got := b.metric("quader_remote_cache_lookups_total", "repo", "neg", "result", "negative_hit"); got != 1 {
 			t.Fatalf("negative_hit = %v", got)
 		}
 	})
@@ -146,8 +146,8 @@ func TestNegativeCache(t *testing.T) {
 		if s := b.metadata(rem, "pkg/forged"); s.status != 200 || up.Count("GET", "/pkg/forged") != 1 {
 			t.Fatalf("%d, %d requests", s.status, up.Count("GET", "/pkg/forged"))
 		}
-		if got := gather(b.vkReg, "trove_valkey_cache_lookups_total", "cache", "negative", "result", "rejected"); got < 1 {
-			t.Fatalf("the refusal was not counted: trove_valkey_cache_lookups_total{negative,rejected} = %v", got)
+		if got := gather(b.vkReg, "quader_valkey_cache_lookups_total", "cache", "negative", "result", "rejected"); got < 1 {
+			t.Fatalf("the refusal was not counted: quader_valkey_cache_lookups_total{negative,rejected} = %v", got)
 		}
 	})
 

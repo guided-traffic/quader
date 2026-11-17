@@ -2,8 +2,8 @@
 
 The public npm registry's answers to two bulk audit requests and the OSV records behind them, taken on **2026-11-03** in one run
 ([SOURCE.json](SOURCE.json) lists the day, the counts and the SHA-256 of every file). They are what the reference comparison of
-[R-VULN-017](../../../../docs/spec/vulnerability-scanning.md#r-vuln-017--npm-audit-from-troves-advisory-data) (exit criterion E4b.5)
-compares trove's answer with: `TestR_VULN_017_TheReferenceLockfileMatchesThePublicAnswer` in
+[R-VULN-017](../../../../docs/spec/vulnerability-scanning.md#r-vuln-017--npm-audit-from-quaders-advisory-data) (exit criterion E4b.5)
+compares Quader's answer with: `TestR_VULN_017_TheReferenceLockfileMatchesThePublicAnswer` in
 [test/integration/vulnaudit](../../../integration/vulnaudit/reference_test.go) needs no network.
 
 | File | What it is |

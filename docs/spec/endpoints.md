@@ -8,7 +8,7 @@ Metadata filtering and the cache-fill policy (R-EP-018, R-EP-019) arrive with np
 implemented: the handler and the comparator in `internal/authz/journal_replay_exposure.go`, run by the replayer of the revocation
 journal.
 
-This page specifies endpoints: the named network entry points through which clients reach trove,
+This page specifies endpoints: the named network entry points through which clients reach Quader,
 and what each of them may serve. It covers:
 
 - the endpoint model and its configuration: one client listener per endpoint, an optional web pool,
@@ -51,7 +51,7 @@ HA-025, HA-027, HA-038 to HA-040), [operations-and-monitoring.md](../features/op
 [access-tokens.md](../features/access-tokens.md) (TOK-007),
 [beyond-baseline.md](../features/beyond-baseline.md) (BEYOND-030) and
 [formats/docker.md](../features/formats/docker.md) (PKG-DOCKER-007). Exposure rules per endpoint
-have no catalog entry; those requirements are `trove-only`.
+have no catalog entry; those requirements are `quader-only`.
 
 <details>
 <summary>Facts this page relies on, and how they were verified (2026-10-29)</summary>
@@ -93,7 +93,7 @@ pass `--resolve`.
 
 ```text
       internal clients, browsers, CI jobs                        customers
-               │ https://trove.example.com                         │ https://packages.example.com
+               │ https://quader.example.com                         │ https://packages.example.com
      ┌─────────▼──────────┐                              ┌─────────▼──────────┐
      │ Ingress <fullname> │  ingress class A             │ Ingress            │  ingress class B, own hosts,
      │                    │                              │ <fullname>-ep-     │  own TLS Secret, wildcard
@@ -168,7 +168,7 @@ server:
   #     max_in_flight: 1024               # default (proposed), per replica (R-EP-002)
   #     tls:
   #       certificates: []                # default (proposed): [] = the pair of server.tls (R-EP-004)
-  #       # - {cert_file: /var/run/secrets/trove/endpoints/customers/0/tls.crt, key_file: /var/run/secrets/trove/endpoints/customers/0/tls.key}   # example
+  #       # - {cert_file: /var/run/secrets/quader/endpoints/customers/0/tls.crt, key_file: /var/run/secrets/quader/endpoints/customers/0/tls.key}   # example
   #       client_ca_file: ""              # default (proposed): no client certificates (R-EP-004)
   #     surface: [packages]               # default (proposed) for a further endpoint (R-EP-005)
   #     auth:
@@ -195,11 +195,11 @@ server:
 
 The keys belong to the section `server` and are owned by this page
 ([operations-and-observability.md](operations-and-observability.md) R-OPS-028). Lists and maps
-arrive through the environment as JSON (`TROVE_SERVER_ENDPOINTS`), like every other list.
+arrive through the environment as JSON (`QUADER_SERVER_ENDPOINTS`), like every other list.
 
 Acceptance criteria:
 
-- With the `customers` example set, `trove admin config validate` prints `server.endpoints` as one row whose value is the
+- With the `customers` example set, `quader admin config validate` prints `server.endpoints` as one row whose value is the
   map as one JSON value, with its source; the defaults of a further endpoint are in that value
   ([Q-EP-16](#q-ep-16--rendering-of-the-endpoint-map-and-of-the-pool-values)).
 - `listen: ":8080"` for `customers` stops startup and names `server.endpoints.customers.listen` and
@@ -210,7 +210,7 @@ Acceptance criteria:
   startup with an error that names the key.
 
 ### R-EP-002 · Endpoint identity comes from the listener
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **One listener per endpoint.** Every endpoint has its own `net.Listener` and `http.Server`, its own
   ServeMux built from its surface (R-EP-005) through the one registration wrapper of R-ARCH-005,
@@ -229,7 +229,7 @@ Priority: **MVP** · Covers: trove-only
 - **Which process opens which listener.** A process of a client-serving role (`api`, `packages`, or `web`, which
   serves both) opens the client listeners of the endpoints of its pool whose surface holds at least one family of its
   role ([architecture.md](architecture.md) Q-ARCH-298), each with only those families: the endpoints whose `pool`
-  equals the process's pool name, read from the reserved variable `TROVE_POOL_NAME`
+  equals the process's pool name, read from the reserved variable `QUADER_POOL_NAME`
   ([operations-and-observability.md](operations-and-observability.md) R-OPS-028), which is empty for a role's main
   Deployment. A process in a pool that no endpoint names (a path pool of [ha-and-helm.md](ha-and-helm.md) R-HA-062)
   serves the endpoints without a pool, like the main Deployment of its role. A `worker` process opens no client listener.
@@ -254,14 +254,14 @@ Acceptance criteria:
 - Endpoints `default` (`:8080`) and `customers` (`:8443`, base URL `https://packages.example.com`).
   `curl --resolve packages.example.com:8080:127.0.0.1 https://packages.example.com:8080/api/v1/system/ping`
   is logged with `"endpoint":"default"`, never with `customers`.
-  `curl --resolve trove.example.com:8443:127.0.0.1 https://trove.example.com:8443/api/npm/web/npm-all/`
+  `curl --resolve quader.example.com:8443:127.0.0.1 https://quader.example.com:8443/api/npm/web/npm-all/`
   answers `421` from `customers`.
 - A table test sends every combination of listener, `Host`, server name and forwarded host of a
   fixture to the server and asserts that the endpoint in the request context is always the
   listener's. R-ARCH-006's source check (no `Host` or forwarded header read outside
   `internal/httpserver`) still passes, and an architecture test fails when a package other than
   `internal/httpserver` constructs an endpoint snapshot.
-- A process with `TROVE_POOL_NAME=ep-customers` and `customers` assigned to that pool listens on
+- A process with `QUADER_POOL_NAME=ep-customers` and `customers` assigned to that pool listens on
   `:8443` and `:8081` only; `ss -ltn` in its pod shows no `:8080`. A main `packages` pod shows `:8080`
   and `:8081` only. With `customers` on `surface: [packages]` and no pool, a main `api` pod shows no `:8443`; with
   `surface: [packages, files, api]`, both main Deployments show `:8443`, and on the `api` pod
@@ -288,7 +288,7 @@ Priority: **MVP** · Covers: OPS-051, OPS-052, HA-025
   `X-Forwarded-Host`; [Q-EP-15](#q-ep-15--which-forwarded-host-counts-on-an-endpoint)), the forwarded
   host is the effective host if it lies in the endpoint's host set. The other family is never read,
   not even as a fallback. A forwarded host outside the set is ignored for the check and for URL
-  generation, and counted in `trove_endpoint_forwarded_host_ignored_total{endpoint}`.
+  generation, and counted in `quader_endpoint_forwarded_host_ignored_total{endpoint}`.
 - **Host check.** A further endpoint always checks; the default endpoint checks only when its
   `hosts` or `wildcard_host` is configured. A checking endpoint answers a request whose effective
   host is not in its host set, an empty host or an IP literal with `421 Misdirected Request`
@@ -318,7 +318,7 @@ Acceptance criteria:
 - `customers` with base URL `https://packages.example.com` and `hosts: [pkgs.example.org]`:
   - `GET https://pkgs.example.org:8443/api/npm/web/npm-customers/@acme%2fsdk` answers a document whose
     tarball URLs start with `https://pkgs.example.org/api/npm/web/npm-customers/`;
-  - `Host: trove.example.com` answers `421` with code `misdirected_request`, and so do
+  - `Host: quader.example.com` answers `421` with code `misdirected_request`, and so do
     `Host: 10.0.0.5` and an HTTP/1.0 request without `Host`;
   - `Host: evil.example` with `X-Forwarded-Host: packages.example.com` from a peer outside the
     trusted proxies answers `421`; the same from a trusted proxy answers `200` with URLs on
@@ -329,11 +329,11 @@ Acceptance criteria:
   check; `registry.example.com` (not in the set) and
   `a.b.registry.example.com` answer `421`.
 - Without `server.endpoints.default`, R-OPS-005's acceptance criteria pass unchanged. With
-  `server.endpoints.default.hosts: [trove.example.com]`, a request on `:8080` with
+  `server.endpoints.default.hosts: [quader.example.com]`, a request on `:8080` with
   `Host: packages.example.com` answers `421`.
 
 ### R-EP-004 · TLS on endpoint listeners: certificates by SNI, wildcard certificates, reload
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Every endpoint listener uses the TLS machinery of [architecture.md](architecture.md) R-ARCH-035
 (INV-20); this requirement adds the certificate set.
@@ -347,11 +347,11 @@ Every endpoint listener uses the TLS machinery of [architecture.md](architecture
   another endpoint is never served on this listener. A wildcard name in a certificate covers one
   label, by the rule of R-EP-003.
 - **The server name selects a certificate, never the endpoint**, and it need not equal the
-  effective host: an edge that re-encrypts to trove sends the Service name as server name
+  effective host: an edge that re-encrypts to Quader sends the Service name as server name
   ([ha-and-helm.md](ha-and-helm.md) R-HA-063), while `Host` carries the public name.
 - **Reload.** Every pair is checked by the reloader of R-ARCH-035 every `server.tls.reload_interval`
   and swapped atomically for new handshakes; a pair that does not load keeps the previous one in
-  service. The families `trove_tls_reload_errors_total` and `trove_tls_certificate_expiry_timestamp_seconds`
+  service. The families `quader_tls_reload_errors_total` and `quader_tls_certificate_expiry_timestamp_seconds`
   carry `kind="listener"`, `listener="client:customers"` and `name`, the configured file of the pair (its path
   names the position in `tls.certificates`; [Q-EP-14](#q-ep-14--labels-of-the-tls-series-and-of-the-ops-series)).
   A broken pair at start holds the first readiness and does not stop the process; the listener serves once
@@ -373,7 +373,7 @@ Acceptance criteria:
 - Rotating pair 1 under E0.13's k6 load: k6 records only `200`, the new certificate is served within
   `server.tls.reload_interval` + 1 s, and the process start time does not change.
 - A rotated pair 1 whose key does not match keeps the old pair in service and increments
-  `trove_tls_reload_errors_total{kind="listener",listener="client:customers",name="/var/run/secrets/trove/endpoints/customers/1/tls.crt"}`
+  `quader_tls_reload_errors_total{kind="listener",listener="client:customers",name="/var/run/secrets/quader/endpoints/customers/1/tls.crt"}`
   (the name is the certificate path; example).
 - With `tls.client_ca_file` set on `customers` only, a handshake on `:8443` without a client
   certificate fails before any HTTP request is read, and `:8080` is unaffected.
@@ -446,7 +446,7 @@ This section is normative for every format page.
 | Client or protocol | Registry URL with a path possible | Needs | Mechanism |
 |---|---|---|---|
 | npm, pnpm, Yarn; NuGet; PyPI; Maven and Gradle; Cargo (sparse index); Go module proxy; Helm (index and OCI path mode); Ansible Galaxy; Composer; Conan; Debian and RPM; RubyGems; pub; Swift; Conda; Bazel | yes | nothing | `/api/<format>/<projectKey>/<repoKey>/` |
-| OCI clients (docker, Podman, containerd, CRI-O, ORAS) with image names that carry the project and repository keys (`trove.example.com/web/docker-all/alpine:3`) | the API root is fixed at `/v2/` | the host-root prefix `/v2/`, reserved since the MVP ([ha-and-helm.md](ha-and-helm.md) Q-HA-4) | host-root route |
+| OCI clients (docker, Podman, containerd, CRI-O, ORAS) with image names that carry the project and repository keys (`quader.example.com/web/docker-all/alpine:3`) | the API root is fixed at `/v2/` | the host-root prefix `/v2/`, reserved since the MVP ([ha-and-helm.md](ha-and-helm.md) Q-HA-4) | host-root route |
 | containerd (`hosts.toml` with a path and `override_path`) and CRI-O (a mirror location with a path) as pull-through mirrors | yes | nothing beyond `/v2/` | host-root route |
 | Docker Engine `registry-mirrors` | no: the mirror URL may not carry a path, and pulls arrive as `/v2/library/<name>/…` without a repository segment | a host whose `/v2/` belongs to one repository | host-root binding (R-EP-007) |
 | Terraform and OpenTofu registry protocol | no: service discovery reads `/.well-known/terraform.json` at the host root | one host per Terraform registry; several Terraform repositories need several hosts | host-root binding (R-EP-007) |
@@ -459,7 +459,7 @@ This section is normative for every format page.
   route of the `ci_exchange` family on every endpoint that serves it.
 
 ### R-EP-006 · Host-root binding: the reserved mechanism
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The MVP builds the mechanism; no MVP format uses it (Q-EP-6). R-EP-007 lists its first consumers.
 
@@ -539,7 +539,7 @@ Acceptance criteria (when the formats exist):
 ### R-EP-008 · Chart rendering of endpoints
 Priority: **MVP** · Covers: HA-038, HA-039, HA-040
 
-The chart renders each entry of `endpoints` into `trove.yaml` and into the Kubernetes objects that
+The chart renders each entry of `endpoints` into `quader.yaml` and into the Kubernetes objects that
 carry its traffic. The default endpoint keeps the objects of [ha-and-helm.md](ha-and-helm.md)
 R-HA-037 and R-HA-038 (the role Services `<fullname>-api` and `<fullname>-packages`, `ingress.*`, `gateway.*`).
 
@@ -571,7 +571,7 @@ endpoints: {}                             # default (proposed): only the default
 #    trustedProxies: []                   # default (proposed): config.server.trusted_proxies
 #    tls:
 #      existingSecret: ""                 # default (proposed): "" = the listener pair of tls.secretName (R-HA-063)
-#      extraSecrets: []                   # default (proposed); example [trove-packages-wildcard-tls]: further pairs, chosen by SNI
+#      extraSecrets: []                   # default (proposed); example [quader-packages-wildcard-tls]: further pairs, chosen by SNI
 #      clientCaSecret: ""                 # default (proposed): no client certificates
 #    pool:
 #      enabled: false                     # default (proposed): served by the main Deployments of the roles its surface holds (Q-EP-3, Q-EP-70)
@@ -594,13 +594,13 @@ endpoints: {}                             # default (proposed): only the default
 
 | Kind | Name | Rendered when |
 |---|---|---|
-| Configuration | `server.endpoints.<name>` in `trove.yaml`; chart-managed ([ha-and-helm.md](ha-and-helm.md) R-HA-030) | per entry |
+| Configuration | `server.endpoints.<name>` in `quader.yaml`; chart-managed ([ha-and-helm.md](ha-and-helm.md) R-HA-030) | per entry |
 | Service | `<fullname>-ep-<name>`, one port `<port>` with `appProtocol: https` under `tls.enabled`, `sessionAffinity: None`, selecting the pods of the role that serves the surface's `packages` and `files` families, or of `api` when the surface holds neither; and `<fullname>-api-ep-<name>` the same way for the `api` pods when the surface holds families of both roles (Q-EP-71) | per further endpoint |
-| Deployment, PodDisruptionBudget, HorizontalPodAutoscaler | `<fullname>-packages-ep-<name>` with `--role packages` and `<fullname>-api-ep-<name>` with `--role api`, one per role the surface holds, each with `TROVE_POOL_NAME=ep-<name>` and pod label `trove/pool: ep-<name>`; the rendered `pool` of the endpoint is `ep-<name>` (before phase 6a: one `<fullname>-web-ep-<name>` with `--role web`) | `pool.enabled` |
+| Deployment, PodDisruptionBudget, HorizontalPodAutoscaler | `<fullname>-packages-ep-<name>` with `--role packages` and `<fullname>-api-ep-<name>` with `--role api`, one per role the surface holds, each with `QUADER_POOL_NAME=ep-<name>` and pod label `quader/pool: ep-<name>`; the rendered `pool` of the endpoint is `ep-<name>` (before phase 6a: one `<fullname>-web-ep-<name>` with `--role web`) | `pool.enabled` |
 | Ingress | `<fullname>-ep-<name>`: `ingressClassName`, one rule per host of the endpoint (the base URL's host, every exact host, the wildcard host) with the paths of [ha-and-helm.md](ha-and-helm.md) R-HA-037's table whose families the surface holds, each `pathType: Prefix` to the Service of its role on `<port>` (path `/` to the one Service when the surface lies within one role), over TLS as R-HA-063 wires it, with the endpoint's own `ingress.backendTLS` keys overriding the global block key by key ([Q-EP-17](#q-ep-17--backend-tls-of-a-further-endpoints-ingress)), and the `tls` entries | `ingress.enabled` |
 | HTTPRoute, BackendTLSPolicy | `<fullname>-ep-<name>`: `parentRefs`, `hostnames` with the same hosts (a wildcard as a leading `*.` label), the same path rules as `PathPrefix` matches; a BackendTLSPolicy per Service it names | `gateway.enabled` |
 | NetworkPolicy | none of its own: the rule for `<port>`, from `networkPolicy.from` only, is part of the policy of every Deployment that opens the port ([ha-and-helm.md](ha-and-helm.md) R-HA-042, Q-HA-76; before phase 6a a policy `<fullname>-ep-<name>`) | `networkPolicy.enabled` |
-| Secret mounts | `tls.existingSecret` and each of `extraSecrets` at `/var/run/secrets/trove/endpoints/<name>/<n>/` (keys `tls.crt`, `tls.key`), rendered as `tls.certificates`; `clientCaSecret` (`ca.crt`) as `tls.client_ca_file` | per entry that names them |
+| Secret mounts | `tls.existingSecret` and each of `extraSecrets` at `/var/run/secrets/quader/endpoints/<name>/<n>/` (keys `tls.crt`, `tls.key`), rendered as `tls.certificates`; `clientCaSecret` (`ca.crt`) as `tls.client_ca_file` | per entry that names them |
 
 - **Pods and ports.** The pods that serve an endpoint (the main Deployments of the roles its surface holds, or the
   endpoint's pools) get its container port; no other pod listens on it (R-EP-002). An endpoint pool follows
@@ -625,24 +625,24 @@ endpoints: {}                             # default (proposed): only the default
 - **NOTES.txt** lists each endpoint with its Service and hosts, and warns when an endpoint with
   `exposure: rules` has no pool or an empty `networkPolicy.from`.
 - **Local profile** ([ha-and-helm.md](ha-and-helm.md) R-HA-051): `values-dev.yaml` renders an
-  endpoint `customers` on port 8443 with base URL `https://packages.trove.localhost:<port>`, its own
+  endpoint `customers` on port 8443 with base URL `https://packages.quader.localhost:<port>`, its own
   Traefik route and a certificate from the dev CA.
 
 Acceptance criteria:
 
 - `helm template` with the `customers` example, `ingress.enabled: true`,
   `className: traefik-external` and `tls: [{secretName: packages-tls, hosts: [packages.example.com,
-  "*.packages.example.com"]}]` renders: Service `trove-ep-customers` with port 8443 selecting the
-  main `packages` pods; Ingress `trove-ep-customers` with that class, rules for `packages.example.com`
-  and `*.packages.example.com`, each with path `/` to `trove-ep-customers:8443`, and the TLS entry;
-  the policy `trove-packages` with a rule admitting 8443 only from `networkPolicy.from`; no container port 8443 and no
-  rule for it on the `api` pods; and `trove.yaml` with `server.endpoints.customers` and
-  `server.endpoints.default.hosts: [trove.example.com]`.
-- With `surface: [packages, files, api]`: Services `trove-ep-customers` (packages pods) and `trove-api-ep-customers`
-  (api pods), both on 8443; the Ingress rules per host `/` and `/api/v1` to `trove-api-ep-customers`, `/api`, `/files`,
-  `/v2` and `/.well-known` to `trove-ep-customers`; the 8443 rule in both `trove-packages` and `trove-api`.
-- With `pool.enabled: true`: Deployment `trove-packages-ep-customers` with `--role packages` and
-  `TROVE_POOL_NAME=ep-customers`, its disruption budget and its policy (8443 and 8081, no 8080), and the Service
+  "*.packages.example.com"]}]` renders: Service `quader-ep-customers` with port 8443 selecting the
+  main `packages` pods; Ingress `quader-ep-customers` with that class, rules for `packages.example.com`
+  and `*.packages.example.com`, each with path `/` to `quader-ep-customers:8443`, and the TLS entry;
+  the policy `quader-packages` with a rule admitting 8443 only from `networkPolicy.from`; no container port 8443 and no
+  rule for it on the `api` pods; and `quader.yaml` with `server.endpoints.customers` and
+  `server.endpoints.default.hosts: [quader.example.com]`.
+- With `surface: [packages, files, api]`: Services `quader-ep-customers` (packages pods) and `quader-api-ep-customers`
+  (api pods), both on 8443; the Ingress rules per host `/` and `/api/v1` to `quader-api-ep-customers`, `/api`, `/files`,
+  `/v2` and `/.well-known` to `quader-ep-customers`; the 8443 rule in both `quader-packages` and `quader-api`.
+- With `pool.enabled: true`: Deployment `quader-packages-ep-customers` with `--role packages` and
+  `QUADER_POOL_NAME=ep-customers`, its disruption budget and its policy (8443 and 8081, no 8080), and the Service
   selecting only its pods; the main `packages` pods carry no container port 8443; no `api` pool, because the default
   surface holds no `api` family.
 - `--set endpoints.customers.port=8080` and `--set config.server.endpoints.x.listen=:9000` each fail
@@ -653,20 +653,20 @@ Priority: **MVP** · Covers: OPS-012, OPS-019
 
 - **Metric label.** `endpoint` takes the configured endpoint names and `default`, bounded by
   configuration to 17 values ([operations-and-observability.md](operations-and-observability.md)
-  R-OPS-007). The client-listener series of `trove_http_requests_total`,
-  `trove_http_request_duration_seconds` and `trove_http_requests_in_flight` carry it (R-OPS-008);
+  R-OPS-007). The client-listener series of `quader_http_requests_total`,
+  `quader_http_request_duration_seconds` and `quader_http_requests_in_flight` carry it (R-OPS-008);
   ops-listener series do not.
 - **Families of this page:**
 
 | Family | Type | Labels | Meaning |
 |---|---|---|---|
-| `trove_endpoint_listener_up` | gauge | `endpoint` | 1 while this replica's listener of the endpoint accepts connections |
-| `trove_endpoint_misdirected_total` | counter | `endpoint` | `421` answers (R-EP-003) |
-| `trove_endpoint_forwarded_host_ignored_total` | counter | `endpoint` | Forwarded hosts outside the endpoint's host set (R-EP-003) |
-| `trove_endpoint_credentials_refused_total` | counter | `endpoint`, `reason` (`token_type`, `token_binding`, `anonymous`) | Credentials the endpoint does not accept (R-EP-010) |
-| `trove_endpoint_cache_fill_refused_total` | counter | `endpoint` | Upstream contacts the endpoint's cache-fill policy prevented (R-EP-019) |
-| `trove_exposure_hidden_total` | counter | `endpoint`, `kind` (`request`, `item`) | Requests answered `404` or `403` by exposure, and items removed from documents and listings (R-EP-013, R-EP-018) |
-| `trove_exposure_rules` | gauge | `endpoint` | Enabled rules per endpoint, read from PostgreSQL; aggregate with `max` (R-OPS-007) |
+| `quader_endpoint_listener_up` | gauge | `endpoint` | 1 while this replica's listener of the endpoint accepts connections |
+| `quader_endpoint_misdirected_total` | counter | `endpoint` | `421` answers (R-EP-003) |
+| `quader_endpoint_forwarded_host_ignored_total` | counter | `endpoint` | Forwarded hosts outside the endpoint's host set (R-EP-003) |
+| `quader_endpoint_credentials_refused_total` | counter | `endpoint`, `reason` (`token_type`, `token_binding`, `anonymous`) | Credentials the endpoint does not accept (R-EP-010) |
+| `quader_endpoint_cache_fill_refused_total` | counter | `endpoint` | Upstream contacts the endpoint's cache-fill policy prevented (R-EP-019) |
+| `quader_exposure_hidden_total` | counter | `endpoint`, `kind` (`request`, `item`) | Requests answered `404` or `403` by exposure, and items removed from documents and listings (R-EP-013, R-EP-018) |
+| `quader_exposure_rules` | gauge | `endpoint` | Enabled rules per endpoint, read from PostgreSQL; aggregate with `max` (R-OPS-007) |
 
   The TLS families of R-ARCH-035 carry `endpoint` and `certificate` (R-EP-004).
 - **Request log** ([operations-and-observability.md](operations-and-observability.md) R-OPS-010):
@@ -676,24 +676,24 @@ Priority: **MVP** · Covers: OPS-012, OPS-019
   carry `null`. A read refused by exposure is `authz.denied` with reason `deny.exposure`, a refused
   write reason `deny.endpoint_read_only`; a refused credential is the `token.rejected` event of
   R-OPS-016 and R-AUTH-041 with reason `endpoint_not_accepted`.
-- **Traces** (R-OPS-018): every server span carries `trove.endpoint`.
+- **Traces** (R-OPS-018): every server span carries `quader.endpoint`.
 - **Identification headers** (R-OPS-002): `replica_header` applies per endpoint, `never` by default
   on further endpoints, so pod names do not leave the organization.
 
 Acceptance criteria:
 
-- After one request on each endpoint, `trove_http_requests_total` has series with
+- After one request on each endpoint, `quader_http_requests_total` has series with
   `endpoint="default"` and `endpoint="customers"`, the ops-listener series have no `endpoint`, and
   R-OPS-007's label test accepts the label.
-- A `421` on `customers` increments `trove_endpoint_misdirected_total{endpoint="customers"}` and is
+- A `421` on `customers` increments `quader_endpoint_misdirected_total{endpoint="customers"}` and is
   logged with `"endpoint":"customers"` and `"status":421`.
 - The audit event of a read refused by exposure on `customers` has `endpoint = 'customers'` and
-  reason `deny.exposure`. An authenticated response on `customers` carries no `X-Trove-Replica`.
+  reason `deny.exposure`. An authenticated response on `customers` carries no `X-Quader-Replica`.
 
 ## Credentials
 
 ### R-EP-010 · Accepted credentials per endpoint
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The authentication stage ([identity-and-authentication.md](identity-and-authentication.md)
 R-AUTH-001) applies the endpoint's rules after it selects the credential, and before every database
@@ -719,7 +719,7 @@ lookup that a rule makes unnecessary:
 
 - A rejection never falls through to a lower-ranked credential or to anonymous (R-AUTH-001). Its
   answer is the `401` `invalid_token` of an unknown token, so it does not tell that the token is
-  valid on another endpoint; the audit event and `trove_endpoint_credentials_refused_total` name
+  valid on another endpoint; the audit event and `quader_endpoint_credentials_refused_total` name
   the reason.
 - Type and binding refusals do not count towards the failed-credential throttle of R-AUTH-038: the
   token is known, and the type refusal happens before any lookup.
@@ -733,13 +733,13 @@ Acceptance criteria:
 - On `customers` with the defaults: a PAT gets `401` `invalid_token` and the token table records no
   query (query counter); an unbound SAT gets `401` after one lookup; a SAT bound to `customers`
   reaches authorization; the same bound SAT gets `401` on `default`.
-- `curl -b '__Host-trv_session=<valid session>' https://packages.example.com:8443/api/npm/web/npm-customers/@acme%2fsdk`
+- `curl -b '__Host-qdr_session=<valid session>' https://packages.example.com:8443/api/npm/web/npm-customers/@acme%2fsdk`
   answers `401` `credentials_required`, because the cookie is ignored and anonymous requests are
-  off. On the default endpoint, the same cookie on `GET https://trove.example.com/api/npm/web/npm-local/@acme%2fsdk` (a
+  off. On the default endpoint, the same cookie on `GET https://quader.example.com/api/npm/web/npm-local/@acme%2fsdk` (a
   `packages` pod) is ignored as well, and the request is decided as one without a credential.
 - With project `web` and the artifacts of `web/npm-customers` `public` and an exposure rule of `customers` on it: an anonymous
   `npm view @acme/sdk` succeeds on `default` and gets `E401` on `customers`, whose `auth.anonymous` is `false`.
-- Each case increments `trove_endpoint_credentials_refused_total` with its reason.
+- Each case increments `quader_endpoint_credentials_refused_total` with its reason.
 
 ### R-EP-011 · Endpoint-bound tokens
 Priority: **MVP** · Covers: TOK-007
@@ -754,7 +754,7 @@ Priority: **MVP** · Covers: TOK-007
   to a further endpoint, which accepts service-account tokens only by default (Q-EP-10), is refused
   because it would work nowhere: its type is refused on that endpoint and its binding on every
   other. The rule is the token service's, in `prepareCreate`, so it holds for the API, for
-  `trove admin token create` and for any other caller alike, and it comes after the
+  `quader admin token create` and for any other caller alike, and it comes after the
   authorization of the operation: a caller who may not create the token gets the `403`, never
   the `400` that would name an endpoint or its token types (Q-AUTH-182). Scopes stay immutable,
   and rotation keeps the binding (R-AUTH-030) if the endpoint still accepts the token's type;
@@ -790,7 +790,7 @@ Acceptance criteria:
 ## Exposure rules
 
 ### R-EP-012 · Exposure rules: model, validation and storage
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **Mode.** An endpoint with `exposure: all` has no ceiling. An endpoint with `exposure: rules`
   exposes nothing until a rule admits it (deny by default). Rules of an endpoint in mode `all` are
@@ -877,7 +877,7 @@ CREATE INDEX endpoint_exposure_rule_repo ON endpoint_exposure_rule (repo_id);
   - Every write records itself in the change area `authz` ([architecture.md](architecture.md)
     R-ARCH-018), and the compiled grant index of R-AUTHZ-028 holds the rules. A rule change
     therefore follows the same propagation bound, the same fail-closed wait on a stale index and the
-    same `Trove-Authz-Min-Epoch` header as a policy change (R-AUTHZ-032). No rule is read from
+    same `Quader-Authz-Min-Epoch` header as a policy change (R-AUTHZ-032). No rule is read from
     Valkey.
   - Deleting a repository deletes its rules through the foreign key, audited as
     `endpoint.exposure.deleted` with cause `repository_deleted`; a repository created later under
@@ -909,7 +909,7 @@ Acceptance criteria:
   whose `repository` is `npm-customers` (no project) answers `422` `invalid_pattern`.
 - A rule written through replica A takes effect on replica B within the bound of R-AUTHZ-028, also
   with Valkey stopped, and at once for a request that sends the returned epoch in
-  `Trove-Authz-Min-Epoch`.
+  `Quader-Authz-Min-Epoch`.
 
 ### R-EP-013 · Exposure as a ceiling in the decision point
 Priority: **MVP** · Covers: IAM-032
@@ -964,7 +964,7 @@ func Allowed(sub Subject, idx *Index, a Action, c Coordinate) bool {
   development machine. `TestR_EP_013_CeilingPerformance` asserts the allocations (at most 100) per change and
   the median when the race detector is off, and the p99, in the CPU time of the deciding thread
   ([Q-EP-65](#q-ep-65--the-tail-of-r-ep-013-is-measured-in-the-cpu-time-of-the-deciding-thread)),
-  only with `TROVE_PERF_GATE=1`, which `make test-performance` sets in the nightly run
+  only with `QUADER_PERF_GATE=1`, which `make test-performance` sets in the nightly run
   ([Q-ARCH-250](architecture.md#q-arch-250--a-p99-bound-in-microseconds-is-a-nightly-gate-and-the-per-change-test-asserts-allocations-and-the-median)).
 
 Acceptance criteria (fixture of R-EP-012):
@@ -984,7 +984,7 @@ Acceptance criteria (fixture of R-EP-012):
   same result as on `default`.
 
 ### R-EP-014 · Exposure on raw files, listings and the management API
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **Raw files.** On an endpoint with `files`, `/files/<projectKey>/<repoKey>/<path>` passes the ceiling with the
   coordinate the format plug-in gives the file: package name and version for npm and NuGet
@@ -1046,11 +1046,11 @@ Acceptance criteria:
   receives `429` answers after the burst, each with `Retry-After`; a second bound token is not slowed
   down, and the first token's requests to another endpoint that accepts it are not either.
 - In the `scatter` profile, 1,000 requests with one token on `customers` within 2 s are admitted at
-  most 300 times, also with Valkey stopped, and `trove_ratelimit_fallback{limiter="endpoint_external"}`
+  most 300 times, also with Valkey stopped, and `quader_ratelimit_fallback{limiter="endpoint_external"}`
   is 1 on every replica that serves `customers` while Valkey is stopped.
 
 ### R-EP-016 · Endpoint and exposure management API
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 | Method | Path | Purpose | Permission |
 |---|---|---|---|
@@ -1066,7 +1066,7 @@ Priority: **MVP** · Covers: trove-only
 
 - Endpoints themselves are file configuration (INV-15) and have no write operation. `{endpoint}` is
   a configured endpoint or an inert name that still has rules, whose rules can be read and deleted.
-- Every successful write answers `Trove-Authz-Epoch` (R-API-052, R-AUTHZ-032).
+- Every successful write answers `Quader-Authz-Epoch` (R-API-052, R-AUTHZ-032).
 - `check-exposure` transfers no content and contacts no upstream; for a remote repository it reports
   the cached versions only. A request that names a package of a format with versions and no
   `versions` (absent or empty) judges the versions the repository stores of the package, and for a
@@ -1117,7 +1117,7 @@ Acceptance criteria:
   2.0.1 as `version_excluded`, 2.1.0-rc.1 as `prerelease`, and 2.0.0 and 2.1.0 as exposed.
 
 ### R-EP-017 · Endpoint administration screen
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **Routes** ([api-and-ui.md](api-and-ui.md) R-UI-003): `/admin/endpoints` (the list: name, base URL,
   hosts, surface, exposure mode, rule count, pool; inert names flagged), `/admin/endpoints/{endpoint}`
@@ -1157,7 +1157,7 @@ Acceptance criteria:
 ## Package metadata and remote repositories
 
 ### R-EP-018 · Package metadata on an endpoint: filtering, URLs and cache keys
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - **Format contract** ([architecture.md](architecture.md) R-ARCH-008). A format that can be served on
   an endpoint with `exposure: rules` implements `Exposure() ExposureAdapter`:
@@ -1224,7 +1224,7 @@ type ExposureView interface {
   request's endpoint and host (R-EP-003, [repositories-and-proxy.md](repositories-and-proxy.md)
   R-REPO-043).
 - **Only the addressed repository is named.** On an endpoint with `exposure: rules`, responses carry
-  no `Trove-Resolved-From` (R-REPO-019), and no problem body names a repository other than the
+  no `Quader-Resolved-From` (R-REPO-019), and no problem body names a repository other than the
   addressed one: a member's failure is reported as the addressed repository's. The virtual engine
   keeps the failure's kind, code, `Retry-After` and headers and replaces its detail by one that
   names the addressed repository and the code's title; a missing item is the engine's one `404`
@@ -1257,16 +1257,16 @@ Acceptance criteria (fixture of R-EP-012):
 - A test format without the adapter answers `404` on every read route on `customers` (and `403`
   `endpoint_read_only` on a write, Q-EP-57), and a rule for its repository answers `422`
   `format_not_exposable`.
-- No response body or header captured on `customers` during the e2e run contains `trove.example.com`
+- No response body or header captured on `customers` during the e2e run contains `quader.example.com`
   or the key of a member of `web/npm-customers`.
 
 The Ansible Galaxy format has no exposure adapter (Q-ANS-25): its repositories are served on an endpoint without exposure rules.
 
 ### R-EP-019 · Cache-fill policy per endpoint
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 - With `cache_fill: false` (the default of a further endpoint), no request on the endpoint makes
-  trove contact an upstream (Q-EP-5). Every subject fails the cache-fill check there
+  Quader contact an upstream (Q-EP-5). Every subject fails the cache-fill check there
   ([authorization.md](authorization.md) R-AUTHZ-008, the `MemberUsable` step of R-AUTHZ-015), so a
   request is served exactly as for a caller who may read but not populate: what the cache holds,
   expired metadata served stale without a refresh, an uncached exposed artifact on a remote
@@ -1280,7 +1280,7 @@ Priority: **MVP** · Covers: trove-only
 - Forwarded search (R-NUGET-016) is not forwarded on such an endpoint; the remote answers with its
   cache-only search.
 - With `cache_fill: true`, the subject's populate check decides, as on the default endpoint.
-- A refused upstream contact increments `trove_endpoint_cache_fill_refused_total{endpoint}` and
+- A refused upstream contact increments `quader_endpoint_cache_fill_refused_total{endpoint}` and
   writes no negative entry (R-REPO-025 step 9). The remote engine counts the fills it refuses; the
   virtual engine counts each remote member it does not ask for an artifact because the endpoint
   does not fill caches, since that member is never handed to the remote engine
@@ -1298,7 +1298,7 @@ Acceptance criteria:
 ## Restores
 
 ### R-EP-020 · Exposure changes in the revocation journal
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 A database restore to time *t* undoes the exposure narrowings made after *t*, which would show
 consumers versions hidden since ([ha-and-helm.md](ha-and-helm.md) H-37). The journal of R-HA-054
@@ -1342,8 +1342,8 @@ re-applies them.
 
 Acceptance criteria:
 
-- A trove backup is taken; then `acme-sdk` is narrowed by adding `2.0.0` to `versions.exclude` and
-  a rule `beta` is deleted. `trove backup restore` of that backup into an empty installation
+- A Quader backup is taken; then `acme-sdk` is narrowed by adding `2.0.0` to `versions.exclude` and
+  a rule `beta` is deleted. `quader backup restore` of that backup into an empty installation
   reports both entries `applied`; afterwards `npm view @acme/sdk@2.0.0` on `customers` gets `E404`
   on every replica, and `beta` does not exist. A narrowing of the range itself (`">=2.0.0"` to
   `">=2.1.0"`) is reported `suspended`, and the rule reads back with `"enabled": false` (Q-EP-79).
@@ -1359,8 +1359,8 @@ that lists only what is released to them.
 
 1. **Configuration.** The chart values of R-EP-008 with `customers` on port 8443, base URL
    `https://packages.example.com`, its own IngressClass `traefik-external`, a TLS Secret, and a pool.
-   The rendered `trove.yaml` carries `server.endpoints.customers` and
-   `server.endpoints.default.hosts: [trove.example.com]`.
+   The rendered `quader.yaml` carries `server.endpoints.customers` and
+   `server.endpoints.default.hosts: [quader.example.com]`.
 2. **Repositories.** Virtual repositories `npm-customers` and `nuget-customers` of project `web` over
    the project's internal local repositories; no remote member, so customers resolve public
    dependencies from the public registries.
@@ -1372,9 +1372,9 @@ that lists only what is released to them.
 5. **Customer configuration** *(example)*:
 
 ```ini
-# .npmrc: only the @acme scope points at trove
+# .npmrc: only the @acme scope points at Quader
 @acme:registry=https://packages.example.com/api/npm/web/npm-customers/
-//packages.example.com/api/npm/web/npm-customers/:_authToken=${ACME_TROVE_TOKEN}
+//packages.example.com/api/npm/web/npm-customers/:_authToken=${ACME_QUADER_TOKEN}
 ```
 
 ```xml
@@ -1385,7 +1385,7 @@ that lists only what is released to them.
 <packageSourceCredentials>
   <acme>
     <add key="Username" value="acme" />
-    <add key="ClearTextPassword" value="%ACME_TROVE_TOKEN%" />
+    <add key="ClearTextPassword" value="%ACME_QUADER_TOKEN%" />
   </acme>
 </packageSourceCredentials>
 ```
@@ -1395,10 +1395,10 @@ that lists only what is released to them.
 | 1 | `npm view @acme/sdk versions` with the customer token | endpoint `customers` from the listener; host in the set; SAT bound to `customers`; grant `read`; rule `acme-sdk`; document filtered | `[ '2.0.0', '2.1.0' ]`, tarball URLs on `packages.example.com` |
 | 2 | `npm install @acme/sdk@1.9.0` | exposure: out of range | `E404`, as for a missing version |
 | 3 | `npm view @acme/billing` | no rule | `E404` |
-| 4 | The customer token against `https://trove.example.com/api/npm/web/npm-customers/` | default endpoint: the token is bound to `customers` | `E401` |
+| 4 | The customer token against `https://quader.example.com/api/npm/web/npm-customers/` | default endpoint: the token is bound to `customers` | `E401` |
 | 5 | An employee's PAT against `packages.example.com` | token type not accepted | `E401` |
 | 6 | `npm publish` with the customer token | endpoint is read only | `E403` `endpoint_read_only` |
-| 7 | `curl -H 'Host: trove.example.com'` to the customer Ingress address | effective host not in the set | `421` |
+| 7 | `curl -H 'Host: quader.example.com'` to the customer Ingress address | effective host not in the set | `421` |
 | 8 | `dotnet restore` of `Acme.Sdk 2.1.0` | as row 1 for NuGet (R-NUGET-034) | restored; the version list holds only exposed versions |
 
 ## Deferred
@@ -1437,7 +1437,7 @@ can reach.
 selected by the network path, which Kubernetes Services, edge routes and NetworkPolicies control;
 every header is selected by the client. The cost, one more Service and route per endpoint, is
 rendered by the chart (R-EP-008). The development agent would revisit this if a supported platform
-could give trove only one port, and would then fall back to (b) with an edge that is the only path
+could give Quader only one port, and would then fall back to (b) with an edge that is the only path
 to the listener and rewrites `Host`.
 
 **Applied in the spec:** R-EP-002 and R-EP-003 state the rule; [architecture.md](architecture.md)
@@ -1451,7 +1451,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Everything in the file | Endpoints and their rules in `trove.yaml` | One place; GitOps | Every change of what customers see is a rolling restart; replicas disagree during the rollout; no audit trail and no ETag per change |
+| (a) Everything in the file | Endpoints and their rules in `quader.yaml` | One place; GitOps | Every change of what customers see is a rolling restart; replicas disagree during the rollout; no audit trail and no ETag per change |
 | (b) Everything in PostgreSQL | Endpoints and rules through the API | Runtime changes | A listener must be known before the database is reachable; a port or certificate change needs a restart and new Kubernetes objects anyway, which the chart renders from values |
 | (c) Network binding in the file, exposure rules in PostgreSQL | Listener, hosts, base URL, certificates, pool, surface and credential rules in the file; rules through API and UI, audited | Each value lives where its lifecycle is, by the rule of R-ARCH-020; rules change at runtime, identically on every replica, with the bounds of the grant index | Two places to look; rules can outlive their endpoint name (H-58) |
 
@@ -1517,14 +1517,14 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) As on the default endpoint | The subject's populate action decides (R-AUTHZ-008) | Customers always get the newest upstream metadata | Customers decide what trove downloads, spend the upstream's rate limits, and can probe upstreams through trove |
+| (a) As on the default endpoint | The subject's populate action decides (R-AUTHZ-008) | Customers always get the newest upstream metadata | Customers decide what Quader downloads, spend the upstream's rate limits, and can probe upstreams through Quader |
 | (b) Off by default, `cache_fill` per endpoint | Further endpoints serve what the cache holds unless configured otherwise | No upstream contact from outside by default; an internal second endpoint can switch it on | Customers see upstream content only after internal traffic fetched it |
 | (c) Never on further endpoints | No setting | Simplest | Blocks a second internal endpoint, for example for CI runners |
 
 **Choice:** (b).
 
 **Rationale:** Which third-party packages enter the organization is an internal decision, and an
-external audience should not be able to make trove fetch or refresh anything. The setting keeps (a)
+external audience should not be able to make Quader fetch or refresh anything. The setting keeps (a)
 available where an endpoint serves internal clients. The development agent would revisit the default
 if the owner's customers depend on upstream packages that internal traffic never fetches.
 
@@ -1714,7 +1714,7 @@ carry an `endpoint` label.
 set keeps the expiry and failed-rotation alerts identical for every listener. The development agent would revisit this when an
 alert must select one endpoint across kinds of material.
 
-**Applied in the spec:** [R-OPS-007](operations-and-observability.md) (label set of `trove_tls_*`), [R-EP-004](#r-ep-004--tls-on-endpoint-listeners-certificates-by-sni-wildcard-certificates-reload),
+**Applied in the spec:** [R-OPS-007](operations-and-observability.md) (label set of `quader_tls_*`), [R-EP-004](#r-ep-004--tls-on-endpoint-listeners-certificates-by-sni-wildcard-certificates-reload),
 [R-EP-009](#r-ep-009--endpoint-observability) (the empty `endpoint` value on the ops listener).
 
 ### Q-EP-15 · Which forwarded host counts on an endpoint
@@ -1748,11 +1748,11 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) One row per endpoint key | a flat listing | every key is greppable | the listing grows with the endpoints and loses the map's shape |
 | (c) A pool's values replace the web values as a whole | the pool is a complete copy | simple to read | a key that is not repeated in the pool is silently lost |
 
-**Choice:** (a). The chart's merge (`trove.mergeValues`) takes each key of the pool over the web values, recursively, and a key set
+**Choice:** (a). The chart's merge (`quader.mergeValues`) takes each key of the pool over the web values, recursively, and a key set
 to `false`, `0` or empty wins.
 
 **Rationale:** The effective view is for the operator's review, and a map is one value in the environment as well (JSON in
-`TROVE_SERVER_ENDPOINTS`), so one row matches what the operator writes. A key-wise merge is the only choice that keeps every web
+`QUADER_SERVER_ENDPOINTS`), so one row matches what the operator writes. A key-wise merge is the only choice that keeps every web
 setting a pool does not state. The development agent would revisit this when the effective view gets a structured form.
 
 **Applied in the spec:** [R-EP-001](#r-ep-001--endpoints-and-their-configuration) (the effective view),
@@ -2046,7 +2046,7 @@ is unchanged, because there the members are the caller's to see (R-REPO-019). Th
 which the format boundary drops on an endpoint with rules (Q-EP-60).
 
 **Rationale:** The boundary is the engine that combines members, so the rule is applied once, where every member error passes, and not
-in each format. The development agent would revisit this if customers need to tell an upstream failure from a trove failure on a
+in each format. The development agent would revisit this if customers need to tell an upstream failure from a Quader failure on a
 rules endpoint, which the code still does, or if the code itself becomes sensitive (then (b)).
 
 **Applied in the spec:** R-EP-018 ("Only the addressed repository is named"). Code: `virtual.Caller.asAddressed`.
@@ -2076,7 +2076,7 @@ endpoint with rules are ever allowed (Q-EP-9), when a format without the adapter
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-EP-019 counts every upstream contact the endpoint's policy prevents in `trove_endpoint_cache_fill_refused_total{endpoint}`.
+Context: R-EP-019 counts every upstream contact the endpoint's policy prevents in `quader_endpoint_cache_fill_refused_total{endpoint}`.
 The remote engine counts where its populate check refuses a fill. For an artifact through a virtual repository, the virtual engine does
 not hand a remote member the caller may not fill to the remote engine at all (R-AUTHZ-009 rule 3), so that contact was never counted.
 
@@ -2089,7 +2089,7 @@ not hand a remote member the caller may not fill to the remote engine at all (R-
 **Choice:** (a). The count is made only when the subject's endpoint does not fill (`Endpoint != "" && !CacheFill`), the condition of
 the remote engine.
 
-**Rationale:** The metric answers "how often did this endpoint's policy keep trove from an upstream"; (a) is the only option that
+**Rationale:** The metric answers "how often did this endpoint's policy keep Quader from an upstream"; (a) is the only option that
 answers it for both paths without adding work or audit events. The development agent would revisit this if the virtual engine starts
 to ask remote members for artifacts in another way (then the count moves with the call).
 
@@ -2135,7 +2135,7 @@ told the two apart. Q-EP-56 kept the header in a member's failure.
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Drop it at the format boundary | `formats.ServeRoute` removes `Cache-Status` when the status line goes out, for a request on an endpoint with rules, whoever set it | One place for every format, every engine and the headers of errors; a later handler cannot forget it | The header is not available to a customer's debugging on that endpoint |
-| (b) Drop it in each handler and engine | Where `Trove-Resolved-From` is dropped | Close to the code that sets it | Five places today (two npm handlers, a negative `404`, the virtual merge, the remote engine's artifact and error headers) and one more per format |
+| (b) Drop it in each handler and engine | Where `Quader-Resolved-From` is dropped | Close to the code that sets it | Five places today (two npm handlers, a negative `404`, the virtual merge, the remote engine's artifact and error headers) and one more per format |
 | (c) Keep it | — | Debugging | The topology of the addressed repository stays visible (H-294) |
 
 **Choice:** (a). The answer of Q-EP-56 keeps the kind, the code and `Retry-After` of a member's failure; its `Cache-Status`
@@ -2212,7 +2212,7 @@ the segment match returns to the state vector, which stays in the file).
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: the p99 of R-AUTHZ-015 is a statement about a decision on one CPU core (`trove_authz_evaluation_seconds`), but a wall-clock sample of a call of 20 to 140 µs on a
+Context: the p99 of R-AUTHZ-015 is a statement about a decision on one CPU core (`quader_authz_evaluation_seconds`), but a wall-clock sample of a call of 20 to 140 µs on a
 shared machine also holds the time the scheduler gave the core to another process. Wall-clock p99 of the wildcard-first shape was 1 to 20 ms in five of eleven runs at a load average of 36 to 63
 (median 140 µs in all of them); the same runs measured in the CPU time of the thread were 0.2 to 0.45 ms in six of six.
 

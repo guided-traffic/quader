@@ -7,31 +7,31 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The metrics of the mirror (repositories-and-proxy.md R-REPO-057, operations-and-observability.md R-OPS-008, Q-OPS-158):
-// twelve families with the label repo and no package. The counters and trove_mirror_concurrency belong to the process that runs
+// twelve families with the label repo and no package. The counters and quader_mirror_concurrency belong to the process that runs
 // the pass; the three gauges read from PostgreSQL are exported by every process that claims the queue mirror, through the
 // database gauge source of internal/observability (read once per metrics.db_gauge_interval, 30 s by default).
 const (
-	MetricPasses              = "trove_mirror_passes_total" //nolint:gosec // G101: a metric name, no credential
-	MetricItems               = "trove_mirror_items_total"
-	MetricBytes               = "trove_mirror_bytes_total"
-	MetricRateLimited         = "trove_mirror_rate_limited_total"
-	MetricRateLimitWait       = "trove_mirror_rate_limit_wait_seconds_total"
-	MetricConcurrency         = "trove_mirror_concurrency"
-	MetricPreempted           = "trove_mirror_preempted_total"
-	MetricPending             = "trove_mirror_pending_packages"
-	MetricLastComplete        = "trove_mirror_last_complete_pass_timestamp_seconds"
-	MetricInterval            = "trove_mirror_interval_seconds"
-	MetricConsecutiveFailures = "trove_mirror_consecutive_failures"
-	MetricNextPass            = "trove_mirror_next_pass_timestamp_seconds" //nolint:gosec // G101: a metric name, no credential
+	MetricPasses              = "quader_mirror_passes_total" //nolint:gosec // G101: a metric name, no credential
+	MetricItems               = "quader_mirror_items_total"
+	MetricBytes               = "quader_mirror_bytes_total"
+	MetricRateLimited         = "quader_mirror_rate_limited_total"
+	MetricRateLimitWait       = "quader_mirror_rate_limit_wait_seconds_total"
+	MetricConcurrency         = "quader_mirror_concurrency"
+	MetricPreempted           = "quader_mirror_preempted_total"
+	MetricPending             = "quader_mirror_pending_packages"
+	MetricLastComplete        = "quader_mirror_last_complete_pass_timestamp_seconds"
+	MetricInterval            = "quader_mirror_interval_seconds"
+	MetricConsecutiveFailures = "quader_mirror_consecutive_failures"
+	MetricNextPass            = "quader_mirror_next_pass_timestamp_seconds" //nolint:gosec // G101: a metric name, no credential
 )
 
-// The outcomes of a pass attempt (the label outcome of trove_mirror_passes_total) and of a pass (last_pass.outcome).
+// The outcomes of a pass attempt (the label outcome of quader_mirror_passes_total) and of a pass (last_pass.outcome).
 const (
 	OutcomeComplete     = "complete"
 	OutcomePartial      = "partial"
@@ -42,7 +42,7 @@ const (
 	OutcomeDeferred     = "deferred"
 )
 
-// The results of an artifact (the label result of trove_mirror_items_total).
+// The results of an artifact (the label result of quader_mirror_items_total).
 const (
 	ResultStored    = "stored"
 	ResultPresent   = "present"
@@ -182,7 +182,7 @@ func (r *repoMetrics) record(fn func(m *Metrics, repo string)) {
 
 // touch creates the series of the repository at 0, so that the first event of a kind is an increase for a rate or an
 // increase() over a counter that has existed since the pass began, and not the series' first sample (the alerts of R-OPS-046
-// read increase() of trove_mirror_passes_total).
+// read increase() of quader_mirror_passes_total).
 func (r *repoMetrics) touch() {
 	r.record(func(m *Metrics, repo string) {
 		for _, kind := range []string{string(discover.PassFull), string(discover.PassIncremental)} {

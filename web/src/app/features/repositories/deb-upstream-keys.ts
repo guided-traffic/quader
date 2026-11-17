@@ -8,7 +8,7 @@ import { groupedFingerprint } from './deb-signing-keys';
  * channel before trusting the pasted block.
  */
 @Component({
-  selector: 'trove-deb-upstream-keys',
+  selector: 'quader-deb-upstream-keys',
   imports: [CopyButton],
   template: `
     <section class="fingerprints" aria-labelledby="deb-upstream-fpr-heading" data-testid="deb-upstream-fingerprints">
@@ -21,7 +21,7 @@ import { groupedFingerprint } from './deb-signing-keys';
         @for (f of fingerprints(); track f) {
           <li>
             <code translate="no" [attr.title]="f">{{ grouped(f) }}</code>
-            <trove-copy-button [value]="f" [label]="copyLabel" />
+            <quader-copy-button [value]="f" [label]="copyLabel" />
           </li>
         }
       </ul>
@@ -29,11 +29,11 @@ import { groupedFingerprint } from './deb-signing-keys';
   `,
   styles: `
     .fingerprints {
-      margin-block-start: var(--trove-space-4);
+      margin-block-start: var(--quader-space-4);
     }
     h3 {
-      margin-block: 0 var(--trove-space-2);
-      font: var(--trove-type-title-small);
+      margin-block: 0 var(--quader-space-2);
+      font: var(--quader-type-title-small);
     }
   `,
 })

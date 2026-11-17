@@ -164,7 +164,7 @@ export const NPM_SETTINGS_SCHEMA = {
         'A publish of a version below latest, or of a pre-release while latest is a release, is stored without moving latest. Turn it off if every publish under latest should move it.',
       type: 'boolean',
       default: true,
-      'x-trove-classes': ['local'],
+      'x-quader-classes': ['local'],
     },
     serveRemovedVersions: {
       title: 'Serve removed versions',
@@ -172,29 +172,29 @@ export const NPM_SETTINGS_SCHEMA = {
         'Keep serving cached versions and packages that the upstream has removed, to exact downloads such as from a lockfile; they are no longer listed. Leave it off so that what the upstream took down, often malware, stops being served.',
       type: 'boolean',
       default: false,
-      'x-trove-classes': ['remote'],
+      'x-quader-classes': ['remote'],
     },
     latestStrategy: {
       title: 'Latest tag strategy',
       description: 'Which latest tag this virtual repository offers when the latest tags of its members differ.',
       type: 'string',
       enum: ['highest-member-latest', 'newest-published'],
-      'x-trove-enum-titles': { 'highest-member-latest': 'Highest version', 'newest-published': 'Most recently published' },
+      'x-quader-enum-titles': { 'highest-member-latest': 'Highest version', 'newest-published': 'Most recently published' },
       default: 'highest-member-latest',
-      'x-trove-classes': ['virtual'],
+      'x-quader-classes': ['virtual'],
     },
     distTagStrategy: {
       title: 'Dist-tag strategy',
       description: 'Which value the other dist-tags, such as next or beta, take when the values of the members differ.',
       type: 'string',
       enum: ['member-order', 'highest-semver', 'newest-published'],
-      'x-trove-enum-titles': {
+      'x-quader-enum-titles': {
         'member-order': 'First member in order',
         'highest-semver': 'Highest version',
         'newest-published': 'Most recently published',
       },
       default: 'member-order',
-      'x-trove-classes': ['virtual'],
+      'x-quader-classes': ['virtual'],
     },
   },
 };
@@ -207,16 +207,16 @@ export const RICH_SETTINGS_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    latestGuard: { type: 'boolean', default: true, 'x-trove-classes': ['local'] },
-    serveRemovedVersions: { type: 'boolean', default: false, 'x-trove-classes': ['remote'] },
+    latestGuard: { type: 'boolean', default: true, 'x-quader-classes': ['local'] },
+    serveRemovedVersions: { type: 'boolean', default: false, 'x-quader-classes': ['remote'] },
     audit: {
       type: 'object',
       description: 'The security audit.',
       additionalProperties: false,
-      'x-trove-classes': ['remote'],
+      'x-quader-classes': ['remote'],
       properties: {
         // One value with a label and one without, which the select shows as it is written.
-        mode: { type: 'string', enum: ['forward', 'disabled'], 'x-trove-enum-titles': { forward: 'Forward to an advisory service' }, default: 'forward' },
+        mode: { type: 'string', enum: ['forward', 'disabled'], 'x-quader-enum-titles': { forward: 'Forward to an advisory service' }, default: 'forward' },
         providerURL: { type: ['string', 'null'], format: 'uri', default: null },
         timeout: { type: 'string', default: '30s', description: 'A duration such as 30s.' },
         maxBodySize: { type: 'string', default: '10MiB' },
@@ -228,7 +228,7 @@ export const RICH_SETTINGS_SCHEMA = {
       type: 'string',
       enum: ['highest-member-latest', 'newest-published'],
       default: 'highest-member-latest',
-      'x-trove-classes': ['virtual'],
+      'x-quader-classes': ['virtual'],
     },
   },
 };
@@ -263,20 +263,20 @@ export const NUGET_SETTINGS_SCHEMA = {
     deleteMode: {
       title: 'Delete mode',
       description:
-        "What dotnet nuget delete and nuget delete do in this repository: Unlist hides the version from search and keeps it downloadable, Delete for good removes it. A delete in trove's own pages or API always removes the version.",
+        "What dotnet nuget delete and nuget delete do in this repository: Unlist hides the version from search and keeps it downloadable, Delete for good removes it. A delete in Quader's own pages or API always removes the version.",
       type: 'string',
       enum: ['unlist', 'delete'],
-      'x-trove-enum-titles': { unlist: 'Unlist', delete: 'Delete for good' },
+      'x-quader-enum-titles': { unlist: 'Unlist', delete: 'Delete for good' },
       default: 'unlist',
-      'x-trove-classes': ['local'],
+      'x-quader-classes': ['local'],
     },
     forwardSearch: {
       title: 'Forward search',
       description:
-        'Pass searches on to the upstream, so that clients also find packages nobody has fetched through trove yet. Turn it off to search only what this repository has cached and to keep search terms inside your network.',
+        'Pass searches on to the upstream, so that clients also find packages nobody has fetched through Quader yet. Turn it off to search only what this repository has cached and to keep search terms inside your network.',
       type: 'boolean',
       default: true,
-      'x-trove-classes': ['remote'],
+      'x-quader-classes': ['remote'],
     },
   },
 };
@@ -335,7 +335,7 @@ export const DEB_SETTINGS_SCHEMA = {
       minItems: 1,
       uniqueItems: true,
       default: ['amd64', 'arm64'],
-      'x-trove-classes': ['local', 'virtual'],
+      'x-quader-classes': ['local', 'virtual'],
       items: { type: 'string' },
     },
     compression: {
@@ -344,25 +344,25 @@ export const DEB_SETTINGS_SCHEMA = {
       maxItems: 1,
       uniqueItems: true,
       default: [],
-      'x-trove-classes': ['local', 'virtual'],
+      'x-quader-classes': ['local', 'virtual'],
       items: { type: 'string', enum: ['xz'] },
     },
-    origin: { description: 'The origin apt reports for this repository, which pinning rules can match.', type: 'string', default: 'trove', 'x-trove-classes': ['local', 'virtual'] },
-    label: { description: "The label apt reports for this repository, which pinning rules can match. Left empty, it is the repository's key.", type: 'string', 'x-trove-classes': ['local', 'virtual'] },
-    suites: { description: 'Further suites to serve from the remote members, such as bookworm-backports.', type: 'array', default: [], 'x-trove-classes': ['virtual'], items: { type: 'string' } },
-    components: { description: 'The components to serve, such as main and contrib, merged from all members.', type: 'array', default: ['main'], 'x-trove-classes': ['virtual'], items: { type: 'string' } },
+    origin: { description: 'The origin apt reports for this repository, which pinning rules can match.', type: 'string', default: 'quader', 'x-quader-classes': ['local', 'virtual'] },
+    label: { description: "The label apt reports for this repository, which pinning rules can match. Left empty, it is the repository's key.", type: 'string', 'x-quader-classes': ['local', 'virtual'] },
+    suites: { description: 'Further suites to serve from the remote members, such as bookworm-backports.', type: 'array', default: [], 'x-quader-classes': ['virtual'], items: { type: 'string' } },
+    components: { description: 'The components to serve, such as main and contrib, merged from all members.', type: 'array', default: ['main'], 'x-quader-classes': ['virtual'], items: { type: 'string' } },
     upstreamKeys: {
       description: "The upstream's public signing keys, pasted as one armored OpenPGP block of up to 32 keys.",
       type: ['string', 'null'],
       default: null,
-      'x-trove-classes': ['remote'],
+      'x-quader-classes': ['remote'],
       maxLength: 262144,
     },
     mirror: {
       description: 'What a mirror of the APT archive keeps.',
       type: 'object',
       additionalProperties: false,
-      'x-trove-classes': ['remote'],
+      'x-quader-classes': ['remote'],
       properties: {
         suites: { description: 'The suites to mirror, such as bookworm and bookworm-updates. A mirror needs at least one.', type: 'array', default: [], items: { type: 'string' } },
         components: { description: 'The components to keep, such as main, contrib or non-free-firmware.', type: 'array', default: ['main'], items: { type: 'string' } },
@@ -393,18 +393,18 @@ export const ANSIBLE_SETTINGS_SCHEMA = {
   additionalProperties: false,
   properties: {
     authUrl: {
-      description: 'For a hub behind single sign-on: where trove exchanges the stored offline token for a short-lived access token.',
+      description: 'For a hub behind single sign-on: where Quader exchanges the stored offline token for a short-lived access token.',
       type: 'string',
       pattern: '^https://',
       maxLength: 2048,
-      'x-trove-classes': ['remote'],
+      'x-quader-classes': ['remote'],
     },
     clientId: {
-      description: 'The client ID trove presents when it exchanges the token.',
+      description: 'The client ID Quader presents when it exchanges the token.',
       type: 'string',
       default: 'cloud-services',
       pattern: '^[A-Za-z0-9._-]{1,128}$',
-      'x-trove-classes': ['remote'],
+      'x-quader-classes': ['remote'],
     },
   },
 };
@@ -428,7 +428,7 @@ export class FakeRepositoriesApi extends RepositoriesApi {
   formatsResult: readonly FormatDescriptor[] = [GENERIC_FORMAT];
   formatsError: ApiError | null = null;
   /** The `baseUrl` of the formats answer. */
-  baseUrlResult: string | null = 'https://trove.example.net';
+  baseUrlResult: string | null = 'https://quader.example.net';
   baseUrlCalls = 0;
   repositories: FakeRepository[] = [
     {
@@ -504,7 +504,7 @@ export class FakeRepositoriesApi extends RepositoriesApi {
         format: r.format,
         description: r.description ?? '',
         visibility: r.visibility ?? { artifacts: 'private', wiki: 'private' },
-        addresses: [`https://trove.example.net/files/${refOf(r)}/`],
+        addresses: [`https://quader.example.net/files/${refOf(r)}/`],
         disabled: r.disabled ?? false,
         lifecycle: (r.lifecycle ?? 'active') as 'active' | 'deleting',
         lastActivityAt: r.lastActivityAt ?? null,
@@ -534,7 +534,7 @@ export class FakeRepositoriesApi extends RepositoriesApi {
           description: repo.description ?? '',
           layout: 'generic',
           visibility: repo.visibility ?? { artifacts: 'private', wiki: 'private' },
-          addresses: [`https://trove.example.net/files/${ref}/`],
+          addresses: [`https://quader.example.net/files/${ref}/`],
         },
         etag: `"${this.version(key)}-consumer"`,
       };
@@ -853,19 +853,19 @@ export class FakeFilesApi extends FilesApi {
             mediaType: 'application/octet-stream',
             digests: { sha256: 'a'.repeat(64), sha1: 'b'.repeat(40) },
             contentStatus: 'ok' as const,
-            downloadUrl: `https://trove.example.net/files/${repository}/${node.path}`,
+            downloadUrl: `https://quader.example.net/files/${repository}/${node.path}`,
             contentUrl: `${repositoryUrl(repository)}/content/${node.path}`,
           }
         : {
             explicit: true,
-            listingUrl: `https://trove.example.net/files/${repository}/${node.path}/`,
+            listingUrl: `https://quader.example.net/files/${repository}/${node.path}/`,
           }),
       created: stamp,
       modified: stamp,
       updatedAt: stamp.at,
       package: null,
       upstreamUrl: null,
-      itemUrl: `https://trove.example.net${repositoryUrl(repository)}/items?path=${node.path}`,
+      itemUrl: `https://quader.example.net${repositoryUrl(repository)}/items?path=${node.path}`,
     };
   }
 
@@ -971,8 +971,8 @@ export class FakeEndpointsApi extends EndpointsApi {
       configuration: {
         default: true,
         port: 8080,
-        baseUrl: 'https://trove.example.net',
-        hosts: ['trove.example.net'],
+        baseUrl: 'https://quader.example.net',
+        hosts: ['quader.example.net'],
         wildcardHost: null,
         hostRoots: {},
         pool: null,
@@ -1142,7 +1142,7 @@ export function sampleEvent(over: Partial<AuditEvent> = {}): AuditEvent {
     actor: { type: 'user', id: 'u-1', name: 'alice', tokenId: null, authMethod: 'session' },
     source: { ip: '10.12.4.7', userAgent: 'Mozilla/5.0' },
     traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
-    replica: 'trove-web-0',
+    replica: 'quader-web-0',
     endpoint: 'default',
     resource: { type: 'permission_policy', id: 'p-1' },
     repository: null,
@@ -1199,7 +1199,7 @@ export function sampleJob(over: Partial<Job> = {}): Job {
     id: '01933b2a-7c41-7d1e-9a52-3f0e4b8c2d11',
     kind: 'gc',
     state: 'succeeded',
-    replica: 'trove-worker-0',
+    replica: 'quader-worker-0',
     enqueuedAt: '2026-10-28T12:40:00Z',
     startedAt: '2026-10-28T12:40:01Z',
     finishedAt: '2026-10-28T12:40:02Z',
@@ -1239,7 +1239,7 @@ export class FakeJobsApi extends JobsApi {
         startedAt: '2026-10-29T03:00:01Z',
         finishedAt: '2026-10-29T03:00:09Z',
         outcome: 'succeeded',
-        replica: 'trove-worker-0',
+        replica: 'quader-worker-0',
       },
     },
     {

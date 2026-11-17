@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // Database is what the operations reads need of the PostgreSQL store: a retrying read. *postgres.DB implements it.

@@ -17,17 +17,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/proxy/upstream"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/proxy/upstream"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The tests of the handshake drive Engine.Get, the engine's request of a mirror's pass, against a registry that challenges and a
@@ -185,8 +185,8 @@ func hsProxyConfig(t *testing.T) config.Proxy {
 	l, err := config.Load(config.Options{
 		ReadFile: func(string) ([]byte, error) { return nil, os.ErrNotExist },
 		Environ: []string{
-			"TROVE_DATABASE_HOST=db.invalid", "TROVE_DATABASE_NAME=trove", "TROVE_STORAGE_S3_BUCKET=blobs",
-			"TROVE_STORAGE_SPOOL_DIR=" + t.TempDir(),
+			"QUADER_DATABASE_HOST=db.invalid", "QUADER_DATABASE_NAME=quader", "QUADER_STORAGE_S3_BUCKET=blobs",
+			"QUADER_STORAGE_SPOOL_DIR=" + t.TempDir(),
 		},
 		Command: config.CommandMigrate,
 	})
@@ -922,7 +922,7 @@ func TestR_REPO_033_TokenServiceRefusalNamesItsHostInTheSecurityEvent(t *testing
 	}
 	var m dto.Metric
 	if err := w.e.m.egressDenied.WithLabelValues("it/registry").Write(&m); err != nil || m.GetCounter().GetValue() != 1 {
-		t.Errorf("trove_remote_egress_denied_total = %v (%v), want 1", m.GetCounter().GetValue(), err)
+		t.Errorf("quader_remote_egress_denied_total = %v (%v), want 1", m.GetCounter().GetValue(), err)
 	}
 }
 

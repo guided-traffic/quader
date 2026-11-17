@@ -8,9 +8,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // authzPaths is check 13 (R-AUTHZ-005, Q-AUTHZ-250): a protocol request is decided on the canonical path of what it

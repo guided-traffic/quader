@@ -1,68 +1,68 @@
 #!/usr/bin/env bash
-# Brings up the local development profile (R-HA-051, E0.3) on a kind cluster named "trove":
+# Brings up the local development profile (R-HA-051, E0.3) on a kind cluster named "quader":
 # one control-plane and three worker nodes in three zones, HAProxy Ingress as the edge, cert-manager with a
 # dev CA that issues every certificate, the internal-secrets-operator that generates every Secret,
 # CloudNativePG with a two-instance PostgreSQL cluster, the Valkey operator with a replica and three
-# Sentinels over TLS, SeaweedFS with its buckets over HTTPS, and the trove chart with the dev values.
-# TLS on every connection: client -> edge, edge -> trove, trove -> PostgreSQL, Valkey, Sentinel, S3.
+# Sentinels over TLS, SeaweedFS with its buckets over HTTPS, and the quader chart with the dev values.
+# TLS on every connection: client -> edge, edge -> quader, quader -> PostgreSQL, Valkey, Sentinel, S3.
 #
 # Idempotent: a second run reuses the cluster, the Secrets and the certificates and re-applies
 # the rest. Independent installs run in parallel; their logs are in .dev/logs/.
 #
 # Environment:
-#   TROVE_SKIP_RELEASE=1  install the dependency stack only, not the trove release. Use it while
-#                         the trove image does not serve yet, or to work on the dependencies.
-#   TROVE_PROFILE=scatter the `scatter` e2e profile (E0.11): three api and three packages replicas and an edge that
-#                         balances round robin per request with its keep-alive to the pods off
-#                         (values-scatter.yaml: HAProxy Ingress annotations on trove's Ingress).
-#                         Run up.sh again without it to switch back.
-#   TROVE_PROFILE=vuln    the `vuln` e2e profile (R-VULN-029): the scatter profile with the scanning reading the test advisory
-#                         source and the hosts of the test upstreams listed as public registries (values-vuln.yaml).
-#                         Run up.sh again without it to switch back.
-#   TROVE_PROFILE=bastion the `bastion` e2e profile (R-BAS-049): the main installation trusts the pod range as a proxy
-#                         and lists the base URLs of the e2e Bastions (values-bastion.yaml, deploy/dev/bastion.sh).
-#                         Run up.sh again without it to switch back.
-#   TROVE_PROFILE=backup  the `backup` e2e profile (R-BAK-029): garbage collection with a grace period of 0s, so that the consistency
-#                         scenario of the backup suite collects what it deletes at once (values-backup.yaml).
-#                         Run up.sh again without it to switch back.
-#   TROVE_PROFILE=edge    the `edge` e2e profile (R-HA-039, R-HA-038): Envoy Gateway (tools/versions.env DEV_ENVOY_*) with the platform Gateway `shared` in
-#                         the namespace gateway-system (gateway.yaml), and the trove release with an HTTPRoute on it beside the Ingress, the
-#                         BackendTLSPolicies and the spool and upload limit of a 6 GiB transfer (values-edge.yaml). The Gateway is installed for this
-#                         profile only; it stays in the cluster when a later run uses another profile, which removes the HTTPRoute again.
-#                         Run up.sh again without it to switch back.
-#   TROVE_PROFILE=alerts  the `alerts` e2e profile (R-HA-045, R-OPS-045, R-OPS-046): kube-prometheus-stack in the namespace monitoring (the Prometheus
-#                         operator, one Prometheus and kube-state-metrics; DEV_PROMETHEUS_*) and the trove release with the ServiceMonitor and the
-#                         PrometheusRule rendered (values-alerts.yaml). Installed for this profile only; it stays in the cluster afterwards.
-#   TROVE_PROFILE=drain   the `drain` e2e profile (R-HA-059, R-STOR-046, roadmap E5.9): the scatter profile with garbage collection without a grace
-#                         period, so that the full collection run the drain test starts has blobs to delete and is still waiting for them to
-#                         settle (storage.gc.delete_settle) when its worker is evicted (values-drain.yaml).
-#                         Run up.sh again without it to switch back.
-#   TROVE_POOLER=1        also install the transaction-mode poolers and point the chart at them
-#                         (pooler.yaml, values-pooler.yaml, R-HA-058). The profile carries what the drain of a pooler instance
-#                         needs (R-HA-059 rule 5: PodDisruptionBudgets, node spread, a grace period of 120 s, a pooled connection
-#                         lifetime of 60 s + 15 s) and the role defaults that preflight reads on a pooled connection, which this
-#                         script sets with ALTER ROLE trove IN DATABASE trove SET ... (statement_timeout 30s, lock_timeout 5s,
-#                         idle_in_transaction_session_timeout 60s, search_path trove: the configuration's defaults).
-#   TROVE_PITR=1          also install the Barman Cloud plugin of CloudNativePG (tools/versions.env DEV_BARMAN_PLUGIN_*) and archive the WAL
-#                         of trove-db to the bucket trove-pg-archive (pitr.yaml, R-HA-023); the point-in-time restore drill needs it
-#                         (docs/developer/e2e.md#the-point-in-time-restore-drill). It is off by default: the plugin adds a Deployment and a
-#                         sidecar container to both PostgreSQL pods. The setting is sticky for a cluster that exists: the plugin entry
-#                         stays in the Cluster when a later run leaves the variable out, and down.sh removes it with the cluster.
-#   TROVE_IMAGE=<ref>     the trove image to load into the cluster (default guidedtraffic/trove:dev,
-#                         built by `make image`). It must be present in the local Docker.
-#   TROVE_DEV_HTTP_PORT=n the host port of the edge, default 8080 (https://localhost:8080). Set it when
-#                         8080 is taken; the chart's base_url follows. Fixed when the cluster is created.
-#   TROVE_HELM_EXTRA=...  extra arguments for the helm upgrade of the trove release.
+#   QUADER_SKIP_RELEASE=1  install the dependency stack only, not the quader release. Use it while
+#                          the quader image does not serve yet, or to work on the dependencies.
+#   QUADER_PROFILE=scatter the `scatter` e2e profile (E0.11): three api and three packages replicas and an edge that
+#                          balances round robin per request with its keep-alive to the pods off
+#                          (values-scatter.yaml: HAProxy Ingress annotations on quader's Ingress).
+#                          Run up.sh again without it to switch back.
+#   QUADER_PROFILE=vuln    the `vuln` e2e profile (R-VULN-029): the scatter profile with the scanning reading the test advisory
+#                          source and the hosts of the test upstreams listed as public registries (values-vuln.yaml).
+#                          Run up.sh again without it to switch back.
+#   QUADER_PROFILE=bastion the `bastion` e2e profile (R-BAS-049): the main installation trusts the pod range as a proxy
+#                          and lists the base URLs of the e2e Bastions (values-bastion.yaml, deploy/dev/bastion.sh).
+#                          Run up.sh again without it to switch back.
+#   QUADER_PROFILE=backup  the `backup` e2e profile (R-BAK-029): garbage collection with a grace period of 0s, so that the consistency
+#                          scenario of the backup suite collects what it deletes at once (values-backup.yaml).
+#                          Run up.sh again without it to switch back.
+#   QUADER_PROFILE=edge    the `edge` e2e profile (R-HA-039, R-HA-038): Envoy Gateway (tools/versions.env DEV_ENVOY_*) with the platform Gateway `shared` in
+#                          the namespace gateway-system (gateway.yaml), and the quader release with an HTTPRoute on it beside the Ingress, the
+#                          BackendTLSPolicies and the spool and upload limit of a 6 GiB transfer (values-edge.yaml). The Gateway is installed for this
+#                          profile only; it stays in the cluster when a later run uses another profile, which removes the HTTPRoute again.
+#                          Run up.sh again without it to switch back.
+#   QUADER_PROFILE=alerts  the `alerts` e2e profile (R-HA-045, R-OPS-045, R-OPS-046): kube-prometheus-stack in the namespace monitoring (the Prometheus
+#                          operator, one Prometheus and kube-state-metrics; DEV_PROMETHEUS_*) and the quader release with the ServiceMonitor and the
+#                          PrometheusRule rendered (values-alerts.yaml). Installed for this profile only; it stays in the cluster afterwards.
+#   QUADER_PROFILE=drain   the `drain` e2e profile (R-HA-059, R-STOR-046, roadmap E5.9): the scatter profile with garbage collection without a grace
+#                          period, so that the full collection run the drain test starts has blobs to delete and is still waiting for them to
+#                          settle (storage.gc.delete_settle) when its worker is evicted (values-drain.yaml).
+#                          Run up.sh again without it to switch back.
+#   QUADER_POOLER=1        also install the transaction-mode poolers and point the chart at them
+#                          (pooler.yaml, values-pooler.yaml, R-HA-058). The profile carries what the drain of a pooler instance
+#                          needs (R-HA-059 rule 5: PodDisruptionBudgets, node spread, a grace period of 120 s, a pooled connection
+#                          lifetime of 60 s + 15 s) and the role defaults that preflight reads on a pooled connection, which this
+#                          script sets with ALTER ROLE quader IN DATABASE quader SET ... (statement_timeout 30s, lock_timeout 5s,
+#                          idle_in_transaction_session_timeout 60s, search_path quader: the configuration's defaults).
+#   QUADER_PITR=1          also install the Barman Cloud plugin of CloudNativePG (tools/versions.env DEV_BARMAN_PLUGIN_*) and archive the WAL
+#                          of quader-db to the bucket quader-pg-archive (pitr.yaml, R-HA-023); the point-in-time restore drill needs it
+#                          (docs/developer/e2e.md#the-point-in-time-restore-drill). It is off by default: the plugin adds a Deployment and a
+#                          sidecar container to both PostgreSQL pods. The setting is sticky for a cluster that exists: the plugin entry
+#                          stays in the Cluster when a later run leaves the variable out, and down.sh removes it with the cluster.
+#   QUADER_IMAGE=<ref>     the quader image to load into the cluster (default guidedtraffic/quader:dev,
+#                          built by `make image`). It must be present in the local Docker.
+#   QUADER_DEV_HTTP_PORT=n the host port of the edge, default 8080 (https://localhost:8080). Set it when
+#                          8080 is taken; the chart's base_url follows. Fixed when the cluster is created.
+#   QUADER_HELM_EXTRA=...  extra arguments for the helm upgrade of the quader release.
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
-SKIP_RELEASE="${TROVE_SKIP_RELEASE:-0}"
-POOLER="${TROVE_POOLER:-0}"
-PITR="${TROVE_PITR:-0}"
-PROFILE="${TROVE_PROFILE:-default}"
-case "$PROFILE" in default|scatter|bastion|vuln|backup|edge|alerts|drain) ;; *) die "TROVE_PROFILE must be default, scatter, bastion, vuln, backup, edge, alerts or drain, not '$PROFILE'" ;; esac
-IMAGE="${TROVE_IMAGE:-guidedtraffic/trove:dev}"
+SKIP_RELEASE="${QUADER_SKIP_RELEASE:-0}"
+POOLER="${QUADER_POOLER:-0}"
+PITR="${QUADER_PITR:-0}"
+PROFILE="${QUADER_PROFILE:-default}"
+case "$PROFILE" in default|scatter|bastion|vuln|backup|edge|alerts|drain) ;; *) die "QUADER_PROFILE must be default, scatter, bastion, vuln, backup, edge, alerts or drain, not '$PROFILE'" ;; esac
+IMAGE="${QUADER_IMAGE:-guidedtraffic/quader:dev}"
 LOGS="$STATE_DIR/logs"
 START="$(date +%s)"
 
@@ -74,7 +74,7 @@ if kind get clusters 2>/dev/null | grep -qx "$CLUSTER"; then
   log "kind cluster '$CLUSTER' exists, reusing it"
 else
   if (exec 3<>"/dev/tcp/127.0.0.1/$DEV_HTTP_PORT") 2>/dev/null; then
-    die "port $DEV_HTTP_PORT on localhost is in use; free it or set TROVE_DEV_HTTP_PORT=<other port> (base_url follows)"
+    die "port $DEV_HTTP_PORT on localhost is in use; free it or set QUADER_DEV_HTTP_PORT=<other port> (base_url follows)"
   fi
   log "creating the kind cluster '$CLUSTER' (1 control-plane, 3 workers in 3 zones, edge on localhost:$DEV_HTTP_PORT)"
   sed "s|\${DEV_HTTP_PORT}|$DEV_HTTP_PORT|g" "$DEV_DIR/kind.yaml" \
@@ -140,7 +140,7 @@ task_pki() {
     --set startupapicheck.image.digest="$(digest_of "$DEV_CERT_MANAGER_STARTUPAPICHECK_IMAGE")" \
     --wait --timeout 5m
   render "$DEV_DIR/pki.yaml" | kn apply -f -
-  kn wait --for=condition=Ready certificate/trove-dev-ca certificate/trove-tls certificate/trove-edge-tls certificate/trove-s3-tls --timeout=3m
+  kn wait --for=condition=Ready certificate/quader-dev-ca certificate/quader-tls certificate/quader-edge-tls certificate/quader-s3-tls --timeout=3m
 }
 
 # The operator caches every Secret and ConfigMap of the cluster. Its chart's limit of 128 MiB was too small on a long-lived dev
@@ -154,7 +154,7 @@ task_secrets() {
     --set resources.limits.memory=512Mi --set resources.requests.memory=128Mi \
     --wait --timeout 5m
   kn apply -f "$DEV_DIR/secrets.yaml"
-  wait_secret_fields 120 trove-valkey-auth:password trove-s3:secret-access-key trove-encryption-keys:dev.key trove-break-glass:password
+  wait_secret_fields 120 quader-valkey-auth:password quader-s3:secret-access-key quader-encryption-keys:dev.key quader-break-glass:password
 }
 
 task_vko() {
@@ -164,12 +164,12 @@ task_vko() {
     --wait --timeout 5m
 }
 
-# pg_cluster_manifest prints postgres.yaml; with TROVE_PITR=1 the Cluster also archives through the Barman Cloud plugin (kubectl patch --local
+# pg_cluster_manifest prints postgres.yaml; with QUADER_PITR=1 the Cluster also archives through the Barman Cloud plugin (kubectl patch --local
 # edits the document on stdin and needs no server).
 pg_cluster_manifest() {
   if [ "$PITR" = "1" ]; then
     render "$DEV_DIR/postgres.yaml" | kubectl patch --local -f - --type merge -o yaml \
-      -p '{"spec":{"plugins":[{"name":"barman-cloud.cloudnative-pg.io","isWALArchiver":true,"parameters":{"barmanObjectName":"trove-pg-archive"}}]}}'
+      -p '{"spec":{"plugins":[{"name":"barman-cloud.cloudnative-pg.io","isWALArchiver":true,"parameters":{"barmanObjectName":"quader-pg-archive"}}]}}'
   else
     render "$DEV_DIR/postgres.yaml"
   fi
@@ -207,23 +207,23 @@ task_postgres() {
     sleep 3
   done
   # The cluster object exists before its status; wait for the condition.
-  kn wait --for=condition=Ready cluster/trove-db --timeout=10m
+  kn wait --for=condition=Ready cluster/quader-db --timeout=10m
   local ready
-  ready="$(kn get cluster trove-db -o jsonpath='{.status.readyInstances}')"
-  [ "$ready" = "2" ] || { echo "trove-db has $ready ready instances, want 2"; exit 1; }
+  ready="$(kn get cluster quader-db -o jsonpath='{.status.readyInstances}')"
+  [ "$ready" = "2" ] || { echo "quader-db has $ready ready instances, want 2"; exit 1; }
   if [ "$POOLER" = "1" ]; then
     # A transaction-mode pooler cannot pass these four settings as startup parameters (R-HA-058); preflight refuses to start
     # without them as role defaults. The values are the defaults of database.session (internal/config/database.go). Idempotent.
     local primary
-    primary="$(kn get cluster trove-db -o jsonpath='{.status.currentPrimary}')"
-    kn exec "$primary" -c postgres -- psql -U postgres -d trove -v ON_ERROR_STOP=1 -c "
-      ALTER ROLE trove IN DATABASE trove SET statement_timeout = '30s';
-      ALTER ROLE trove IN DATABASE trove SET lock_timeout = '5s';
-      ALTER ROLE trove IN DATABASE trove SET idle_in_transaction_session_timeout = '60s';
-      ALTER ROLE trove IN DATABASE trove SET search_path = trove;"
+    primary="$(kn get cluster quader-db -o jsonpath='{.status.currentPrimary}')"
+    kn exec "$primary" -c postgres -- psql -U postgres -d quader -v ON_ERROR_STOP=1 -c "
+      ALTER ROLE quader IN DATABASE quader SET statement_timeout = '30s';
+      ALTER ROLE quader IN DATABASE quader SET lock_timeout = '5s';
+      ALTER ROLE quader IN DATABASE quader SET idle_in_transaction_session_timeout = '60s';
+      ALTER ROLE quader IN DATABASE quader SET search_path = quader;"
     kn apply -f "$DEV_DIR/pooler.yaml"
     # The operator creates the Deployments a moment after the Pooler objects.
-    for d in trove-db-pooler-rw trove-db-pooler-control; do
+    for d in quader-db-pooler-rw quader-db-pooler-control; do
       until kn get deployment "$d" >/dev/null 2>&1; do sleep 1; done
       kn rollout status "deployment/$d" --timeout=5m
     done
@@ -234,27 +234,27 @@ task_valkey() {
   await pki secrets vko
   render "$DEV_DIR/valkey.yaml" | kn apply -f -
   # The operator creates the StatefulSets a moment after the resource.
-  until kn get statefulset trove-valkey trove-valkey-sentinel >/dev/null 2>&1; do sleep 1; done
-  sts_wait_ready trove-valkey 2 300
-  sts_wait_ready trove-valkey-sentinel 3 300
+  until kn get statefulset quader-valkey quader-valkey-sentinel >/dev/null 2>&1; do sleep 1; done
+  sts_wait_ready quader-valkey 2 300
+  sts_wait_ready quader-valkey-sentinel 3 300
 }
 
 task_s3() {
   await pki secrets
-  kn delete job trove-s3-buckets --ignore-not-found >/dev/null
+  kn delete job quader-s3-buckets --ignore-not-found >/dev/null
   render "$DEV_DIR/s3.yaml" | kn apply -f -
-  kn rollout status deployment/trove-s3 --timeout=5m
-  kn wait --for=condition=Complete job/trove-s3-buckets --timeout=5m
-  kn logs job/trove-s3-buckets
+  kn rollout status deployment/quader-s3 --timeout=5m
+  kn wait --for=condition=Complete job/quader-s3-buckets --timeout=5m
+  kn logs job/quader-s3-buckets
 }
 
 # The test IdP (E1.1, Q-AUTH-35): Keycloak with the realm of deploy/dev/keycloak.yaml, HTTPS with a certificate of the dev CA.
 task_keycloak() {
   await pki secrets
   render "$DEV_DIR/keycloak.yaml" | kn apply -f -
-  kn wait --for=condition=Ready certificate/trove-keycloak-tls --timeout=3m
-  wait_secret_fields 120 trove-keycloak:admin-password trove-keycloak:client-secret trove-keycloak:alice-password trove-keycloak:bob-password
-  kn rollout status deployment/trove-keycloak --timeout=10m
+  kn wait --for=condition=Ready certificate/quader-keycloak-tls --timeout=3m
+  wait_secret_fields 120 quader-keycloak:admin-password quader-keycloak:client-secret quader-keycloak:alice-password quader-keycloak:bob-password
+  kn rollout status deployment/quader-keycloak --timeout=10m
 }
 
 # image_tag <ref> and image_hex <ref> split "repo:tag@sha256:hex" for the charts that take the tag and the digest as two values.
@@ -276,8 +276,8 @@ task_gateway() {
   k wait --for=condition=Established crd/gateways.gateway.networking.k8s.io crd/httproutes.gateway.networking.k8s.io \
     crd/backendtlspolicies.gateway.networking.k8s.io crd/clienttrafficpolicies.gateway.envoyproxy.io --timeout=2m
   # Gateway API takes the CA of a BackendTLSPolicy from a ConfigMap, and cert-manager writes the dev CA into a Secret.
-  secret_field trove-dev-ca ca.crt | base64 -d > "$LOGS/gateway-ca.crt"
-  kn create configmap trove-tls-ca --from-file=ca.crt="$LOGS/gateway-ca.crt" --dry-run=client -o yaml | kn apply -f -
+  secret_field quader-dev-ca ca.crt | base64 -d > "$LOGS/gateway-ca.crt"
+  kn create configmap quader-tls-ca --from-file=ca.crt="$LOGS/gateway-ca.crt" --dry-run=client -o yaml | kn apply -f -
   # The controller's admission may refuse the first objects for a moment after its Deployment is ready.
   local deadline=$(( $(date +%s) + 180 ))
   until render "$DEV_DIR/gateway.yaml" | k apply -f - 2>"$LOGS/gateway-apply.err"; do
@@ -289,7 +289,7 @@ task_gateway() {
 
 # Prometheus for the profile `alerts` (R-HA-045, R-OPS-045, R-OPS-046): the operator, one Prometheus and kube-state-metrics, nothing else of the
 # stack. The Prometheus selects every ServiceMonitor and PrometheusRule of the cluster; its web interface is plain HTTP inside the cluster (the
-# tests read it through the API server's Service proxy), the scrape of trove's ops listener is TLS, verified against the dev CA.
+# tests read it through the API server's Service proxy), the scrape of quader's ops listener is TLS, verified against the dev CA.
 task_monitoring() {
   helm --kube-context "$CTX" upgrade --install prometheus \
     "$(chart_tgz https://prometheus-community.github.io/helm-charts kube-prometheus-stack "$DEV_PROMETHEUS_STACK_CHART_VERSION")" \
@@ -337,34 +337,34 @@ done
 
 # The dev CA, for a client on the host (curl --cacert, a browser's trust store, the e2e suite).
 mkdir -p "$STATE_DIR/pki"
-secret_field trove-dev-ca ca.crt | base64 -d > "$STATE_DIR/pki/ca.crt"
+secret_field quader-dev-ca ca.crt | base64 -d > "$STATE_DIR/pki/ca.crt"
 printf '*\n' > "$STATE_DIR/.gitignore"
 
 # ── 4. verify the dependency stack ───────────────────────────────────────────
-primary="$(valkey_primary)" || die "no Sentinel reports a primary for 'trove-valkey'"
+primary="$(valkey_primary)" || die "no Sentinel reports a primary for 'quader-valkey'"
 log "Valkey primary (asked through TLS at the Sentinels): $primary"
-log "PostgreSQL primary: $(kn get cluster trove-db -o jsonpath='{.status.currentPrimary}')"
+log "PostgreSQL primary: $(kn get cluster quader-db -o jsonpath='{.status.currentPrimary}')"
 
-# ── 5. the trove release ─────────────────────────────────────────────────────
+# ── 5. the quader release ─────────────────────────────────────────────────────
 if [ "$SKIP_RELEASE" = "1" ]; then
-  log "TROVE_SKIP_RELEASE=1: the trove release is not installed"
+  log "QUADER_SKIP_RELEASE=1: the quader release is not installed"
 else
   if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-    die "the image $IMAGE is not in the local Docker; build it with 'make image' (or set TROVE_SKIP_RELEASE=1 for the dependencies only)"
+    die "the image $IMAGE is not in the local Docker; build it with 'make image' (or set QUADER_SKIP_RELEASE=1 for the dependencies only)"
   fi
   log "loading $IMAGE into the kind cluster"
   kind load docker-image "$IMAGE" --name "$CLUSTER" > "$LOGS/image-load.log" 2>&1 \
     || { tail -20 "$LOGS/image-load.log" >&2; die "kind load docker-image failed"; }
-  chart="$REPO_ROOT/deploy/helm/trove"
+  chart="$REPO_ROOT/deploy/helm/quader"
   release_values "$DEV_DIR" "$PROFILE" 1
   values=("${RELEASE_VALUES[@]}")
-  log "installing the trove release (helm upgrade --install trove, migration Job first)"
+  log "installing the quader release (helm upgrade --install quader, migration Job first)"
   # --force-conflicts: helm applies server-side, and on a cluster that tests have used a `kubectl scale` is the field manager of
   # spec.replicas of a Deployment; the profile's values own the replica count again (Q-HA-289).
   # shellcheck disable=SC2086
-  helm --kube-context "$CTX" upgrade --install trove "$chart" -n "$NS" --force-conflicts \
-    "${values[@]}" --wait --timeout 10m ${TROVE_HELM_EXTRA:-}
-  kn get deploy,pods -l app.kubernetes.io/instance=trove -o wide
+  helm --kube-context "$CTX" upgrade --install quader "$chart" -n "$NS" --force-conflicts \
+    "${values[@]}" --wait --timeout 10m ${QUADER_HELM_EXTRA:-}
+  kn get deploy,pods -l app.kubernetes.io/instance=quader -o wide
   log "check: curl -s --cacert $STATE_DIR/pki/ca.crt https://localhost:$EDGE_PORT/api/v1/system/ping"
 fi
 
@@ -372,9 +372,9 @@ log "dev profile is up in $(elapsed "$START")"
 cat >&2 <<MSG
 
   kubectl:        kubectl --context $CTX -n $NS get pods -o wide
-  trove (edge):   https://localhost:$EDGE_PORT   (HAProxy Ingress, class haproxy; trust $STATE_DIR/pki/ca.crt)
-  PostgreSQL:     kubectl --context $CTX -n $NS get cluster trove-db
+  quader (edge):  https://localhost:$EDGE_PORT   (HAProxy Ingress, class haproxy; trust $STATE_DIR/pki/ca.crt)
+  PostgreSQL:     kubectl --context $CTX -n $NS get cluster quader-db
   Valkey:         deploy/dev/valkey-failover.sh | valkey-kill.sh | valkey-outage.sh 60s
-  test IdP:       https://trove-keycloak.$NS.svc:8443/realms/trove (users alice, bob; docs/developer/local-profile.md)
+  test IdP:       https://quader-keycloak.$NS.svc:8443/realms/quader (users alice, bob; docs/developer/local-profile.md)
   tear down:      deploy/dev/down.sh
 MSG

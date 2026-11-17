@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // R-REPO-053 step 3, Q-REPO-252: a package with one permanently failed item and one that failed transiently keeps its retries

@@ -153,9 +153,9 @@ func TestR_BAS_020_R_BAS_026_AnAnswerObtainedBeforeARevocationAndStoredAfterItIs
 	}
 	// The main installation has decided "allowed". Now the token is revoked, and the Bastion learns it from the feed.
 	w.mustAPI("DELETE", "/api/v1/tokens/"+u.id, 204, nil)
-	before := sumMetric(r.metrics(t), "trove_bastion_feed_entries_applied_total")
+	before := sumMetric(r.metrics(t), "quader_bastion_feed_entries_applied_total")
 	deadline := time.Now().Add(bound)
-	for sumMetric(r.metrics(t), "trove_bastion_feed_entries_applied_total") <= before {
+	for sumMetric(r.metrics(t), "quader_bastion_feed_entries_applied_total") <= before {
 		if time.Now().After(deadline) {
 			t.Fatal("the feed entry of the revocation did not arrive")
 		}

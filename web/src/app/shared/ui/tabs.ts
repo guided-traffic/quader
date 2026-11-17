@@ -12,16 +12,16 @@ import {
 } from '@angular/core';
 import { Tab as AriaTab, TabList, TabPanel, Tabs } from '@angular/aria/tabs';
 
-/** Marks the lazy content of a tab: `<ng-template troveTabContent>` is created when the tab is selected and gone when it is left. */
-@Directive({ selector: 'ng-template[troveTabContent]' })
+/** Marks the lazy content of a tab: `<ng-template quaderTabContent>` is created when the tab is selected and gone when it is left. */
+@Directive({ selector: 'ng-template[quaderTabContent]' })
 export class TabContent {}
 
 /**
- * One tab of a `trove-tab-group`: its label and its content. The content is created with the screen, as the tabs it
+ * One tab of a `quader-tab-group`: its label and its content. The content is created with the screen, as the tabs it
  * replaces did, and only the selected tab's content is in the page, so a form in another tab keeps what was typed.
  */
 @Component({
-  selector: 'trove-tab',
+  selector: 'quader-tab',
   template: `<ng-template><ng-content /></ng-template>`,
 })
 export class TabPage {
@@ -38,10 +38,10 @@ export class TabPage {
  * WAI-ARIA tabs pattern, and the selected tab's panel is a `tabpanel` named by its tab. Tabs that are links to
  * routes are plain `.tab-nav` links instead.
  *
- *   <trove-tab-group [(selectedIndex)]="index"><trove-tab label="General">…</trove-tab></trove-tab-group>
+ *   <quader-tab-group [(selectedIndex)]="index"><quader-tab label="General">…</quader-tab></quader-tab-group>
  */
 @Component({
-  selector: 'trove-tab-group',
+  selector: 'quader-tab-group',
   imports: [NgTemplateOutlet, Tabs, TabList, AriaTab, TabPanel],
   template: `
     <div ngTabs>
@@ -72,7 +72,7 @@ export class TabPage {
       display: block;
     }
     .tab-link .badge {
-      margin-inline-start: var(--trove-space-1);
+      margin-inline-start: var(--quader-space-1);
     }
   `,
 })

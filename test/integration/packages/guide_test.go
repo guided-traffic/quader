@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // guideSections returns the sections of a guide answer by id.
@@ -39,7 +39,7 @@ func sectionSnippets(sec map[string]any) map[string]string {
 // names no token; the guide of a format answers every caller that may list the formats.
 func TestR_API_053_TheGuideThroughTheStack(t *testing.T) {
 	e := newEnv(t)
-	shape := regexp.MustCompile(`trv_(pat|sat|cit)_`)
+	shape := regexp.MustCompile(`qdr_(pat|sat|cit)_`)
 
 	t.Run("the configure and install snippets are the client setup's with credentials=env", func(t *testing.T) {
 		for _, client := range []string{"npm", "pnpm", "yarn", "yarn-classic"} {
@@ -60,7 +60,7 @@ func TestR_API_053_TheGuideThroughTheStack(t *testing.T) {
 	})
 	t.Run("a caller who may deploy gets the target, one who may not is told", func(t *testing.T) {
 		a := e.get(e.tokA, "/api/v1/projects/it/repositories/npm-local/guide?client=npm")
-		if v := a.JSON(t); v["publishTarget"] != "it/npm-local" || v["credentials"] != "env" || v["registryUrl"] != "http://trove.test/api/npm/it/npm-local/" {
+		if v := a.JSON(t); v["publishTarget"] != "it/npm-local" || v["credentials"] != "env" || v["registryUrl"] != "http://quader.test/api/npm/it/npm-local/" {
 			t.Fatalf("%v", v)
 		}
 		b := e.get(e.tokB, "/api/v1/projects/it/repositories/npm-local/guide?client=npm")
@@ -82,7 +82,7 @@ func TestR_API_053_TheGuideThroughTheStack(t *testing.T) {
 		for _, tok := range []string{e.tokA, e.tokD} {
 			a := e.get(tok, "/api/v1/formats/npm/guide?class=virtual&client=yarn")
 			g := guideSections(t, a)
-			if v := a.JSON(t); v["repository"] != nil || v["registryUrl"] != "http://trove.test/api/npm/<project>/<repository>/" || g["npm.virtual.what"] == nil {
+			if v := a.JSON(t); v["repository"] != nil || v["registryUrl"] != "http://quader.test/api/npm/<project>/<repository>/" || g["npm.virtual.what"] == nil {
 				t.Fatalf("%v", v)
 			}
 		}

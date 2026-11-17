@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // ErrBlobList is a blob list that cannot be trusted: its bytes do not match the manifest's SHA-256, or it holds another

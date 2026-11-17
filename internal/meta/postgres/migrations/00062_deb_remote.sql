@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The rows of the Debian (APT) format's remote repositories (R-DEB-023, Q-DEB-16, Q-DEB-36): the stored release document of each
 -- release directory with the verdict of its verification, the Packages and Sources indexes whose rows are parsed, and the parsed

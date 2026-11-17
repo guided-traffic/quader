@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/auth/jws"
+	"github.com/guided-traffic/quader/internal/auth/jws"
 )
 
 // The login's view of the shared verifier (R-AUTH-006, Q-AUTH-31, Q-CI-19): the compact JWS, the

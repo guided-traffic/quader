@@ -76,7 +76,7 @@ func (o Object) validate() error {
 }
 
 // ErrUnknownVersion is an object of a higher version than this binary reads. The replay reports it and skips the object.
-var ErrUnknownVersion = errors.New("journal: object has a newer version than this trove reads")
+var ErrUnknownVersion = errors.New("journal: object has a newer version than this Quader reads")
 
 // Decode parses and validates an object. Anyone who holds the runtime S3 credential can write journal objects, so a
 // decoded object is untrusted input: the handlers treat it as a claim to be checked against the restored database

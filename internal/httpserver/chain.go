@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // HeaderRequestID carries the request's trace ID on every client-listener
@@ -21,7 +21,7 @@ const HeaderRequestID = "X-Request-Id"
 
 // HeaderReplica names the replica that answered, according to
 // server.replica_header (R-OPS-002).
-const HeaderReplica = "X-Trove-Replica"
+const HeaderReplica = "X-Quader-Replica"
 
 // Replica header modes (server.replica_header).
 const (
@@ -121,7 +121,7 @@ type Chain struct {
 	// refuses before the first read of the body (R-HA-010, Q-STOR-149). Nil means none.
 	ExpectMark func(context.Context) context.Context
 
-	// Replica and ReplicaHeader implement X-Trove-Replica (R-OPS-002).
+	// Replica and ReplicaHeader implement X-Quader-Replica (R-OPS-002).
 	Replica       string
 	ReplicaHeader string
 

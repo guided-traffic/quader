@@ -7,13 +7,13 @@ import { TabContent, TabGroup, TabPage } from './tabs';
 @Component({
   imports: [TabGroup, TabPage, TabContent],
   template: `
-    <trove-tab-group [selectedIndex]="index()" (selectedIndexChange)="index.set($event)">
-      <trove-tab label="General"><p>general body</p></trove-tab>
-      <trove-tab label="Access"><ng-template troveTabContent><p>access body</p></ng-template></trove-tab>
+    <quader-tab-group [selectedIndex]="index()" (selectedIndexChange)="index.set($event)">
+      <quader-tab label="General"><p>general body</p></quader-tab>
+      <quader-tab label="Access"><ng-template quaderTabContent><p>access body</p></ng-template></quader-tab>
       @if (extra()) {
-        <trove-tab label="Extra"><p>extra body</p></trove-tab>
+        <quader-tab label="Extra"><p>extra body</p></quader-tab>
       }
-    </trove-tab-group>
+    </quader-tab-group>
   `,
 })
 class Host {
@@ -31,7 +31,7 @@ async function render() {
   return { fixture, root, tabs, host: fixture.componentInstance };
 }
 
-describe('trove tabs (Q-UI-126)', () => {
+describe('Quader tabs (Q-UI-126)', () => {
   it('R-UI-044 is a tablist with the selected tab named for its panel, and passes axe', async () => {
     const { root, tabs } = await render();
     expect(root.querySelector('[role="tablist"]')).toBeTruthy();

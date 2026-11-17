@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 func limits() issuerLimits {
@@ -255,7 +255,7 @@ func TestFlightSharesOneCall(t *testing.T) {
 	}
 }
 
-// R-CI-001, Q-CI-48: trove migrate refuses a declared name whose issuer URL or kind changes, naming both values and
+// R-CI-001, Q-CI-48: quader migrate refuses a declared name whose issuer URL or kind changes, naming both values and
 // the remedy; the integration test TestR_CI_001_ADeclaredIssuerKeepsItsIssuerURL runs it through the command.
 func TestR_CI_001_ADeclaredNameKeepsItsIdentity(t *testing.T) {
 	before := Issuer{Name: "gitlab-main", Kind: KindGitLab, Issuer: "https://gitlab.example.com"}

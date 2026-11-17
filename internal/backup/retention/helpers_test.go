@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/listing/fixture"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/backup/target/targettest"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/listing/fixture"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/target/targettest"
 )
 
 var testNow = time.Date(2026, 11, 20, 12, 0, 0, 0, time.UTC)
@@ -113,7 +113,7 @@ type env struct {
 func newEnv(t *testing.T, policy Policy) *env {
 	t.Helper()
 	mem := targettest.New()
-	l := format.Layout{Prefix: "trove"}
+	l := format.Layout{Prefix: "quader"}
 	raw, err := format.NewMarker("inst-1", "inc-1", testNow).Encode()
 	if err != nil {
 		t.Fatal(err)

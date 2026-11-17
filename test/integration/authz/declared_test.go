@@ -9,15 +9,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/test/integration/stack"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/test/integration/stack"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // Role bindings declared in the system configuration (R-AUTHZ-010, Q-AUTHZ-170,
-// Q-AUTHZ-171): trove migrate applies authz.role_bindings, three web replicas
+// Q-AUTHZ-171): quader migrate applies authz.role_bindings, three web replicas
 // that follow the change log serve the management API, and every answer is
 // validated against api/openapi.yaml.
 
@@ -57,7 +57,7 @@ func TestR_AUTHZ_010_BindingsFromTheConfiguration(t *testing.T) {
 	me := f.admin.Name
 	ctx := context.Background()
 
-	t.Run("R-AUTHZ-010 trove migrate creates the declared group as a local group and binds it", func(t *testing.T) {
+	t.Run("R-AUTHZ-010 quader migrate creates the declared group as a local group and binds it", func(t *testing.T) {
 		before := f.e.AuthzEpoch()
 		if err := testenv.DeclareRoleBindings(f.e.Cfg, declared("admin", "group", "gh-ops"), declared("auditor", "user", "bob")); err != nil {
 			t.Fatal(err)
@@ -117,10 +117,10 @@ func TestR_AUTHZ_010_BindingsFromTheConfiguration(t *testing.T) {
 		}
 	})
 
-	t.Run("R-AUTH-008 R-AUTHZ-010 a member the login provider syncs into the declared group administers trove", func(t *testing.T) {
+	t.Run("R-AUTH-008 R-AUTHZ-010 a member the login provider syncs into the declared group administers quader", func(t *testing.T) {
 		prov := principal.NewProvisioner(principal.ProvisionerOptions{DB: f.a.DB, Notifier: f.a.Changes, Recorder: f.a.Audit, BreakGlassName: "admin"})
 		// The provider's rules map the IdP group to gh-ops; create_groups is off, so
-		// the sync needs the group trove migrate created.
+		// the sync needs the group quader migrate created.
 		if _, err := prov.SignIn(ctx, principal.LoginClaims{
 			Provider: "corp", Issuer: "https://idp.example.com", Subject: "sub-dave", Username: "dave",
 			Email: "dave@example.com", EmailVerified: true, DisplayName: "Dave", GroupSync: true, JIT: true,
@@ -187,7 +187,7 @@ func TestR_AUTHZ_010_BindingsFromTheConfiguration(t *testing.T) {
 		wantStatus(t, f.cl.Do("dave", "GET", roleBindings, nil, f.current()...), 403, "forbidden")
 	})
 
-	t.Run("R-AUTHZ-010 a declared user or service account that does not exist stops trove migrate, naming each, and nothing is applied", func(t *testing.T) {
+	t.Run("R-AUTHZ-010 a declared user or service account that does not exist stops quader migrate, naming each, and nothing is applied", func(t *testing.T) {
 		epoch := f.e.AuthzEpoch()
 		err := testenv.DeclareRoleBindings(f.e.Cfg, declared("admin", "group", "new-ops"), declared("auditor", "user", "nobody"),
 			declared("auditor", "service_account", "ghost-bot"))
@@ -203,7 +203,7 @@ func TestR_AUTHZ_010_BindingsFromTheConfiguration(t *testing.T) {
 		}
 	})
 
-	t.Run("R-AUTHZ-022 a declared auto-join group stops trove migrate", func(t *testing.T) {
+	t.Run("R-AUTHZ-022 a declared auto-join group stops quader migrate", func(t *testing.T) {
 		auto := f.e.Group("everyone")
 		f.e.Exec("UPDATE user_group SET auto_join = true WHERE principal_id = $1::uuid", auto.ID)
 		err := testenv.DeclareRoleBindings(f.e.Cfg, declared("auditor", "group", "everyone"))
@@ -214,7 +214,7 @@ func TestR_AUTHZ_010_BindingsFromTheConfiguration(t *testing.T) {
 	})
 }
 
-// TestR_AUTHZ_022_DeclaredRemovalKeepsAnAdministrator: trove migrate does not
+// TestR_AUTHZ_022_DeclaredRemovalKeepsAnAdministrator: quader migrate does not
 // remove the last administrator while the break-glass administrator is disabled
 // (Q-AUTHZ-171); the run stops and names the binding.
 func TestR_AUTHZ_022_DeclaredRemovalKeepsAnAdministrator(t *testing.T) {

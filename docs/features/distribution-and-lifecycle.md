@@ -1443,7 +1443,7 @@ and merged pull request, without manual work.
 - **Visibility.** The evidence tab of the application version (DIST-052) and one activity-log
   event per successful collection (DIST-062).
 
-The flow as specified here covers GitHub only. For trove the equivalent unit is a GitLab merge
+The flow as specified here covers GitHub only. For Quader the equivalent unit is a GitLab merge
 request: merge commit, merger, approvals and pipeline status are available from the GitLab API
 and, for the pipeline that built a package, from its ID-token claims
 ([oidc-ci-integration.md](oidc-ci-integration.md)).
@@ -1488,7 +1488,7 @@ which other tools' results become evidence:
   provenance, issue-tracker ticket links found in commit messages). Each produces an ordinary
   signed DSSE envelope (DIST-045).
 
-For trove, accepting a standard in-toto/DSSE envelope (DIST-047) covers all three paths without
+For Quader, accepting a standard in-toto/DSSE envelope (DIST-047) covers all three paths without
 tool-specific server code; the GitLab CI path is the reference design for SBOM and SLSA
 provenance named above.
 

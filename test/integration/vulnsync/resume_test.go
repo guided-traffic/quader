@@ -11,8 +11,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	vsync "github.com/guided-traffic/trove/internal/vuln/sync"
+	"github.com/guided-traffic/quader/internal/jobs"
+	vsync "github.com/guided-traffic/quader/internal/vuln/sync"
 )
 
 // fakeRun is the run handle of a job that survives its attempt: the checkpoint and the progress are kept, as the job row keeps

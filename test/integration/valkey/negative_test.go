@@ -12,15 +12,15 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func negativeKeyName(ks string, repoID int64, f cluster.FlightKey) string {
 	return runPrefix + strings.ToLower(ks[:12]) + ":neg:v1:" + strconv.FormatInt(repoID, 10) + ":" + f.String()
 }
 
-// negativeLookups reads trove_valkey_cache_lookups_total{cache="negative",result}.
+// negativeLookups reads quader_valkey_cache_lookups_total{cache="negative",result}.
 func negativeLookups(t *testing.T, reg *prometheus.Registry, result string) float64 {
 	t.Helper()
 	mfs, err := reg.Gather()
@@ -28,7 +28,7 @@ func negativeLookups(t *testing.T, reg *prometheus.Registry, result string) floa
 		t.Fatal(err)
 	}
 	for _, mf := range mfs {
-		if mf.GetName() != "trove_valkey_cache_lookups_total" {
+		if mf.GetName() != "quader_valkey_cache_lookups_total" {
 			continue
 		}
 		for _, m := range mf.GetMetric() {
@@ -74,7 +74,7 @@ func TestNegativeStore(t *testing.T) {
 			t.Fatalf("Lookup on the other replica = %+v, %v, %v", e, found, err)
 		}
 		if got := negativeLookups(t, r.Reg, "hit"); got != 1 {
-			t.Fatalf("trove_valkey_cache_lookups_total{cache=negative,result=hit} = %v, want 1", got)
+			t.Fatalf("quader_valkey_cache_lookups_total{cache=negative,result=hit} = %v, want 1", got)
 		}
 		if _, found, err := cluster.NewNegativeStore(r.Valkey).Lookup(ctx, 8, f); err != nil || found {
 			t.Fatalf("another repository found %v (%v)", found, err)
@@ -170,8 +170,8 @@ func TestNegativeStore(t *testing.T) {
 		if took := time.Since(start); took > 50*time.Millisecond {
 			t.Fatalf("the calls took %s with the breaker open", took)
 		}
-		if got := metric(t, c.Reg, "trove_valkey_degraded_total", cluster.MechanismNegativeCache); got < 2 {
-			t.Fatalf("trove_valkey_degraded_total{mechanism=negative_cache} = %v", got)
+		if got := metric(t, c.Reg, "quader_valkey_degraded_total", cluster.MechanismNegativeCache); got < 2 {
+			t.Fatalf("quader_valkey_degraded_total{mechanism=negative_cache} = %v", got)
 		}
 		if got := negativeLookups(t, c.Reg, "unavailable"); got < 1 {
 			t.Fatalf("result=unavailable = %v", got)

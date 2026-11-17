@@ -25,8 +25,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // defaultCfg is proxy.outbound with the defaults of internal/config, so the
@@ -153,7 +153,7 @@ func TestFactoryTimeouts(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-022 every client sends User-Agent trove/<version>", func(t *testing.T) {
+	t.Run("R-ARCH-022 every client sends User-Agent quader/<version>", func(t *testing.T) {
 		var got string
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { got = r.Header.Get("User-Agent") }))
 		defer srv.Close()
@@ -162,7 +162,7 @@ func TestFactoryTimeouts(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp.Body.Close()
-		if got != "trove/0.3.0" {
+		if got != "quader/0.3.0" {
 			t.Errorf("User-Agent = %q", got)
 		}
 	})
@@ -216,7 +216,7 @@ func TestEgressPolicy(t *testing.T) {
 				t.Errorf("%s: err = %v", u, err)
 			}
 		}
-		// Behind an outbound proxy, trove's own check of the target refuses it.
+		// Behind an outbound proxy, quader's own check of the target refuses it.
 		proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { seen.Add(1) }))
 		defer proxy.Close()
 		pu, _ := url.Parse(proxy.URL)
@@ -322,14 +322,14 @@ func TestEgressPolicy(t *testing.T) {
 		resp.Body.Close()
 	})
 
-	t.Run("R-ARCH-022 a denied connection counts in trove_outbound_egress_denied_total", func(t *testing.T) {
+	t.Run("R-ARCH-022 a denied connection counts in quader_outbound_egress_denied_total", func(t *testing.T) {
 		m := observability.NewMetrics("web")
 		_ = getErr(t, New(defaultCfg(), WithMetrics(m)).Client(PurposeRemote), srv.URL)
 		body := scrape(t, m)
-		if !strings.Contains(body, `trove_outbound_egress_denied_total{kind="remote"} 1`) {
+		if !strings.Contains(body, `quader_outbound_egress_denied_total{kind="remote"} 1`) {
 			t.Errorf("metrics:\n%s", body)
 		}
-		if !strings.Contains(body, `trove_outbound_requests_total{code="error",kind="remote"} 1`) {
+		if !strings.Contains(body, `quader_outbound_requests_total{code="error",kind="remote"} 1`) {
 			t.Errorf("requests:\n%s", body)
 		}
 		if errs := m.Check(); len(errs) != 0 {

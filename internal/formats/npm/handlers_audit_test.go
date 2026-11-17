@@ -14,14 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/npm/npmtest"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/npm/npmtest"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // provider is the advisory provider of a test: it records what it was sent and answers
@@ -171,7 +171,7 @@ func TestR_NPM_038_ARemoteForwardsOnlyProxiedNamesThatNothingMarksInternal(t *te
 	if strings.Join(sent["lodash"], ",") != "4.17.20,4.17.21" {
 		t.Errorf("the versions of lodash were forwarded as %v", sent["lodash"])
 	}
-	want := "trove audited 3 of 7 packages; 4 internal or not yet proxied names were not sent to the advisory provider"
+	want := "Quader audited 3 of 7 packages; 4 internal or not yet proxied names were not sent to the advisory provider"
 	if got := r.Header().Get("npm-notice"); got != want {
 		t.Errorf("npm-notice %q, want %q", got, want)
 	}
@@ -200,7 +200,7 @@ func TestR_NPM_038_ARemoteForwardsOnlyProxiedNamesThatNothingMarksInternal(t *te
 		if r.Code != 200 || r.Body.String() != "{}" || len(p.sent) != before {
 			t.Fatalf("%d %s, provider asked %d times", r.Code, r.Body, len(p.sent)-before)
 		}
-		if got := r.Header().Get("npm-notice"); got != "trove audited 0 of 2 packages; 2 internal or not yet proxied names were not sent to the advisory provider" {
+		if got := r.Header().Get("npm-notice"); got != "Quader audited 0 of 2 packages; 2 internal or not yet proxied names were not sent to the advisory provider" {
 			t.Errorf("npm-notice %q", got)
 		}
 	})
@@ -230,7 +230,7 @@ func TestR_NPM_038_ANameTheCallerMayNotReadIsWithheldLikeOneNeverFetched(t *test
 	if got := p.names(t, 0); strings.Join(got, ",") != "left-pad" {
 		t.Fatalf("the provider was sent %v, want left-pad alone", got)
 	}
-	want := "trove audited 1 of 3 packages; 2 internal or not yet proxied names were not sent to the advisory provider"
+	want := "Quader audited 1 of 3 packages; 2 internal or not yet proxied names were not sent to the advisory provider"
 	if got := r.Header().Get("npm-notice"); got != want {
 		t.Errorf("npm-notice %q, want %q", got, want)
 	}

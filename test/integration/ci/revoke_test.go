@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 // revocationBound is auth.revocation_bound, the default of R-AUTH-023.
@@ -233,7 +233,7 @@ func TestR_CI_002_ACascadeDeleteRevokesTheTokensBeforeTheMappingsGo(t *testing.T
 	}
 }
 
-// R-CI-001: removed from ci.issuers, the next trove migrate disables the issuer and its issuance records stay; the
+// R-CI-001: removed from ci.issuers, the next quader migrate disables the issuer and its issuance records stay; the
 // tokens it issued are revoked in that transaction.
 func TestR_CI_001_ARemovedConfigurationIssuerKeepsItsRecords(t *testing.T) {
 	d := startDouble(t, oidcstub.Config{})

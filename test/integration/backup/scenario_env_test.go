@@ -13,15 +13,15 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/runstoretest"
-	"github.com/guided-traffic/trove/internal/backup/verify"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/secrets"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/runstoretest"
+	"github.com/guided-traffic/quader/internal/backup/verify"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/secrets"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The scenarios of R-BAK-029 that run without a cluster (scenario_*_test.go) compose the pieces of the lane the way the drill
@@ -41,7 +41,7 @@ func realCanary(t *testing.T, in *install) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	in.exec(`UPDATE trove.secret_key_canary SET ciphertext = $1 WHERE key_id = '2026-10'`, sealed)
+	in.exec(`UPDATE quader.secret_key_canary SET ciphertext = $1 WHERE key_id = '2026-10'`, sealed)
 }
 
 // sourceOf describes the backup a rig wrote, so that a destination can restore it.
@@ -51,7 +51,7 @@ func (in *install) sourceOf(t *testing.T, r *rig, id string) *source {
 	return &source{t: t, layout: format.Layout{Prefix: r.cfg.Target.Prefix}, tgtCfg: r.cfg, id: format.ID(id), m: m}
 }
 
-// deepVerify is `trove backup verify --deep` of the newest backup of the rig's target and returns its exit code.
+// deepVerify is `quader backup verify --deep` of the newest backup of the rig's target and returns its exit code.
 func deepVerify(t *testing.T, r *rig, ids ...string) int {
 	t.Helper()
 	v := &verify.Verifier{
@@ -119,7 +119,7 @@ func sealStackCanary(t *testing.T, s *testenv.Stack) {
 // installOnStack is an installation around a stack's database and blob prefix, for the create pipeline.
 func installOnStack(t *testing.T, s *testenv.Stack) *install {
 	t.Helper()
-	loaded, err := config.Load(config.Options{Environ: append(s.Environ(), "TROVE_BACKUP_TARGET_BUCKET="+testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS")), Command: config.CommandBackup})
+	loaded, err := config.Load(config.Options{Environ: append(s.Environ(), "QUADER_BACKUP_TARGET_BUCKET="+testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS")), Command: config.CommandBackup})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +136,7 @@ func installOnStack(t *testing.T, s *testenv.Stack) *install {
 // newBackupRig is a rig with a target of its own below the backup bucket.
 func newBackupRig(t *testing.T, in *install) *rig {
 	t.Helper()
-	tc := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), "none")
+	tc := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), "none")
 	tgt := newTarget(t, tc)
 	cleanup(t, tgt, tc.Target.Prefix+"/")
 	r := &rig{cfg: in.backupConfig(t), tgt: tgt}

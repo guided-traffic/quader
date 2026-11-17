@@ -10,19 +10,19 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/document"
-	"github.com/guided-traffic/trove/internal/formats/nuget/registration"
-	"github.com/guided-traffic/trove/internal/formats/nuget/remote"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/document"
+	"github.com/guided-traffic/quader/internal/formats/nuget/registration"
+	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 )
 
 // The documents and files of a remote repository (R-NUGET-008, R-NUGET-009, R-NUGET-015).
 // A package file is the cached item or one fetch under the collapsing protocol of the engine. A
 // document is rendered from the stored upstream documents: the version list from the stored
 // list, a registration document from the stored index and the pages it does not inline, with
-// the hive's SemVer 2.0.0 filter, trove's paging and trove's addresses. The stored bytes are
+// the hive's SemVer 2.0.0 filter, quader's paging and quader's addresses. The stored bytes are
 // never altered (R-NUGET-015); what changes is the rendering, a function of them and of the
 // serving repository, so every replica renders the same bytes (R-NUGET-030).
 
@@ -471,7 +471,7 @@ type registrationRender struct {
 }
 
 // renderRegistration renders the index, a page or a leaf of the hive from the versions of an
-// upstream's registration, with trove's addresses and trove's paging (R-NUGET-009). The
+// upstream's registration, with quader's addresses and quader's paging (R-NUGET-009). The
 // versions the hive does not show (R-NUGET-004) and those the endpoint hides are left out
 // before the paging; an ID with no version left has no document.
 func renderRegistration(r registrationRender) (body []byte, found bool, err error) {

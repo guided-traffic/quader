@@ -7,14 +7,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The move of a repository to another project (R-REPO-060, Q-REPO-217). The repository keeps its ID, its
@@ -225,7 +225,7 @@ func references(ctx context.Context, qs *q.Queries, repoID int64, projectID stri
 // globalReferences lists the global policies whose key selector names the repository (Q-REPO-232). Their
 // grant is held by the repository's ID and follows it into the target project, whose other Owners cannot
 // remove it; an Owner who moves without repositories:write-config is therefore refused while one exists,
-// and asks an administrator of trove, who sees the policy by this name. A pattern or a class names no
+// and asks an administrator of quader, who sees the policy by this name. A pattern or a class names no
 // repository and is not listed.
 func globalReferences(ctx context.Context, qs *q.Queries, repoID int64) ([]Reference, error) {
 	names, err := qs.ProjectRepositoryGlobalPolicies(ctx, repoID)

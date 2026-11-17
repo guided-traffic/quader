@@ -18,7 +18,7 @@ type Manifest struct {
 	BackupID         ID          `json:"backupId"`
 	InstallationID   string      `json:"installationId"`
 	Incarnation      string      `json:"incarnation"`
-	Trove            TroveInfo   `json:"trove"`
+	Quader           QuaderInfo  `json:"quader"`
 	Schema           SchemaInfo  `json:"schema"`
 	Postgres         PostgresRef `json:"postgres"`
 	StartedAt        time.Time   `json:"startedAt"`
@@ -34,8 +34,8 @@ type Manifest struct {
 	Encryption       Encryption  `json:"encryption"`
 }
 
-// TroveInfo names the build that took the backup.
-type TroveInfo struct {
+// QuaderInfo names the build that took the backup.
+type QuaderInfo struct {
 	Version  string `json:"version"`
 	Revision string `json:"revision"`
 }

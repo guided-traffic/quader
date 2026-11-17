@@ -7,7 +7,7 @@
 #                                       (used by rotate-cert.sh); days defaults to 365
 #
 # Layout of the directory (one CA, one certificate per service, all with the same SANs):
-#   ca.crt  ca.key                      the CA; ca.crt is what TROVE_TEST_CA_FILE points to
+#   ca.crt  ca.key                      the CA; ca.crt is what QUADER_TEST_CA_FILE points to
 #   server.crt  server.key              Valkey data nodes and Sentinels
 #   postgres.crt  postgres.key          PostgreSQL
 #   pgbouncer.crt  pgbouncer.key        PgBouncer (client side)
@@ -41,7 +41,7 @@ distinguished_name = dn
 req_extensions = ext
 prompt = no
 [dn]
-CN = trove-integration-$name
+CN = quader-integration-$name
 [ext]
 subjectAltName = @alt
 extendedKeyUsage = serverAuth, clientAuth
@@ -103,7 +103,7 @@ if [ "$complete" = 1 ] && [ -f ca.crt ]; then
 fi
 
 openssl genrsa -out ca.key 2048 2>/dev/null
-openssl req -x509 -new -key ca.key -sha256 -days 365 -subj "/CN=trove integration CA" -out ca.crt
+openssl req -x509 -new -key ca.key -sha256 -days 365 -subj "/CN=quader integration CA" -out ca.crt
 for s in $services; do
   issue "$s" 365
 done

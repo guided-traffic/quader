@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/ci/claims"
 )
 
 // Method is the credential source that proved the principal (R-AUTH-001). The
@@ -22,11 +22,11 @@ type Method string
 // The credential sources.
 const (
 	MethodNone Method = ""
-	// MethodAPIKey is a trove token in [HeaderAPIKey] (R-AUTH-033).
+	// MethodAPIKey is a quader token in [HeaderAPIKey] (R-AUTH-033).
 	MethodAPIKey Method = "api_key"
-	// MethodGalaxyToken is a trove token in "Authorization: Token <token>", the scheme the Ansible Galaxy clients send a configured
+	// MethodGalaxyToken is a quader token in "Authorization: Token <token>", the scheme the Ansible Galaxy clients send a configured
 	// token with, read only on a route that declares it (R-ANS-006, Q-ANS-4). It is the label of the request log and of
-	// trove_auth_attempts_total as well as the audit method.
+	// quader_auth_attempts_total as well as the audit method.
 	MethodGalaxyToken Method = "galaxy_token"
 	MethodBearer      Method = "bearer"
 	MethodBasic       Method = "basic"
@@ -50,7 +50,7 @@ type Credential struct {
 	BasicUsername string
 	// Registry is the grant of a registry token (R-OCI-005): the further ceiling the route's action must be within on the
 	// routes below /v2/. Nil for every other credential. With a registry token, Method is MethodBearer, TokenID, TokenType
-	// and Scope are those of the trove token it was issued for (nothing for an anonymous one), and ExpiresAt is the registry
+	// and Scope are those of the quader token it was issued for (nothing for an anonymous one), and ExpiresAt is the registry
 	// token's expiry.
 	Registry *registrytoken.Grant
 }
@@ -107,22 +107,22 @@ type EndpointRules struct {
 	APIKeyRoute func(*http.Request) bool
 	// TokenSchemeRoute reports whether the request matches a package-protocol route that declares the scheme "Token"
 	// (formats.Route.TokenScheme: every route of the Ansible Galaxy format, R-ANS-006). Only there is "Authorization: Token
-	// <trove token>" a credential, with the checks of a Bearer token and the method [MethodGalaxyToken]; on every other route
-	// that header is not a trove token and is rejected without a lookup. The composition root hands the dispatcher's own match,
+	// <quader token>" a credential, with the checks of a Bearer token and the method [MethodGalaxyToken]; on every other route
+	// that header is not a quader token and is rejected without a lookup. The composition root hands the dispatcher's own match,
 	// as for APIKeyRoute, and the stage asks it only for a request whose header has that scheme. Nil: no route is.
 	TokenSchemeRoute func(*http.Request) bool
 	// Refused, when set, is told of every request the endpoint's rules refused
 	// (R-EP-010): a token type the endpoint does not accept, a token bound
 	// elsewhere or an unbound token where only bound ones are accepted, and a
 	// request without a credential on an endpoint without anonymous access. The
-	// composition root counts it in trove_endpoint_credentials_refused_total and
+	// composition root counts it in quader_endpoint_credentials_refused_total and
 	// records token.rejected with reason endpoint_not_accepted (R-EP-009). The
 	// answer is the 401 of an unknown token or of a missing credential either way.
 	Refused func(r *http.Request, f Refusal)
 }
 
 // The reasons of an endpoint's refusal, the values of the reason label of
-// trove_endpoint_credentials_refused_total (R-EP-009).
+// quader_endpoint_credentials_refused_total (R-EP-009).
 const (
 	RefusedTokenType    = "token_type"
 	RefusedTokenBinding = "token_binding"

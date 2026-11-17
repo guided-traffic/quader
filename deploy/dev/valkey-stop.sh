@@ -17,6 +17,6 @@ op() { kubectl --context "$CTX" -n "$OPNS" "$@"; }
 log "stopping the Valkey operator, then scaling Valkey and the Sentinels to 0"
 op scale deployment/valkey-operator --replicas=0 >/dev/null
 op wait --for=delete pod -l app.kubernetes.io/component=operator --timeout=60s >/dev/null 2>&1 || true
-kn scale statefulset/trove-valkey statefulset/trove-valkey-sentinel --replicas=0 >/dev/null
-kn wait --for=delete pod -l app.kubernetes.io/instance=trove-valkey,app.kubernetes.io/managed-by=vko.gtrfc.com --timeout=120s >/dev/null 2>&1 || true
+kn scale statefulset/quader-valkey statefulset/quader-valkey-sentinel --replicas=0 >/dev/null
+kn wait --for=delete pod -l app.kubernetes.io/instance=quader-valkey,app.kubernetes.io/managed-by=vko.gtrfc.com --timeout=120s >/dev/null 2>&1 || true
 log "Valkey is stopped"

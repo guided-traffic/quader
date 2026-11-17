@@ -56,7 +56,7 @@ func TestR_AUTHZ_010_RoleBindingsFromTheConfiguration(t *testing.T) {
 	})
 
 	t.Run("R-ARCH-020 the environment carries the list as JSON", func(t *testing.T) {
-		l, err := loadRoleBindings(t, "", `TROVE_AUTHZ_ROLE_BINDINGS=[{"role":"admin","group":"platform-admins"}]`)
+		l, err := loadRoleBindings(t, "", `QUADER_AUTHZ_ROLE_BINDINGS=[{"role":"admin","group":"platform-admins"}]`)
 		if err != nil {
 			t.Fatal(err)
 		}

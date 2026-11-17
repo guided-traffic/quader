@@ -17,14 +17,14 @@ import { ErrorNotice } from '../../shared/error-notice';
  * wiki's choice with it. The block sends only the parts that changed; the screen applies the answer.
  */
 @Component({
-  selector: 'trove-repository-visibility',
+  selector: 'quader-repository-visibility',
   imports: [ErrorNotice, VisibilityLevelControl],
   template: `
     <section class="visibility" aria-labelledby="repo-visibility">
       <h2 id="repo-visibility" i18n="@@repo.visibility.heading">Visibility</h2>
       <form (submit)="submit($event)" novalidate>
         <div class="groups">
-          <trove-visibility-level
+          <quader-visibility-level
             [label]="artifactsLabel()"
             subject="artifacts"
             [value]="artifacts()"
@@ -33,7 +33,7 @@ import { ErrorNotice } from '../../shared/error-notice';
             [disabled]="!canWrite()"
           />
           @if (hasWiki()) {
-            <trove-visibility-level
+            <quader-visibility-level
               i18n-label="@@repo.visibility.wiki"
               label="Wiki"
               subject="wiki"
@@ -56,7 +56,7 @@ import { ErrorNotice } from '../../shared/error-notice';
           </p>
         }
         @if (failure(); as f) {
-          <trove-error-notice [error]="f" />
+          <quader-error-notice [error]="f" />
         }
         @if (canWrite()) {
           <button class="btn btn-confirm" type="submit" [disabled]="saving() || !dirty()">
@@ -73,16 +73,16 @@ import { ErrorNotice } from '../../shared/error-notice';
   `,
   styles: `
     .visibility {
-      margin-block-end: var(--trove-space-5);
+      margin-block-end: var(--quader-space-5);
     }
     .groups {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-4);
+      gap: var(--quader-space-4);
     }
     .muted {
-      color: var(--trove-text-muted);
-      font-size: var(--trove-text-muted-size);
+      color: var(--quader-text-muted);
+      font-size: var(--quader-text-muted-size);
     }
   `,
 })

@@ -1,7 +1,7 @@
-<trove-page-header i18n-heading="@@repo.settings.heading" heading="Settings">
+<quader-page-header i18n-heading="@@repo.settings.heading" heading="Settings">
   <p meta class="subject" translate="no">
     @if (artifactsLevel(); as level) {
-      <trove-visibility-icon [level]="level" />
+      <quader-visibility-icon [level]="level" />
     }
     <strong>{{ ref() }}</strong>
     @if (stored()?.disabled) {
@@ -12,14 +12,14 @@
   @if (vulnerabilitiesShown()) {
     <a actions class="btn btn-default" [routerLink]="['/projects', project(), 'vulnerabilities']" [queryParams]="{ repository: ref() }" i18n="@@repo.action.vulnerabilities">Vulnerabilities</a>
   }
-</trove-page-header>
+</quader-page-header>
 
 <ng-template #problems let-section>
   @if (summaryOf(section).length > 0) {
-    <trove-error-summary [items]="summaryOf(section)" />
+    <quader-error-summary [items]="summaryOf(section)" />
   }
   @if (noticeOf(section); as f) {
-    <trove-error-notice [error]="f" />
+    <quader-error-notice [error]="f" />
   }
 </ng-template>
 
@@ -40,7 +40,7 @@
 </ng-template>
 
 @if (loadFailure(); as f) {
-  <trove-error-notice [error]="f" (retry)="loaded.reload()" />
+  <quader-error-notice [error]="f" (retry)="loaded.reload()" />
 } @else if (loaded.isLoading() && !stored() && !consumer()) {
   <p role="status" i18n="@@repo.loading">Loading.</p>
 } @else if (consumer(); as c) {
@@ -59,14 +59,14 @@
       <dt i18n="@@repo.col.address">Client address</dt>
       <dd>
         @for (a of c.addresses; track a) {
-          <trove-address-field [value]="a" />
+          <quader-address-field [value]="a" />
         }
       </dd>
     </dl>
     @if (clientsOf(c.format).length > 0) {
       <section class="how-to-use" aria-labelledby="repo-how-to-use">
         <h2 id="repo-how-to-use" i18n="@@repo.tab.guide">How to use</h2>
-        <trove-repository-guide [key]="ref()" [format]="c.format" [clients]="clientsOf(c.format)" />
+        <quader-repository-guide [key]="ref()" [format]="c.format" [clients]="clientsOf(c.format)" />
       </section>
     }
   </div>
@@ -112,7 +112,7 @@
 
       @if (repo.visibility; as levels) {
         <div class="open-section">
-          <trove-repository-visibility
+          <quader-repository-visibility
             [stored]="levels"
             [projectLevel]="projectLevel.value() ?? null"
             [hasWiki]="format()?.wiki ?? false"
@@ -128,7 +128,7 @@
       @if (upstreamSection() && format(); as upstreamFormat) {
         <form class="open-section" (submit)="saveSection('upstream', $event)" novalidate>
           <fieldset class="plain" [disabled]="!canChange()">
-            <trove-upstream-settings
+            <quader-upstream-settings
               [project]="project()"
               [form]="current"
               (formChange)="setForm($event)"
@@ -145,7 +145,7 @@
       @if (repo.class === 'virtual') {
         <section class="open-section" aria-labelledby="repo-members">
           <h2 id="repo-members" i18n="@@repo.create.members">Members</h2>
-          <trove-virtual-members
+          <quader-virtual-members
             [repo]="repo"
             [canWrite]="canChange()"
             [saving]="membersSaving()"
@@ -158,7 +158,7 @@
 
       <div class="details">
         @if (mirrorSection() && format(); as mirrorFormat) {
-          <trove-disclosure
+          <quader-disclosure
             i18n-heading="@@mirror.heading"
             heading="Mirror"
             i18n-hint="@@repo.settings.mirror-hint"
@@ -167,7 +167,7 @@
             [(expanded)]="mirrorOpen"
           >
             @if (mirrorOpen() && mirrorStatusShown()) {
-              <trove-mirror-status
+              <quader-mirror-status
                 [key]="ref()"
                 [canChange]="canChange()"
                 [busy]="pausing()"
@@ -179,7 +179,7 @@
             }
             <form (submit)="saveSection('mirror', $event)" novalidate>
               <fieldset class="plain" [disabled]="!canWrite() || repo.lifecycle === 'deleting'">
-                <trove-mirror-settings
+                <quader-mirror-settings
                   [form]="current"
                   (formChange)="setForm($event)"
                   [format]="mirrorFormat"
@@ -189,7 +189,7 @@
                   [fieldErrors]="errorsOf('mirror')"
                 />
                 @if (current.remoteMode === 'mirror' && formatMirrorNodes().length > 0) {
-                  <trove-format-settings
+                  <quader-format-settings
                     part="mirror"
                     [nodes]="settingNodes()"
                     [pointer]="memberPointer()"
@@ -202,11 +202,11 @@
               <ng-container *ngTemplateOutlet="problems; context: { $implicit: 'mirror' }" />
               <ng-container *ngTemplateOutlet="save; context: { $implicit: 'mirror', suffix: sectionLabel('mirror') }" />
             </form>
-          </trove-disclosure>
+          </quader-disclosure>
         }
 
         @if (formatNodes().length > 0) {
-          <trove-disclosure
+          <quader-disclosure
             [heading]="formatHeading()"
             i18n-hint="@@repo.settings.format-hint"
             hint="What the format does differently in this repository. The defaults suit most repositories."
@@ -214,7 +214,7 @@
           >
             <form (submit)="saveSection('format', $event)" novalidate>
               <fieldset class="plain" [disabled]="!canChange()">
-                <trove-format-settings
+                <quader-format-settings
                   [nodes]="settingNodes()"
                   [pointer]="memberPointer()"
                   [value]="current.formatMember"
@@ -223,15 +223,15 @@
                 />
               </fieldset>
               @if (debUpstreamFingerprints().length > 0) {
-                <trove-deb-upstream-keys [fingerprints]="debUpstreamFingerprints()" />
+                <quader-deb-upstream-keys [fingerprints]="debUpstreamFingerprints()" />
               }
               <ng-container *ngTemplateOutlet="problems; context: { $implicit: 'format' }" />
               <ng-container *ngTemplateOutlet="save; context: { $implicit: 'format', suffix: formatHeading() }" />
             </form>
-          </trove-disclosure>
+          </quader-disclosure>
         }
 
-        <trove-disclosure
+        <quader-disclosure
           i18n-heading="@@repo.group.access"
           heading="Access details"
           i18n-hint="@@repo.settings.access-hint"
@@ -239,14 +239,14 @@
           [note]="unsaved('access')"
         >
           <form (submit)="saveSection('access', $event)" novalidate>
-            <trove-repository-fields section="paths" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('access')" />
-            <trove-repository-fields section="access" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('access')" />
+            <quader-repository-fields section="paths" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('access')" />
+            <quader-repository-fields section="access" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('access')" />
             <ng-container *ngTemplateOutlet="problems; context: { $implicit: 'access' }" />
             <ng-container *ngTemplateOutlet="save; context: { $implicit: 'access', suffix: sectionLabel('access') }" />
           </form>
-        </trove-disclosure>
+        </quader-disclosure>
 
-        <trove-disclosure
+        <quader-disclosure
           i18n-heading="@@repo.field.notes"
           heading="Administrator notes"
           i18n-hint="@@repo.settings.notes-hint"
@@ -254,14 +254,14 @@
           [note]="unsaved('notes')"
         >
           <form (submit)="saveSection('notes', $event)" novalidate>
-            <trove-repository-fields section="notes" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('notes')" />
+            <quader-repository-fields section="notes" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('notes')" />
             <ng-container *ngTemplateOutlet="problems; context: { $implicit: 'notes' }" />
             <ng-container *ngTemplateOutlet="save; context: { $implicit: 'notes', suffix: sectionLabel('notes') }" />
           </form>
-        </trove-disclosure>
+        </quader-disclosure>
 
         @if (debSection()) {
-          <trove-disclosure
+          <quader-disclosure
             i18n-heading="@@repo.tab.deb-keys"
             heading="Signing keys"
             i18n-hint="@@repo.settings.deb-keys-hint"
@@ -269,10 +269,10 @@
             (expandedChange)="open('deb-keys', $event)"
           >
             @if (isOpened('deb-keys')) {
-              <trove-deb-signing-keys [key]="ref()" [canManage]="canChange()" />
+              <quader-deb-signing-keys [key]="ref()" [canManage]="canChange()" />
             }
-          </trove-disclosure>
-          <trove-disclosure
+          </quader-disclosure>
+          <quader-disclosure
             i18n-heading="@@repo.settings.deb-index"
             heading="Indexes"
             i18n-hint="@@repo.settings.deb-index-hint"
@@ -280,13 +280,13 @@
             (expandedChange)="open('deb-index', $event)"
           >
             @if (isOpened('deb-index')) {
-              <trove-deb-index-state [key]="ref()" [canManage]="canChange()" />
+              <quader-deb-index-state [key]="ref()" [canManage]="canChange()" />
             }
-          </trove-disclosure>
+          </quader-disclosure>
         }
 
         @if (ansibleImportsSection()) {
-          <trove-disclosure
+          <quader-disclosure
             i18n-heading="@@repo.tab.ansible-imports"
             heading="Import tasks"
             i18n-hint="@@repo.settings.imports-hint"
@@ -294,12 +294,12 @@
             (expandedChange)="open('ansible-imports', $event)"
           >
             @if (isOpened('ansible-imports')) {
-              <trove-ansible-import-tasks [key]="ref()" />
+              <quader-ansible-import-tasks [key]="ref()" />
             }
-          </trove-disclosure>
+          </quader-disclosure>
         }
         @if (ansibleTombstonesSection()) {
-          <trove-disclosure
+          <quader-disclosure
             i18n-heading="@@repo.tab.ansible-tombstones"
             heading="Tombstones"
             i18n-hint="@@repo.settings.tombstones-hint"
@@ -307,13 +307,13 @@
             (expandedChange)="open('ansible-tombstones', $event)"
           >
             @if (isOpened('ansible-tombstones')) {
-              <trove-ansible-tombstones [key]="ref()" [canManage]="canChange()" />
+              <quader-ansible-tombstones [key]="ref()" [canManage]="canChange()" />
             }
-          </trove-disclosure>
+          </quader-disclosure>
         }
 
         @if (clientsOf(repo.format).length > 0) {
-          <trove-disclosure
+          <quader-disclosure
             i18n-heading="@@repo.tab.guide"
             heading="How to use"
             i18n-hint="@@repo.settings.guide-hint"
@@ -321,12 +321,12 @@
             (expandedChange)="open('guide', $event)"
           >
             @if (isOpened('guide')) {
-              <trove-repository-guide [key]="ref()" [format]="repo.format" [clients]="clientsOf(repo.format)" />
+              <quader-repository-guide [key]="ref()" [format]="repo.format" [clients]="clientsOf(repo.format)" />
             }
-          </trove-disclosure>
+          </quader-disclosure>
         }
 
-        <trove-disclosure
+        <quader-disclosure
           i18n-heading="@@repo.settings.details"
           heading="Details"
           i18n-hint="@@repo.settings.details-hint"
@@ -345,7 +345,7 @@
             }
             @if (address()) {
               <dt i18n="@@repo.col.address">Client address</dt>
-              <dd><trove-address-field [value]="address()" /></dd>
+              <dd><quader-address-field [value]="address()" /></dd>
             }
             @if (repo.createdAt; as at) {
               <dt i18n="@@repo.detail.created">Created</dt>
@@ -360,9 +360,9 @@
               <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
             }
           </dl>
-        </trove-disclosure>
+        </quader-disclosure>
 
-        <trove-disclosure
+        <quader-disclosure
           i18n-heading="@@repo.tab.api"
           heading="API"
           i18n-hint="@@repo.settings.api-hint"
@@ -377,11 +377,11 @@
           } @empty {
             <p class="hint" i18n="@@repo.detail.api.nochange">Change a setting to see the request that saves it.</p>
           }
-        </trove-disclosure>
+        </quader-disclosure>
 
         @if (canChange()) {
           <!-- What acts on the running repository comes last, behind its own closed section (Q-UI-352). -->
-          <trove-disclosure
+          <quader-disclosure
             class="advanced"
             i18n-heading="@@repo.detail.advanced"
             heading="Advanced"
@@ -389,7 +389,7 @@
             hint="Disable, move or delete this repository."
           >
             @if (advancedFailure(); as f) {
-              <trove-error-notice [error]="f" />
+              <quader-error-notice [error]="f" />
             }
             <section class="advanced-action" aria-labelledby="repo-disable">
               @if (repo.disabled) {
@@ -409,7 +409,7 @@
                   The repository keeps its key and its content; its address changes. You must be Owner of the target project too.
                 </p>
                 <div class="field-action-row">
-                  <trove-select-field
+                  <quader-select-field
                     i18n-label="@@repo.move.target"
                     label="Target project"
                     name="moveTarget"
@@ -427,14 +427,14 @@
               <p class="hint delete-note" i18n="@@repo.detail.delete-note">Deleting the repository removes it and everything in it for good. It runs as a job, and the key stays taken until it has finished.</p>
               <button class="btn btn-danger" type="button" (click)="remove()" i18n="@@repo.detail.delete">Delete repository</button>
             </section>
-          </trove-disclosure>
+          </quader-disclosure>
         }
       </div>
 
       @if (deletion(); as job) {
         <div class="deleting">
           <span i18n="@@repo.deleting">Deleting</span>
-          <trove-job-progress [jobId]="job.id" [label]="deleteLabel" (finished)="jobEnded($event.state)" />
+          <quader-job-progress [jobId]="job.id" [label]="deleteLabel" (finished)="jobEnded($event.state)" />
         </div>
       }
     </div>

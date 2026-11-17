@@ -1,6 +1,6 @@
 //go:build chart
 
-// Package chart_test renders deploy/helm/trove with the helm binary and asserts the chart
+// Package chart_test renders deploy/helm/quader with the helm binary and asserts the chart
 // requirements of docs/spec/ha-and-helm.md (R-HA-002, R-HA-011, R-HA-019, R-HA-027 to R-HA-037,
 // R-HA-056, R-HA-061, R-HA-063) and the exit criterion E0.7 of the roadmap. It needs helm at the version
 // pinned in tools/versions.env, and nothing else: no cluster.
@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 		dir = parent
 	}
 	repoRoot = dir
-	chartDir = filepath.Join(repoRoot, "deploy", "helm", "trove")
+	chartDir = filepath.Join(repoRoot, "deploy", "helm", "quader")
 
 	if err := checkHelmPin(); err != nil {
 		println("chart tests: " + err.Error())
@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 	}
 	sets, err := filepath.Glob(filepath.Join(chartDir, "ci", "*.yaml"))
 	if err != nil || len(sets) == 0 {
-		println("chart tests: no value sets under deploy/helm/trove/ci")
+		println("chart tests: no value sets under deploy/helm/quader/ci")
 		os.Exit(2)
 	}
 	valueSets = append(sets, filepath.Join(repoRoot, "deploy", "dev", "values-dev.yaml"))
@@ -123,7 +123,7 @@ func templateArgs(release string, files []string, sets []string) []string {
 // render runs helm template and returns the raw output and the parsed documents.
 func render(t *testing.T, files []string, sets ...string) (string, []doc) {
 	t.Helper()
-	return renderRelease(t, "trove", files, sets...)
+	return renderRelease(t, "quader", files, sets...)
 }
 
 func renderRelease(t *testing.T, release string, files []string, sets ...string) (string, []doc) {
@@ -138,7 +138,7 @@ func renderRelease(t *testing.T, release string, files []string, sets ...string)
 // renderFails asserts that helm template fails and that its error names every wanted fragment.
 func renderFails(t *testing.T, files []string, sets []string, want ...string) {
 	t.Helper()
-	out, stderr, err := helm(t, templateArgs("trove", files, sets)...)
+	out, stderr, err := helm(t, templateArgs("quader", files, sets)...)
 	if err == nil {
 		t.Fatalf("helm template succeeded (%d bytes), want a failure naming %q", len(out), want)
 	}
@@ -246,7 +246,7 @@ func envByName(pod any) map[string]any {
 // s3SettingEnv are the variables that read the non-secret S3 settings from the provisioner's
 // Secret (secrets.s3.bucketKey, regionKey, endpointKey).
 var s3SettingEnv = map[string]bool{
-	"TROVE_STORAGE_S3_BUCKET": true, "TROVE_STORAGE_S3_REGION": true, "TROVE_STORAGE_S3_ENDPOINT": true,
+	"QUADER_STORAGE_S3_BUCKET": true, "QUADER_STORAGE_S3_REGION": true, "QUADER_STORAGE_S3_ENDPOINT": true,
 }
 
 func base(file string) string { return filepath.Base(file) }
@@ -287,7 +287,7 @@ func TestChart(t *testing.T) {
 		if err := yaml.Unmarshal(raw, &chart); err != nil {
 			t.Fatal(err)
 		}
-		if str(chart, "apiVersion") != "v2" || str(chart, "name") != "trove" {
+		if str(chart, "apiVersion") != "v2" || str(chart, "name") != "quader" {
 			t.Errorf("Chart.yaml apiVersion/name = %q/%q", str(chart, "apiVersion"), str(chart, "name"))
 		}
 		if chart["dependencies"] != nil {
@@ -295,7 +295,7 @@ func TestChart(t *testing.T) {
 		}
 		for _, dir := range []string{"crds", "charts"} {
 			if _, err := os.Stat(filepath.Join(chartDir, dir)); err == nil {
-				t.Errorf("deploy/helm/trove/%s exists; the chart ships no CRDs and no subcharts", dir)
+				t.Errorf("deploy/helm/quader/%s exists; the chart ships no CRDs and no subcharts", dir)
 			}
 		}
 		eachSet(t, func(t *testing.T, _ string, out string, docs []doc) {
@@ -316,9 +316,9 @@ func TestChart(t *testing.T) {
 			sets    []string
 			prefix  string
 		}{
-			{"trove", nil, "trove"},
-			{"prod", nil, "prod-trove"},
-			{"my-trove-eu", nil, "my-trove-eu"},
+			{"quader", nil, "quader"},
+			{"prod", nil, "prod-quader"},
+			{"my-quader-eu", nil, "my-quader-eu"},
 			{"prod", []string{"fullnameOverride=artifacts"}, "artifacts"},
 		}
 		for _, c := range cases {
@@ -370,7 +370,7 @@ func TestChart(t *testing.T) {
 			// The three role Deployments, plus the pools of the value set; every Deployment runs the
 			// role its name says, and --role web only where the bridge is enabled.
 			for _, d := range ofKind(docs, "Deployment") {
-				name := strings.TrimPrefix(str(d, "metadata", "name"), "trove-")
+				name := strings.TrimPrefix(str(d, "metadata", "name"), "quader-")
 				role, _, _ := strings.Cut(name, "-")
 				if role == "web" && !bridge {
 					t.Errorf("%s runs --role web without web.enabled", name)
@@ -381,12 +381,12 @@ func TestChart(t *testing.T) {
 				}
 			}
 			for _, role := range []string{"api", "packages", "worker"} {
-				if find(docs, "Deployment", "trove-"+role) == nil {
-					t.Errorf("Deployment trove-%s missing", role)
+				if find(docs, "Deployment", "quader-"+role) == nil {
+					t.Errorf("Deployment quader-%s missing", role)
 				}
 			}
-			if (find(docs, "Deployment", "trove-web") != nil) != bridge {
-				t.Errorf("Deployment trove-web rendered = %v, want %v (only the bridge renders it)", !bridge, bridge)
+			if (find(docs, "Deployment", "quader-web") != nil) != bridge {
+				t.Errorf("Deployment quader-web rendered = %v, want %v (only the bridge renders it)", !bridge, bridge)
 			}
 			if strings.Contains(out, "--role\n            - all") || strings.Contains(out, "role=all") {
 				t.Error("a rendered container runs --role all")
@@ -414,28 +414,28 @@ func TestChart(t *testing.T) {
 	t.Run("R-HA-002 each role Service selects the main pods of its role only, the ops Service every serving pod", func(t *testing.T) {
 		_, docs := render(t, required())
 		for _, role := range []string{"api", "packages"} {
-			svc := find(docs, "Service", "trove-"+role)
+			svc := find(docs, "Service", "quader-"+role)
 			sel, _ := at(svc, "spec", "selector").(map[string]any)
-			if sel["app.kubernetes.io/component"] != role || sel["trove/pool"] != "" {
-				t.Errorf("Service trove-%s selector = %v, want component %s and the empty pool", role, sel, role)
+			if sel["app.kubernetes.io/component"] != role || sel["quader/pool"] != "" {
+				t.Errorf("Service quader-%s selector = %v, want component %s and the empty pool", role, sel, role)
 			}
 			if got := str(svc, "spec", "ports", "0", "name"); got != "http" {
-				t.Errorf("Service trove-%s port name = %q, want http", role, got)
+				t.Errorf("Service quader-%s port name = %q, want http", role, got)
 			}
 			if got := at(svc, "spec", "ports", "0", "port"); got != 8080 {
-				t.Errorf("Service trove-%s port = %v, want 8080", role, got)
+				t.Errorf("Service quader-%s port = %v, want 8080", role, got)
 			}
 			if got := str(svc, "spec", "sessionAffinity"); got != "None" {
-				t.Errorf("Service trove-%s sessionAffinity = %q, want None", role, got)
+				t.Errorf("Service quader-%s sessionAffinity = %q, want None", role, got)
 			}
 		}
-		if find(docs, "Service", "trove") != nil {
+		if find(docs, "Service", "quader") != nil {
 			t.Error("the Service <fullname> is rendered without web.enabled (Q-HA-74)")
 		}
-		if find(docs, "Service", "trove-worker") != nil {
+		if find(docs, "Service", "quader-worker") != nil {
 			t.Error("a worker Service is rendered, worker pods are reached on the operations port only")
 		}
-		ops := find(docs, "Service", "trove-ops")
+		ops := find(docs, "Service", "quader-ops")
 		if at(ops, "spec", "selector", "app.kubernetes.io/component") != nil {
 			t.Error("the ops Service must select every serving pod, not one component")
 		}
@@ -447,16 +447,16 @@ func TestChart(t *testing.T) {
 	t.Run("R-HA-002 the pods of every role carry the pool label for their selectors", func(t *testing.T) {
 		_, docs := render(t, required())
 		for _, role := range []string{"api", "packages", "worker"} {
-			d := find(docs, "Deployment", "trove-"+role)
+			d := find(docs, "Deployment", "quader-"+role)
 			sel, ok := at(d, "spec", "selector", "matchLabels").(map[string]any)
 			if !ok {
-				t.Fatalf("trove-%s has no selector", role)
+				t.Fatalf("quader-%s has no selector", role)
 			}
-			if v, ok := sel["trove/pool"]; !ok || v != "" {
-				t.Errorf("trove-%s selector trove/pool = %v (present %v), want the empty value", role, v, ok)
+			if v, ok := sel["quader/pool"]; !ok || v != "" {
+				t.Errorf("quader-%s selector quader/pool = %v (present %v), want the empty value", role, v, ok)
 			}
 			if sel["app.kubernetes.io/component"] != role {
-				t.Errorf("trove-%s selects component %v", role, sel["app.kubernetes.io/component"])
+				t.Errorf("quader-%s selects component %v", role, sel["app.kubernetes.io/component"])
 			}
 		}
 	})
@@ -487,7 +487,7 @@ func TestChart(t *testing.T) {
 		t.Run("generic ephemeral spool", func(t *testing.T) {
 			out, docs := render(t, required(), "spool.type=ephemeral", "spool.ephemeral.accessModes={ReadWriteOncePod}")
 			check(t, out, docs)
-			vol := list(at(find(docs, "Deployment", "trove-packages"), "spec", "template", "spec"), "volumes")
+			vol := list(at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec"), "volumes")
 			found := false
 			for _, v := range vol {
 				if str(v, "name") == "spool" && at(v, "ephemeral", "volumeClaimTemplate") != nil {
@@ -518,7 +518,7 @@ func TestChart(t *testing.T) {
 			}
 			want := map[string]bool{"/tmp": true}
 			if strings.HasSuffix(name, "-api") || strings.HasSuffix(name, "-packages") || strings.HasSuffix(name, "-worker") {
-				want["/var/lib/trove/spool"] = true
+				want["/var/lib/quader/spool"] = true
 			}
 			for p := range mounts {
 				if !want[p] {
@@ -547,8 +547,8 @@ func TestChart(t *testing.T) {
 			{"static s3 without secret", []string{"config.storage.s3.credentials.source=static"}, []string{"config.storage.s3.credentials.source", "secrets.s3.existingSecret"}},
 			{"encryption secret empty", []string{enc + "="}, []string{enc, "secrets.encryption.keys"}},
 			{"encryption keys empty", []string{"secrets.encryption.keys=null"}, []string{enc, "secrets.encryption.keys"}},
-			{"web below two replicas", []string{"packages.replicaCount=1"}, []string{"packages.replicaCount", "trove-packages"}},
-			{"worker below two replicas", []string{"worker.replicaCount=1"}, []string{"worker.replicaCount", "trove-worker"}},
+			{"web below two replicas", []string{"packages.replicaCount=1"}, []string{"packages.replicaCount", "quader-packages"}},
+			{"worker below two replicas", []string{"worker.replicaCount=1"}, []string{"worker.replicaCount", "quader-worker"}},
 			{"web pdb disabled", []string{"packages.podDisruptionBudget.enabled=false"}, []string{"packages.podDisruptionBudget.enabled"}},
 			{"worker pdb disabled", []string{"worker.podDisruptionBudget.enabled=false"}, []string{"worker.podDisruptionBudget.enabled"}},
 			{"web host spread soft", []string{"packages.topologySpread.host.whenUnsatisfiable=ScheduleAnyway"}, []string{"packages.topologySpread.host.whenUnsatisfiable", "DoNotSchedule"}},
@@ -601,10 +601,10 @@ func TestChart(t *testing.T) {
 	})
 
 	t.Run("R-HA-029 and R-HA-027 without the encryption-key Secret the error prints the creation command", func(t *testing.T) {
-		out, stderr, err := helm(t, "template", "trove", chartDir, "--namespace", "artifacts",
-			"--set", "config.server.base_url=https://trove.example.com",
+		out, stderr, err := helm(t, "template", "quader", chartDir, "--namespace", "artifacts",
+			"--set", "config.server.base_url=https://quader.example.com",
 			"--set", "config.database.host=db", "--set", "config.storage.s3.bucket=b",
-			"--set", "config.valkey.sentinel.addresses={a:1,b:1,c:1}", "--set", "config.valkey.sentinel.primary_name=trove",
+			"--set", "config.valkey.sentinel.addresses={a:1,b:1,c:1}", "--set", "config.valkey.sentinel.primary_name=quader",
 			"--set", "secrets.database.existingSecret=db", "--set", "secrets.valkey.existingSecret=vk")
 		if err == nil {
 			t.Fatalf("rendered without an encryption key Secret:\n%s", out)
@@ -612,7 +612,7 @@ func TestChart(t *testing.T) {
 		for _, w := range []string{
 			"secrets.encryption.existingSecret",
 			"secrets.encryption.keys",
-			"kubectl -n artifacts create secret generic trove-encryption-keys",
+			"kubectl -n artifacts create secret generic quader-encryption-keys",
 			"--from-file=2026-10.key=<(head -c 32 /dev/urandom | base64)",
 		} {
 			if !strings.Contains(stderr, w) {
@@ -647,53 +647,53 @@ func TestChart(t *testing.T) {
 		t.Run("keys are an ordered ring, first is active", func(t *testing.T) {
 			_, docs := render(t, required(), "secrets.encryption.keys={2026-10.key,2026-04.key}")
 			var cfg doc
-			if err := yaml.Unmarshal([]byte(str(find(docs, "ConfigMap", "trove-config"), "data", "trove.yaml")), &cfg); err != nil {
+			if err := yaml.Unmarshal([]byte(str(find(docs, "ConfigMap", "quader-config"), "data", "quader.yaml")), &cfg); err != nil {
 				t.Fatal(err)
 			}
 			if got := str(cfg, "secrets", "active_key_id"); got != "2026-10" {
 				t.Errorf("active_key_id = %q, want 2026-10", got)
 			}
 			files := list(cfg, "secrets", "encryption_key_files")
-			if len(files) != 2 || files[0] != "/var/run/secrets/trove/encryption/2026-10.key" || files[1] != "/var/run/secrets/trove/encryption/2026-04.key" {
+			if len(files) != 2 || files[0] != "/var/run/secrets/quader/encryption/2026-10.key" || files[1] != "/var/run/secrets/quader/encryption/2026-04.key" {
 				t.Errorf("encryption_key_files = %v", files)
 			}
 		})
 		t.Run("a change of the key list rolls the pods", func(t *testing.T) {
 			_, a := render(t, required(), "secrets.encryption.keys={2026-10.key}")
 			_, b := render(t, required(), "secrets.encryption.keys={2026-10.key,2026-04.key}")
-			ca := str(find(a, "Deployment", "trove-packages"), "spec", "template", "metadata", "annotations", "checksum/encryption-keys")
-			cb := str(find(b, "Deployment", "trove-packages"), "spec", "template", "metadata", "annotations", "checksum/encryption-keys")
+			ca := str(find(a, "Deployment", "quader-packages"), "spec", "template", "metadata", "annotations", "checksum/encryption-keys")
+			cb := str(find(b, "Deployment", "quader-packages"), "spec", "template", "metadata", "annotations", "checksum/encryption-keys")
 			if ca == "" || ca == cb {
 				t.Errorf("checksum/encryption-keys did not change: %q -> %q", ca, cb)
 			}
 		})
 	})
 
-	t.Run("R-HA-030 the configuration file is mounted at /etc/trove/trove.yaml and rolls the pods", func(t *testing.T) {
+	t.Run("R-HA-030 the configuration file is mounted at /etc/quader/quader.yaml and rolls the pods", func(t *testing.T) {
 		eachSet(t, func(t *testing.T, _ string, _ string, docs []doc) {
 			for _, role := range []string{"api", "packages", "worker"} {
-				pod := at(find(docs, "Deployment", "trove-"+role), "spec", "template", "spec")
+				pod := at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec")
 				ok := false
 				for _, m := range list(pod, "containers", "0", "volumeMounts") {
-					if str(m, "mountPath") == "/etc/trove/trove.yaml" && at(m, "readOnly") == true {
+					if str(m, "mountPath") == "/etc/quader/quader.yaml" && at(m, "readOnly") == true {
 						ok = true
 					}
 				}
 				if !ok {
-					t.Errorf("trove-%s does not mount /etc/trove/trove.yaml read-only", role)
+					t.Errorf("quader-%s does not mount /etc/quader/quader.yaml read-only", role)
 				}
-				if str(find(docs, "Deployment", "trove-"+role), "spec", "template", "metadata", "annotations", "checksum/config") == "" {
-					t.Errorf("trove-%s carries no checksum/config", role)
+				if str(find(docs, "Deployment", "quader-"+role), "spec", "template", "metadata", "annotations", "checksum/config") == "" {
+					t.Errorf("quader-%s carries no checksum/config", role)
 				}
 			}
-			if str(find(docs, "ConfigMap", "trove-config"), "data", "trove.yaml") == "" {
-				t.Error("ConfigMap trove-config has no trove.yaml")
+			if str(find(docs, "ConfigMap", "quader-config"), "data", "quader.yaml") == "" {
+				t.Error("ConfigMap quader-config has no quader.yaml")
 			}
 		})
 		_, a := render(t, required())
 		_, b := render(t, required(), "config.log.level=debug")
-		ca := str(find(a, "Deployment", "trove-worker"), "spec", "template", "metadata", "annotations", "checksum/config")
-		cb := str(find(b, "Deployment", "trove-worker"), "spec", "template", "metadata", "annotations", "checksum/config")
+		ca := str(find(a, "Deployment", "quader-worker"), "spec", "template", "metadata", "annotations", "checksum/config")
+		cb := str(find(b, "Deployment", "quader-worker"), "spec", "template", "metadata", "annotations", "checksum/config")
 		if ca == cb {
 			t.Error("a configuration change did not change checksum/config")
 		}
@@ -756,24 +756,24 @@ func TestChart(t *testing.T) {
 			}
 			return out
 		}
-		job := mounted("trove-migrate")
-		for _, s := range []string{"trove-valkey", "trove-valkey-sentinel", "trove-valkey-ca", "trove-valkey-client", "trove-s3", "trove-metrics"} {
+		job := mounted("quader-migrate")
+		for _, s := range []string{"quader-valkey", "quader-valkey-sentinel", "quader-valkey-ca", "quader-valkey-client", "quader-s3", "quader-metrics"} {
 			if job[s] {
 				t.Errorf("the migration Job mounts %s", s)
 			}
 		}
-		if !job["trove-db-owner"] || job["trove-db-app"] {
+		if !job["quader-db-owner"] || job["quader-db-app"] {
 			t.Errorf("the migration Job must use the migration credentials, mounts %v", job)
 		}
 		for _, role := range []string{"api", "packages", "worker"} {
-			m := mounted("trove-" + role)
-			for _, s := range []string{"trove-db-app", "trove-db-ca", "trove-db-client", "trove-s3", "trove-valkey", "trove-valkey-sentinel", "trove-valkey-ca", "trove-valkey-client", "trove-metrics", "trove-encryption-keys"} {
+			m := mounted("quader-" + role)
+			for _, s := range []string{"quader-db-app", "quader-db-ca", "quader-db-client", "quader-s3", "quader-valkey", "quader-valkey-sentinel", "quader-valkey-ca", "quader-valkey-client", "quader-metrics", "quader-encryption-keys"} {
 				if !m[s] {
-					t.Errorf("trove-%s does not mount %s", role, s)
+					t.Errorf("quader-%s does not mount %s", role, s)
 				}
 			}
-			if m["trove-db-owner"] {
-				t.Errorf("trove-%s mounts the migration credentials", role)
+			if m["quader-db-owner"] {
+				t.Errorf("quader-%s mounts the migration credentials", role)
 			}
 		}
 	})
@@ -781,27 +781,27 @@ func TestChart(t *testing.T) {
 	t.Run("R-HA-030 the chart sets the file paths of the Secrets it mounts", func(t *testing.T) {
 		_, docs := render(t, []string{filepath.Join(chartDir, "ci", "ha-ingress.yaml")})
 		var cfg doc
-		if err := yaml.Unmarshal([]byte(str(find(docs, "ConfigMap", "trove-config"), "data", "trove.yaml")), &cfg); err != nil {
+		if err := yaml.Unmarshal([]byte(str(find(docs, "ConfigMap", "quader-config"), "data", "quader.yaml")), &cfg); err != nil {
 			t.Fatal(err)
 		}
 		want := map[string][]string{
-			"/var/run/secrets/trove/database/username":        {"database", "username_file"},
-			"/var/run/secrets/trove/database/password":        {"database", "password_file"},
-			"/var/run/secrets/trove/database-ca/ca.crt":       {"database", "ssl_root_cert_file"},
-			"/var/run/secrets/trove/database-client/tls.crt":  {"database", "ssl_cert_file"},
-			"/var/run/secrets/trove/database-client/tls.key":  {"database", "ssl_key_file"},
-			"/var/run/secrets/trove/valkey/username":          {"valkey", "username_file"},
-			"/var/run/secrets/trove/valkey/password":          {"valkey", "password_file"},
-			"/var/run/secrets/trove/valkey-sentinel/password": {"valkey", "sentinel", "password_file"},
-			"/var/run/secrets/trove/valkey-ca/ca.crt":         {"valkey", "tls", "ca_file"},
-			"/var/run/secrets/trove/valkey-client/tls.crt":    {"valkey", "tls", "cert_file"},
-			"/var/run/secrets/trove/valkey-client/tls.key":    {"valkey", "tls", "key_file"},
-			"/var/run/secrets/trove/s3/access-key-id":         {"storage", "s3", "credentials", "access_key_id_file"},
-			"/var/run/secrets/trove/s3/secret-access-key":     {"storage", "s3", "credentials", "secret_access_key_file"},
-			"/var/run/secrets/trove/metrics/token":            {"metrics", "bearer_token_file"},
-			"/var/lib/trove/spool":                            {"storage", "spool", "dir"},
-			"/var/run/secrets/trove/encryption/2026-10.key":   {"secrets", "encryption_key_files", "0"},
-			"/var/run/secrets/trove/encryption/2026-04.key":   {"secrets", "encryption_key_files", "1"},
+			"/var/run/secrets/quader/database/username":        {"database", "username_file"},
+			"/var/run/secrets/quader/database/password":        {"database", "password_file"},
+			"/var/run/secrets/quader/database-ca/ca.crt":       {"database", "ssl_root_cert_file"},
+			"/var/run/secrets/quader/database-client/tls.crt":  {"database", "ssl_cert_file"},
+			"/var/run/secrets/quader/database-client/tls.key":  {"database", "ssl_key_file"},
+			"/var/run/secrets/quader/valkey/username":          {"valkey", "username_file"},
+			"/var/run/secrets/quader/valkey/password":          {"valkey", "password_file"},
+			"/var/run/secrets/quader/valkey-sentinel/password": {"valkey", "sentinel", "password_file"},
+			"/var/run/secrets/quader/valkey-ca/ca.crt":         {"valkey", "tls", "ca_file"},
+			"/var/run/secrets/quader/valkey-client/tls.crt":    {"valkey", "tls", "cert_file"},
+			"/var/run/secrets/quader/valkey-client/tls.key":    {"valkey", "tls", "key_file"},
+			"/var/run/secrets/quader/s3/access-key-id":         {"storage", "s3", "credentials", "access_key_id_file"},
+			"/var/run/secrets/quader/s3/secret-access-key":     {"storage", "s3", "credentials", "secret_access_key_file"},
+			"/var/run/secrets/quader/metrics/token":            {"metrics", "bearer_token_file"},
+			"/var/lib/quader/spool":                            {"storage", "spool", "dir"},
+			"/var/run/secrets/quader/encryption/2026-10.key":   {"secrets", "encryption_key_files", "0"},
+			"/var/run/secrets/quader/encryption/2026-04.key":   {"secrets", "encryption_key_files", "1"},
 		}
 		for value, path := range want {
 			if got := str(cfg, path...); got != value {
@@ -817,33 +817,33 @@ func TestChart(t *testing.T) {
 					t.Errorf("%s: enableServiceLinks is not false", name)
 				}
 				env := envByName(pod)
-				for v, field := range map[string]string{"TROVE_POD_NAME": "metadata.name", "TROVE_POD_NAMESPACE": "metadata.namespace", "TROVE_NODE_NAME": "spec.nodeName"} {
+				for v, field := range map[string]string{"QUADER_POD_NAME": "metadata.name", "QUADER_POD_NAMESPACE": "metadata.namespace", "QUADER_NODE_NAME": "spec.nodeName"} {
 					if got := str(env[v], "valueFrom", "fieldRef", "fieldPath"); got != field {
 						t.Errorf("%s: %s fieldPath = %q, want %q", name, v, got, field)
 					}
 				}
 				if !strings.HasSuffix(name, "-migrate") {
-					for _, v := range []string{"TROVE_RUNTIME_MEMORY_LIMIT_BYTES", "TROVE_RUNTIME_TERMINATION_GRACE_PERIOD", "TROVE_STORAGE_SPOOL_MAX_BYTES"} {
+					for _, v := range []string{"QUADER_RUNTIME_MEMORY_LIMIT_BYTES", "QUADER_RUNTIME_TERMINATION_GRACE_PERIOD", "QUADER_STORAGE_SPOOL_MAX_BYTES"} {
 						if env[v] == nil {
 							t.Errorf("%s lacks %s", name, v)
 						}
 					}
 				}
 				for v := range env {
-					if strings.HasPrefix(v, "TROVE_") {
+					if strings.HasPrefix(v, "QUADER_") {
 						switch v {
-						case "TROVE_POD_NAME", "TROVE_POD_NAMESPACE", "TROVE_NODE_NAME", "TROVE_RUNTIME_MEMORY_LIMIT_BYTES",
-							"TROVE_RUNTIME_TERMINATION_GRACE_PERIOD", "TROVE_STORAGE_SPOOL_MAX_BYTES",
-							"TROVE_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS", "TROVE_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS", "TROVE_LOG_LEVEL":
-						case "TROVE_POOL_NAME": // the pods of a pool (R-HA-062, R-EP-002, R-EP-008)
-							if main := name == "trove-api" || name == "trove-packages" || name == "trove-worker" || name == "trove-web"; main {
-								t.Errorf("%s sets TROVE_POOL_NAME, which only a pool does", name)
+						case "QUADER_POD_NAME", "QUADER_POD_NAMESPACE", "QUADER_NODE_NAME", "QUADER_RUNTIME_MEMORY_LIMIT_BYTES",
+							"QUADER_RUNTIME_TERMINATION_GRACE_PERIOD", "QUADER_STORAGE_SPOOL_MAX_BYTES",
+							"QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS", "QUADER_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS", "QUADER_LOG_LEVEL":
+						case "QUADER_POOL_NAME": // the pods of a pool (R-HA-062, R-EP-002, R-EP-008)
+							if main := name == "quader-api" || name == "quader-packages" || name == "quader-worker" || name == "quader-web"; main {
+								t.Errorf("%s sets QUADER_POOL_NAME, which only a pool does", name)
 							}
-						case "TROVE_JOBS_QUEUES", "TROVE_JOBS_EXCLUDE_QUEUES": // worker Deployments only (R-HA-062)
+						case "QUADER_JOBS_QUEUES", "QUADER_JOBS_EXCLUDE_QUEUES": // worker Deployments only (R-HA-062)
 							if !strings.Contains(name, "-worker") {
 								t.Errorf("%s sets %s, which only a worker Deployment does", name, v)
 							}
-						case "TROVE_STORAGE_S3_BUCKET", "TROVE_STORAGE_S3_REGION", "TROVE_STORAGE_S3_ENDPOINT": // from the S3 Secret
+						case "QUADER_STORAGE_S3_BUCKET", "QUADER_STORAGE_S3_REGION", "QUADER_STORAGE_S3_ENDPOINT": // from the S3 Secret
 						default:
 							t.Errorf("%s sets %s, which the spec does not list (R-HA-030)", name, v)
 						}
@@ -931,7 +931,7 @@ func TestChart(t *testing.T) {
 	t.Run("R-HA-034 probes render as specified", func(t *testing.T) {
 		_, docs := render(t, required())
 		for _, role := range []string{"api", "packages", "worker"} {
-			c := at(find(docs, "Deployment", "trove-"+role), "spec", "template", "spec", "containers", "0")
+			c := at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec", "containers", "0")
 			want := map[string][4]any{ // path, period, timeout, threshold
 				"startupProbe":   {"/healthz", 2, 2, 60},
 				"livenessProbe":  {"/healthz", 10, 3, 6},
@@ -940,13 +940,13 @@ func TestChart(t *testing.T) {
 			for probe, w := range want {
 				if str(c, probe, "httpGet", "path") != w[0] || str(c, probe, "httpGet", "port") != "ops" ||
 					at(c, probe, "periodSeconds") != w[1] || at(c, probe, "timeoutSeconds") != w[2] || at(c, probe, "failureThreshold") != w[3] {
-					t.Errorf("trove-%s %s = %v", role, probe, at(c, probe))
+					t.Errorf("quader-%s %s = %v", role, probe, at(c, probe))
 				}
 			}
 		}
 		t.Run("a probe can be disabled or replaced", func(t *testing.T) {
 			_, docs := render(t, required(), "probes.startup.enabled=false", "probes.liveness.custom.tcpSocket.port=ops")
-			c := at(find(docs, "Deployment", "trove-packages"), "spec", "template", "spec", "containers", "0")
+			c := at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec", "containers", "0")
 			if at(c, "startupProbe") != nil {
 				t.Error("startupProbe rendered although disabled")
 			}
@@ -961,7 +961,7 @@ func TestChart(t *testing.T) {
 			if strings.Contains(out, "preStop") {
 				t.Error("a preStop hook is rendered; the drain delay lives in the process (R-HA-011)")
 			}
-			web := at(find(docs, "Deployment", "trove-packages"), "spec", "template", "spec", "containers", "0")
+			web := at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec", "containers", "0")
 			var ports []string
 			for _, p := range list(web, "ports") {
 				if str(p, "name") == "" {
@@ -972,7 +972,7 @@ func TestChart(t *testing.T) {
 			if strings.Join(ports, ",") != "http=8080,ops=8081" {
 				t.Errorf("web ports = %v, want http=8080 and ops=8081 only", ports)
 			}
-			worker := at(find(docs, "Deployment", "trove-worker"), "spec", "template", "spec", "containers", "0")
+			worker := at(find(docs, "Deployment", "quader-worker"), "spec", "template", "spec", "containers", "0")
 			ports = nil
 			for _, p := range list(worker, "ports") {
 				ports = append(ports, str(p, "name"))
@@ -989,16 +989,16 @@ func TestChart(t *testing.T) {
 			seconds int
 			env     string
 		}{"api": {120, "120s"}, "packages": {120, "120s"}, "worker": {300, "300s"}} {
-			spec := at(find(docs, "Deployment", "trove-"+role), "spec", "template", "spec")
+			spec := at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec")
 			if at(spec, "terminationGracePeriodSeconds") != want.seconds {
-				t.Errorf("trove-%s terminationGracePeriodSeconds = %v, want %d", role, at(spec, "terminationGracePeriodSeconds"), want.seconds)
+				t.Errorf("quader-%s terminationGracePeriodSeconds = %v, want %d", role, at(spec, "terminationGracePeriodSeconds"), want.seconds)
 			}
-			if got := str(envByName(spec)["TROVE_RUNTIME_TERMINATION_GRACE_PERIOD"], "value"); got != want.env {
-				t.Errorf("trove-%s TROVE_RUNTIME_TERMINATION_GRACE_PERIOD = %q, want %q", role, got, want.env)
+			if got := str(envByName(spec)["QUADER_RUNTIME_TERMINATION_GRACE_PERIOD"], "value"); got != want.env {
+				t.Errorf("quader-%s QUADER_RUNTIME_TERMINATION_GRACE_PERIOD = %q, want %q", role, got, want.env)
 			}
 		}
 		_, docs = render(t, required(), "packages.terminationGracePeriodSeconds=45", "config.health.shutdown_drain_delay=30s")
-		if got := str(envByName(at(find(docs, "Deployment", "trove-packages"), "spec", "template", "spec"))["TROVE_RUNTIME_TERMINATION_GRACE_PERIOD"], "value"); got != "45s" {
+		if got := str(envByName(at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec"))["QUADER_RUNTIME_TERMINATION_GRACE_PERIOD"], "value"); got != "45s" {
 			t.Errorf("grace period env = %q, want 45s (exactly the drain delay plus 15 s is allowed)", got)
 		}
 	})
@@ -1010,34 +1010,34 @@ func TestChart(t *testing.T) {
 			"api":      {"5Gi", "3221225472"},
 			"worker":   {"3Gi", "1073741824"},
 		} {
-			pod := at(find(docs, "Deployment", "trove-"+role), "spec", "template", "spec")
+			pod := at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec")
 			found := false
 			for _, v := range list(pod, "volumes") {
 				if str(v, "name") == "spool" {
 					found = true
 					if got := str(v, "emptyDir", "sizeLimit"); got != want.limit {
-						t.Errorf("trove-%s spool sizeLimit = %q, want %q", role, got, want.limit)
+						t.Errorf("quader-%s spool sizeLimit = %q, want %q", role, got, want.limit)
 					}
 				}
 			}
 			if !found {
-				t.Errorf("trove-%s has no spool volume", role)
+				t.Errorf("quader-%s has no spool volume", role)
 			}
-			if got := str(envByName(pod)["TROVE_STORAGE_SPOOL_MAX_BYTES"], "value"); got != want.max {
-				t.Errorf("trove-%s TROVE_STORAGE_SPOOL_MAX_BYTES = %q, want %q", role, got, want.max)
+			if got := str(envByName(pod)["QUADER_STORAGE_SPOOL_MAX_BYTES"], "value"); got != want.max {
+				t.Errorf("quader-%s QUADER_STORAGE_SPOOL_MAX_BYTES = %q, want %q", role, got, want.max)
 			}
 		}
 		t.Run("an explicit storage.spool.max_bytes wins", func(t *testing.T) {
 			_, docs := render(t, required(), "config.storage.spool.max_bytes=1073741824")
-			if envByName(at(find(docs, "Deployment", "trove-packages"), "spec", "template", "spec"))["TROVE_STORAGE_SPOOL_MAX_BYTES"] != nil {
-				t.Error("the chart sets TROVE_STORAGE_SPOOL_MAX_BYTES although config.storage.spool.max_bytes is set")
+			if envByName(at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec"))["QUADER_STORAGE_SPOOL_MAX_BYTES"] != nil {
+				t.Error("the chart sets QUADER_STORAGE_SPOOL_MAX_BYTES although config.storage.spool.max_bytes is set")
 			}
 		})
 		t.Run("a worker spool smaller than the largest upload renders: workers accept no uploads", func(t *testing.T) {
 			_, docs := render(t, required(), "worker.spool.sizeLimit=5Gi", "config.storage.upload.max_size=10GiB", "config.vulnerabilities.images.enabled=false")
-			pod := at(find(docs, "Deployment", "trove-worker"), "spec", "template", "spec")
-			if got := str(envByName(pod)["TROVE_STORAGE_SPOOL_MAX_BYTES"], "value"); got != "3221225472" {
-				t.Errorf("trove-worker TROVE_STORAGE_SPOOL_MAX_BYTES = %q, want 3221225472", got)
+			pod := at(find(docs, "Deployment", "quader-worker"), "spec", "template", "spec")
+			if got := str(envByName(pod)["QUADER_STORAGE_SPOOL_MAX_BYTES"], "value"); got != "3221225472" {
+				t.Errorf("quader-worker QUADER_STORAGE_SPOOL_MAX_BYTES = %q, want 3221225472", got)
 			}
 		})
 		t.Run("spool.sizeLimit=5Gi with a 10GiB upload fails", func(t *testing.T) {
@@ -1047,20 +1047,20 @@ func TestChart(t *testing.T) {
 
 	t.Run("R-HA-036 GOMAXPROCS follows the CPU request unless a CPU limit is set", func(t *testing.T) {
 		_, docs := render(t, required())
-		env := envByName(at(find(docs, "Deployment", "trove-packages"), "spec", "template", "spec"))
+		env := envByName(at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec"))
 		if got := str(env["GOMAXPROCS"], "valueFrom", "resourceFieldRef", "resource"); got != "requests.cpu" {
 			t.Errorf("GOMAXPROCS resource = %q, want requests.cpu", got)
 		}
-		if got := str(env["TROVE_RUNTIME_MEMORY_LIMIT_BYTES"], "valueFrom", "resourceFieldRef", "resource"); got != "limits.memory" {
-			t.Errorf("TROVE_RUNTIME_MEMORY_LIMIT_BYTES resource = %q, want limits.memory", got)
+		if got := str(env["QUADER_RUNTIME_MEMORY_LIMIT_BYTES"], "valueFrom", "resourceFieldRef", "resource"); got != "limits.memory" {
+			t.Errorf("QUADER_RUNTIME_MEMORY_LIMIT_BYTES resource = %q, want limits.memory", got)
 		}
 		_, docs = render(t, required(), "packages.resources.limits.cpu=3")
-		env = envByName(at(find(docs, "Deployment", "trove-packages"), "spec", "template", "spec"))
+		env = envByName(at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec"))
 		if env["GOMAXPROCS"] != nil {
 			t.Error("GOMAXPROCS is set although a CPU limit is set")
 		}
-		web := at(find(docs, "Deployment", "trove-packages"), "spec", "template", "spec", "containers", "0", "resources")
-		worker := at(find(docs, "Deployment", "trove-worker"), "spec", "template", "spec", "containers", "0", "resources")
+		web := at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec", "containers", "0", "resources")
+		worker := at(find(docs, "Deployment", "quader-worker"), "spec", "template", "spec", "containers", "0", "resources")
 		if str(web, "requests", "cpu") != "1" || str(web, "limits", "memory") != "2Gi" ||
 			str(worker, "requests", "cpu") != "500m" || str(worker, "limits", "memory") != "1Gi" {
 			t.Errorf("default resources: web %v, worker %v", web, worker)
@@ -1076,8 +1076,8 @@ func TestChart(t *testing.T) {
 			sets  []string
 			want  []string
 		}{
-			{"no memory limit on api", required(), []string{"api.resources.limits=null"}, []string{"api.resources.limits.memory is required", "trove-api"}},
-			{"no memory limit", required(), []string{"packages.resources.limits=null"}, []string{"packages.resources.limits.memory is required", "trove-packages"}},
+			{"no memory limit on api", required(), []string{"api.resources.limits=null"}, []string{"api.resources.limits.memory is required", "quader-api"}},
+			{"no memory limit", required(), []string{"packages.resources.limits=null"}, []string{"packages.resources.limits.memory is required", "quader-packages"}},
 			{"a limit too small for its requests", required(), []string{"packages.resources.limits.memory=48Mi"}, []string{"packages.resources.limits.memory (48Mi) admits 52 concurrent requests, fewer than 64"}},
 			{"a buffer too large for the limit", required(), []string{"api.resources.limits.memory=8Gi", "config.storage.download.buffer_size=32MiB"}, []string{"packages.resources.limits.memory (2Gi) admits 43 concurrent requests"}},
 			{"a buffer too large for a pool's limit", []string{pool}, []string{"api.resources.limits.memory=8Gi", "config.storage.download.buffer_size=16MiB"}, []string{"endpoints.customers.pool.resources.limits.memory (1Gi) admits 42 concurrent requests"}},
@@ -1101,54 +1101,54 @@ func TestChart(t *testing.T) {
 	t.Run("R-HA-032 each Deployment has a disruption budget and spreads over zones and hosts", func(t *testing.T) {
 		eachSet(t, func(t *testing.T, f string, _ string, docs []doc) {
 			for _, role := range []string{"api", "packages", "worker"} {
-				pdb := find(docs, "PodDisruptionBudget", "trove-"+role)
+				pdb := find(docs, "PodDisruptionBudget", "quader-"+role)
 				if pdb == nil {
-					t.Fatalf("no PodDisruptionBudget trove-%s", role)
+					t.Fatalf("no PodDisruptionBudget quader-%s", role)
 				}
 				if got := str(pdb, "spec", "unhealthyPodEvictionPolicy"); got != "AlwaysAllow" {
-					t.Errorf("trove-%s PDB unhealthyPodEvictionPolicy = %q", role, got)
+					t.Errorf("quader-%s PDB unhealthyPodEvictionPolicy = %q", role, got)
 				}
 				if at(pdb, "spec", "maxUnavailable") == nil && at(pdb, "spec", "minAvailable") == nil {
-					t.Errorf("trove-%s PDB has neither maxUnavailable nor minAvailable", role)
+					t.Errorf("quader-%s PDB has neither maxUnavailable nor minAvailable", role)
 				}
 				if at(pdb, "spec", "maxUnavailable") != nil && at(pdb, "spec", "minAvailable") != nil {
-					t.Errorf("trove-%s PDB sets both budgets", role)
+					t.Errorf("quader-%s PDB sets both budgets", role)
 				}
-				dep := find(docs, "Deployment", "trove-"+role)
+				dep := find(docs, "Deployment", "quader-"+role)
 				if got := at(pdb, "spec", "selector", "matchLabels"); !equalMaps(got, at(dep, "spec", "selector", "matchLabels")) {
-					t.Errorf("trove-%s PDB selector %v differs from the Deployment's %v", role, got, at(dep, "spec", "selector", "matchLabels"))
+					t.Errorf("quader-%s PDB selector %v differs from the Deployment's %v", role, got, at(dep, "spec", "selector", "matchLabels"))
 				}
 				cs := list(dep, "spec", "template", "spec", "topologySpreadConstraints")
 				keys := map[string]any{}
 				for _, c := range cs {
 					keys[str(c, "topologyKey")] = c
 					if str(c, "nodeTaintsPolicy") != "Honor" {
-						t.Errorf("trove-%s constraint %s nodeTaintsPolicy = %q, want Honor", role, str(c, "topologyKey"), str(c, "nodeTaintsPolicy"))
+						t.Errorf("quader-%s constraint %s nodeTaintsPolicy = %q, want Honor", role, str(c, "topologyKey"), str(c, "nodeTaintsPolicy"))
 					}
 					if l := list(c, "matchLabelKeys"); len(l) != 1 || l[0] != "pod-template-hash" {
-						t.Errorf("trove-%s constraint %s matchLabelKeys = %v", role, str(c, "topologyKey"), l)
+						t.Errorf("quader-%s constraint %s matchLabelKeys = %v", role, str(c, "topologyKey"), l)
 					}
 					if !equalMaps(at(c, "labelSelector", "matchLabels"), at(dep, "spec", "selector", "matchLabels")) {
-						t.Errorf("trove-%s constraint %s selects other pods than the Deployment's", role, str(c, "topologyKey"))
+						t.Errorf("quader-%s constraint %s selects other pods than the Deployment's", role, str(c, "topologyKey"))
 					}
 				}
 				if len(cs) != 2 || keys["topology.kubernetes.io/zone"] == nil || keys["kubernetes.io/hostname"] == nil {
-					t.Fatalf("trove-%s has constraints %v, want zone and hostname", role, keys)
+					t.Fatalf("quader-%s has constraints %v, want zone and hostname", role, keys)
 				}
 				if base(f) != "single-node.yaml" {
 					if got := str(keys["kubernetes.io/hostname"], "whenUnsatisfiable"); got != "DoNotSchedule" {
-						t.Errorf("trove-%s host spread = %q, want DoNotSchedule", role, got)
+						t.Errorf("quader-%s host spread = %q, want DoNotSchedule", role, got)
 					}
 				}
 				if got := str(keys["topology.kubernetes.io/zone"], "whenUnsatisfiable"); got != "ScheduleAnyway" {
-					t.Errorf("trove-%s zone spread = %q, want ScheduleAnyway", role, got)
+					t.Errorf("quader-%s zone spread = %q, want ScheduleAnyway", role, got)
 				}
 				tol := map[string]any{}
 				for _, x := range list(dep, "spec", "template", "spec", "tolerations") {
 					tol[str(x, "key")] = at(x, "tolerationSeconds")
 				}
 				if tol["node.kubernetes.io/not-ready"] != 60 || tol["node.kubernetes.io/unreachable"] != 60 {
-					t.Errorf("trove-%s node-failure tolerations = %v, want 60 s", role, tol)
+					t.Errorf("quader-%s node-failure tolerations = %v, want 60 s", role, tol)
 				}
 			}
 		})
@@ -1157,15 +1157,15 @@ func TestChart(t *testing.T) {
 	t.Run("R-HA-032 defaults are two api, three packages and two worker replicas with a rolling update that never drops capacity", func(t *testing.T) {
 		_, docs := render(t, required())
 		for role, n := range map[string]int{"api": 2, "packages": 3, "worker": 2} {
-			d := find(docs, "Deployment", "trove-"+role)
+			d := find(docs, "Deployment", "quader-"+role)
 			if at(d, "spec", "replicas") != n {
-				t.Errorf("trove-%s replicas = %v, want %d", role, at(d, "spec", "replicas"), n)
+				t.Errorf("quader-%s replicas = %v, want %d", role, at(d, "spec", "replicas"), n)
 			}
 			if at(d, "spec", "strategy", "rollingUpdate", "maxUnavailable") != 0 || at(d, "spec", "strategy", "rollingUpdate", "maxSurge") != 1 {
-				t.Errorf("trove-%s strategy = %v", role, at(d, "spec", "strategy"))
+				t.Errorf("quader-%s strategy = %v", role, at(d, "spec", "strategy"))
 			}
 			if at(d, "spec", "minReadySeconds") != 10 {
-				t.Errorf("trove-%s minReadySeconds = %v", role, at(d, "spec", "minReadySeconds"))
+				t.Errorf("quader-%s minReadySeconds = %v", role, at(d, "spec", "minReadySeconds"))
 			}
 		}
 	})
@@ -1201,13 +1201,13 @@ func TestChart(t *testing.T) {
 	})
 
 	t.Run("R-HA-037 ingress.path fails schema validation and names path", func(t *testing.T) {
-		renderFails(t, required(), []string{"ingress.enabled=true", "ingress.path=/trove"}, "path")
-		_, docs := render(t, required(), "ingress.enabled=true", "ingress.className=traefik", "ingress.backendTLS.caSecret=trove-tls")
+		renderFails(t, required(), []string{"ingress.enabled=true", "ingress.path=/quader"}, "path")
+		_, docs := render(t, required(), "ingress.enabled=true", "ingress.className=traefik", "ingress.backendTLS.caSecret=quader-tls")
 		ing := ofKind(docs, "Ingress")
 		if len(ing) != 1 {
 			t.Fatalf("%d Ingress objects, want 1", len(ing))
 		}
-		if got := str(ing[0], "spec", "rules", "0", "host"); got != "trove.example.com" {
+		if got := str(ing[0], "spec", "rules", "0", "host"); got != "quader.example.com" {
 			t.Errorf("ingress host = %q, want the host of config.server.base_url", got)
 		}
 		if got := str(ing[0], "spec", "ingressClassName"); got != "traefik" {
@@ -1236,11 +1236,11 @@ func TestChart(t *testing.T) {
 				str(d, "metadata", "annotations", "helm.sh/hook-weight"),
 				str(d, "metadata", "annotations", "helm.sh/hook-delete-policy")
 		}
-		job := find(docs, "Job", "trove-migrate")
+		job := find(docs, "Job", "quader-migrate")
 		if h, w, p := hook(job); h != "pre-install,pre-upgrade" || w != "0" || p != "before-hook-creation" {
 			t.Errorf("Job hook = %q weight %q policy %q", h, w, p)
 		}
-		for _, d := range []doc{find(docs, "ConfigMap", "trove-migrate"), find(docs, "ServiceAccount", "trove-migrate")} {
+		for _, d := range []doc{find(docs, "ConfigMap", "quader-migrate"), find(docs, "ServiceAccount", "quader-migrate")} {
 			if h, w, _ := hook(d); h != "pre-install,pre-upgrade" || w != "-10" {
 				t.Errorf("%s hook = %q weight %q, want weight -10", str(d, "kind"), h, w)
 			}
@@ -1249,7 +1249,7 @@ func TestChart(t *testing.T) {
 		if got := strings.Join(containerArgs(pod), " "); got != "migrate up" {
 			t.Errorf("migration args = %q", got)
 		}
-		if str(pod, "restartPolicy") != "Never" || str(pod, "serviceAccountName") != "trove-migrate" {
+		if str(pod, "restartPolicy") != "Never" || str(pod, "serviceAccountName") != "quader-migrate" {
 			t.Errorf("migration pod restartPolicy/serviceAccountName = %q/%q", str(pod, "restartPolicy"), str(pod, "serviceAccountName"))
 		}
 		spec := at(job, "spec")
@@ -1263,18 +1263,18 @@ func TestChart(t *testing.T) {
 		}
 		env := envByName(pod)
 		// serving_max 3 + 4 and worker_max 2 + 1 of the defaults, surge included (R-HA-016, Q-HA-77)
-		if got := str(env["TROVE_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS"], "value"); got != "7" {
-			t.Errorf("TROVE_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS = %q, want 7", got)
+		if got := str(env["QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS"], "value"); got != "7" {
+			t.Errorf("QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS = %q, want 7", got)
 		}
-		if got := str(env["TROVE_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS"], "value"); got != "3" {
-			t.Errorf("TROVE_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS = %q, want 3", got)
+		if got := str(env["QUADER_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS"], "value"); got != "3" {
+			t.Errorf("QUADER_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS = %q, want 3", got)
 		}
-		if env["TROVE_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS"] != nil {
+		if env["QUADER_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS"] != nil {
 			t.Error("the migration Job renders the deprecated expected_web_replicas name")
 		}
-		mainCfg := str(find(docs, "ConfigMap", "trove-config"), "data", "trove.yaml")
-		if got := str(find(docs, "ConfigMap", "trove-migrate"), "data", "trove.yaml"); got != mainCfg {
-			t.Error("the hook ConfigMap does not carry the same trove.yaml as <fullname>-config")
+		mainCfg := str(find(docs, "ConfigMap", "quader-config"), "data", "quader.yaml")
+		if got := str(find(docs, "ConfigMap", "quader-migrate"), "data", "quader.yaml"); got != mainCfg {
+			t.Error("the hook ConfigMap does not carry the same quader.yaml as <fullname>-config")
 		}
 	})
 
@@ -1286,7 +1286,7 @@ func TestChart(t *testing.T) {
 				t.Errorf("%d %s objects rendered", n, k)
 			}
 		}
-		if find(docs, "ConfigMap", "trove-migrate") != nil || find(docs, "ServiceAccount", "trove-migrate") != nil {
+		if find(docs, "ConfigMap", "quader-migrate") != nil || find(docs, "ServiceAccount", "quader-migrate") != nil {
 			t.Error("hook resources rendered with migrations disabled")
 		}
 	})
@@ -1294,19 +1294,19 @@ func TestChart(t *testing.T) {
 	t.Run("R-HA-056 the Valkey wiring reaches web and worker only", func(t *testing.T) {
 		_, docs := render(t, required())
 		var cfg doc
-		if err := yaml.Unmarshal([]byte(str(find(docs, "ConfigMap", "trove-config"), "data", "trove.yaml")), &cfg); err != nil {
+		if err := yaml.Unmarshal([]byte(str(find(docs, "ConfigMap", "quader-config"), "data", "quader.yaml")), &cfg); err != nil {
 			t.Fatal(err)
 		}
-		if str(cfg, "valkey", "mode") != "sentinel" || str(cfg, "valkey", "sentinel", "primary_name") != "trove" || len(list(cfg, "valkey", "sentinel", "addresses")) != 3 {
+		if str(cfg, "valkey", "mode") != "sentinel" || str(cfg, "valkey", "sentinel", "primary_name") != "quader" || len(list(cfg, "valkey", "sentinel", "addresses")) != 3 {
 			t.Errorf("valkey config = %v", cfg["valkey"])
 		}
 		if str(cfg, "valkey", "tls", "mode") != "verify-full" {
 			t.Errorf("valkey tls mode = %q, want verify-full", str(cfg, "valkey", "tls", "mode"))
 		}
-		for _, name := range []string{"trove-packages", "trove-worker"} {
+		for _, name := range []string{"quader-packages", "quader-worker"} {
 			ok := false
 			for _, v := range list(podSpecs(docs)[name], "volumes") {
-				if str(v, "secret", "secretName") == "trove-valkey" {
+				if str(v, "secret", "secretName") == "quader-valkey" {
 					ok = true
 				}
 			}
@@ -1314,7 +1314,7 @@ func TestChart(t *testing.T) {
 				t.Errorf("%s does not mount the Valkey Secret", name)
 			}
 		}
-		for _, v := range list(podSpecs(docs)["trove-migrate"], "volumes") {
+		for _, v := range list(podSpecs(docs)["quader-migrate"], "volumes") {
 			if strings.Contains(str(v, "secret", "secretName"), "valkey") {
 				t.Error("the migration Job mounts a Valkey Secret")
 			}
@@ -1323,51 +1323,51 @@ func TestChart(t *testing.T) {
 }
 
 var (
-	troveOnce sync.Once
-	troveBin  string
-	troveErr  error
+	quaderOnce sync.Once
+	quaderBin  string
+	quaderErr  error
 )
 
-// trove builds the binary once; the tests that need it run its configuration validator over
+// quader builds the binary once; the tests that need it run its configuration validator over
 // what the chart renders.
-func trove(t *testing.T) string {
+func quader(t *testing.T) string {
 	t.Helper()
-	troveOnce.Do(func() {
-		dir, err := os.MkdirTemp("", "trove-chart-test-")
+	quaderOnce.Do(func() {
+		dir, err := os.MkdirTemp("", "quader-chart-test-")
 		if err != nil {
-			troveErr = err
+			quaderErr = err
 			return
 		}
-		troveBin = filepath.Join(dir, "trove")
-		cmd := exec.Command("go", "build", "-o", troveBin, "./cmd/trove")
+		quaderBin = filepath.Join(dir, "quader")
+		cmd := exec.Command("go", "build", "-o", quaderBin, "./cmd/quader")
 		cmd.Dir = repoRoot
 		if out, err := cmd.CombinedOutput(); err != nil {
-			troveErr = errors.New("go build ./cmd/trove: " + err.Error() + "\n" + string(out))
+			quaderErr = errors.New("go build ./cmd/quader: " + err.Error() + "\n" + string(out))
 		}
 	})
-	if troveErr != nil {
-		t.Fatalf("the trove binary does not build: %v", troveErr)
+	if quaderErr != nil {
+		t.Fatalf("the quader binary does not build: %v", quaderErr)
 	}
-	return troveBin
+	return quaderBin
 }
 
 func TestRenderedConfigurationPassesTheBinary(t *testing.T) {
-	// R-OPS-028: one file, strict validation of every key and every TROVE_ variable. The chart's
+	// R-OPS-028: one file, strict validation of every key and every QUADER_ variable. The chart's
 	// file and the variables it sets must pass the binary's own loader, for every value set.
-	t.Run("R-OPS-028 the rendered file and the chart's variables pass trove admin config validate", func(t *testing.T) {
-		bin := trove(t)
+	t.Run("R-OPS-028 the rendered file and the chart's variables pass quader admin config validate", func(t *testing.T) {
+		bin := quader(t)
 		for _, f := range valueSets {
 			t.Run(base(f), func(t *testing.T) {
 				_, docs := render(t, []string{f})
-				cfgPath := filepath.Join(t.TempDir(), "trove.yaml")
-				if err := os.WriteFile(cfgPath, []byte(str(find(docs, "ConfigMap", "trove-config"), "data", "trove.yaml")), 0o600); err != nil {
+				cfgPath := filepath.Join(t.TempDir(), "quader.yaml")
+				if err := os.WriteFile(cfgPath, []byte(str(find(docs, "ConfigMap", "quader-config"), "data", "quader.yaml")), 0o600); err != nil {
 					t.Fatal(err)
 				}
 				pods := map[string]any{}
 				for _, d := range ofKind(docs, "Deployment") {
-					pods[strings.TrimPrefix(str(d, "metadata", "name"), "trove-")] = at(d, "spec", "template", "spec")
+					pods[strings.TrimPrefix(str(d, "metadata", "name"), "quader-")] = at(d, "spec", "template", "spec")
 				}
-				if job := find(docs, "Job", "trove-migrate"); job != nil {
+				if job := find(docs, "Job", "quader-migrate"); job != nil {
 					pods["migrate"] = at(job, "spec", "template", "spec")
 				}
 				for name, pod := range pods {
@@ -1376,10 +1376,10 @@ func TestRenderedConfigurationPassesTheBinary(t *testing.T) {
 						cmd.Env = []string{"PATH=" + os.Getenv("PATH")}
 						for n, e := range envByName(pod) {
 							switch {
-							case !strings.HasPrefix(n, "TROVE_"):
+							case !strings.HasPrefix(n, "QUADER_"):
 							case at(e, "value") != nil:
 								cmd.Env = append(cmd.Env, n+"="+str(e, "value"))
-							case n == "TROVE_RUNTIME_MEMORY_LIMIT_BYTES":
+							case n == "QUADER_RUNTIME_MEMORY_LIMIT_BYTES":
 								cmd.Env = append(cmd.Env, n+"=1073741824")
 							default: // downward API
 								cmd.Env = append(cmd.Env, n+"=test")
@@ -1395,7 +1395,7 @@ func TestRenderedConfigurationPassesTheBinary(t *testing.T) {
 							}
 						}
 						if out, err := cmd.CombinedOutput(); err != nil {
-							t.Fatalf("trove admin config validate: %v\n%s", err, out)
+							t.Fatalf("quader admin config validate: %v\n%s", err, out)
 						}
 					})
 				}
@@ -1409,10 +1409,10 @@ func podEnviron(pod any) []string {
 	env := []string{"PATH=" + os.Getenv("PATH")}
 	for n, e := range envByName(pod) {
 		switch {
-		case !strings.HasPrefix(n, "TROVE_"):
+		case !strings.HasPrefix(n, "QUADER_"):
 		case at(e, "value") != nil:
 			env = append(env, n+"="+str(e, "value"))
-		case n == "TROVE_RUNTIME_MEMORY_LIMIT_BYTES":
+		case n == "QUADER_RUNTIME_MEMORY_LIMIT_BYTES":
 			env = append(env, n+"=1073741824")
 		default:
 			env = append(env, n+"=test")
@@ -1436,21 +1436,21 @@ func TestShutdownBudgetDerivation(t *testing.T) {
 		{"drain 15 s, worker 300 s", []string{"config.health.shutdown_drain_delay=15s"}, "1m40s", "4m40s", "derived"},
 		{"packages 45 s with drain 30 s leaves the 10 s the chart rule guarantees", []string{"packages.terminationGracePeriodSeconds=45", "config.health.shutdown_drain_delay=30s"}, "10s", "4m25s", "derived"},
 	}
-	bin := trove(t)
+	bin := quader(t)
 	for _, c := range cases {
 		t.Run("R-HA-011 the binary derives server.shutdown_timeout from the rendered grace period: "+c.name, func(t *testing.T) {
 			_, docs := render(t, required(), c.sets...)
-			cfgPath := filepath.Join(t.TempDir(), "trove.yaml")
-			if err := os.WriteFile(cfgPath, []byte(str(find(docs, "ConfigMap", "trove-config"), "data", "trove.yaml")), 0o600); err != nil {
+			cfgPath := filepath.Join(t.TempDir(), "quader.yaml")
+			if err := os.WriteFile(cfgPath, []byte(str(find(docs, "ConfigMap", "quader-config"), "data", "quader.yaml")), 0o600); err != nil {
 				t.Fatal(err)
 			}
 			for role, want := range map[string]string{"packages": c.web, "worker": c.worker} {
-				pod := at(find(docs, "Deployment", "trove-"+role), "spec", "template", "spec")
+				pod := at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec")
 				cmd := exec.Command(bin, "admin", "config", "validate", "--config", cfgPath, "--format", "json")
 				cmd.Env = podEnviron(pod)
 				out, err := cmd.Output()
 				if err != nil {
-					t.Fatalf("%s: trove admin config validate: %v", role, err)
+					t.Fatalf("%s: quader admin config validate: %v", role, err)
 				}
 				var res struct {
 					Values map[string]struct {
@@ -1502,9 +1502,9 @@ func TestNetworkPolicy(t *testing.T) {
 				return // the bridge adds web, covered by TestRoles
 			}
 			for _, role := range []string{"api", "packages"} {
-				pol := find(docs, "NetworkPolicy", "trove-"+role)
+				pol := find(docs, "NetworkPolicy", "quader-"+role)
 				if pol == nil {
-					t.Fatalf("NetworkPolicy trove-%s not rendered", role)
+					t.Fatalf("NetworkPolicy quader-%s not rendered", role)
 				}
 				if got := list(pol, "spec", "policyTypes"); len(got) != 1 || got[0] != "Ingress" {
 					t.Errorf("%s policyTypes = %v, want [Ingress] only (egress is not rendered)", role, got)
@@ -1529,7 +1529,7 @@ func TestNetworkPolicy(t *testing.T) {
 					t.Errorf("%s last rule = ports %v from %v, want 8081 from the monitoring namespace only", role, p1, f1)
 				}
 			}
-			worker := find(docs, "NetworkPolicy", "trove-worker")
+			worker := find(docs, "NetworkPolicy", "quader-worker")
 			wr := list(worker, "spec", "ingress")
 			if len(wr) != 1 {
 				t.Fatalf("worker has %d ingress rules, want 1", len(wr))
@@ -1543,10 +1543,10 @@ func TestNetworkPolicy(t *testing.T) {
 	t.Run("R-HA-042 every policy selects the pods of its component and no others", func(t *testing.T) {
 		_, docs := render(t, required())
 		for _, c := range []struct{ policy, kind, workload string }{
-			{"trove-api", "Deployment", "trove-api"},
-			{"trove-packages", "Deployment", "trove-packages"},
-			{"trove-worker", "Deployment", "trove-worker"},
-			{"trove-migrate", "Job", "trove-migrate"},
+			{"quader-api", "Deployment", "quader-api"},
+			{"quader-packages", "Deployment", "quader-packages"},
+			{"quader-worker", "Deployment", "quader-worker"},
+			{"quader-migrate", "Job", "quader-migrate"},
 		} {
 			sel, _ := at(find(docs, "NetworkPolicy", c.policy), "spec", "podSelector", "matchLabels").(map[string]any)
 			labels, _ := at(find(docs, c.kind, c.workload), "spec", "template", "metadata", "labels").(map[string]any)
@@ -1561,7 +1561,7 @@ func TestNetworkPolicy(t *testing.T) {
 		}
 		// the roles must not select each other's pods.
 		seen := map[any]string{}
-		for _, n := range []string{"trove-api", "trove-packages", "trove-worker"} {
+		for _, n := range []string{"quader-api", "quader-packages", "quader-worker"} {
 			sel, _ := at(find(docs, "NetworkPolicy", n), "spec", "podSelector", "matchLabels").(map[string]any)
 			if other, dup := seen[sel["app.kubernetes.io/component"]]; dup {
 				t.Errorf("%s and %s select the same component", n, other)
@@ -1572,9 +1572,9 @@ func TestNetworkPolicy(t *testing.T) {
 
 	t.Run("R-HA-042 the migration Job accepts no ingress at all", func(t *testing.T) {
 		_, docs := render(t, required())
-		p := find(docs, "NetworkPolicy", "trove-migrate")
+		p := find(docs, "NetworkPolicy", "quader-migrate")
 		if p == nil {
-			t.Fatal("NetworkPolicy trove-migrate not rendered")
+			t.Fatal("NetworkPolicy quader-migrate not rendered")
 		}
 		if got := list(p, "spec", "policyTypes"); len(got) != 1 || got[0] != "Ingress" {
 			t.Errorf("policyTypes = %v", got)
@@ -1608,7 +1608,7 @@ func TestNetworkPolicy(t *testing.T) {
 			t.Fatal(err)
 		}
 		_, docs := render(t, append(required(), vals))
-		rules := list(find(docs, "NetworkPolicy", "trove-packages"), "spec", "ingress")
+		rules := list(find(docs, "NetworkPolicy", "quader-packages"), "spec", "ingress")
 		_, f0, has0 := portsOf(rules[0])
 		if !has0 || len(f0) != 1 || str(f0[0], "namespaceSelector", "matchLabels", "kubernetes.io/metadata.name") != "traefik" {
 			t.Errorf("8080 from = %v, want the traefik namespace", f0)
@@ -1620,7 +1620,7 @@ func TestNetworkPolicy(t *testing.T) {
 
 		_, docs = render(t, required(), "networkPolicy.ingress.ops.from=null")
 		for _, role := range []string{"api", "packages", "worker"} {
-			for _, r := range list(find(docs, "NetworkPolicy", "trove-"+role), "spec", "ingress") {
+			for _, r := range list(find(docs, "NetworkPolicy", "quader-"+role), "spec", "ingress") {
 				if p, _, _ := portsOf(r); len(p) == 1 && p[0] == 8081 {
 					t.Errorf("%s still admits 8081 although no peer is listed; an empty from would mean from anywhere", role)
 				}
@@ -1639,7 +1639,7 @@ func TestNetworkPolicy(t *testing.T) {
 func TestMigrationJobSecrets(t *testing.T) {
 	t.Run("R-HA-030 the migration Job mounts no encryption key ring, the replicas do", func(t *testing.T) {
 		eachSet(t, func(t *testing.T, _ string, out string, docs []doc) {
-			job := find(docs, "Job", "trove-migrate")
+			job := find(docs, "Job", "quader-migrate")
 			if job == nil {
 				return // migrations.mode disabled
 			}
@@ -1656,11 +1656,11 @@ func TestMigrationJobSecrets(t *testing.T) {
 			}
 			for _, role := range []string{"api", "packages", "worker"} {
 				found := false
-				for _, m := range list(at(find(docs, "Deployment", "trove-"+role), "spec", "template", "spec"), "containers", "0", "volumeMounts") {
-					found = found || str(m, "mountPath") == "/var/run/secrets/trove/encryption"
+				for _, m := range list(at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec"), "containers", "0", "volumeMounts") {
+					found = found || str(m, "mountPath") == "/var/run/secrets/quader/encryption"
 				}
 				if !found {
-					t.Errorf("trove-%s lost its key ring mount", role)
+					t.Errorf("quader-%s lost its key ring mount", role)
 				}
 			}
 		})

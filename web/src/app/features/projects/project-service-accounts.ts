@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, input, untracked } from '@angular/core';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { IdentityApi, ServiceAccount } from '../../api/identity-api';
@@ -15,12 +15,12 @@ import { ProjectNeeds, createState } from './project-access';
  * identity area; it recognises a project account and offers the project Owner its rights.
  */
 @Component({
-  selector: 'trove-project-service-accounts',
+  selector: 'quader-project-service-accounts',
   imports: [RouterLink, DataTable, ProjectNeeds],
   template: `
-    <trove-project-needs id="needs-project-sas" [state]="state()" capability="identities:write" />
+    <quader-project-needs id="needs-project-sas" [state]="state()" capability="identities:write" />
 
-    <trove-data-table
+    <quader-data-table
       [caption]="caption"
       [columns]="columns"
       [loaded]="list.loaded()"
@@ -46,7 +46,7 @@ import { ProjectNeeds, createState } from './project-access';
           </td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   `,
   styleUrl: '../../shared/access/access.scss',
 })
@@ -54,7 +54,7 @@ export class ProjectServiceAccounts {
   readonly project = input.required<string>();
 
   private readonly api = inject(IdentityApi);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly router = inject(Router);
   private readonly session = inject(SessionStore);
 

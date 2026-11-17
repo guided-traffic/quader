@@ -1,24 +1,24 @@
-<trove-page-header [heading]="username()" [name]="true">
+<quader-page-header [heading]="username()" [name]="true">
   <span meta class="badge" i18n="@@user.heading">User</span>
-</trove-page-header>
-<trove-needs capability="identities:write" />
+</quader-page-header>
+<quader-needs capability="identities:write" />
 
 @if (loadError(); as e) {
-  <trove-error-notice [error]="e" (retry)="load()" />
+  <quader-error-notice [error]="e" (retry)="load()" />
 }
 @if (actionError(); as e) {
-  <trove-error-notice [error]="e" />
+  <quader-error-notice [error]="e" />
 }
 
 @if (user(); as u) {
   <div class="settings">
   <form (submit)="saveAttributes($event)" novalidate>
     @if (editError(); as e) {
-      <trove-error-notice [error]="e" />
+      <quader-error-notice [error]="e" />
     }
     <div class="row">
-      <trove-text-field width="name" i18n-label="@@user.display-name" label="Display name" name="displayName" [(value)]="displayName" [readonly]="!canEdit()" [error]="fieldError('/displayName')" />
-      <trove-text-field width="name" i18n-label="@@user.email" label="Email" name="email" type="email" [(value)]="email" [readonly]="!canEdit()" [error]="fieldError('/email')" />
+      <quader-text-field width="name" i18n-label="@@user.display-name" label="Display name" name="displayName" [(value)]="displayName" [readonly]="!canEdit()" [error]="fieldError('/displayName')" />
+      <quader-text-field width="name" i18n-label="@@user.email" label="Email" name="email" type="email" [(value)]="email" [readonly]="!canEdit()" [error]="fieldError('/email')" />
     </div>
     <p class="muted" i18n="@@user.attributes-note">
       Name and email come from the identity provider and are replaced at the user's next sign-in.
@@ -30,16 +30,16 @@
 
   <form (submit)="saveExternal($event)" novalidate>
     @if (externalError(); as e) {
-      <trove-error-notice [error]="e" />
+      <quader-error-notice [error]="e" />
     }
-    <trove-checkbox
+    <quader-checkbox
       [checked]="external()"
       [disabled]="!canEditExternal()"
       describedBy="external-note"
       (checkedChange)="external.set($event)"
     >
       <ng-container i18n="@@user.external">External user</ng-container>
-    </trove-checkbox>
+    </quader-checkbox>
     <p id="external-note" class="muted" i18n="@@user.external-note">
       Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay hidden.
     </p>
@@ -56,12 +56,12 @@
 
   <form novalidate>
     <div class="row ids">
-      <trove-text-field width="name" i18n-label="@@user.id" label="ID" name="id" [value]="u.id" [readonly]="true" />
-      <trove-text-field width="name" i18n-label="@@user.origin" label="Origin" name="origin" [value]="originLabel(u.origin)" [readonly]="true" />
+      <quader-text-field width="name" i18n-label="@@user.id" label="ID" name="id" [value]="u.id" [readonly]="true" />
+      <quader-text-field width="name" i18n-label="@@user.origin" label="Origin" name="origin" [value]="originLabel(u.origin)" [readonly]="true" />
     </div>
   </form>
 
-  <trove-disclosure
+  <quader-disclosure
     i18n-heading="@@user.details"
     heading="Details"
     i18n-hint="@@user.details-hint"
@@ -70,7 +70,7 @@
     <dl class="facts">
       <dt i18n="@@user.avatar">Avatar</dt>
       <dd>
-        <trove-avatar class="user-avatar" aria-hidden="true" [seed]="u.id" [imageUrl]="u.avatarUrl" />
+        <quader-avatar class="user-avatar" aria-hidden="true" [seed]="u.id" [imageUrl]="u.avatarUrl" />
         @if (u.avatarUrl && canWrite()) {
           <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="removeAvatar()">
             <ng-container i18n="@@user.remove-avatar">Remove avatar</ng-container>
@@ -110,9 +110,9 @@
     @if (session.has('audit:read')) {
       <p><a class="btn btn-tertiary" routerLink="/admin/audit" [queryParams]="{ actor: u.username }" i18n="@@user.audit">Audit log of this user</a></p>
     }
-  </trove-disclosure>
+  </quader-disclosure>
 
-  <trove-disclosure i18n-heading="@@user.identities" heading="Identities" i18n-hint="@@user.identities-hint" hint="The identity providers linked to this user.">
+  <quader-disclosure i18n-heading="@@user.identities" heading="Identities" i18n-hint="@@user.identities-hint" hint="The identity providers linked to this user.">
     @if (u.identities.length === 0) {
       <p i18n="@@user.no-identities">No identity provider is linked.</p>
     } @else {
@@ -129,9 +129,9 @@
         }
       </ul>
     }
-  </trove-disclosure>
+  </quader-disclosure>
 
-  <trove-disclosure i18n-heading="@@user.groups" heading="Groups" i18n-hint="@@user.groups-hint" hint="Group memberships and where each comes from.">
+  <quader-disclosure i18n-heading="@@user.groups" heading="Groups" i18n-hint="@@user.groups-hint" hint="Group memberships and where each comes from.">
     @if (u.groupClaimMissing; as missing) {
       <p role="status" class="warn">
         <span class="material-icons" aria-hidden="true">warning</span>
@@ -172,32 +172,32 @@
     }
     @if (canWrite() && editable()) {
       <form class="toolbar" (submit)="addGroup($event)">
-        <trove-text-field width="name" i18n-label="@@user.add-group" label="Add to group" name="group" [(value)]="newGroup" />
+        <quader-text-field width="name" i18n-label="@@user.add-group" label="Add to group" name="group" [(value)]="newGroup" />
         <button class="btn btn-confirm" type="submit" [disabled]="busy() || newGroup().trim() === ''" i18n="@@user.add-group-submit">Add</button>
       </form>
     }
-  </trove-disclosure>
+  </quader-disclosure>
 
   @if (session.has('roles:read')) {
-    <trove-principal-roles [principal]="'user:' + u.username" />
+    <quader-principal-roles [principal]="'user:' + u.username" />
   }
 
   <!-- A quiet section like its siblings, opened when the user holds a token and never closed by itself (Q-UI-333). -->
   @if (session.has('tokens:read')) {
-    <trove-disclosure
+    <quader-disclosure
       i18n-heading="@@user.tokens"
       heading="Tokens"
       i18n-hint="@@user.tokens-hint"
       hint="The personal tokens of this user."
       [expanded]="tokens()?.heldTokens() ?? false"
     >
-      <trove-token-manager [scope]="scope()" [revokeAllHere]="false" />
-    </trove-disclosure>
+      <quader-token-manager [scope]="scope()" [revokeAllHere]="false" />
+    </quader-disclosure>
   }
 
-  <trove-disclosure i18n-heading="@@user.sessions" heading="Sessions" i18n-hint="@@user.sessions-hint" hint="Open sessions of this user.">
+  <quader-disclosure i18n-heading="@@user.sessions" heading="Sessions" i18n-hint="@@user.sessions-hint" hint="Open sessions of this user.">
     @if (sessionError(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     }
     @if (sessions(); as list) {
       @if (list.length === 0) {
@@ -231,10 +231,10 @@
         }
       }
     }
-  </trove-disclosure>
+  </quader-disclosure>
 
   @if ((canWrite() && editable()) || (locked() && session.has('content:bypass')) || tokens()?.offersRevokeAll()) {
-    <trove-disclosure
+    <quader-disclosure
       i18n-heading="@@user.advanced"
       heading="Advanced"
       [hint]="advancedHint()"
@@ -266,7 +266,7 @@
       @if (isSelf()) {
         <p id="self-guard" class="muted" i18n="@@user.self-guard">You cannot disable or delete your own account.</p>
       }
-    </trove-disclosure>
+    </quader-disclosure>
   }
   </div>
 }

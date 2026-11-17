@@ -8,9 +8,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The rows of the CI issuers: the mapping between the queries of ci_issuers.sql and [Issuer], and the
@@ -199,7 +199,7 @@ func recordOf(is Issuer) *record {
 }
 
 // sameSettings reports whether two issuers have the same settings, ignoring the version, the
-// timestamps and the read-only members: `trove migrate` leaves an issuer alone when the configuration
+// timestamps and the read-only members: `quader migrate` leaves an issuer alone when the configuration
 // still declares exactly what is stored.
 func sameSettings(a, b Issuer) bool {
 	ra, rb := recordOf(a), recordOf(b)

@@ -34,17 +34,17 @@ func TestR_BAS_001_TheRoleOpensNoConnectionToPostgreSQL(t *testing.T) {
 	}()
 	host, port, _ := net.SplitHostPort(trap.Addr().String())
 	for k, v := range map[string]string{
-		"PGHOST": host, "PGPORT": port, "PGDATABASE": "trove", "PGUSER": "trove", "PGPASSWORD": "x",
-		"DATABASE_URL": "postgres://trove:x@" + trap.Addr().String() + "/trove",
+		"PGHOST": host, "PGPORT": port, "PGDATABASE": "quader", "PGUSER": "quader", "PGPASSWORD": "x",
+		"DATABASE_URL": "postgres://quader:x@" + trap.Addr().String() + "/quader",
 	} {
 		t.Setenv(k, v)
 	}
 	environ := []string{
-		"TROVE_POD_NAME=trove-bastion-test", "TROVE_DATABASE_HOST=" + host, "TROVE_DATABASE_PORT=" + port,
-		"TROVE_DATABASE_NAME=trove", "TROVE_DATABASE_USER=trove",
+		"QUADER_POD_NAME=quader-bastion-test", "QUADER_DATABASE_HOST=" + host, "QUADER_DATABASE_PORT=" + port,
+		"QUADER_DATABASE_NAME=quader", "QUADER_DATABASE_USER=quader",
 	}
 
-	// The configuration loader refuses a TROVE_DATABASE_* setting for the role (R-BAS-002); the process
+	// The configuration loader refuses a QUADER_DATABASE_* setting for the role (R-BAS-002); the process
 	// environment and the server's own environment still carry the address, so a pool opened by mistake
 	// would find it.
 	loaded, err := load(t, minimal(writeTokenFile(t, t.TempDir()), ""))
@@ -71,7 +71,7 @@ func TestR_BAS_001_TheRoleOpensNoConnectionToPostgreSQL(t *testing.T) {
 		t.Fatalf("the role opened %d connections to the PostgreSQL address", n)
 	}
 	body := metricsBody(t, srv)
-	for _, banned := range []string{"trove_db_", "pgx", "trove_postgres"} {
+	for _, banned := range []string{"quader_db_", "pgx", "quader_postgres"} {
 		if strings.Contains(body, banned) {
 			t.Errorf("the role's metrics carry %q:\n%s", banned, grepLines(body, banned))
 		}

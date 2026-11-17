@@ -3,9 +3,9 @@ package authz
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The reach of a subject on a repository: whether the subject may read the whole of it, something of it, or

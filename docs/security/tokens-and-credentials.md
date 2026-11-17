@@ -14,8 +14,8 @@ invalid one is a 401 that never falls through to a lower source or to anonymous:
 | Order | Source | Rule |
 |---|---|---|
 | 1 | `X-NuGet-ApiKey: <token>` or `<any>:<token>` | Only on a route that declares the API key (`Route.APIKey`: NuGet's push, delete, relist and symbol push) and only while `auth.clients.nuget_api_key_header` is on. The value, or its part after the last `:`, must pass the syntax step to be a credential; any other value (the placeholder `az`) is ignored and order 2 applies. A token there decides over `Authorization`, even of another principal. |
-| 2 | `Authorization: Bearer <token>` or `Basic base64(<any>:<token>)` | The value must be a trove token (prefix, length 57, base62, CRC-32). A JWT, an identity-provider token or a password, the break-glass password included, is refused at the syntax step without a database query. The Basic username is recorded and ignored. `auth.clients.basic.enabled: false` refuses Basic. Below `/v2/` a `Bearer` value with the prefix `trv_rgt_` is a registry token, verified as [oci-registry.md](oci-registry.md#verification) describes; the token service `/v2/_token` presents its credential to the stage itself. |
-| 3 | Session cookie `__Host-trv_session` | Only where the endpoint's surface holds `ui` and the path allows it (`/api/v1/` all methods, `/files/` GET HEAD PUT DELETE, `/api/<format>/` GET HEAD), and never on a route that declares the API key, whatever its method; CSRF is the session validator's. A replica without a session validator ignores the cookie. |
+| 2 | `Authorization: Bearer <token>` or `Basic base64(<any>:<token>)` | The value must be a Quader token (prefix, length 57, base62, CRC-32). A JWT, an identity-provider token or a password, the break-glass password included, is refused at the syntax step without a database query. The Basic username is recorded and ignored. `auth.clients.basic.enabled: false` refuses Basic. Below `/v2/` a `Bearer` value with the prefix `qdr_rgt_` is a registry token, verified as [oci-registry.md](oci-registry.md#verification) describes; the token service `/v2/_token` presents its credential to the stage itself. |
+| 3 | Session cookie `__Host-qdr_session` | Only where the endpoint's surface holds `ui` and the path allows it (`/api/v1/` all methods, `/files/` GET HEAD PUT DELETE, `/api/<format>/` GET HEAD), and never on a route that declares the API key, whatever its method; CSRF is the session validator's. A replica without a session validator ignores the cookie. |
 | 4 | none | Anonymous if the endpoint admits requests without a credential (`auth.anonymous`, R-EP-010), and never an unsafe method on `/api/v1/`; or a route that is always open or declared public. What the anonymous subject then reads is decided by the visibility levels ([visibility.md](visibility.md)), not by the stage. |
 
 The path rules read two forms of the path (`rulePaths` in [stage.go](../../internal/auth/stage.go)). The rules that limit a
@@ -30,9 +30,9 @@ The stage runs before the dispatcher, so it learns whether a request reaches an 
 Q-AUTH-186): the endpoint's surface, the prefix, the key shape, the clean path and the format's `Match`. The header is therefore
 not a credential on a download, a document, the management API, `/files/`, or an endpoint without the package surface. A token
 in the header passes the endpoint's token rules, the throttle and the last-use record exactly like a Bearer token; the
-principal's method is `api_key` in the audit event and `nuget_apikey` in the request log and `trove_auth_attempts_total`. The
+principal's method is `api_key` in the audit event and `nuget_apikey` in the request log and `quader_auth_attempts_total`. The
 cookie rule makes a cross-site `POST` relist from a signed-in browser unauthenticated (Q-AUTH-187). A page cannot send
-`X-NuGet-ApiKey` across sites either: the header needs a CORS preflight, and trove answers preflights only under `/api/v1/` and
+`X-NuGet-ApiKey` across sites either: the header needs a CORS preflight, and Quader answers preflights only under `/api/v1/` and
 never allows that header ([cors.go](../../internal/api/v1/cors.go)); a page would also need the token itself.
 
 The GitLab job-token extension point is not evaluated; no credential is read from a query parameter or a path. An exchange
@@ -95,7 +95,7 @@ succeeded, so a bound token that is refused on the wrong endpoint, or whose owne
 (Q-AUTH-180). The time is capped at the database's clock, so a replica with a fast clock cannot freeze the column; the shutdown waits for the
 batch the loop is writing before the final flush. The client address is the one the trusted-proxy rule of the chain
 resolved (a forwarded header from a peer outside `server.trusted_proxies` is not believed), with an IPv6 zone removed because the
-`inet` column cannot hold it. A failed flush is dropped and counted in `trove_auth_lastused_flush_failures_total`; a replica killed
+`inet` column cannot hold it. A failed flush is dropped and counted in `quader_auth_lastused_flush_failures_total`; a replica killed
 without a drain loses the uses of its last minute, so the time and address are approximate evidence of a use, which is what
 [H-19](../spec/identity-and-authentication.md#h-19--tokens-are-bearer-credentials) asks of it, and not an audit record: the audit trail
 holds the rejections and the content events, not every successful use. The filter `lastUsedBefore` and the token screens read
@@ -155,11 +155,11 @@ the declarations are in `api/openapi.yaml` (Q-AUTH-43).
   another user's PAT is never rotated, only revoked. A service-account token is created by an administrator, or by a token of that account
   under the derivation rule; the answer for anyone else is the same `403` whether the account exists or not.
 - **A session that mints a credential proves a recent sign-in.** Creating a PAT or SAT, rotating through a session and changing the
-  authentication settings declare `x-trove-recent-auth: true`; the shared authorization step answers `401 reauthentication_required` when
+  authentication settings declare `x-quader-recent-auth: true`; the shared authorization step answers `401 reauthentication_required` when
   `authenticated_at` is older than `auth.sessions.recent_auth_window`, after the permission was decided (R-AUTH-011, R-API-007,
   Q-API-40). A token caller is not asked: its limits are the derivation rule's.
 - **A narrowed token does not act on its owner's account.** A scope is a ceiling on the owner's rights (R-AUTH-024) and names no right
-  over the owner's profile. The operations on the caller's own account declare `x-trove-owner-rights: required` (`setAvatar`,
+  over the owner's profile. The operations on the caller's own account declare `x-quader-owner-rights: required` (`setAvatar`,
   `removeAvatar`, `updatePreferences`, `listOwnSessions`, `endOwnSession`, `endOwnSessions`, `revokeOwnTokens`); the shared authorization
   step answers `403 forbidden` for a token whose scope has `inherit: false` (also with `admin: true`) before the handler runs, and a session
   and a token with `inherit: true` pass (Q-API-214, [authorize.go](../../internal/api/v1/authorize.go)). A test walks the document, so an
@@ -225,7 +225,7 @@ setup answer into a token, which is the one place where the UI handles a token v
 
 - **The server never fills a token.** The setup answer carries `{{token}}`, `${<ui.client_setup.token_env_var>}` or no authentication line, by the request's
   `credentials` (R-API-030). The templates have no field a token could come from (`formats.SetupData`), a `package`, `version` or `scope` in the
-  shape of a token is refused with `400` instead of being echoed, and every snippet is checked for `trv_(pat|sat|cit)_` before it is sent
+  shape of a token is refused with `400` instead of being echoed, and every snippet is checked for `qdr_(pat|sat|cit)_` before it is sent
   ([packages_api.go](../../internal/api/v1/packages_api.go); `TestR_API_030_ClientSetupNeverHoldsAToken`, 144 answers over every client, mode and
   caller). The addresses are built on the configured base URL, never on the `Host` of the request: without a base URL the operation answers `503`. The browser replaces the placeholder in the component (`fillToken`, a literal replacement) and nowhere else.
 - **One owner, no copy.** A created or pasted value is a private signal of the page component. It is in no service, no URL and no
@@ -245,13 +245,13 @@ setup answer into a token, which is the one place where the UI handles a token v
 - **The install command panel (R-UI-009) asks for `credentials=none`**, so a command copied from a package page cannot contain a token.
 - **A guide never holds a token** (R-UI-049, R-API-053, Q-API-176). Its snippets are rendered by the setup's code with `credentials=env`, or
   `none` for an anonymous reader, so they hold the variable's reference or no authentication line; the reference in a section's text is
-  rewritten the same way, every answer is checked for `trv_(pat|sat|cit)_` before it is sent (`TestR_API_053_NoGuideHoldsAToken`), and
+  rewritten the same way, every answer is checked for `qdr_(pat|sat|cit)_` before it is sent (`TestR_API_053_NoGuideHoldsAToken`), and
   kit check 8 refuses a format whose guide spells a credential in a code block. The guide tells readers never to commit a file that holds a
   token; that a downloaded file with a token can still be committed is [H-319](../spec/api-and-ui.md#h-319--a-configuration-file-that-holds-a-token-can-be-committed).
 - **README HTML is bound, not trusted.** The README component ([package-readme.ts](../../web/src/app/features/packages/package-readme.ts),
   Q-UI-71) binds server HTML with `[innerHTML]` under Angular's sanitizer and the document's Trusted Types policy, removes a link target that
   is not a fragment, `http`, `https` or `mailto`, removes an image source that is not `https` or a path of this origin, and puts
-  `rel="nofollow noopener noreferrer"` on every link that leaves trove (`package-readme.spec.ts` carries the vectors). The server-side sanitizer
+  `rel="nofollow noopener noreferrer"` on every link that leaves Quader (`package-readme.spec.ts` carries the vectors). The server-side sanitizer
   of R-UI-008 is the first layer ([render.go](../../internal/packages/readme/render.go): goldmark, bluemonday with the allowlist, a pass for links, images,
   checkboxes and heading anchors; `TestR_UI_008_XSSCorpusRendersNothingExecutable`); this page describes the browser's part.
   One exception, for the binary's own text only: the manual (R-API-054) is rendered with `RenderLinked`, which turns its relative `.md`
@@ -290,7 +290,7 @@ A project service account has no group, no role and only its project's policies,
 
 ## CI tokens
 
-A CI token (`trv_cit_`) has the format, the hashing, the validation and the cache of every token; what differs is where it comes from and
+A CI token (`qdr_cit_`) has the format, the hashing, the validation and the cache of every token; what differs is where it comes from and
 what it carries ([R-CI-017](../spec/gitlab-ci-oidc.md#r-ci-017--ci-token-identity-presentation-and-revocation)):
 
 | Property | Rule | Where |
@@ -306,7 +306,7 @@ What a CI token may do with its grants, and how it owns package names, is [ci-fe
 
 ## Bastion tokens
 
-A Bastion token (`trv_bst_`) has the format, the hashing and the cache of every token and belongs to a Bastion registration, a principal that
+A Bastion token (`qdr_bst_`) has the format, the hashing and the cache of every token and belongs to a Bastion registration, a principal that
 holds no grant ([R-BAS-004](../spec/bastion.md#r-bas-004--bastion-registrations-and-the-bastion-token-on-the-main-installation),
 [R-BAS-005](../spec/bastion.md#r-bas-005--what-the-bastion-token-can-do)). The whole page of the Bastion is [bastion.md](bastion.md); what
 differs from the tokens above:
@@ -315,7 +315,7 @@ differs from the tokens above:
 |---|---|---|
 | presentation | refused on every route but the Bastion interface, as `Authorization: Bearer`, as the Basic password and as `X-NuGet-ApiKey`: `401 invalid_token` of an unknown token, counted against the client address, before the cache and the token table are asked (`TestR_BAS_005_ABastionTokenIsNoCredentialOnAnyOtherRoute` shows that no database call happens) | `Service.Check` ([validate.go](../../internal/auth/token/validate.go)) |
 | `auth.token_types` | `bst` stops start-up and names the key: no list of accepted types can widen the rule | [endpoints.go](../../internal/config/endpoints.go) |
-| issuance | an administrator holding `endpoints:write`, through `POST /api/v1/bastions/{name}/tokens` or `trove admin bastion token create`; always expires (`ttlSeconds` from 60 up to `auth.tokens.bst.max_ttl`, else `400 invalid_ttl`); at most `auth.tokens.max_active_per_principal.bst` unrevoked tokens per registration, counted under the lock of the registration's principal row; the value only in the answer | [bastion.go](../../internal/auth/token/bastion.go) |
+| issuance | an administrator holding `endpoints:write`, through `POST /api/v1/bastions/{name}/tokens` or `quader admin bastion token create`; always expires (`ttlSeconds` from 60 up to `auth.tokens.bst.max_ttl`, else `400 invalid_ttl`); at most `auth.tokens.max_active_per_principal.bst` unrevoked tokens per registration, counted under the lock of the registration's principal row; the value only in the answer | [bastion.go](../../internal/auth/token/bastion.go) |
 | scope | none: what the token may do is fixed by its type; its scope column holds the default document and is never evaluated | `AuthenticateBastion` |
 | management API | the token API neither lists nor reads nor revokes it (`404`); `/bastions/{name}/tokens` does, and `tokens:revoke` alone suffices to revoke one | [identity.sql](../../internal/meta/postgres/queries/identity.sql), [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go) |
 | validation on the interface | the replica's `auth_tokens` cache while the change log is fresh, then, unless the sending address is in throttled mode (asked after the cache, R-AUTH-038), `BastionTokenBySecret`; a rejected token counts against the address that sent it; a revoked or expired token logs `token.rejected` once an hour with the request's source; the last use records the Bastion's own address; a disabled or deleted registration and a revocation are in force within `auth.revocation_bound` | `AuthenticateBastion`; [H-436](../spec/bastion.md#h-436--deleting-a-registration-deletes-its-token-rows-so-a-later-use-of-a-deleted-token-is-unknown-and-not-logged), [H-437](../spec/bastion.md#h-437--a-bastion-tokens-last-use-is-one-value-per-token-at-the-granularity-of-the-last-used-buffer) |
@@ -326,10 +326,10 @@ differs from the tokens above:
 The gaps of the spec pages whose mechanism this page describes:
 
 - [H-19](../spec/identity-and-authentication.md#h-19--tokens-are-bearer-credentials): tokens are bearer credentials.
-- [H-16](../spec/identity-and-authentication.md#h-16--idp-side-deactivation-without-scim): a deactivation at the identity provider does not reach trove's tokens and sessions without SCIM.
-- [H-44](../spec/api-and-ui.md#h-44--credentials-displayed-in-the-browser-are-outside-troves-control): credentials displayed in the browser are outside trove's control.
+- [H-16](../spec/identity-and-authentication.md#h-16--idp-side-deactivation-without-scim): a deactivation at the identity provider does not reach Quader's tokens and sessions without SCIM.
+- [H-44](../spec/api-and-ui.md#h-44--credentials-displayed-in-the-browser-are-outside-quaders-control): credentials displayed in the browser are outside Quader's control.
 - [H-319](../spec/api-and-ui.md#h-319--a-configuration-file-that-holds-a-token-can-be-committed): a configuration file that holds a token can be committed.
-- [H-320](../spec/api-and-ui.md#h-320--a-guide-can-state-what-trove-no-longer-does): a guide can state what trove no longer does.
+- [H-320](../spec/api-and-ui.md#h-320--a-guide-can-state-what-quader-no-longer-does): a guide can state what Quader no longer does.
 - [H-321](../spec/api-and-ui.md#h-321--an-anonymous-reader-learns-the-token-variables-name-from-the-guide-of-a-format): an anonymous reader learns the token variable's name from the guide of a format.
 
 ### H-82 · Rejected credentials of one address are counted together
@@ -355,7 +355,7 @@ localhost).
 ### H-85 · Group names from the login flow are applied as given
 
 Component: `principal.PGProvisioner`, subject: group memberships of an OIDC user. Live for every provider. The provisioner
-takes `LoginClaims.Groups` as the trove group names that the provider's mapping rules produced and creates a missing group
+takes `LoginClaims.Groups` as the Quader group names that the provider's mapping rules produced and creates a missing group
 with origin `oidc` when `CreateGroups` is set; it cannot tell a mapped name from a name the claim controls. A group that
 carries an administrator role binding therefore gives that role to whoever the identity provider puts into the mapped
 group, as the trust in the group-sync rules on [permissions.md](permissions.md#role-bindings-from-the-configuration) and the
@@ -398,10 +398,10 @@ to push with an API key shows it; one credential per client avoids it.
 Component: `createServiceAccountToken` for a project service account. Subject: the active-token limit and the lifetime of the tokens of one
 project. Live for every project that has an Owner. A token issued by a project Owner is bounded by the installation's
 `auth.tokens.sat` maximum lifetime and `max_active` count for the account, as every service-account token is; there is no limit per
-project, no approval and no notice to an administrator of trove beyond the `token.created` event (which carries `project`). A project
+project, no approval and no notice to an administrator of Quader beyond the `token.created` event (which carries `project`). A project
 Owner can therefore keep an account's credentials alive for the full maximum by issuing a new token before the old one ends, as
 long as it is an Owner. What makes it real: a project whose Owner is not trusted to renew credentials. Taking the Owner role away stops the issue; a
-project service account is deleted or disabled by an Owner or by an administrator of trove.
+project service account is deleted or disabled by an Owner or by an administrator of Quader.
 
 ### H-401 · The repository grants of a delegated token are not checked against the project
 

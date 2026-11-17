@@ -57,7 +57,7 @@ for (const screen of screens) {
         await page.goto(screen.path);
         // A phone's scrollbars lie over the content and take no room: so they do in the phone's pictures. A page that is not
         // the app (the dev server's own answer) refuses the style and keeps its scrollbars.
-        if (width < 600 && (await page.locator('trove-root').count()) > 0) {
+        if (width < 600 && (await page.locator('quader-root').count()) > 0) {
           await page.addStyleTag({ content: '* { scrollbar-width: none; }' });
         }
         if (process.env['UI_RENDERS_DEBUG']) console.log(`goto: ${Date.now() - t0} ms`);
@@ -182,7 +182,7 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
     const doc = document.scrollingElement;
     const overflowX = Math.max(main ? main.scrollWidth - main.clientWidth : 0, doc ? doc.scrollWidth - doc.clientWidth : 0);
     const addressWidths = Array.from(document.querySelectorAll('main table'))
-      .map((t) => Array.from(t.querySelectorAll('trove-address-field input')).map((i) => Math.round(i.getBoundingClientRect().width)))
+      .map((t) => Array.from(t.querySelectorAll('quader-address-field input')).map((i) => Math.round(i.getBoundingClientRect().width)))
       .filter((w) => w.length > 0);
     let offender: { what: string; overflowX: number } | null = null;
     if (overflowX > 1 && main) {
@@ -270,7 +270,7 @@ function watch(page: Page, screen: Screen): { notices: string[]; list(): string[
 
 /** An error notice on the screen is a failure, whatever caused it. */
 async function errorNotices(page: Page, width: number, tab: string | null): Promise<string[]> {
-  const texts = await page.locator('main trove-error-notice').allTextContents();
+  const texts = await page.locator('main quader-error-notice').allTextContents();
   const where = `${tab ? `tab ${tab}, ` : ''}${width} px`;
   return texts.map((t) => `error notice (${where}): ${t.replace(/\s+/g, ' ').trim().slice(0, 200)}`);
 }

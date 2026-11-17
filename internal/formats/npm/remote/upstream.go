@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Accept is the Accept header of a document request: the full document, the form

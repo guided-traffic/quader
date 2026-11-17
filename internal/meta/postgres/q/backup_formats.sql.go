@@ -113,7 +113,7 @@ type BackupNPMReplayRepositoryRow struct {
 }
 
 // The statements of the formats' parts of backups and restores (internal/formatdata/npm and internal/formatdata/nuget;
-// R-NPM-047, R-NUGET-033, R-BAK-008): the journal replay of unpublishes, publishes and deletes, `trove admin npm
+// R-NPM-047, R-NUGET-033, R-BAK-008): the journal replay of unpublishes, publishes and deletes, `quader admin npm
 // reinstate` and the purge of remote caches. The packages are domain packages and import no driver types, so a time
 // travels as text and is cast to timestamptz here, a principal id as text cast to uuid.
 // The npm local repository a journal entry names. An entry about any other repository (a forged one included) finds
@@ -373,7 +373,7 @@ type BackupRepositoryByRefRow struct {
 	Class  string
 }
 
-// A repository by its project key and its key, for the commands that name one (`trove admin npm reinstate`).
+// A repository by its project key and its key, for the commands that name one (`quader admin npm reinstate`).
 func (q *Queries) BackupRepositoryByRef(ctx context.Context, arg BackupRepositoryByRefParams) ([]BackupRepositoryByRefRow, error) {
 	rows, err := q.db.Query(ctx, backupRepositoryByRef, arg.ProjectKey, arg.RepoKey)
 	if err != nil {

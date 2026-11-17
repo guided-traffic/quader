@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // AreaOwnership is package ownership.

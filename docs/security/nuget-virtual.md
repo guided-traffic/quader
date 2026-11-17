@@ -11,7 +11,7 @@ question on every road is which members take part for this caller and which repo
 addressed, the virtual one (`rq.Addressed()`), for exposure and for the scope of a token; the member decides the grants. The routing of virtual
 repositories (patterns, claims, pin rules) is on [repository-model.md](repository-model.md), the decision point and the token scope on
 [permissions.md](permissions.md) and [tokens-and-credentials.md](tokens-and-credentials.md), the exposure rules on
-[endpoints-and-exposure.md](endpoints-and-exposure.md), and what a remote member's upstream can make trove do on [nuget-remote.md](nuget-remote.md). The
+[endpoints-and-exposure.md](endpoints-and-exposure.md), and what a remote member's upstream can make Quader do on [nuget-remote.md](nuget-remote.md). The
 requirements are R-NUGET-017 to R-NUGET-019 and R-NUGET-034 in [spec/formats/nuget.md](../spec/formats/nuget.md) and R-AUTHZ-009 in
 [spec/authorization.md](../spec/authorization.md); the code is [handlers_virtual.go](../../internal/formats/nuget/handlers_virtual.go),
 [search_virtual.go](../../internal/formats/nuget/search_virtual.go), the bridge [formathost/virtual.go](../../internal/formathost/virtual.go) and the

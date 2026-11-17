@@ -3,9 +3,9 @@
 Status: specification — not implemented (phase T-16, FULL.md block B F4): local, remote (modes `pullThrough` and `mirror`) and
 virtual repositories for container images and other OCI content, Docker CLI and Podman as tested clients
 
-This page specifies how trove serves container images: the OCI distribution API under `/v2/` for local, remote and virtual
+This page specifies how Quader serves container images: the OCI distribution API under `/v2/` for local, remote and virtual
 repositories of the format `oci`, which serves Docker image manifests and OCI manifests alike; the registry's token service and
-how it maps onto trove tokens and permissions; blob uploads over several requests and replicas; manifests, image indexes and
+how it maps onto Quader tokens and permissions; blob uploads over several requests and replicas; manifests, image indexes and
 multi-platform images; tags, digests and the referrers API; deletion and the collection of unreferenced blobs; proxying Docker
 Hub and other registries, in both modes of a remote repository; what a mirror of a registry discovers and keeps; virtual
 resolution of image names; the bound host of a Docker Engine mirror; the limits on untrusted content; operation on
@@ -36,16 +36,16 @@ External references, normative wherever this page does not say otherwise:
 
 | Placeholder | Meaning |
 |---|---|
-| `<base>` | trove's public base URL of the endpoint the request arrived on; `https://trove.example.com` in examples (# example) |
-| `<host>` | the host (and port) of `<base>`: `trove.example.com` (# example) |
+| `<base>` | Quader's public base URL of the endpoint the request arrived on; `https://quader.example.com` in examples (# example) |
+| `<host>` | the host (and port) of `<base>`: `quader.example.com` (# example) |
 | `<name>` | an image name in the OCI grammar, below the repository: `library/nginx`, `app` (# example) |
 | `<ref>` | a tag or a digest |
-| `$TOKEN` | a trove token (`trv_pat_…`, `trv_sat_…` or `trv_cit_…`, INV-8) |
+| `$TOKEN` | a Quader token (`qdr_pat_…`, `qdr_sat_…` or `qdr_cit_…`, INV-8) |
 
 Project and repository keys used in examples (# example): the project `web` with `docker-local` (local), `docker-hub` (remote of
 Docker Hub, mode `pullThrough`), `docker-hub-mirror` (remote of Docker Hub, mode `mirror`) and `docker` (virtual over
 `docker-local` and `docker-hub`, deploy target `docker-local`). An image reference therefore reads
-`trove.example.com/web/docker/library/nginx:1.29`: registry host, project key, repository key, image name, tag.
+`quader.example.com/web/docker/library/nginx:1.29`: registry host, project key, repository key, image name, tag.
 
 Priorities: every requirement below is **P1** (block B of the roadmap) unless it says otherwise; what this phase leaves to F4 is
 in [Deferred](#deferred).
@@ -55,7 +55,7 @@ in [Deferred](#deferred).
 ### R-OCI-001 · The format `oci`, its classes and the registry address
 Priority: **P1** · Covers: PKG-DOCKER-001, PKG-DOCKER-004, PKG-DOCKER-005, PKG-DOCKER-006, PKG-DOCKER-016, PKG-OCI-001, PKG-OCI-005
 
-trove MUST offer the format `oci` for all three repository classes of INV-5. One format serves Docker images (Docker image
+Quader MUST offer the format `oci` for all three repository classes of INV-5. One format serves Docker images (Docker image
 manifest v2 schema 2 and the Docker manifest list) and OCI content (image manifests, image indexes and artifacts of any type);
 there is no separate Docker format and no per-repository protocol version: every repository speaks the OCI distribution API,
 which is a superset of the Docker registry HTTP API V2 (Q-OCI-1).
@@ -103,7 +103,7 @@ Acceptance criteria:
 
 - `curl -s <base>/api/v1/formats | jq '.[] | select(.name=="oci")'` lists the classes `local`, `remote`, `virtual`, the
   protocol base path `/v2/{project}/{key}/` and the four upstream presets above, `docker-hub` the default.
-- `docker push trove.example.com/web/docker-local/app:1` followed by `docker pull trove.example.com/web/docker/app:1` on
+- `docker push quader.example.com/web/docker-local/app:1` followed by `docker pull quader.example.com/web/docker/app:1` on
   another machine succeeds.
 - `GET /v2/web/nope/app/manifests/1`, `GET /v2/nope/docker-local/app/manifests/1` and `GET /v2/web/docker-local` each answer
   404 with an OCI error body whose code is `NAME_UNKNOWN`.
@@ -182,7 +182,7 @@ The registry uses the token flow of the Docker registry token authentication spe
 1. A request without a credential that needs one, and the version check, answer 401 with
    `WWW-Authenticate: Bearer realm="<base>/v2/_token",service="<host>"`; on a repository route the challenge adds
    `scope="repository:<full name>:<actions>"` naming what the request needs, so the client asks for the right token.
-2. The client calls `GET <base>/v2/_token?service=<host>&scope=…` with `Authorization: Basic base64(<user>:<trove token>)`, or
+2. The client calls `GET <base>/v2/_token?service=<host>&scope=…` with `Authorization: Basic base64(<user>:<quader token>)`, or
    without credentials for an anonymous token. `POST /v2/_token` with the form fields `grant_type=password`, `username`,
    `password`, `service`, `scope` and `client_id` (the OAuth 2.0 form that containerd tries first) is answered the same way. A
    `POST` carries its credential in the form only: a form without `grant_type` or without `password`, a form that is not
@@ -192,20 +192,20 @@ The registry uses the token flow of the Docker registry token authentication spe
    R-OCI-008 with the code `UNSUPPORTED` and, in the same object, the members `error` and `error_description` of
    [RFC 6749](https://www.rfc-editor.org/rfc/rfc6749) §5.2 (Q-OCI-52).
 3. The token service authenticates the credential through the authentication stage of R-AUTH-001 (the Basic user name is
-   recorded and ignored, INV-8): an invalid one answers 401 `UNAUTHORIZED` with `WWW-Authenticate: Basic realm="trove"`;
+   recorded and ignored, INV-8): an invalid one answers 401 `UNAUTHORIZED` with `WWW-Authenticate: Basic realm="quader"`;
    none yields the anonymous principal where the endpoint allows anonymous requests (R-AUTH-037, R-EP-010), else 401. The
    chain does not authenticate `/v2/_token`: the token service presents the one credential of the request, the
    `Authorization` header or the form's password, to the stage itself, which applies every rule of R-AUTH-001 and of the
    endpoint to it (Q-OCI-51). A registry token is no credential of the token service, so a registry token cannot renew itself.
-   The form's password is a Basic presentation of the trove token: with `auth.clients.basic.enabled: false` the token service
+   The form's password is a Basic presentation of the Quader token: with `auth.clients.basic.enabled: false` the token service
    refuses it like a `GET` with `Basic`, and no registry client gets a token (Q-OCI-57).
 4. It grants per scope entry the actions the caller may perform (R-OCI-006) and answers 200 with
    `{"token": "<registry token>", "access_token": "<the same>", "expires_in": <seconds>, "issued_at": "<RFC 3339>"}`. A
    partial or empty grant is not an error. No refresh token is issued, whatever `offline_token` says, so Docker stores the
-   trove token itself as it does for any registry without refresh tokens.
+   Quader token itself as it does for any registry without refresh tokens.
 5. The client repeats the request with `Authorization: Bearer <registry token>`.
 
-- **Direct credentials.** A trove token is also accepted directly on every `/v2/` route, as `Basic` with any user name or as
+- **Direct credentials.** A Quader token is also accepted directly on every `/v2/` route, as `Basic` with any user name or as
   `Bearer` (R-AUTH-001): clients that send credentials up front (`curl -u`, a cloud registry's pass-through repository,
   PKG-DOCKER-052) need no token round trip. The session cookie is not accepted below `/v2/`.
 - **Token requests carry the scope grammar** `repository:<full name>:<action>[,<action>…]` (R-OCI-006). Docker sends one
@@ -219,16 +219,16 @@ The registry uses the token flow of the Docker registry token authentication spe
   (R-AUTHZ-016).
 - **Realm.** The realm is built from the response base URL of the endpoint the request arrived on (R-EP-003), so it is
   reachable under every host the endpoint serves; on a bound host it is that host's own `/v2/_token` (R-EP-007).
-- **Kubernetes** pulls with an image pull secret whose password is a trove token (PKG-DOCKER-015); the kubelet's container
+- **Kubernetes** pulls with an image pull secret whose password is a Quader token (PKG-DOCKER-015); the kubelet's container
   runtime follows the same flow.
 
 Acceptance criteria:
 
-- `echo "$TOKEN" | docker login trove.example.com -u ci --password-stdin` succeeds; `podman login` likewise.
+- `echo "$TOKEN" | docker login quader.example.com -u ci --password-stdin` succeeds; `podman login` likewise.
 - `curl -s "<base>/v2/_token?service=<host>&scope=repository:web/docker-local/app:pull,push" -u x:$TOKEN` for a caller with
   `read` and `deploy` on `web/docker-local` returns a token whose verified grant lists `pull` and `push` for that name; the same
   for a caller with `read` only lists `pull`; with a revoked `$TOKEN` it answers 401.
-- Anonymous: with anonymous `read` on `docker-hub`, `docker pull trove.example.com/web/docker-hub/library/alpine:3` without
+- Anonymous: with anonymous `read` on `docker-hub`, `docker pull quader.example.com/web/docker-hub/library/alpine:3` without
   login succeeds; `docker push` to `docker-local` without login fails with `unauthorized`.
 - `curl -s -X POST <base>/v2/_token -d grant_type=password -d username=x -d password=$TOKEN -d service=<host> -d
   scope=repository:web/docker-local/app:pull` answers 200 with `access_token`.
@@ -240,17 +240,17 @@ Acceptance criteria:
 ### R-OCI-005 · Registry tokens
 Priority: **P1** · Covers: PKG-DOCKER-012
 
-A registry token is a short-lived, self-contained credential that trove issues and verifies itself (Q-OCI-5). It narrows a
+A registry token is a short-lived, self-contained credential that Quader issues and verifies itself (Q-OCI-5). It narrows a
 principal's access; it never widens it.
 
 - **Content.** Version, the key ID of the key that signed it, the principal (kind and ID; the anonymous principal has no ID),
-  the trove token that authenticated the token request, named by its ID, its type and the SHA-256 of its secret (none for
+  the Quader token that authenticated the token request, named by its ID, its type and the SHA-256 of its secret (none for
   anonymous; Q-OCI-50), the endpoint, the issue and expiry times, and the grant: at most 16 entries of qualified repository,
   image name and actions (`pull`, `push`, `delete`), and the catalog entry.
-- **Form.** `trv_rgt_` + base64url(payload) + `.` + base64url(HMAC-SHA-256(key, `trv_rgt_` + base64url(payload))), at most
+- **Form.** `qdr_rgt_` + base64url(payload) + `.` + base64url(HMAC-SHA-256(key, `qdr_rgt_` + base64url(payload))), at most
   4 KiB, base64url without padding ([RFC 4648](https://www.rfc-editor.org/rfc/rfc4648) §5). The payload is `1:<key id>:<claims
   as JSON>`: the key ID stands before the claims, so the verifier finds the key and checks the MAC before it parses anything
-  the client sent (Q-OCI-54). The key is derived with HKDF-SHA-256 from a key of the stored-secret key ring with info `trove
+  the client sent (Q-OCI-54). The key is derived with HKDF-SHA-256 from a key of the stored-secret key ring with info `quader
   registry token v1` (R-ARCH-021): the active key signs, every key of the ring verifies, so a rotation of the ring needs no new
   secret and old tokens end with their lifetime or with the removal of their key from the ring. A grant that does not fit in
   4 KiB is refused with 400 `invalid_request`, never cut. The token is not a reference token (R-AUTH-022): it is never stored,
@@ -323,7 +323,7 @@ The coordinate of every request is the repository, the image name as the package
   `<name>/_tags/<tag>`, a blob `<name>/_blobs/sha256:<hex>`. The tags list and each catalog name are decided on the package
   document `<name>/_taglist`, referrers on the manifest path of their subject; each tag and each referrer is still filtered on its
   own path. A push by tag is decided on the tag path and on the manifest path, and its ownership claim names the tag path (a push by
-  digest the manifest path). A path set that covers the item folders and not `<name>/_taglist` therefore pushes and pulls with a trove token directly, lists
+  digest the manifest path). A path set that covers the item folders and not `<name>/_taglist` therefore pushes and pulls with a Quader token directly, lists
   no tags and is granted no registry token.
 - A grant is a ceiling only; each request is decided again (R-OCI-005). `push` covers `overwrite` as a ceiling; the decision
   point still requires `overwrite` for a moved tag.
@@ -549,7 +549,7 @@ Priority: **P1** · Covers: PKG-DOCKER-019, PKG-OCI-006
   202, saying nothing about whether the source exists (Q-OCI-12).
 - A request that carries a registry token (R-OCI-005) also needs `pull` on the source name in the token's grant: the enforcement
   point checks it before the handler runs and, when the grant lacks it, removes `mount` and `from` from the request, so the handler
-  opens a session and answers 202 as it does for a source the caller may not read (Q-OCI-102). A direct trove token is checked by the
+  opens a session and answers 202 as it does for a source the caller may not read (Q-OCI-102). A direct Quader token is checked by the
   handler alone.
 - The source may be any repository of the format on the same installation the caller can read, a remote's cache included;
   through a virtual source the member resolution of R-OCI-027 applies, without an upstream request.
@@ -649,7 +649,7 @@ Priority: **P1** · Covers: PKG-DOCKER-023, PKG-DOCKER-025
 
 Acceptance criteria:
 
-- `docker buildx build --platform linux/amd64,linux/arm64 -t trove.example.com/web/docker-local/multi:1 --push .` (a `FROM
+- `docker buildx build --platform linux/amd64,linux/arm64 -t quader.example.com/web/docker-local/multi:1 --push .` (a `FROM
   scratch` image, no emulation needed) succeeds; `docker pull --platform linux/arm64 …/multi:1` pulls the arm64 manifest;
   `podman manifest inspect …/multi:1` lists both platforms.
 - `podman manifest create`, `podman build --platform linux/amd64,linux/arm64 --manifest m .` and `podman manifest push --all m
@@ -681,11 +681,11 @@ Priority: **P1** · Covers: PKG-OCI-009, PKG-OCI-010, PKG-OCI-011
 - `?artifactType=<type>` filters and the answer carries `OCI-Filters-Applied: artifactType`.
 - Pages hold at most 1,000 descriptors or 4 MiB; a longer list continues with `Link: <…>; rel="next"`, which repeats the
   `artifactType` filter and carries `last=<digest>`, the digest the page ended at (the list is in digest order). An answer that
-  holds a manifest whose annotations were cut at 64 KiB when it was recorded (R-OCI-007) carries `Trove-Annotations-Cut: true`
+  holds a manifest whose annotations were cut at 64 KiB when it was recorded (R-OCI-007) carries `Quader-Annotations-Cut: true`
   (Q-OCI-70). A manifest the journal replay withheld is not listed (R-OCI-033).
 - The list is read from the rows of R-OCI-007, so concurrent pushes of referrers to one subject never lose one: each push
   inserts its own row.
-- The referrers tag schema (`sha256-<hex>` tags) is not maintained by trove: the API exists from the start, so clients never
+- The referrers tag schema (`sha256-<hex>` tags) is not maintained by Quader: the API exists from the start, so clients never
   fall back to it; a client that pushes such a tag stores an ordinary tag.
 
 Acceptance criteria:
@@ -704,8 +704,8 @@ Priority: **P1** · Covers: PKG-DOCKER-003, PKG-DOCKER-022
 - The data port gives the registry root one page per repository: the image names that hold a manifest row, in byte order after a
   cursor (Q-OCI-75); the root merges the pages of the repositories the caller may read and decides each name.
 - On a bound host the catalog lists the names of the bound repository only, without the prefix.
-- A registry token needs the `registry:catalog:*` grant; a direct trove token needs nothing more than its read grants. The grant
-  opens the route and nothing more: the names are those the caller's trove token may read, not only those the token's other
+- A registry token needs the `registry:catalog:*` grant; a direct Quader token needs nothing more than its read grants. The grant
+  opens the route and nothing more: the names are those the caller's Quader token may read, not only those the token's other
   scope entries name (H-649).
 - `last` is the full name the previous page ended with (on a bound host the name without the prefix) and need not exist; `n` is
   a non-negative integer, 0 is an empty list, a value above 1,000 is 1,000, and anything else is 400 `UNSUPPORTED`. The
@@ -769,7 +769,7 @@ Priority: **P1** · Covers: PKG-DOCKER-019, PKG-DOCKER-031
 - The job removes each blob item in a transaction of its own that locks the package row of the image name when it has one (a name
   that holds only blobs has none, and none is made: the rows of the blobs arbitrate) and reads the references again, and it leaves a blob whose digest an unfinished upload session of the name holds (Q-OCI-71); it removes through
   the item store as the system actor `removal`, so the audit trail and the refusals of R-OCI-018 apply. The task `oci-sweep` is
-  scheduled in `maintenance.tasks` (default `0 * * * *`), and `trove_oci_sweep_blobs_removed_total` counts what it removed
+  scheduled in `maintenance.tasks` (default `0 * * * *`), and `quader_oci_sweep_blobs_removed_total` counts what it removed
   (R-OCI-034).
 - The blob object itself is collected by the garbage collection of R-STOR-024 once no item references it.
 - A remote's cached blobs are not swept: they are cache entries, evicted by R-STOR-045.
@@ -808,7 +808,7 @@ Acceptance criteria:
 Priority: **P1** · Covers: PKG-DOCKER-033, PKG-DOCKER-038, PKG-OCI-003
 
 - `remote.url` is the registry's origin, optionally with a path that is a **namespace prefix**: every image name is requested
-  as `<path>/<name>` (`https://ghcr.io/acme` serves `app` from `ghcr.io/acme/app`; another trove's virtual repository is
+  as `<path>/<name>` (`https://ghcr.io/acme` serves `app` from `ghcr.io/acme/app`; another Quader's virtual repository is
   `https://other.example.com/web/docker`) (Q-OCI-13).
 - **Token handshake** (R-REPO-033: the protocol's handshake belongs to the format, its I/O to the core). An upstream answer 401
   with `WWW-Authenticate: Bearer realm=…,service=…[,scope=…]` makes the remote engine ask the format for the token request
@@ -890,7 +890,7 @@ Priority: **P1** · Covers: PKG-DOCKER-017, PKG-DOCKER-019
 - Upstream redirects (R-REPO-039) are followed up to `proxy.max_redirects` hops, over `https`, through the egress rules; `extraHosts` does not
   gate them (Q-OCI-125). Credentials never go to a redirect target that is not a `sendCredentials` host, and a token goes to the origin only.
 - `HEAD` of a blob that is not cached is answered from the upstream's `HEAD` without a fill.
-- A foreign layer (a digest the upstream does not serve) answers what the upstream answers; trove does not fetch `urls`
+- A foreign layer (a digest the upstream does not serve) answers what the upstream answers; Quader does not fetch `urls`
   (Deferred, PKG-DOCKER-036).
 
 Acceptance criteria:
@@ -902,14 +902,14 @@ Acceptance criteria:
 Priority: **P1** · Covers: PKG-DOCKER-022, PKG-OCI-009
 
 - The tags list of a name is the metadata document `<name>/_taglist`: the upstream's answer to `tags/list?n=10000`, kept for the
-  metadata period, with the member `x-trove-truncated` added when the upstream cut its answer
+  metadata period, with the member `x-quader-truncated` added when the upstream cut its answer
   ([Q-OCI-122](#q-oci-122--a-stored-tags-list-records-that-the-upstream-cut-it)). It is the package document of the format (R-ARCH-008): an upstream 404 marks the name gone (R-REPO-029) and
   it is what the shadowing check probes (R-REPO-048).
 - A client's `tags/list` with `n` and `last` is answered from that document. The page is filled from the tags the caller may read, in
   chunks, as the local class does (Q-OCI-76): a tag the caller may not read is in no page and its name in no `Link`, and the `Link` names the last
   tag listed. When the upstream cut its answer and the window reaches the end of the stored tags, the page is continued with the upstream's own
   pages after the last tag taken, at most eight for one request of a client (Q-OCI-150), passed through as volatile queries (R-ARCH-013, `n` 1,000, kept for the metadata period); the upstream's `Link`
-  does not reach the format, so trove's `Link` is set whenever the stored list was cut or a pass-through page was used, and a page that is empty
+  does not reach the format, so Quader's `Link` is set whenever the stored list was cut or a pass-through page was used, and a page that is empty
   ends the list. Offline, with the circuit open, or for a caller who may not fill the repository, the stored window answers and no
   pass-through is sent ([Q-OCI-128](#q-oci-128--a-remote-that-cannot-ask-its-upstream-answers-with-what-it-stores)).
 - Referrers of a remote are passed through to the upstream's referrers API as a volatile query, cached for the metadata period, limited to
@@ -920,7 +920,7 @@ Priority: **P1** · Covers: PKG-DOCKER-022, PKG-OCI-009
 
 Acceptance criteria:
 
-- `curl …/docker-hub/library/alpine/tags/list?n=5` answers the stub's first five tags and a `Link` to trove's address; the
+- `curl …/docker-hub/library/alpine/tags/list?n=5` answers the stub's first five tags and a `Link` to Quader's address; the
   stub records one request for the document within the period.
 - Against a stub without the referrers API, `GET …/referrers/<d>` answers 404; against one with it, the stub's index.
 
@@ -943,10 +943,10 @@ Acceptance criteria:
 - `docker pull …/docker-hub/nginx:1` and `docker pull …/docker-hub/library/nginx:1` store one tag item
   `library/nginx/_tags/1`; the stub (configured as `registry-1.docker.io` through the test resolver) records one manifest `GET`.
 - The stub answering `429` with `RateLimit-Remaining: 0;w=21600` and no `Retry-After` to a pass is counted with the reason
-  `quota_header` in `trove_mirror_rate_limited_total`.
+  `quota_header` in `quader_mirror_rate_limited_total`.
 
 ### R-OCI-026 · Mirror settings of an OCI remote
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 A remote repository of the format runs in either mode of R-REPO-050. What a mirror of a registry discovers and keeps is in the
 section [Mirror discovery](#mirror-discovery) (Q-OCI-16); its own settings are the member `oci.mirror` of the repository's
@@ -991,7 +991,7 @@ Virtual resolution follows R-REPO-019 with these format rules (Q-OCI-18):
 - Pin rules and namespace claims (R-REPO-023) apply to image names as the client addresses them at the virtual repository:
   a claim of `acme/*` for `docker-local` keeps every remote member from serving `acme/app` through `docker` (dependency
   confusion for images). A remote member applies its own `library/` mapping (R-OCI-025) after the claim decision.
-- `Trove-Resolved-From` names the member that answered (R-REPO-019); an endpoint with exposure rules sends none and words a member's failure as the
+- `Quader-Resolved-From` names the member that answered (R-REPO-019); an endpoint with exposure rules sends none and words a member's failure as the
   addressed repository's (R-EP-018).
 - Tag resolution by push time across members (PKG-DOCKER-040) is not offered in this phase (Deferred).
 - **How the walk answers** ([Q-OCI-160](#q-oci-160--the-virtual-class-walks-the-members-itself-and-merges-one-document-the-tags-list),
@@ -1012,7 +1012,7 @@ Virtual resolution follows R-REPO-019 with these format rules (Q-OCI-18):
 Acceptance criteria:
 
 - `app:1` in `docker-local` and in the stub behind `docker-hub`: `docker pull …/docker/app:1` gets the local image
-  (`Trove-Resolved-From: docker-local`).
+  (`Quader-Resolved-From: docker-local`).
 - A claim `acme/*` for `docker-local`: `…/docker/acme/tool:1`, which only the stub has, answers 404, and the stub records no
   request.
 - `tags/list` through `docker` lists the union of `docker-local`'s and the stub's tags of the name.
@@ -1043,7 +1043,7 @@ Acceptance criteria:
 
 - `docker push …/docker/app:2` stores the image in `docker-local`; an image based on a layer that `docker-hub` cached is pushed
   through `docker` without uploading that layer, and `docker pull …/docker-local/app:2` succeeds.
-- With the deploy target removed, `docker push …/docker/app:3` fails: the token service withholds `push` for `docker`, and a request with a trove token is
+- With the deploy target removed, `docker push …/docker/app:3` fails: the token service withholds `push` for `docker`, and a request with a Quader token is
   answered 403 `DENIED` naming the action and the repository.
 - A first upload through `docker` records `docker` as the addressed repository and `docker-local` as the target, its `Location` names `…/docker/…`, and
   cancelling it through `docker` acts on the session. `DELETE …/docker/app/manifests/1` answers 405 `UNSUPPORTED` and deletes nothing.
@@ -1077,7 +1077,7 @@ Priority: **P1** · Covers: PKG-DOCKER-011, PKG-DOCKER-013, PKG-DOCKER-015, PKG-
 - Clients registered (`Descriptor.Clients`, FMT-002): `docker` (Docker CLI with Buildx) and `podman`, each with the versions
   the e2e suite pins (R-OCI-035).
 - Setup templates (R-API-030; no credential field, the token only by reference): `configure` (`docker login <host> -u <user>
-  --password-stdin` reading `$TROVE_TOKEN`; `podman login` the same), `install` (`docker pull <image prefix>/<name>:<tag>`),
+  --password-stdin` reading `$QUADER_TOKEN`; `podman login` the same), `install` (`docker pull <image prefix>/<name>:<tag>`),
   `publish` (`docker tag` and `docker push`; `podman push`; a multi-platform `docker buildx build --push`), and a Kubernetes
   image pull secret (`kubectl create secret generic --type=kubernetes.io/dockerconfigjson` reading a docker config file that the shell's `printf` builds from the token variable and hands over on standard input, so the token is in no argument list). The image prefix
   `<host>/<projectKey>/<repoKey>` comes from the new field `SetupData.ImagePrefix`, filled by the core for the format whose
@@ -1090,7 +1090,7 @@ Priority: **P1** · Covers: PKG-DOCKER-011, PKG-DOCKER-013, PKG-DOCKER-015, PKG-
 Acceptance criteria:
 
 - The setup API for `docker-local` and client `docker` answers snippets whose image references start with
-  `trove.example.com/web/docker-local/`; the e2e suite runs every rendered snippet (as the npm matrix does) and each succeeds.
+  `quader.example.com/web/docker-local/`; the e2e suite runs every rendered snippet (as the npm matrix does) and each succeeds.
 
 ### R-OCI-031 · Package screens
 Priority: **P1** · Covers: PKG-DOCKER-041, PKG-DOCKER-023
@@ -1112,7 +1112,7 @@ Acceptance criteria:
   document.
 
 ### R-OCI-032 · OCI on n replicas, without Valkey and during a drain
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 | State | Where | Across replicas | Valkey unavailable | Drain or crash of the replica |
 |---|---|---|---|---|
@@ -1132,7 +1132,7 @@ Acceptance criteria:
 - With Valkey stopped, `docker push` and `docker pull` through local, remote and virtual repositories succeed (closing run).
 
 ### R-OCI-033 · OCI data in backups and restores
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - `oci_manifests`, `oci_references` and `oci_tombstones` have the backup export class `data`; `upload_sessions` and
   `upload_session_parts` are `transient` (R-STOR-011): a client restarts an upload after a restore.
@@ -1155,7 +1155,7 @@ Priority: **P1** · Covers: trove-only
   The tags list omits a tag whose manifest is withheld. A withheld manifest counts toward the repository's storage like a live one.
 - **The way back.** The replay output lists every withheld manifest. An administrator confirms the withdrawal by deleting the
   manifest through the management item API (R-STOR-018; the mark stays, so the digest stays refused), or reverses it with
-  `trove admin oci reinstate <projectKey>/<repoKey> <name>@<digest>`, which removes the mark only while the manifest row and its items
+  `quader admin oci reinstate <projectKey>/<repoKey> <name>@<digest>`, which removes the mark only while the manifest row and its items
   are stored with that digest (so it brings back the same bytes and never admits new ones), increments `rev_seq` and writes
   `oci.reinstate` (not journaled, as `npm.reinstate`). There is no other way to push a digest back: reinstating is the explicit
   allowance.
@@ -1168,10 +1168,10 @@ Acceptance criteria:
   digest succeeds and `tags/list` lists its tags.
 - An image deleted after the snapshot is withheld after the restore: `docker pull` by tag and by digest answers 404, the replay
   reports the entry as applied, the items are still stored, and a push of the same digest answers 409 `DENIED` until
-  `trove admin oci reinstate` brings it back.
+  `quader admin oci reinstate` brings it back.
 
 ### R-OCI-034 · Audit events and metrics
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - Writes record the authorization events of R-AUTHZ-029 like every format (`authz.write.allowed` with `deploy`, `overwrite` or
   `delete`; a remote fill with `populate`). Tag moves are writes with `overwrite`.
@@ -1183,18 +1183,18 @@ Priority: **P1** · Covers: trove-only
 
 | Metric | Type | Labels | Meaning |
 |---|---|---|---|
-| `trove_oci_registry_tokens_total` | counter | `outcome` (`issued`, `anonymous`, `denied`) | Token service answers |
-| `trove_storage_upload_sessions_total` | counter | `outcome` (`completed`, `aborted`, `expired`) | Upload sessions by how they ended; a storage family, counted where the sessions end ([Q-STOR-173](../storage.md#q-stor-173--the-sessions-are-counted-by-trove_storage_upload_sessions_total-not-by-an-oci-metric)) |
-| `trove_oci_upstream_token_requests_total` | counter | `repo`, `outcome` (`ok`, `denied`, `failed`) | Handshakes of remote repositories |
-| `trove_oci_sweep_blobs_removed_total` | counter | — | Blob items removed by `oci-sweep` |
+| `quader_oci_registry_tokens_total` | counter | `outcome` (`issued`, `anonymous`, `denied`) | Token service answers |
+| `quader_storage_upload_sessions_total` | counter | `outcome` (`completed`, `aborted`, `expired`) | Upload sessions by how they ended; a storage family, counted where the sessions end ([Q-STOR-173](../storage.md#q-stor-173--the-sessions-are-counted-by-quader_storage_upload_sessions_total-not-by-an-oci-metric)) |
+| `quader_oci_upstream_token_requests_total` | counter | `repo`, `outcome` (`ok`, `denied`, `failed`) | Handshakes of remote repositories |
+| `quader_oci_sweep_blobs_removed_total` | counter | — | Blob items removed by `oci-sweep` |
 
 Acceptance criteria:
 
-- After the e2e matrix, `trove_oci_registry_tokens_total{outcome="issued"}` grew and the request log contains no
-  `trv_rgt_` substring followed by more than 4 characters.
+- After the e2e matrix, `quader_oci_registry_tokens_total{outcome="issued"}` grew and the request log contains no
+  `qdr_rgt_` substring followed by more than 4 characters.
 
 ### R-OCI-035 · Test suites
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - **Unit**: the grammars of R-OCI-002, the manifest parser and its crafted inputs (R-OCI-020), the registry token's form and
   verification (R-OCI-005), the scope grammar, the tag order of Q-OCI-17 against a table of real tag sets, the mirror plan
@@ -1228,7 +1228,7 @@ Priority: **P1** · Covers: trove-only
   mirror of a bound host; the rendered setup snippets. Set `oci-long` (nightly, R-HA-052): a push whose upload is cut by a
   drain (R-OCI-011). The set `oci` carries an OCI mirror of the stub on two worker processes while clients pull through it, and
   `oci-long` the drain of the node of the process that runs an OCI pass (R-REPO-058, R-REPO-059, Q-REPO-306).
-- **As built (WP11).** The sets, the rows and the clients are in [docs/developer/e2e.md](../../developer/e2e.md#the-oci-tests): `oci` (per change that touches the registry: login with both clients, push and pull through local, remote `pullThrough`, remote `mirror` with the stub stopped, virtual and bound-host repositories, Buildx, `docker manifest`, Podman manifests, anonymous pull, a Kubernetes pod with the image pull secret of the snippet, the Docker Engine mirror, the rendered snippets, six concurrent pulls on three replicas), `oci-long` (a push cut by the drain of the receiving pod, with the multipart check), the OCI mirror tests in `oci` and `oci-long` (an OCI pass while clients pull, the drain of its node, Q-REPO-306) and `oci-closing` (Valkey stopped, Docker Hub read-only without the count of Q-OCI-203). The clients are `docker:29.9.3-dind` and `quay.io/podman/stable:v5.8.9`, both by digest (`E2E_OCICLIENTS_DOCKER_IMAGE`, `E2E_OCICLIENTS_PODMAN_IMAGE`), in privileged pods of the namespace `trove-e2e-clients` (Q-OCI-21 held; the cluster admitted the level; [H-750](../../security/oci-registry.md#h-750--the-oci-client-pods-of-the-e2e-tier-are-privileged-and-the-dev-ca-is-added-to-a-nodes-containerd), Q-OCI-200, Q-OCI-201). The conformance suite, the integration tier and the criteria that need no client are not these sets.
+- **As built (WP11).** The sets, the rows and the clients are in [docs/developer/e2e.md](../../developer/e2e.md#the-oci-tests): `oci` (per change that touches the registry: login with both clients, push and pull through local, remote `pullThrough`, remote `mirror` with the stub stopped, virtual and bound-host repositories, Buildx, `docker manifest`, Podman manifests, anonymous pull, a Kubernetes pod with the image pull secret of the snippet, the Docker Engine mirror, the rendered snippets, six concurrent pulls on three replicas), `oci-long` (a push cut by the drain of the receiving pod, with the multipart check), the OCI mirror tests in `oci` and `oci-long` (an OCI pass while clients pull, the drain of its node, Q-REPO-306) and `oci-closing` (Valkey stopped, Docker Hub read-only without the count of Q-OCI-203). The clients are `docker:29.9.3-dind` and `quay.io/podman/stable:v5.8.9`, both by digest (`E2E_OCICLIENTS_DOCKER_IMAGE`, `E2E_OCICLIENTS_PODMAN_IMAGE`), in privileged pods of the namespace `quader-e2e-clients` (Q-OCI-21 held; the cluster admitted the level; [H-750](../../security/oci-registry.md#h-750--the-oci-client-pods-of-the-e2e-tier-are-privileged-and-the-dev-ca-is-added-to-a-nodes-containerd), Q-OCI-200, Q-OCI-201). The conformance suite, the integration tier and the criteria that need no client are not these sets.
 - **Closing run** (the full run of Test and Release on the commit that closes the phase): the set `oci` with Valkey stopped,
   and a read-only check against Docker Hub through a `pullThrough` remote and a mirror of `library/busybox` with `tags:
   ["latest"]` (at most six manifest `GET` requests in total, anonymous).
@@ -1237,7 +1237,7 @@ Acceptance criteria: the suites are green in CI for every change that touches th
 service, and the closing run is green.
 
 ### R-OCI-036 · The tags of a remote repository on the package screens
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 A remote repository of the format, in mode `pullThrough` or `mirror`, lists the images and tags it holds on the package screens, the list API
 and the content page of [R-UI-052](../api-and-ui.md#r-ui-052--repository-content-page), as a local repository does (R-OCI-031).
@@ -1328,7 +1328,7 @@ named (Q-OCI-16).
   Docker's anonymous allowance of the installation's egress address, which every client of that address shares. With `authMode:
   basic` (a Docker Hub user and access token; the realm `auth.docker.io` is a credential host by default, R-OCI-021) it draws on
   that account's allowance. The guide recommends an authenticated remote for every mirror of Docker Hub (R-OCI-030); the
-  numbers are Docker's and change, so trove names none.
+  numbers are Docker's and change, so Quader names none.
 - **Cursor.** A listing pass keeps `{"last": "<name>"}` within the pass (at most 4 KiB); there is no cursor between passes.
 
 Acceptance criteria (integration, the OCI stub of R-OCI-035):
@@ -1347,7 +1347,7 @@ Acceptance criteria (integration, the OCI stub of R-OCI-035):
 - After a pass, with the stub stopped, `docker pull` of a mirrored tag through the remote succeeds.
 - A Docker Hub remote (the stub under Docker Hub's names) with `includePatterns: ["nginx"]`: the pass stores `library/nginx`, nothing below
   `nginx/`; when the stub answers the first manifest `GET` with Docker Hub's `429` (`RateLimit-Remaining: 0;w=21600`, no `Retry-After`), the
-  pass counts it in `trove_mirror_rate_limited_total` with the reason `quota_header` and goes on.
+  pass counts it in `quader_mirror_rate_limited_total` with the reason `quota_header` and goes on.
 
 ## Test plan
 
@@ -1374,7 +1374,7 @@ against PostgreSQL, Valkey with Sentinel and S3 plus the conformance kit, and e2
 ## Catalog coverage
 
 Every entry of the two catalog pages, with what this phase does (Q-OCI-2). "Built" means specified on this page and built in
-T-16; "F4" means it stays in FULL.md F4 for a later phase; "Not offered" means trove decided against it.
+T-16; "F4" means it stays in FULL.md F4 for a later phase; "Not offered" means Quader decided against it.
 
 <details>
 <summary>PKG-DOCKER-001 to PKG-DOCKER-052</summary>
@@ -1423,7 +1423,7 @@ T-16; "F4" means it stays in FULL.md F4 for a later phase; "Not offered" means t
 | PKG-DOCKER-040 Tags by latest timestamp | F4 | Deferred |
 | PKG-DOCKER-041 Tag details | Built in part; layer history F4 | R-OCI-031 |
 | PKG-DOCKER-042 Labels as properties | F4 | Deferred |
-| PKG-DOCKER-043 Storage layout | Built (trove's layout) | R-OCI-007 |
+| PKG-DOCKER-043 Storage layout | Built (Quader's layout) | R-OCI-007 |
 | PKG-DOCKER-044 Docker Content Trust | Built by nature: signatures live on a separate server | — |
 | PKG-DOCKER-045 Supported clients | Built: Docker CLI with Buildx, Podman, Kubernetes; Kaniko and OpenShift F4 | R-OCI-035 |
 | PKG-DOCKER-046 Setup instructions | Built for Docker and Podman | R-OCI-030 |
@@ -1476,7 +1476,7 @@ R-ARCH-009 by `TestR_ARCH_008_TheWrittenContractEqualsTheCode`):
 | [architecture.md](../architecture.md) | R-ARCH-005: the `/v2/` row and the route-table rule admit the format's prefix and the core's three root routes; R-ARCH-008: `ProtocolBasePath` may be `/v2/{project}/{key}/` for the one format that declares the registry root, `Refusal.Registry` and the link builder render the base path, the optional remote interfaces `Authenticator` and `Revalidator`, `discover.Upstream.Artifact`, the optional `discover.Bounded`, `catalog.Facts.UpstreamPresets` (formerly the default credential hosts, ADR-198), `SetupData.ImagePrefix`; R-ARCH-009: the upload-session port of the host; R-ARCH-032: the state rows of R-OCI-032 | Q-OCI-4, Q-OCI-12, Q-OCI-13, Q-OCI-16, Q-ARCH-415 |
 | [identity-and-authentication.md](../identity-and-authentication.md) | R-AUTH-001: the registry token as a credential of the `Authorization` header on `/v2/`, no session cookie there, `/v2/_token` among the routes whose credential the handler presents; R-AUTH-002: the `/v2/` rows of the challenge table; R-AUTH-022: the registry token, its form and that it is not a reference token; R-AUTH-023: a registry token enters the validation at step 2 with the hash it carries; R-AUTH-033: the Basic switch covers the token service; R-AUTH-041: the event `auth.registry_token.denied` (made with the token service) | Q-OCI-5, Q-OCI-50, Q-OCI-51, Q-OCI-53, Q-OCI-57 |
 | [authorization.md](../authorization.md) | R-AUTHZ-007: the OCI table of R-OCI-006 (made with the token service); R-AUTHZ-026: the project key grammar | Q-OCI-3, Q-OCI-6 |
-| [operations-and-observability.md](../operations-and-observability.md) | R-OPS-015: `auth.registry_token.denied` deduplicated like `token.rejected`; the event registry's row of `auth.registry_token.denied`; the metric `trove_oci_registry_tokens_total` (made with the token service) | Q-OCI-53 |
+| [operations-and-observability.md](../operations-and-observability.md) | R-OPS-015: `auth.registry_token.denied` deduplicated like `token.rejected`; the event registry's row of `auth.registry_token.denied`; the metric `quader_oci_registry_tokens_total` (made with the token service) | Q-OCI-53 |
 | [repositories-and-proxy.md](../repositories-and-proxy.md) | R-REPO-002: the key grammar; R-REPO-033: the token handshake's credential rule; R-REPO-050: `<format>.mirror` kept for an Owner without `repositories:write-config`, OCI among the formats that can mirror; R-REPO-051: versions are counted per version, not per item; R-REPO-054: the quota header is read by its integer before `;`; R-REPO-024: the probe reads a Bearer challenge as reachable, at the root of the host for the registry-root format | Q-OCI-3, Q-OCI-13, Q-OCI-16, Q-OCI-22, Q-REPO-280, Q-REPO-281, Q-REPO-295 |
 | [storage.md](../storage.md) | R-STOR-011: status built, with the OCI page as its first user; the session row gains the repository the client addressed and a binding the format names (the OCI image name), both checked on every request | Q-OCI-12 |
 | [endpoints.md](../endpoints.md) | R-EP-007: the Docker Engine mirror points at R-OCI-029 | — |
@@ -1505,16 +1505,16 @@ R-ARCH-009 by `TestR_ARCH_008_TheWrittenContractEqualsTheCode`):
 
 ## Security notes
 
-- **The long-lived credential crosses the wire once per token.** Clients send the trove token to `/v2/_token` and use a
+- **The long-lived credential crosses the wire once per token.** Clients send the Quader token to `/v2/_token` and use a
   registry token of at most `oci.token_lifetime` that names only the repositories and actions they asked for. A registry token
   that leaks from a client's debug log is worth minutes and those actions; it never widens what its principal may do, because
   every request is decided again (R-OCI-005).
 - **Registry tokens are self-contained** and verified without the database. Their MAC key is derived from the stored-secret key
-  ring, so whoever holds a key of the ring and the hash of a live trove token can mint registry tokens for that token's
+  ring, so whoever holds a key of the ring and the hash of a live Quader token can mint registry tokens for that token's
   principal; that is the same trust the ring already carries for sealed upstream credentials
   ([H-579](#h-579--a-holder-of-the-stored-secret-key-ring-can-mint-registry-tokens)). A stolen registry token is usable from
   anywhere for its lifetime within its grant ([H-595](../../security/oci-registry.md#h-595--a-registry-token-is-a-bearer-credential-for-its-whole-lifetime)).
-- **Revocation** of the trove token behind a registry token takes effect within the bound of R-AUTH-023, not at the registry
+- **Revocation** of the Quader token behind a registry token takes effect within the bound of R-AUTH-023, not at the registry
   token's expiry, because verification reads the authenticating token's state.
 - **No automatic cross-mount.** A mount names its source and needs `read` there; without `from` nothing is mounted, so the
   registry never tells a caller that bytes exist in a repository it cannot read (R-OCI-012).
@@ -1541,13 +1541,13 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) One format `oci`, display name "OCI (Docker)", one page `oci.md` (chosen) | Docker v2 schema 2 and OCI manifests in every repository, one implementation, one prefix | The wire protocol is one (OCI distribution is the Docker registry API V2 plus referrers); INV-6 reserves `/v2/` for "the OCI format"; F5 builds on it; no setting that only selects a subset | Users who search for "Docker" find the format by its display name, not its ID |
-| (b) Formats `docker` and `oci`, pages `docker.md` and `oci.md` | The catalog's split | Mirrors the catalog's two pages | Two formats with one protocol and one route prefix that only one format can own (R-ARCH-005); repository settings that differ in nothing trove builds (schema 1 blocking becomes a fixed rule, the v1 API is not offered) |
+| (b) Formats `docker` and `oci`, pages `docker.md` and `oci.md` | The catalog's split | Mirrors the catalog's two pages | Two formats with one protocol and one route prefix that only one format can own (R-ARCH-005); repository settings that differ in nothing Quader builds (schema 1 blocking becomes a fixed rule, the v1 API is not offered) |
 | (c) One format `docker` | The client name users know | Familiar | OCI artifacts, referrers and Helm charts are not Docker; the ID would mislead every non-Docker client |
 
 **Choice:** (a). FULL.md F4's "spec pages `formats/oci.md` and `formats/docker.md`" becomes the one page `formats/oci.md`.
 
 **Rationale:** one protocol, one route owner, one implementation; the catalog's differences between its Docker and OCI formats are
-settings trove does not offer (schema 1, v1, store-locally). The development agent would revisit a second format if a later
+settings Quader does not offer (schema 1, v1, store-locally). The development agent would revisit a second format if a later
 phase needs a repository that refuses one of the two manifest families as a matter of configuration.
 
 **Applied in the spec:** R-OCI-001; [Catalog coverage](#catalog-coverage); [README.md](../README.md) pages table.
@@ -1609,15 +1609,15 @@ development agent would revisit it if a second format needs a host-root base pat
 **Applied in the spec:** R-OCI-001, R-OCI-003, R-OCI-029, R-OCI-030; [Changes to other pages](#changes-to-other-pages)
 (R-ARCH-005, R-ARCH-008).
 
-### Q-OCI-5 · Bearer token service with short-lived self-contained registry tokens; trove tokens also accepted directly
+### Q-OCI-5 · Bearer token service with short-lived self-contained registry tokens; Quader tokens also accepted directly
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `Bearer` challenge, token service at `/v2/_token`, registry tokens signed with a key derived from the key ring, verified without the database, bound to the authenticating token's state; trove tokens also accepted as `Basic` or `Bearer` (chosen) | The protocol's own flow | The scope grammar narrows each token to what the operation needs; the long-lived token crosses the wire once per lifetime; the flow every registry client implements first; `Basic` still works for clients that send it up front | A self-contained credential next to the reference tokens of R-AUTH-022; a key derivation; one more stage in authentication |
-| (b) `Basic realm="trove"` challenge only | The challenge of the other formats (R-AUTH-002) | Nothing new: the authentication stage already accepts `user:token` | No scopes; the trove token on every request; some tools follow bearer flows only as their tested path |
-| (c) Bearer, the token service returns the presented trove token as the bearer token | A token service without new tokens | Small | No anonymous token (an anonymous caller has nothing to return), no narrowing, and the long-lived token on every request again |
+| (a) `Bearer` challenge, token service at `/v2/_token`, registry tokens signed with a key derived from the key ring, verified without the database, bound to the authenticating token's state; Quader tokens also accepted as `Basic` or `Bearer` (chosen) | The protocol's own flow | The scope grammar narrows each token to what the operation needs; the long-lived token crosses the wire once per lifetime; the flow every registry client implements first; `Basic` still works for clients that send it up front | A self-contained credential next to the reference tokens of R-AUTH-022; a key derivation; one more stage in authentication |
+| (b) `Basic realm="quader"` challenge only | The challenge of the other formats (R-AUTH-002) | Nothing new: the authentication stage already accepts `user:token` | No scopes; the Quader token on every request; some tools follow bearer flows only as their tested path |
+| (c) Bearer, the token service returns the presented Quader token as the bearer token | A token service without new tokens | Small | No anonymous token (an anonymous caller has nothing to return), no narrowing, and the long-lived token on every request again |
 | (d) Bearer with reference registry tokens in PostgreSQL | Registry tokens as rows | Revocable by row | A row written per pull; a database write on the hottest path |
 
 **Choice:** (a).
@@ -1725,7 +1725,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a).
 
-**Rationale:** the protocol's deletes and trove's item store meet in one hook, so every path behaves alike. The development agent
+**Rationale:** the protocol's deletes and Quader's item store meet in one hook, so every path behaves alike. The development agent
 would revisit untagged retention with the retention policies of M7.
 
 **Applied in the spec:** R-OCI-018, R-OCI-019.
@@ -1753,7 +1753,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Two optional interfaces of the remote adapter: `Authenticator` (the format builds the token request from a challenge and reads the answer; the engine sends it, caches the token per replica and retries) and `Revalidator` (a `HEAD` whose digest decides); the URL's path is a name prefix; the `ns` parameter is ignored (chosen) | The format knows the protocol, the core does the I/O (R-ARCH-008) | Formats still open no connection; the egress, host and credential rules apply to the realm; an unchanged tag costs no Docker Hub pull; chaining to another trove and to an organisation's namespace is one URL | Two contract additions and an ADR |
+| (a) Two optional interfaces of the remote adapter: `Authenticator` (the format builds the token request from a challenge and reads the answer; the engine sends it, caches the token per replica and retries) and `Revalidator` (a `HEAD` whose digest decides); the URL's path is a name prefix; the `ns` parameter is ignored (chosen) | The format knows the protocol, the core does the I/O (R-ARCH-008) | Formats still open no connection; the egress, host and credential rules apply to the realm; an unchanged tag costs no Docker Hub pull; chaining to another Quader and to an organisation's namespace is one URL | Two contract additions and an ADR |
 | (b) Conditional `GET` with `If-None-Match` | The engine's revalidation | Nothing new | Whether a conditional manifest `GET` counts as a Docker Hub pull is not documented; `HEAD` is documented as not counted |
 | (c) Static bearer tokens only (`authMode: bearer`) | No handshake | Nothing new | Docker Hub and most registries issue short-lived tokens per scope |
 
@@ -1861,8 +1861,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Full names of local repositories and remote caches, filtered per name by `read`, virtual repositories not expanded (chosen) | A listing of what exists, as the caller may see it | No duplicates; another trove can mirror by catalog listing; no name a grant hides | A virtual repository's address does not appear |
-| (b) No catalog (`404`) | Many registries restrict it | Nothing to build | A trove chained behind another cannot mirror by listing |
+| (a) Full names of local repositories and remote caches, filtered per name by `read`, virtual repositories not expanded (chosen) | A listing of what exists, as the caller may see it | No duplicates; another Quader can mirror by catalog listing; no name a grant hides | A virtual repository's address does not appear |
+| (b) No catalog (`404`) | Many registries restrict it | Nothing to build | A Quader chained behind another cannot mirror by listing |
 | (c) Names of every readable repository without per-name filtering | Catalog-style visibility | Cheaper | Discloses names a package-scoped grant hides (PKG-DOCKER-003's warning) |
 
 **Choice:** (a).
@@ -1894,7 +1894,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) One client pod with dockerd (Buildx included) and Podman in a namespace that admits privileged pods, both pinned and trusting the dev CA; the conformance suite built from its `v1.1.1` tag with the repository's Go and run in the integration tier and against a virtual address (chosen) | The real clients beside the cluster; the specification's own suite | dockerd needs privileges that trove's namespace does not give; Podman alone would miss Docker's push order; the suite is Apache 2.0, a Go test binary, so the one Go version builds it | A privileged pod in the dev cluster |
+| (a) One client pod with dockerd (Buildx included) and Podman in a namespace that admits privileged pods, both pinned and trusting the dev CA; the conformance suite built from its `v1.1.1` tag with the repository's Go and run in the integration tier and against a virtual address (chosen) | The real clients beside the cluster; the specification's own suite | dockerd needs privileges that Quader's namespace does not give; Podman alone would miss Docker's push order; the suite is Apache 2.0, a Go test binary, so the one Go version builds it | A privileged pod in the dev cluster |
 | (b) The Docker daemon of the CI runner | No pod | Simpler | The runner's daemon is shared with kind; certificates go into the host's `/etc/docker` |
 | (c) The suite's published container image | Prebuilt | No build | A second Go toolchain inside an image, against the rule of one version per tool |
 
@@ -2202,7 +2202,7 @@ Context: the owner created a personal token with **All permissions of the owner*
 | (c) Ask the decision point for the owner's role and say it only to an administrator | The sentence only where it applies | No noise for a non-administrator | The enforcement point would hold the decision point and rebuild a subject from the registry token; a second path to the roles for one sentence of text |
 | (d) Leave the answer as it is | `denied` | No change | The case stays unexplained at the one place the user looks |
 
-**Choice:** (a), for a refusal of a registry token on a route that needs a scope (the 401 `insufficient_scope` of the enforcement point). The message of the 403 `DENIED` of the decision point for a trove token presented directly already names the action and the target the caller sent (R-AUTHZ-016) and is unchanged; a 404 `NAME_UNKNOWN` stays byte-identical for a hidden and a missing repository. The sentence about administrator rights is added for the types `pat` and `sat` with `inherit` and no `admin`, and for no other credential: not for an anonymous caller, not for a CI token, not for a restricted scope, not for a token that has administrator rights. **Rationale:** the facts the message uses are facts about the caller's own token and the address the caller typed, so it is safe for an authenticated principal and is the same whether the repository exists or not. The development agent would revisit (a) for (c) if the sentence confuses non-administrators, or if the answer should state the owner's role.
+**Choice:** (a), for a refusal of a registry token on a route that needs a scope (the 401 `insufficient_scope` of the enforcement point). The message of the 403 `DENIED` of the decision point for a Quader token presented directly already names the action and the target the caller sent (R-AUTHZ-016) and is unchanged; a 404 `NAME_UNKNOWN` stays byte-identical for a hidden and a missing repository. The sentence about administrator rights is added for the types `pat` and `sat` with `inherit` and no `admin`, and for no other credential: not for an anonymous caller, not for a CI token, not for a restricted scope, not for a token that has administrator rights. **Rationale:** the facts the message uses are facts about the caller's own token and the address the caller typed, so it is safe for an authenticated principal and is the same whether the repository exists or not. The development agent would revisit (a) for (c) if the sentence confuses non-administrators, or if the answer should state the owner's role.
 
 **Applied in the spec:** R-OCI-004 (insufficient scope). Code: `insufficientText` in [enforce.go](../../../internal/api/registry/enforce.go). Tests: `TestTheInsufficientScopeRefusalSaysMoreWithoutLeaking` in [enforce_test.go](../../../internal/api/registry/enforce_test.go); `TestTheRefusalOfATokenWithoutRightsSaysWhyAndNothingAboutTheRepository` in [refusal_test.go](../../../test/integration/registry/refusal_test.go).
 
@@ -2369,7 +2369,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The serve-facts kind `oci_local` (R-ARCH-027): the one statement of the item lookup returns the manifest row and whether a tombstone withholds the item's digest; the replay writes the mark and deletes nothing; `trove admin oci reinstate` removes it; a push of a withheld digest is refused until then (chosen) | The hottest route costs no extra query; a restore never deletes; the way back is explicit | The same shape as npm's tombstone and reinstate | A column more in the lookup statement; an admin command to build |
+| (a) The serve-facts kind `oci_local` (R-ARCH-027): the one statement of the item lookup returns the manifest row and whether a tombstone withholds the item's digest; the replay writes the mark and deletes nothing; `quader admin oci reinstate` removes it; a push of a withheld digest is refused until then (chosen) | The hottest route costs no extra query; a restore never deletes; the way back is explicit | The same shape as npm's tombstone and reinstate | A column more in the lookup statement; an admin command to build |
 | (b) The serve check queries the data port on every manifest pull | No contract addition | Smaller statement | A second statement on the hottest route, against R-ARCH-027 |
 | (c) The replay deletes the manifest | Nothing to serve | Simple | A forged entry destroys data, against R-HA-054 |
 
@@ -2394,19 +2394,19 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Applied in the spec:** [R-OCI-007](#r-oci-007--storage-layout-packages-and-the-formats-tables), [R-OCI-022](#r-oci-022--remote-repository-manifests-by-tag-and-by-digest).
 
-### Q-OCI-50 · A registry token names its trove token by the SHA-256 of its secret and is verified through the token cache
+### Q-OCI-50 · A registry token names its Quader token by the SHA-256 of its secret and is verified through the token cache
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The claims name the authenticating trove token by its ID, its type and the SHA-256 of its secret; verification asks the token cache of R-AUTH-023 with the hash, exactly as for the trove token presented itself (chosen) | One cache, one freshness gate, one invalidation, one throttle and one rejection event for both credentials | The revocation bound of the registry token is the trove token's by construction; a client that logs in with the trove token fills the entry its registry tokens use, so a pull costs no extra query; a holder of the key ring needs a live token's hash to forge (H-579) | The hash travels in every registry token; it allows no guess of the secret (256 bits, R-AUTH-023) and is what the database holds |
-| (b) The claims name the trove token by its ID only; a second cache keyed by ID and a query by ID | The content R-OCI-005 first listed | Nothing but an ID in the token | A fifth auth cache with its own fill, invalidation and gate; a query per replica and cache period that the trove token's own lookup already paid; a ring holder forges with an ID that every listing and audit event shows |
-| (c) The claims name the trove token by its ID; every request reads its row | No cache | Simplest | A database read on the hottest route, against R-AUTH-023 and R-OCI-005 |
+| (a) The claims name the authenticating Quader token by its ID, its type and the SHA-256 of its secret; verification asks the token cache of R-AUTH-023 with the hash, exactly as for the Quader token presented itself (chosen) | One cache, one freshness gate, one invalidation, one throttle and one rejection event for both credentials | The revocation bound of the registry token is the Quader token's by construction; a client that logs in with the Quader token fills the entry its registry tokens use, so a pull costs no extra query; a holder of the key ring needs a live token's hash to forge (H-579) | The hash travels in every registry token; it allows no guess of the secret (256 bits, R-AUTH-023) and is what the database holds |
+| (b) The claims name the Quader token by its ID only; a second cache keyed by ID and a query by ID | The content R-OCI-005 first listed | Nothing but an ID in the token | A fifth auth cache with its own fill, invalidation and gate; a query per replica and cache period that the Quader token's own lookup already paid; a ring holder forges with an ID that every listing and audit event shows |
+| (c) The claims name the Quader token by its ID; every request reads its row | No cache | Simplest | A database read on the hottest route, against R-AUTH-023 and R-OCI-005 |
 
 **Choice:** (a).
 
-**Rationale:** the registry token is the trove token narrowed by a grant and a lifetime, so it should be checked by the same steps;
+**Rationale:** the registry token is the Quader token narrowed by a grant and a lifetime, so it should be checked by the same steps;
 reusing the cache key makes the revocation bound and the throttle identical rather than parallel. The development agent would revisit it
 if the hash of a token had to be kept from the clients that hold its registry tokens (an encrypted payload would then carry it).
 
@@ -2427,7 +2427,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Rationale:** the token service is a credential exchange like the CI exchange (R-AUTH-001 "Exchange endpoints"), and handing the
 presented value to the stage keeps the rules of the endpoint, the throttle and the metrics in one place for both request forms. A
-registry token is refused there by the syntax step of a trove token, so it cannot renew itself. The development agent would revisit it
+registry token is refused there by the syntax step of a Quader token, so it cannot renew itself. The development agent would revisit it
 if a client sends its credential in another field of the form.
 
 **Applied in the spec:** [R-OCI-004](#r-oci-004--authentication-challenge-and-token-service); R-AUTH-001 in
@@ -2477,10 +2477,10 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) payload = `1:<key id>:<claims as JSON>`; the MAC covers `trv_rgt_` + base64url(payload) as received (chosen) | The verifier reads the version and the key ID by two cuts, checks the MAC with the named key and parses the JSON only when it is authentic | No parser runs on forged input; no canonical form of the claims is needed | A form of its own instead of a JWT |
+| (a) payload = `1:<key id>:<claims as JSON>`; the MAC covers `qdr_rgt_` + base64url(payload) as received (chosen) | The verifier reads the version and the key ID by two cuts, checks the MAC with the named key and parses the JSON only when it is authentic | No parser runs on forged input; no canonical form of the claims is needed | A form of its own instead of a JWT |
 | (b) The key ID inside the JSON | One encoding | Plain | The JSON of every forged token is parsed before its MAC is known |
 | (c) Every key of the ring is tried | No key ID | Simple | A forged token costs one MAC per key; an error cannot say which key |
-| (d) A JWT (JWS compact) | A known format | Libraries | Header-driven algorithm choice and the JWS pitfalls for a token only trove reads |
+| (d) A JWT (JWS compact) | A known format | Libraries | Header-driven algorithm choice and the JWS pitfalls for a token only Quader reads |
 
 **Choice:** (a).
 
@@ -2512,9 +2512,9 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `registry.Enforcer` is the only way to mount below `/v2/`: `Mount(router, pattern, handler, routes...)` registers the routes a handler serves (kind, coarse-check action, an example request) and puts the handler behind the check in one call; the start-up route-table check admits exactly the patterns mounted through it; the route of a request is the dispatcher's own match (`dispatch.Dispatcher.RegistryTarget`, as the stage shares `APIKeyRoute`); a registry token on a route without an entry, on an address the match cannot read, or on a route whose action has no token action answers 401 `insufficient_scope` with the code `oci_insufficient_scope`; exactly one version check, `GET` or `HEAD` of `/v2/`, which passes on `/v2/` only; `registrytest.Walk` proves it through the endpoint's whole handler with real registry tokens (chosen) | One place decides the ceiling for every route, before any handler, and nothing below `/v2/` can be mounted around it | A route that forgets its entry is refused instead of handing the registry token its trove token's full power; a handler mounted around the enforcer stops the start-up; one match cannot disagree with itself; the walk sees what a client sees: the stage, the conversion and the enforcer | The registry root mounts through an API of the registry package rather than the router directly |
+| (a) `registry.Enforcer` is the only way to mount below `/v2/`: `Mount(router, pattern, handler, routes...)` registers the routes a handler serves (kind, coarse-check action, an example request) and puts the handler behind the check in one call; the start-up route-table check admits exactly the patterns mounted through it; the route of a request is the dispatcher's own match (`dispatch.Dispatcher.RegistryTarget`, as the stage shares `APIKeyRoute`); a registry token on a route without an entry, on an address the match cannot read, or on a route whose action has no token action answers 401 `insufficient_scope` with the code `oci_insufficient_scope`; exactly one version check, `GET` or `HEAD` of `/v2/`, which passes on `/v2/` only; `registrytest.Walk` proves it through the endpoint's whole handler with real registry tokens (chosen) | One place decides the ceiling for every route, before any handler, and nothing below `/v2/` can be mounted around it | A route that forgets its entry is refused instead of handing the registry token its Quader token's full power; a handler mounted around the enforcer stops the start-up; one match cannot disagree with itself; the walk sees what a client sees: the stage, the conversion and the enforcer | The registry root mounts through an API of the registry package rather than the router directly |
 | (a') The same with a separate `Register` and `Wrap` and a resolver of the caller's choice | Fewer constraints on the mount | Flexible | A handler that is registered but not wrapped, or wrapped with a second matcher that disagrees with the dispatcher, defeats the check; the walk cannot tell |
-| (b) Each route calls `Allows` itself | The check where the route is | No table | A route that forgets the call grants everything the trove token may do; the catalog, the tags list, the upload sessions and the mount's source are each a place to forget it |
+| (b) Each route calls `Allows` itself | The check where the route is | No table | A route that forgets the call grants everything the Quader token may do; the catalog, the tags list, the upload sessions and the mount's source are each a place to forget it |
 | (c) The grant in `authz.Subject`, decided by the decision point | No new component | The decision point sees everything | A missing scope becomes 403 instead of the 401 `insufficient_scope` clients act on; `authz.denied` for every scope a client did not ask for; the catalog's per-name filtering would have to know the grant |
 
 **Choice:** (a).
@@ -2545,7 +2545,7 @@ Status: **Decided by the development agent** — selected from the options below
 **Rationale:** exempting only the form would make one client work and leave the two most common ones broken, at the price of a switch
 that no longer covers every password presentation. The registry clients are named in the switch's description, the configuration
 reference and the Basic switch of R-AUTH-033. The development agent would revisit it if an installation needs the registry with Basic
-off (a client that presents the trove token as `Bearer` at the token service, which the stage accepts, would be the road).
+off (a client that presents the Quader token as `Bearer` at the token service, which the stage accepts, would be the road).
 
 **Applied in the spec:** [R-OCI-004](#r-oci-004--authentication-challenge-and-token-service); the Basic switch of R-AUTH-033 in
 [identity-and-authentication.md](../identity-and-authentication.md).
@@ -2650,7 +2650,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The `Link` of a longer list carries `last=<digest>` (the digest the page ended at) next to the `artifactType` filter; an answer whose descriptors include a manifest whose annotations were cut at 64 KiB carries `Trove-Annotations-Cut: true` (chosen) | The cursor is the index order of R-OCI-007; the cut is told in a header | No state, no token to sign; a client follows the `Link` as it is; the cut is visible without changing a descriptor | A header that is trove's own |
+| (a) The `Link` of a longer list carries `last=<digest>` (the digest the page ended at) next to the `artifactType` filter; an answer whose descriptors include a manifest whose annotations were cut at 64 KiB carries `Quader-Annotations-Cut: true` (chosen) | The cursor is the index order of R-OCI-007; the cut is told in a header | No state, no token to sign; a client follows the `Link` as it is; the cut is visible without changing a descriptor | A header that is Quader's own |
 | (b) An opaque, signed cursor | The page position hides behind a token | A format may change its order | A key and a lifetime for a cursor that is a digest anyway |
 | (c) Report the cut as an annotation of the descriptor | In the document | One place | Changes what the manifest says about itself and breaks a client that compares annotations |
 
@@ -2694,7 +2694,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). The item store tells the hook whether a referencing manifest belongs to the same removal (`ItemsEvent.InScope`): a delete of a whole image name reaches the hook in events of at most 5,000 files, or in the batches of the job above `storage.delete.max_sync_items`, and the blobs of a name sort before its manifests, so the hook would otherwise refuse the delete of a name with more than 5,000 files. A job commits its batches one by one, so the hook removes a blob **together with** the manifests of the same delete that reference it, in the transaction of the blob (and an index with the child it lists), through the cascade: a batch that is refused or a job that is cancelled afterwards leaves no manifest over a removed blob. A manifest outside the delete (pushed after it was authorized) refuses the blob, and the batch fails whole. The refusal carries the code `oci_referenced`, which the sweep alone treats as "kept". A referrer that an index lists stays (its subject is gone, which a manifest may allow); the trash can does not exist yet, so an event with the reason `trash` keeps the rows and cascades nothing but still refuses; the deletion of a blob changes no row of the format and raises no revision.
 
-**Rationale:** the protocol's deletes and trove's item store meet in one hook (Q-OCI-11, Q-OCI-24). The development agent would revisit the referrers rule if a client needs a subject's deletion to take every referrer.
+**Rationale:** the protocol's deletes and Quader's item store meet in one hook (Q-OCI-11, Q-OCI-24). The development agent would revisit the referrers rule if a client needs a subject's deletion to take every referrer.
 
 **Applied in the spec:** R-OCI-018.
 
@@ -2798,7 +2798,7 @@ not depend on the request.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Ask after the `401` only (Q-OCI-80) | Every request is challenged once | The contract as WP0 froze it; nothing remembered | About twice the requests to the registry (below); the repository's long-lived credential goes to the registry on every challenged request; half of `trove_remote_upstream_requests_total` for a registry remote is `401`; an overall abuse limit per address that counts every request, `401` included, is met sooner |
+| (a) Ask after the `401` only (Q-OCI-80) | Every request is challenged once | The contract as WP0 froze it; nothing remembered | About twice the requests to the registry (below); the repository's long-lived credential goes to the registry on every challenged request; half of `quader_remote_upstream_requests_total` for a registry remote is `401`; an overall abuse limit per address that counts every request, `401` included, is met sooner |
 | (b) Remember the last challenge per repository and configuration version; before a request call `TokenRequest(orig, p, rememberedChallenge)`, attach a token the replica holds under the key it returns, else fetch one first; a rejected pre-emptive token falls into the handshake of the `401`'s own challenge; any failure of the pre-emptive step sends the request without a token (chosen) | Only the first request of a replica and configuration version is challenged | No signature change; the existing fallback loop covers a stale challenge; the credential goes to the registry once | The contract needs one binding sentence: the format takes the scope from `orig` and `p`, and only the realm and the service from the challenge; a token is fetched for a request the registry might have served anonymously |
 | (c) Use only tokens that are already cached, never fetch one pre-emptively | A cache hit saves the challenge | Simpler | Saves nothing on a cold pull of a new image: every layer of it is a new scope |
 
@@ -2845,7 +2845,7 @@ the layout does not classify and a path set refuses: a caller with any path patt
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Lists on the package document, claims on the item written | The tags list is decided on `<name>/_taglist`, the package document of R-OCI-001 (`PackageDocumentPath`), which `Classify` places in the image; each tag is still decided on its own path. A claim names the tag path for a push by tag and the manifest path for a push by digest | The rule of Q-AUTHZ-250 unchanged; one rule for npm, NuGet and OCI; nothing in `Classify` changes | A path set that covers the item folders (`<name>/_tags/**`, `_manifests/**`, `_blobs/**`) and not `<name>/_taglist` pushes and pulls with a trove token directly, lists no tags, and is granted no registry token (the grant is asked on the package document); a pattern that excludes only `**/_tags/**` does not refuse the list gate, the tags it holds are filtered one by one so none is shown. Referrers on this path would refuse a grant for digests only, which the per-referrer decision admits |
+| (a) Lists on the package document, claims on the item written | The tags list is decided on `<name>/_taglist`, the package document of R-OCI-001 (`PackageDocumentPath`), which `Classify` places in the image; each tag is still decided on its own path. A claim names the tag path for a push by tag and the manifest path for a push by digest | The rule of Q-AUTHZ-250 unchanged; one rule for npm, NuGet and OCI; nothing in `Classify` changes | A path set that covers the item folders (`<name>/_tags/**`, `_manifests/**`, `_blobs/**`) and not `<name>/_taglist` pushes and pulls with a Quader token directly, lists no tags, and is granted no registry token (the grant is asked on the package document); a pattern that excludes only `**/_tags/**` does not refuse the list gate, the tags it holds are filtered one by one so none is shown. Referrers on this path would refuse a grant for digests only, which the per-referrer decision admits |
 | (b) Classify the collection folders | `<name>/_tags` and `<name>/_manifests` become paths of the image | The decision path is the folder it lists | A folder is no item; the layout of R-OCI-007 gains two paths no item has, and `/files/` would have to explain them |
 | (c) Weaken check 13 for OCI | Accept a target without a path or outside `Classify` | No code change | Path patterns would admit or refuse OCI by accident: rejected |
 | (d) Option (a) for the tags list and the catalog, the subject's manifest path for referrers (chosen) | A referrers request has an item of its own, the subject digest: its gate is `<name>/_manifests/sha256:<hex>` of the subject, parsed before the decision; each referrer is still filtered on its own path. The catalog decides each name of a repository, and the token service each scope entry, on `<name>/_taglist`, as a listing row is decided on its package document (Q-AUTHZ-250) | Every gate is a path in the image; a signature verifier with `**/_manifests/**` and `**/_blobs/**` lists referrers; the pre-check and the claim of a push agree | The same Against as (a) for the tags list and the catalog; a request for the referrers of a subject the repository does not hold is decided on a path with no item (it answers an empty index either way) |
@@ -3109,11 +3109,11 @@ upstream cut its answer is the `Link` header, which neither `PrepareFill` nor th
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `AcceptResponse` adds the member `x-trove-truncated: true` to a document whose answer had a `Link` with `rel="next"` (chosen) | The fact is stored with the document | Every replica reads it from the entry; the grammar of a tags list names `name` and `tags` only | The stored bytes are the upstream's plus a member |
+| (a) `AcceptResponse` adds the member `x-quader-truncated: true` to a document whose answer had a `Link` with `rel="next"` (chosen) | The fact is stored with the document | Every replica reads it from the entry; the grammar of a tags list names `name` and `tags` only | The stored bytes are the upstream's plus a member |
 | (b) Pass every window with a `last` through | Nothing stored | Simple | A client paging a short list asks the upstream at every page |
 | (c) Treat a document of 700 tags or more as cut | A heuristic | Nothing stored | The cut is at the upstream's choice (Docker Hub, GHCR and distribution differ) |
 
-**Choice:** (a). A passed-through window is the engine's answer, kept per replica for the metadata period; its `Link` is trove's, set when the page is full,
+**Choice:** (a). A passed-through window is the engine's answer, kept per replica for the metadata period; its `Link` is Quader's, set when the page is full,
 because the upstream's does not reach the format. The tags of a cut document are assumed to be in byte order (H-666).
 
 **Rationale:** the development agent would revisit it when the pass-through carries the response headers.
@@ -3155,7 +3155,7 @@ Context: R-OCI-021 proposes the hosts Docker Hub redirects blob downloads to, to
 `GET` of its first layer (2 manifest `GET` requests of the pull limit). A repository whose blob redirects go elsewhere answers 502 `foreign_host_denied`
 and its owner adds the host.
 
-**Rationale:** the development agent would revisit it when a pull of a current Docker Hub image through trove is refused for a host.
+**Rationale:** the development agent would revisit it when a pull of a current Docker Hub image through Quader is refused for a host.
 
 **Applied in the spec:** [R-OCI-021](#r-oci-021--remote-repository-upstream-and-its-token-handshake). Code: `Descriptor` in [format.go](../../../internal/formats/oci/format.go). Test:
 `TestDescriptorDeclaresTheRegistryRoot`.
@@ -3185,7 +3185,7 @@ Code: `Descriptor` in [format.go](../../../internal/formats/oci/format.go).
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Supersedes the recording of Q-OCI-122.
 
-Context: the review of the first build showed that the reader which adds `x-trove-truncated` makes the body longer than the `Content-Length` the
+Context: the review of the first build showed that the reader which adds `x-quader-truncated` makes the body longer than the `Content-Length` the
 upstream announced, and the spool's strict length check refused it with 400: a cut list sent with a length (every small page has one) could not be stored.
 The 700-tag page of the test was chunked and hid it.
 
@@ -3318,7 +3318,7 @@ upstream pages is refused as the local class refuses it. Eight is what a page of
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: the unit test of R-OCI-020's crafted inputs measured each refusal against 5 s. The manifest with 20,000 layers took 0.04 s
-locally (0.4 s under `-race` and coverage) and 5.15 s on a loaded CI runner (F-110): the bound measured the runner, not trove.
+locally (0.4 s under `-race` and coverage) and 5.15 s on a loaded CI runner (F-110): the bound measured the runner, not Quader.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -3451,7 +3451,7 @@ Context: R-OCI-028 and R-REPO-021 say 405 for a write to a virtual repository wi
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The decision point's refusal stands: 403 `DENIED` naming the action and the repository for a trove token, no `push` in a registry token; the handler's 405 stays as the defence behind it (chosen) | No change of the core | One rule for every format; a caller without a target learns nothing the grants do not say | The 405 of the spec is reached only when the target is unavailable (disabled or being deleted: 404) or the decision is bypassed |
+| (a) The decision point's refusal stands: 403 `DENIED` naming the action and the repository for a Quader token, no `push` in a registry token; the handler's 405 stays as the defence behind it (chosen) | No change of the core | One rule for every format; a caller without a target learns nothing the grants do not say | The 405 of the spec is reached only when the target is unavailable (disabled or being deleted: 404) or the decision is bypassed |
 | (b) Let the decision point allow a write to a virtual repository without a target and answer 405 in the handler | | Matches the spec's words | Changes the authorization rule for every format and every caller |
 
 **Choice:** (a); R-OCI-028's criterion now says what a client sees.
@@ -3487,7 +3487,7 @@ Context: a host-root binding needs the host in the endpoint's host set (R-EP-006
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The endpoint `ocimirror` beside `customers` in `values-dev.yaml`: its own port (8444), host `oci-mirror.trove.localhost`, `hostRoots` to `e2e/oci-engine-mirror`, anonymous requests and the cache fill admitted, two certificates (chosen) | The default endpoint stays as every suite knows it | No host check is switched on for the default endpoint | A listener, two Services-worth of objects and two certificates in every profile |
+| (a) The endpoint `ocimirror` beside `customers` in `values-dev.yaml`: its own port (8444), host `oci-mirror.quader.localhost`, `hostRoots` to `e2e/oci-engine-mirror`, anonymous requests and the cache fill admitted, two certificates (chosen) | The default endpoint stays as every suite knows it | No host check is switched on for the default endpoint | A listener, two Services-worth of objects and two certificates in every profile |
 | (b) `endpoints.default.hosts` and `hostRoots` in the `scatter` values | No new objects | Smaller | The host check answers `421` to a request by IP literal or an unlisted Service name on every set that uses the profile |
 
 **Choice:** (a). The binding is inert until the test creates the repository `e2e/oci-engine-mirror` (R-EP-006). A further endpoint does not fill remote caches by default (`cacheFill: false`), so the endpoint sets `cacheFill: true`.
@@ -3517,7 +3517,7 @@ Context: the second acceptance criterion of R-OCI-029 says `GET /v2/web/docker-h
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-OCI-035 asks the closing run for "at most six manifest `GET` requests in total" against Docker Hub. Docker Hub is outside the cluster; its counter is not readable, trove's metric `trove_remote_upstream_requests_total` counts every request to an upstream by status and not by kind, and a registry's access log is not ours.
+Context: R-OCI-035 asks the closing run for "at most six manifest `GET` requests in total" against Docker Hub. Docker Hub is outside the cluster; its counter is not readable, Quader's metric `quader_remote_upstream_requests_total` counts every request to an upstream by status and not by kind, and a registry's access log is not ours.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -3554,11 +3554,11 @@ failed pull. With the upstream down (its connections cut) the e2e row measured `
 ### H-579 · A holder of the stored-secret key ring can mint registry tokens
 
 The registry token service (R-OCI-005, built in T-16) derives its MAC key from the stored-secret key ring of R-ARCH-021. Whoever
-holds a key file of the ring can mint registry tokens at will, for any repository a principal could be granted, while the named trove
-token is live, without trove recording a token request; each minted token verifies for at most `oci.token_lifetime` and is refused
+holds a key file of the ring can mint registry tokens at will, for any repository a principal could be granted, while the named Quader
+token is live, without Quader recording a token request; each minted token verifies for at most `oci.token_lifetime` and is refused
 when its issue time lies more than a minute ahead of the verifying replica's clock. The decision point still decides each request and
 verification still reads the state of the named authenticating token through the token cache, so a forged token cannot exceed the
-principal's own grants and must name a live trove token by the SHA-256 of its secret (Q-OCI-50): the forger needs that hash too, from
+principal's own grants and must name a live Quader token by the SHA-256 of its secret (Q-OCI-50): the forger needs that hash too, from
 the database (`api_token.secret_sha256`) or from a registry token issued for it, and the token's ID alone is not enough. Live once the
 registry root mounts `/v2/` (the token service and the verification are built); real for an operator or attacker with read access to
 the key ring Secret and to one of those hashes, who already opens every sealed upstream credential with the ring.
@@ -3745,7 +3745,7 @@ not read answers like a source that does not exist: 202 and a new session, so th
 repository); the code uses the copy `ociMountSource` in [wire_registry.go](../../../internal/app/wire_registry.go) until the work
 package of the uploads merges, and whichever of the two merges second replaces it with `ociformat.MountSource` and deletes the copy. A
 `from` that names no image is left to the handler, which treats it as no mount. The enforcement point strips the two parameters, drops
-the parsed form of the request and logs the stripped mount at debug level with the trove token's ID and the source.
+the parsed form of the request and logs the stripped mount at debug level with the Quader token's ID and the source.
 
 **Rationale:** the answer to a mount must not depend on whether the source exists or what the token holds, and a failed push would
 make the client's layer upload impossible. The development agent would revisit it if a second format has a mount of its own.

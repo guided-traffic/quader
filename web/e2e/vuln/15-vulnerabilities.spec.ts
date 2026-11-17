@@ -7,12 +7,12 @@ import { bobPassword, e2eProject, expect, expectAccessible, qualified, repositor
 // package page against the test advisory source (deploy/dev/osvstub.yaml). They create their own local npm repositories and
 // publish the fixture packages into them through the API (INV-17); the findings come from the commit hook of the
 // publish, so each journey waits for them through the findings API before it opens the UI. Run by the e2e wave in the
-// `scatter` profile with `npx playwright test -c playwright.vuln.config.ts` and TROVE_E2E_VULN=1; the three replicas answer
+// `scatter` profile with `npx playwright test -c playwright.vuln.config.ts` and QUADER_E2E_VULN=1; the three replicas answer
 // at random, so a journey that passes has read its own writes on another replica (R-HA-011).
 
 test.beforeAll(() => {
-  if (!process.env['TROVE_E2E_VULN']) {
-    throw new Error('TROVE_E2E_VULN is not set: the journeys need the scanning against the test advisory source (deploy/dev/osvstub.yaml)');
+  if (!process.env['QUADER_E2E_VULN']) {
+    throw new Error('QUADER_E2E_VULN is not set: the journeys need the scanning against the test advisory source (deploy/dev/osvstub.yaml)');
   }
 });
 
@@ -48,7 +48,7 @@ test('R-VULN-022 the Critical-style count filters the list, the sort and the fin
   replicas,
 }) => {
   const repo = unique('vuln-a');
-  await localNpmRepository(admin, repo, [['trove-test-vuln', '1.0.0']]);
+  await localNpmRepository(admin, repo, [['quader-test-vuln', '1.0.0']]);
   try {
     const [finding] = await findingsOf(admin, repo, 1);
     const label = SEVERITY[finding!.severity as keyof typeof SEVERITY];
@@ -116,8 +116,8 @@ test('R-VULN-022 three findings are confirmed at once, the CSV holds the rows of
   const repo = unique('vuln-b');
   const policy = unique('vuln-b-read');
   await localNpmRepository(admin, repo, [
-    ['trove-test-vuln', '1.0.0'],
-    ['trove-test-alias', '2.0.0'],
+    ['quader-test-vuln', '1.0.0'],
+    ['quader-test-alias', '2.0.0'],
     ['left-pad', '1.3.0'],
   ]);
   const bobContext = await browser.newContext({ ignoreHTTPSErrors: true, locale: 'en-US' });
@@ -133,7 +133,7 @@ test('R-VULN-022 three findings are confirmed at once, the CSV holds the rows of
 
     await signInLocal(page);
     await page.goto(`/ui/en/projects/${e2eProject}/vulnerabilities?repository=${qualified(repo)}&status=needs_triage`);
-    const rows = page.locator('trove-data-table tbody tr');
+    const rows = page.locator('quader-data-table tbody tr');
     await expect(rows).toHaveCount(3);
 
     await test.step('select the three rows and confirm them', async () => {
@@ -173,7 +173,7 @@ test('R-VULN-022 three findings are confirmed at once, the CSV holds the rows of
 
     await test.step('a reader without the triage capability sees the findings and no selection column', async () => {
       await bob.goto(`/ui/en/projects/${e2eProject}/vulnerabilities?repository=${qualified(repo)}`);
-      await expect(bob.locator('trove-data-table tbody tr')).toHaveCount(3);
+      await expect(bob.locator('quader-data-table tbody tr')).toHaveCount(3);
       await expect(bob.getByRole('button', { name: 'Select all loaded findings' })).toHaveCount(0);
       await expect(bob.getByRole('columnheader', { name: 'Select' })).toHaveCount(0);
       await expect(bob.getByRole('link', { name: 'Advisory sources' })).toHaveCount(0);
@@ -190,40 +190,40 @@ test('R-VULN-023 R-VULN-022 the package page shows the finding on the affected v
   page,
   admin,
 }) => {
-  // trove-test-cvss: the other journeys and the client tests cache trove-test-vuln in npm-remote, which would be a second repository here
+  // quader-test-cvss: the other journeys and the client tests cache quader-test-vuln in npm-remote, which would be a second repository here
   const repo = unique('vuln-c');
   await localNpmRepository(admin, repo, [
-    ['trove-test-cvss', '1.0.0'],
-    ['trove-test-cvss', '1.0.1'],
+    ['quader-test-cvss', '1.0.0'],
+    ['quader-test-cvss', '1.0.1'],
   ]);
-  const tarball = `/api/npm/${e2eProject}/${repo}/trove-test-cvss/-/trove-test-cvss-1.0.0.tgz`;
+  const tarball = `/api/npm/${e2eProject}/${repo}/quader-test-cvss/-/quader-test-cvss-1.0.0.tgz`;
   try {
     const [finding] = await findingsOf(admin, repo, 1);
     expect((await admin.get(tarball)).status(), 'download before the block').toBe(200);
     await signInLocal(page);
-    const packagePage = (version: string, tab: string) => `/ui/en/projects/${e2eProject}/packages/npm/trove-test-cvss?version=${version}&tab=${tab}`;
+    const packagePage = (version: string, tab: string) => `/ui/en/projects/${e2eProject}/packages/npm/quader-test-cvss?version=${version}&tab=${tab}`;
 
     await test.step('the tab shows one finding on 1.0.0 and none on 1.0.1', async () => {
       await page.goto(packagePage('1.0.0', 'vulnerabilities'));
       await expect(page.getByRole('tab', { name: 'Vulnerabilities (1)' })).toBeVisible();
-      const panel = page.locator('trove-package-vulnerabilities');
+      const panel = page.locator('quader-package-vulnerabilities');
       await expect(panel.getByRole('heading', { name: repo })).toBeVisible();
       await expect(panel.getByRole('link', { name: finding!.advisory })).toBeVisible();
       // R-UI-094: the repository's grade card, and the version's grade in the header.
-      await expect(panel.locator('trove-grade-card')).toBeVisible();
-      await expect(panel.locator('trove-grade-card')).not.toContainText('no known vulnerabilities');
+      await expect(panel.locator('quader-grade-card')).toBeVisible();
+      await expect(panel.locator('quader-grade-card')).not.toContainText('no known vulnerabilities');
       await expect(page.locator('.pkg-header a.version-grade')).toBeVisible();
       await expectAccessible(page, 'the package page, Vulnerabilities tab');
       await page.goto(packagePage('1.0.1', 'vulnerabilities'));
-      await expect(page.locator('trove-package-vulnerabilities')).toContainText('S · no known vulnerabilities');
+      await expect(page.locator('quader-package-vulnerabilities')).toContainText('S · no known vulnerabilities');
     });
 
     await test.step('All versions shows the grade of each version, S on 1.0.1 only', async () => {
       await page.goto(packagePage('1.0.0', 'versions'));
       const row = (v: string) => page.getByRole('row', { name: new RegExp(`^${v.replace('.', '\\.')}`) });
-      await expect(row('1.0.0').locator('trove-grade')).toBeVisible();
-      await expect(row('1.0.0').locator('trove-grade')).not.toContainText('S ·');
-      await expect(row('1.0.1').locator('trove-grade')).toContainText('S · no known vulnerabilities');
+      await expect(row('1.0.0').locator('quader-grade')).toBeVisible();
+      await expect(row('1.0.0').locator('quader-grade')).not.toContainText('S ·');
+      await expect(row('1.0.1').locator('quader-grade')).toContainText('S · no known vulnerabilities');
     });
 
     await test.step('confirm the finding, then block downloads', async () => {
@@ -236,7 +236,7 @@ test('R-VULN-023 R-VULN-022 the package page shows the finding on the affected v
       await expect(dialog).toContainText(`Every client of ${qualified(repo)}`);
       await expectAccessible(page, 'the block dialog');
       await dialog.getByRole('button', { name: 'Block downloads' }).click();
-      await expect(page.locator('.vuln-blocked')).toContainText(`Downloads of trove-test-cvss@1.0.0 are blocked in ${qualified(repo)}.`);
+      await expect(page.locator('.vuln-blocked')).toContainText(`Downloads of quader-test-cvss@1.0.0 are blocked in ${qualified(repo)}.`);
       await expect(page.locator('.vuln-blocked')).toContainText('blocked in triage');
     });
 
@@ -246,7 +246,7 @@ test('R-VULN-023 R-VULN-022 the package page shows the finding on the affected v
       await expect(page.getByRole('list', { name: 'Open findings by state' }).getByRole('link', { name: /^1\s*Blocked versions/ })).toBeVisible();
       await page.goto(packagePage('1.0.0', 'vulnerabilities'));
       await expect(page.locator('.pkg-header .banner-warning')).toContainText(`Blocked in ${qualified(repo)}`);
-      await expect(page.locator('trove-package-vulnerabilities .banner-warning')).toContainText('blocked in triage');
+      await expect(page.locator('quader-package-vulnerabilities .banner-warning')).toContainText('blocked in triage');
       expect((await admin.get(tarball)).status(), 'download after the block').toBe(403);
     });
 
@@ -268,18 +268,18 @@ test('R-VULN-023 R-VULN-022 the package page shows the finding on the affected v
 
 test('R-VULN-022 the sources screen shows the state of the test source, and the advisory page lists where an advisory is used', async ({ page, admin }) => {
   const repo = unique('vuln-d');
-  await localNpmRepository(admin, repo, [['trove-test-cvss', '1.0.0']]);
+  await localNpmRepository(admin, repo, [['quader-test-cvss', '1.0.0']]);
   try {
     const [finding] = await findingsOf(admin, repo, 1);
     await signInLocal(page);
     await page.goto('/ui/en/admin/advisory-sources');
     await expect(page.getByRole('heading', { name: 'Advisory sources', level: 1 })).toBeVisible();
-    await expect(page.locator('trove-data-table tbody tr').filter({ hasText: 'OSV' }).first()).toContainText('Online');
+    await expect(page.locator('quader-data-table tbody tr').filter({ hasText: 'OSV' }).first()).toContainText('Online');
     await expectAccessible(page, 'the advisory sources');
 
     await page.goto(`/ui/en/projects/${e2eProject}/vulnerabilities/advisories/npm/${finding!.advisory}`);
     await expect(page.getByRole('heading', { name: 'Advisory', level: 1 })).toBeVisible();
-    await expect(page.getByRole('row', { name: new RegExp(repo) }).or(page.getByRole('row', { name: /trove-test-cvss/ })).first()).toBeVisible();
+    await expect(page.getByRole('row', { name: new RegExp(repo) }).or(page.getByRole('row', { name: /quader-test-cvss/ })).first()).toBeVisible();
     await expectAccessible(page, 'an advisory');
   } finally {
     await admin.delete(repositoryApi(repo));

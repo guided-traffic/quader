@@ -1,11 +1,11 @@
-<trove-page-header heading="Guides" i18n-heading="@@guides.heading" />
+<quader-page-header heading="Guides" i18n-heading="@@guides.heading" />
 <p class="intro" i18n="@@guides.intro">
   What each kind of repository is, and how your package manager configures, signs in, installs, publishes and
   troubleshoots through it. The guide uses this installation's addresses.
 </p>
 
 @if (loadFailure(); as f) {
-  <trove-error-notice [error]="f" (retry)="answer.reload()" />
+  <quader-error-notice [error]="f" (retry)="answer.reload()" />
 }
 
 <div class="choices-panel">
@@ -116,7 +116,7 @@
     } @else if (bastionSetup.hasValue()) {
       <p i18n="@@guides.bastion.registry">Address of the repository on the Bastion:</p>
       <p>
-        <trove-address-field [value]="bastionSetup.value().registryUrl" />
+        <quader-address-field [value]="bastionSetup.value().registryUrl" />
       </p>
       @for (sn of bastionSnippets(); track sn.id) {
         <div class="snippet" [attr.data-snippet]="sn.id">
@@ -127,7 +127,7 @@
           }
           <div class="command">
             <pre class="code-block" translate="no" tabindex="0">{{ sn.content }}</pre>
-            <trove-copy-button [value]="sn.content" [label]="copyLabel" />
+            <quader-copy-button [value]="sn.content" [label]="copyLabel" />
           </div>
         </div>
       }
@@ -147,7 +147,7 @@
         The addresses show &lt;repository&gt; where the key of your repository goes.
       </p>
     }
-    <trove-guide-view [guide]="g" />
+    <quader-guide-view [guide]="g" />
   </section>
 } @else if (answer.isLoading()) {
   <p role="status" i18n="@@guides.loading">Loading the guide.</p>

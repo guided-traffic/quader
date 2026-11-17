@@ -11,7 +11,7 @@ import { GuideView } from '../guides/guide-view';
  * The clients are the format's (`GET /api/v1/formats`); a format without clients shows nothing.
  */
 @Component({
-  selector: 'trove-repository-guide',
+  selector: 'quader-repository-guide',
   imports: [RouterLink, ErrorNotice, GuideView],
   template: `
     @if (clients().length === 0) {
@@ -31,9 +31,9 @@ import { GuideView } from '../guides/guide-view';
         <a routerLink="/guides" [queryParams]="query()" i18n="@@repo.guide.open">Open in the guides</a>
       </p>
       @if (failure(); as f) {
-        <trove-error-notice [error]="f" (retry)="answer.reload()" />
+        <quader-error-notice [error]="f" (retry)="answer.reload()" />
       } @else if (guide(); as g) {
-        <trove-guide-view [guide]="g" prefix="repo-guide" />
+        <quader-guide-view [guide]="g" prefix="repo-guide" />
       } @else {
         <p role="status" i18n="@@repo.guide.loading">Loading the guide.</p>
       }
@@ -43,22 +43,22 @@ import { GuideView } from '../guides/guide-view';
     .clients {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-2) var(--trove-space-4);
-      margin: 0 0 var(--trove-space-3);
-      padding: var(--trove-space-2) var(--trove-space-3);
-      border: 1px solid var(--trove-border);
-      border-radius: var(--trove-radius-m);
+      gap: var(--quader-space-2) var(--quader-space-4);
+      margin: 0 0 var(--quader-space-3);
+      padding: var(--quader-space-2) var(--quader-space-3);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-m);
     }
     .choice {
       display: flex;
       align-items: center;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
     }
     .links {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-4);
-      margin-block: 0 var(--trove-space-4);
+      gap: var(--quader-space-4);
+      margin-block: 0 var(--quader-space-4);
     }
   `,
 })

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
+	"github.com/guided-traffic/quader/internal/audit"
 )
 
 func hit(i int) audit.Event {
@@ -53,7 +53,7 @@ func TestR_OPS_015_AsyncEventsDoNotBlockWhileTheTableIsLocked(t *testing.T) {
 
 	lock := e.st.admin(t, e.db)
 	mustExec(t, lock, "BEGIN")
-	mustExec(t, lock, "LOCK TABLE trove.audit_event IN ACCESS EXCLUSIVE MODE")
+	mustExec(t, lock, "LOCK TABLE quader.audit_event IN ACCESS EXCLUSIVE MODE")
 
 	const total = 20000
 	var slowest time.Duration
@@ -161,7 +161,7 @@ func TestR_OPS_015_RepeatedDenialsCollapseIntoTheFirstAndOneSummary(t *testing.T
 	clk.add(2 * time.Minute) // the window closes; the next tick writes the summary
 	waitRows(t, e, "action = 'authz.denied'", 2)
 
-	rows, err := e.admin.Query(context.Background(), "SELECT id::text, details FROM trove.audit_event WHERE action = 'authz.denied' ORDER BY occurred_at, (details ->> 'count')::int")
+	rows, err := e.admin.Query(context.Background(), "SELECT id::text, details FROM quader.audit_event WHERE action = 'authz.denied' ORDER BY occurred_at, (details ->> 'count')::int")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +208,7 @@ func TestR_OPS_015_DenialsOverThreeReplicasSumExactly(t *testing.T) {
 		}
 	}
 	n := count(t, e, "audit_event", "action = 'authz.denied'")
-	sum := scalar[int](t, e.admin, "SELECT coalesce(sum((details ->> 'count')::int), 0) FROM trove.audit_event WHERE action = 'authz.denied'")
+	sum := scalar[int](t, e.admin, "SELECT coalesce(sum((details ->> 'count')::int), 0) FROM quader.audit_event WHERE action = 'authz.denied'")
 	if n > 6 || sum != 10 {
 		t.Errorf("%d events with counts summing to %d; want at most 6 and 10", n, sum)
 	}
@@ -232,7 +232,7 @@ func TestR_AUTHZ_029_AnonymousDenialsCollapsePerClientAddress(t *testing.T) {
 		t.Fatal(err)
 	}
 	n := count(t, e, "audit_event", "action = 'authz.denied' AND actor_type = 'anonymous' AND source_ip = '203.0.113.9'")
-	sum := scalar[int](t, e.admin, "SELECT coalesce(sum((details ->> 'count')::int), 0) FROM trove.audit_event WHERE action = 'authz.denied'")
+	sum := scalar[int](t, e.admin, "SELECT coalesce(sum((details ->> 'count')::int), 0) FROM quader.audit_event WHERE action = 'authz.denied'")
 	if n < 1 || n > 2 || sum != 1000 {
 		t.Errorf("%d events, counts sum to %d; want at most 2 and 1000", n, sum)
 	}

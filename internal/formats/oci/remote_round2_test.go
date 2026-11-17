@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // Mechanism of R-OCI-021, not a proof of its criteria: it checks a parser or the shape of one handshake request; the criteria are
@@ -85,7 +85,7 @@ func TestAStoodChallengeWithInsufficientScopeIsAMissingImage(t *testing.T) {
 }
 
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestACutTagsListHasNoLengthTheSpoolCouldCheck(t *testing.T) {
 	body := `{"name":"app","tags":["a","b"]}`
 	h := http.Header{"Link": {`</v2/app/tags/list?last=b&n=2>; rel="next"`}, "Content-Length": {"31"}}

@@ -4,8 +4,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/vuln"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/vuln"
 )
 
 // TestR_VULN_002_AnOwnerDoesNotWeakenTheScanning: the role Owner alone changes no member that lifts a download

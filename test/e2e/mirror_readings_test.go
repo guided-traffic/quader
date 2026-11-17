@@ -36,7 +36,7 @@ const (
 	pgSampleInterval  = "0.25"
 	pgSampleCount     = "14400"
 	pgSamplerRestarts = 5
-	pgSamplerApp      = "trove-e2e-readings"
+	pgSamplerApp      = "quader-e2e-readings"
 )
 
 // readings holds the samplers and the event log of one subtest.
@@ -108,7 +108,7 @@ func stamp(at time.Time) string { return at.UTC().Format("2006-01-02T15:04:05.00
 // pgSettingsQuery is the first line of the PostgreSQL file: the settings the other lines are read against.
 const pgSettingsQuery = `SELECT jsonb_build_object('kind', 'settings', 'at', to_char(clock_timestamp() AT TIME ZONE 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
   'log_min_duration_statement', coalesce((SELECT split_part(c, '=', 2) FROM pg_db_role_setting s, unnest(s.setconfig) c
-      WHERE s.setdatabase = 0 AND s.setrole = 'trove'::regrole AND c LIKE 'log_min_duration_statement=%'), current_setting('log_min_duration_statement')), 'log_parameter_max_length', current_setting('log_parameter_max_length'),
+      WHERE s.setdatabase = 0 AND s.setrole = 'quader'::regrole AND c LIKE 'log_min_duration_statement=%'), current_setting('log_min_duration_statement')), 'log_parameter_max_length', current_setting('log_parameter_max_length'),
   'track_wal_io_timing', current_setting('track_wal_io_timing'), 'synchronous_standby_names', current_setting('synchronous_standby_names'),
   'server_version', current_setting('server_version'));
 `
@@ -121,7 +121,7 @@ const pgSampleQuery = `SELECT jsonb_build_object(
   'activity', (SELECT coalesce(jsonb_agg(a), '[]'::jsonb) FROM (
       SELECT backend_type, state, wait_event_type, wait_event, left(query, 48) AS query, count(*) AS n
       FROM pg_stat_activity
-      WHERE pid <> pg_backend_pid() AND state IS DISTINCT FROM 'idle' AND wait_event_type IS DISTINCT FROM 'Activity' AND (backend_type <> 'client backend' OR datname = 'trove')
+      WHERE pid <> pg_backend_pid() AND state IS DISTINCT FROM 'idle' AND wait_event_type IS DISTINCT FROM 'Activity' AND (backend_type <> 'client backend' OR datname = 'quader')
       GROUP BY 1, 2, 3, 4, 5) a),
   'replication', (SELECT coalesce(jsonb_agg(r), '[]'::jsonb) FROM (
       SELECT application_name, sync_state,
@@ -144,12 +144,12 @@ func terminateSamplerSessions(ctx context.Context) {
 	if err != nil {
 		return
 	}
-	_, _ = kubectlCtx(ctx, "-n", cfg.namespace, "exec", primary, "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "trove", "-At", "-c",
+	_, _ = kubectlCtx(ctx, "-n", cfg.namespace, "exec", primary, "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-c",
 		"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = '"+pgSamplerApp+"' AND pid <> pg_backend_pid()")
 }
 
 func currentPrimary(ctx context.Context) (string, error) {
-	out, err := kubectlCtx(ctx, "-n", cfg.namespace, "get", "cluster", "trove-db", "-o", "jsonpath={.status.currentPrimary}")
+	out, err := kubectlCtx(ctx, "-n", cfg.namespace, "get", "cluster", "quader-db", "-o", "jsonpath={.status.currentPrimary}")
 	if primary := strings.TrimSpace(out); err == nil && primary != "" {
 		return primary, nil
 	} else if err == nil {
@@ -192,7 +192,7 @@ func (r *readings) samplePG(ctx context.Context) {
 		}
 		starts++
 		cmd := exec.CommandContext(ctx, "kubectl", "--context", cfg.kubeContext, "-n", cfg.namespace, "exec", "-i", primary, "-c", "postgres", "--",
-			"env", "PGAPPNAME="+pgSamplerApp, "psql", "-U", "postgres", "-d", "trove", "-At")
+			"env", "PGAPPNAME="+pgSamplerApp, "psql", "-U", "postgres", "-d", "quader", "-At")
 		cmd.Stdin = strings.NewReader(pgSettingsQuery + pgSampleQuery)
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr
@@ -233,9 +233,9 @@ const nodesScript = `i=0; while [ $i -lt 3600 ]; do echo @; for f in cpu.stat cp
 // container has a fixed name per cluster, which the next start removes first (docker rm -f), and is removed again when the readings stop;
 // a run that is killed leaves it, and its loop ends by itself after an hour (3600 blocks).
 func (r *readings) sampleNodes(ctx context.Context) {
-	image := os.Getenv("TROVE_E2E_TOOLS_IMAGE")
+	image := os.Getenv("QUADER_E2E_TOOLS_IMAGE")
 	if image == "" {
-		r.t.Logf("readings: the nodes' cgroup is not sampled: TROVE_E2E_TOOLS_IMAGE is not set; run the suite through deploy/dev/e2e.sh")
+		r.t.Logf("readings: the nodes' cgroup is not sampled: QUADER_E2E_TOOLS_IMAGE is not set; run the suite through deploy/dev/e2e.sh")
 		return
 	}
 	f, err := os.OpenFile(filepath.Join(cfg.out, readingsNodes), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
@@ -244,7 +244,7 @@ func (r *readings) sampleNodes(ctx context.Context) {
 		return
 	}
 	defer f.Close()
-	name := "trove-e2e-readings-nodes-" + strings.TrimPrefix(cfg.kubeContext, "kind-")
+	name := "quader-e2e-readings-nodes-" + strings.TrimPrefix(cfg.kubeContext, "kind-")
 	remove := func() { _ = exec.Command("docker", "rm", "-f", name).Run() }
 	remove()
 	defer remove()
@@ -445,7 +445,7 @@ func captureClusterLogs(t *testing.T) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, filepath.Join(cfg.repo, "deploy/dev/cluster-logs.sh"), dir)
 	cmd.Dir = cfg.repo
-	cmd.Env = append(os.Environ(), "TROVE_DEV_CLUSTER="+strings.TrimPrefix(cfg.kubeContext, "kind-"))
+	cmd.Env = append(os.Environ(), "QUADER_DEV_CLUSTER="+strings.TrimPrefix(cfg.kubeContext, "kind-"))
 	cmd.WaitDelay = captureGrace // the script's kubectl children keep its pipe open after the kill
 	start := time.Now()
 	out, err := cmd.CombinedOutput()

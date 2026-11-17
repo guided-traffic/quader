@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The identity-mapping service of work package W3 (R-CI-009, R-CI-017, R-CI-019, R-CI-020, Q-CI-26). The
@@ -35,7 +35,7 @@ type MappingsOptions struct {
 	// Recorder records the events of the service; nil discards them.
 	Recorder audit.Recorder
 	// Caches is the registry the in-process copy registers with; nil gives the service a registry of its
-	// own, which no change log feeds (`trove migrate`).
+	// own, which no change log feeds (`quader migrate`).
 	Caches *cache.Registry
 	// Revoker ends the tokens of a mapping that is disabled or deleted, in the transaction of the write
 	// (R-CI-017). It is asked only for a mapping that has an issuance record.

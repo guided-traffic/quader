@@ -7,7 +7,7 @@ import { DataTable, TableColumn, TableSort } from './data-table';
 @Component({
   imports: [DataTable],
   template: `
-    <trove-data-table
+    <quader-data-table
       caption="Widgets"
       [columns]="columns"
       [sort]="sort()"
@@ -27,7 +27,7 @@ import { DataTable, TableColumn, TableSort } from './data-table';
           <td>detail</td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   `,
 })
 class Host {
@@ -118,7 +118,7 @@ describe('Data table', () => {
     host.loading.set(false);
     host.rows.set([]);
     await settle();
-    expect(root.querySelector('trove-empty-state')?.textContent).toContain('No widget matches.');
+    expect(root.querySelector('quader-empty-state')?.textContent).toContain('No widget matches.');
     expect(root.querySelector('table')).toBeNull();
 
     host.error.set(new ApiError(503, { code: 'unavailable' }, 'rid-1'));
@@ -142,14 +142,14 @@ describe('Data table', () => {
     @Component({
       imports: [DataTable],
       template: `
-        <trove-data-table caption="Things" [columns]="columns">
+        <quader-data-table caption="Things" [columns]="columns">
           <tr>
             <th scope="row">one</th>
             <td>https://example.net/one/</td>
             <td>–</td>
             <td class="actions"><button type="button">x</button></td>
           </tr>
-        </trove-data-table>
+        </quader-data-table>
       `,
     })
     class Budget {
@@ -167,13 +167,13 @@ describe('Data table', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
-    const table = root.querySelector<HTMLElement>('trove-data-table')!;
-    expect(table.style.getPropertyValue('--trove-list-others')).toBe('calc(16rem + 7rem + 2rem + 4 * 2 * var(--trove-space-4))');
+    const table = root.querySelector<HTMLElement>('quader-data-table')!;
+    expect(table.style.getPropertyValue('--quader-list-others')).toBe('calc(16rem + 7rem + 2rem + 4 * 2 * var(--quader-space-4))');
     expect(table.classList.contains('stack')).toBe(true);
     const heads = [...root.querySelectorAll<HTMLElement>('thead th')];
     expect(heads.map((h) => h.style.minInlineSize)).toEqual(['16rem', '', '7rem', '2rem']);
     // A narrow column gives its room back to the address below 64 rem of the list (UI-A-30).
-    expect(table.style.getPropertyValue('--trove-list-narrow')).toBe('calc(7rem + 1 * 2 * var(--trove-space-4))');
+    expect(table.style.getPropertyValue('--quader-list-narrow')).toBe('calc(7rem + 1 * 2 * var(--quader-space-4))');
     expect(heads.map((h) => h.classList.contains('narrow-drop'))).toEqual([false, false, true, false]);
     // Stacked, a cell names its column unless its column says not to; an empty value leaves its line out.
     const cells = [...root.querySelectorAll<HTMLElement>('tbody td')];
@@ -188,14 +188,14 @@ describe('Data table', () => {
     @Component({
       imports: [DataTable],
       template: `
-        <trove-data-table caption="Things" [columns]="columns">
+        <quader-data-table caption="Things" [columns]="columns">
           <tr>
             <th scope="row">one</th>
             <td>generic</td>
             <td>https://example.net/one/</td>
             <td class="actions"><button type="button">x</button></td>
           </tr>
-        </trove-data-table>
+        </quader-data-table>
       `,
     })
     class Prefer {
@@ -213,8 +213,8 @@ describe('Data table', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
-    const table = root.querySelector<HTMLElement>('trove-data-table')!;
-    expect(table.style.getPropertyValue('--trove-list-others')).toBe('calc(20rem + 8rem + 2rem + 4 * 2 * var(--trove-space-4))');
+    const table = root.querySelector<HTMLElement>('quader-data-table')!;
+    expect(table.style.getPropertyValue('--quader-list-others')).toBe('calc(20rem + 8rem + 2rem + 4 * 2 * var(--quader-space-4))');
     const heads = [...root.querySelectorAll<HTMLElement>('thead th')];
     expect(heads.map((h) => h.style.minInlineSize)).toEqual(['13rem', '8rem', '', '2rem']);
     // The name column takes what is left over; every other column keeps its width.

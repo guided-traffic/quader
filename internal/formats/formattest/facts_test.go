@@ -1,6 +1,6 @@
 package formattest_test
 
-import "github.com/guided-traffic/trove/internal/formats/catalog"
+import "github.com/guided-traffic/quader/internal/formats/catalog"
 
 func catalogFacts() catalog.Facts {
 	return catalog.Facts{

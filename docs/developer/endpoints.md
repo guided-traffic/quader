@@ -38,16 +38,16 @@ The security view is [security/endpoints-and-exposure.md](../security/endpoints-
   `CheckSubjectConstruction` ([subject.go](../../internal/archtest/subject.go), fixture
   [testdata/subject](../../internal/archtest/testdata/subject)) names any other (Q-EP-20, H-166).
 - **Exposure is part of the grant index.** The rules are read in the index build's snapshot and compiled with it; a
-  rule change notifies the change area `authz` and follows the bound, the stale wait and `Trove-Authz-Min-Epoch` of a
+  rule change notifies the change area `authz` and follows the bound, the stale wait and `Quader-Authz-Min-Epoch` of a
   policy change. No rule is read from Valkey, and a management `GET` reads the rules from PostgreSQL.
 
 ## Configuration
 
 `server.endpoints` is one map key ([endpoints.go](../../internal/config/endpoints.go)); in the environment it is JSON
-(`TROVE_SERVER_ENDPOINTS`). `Endpoint` keeps "unset" apart from a legitimate zero (`*bool`, `*string`, `nil` lists),
+(`QUADER_SERVER_ENDPOINTS`). `Endpoint` keeps "unset" apart from a legitimate zero (`*bool`, `*string`, `nil` lists),
 because a further endpoint and the default endpoint have different defaults. `Server.ResolveEndpoints()` applies
 them and returns `[]ResolvedEndpoint` (default first, the rest by name); the loader's `Finalize` writes the same
-values back into the entries, so `trove admin config validate` prints them.
+values back into the entries, so `quader admin config validate` prints them.
 
 ```yaml
 server:
@@ -72,7 +72,7 @@ server:
       rate_limit_class: external       # default for a further endpoint; "" = no class (R-EP-015)
       replica_header: never            # default for a further endpoint: authenticated | always | never
     default:                           # optional; hosts, wildcard_host, host_roots, surface, auth,
-      hosts: [trove.example.com]       #   exposure, cache_fill, rate_limit_class, replica_header only
+      hosts: [quader.example.com]       #   exposure, cache_fill, rate_limit_class, replica_header only
   endpoint_rate_limits:                # default: the class below
     external: {requests_per_second: 50, burst: 200, key: principal}   # default
 ```
@@ -118,7 +118,7 @@ The effective TLS block of a further endpoint is `server.tls` with the endpoint'
 | [internal/api/v1/endpoints_api.go](../../internal/api/v1/endpoints_api.go) | The nine operations of R-EP-016; `EndpointServices` |
 | [internal/api/v1/endpoint_ratelimit.go](../../internal/api/v1/endpoint_ratelimit.go) | `NewEndpointRateLimit`, `EndpointLimiterName` (R-EP-015) |
 | [internal/meta/postgres/queries/endpoints.sql](../../internal/meta/postgres/queries/endpoints.sql) | The build query of the index, the rule reads and writes, the counts, the serving-replica count |
-| [internal/observability](../../internal/observability) | `WithEndpoint` (request log option), `WithEndpointNames` (metrics option), `MiddlewareFor` (span attribute), the `trove_endpoint_*` families, `EndpointCredentialsRefused` |
+| [internal/observability](../../internal/observability) | `WithEndpoint` (request log option), `WithEndpointNames` (metrics option), `MiddlewareFor` (span attribute), the `quader_endpoint_*` families, `EndpointCredentialsRefused` |
 
 ## Request path of an endpoint
 
@@ -127,7 +127,7 @@ The chain of [architecture.md](architecture.md#request-path-client-listener) is 
 | Step | Per endpoint |
 |---|---|
 | 1 recovery | places `*httpserver.Endpoint` in the context |
-| 2/3 trace, log, metrics | `Tracer.MiddlewareFor(name)` adds `trove.endpoint`; `RequestLog(…, WithEndpoint(name))` sets the `endpoint` label and log field and counts `trove_http_requests_in_flight` per endpoint |
+| 2/3 trace, log, metrics | `Tracer.MiddlewareFor(name)` adds `quader.endpoint`; `RequestLog(…, WithEndpoint(name))` sets the `endpoint` label and log field and counts `quader_http_requests_in_flight` per endpoint |
 | 4 in-flight limit | `Endpoint.MaxInFlight()`: `server.max_in_flight` for `default`, `max_in_flight` otherwise; a busy endpoint answers `503 server_busy` while another is unaffected. Then the replica's memory guard, one for all endpoints ([architecture.md](architecture.md#stage-4-and-the-memory-guard)) |
 | 5 address and host | the endpoint's `Resolver` (its `trusted_proxies`): client address as before, then the effective host, the host check, the response base URL, the host-root binding |
 | 6 authentication | `ReplicaHeader` is the endpoint's; the stage applies the endpoint's credential rules (`endpointRules`, below) |
@@ -135,7 +135,7 @@ The chain of [architecture.md](architecture.md#request-path-client-listener) is 
 
 **Effective host** (`Resolver.resolveHost`): the request's `Host` (`:authority`), lower-cased, without port. When the
 TCP peer is a trusted proxy of the endpoint, a forwarded host that lies in the endpoint's host set replaces it; one
-outside the set is ignored and counted in `trove_endpoint_forwarded_host_ignored_total`. Only the header family
+outside the set is ignored and counted in `quader_endpoint_forwarded_host_ignored_total`. Only the header family
 that `server.forwarded_header` selects is read (R-ARCH-006 holds: there is no fallback to the other), which narrows
 the "`Forwarded`, else `X-Forwarded-Host`" of the spec. An endpoint that checks hosts answers `421` for a host that is
 not in its set, an IP literal, or no host. A further endpoint always checks; the default endpoint checks only when
@@ -165,7 +165,7 @@ missing credential:
 | no credential and `anonymous: false` (a session cookie without `ui` counts as none) | `noCredential` | none |
 
 Each refusal calls `EndpointRules.Refused`; `credentialRefused` counts it in
-`trove_endpoint_credentials_refused_total{endpoint,reason}` (`token_type`, `token_binding`, `anonymous`) and records a
+`quader_endpoint_credentials_refused_total{endpoint,reason}` (`token_type`, `token_binding`, `anonymous`) and records a
 refused token as `token.rejected` with reason `endpoint_not_accepted` (asynchronous, deduplicated per token ID, or per
 client address for a type refusal, which has no ID). Type and binding refusals do not count towards the failed-credential
 throttle. The binding itself is the token scope's `endpoints` list of the identity area: it is validated against the
@@ -202,7 +202,7 @@ request ─► edge.SubjectFrom (Subject.Endpoint) ─► DecideOn / ReadableOn 
   format_not_exposable` for a rule, the `404` of a missing resource for a read on an endpoint with rules, `403
   endpoint_read_only` for a write, Q-EP-57).
 - **Listings.** `Readable` drops a repository without an enabled rule on the subject's endpoint and counts it in
-  `trove_exposure_hidden_total{kind="item"}`; a refused `Decide` counts `kind="request"`. `trove_exposure_rules{endpoint}`
+  `quader_exposure_hidden_total{kind="item"}`; a refused `Decide` counts `kind="request"`. `quader_exposure_rules{endpoint}`
   is set from every installed index.
 - **The fingerprint** (`ExposureCeiling.ExposureFingerprint`) is computed from the index without a query; it keys the
   rendition and the validator of a filtered document (below); the dry run computes the same value from the stored rows.
@@ -231,7 +231,7 @@ remote / virtual handler ─► merge or rewrite ─► the format's own filter 
   references on the filtered document, hidden versions and tarballs are the `404` of a missing one, `?write=true` is `403
   endpoint_read_only`; the rendition key and the ETag held the endpoint and the fingerprint before (Q-NPM-26), so a rule
   change misses every cached rendition and fails every earlier validator.
-- **Member names** (Q-EP-56). On an endpoint with rules the virtual engine sets no `Trove-Resolved-From` and reports a
+- **Member names** (Q-EP-56). On an endpoint with rules the virtual engine sets no `Quader-Resolved-From` and reports a
   member's failure as the addressed repository's: `Caller.asAddressed` keeps kind, code, `Retry-After` and headers and
   rewrites the detail; a member's `NotFound` is the engine's one `404`.
 - **Cache state** (Q-EP-60). `formats.ServeRoute` removes `Cache-Status` from every answer of a format route on an endpoint
@@ -239,7 +239,7 @@ remote / virtual handler ─► merge or rewrite ─► the format's own filter 
 - **Cache fill** (R-EP-019). `Subject.CacheFill` is false on an endpoint with `cache_fill: false`; the populate check
   (`MayPopulateOn`, `PopulateOn`, `MemberUsableOn`) refuses every subject there. The remote engine then serves what its cache
   holds, answers an uncached item `403 populate_not_permitted` and writes no negative entry; the virtual engine treats such a
-  member as a miss. Each prevented contact is counted in `trove_endpoint_cache_fill_refused_total{endpoint}`: by the remote
+  member as a miss. Each prevented contact is counted in `quader_endpoint_cache_fill_refused_total{endpoint}`: by the remote
   engine where it refuses a fill, and by the virtual engine for each remote member it does not ask for an artifact
   (`virtual.Options.FillRefused`, bound to `proxy.Engine.FillRefused`, Q-EP-58).
 
@@ -248,7 +248,7 @@ remote / virtual handler ─► merge or rewrite ─► the format's own filter 
 One cluster limiter per class that an endpoint of the process names, `endpoint_<class>` with hyphens as underscores
 (`EndpointLimiterName`, Q-EP-22), built with `LimiterSet.NewLimiter`: while Valkey cannot be used, the per-replica
 share divides by `replicaCount` (replica_count.go; the one count of every limiter of the client listener), the live replicas of this replica's pool (web replicas with the same
-`TROVE_POOL_NAME`, and replicas of the role `all`), refreshed every heartbeat. The bucket is
+`QUADER_POOL_NAME`, and replicas of the role `all`), refreshed every heartbeat. The bucket is
 `<endpoint>\x00token:<id>` (or the principal, or `addr:<client>` for an anonymous request and for `key: address`), so two
 endpoints of one class have separate budgets. Every answer of a limited endpoint carries `RateLimit-Policy` and
 `RateLimit` with the class `endpoint:<class>`; the management API's classes add their members to the same fields. A
@@ -262,11 +262,11 @@ refusal is `429 rate_limited` with `Retry-After`, as problem+json; on a package 
 | `listEndpoints` | `GET /api/v1/endpoints` | `endpoints:read`; configured endpoints (default first), then inert names with `configuration: null` |
 | `getEndpoint` | `GET /api/v1/endpoints/{endpoint}` | `endpoints:read`; 404 for a name neither configured nor holding rules |
 | `listExposureRules` | `GET /api/v1/endpoints/{endpoint}/exposure-rules` | `endpoints:read`; filters `repository` (repeatable), `package`, `enabled`; sort `name`/`-name` |
-| `createExposureRule` | `POST …/exposure-rules` | `endpoints:write`; optional `Idempotency-Key`; 201 with `Location`, `ETag`, `Trove-Authz-Epoch` |
+| `createExposureRule` | `POST …/exposure-rules` | `endpoints:write`; optional `Idempotency-Key`; 201 with `Location`, `ETag`, `Quader-Authz-Epoch` |
 | `getExposureRule` | `GET …/exposure-rules/{name}` | `endpoints:read`; `ETag` is the quoted `revision`, 304 |
 | `replaceExposureRule` | `PUT …/exposure-rules/{name}` | `endpoints:write`; `If-Match` required (428, 412 with `currentEtag`) |
 | `patchExposureRule` | `PATCH …/exposure-rules/{name}` | as PUT, a merge patch on the stored rule (Q-EP-18) |
-| `deleteExposureRule` | `DELETE …/exposure-rules/{name}` | `endpoints:write`; `If-Match` honoured; 204 with `Trove-Authz-Epoch`; works on an inert endpoint |
+| `deleteExposureRule` | `DELETE …/exposure-rules/{name}` | `endpoints:write`; `If-Match` honoured; 204 with `Quader-Authz-Epoch`; works on an inert endpoint |
 | `checkExposure` | `POST …/check-exposure` | `endpoints:read` and `read` on the repository (decided in the handler, 404 like a missing repository) |
 
 - `name` and `repository` are immutable (`422 validation_failed` with the pointer). An inert endpoint takes no create or
@@ -274,9 +274,9 @@ refusal is `429 rate_limited` with `Retry-After`, as problem+json; on a package 
   under a row lock of the endpoint's rules).
 - The rule list reads the endpoint's rules (bounded by the limit) in one query and pages over `(name, id)` in the handler,
   because the `package` filter is a pattern match.
-- `x-trove-recent-auth: true` is declared on the writes; the shared authorization step enforces it (Q-API-40).
+- `x-quader-recent-auth: true` is declared on the writes; the shared authorization step enforces it (Q-API-40).
 - The idempotent create learns its epoch in the commit hook and hands it to the stored outcome through `Outcome.Finish`
-  (`finishEpoch`), so the first answer and every replay carry `Trove-Authz-Epoch` (Q-API-44).
+  (`finishEpoch`), so the first answer and every replay carry `Quader-Authz-Epoch` (Q-API-44).
 - `PATCH` computes the merge on the stored rule and writes conditional on that revision, also for `If-Match: *` (Q-EP-26).
 - **The endpoint screen (rule editor and preview) uses these operations:** the list is `listEndpoints` (inert names flagged,
   `ruleCount`, `configuration` for the read-only panel); the rule table is `listExposureRules` with `enabled` from the
@@ -290,7 +290,7 @@ refusal is `429 rate_limited` with `Retry-After`, as problem+json; on a package 
 ## The Bastion stage (R-BAS-008)
 
 Only the chain of the default endpoint carries the Bastion stage (`Chain.Bastion`, [wire_bastion.go](../../internal/app/wire_bastion.go)); a further endpoint
-never recognizes a Bastion, so a `trv_bst_` token there is an unknown token of a type the endpoint does not accept. The default endpoint's `auth.anonymous`
+never recognizes a Bastion, so a `qdr_bst_` token there is an unknown token of a type the endpoint does not accept. The default endpoint's `auth.anonymous`
 and the host set do not matter to the interface routes: the Bastion is admitted by its token alone, and the response base URL of its handshake is derived
 as for any request (R-EP-003) from the forwarded host and `server.additional_base_urls`, which is how the Bastion learns whether the main installation
 honours its host.
@@ -317,11 +317,11 @@ ASCII, and a host-checking endpoint's `base_url` host must be a DNS name (no IP 
 ## Which process opens which listener
 
 `servesEndpoint` ([wire_endpoints.go](../../internal/app/wire_endpoints.go)): role `all` opens every endpoint; a
-`web` process opens the endpoints whose `pool` equals `TROVE_POOL_NAME` (empty for the main Deployment); a process
+`web` process opens the endpoints whose `pool` equals `QUADER_POOL_NAME` (empty for the main Deployment); a process
 in a pool that no endpoint names serves the endpoints without a pool; a `worker` opens none. Every listener binds
 before the replica reports ready (the bind happens in `startClient`, step 9); a listener that cannot bind stops
 start-up and the error starts with `endpoint <name>`. Shutdown drains every client listener in parallel with the
-same drain delay and deadline; `trove_endpoint_listener_up{endpoint}` is 1 from the bind and 0 at the start of the
+same drain delay and deadline; `quader_endpoint_listener_up{endpoint}` is 1 from the bind and 0 at the start of the
 shutdown.
 
 ## TLS
@@ -338,16 +338,16 @@ readiness check covers every endpoint listener. Rotation and the failed-rotation
 
 | Signal | Content |
 |---|---|
-| `trove_http_requests_total`, `…_duration_seconds`, `…_in_flight` | label `endpoint`, bounded by the configured names (`WithEndpointNames`); a name outside folds into `_other`; ops series carry the empty value |
-| `trove_endpoint_listener_up`, `…_misdirected_total`, `…_forwarded_host_ignored_total` | per `endpoint`, exported at 0 from the start |
+| `quader_http_requests_total`, `…_duration_seconds`, `…_in_flight` | label `endpoint`, bounded by the configured names (`WithEndpointNames`); a name outside folds into `_other`; ops series carry the empty value |
+| `quader_endpoint_listener_up`, `…_misdirected_total`, `…_forwarded_host_ignored_total` | per `endpoint`, exported at 0 from the start |
 | request log | `endpoint` (null on the ops listener) and `host` (the effective host, at most 255 bytes) |
-| spans | `trove.endpoint` |
-| `trove_endpoint_credentials_refused_total` | per `endpoint` and `reason` (`token_type`, `token_binding`, `anonymous`), exported at 0 |
-| `trove_exposure_hidden_total` | per `endpoint` and `kind` (`request`, `item`); the decision point's registry, bounded by the configured names |
-| `trove_exposure_rules` | enabled rules per configured endpoint in the installed grant index; aggregate with `max` |
-| `trove_ratelimit_decisions_total`, `trove_ratelimit_fallback` | the limiter `endpoint_<class>` of each class (R-ARCH-034) |
+| spans | `quader.endpoint` |
+| `quader_endpoint_credentials_refused_total` | per `endpoint` and `reason` (`token_type`, `token_binding`, `anonymous`), exported at 0 |
+| `quader_exposure_hidden_total` | per `endpoint` and `kind` (`request`, `item`); the decision point's registry, bounded by the configured names |
+| `quader_exposure_rules` | enabled rules per configured endpoint in the installed grant index; aggregate with `max` |
+| `quader_ratelimit_decisions_total`, `quader_ratelimit_fallback` | the limiter `endpoint_<class>` of each class (R-ARCH-034) |
 | audit | the column `endpoint` of every event recorded during a request: `authz.denied` (reason `deny.exposure`, `deny.endpoint_read_only`), `token.rejected` (reason `endpoint_not_accepted`), `endpoint.exposure.*` |
-| `trove_endpoint_cache_fill_refused_total` | per `endpoint`: upstream contacts the endpoint's `cache_fill: false` prevented (R-EP-019); registered by the remote engine ([metrics.go](../../internal/proxy/metrics.go)), counted there and by the virtual engine through `FillRefused` |
+| `quader_endpoint_cache_fill_refused_total` | per `endpoint`: upstream contacts the endpoint's `cache_fill: false` prevented (R-EP-019); registered by the remote engine ([metrics.go](../../internal/proxy/metrics.go)), counted there and by the virtual engine through `FillRefused` |
 
 ## Chart
 
@@ -363,10 +363,10 @@ See [helm-chart.md](helm-chart.md#endpoints).
 | chart | [test/chart/endpoints_test.go](../../test/chart/endpoints_test.go) | Services, Ingresses, NetworkPolicies, pool, mounts, config block, validation failures, notes |
 | architecture | [internal/archtest](../../internal/archtest) | only `internal/httpserver` sets the endpoint; only `internal/authz` and `internal/api/edge` build or edit a `Subject` (R-EP-013) |
 | unit | [subject_test.go](../../internal/api/edge/subject_test.go), [decider_test.go](../../internal/authz/decider_test.go) | `edge.SubjectFrom` takes the listener's endpoint (`TestR_EP_013_TheSubjectCarriesTheListenersEndpoint`); a decision on a detached context, in a collapsed flight and in a fan-out keeps its ceiling (`TestR_EP_013_ADecisionOnADetachedContextKeepsTheCeiling`); the audit endpoint is the subject's |
-| unit | [exposure_test.go](../../internal/authz/exposure_test.go) | rule matching (paths, exclude inside a rule, rules add up, disabled, repository level, the R-EP-012 version fixture on a test versioning), the reasons of the dry run, the fingerprint, the ceiling in `Decide` for every subject (administrator, break-glass, anonymous, missing and `requireAuthentication` repositories, virtual and addressed members, writes, an unconfigured endpoint), the context endpoint, mode `all` equal to default, `Readable`, the metrics, a rule change through the index, validation codes and journal entries, the cost of 1,000 rules (`TestR_EP_013_CeilingPerformance`: allocations and median per change, the p99 in the CPU time of the deciding thread with `TROVE_PERF_GATE=1` in `make test-performance`; `BenchmarkCeilingDecide` reports `-benchmem`; [Q-ARCH-250](../spec/architecture.md#q-arch-250--a-p99-bound-in-microseconds-is-a-nightly-gate-and-the-per-change-test-asserts-allocations-and-the-median), [Q-EP-65](../spec/endpoints.md#q-ep-65--the-tail-of-r-ep-013-is-measured-in-the-cpu-time-of-the-deciding-thread)) |
+| unit | [exposure_test.go](../../internal/authz/exposure_test.go) | rule matching (paths, exclude inside a rule, rules add up, disabled, repository level, the R-EP-012 version fixture on a test versioning), the reasons of the dry run, the fingerprint, the ceiling in `Decide` for every subject (administrator, break-glass, anonymous, missing and `requireAuthentication` repositories, virtual and addressed members, writes, an unconfigured endpoint), the context endpoint, mode `all` equal to default, `Readable`, the metrics, a rule change through the index, validation codes and journal entries, the cost of 1,000 rules (`TestR_EP_013_CeilingPerformance`: allocations and median per change, the p99 in the CPU time of the deciding thread with `QUADER_PERF_GATE=1` in `make test-performance`; `BenchmarkCeilingDecide` reports `-benchmem`; [Q-ARCH-250](../spec/architecture.md#q-arch-250--a-p99-bound-in-microseconds-is-a-nightly-gate-and-the-per-change-test-asserts-allocations-and-the-median), [Q-EP-65](../spec/endpoints.md#q-ep-65--the-tail-of-r-ep-013-is-measured-in-the-cpu-time-of-the-deciding-thread)) |
 | unit | [endpoint_rules_test.go](../../internal/auth/endpoint_rules_test.go), [exposure_test.go](../../internal/app/exposure_test.go), [endpoints_auth_test.go](../../internal/config/endpoints_auth_test.go) | type refusal without a lookup, binding refusals after one, the refusal hook, the cookie without `ui`; the rules from the configuration; stage 7 keeps the request path and leaves the endpoint to the subject; an empty `token_types` stops start-up |
 | unit | [endpoint_ratelimit_test.go](../../internal/api/v1/endpoint_ratelimit_test.go) | the limiter name, 429 with the class fields, separate budgets per token and endpoint, key `address`, the fallback share |
-| integration | [test/integration/endpoints](../../test/integration/endpoints) | E1.14 with three in-process replicas behind a dispatcher, Valkey running and unreachable: a PAT refused while `api_token` is locked (no query), a bound SAT on `customers` and 401 on default, R-EP-005 with a credential, a rule created, narrowed and deleted through the API on every replica within the bound and at once with `Trove-Authz-Min-Epoch`, hidden equal to missing, the bound administrator, the audit events with their journal rows, 1,000 requests of one token; the convention suite (`RunContract`) on the rules, the endpoint list with an inert name, filters, validation, the dry run with a draft, an auditor, every answer validated against the document |
+| integration | [test/integration/endpoints](../../test/integration/endpoints) | E1.14 with three in-process replicas behind a dispatcher, Valkey running and unreachable: a PAT refused while `api_token` is locked (no query), a bound SAT on `customers` and 401 on default, R-EP-005 with a credential, a rule created, narrowed and deleted through the API on every replica within the bound and at once with `Quader-Authz-Min-Epoch`, hidden equal to missing, the bound administrator, the audit events with their journal rows, 1,000 requests of one token; the convention suite (`RunContract`) on the rules, the endpoint list with an inert name, filters, validation, the dry run with a draft, an auditor, every answer validated against the document |
 | unit | [exposure_test.go](../../internal/authz/exposure_test.go), [dispatcher_test.go](../../internal/api/dispatch/dispatcher_test.go), [exposure_test.go](../../internal/virtual/exposure_test.go), [fillrefused_test.go](../../internal/proxy/fillrefused_test.go) | the view on the R-EP-012 fixture against the ceiling's decisions and its fail-closed cases (`TestR_EP_018_ExposureView`); the facts carry the view and the fingerprint of one ceiling (`TestR_EP_018_TheEndpointFactsCarryTheView`); a member's failure names only the addressed repository (`TestR_EP_018_AFailureNamesOnlyTheAddressedRepository`); the members the virtual engine does not ask are counted for the endpoint and not for a subject's missing right (`TestR_EP_019_TheVirtualEngineCountsTheMembersItDoesNotAsk`, `TestR_EP_019_FillRefusedCountsTheEndpoint`) |
 | integration | [formats_test.go](../../test/integration/endpoints/formats_test.go), [cachefill_test.go](../../test/integration/endpoints/cachefill_test.go) | R-EP-018 with a test format without the adapter (`opaque`): 404 on `customers` byte-identical to a missing repository for a bound SAT and a bound administrator, 403 on a write, 422 `format_not_exposable` for a rule; npm's rules accepted, its strict range check, the dry run on npm versions. R-EP-019 through the dispatcher, the Host's populate check and the remote engine with a counting upstream and a test format with a remote class (`relay`): no upstream request and `403 populate_not_permitted` on `customers`, counted; the fill through default; `customers` served from the cache; a fill on an endpoint with `cache_fill: true` |
 | integration | [test/integration/npm/exposure_test.go](../../test/integration/npm/exposure_test.go) | R-NPM-048 on the R-EP-012 fixture (a local `npm-customers`): the versions and tags of the full and abbreviated document on `customers` and on default, every URL on the endpoint's host and no trace of the default endpoint's, the ETag per endpoint, hidden versions, tags, tarballs and packages byte-identical to missing ones, `latest` moved to a hidden version on default, the read of a write and the writes refused; a rule change answers a conditional request with the earlier ETag with `200` and the new list on each of three replicas, which shared the validator before |
@@ -382,7 +382,7 @@ missing file). Once the files area is merged, the same assertions run against it
 
 **A new per-endpoint setting.** Add the key to `config.Endpoint` (a pointer when zero is a valid value), its default to
 `resolveEndpoint`, its check to `validateEndpoints`, its field to `httpserver.Endpoint`/`NewEndpoint`, the chart key to
-`trove.endpoint` and `trove.endpointsConfig` (and `values.schema.json`), and regenerate the schema with `go generate
+`quader.endpoint` and `quader.endpointsConfig` (and `values.schema.json`), and regenerate the schema with `go generate
 ./internal/config/...`.
 
 **A format that needs a host root.** Register its literal discovery-document patterns below `/.well-known/` and pass them

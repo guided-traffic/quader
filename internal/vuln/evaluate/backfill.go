@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/packages"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/packages"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // ArtifactClassifier is an optional capability of an ecosystem's adapter: it names the package and the version a cached file of a

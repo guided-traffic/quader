@@ -5,7 +5,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // The remote class's per-replica state: its metric families, registered by the binder below when [Format.Bind] (bind.go, the one Bind
@@ -31,10 +31,10 @@ func init() {
 	roleMax.Store(int64(256 << 20))
 	registerBinder(func(r *replica, m *observability.Metrics) {
 		rm := &remoteMetrics{repos: m.Repos()}
-		rm.dropped = m.NewCounterVec("trove_ansible_role_versions_dropped_total",
+		rm.dropped = m.NewCounterVec("quader_ansible_role_versions_dropped_total",
 			"Role versions a remote repository left out of the list it serves, because their download_url is not an https URL on an extra host (R-ANS-020).", "repo")
 		rm.repos.DeleteOnForget(rm.dropped) // the series leave with the repository (R-OPS-007)
-		rm.docBytes = m.NewHistogramVec("trove_ansible_document_bytes",
+		rm.docBytes = m.NewHistogramVec("quader_ansible_document_bytes",
 			"Size of the upstream documents a remote repository stored (R-ANS-030).", []float64{1 << 10, 4 << 10, 16 << 10, 64 << 10, 256 << 10, 1 << 20, 4 << 20, 16 << 20}, "kind")
 		r.ext[remoteKey{}] = rm
 	})
@@ -64,7 +64,7 @@ func (r *remoteMetrics) rolesDropped(repo string, n int) {
 	if r.dropped == nil || n == 0 {
 		return
 	}
-	r.dropped.WithLabelValues(r.repos.Value("trove_ansible_role_versions_dropped_total", repo)).Add(float64(n))
+	r.dropped.WithLabelValues(r.repos.Value("quader_ansible_role_versions_dropped_total", repo)).Add(float64(n))
 }
 
 func (k docKind) label() string {

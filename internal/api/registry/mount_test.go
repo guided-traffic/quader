@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/dispatch"
-	"github.com/guided-traffic/trove/internal/api/registry"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/api/dispatch"
+	"github.com/guided-traffic/quader/internal/api/registry"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // R-OCI-006 (the source of a mount needs pull): a registry token without pull on the source gets the answer of an unreadable
@@ -93,7 +93,7 @@ func TestAMountWithoutPullOnTheSourceFallsBackToASession(t *testing.T) {
 		t.Errorf("an upload without a mount: %q", got)
 	}
 	if got := run(httpserver.Principal{Kind: httpserver.KindUser}, q); got != q {
-		t.Errorf("a trove token presented directly: %q", got)
+		t.Errorf("a quader token presented directly: %q", got)
 	}
 }
 

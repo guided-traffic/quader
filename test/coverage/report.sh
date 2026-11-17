@@ -47,7 +47,7 @@ color="$(awk -v c="$total" 'BEGIN {
 printf '{\n  "schemaVersion": 1,\n  "label": "coverage",\n  "message": "%s%%",\n  "color": "%s"\n}\n' \
   "$total" "$color" > "$dir/coverage.json"
 
-prefix="github.com/guided-traffic/trove/"
+prefix="github.com/guided-traffic/quader/"
 {
   echo "## Test coverage"
   echo

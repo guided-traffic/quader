@@ -21,7 +21,7 @@ import { PageHeader } from '../../shared/ui/page-header';
  * work package and are not shown here.
  */
 @Component({
-  selector: 'trove-token-admin',
+  selector: 'quader-token-admin',
   imports: [
     PageHeader,
     Checkbox,

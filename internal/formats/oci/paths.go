@@ -3,7 +3,7 @@ package oci
 import (
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The storage layout of R-OCI-007. Segments that start with '_' cannot be name components (R-OCI-002), so the layout never

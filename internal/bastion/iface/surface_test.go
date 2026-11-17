@@ -16,7 +16,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // The guard of R-BAS-009 (Q-BAS-20, Q-BAS-26). The surface of this package, which is the whole

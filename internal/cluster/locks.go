@@ -7,8 +7,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // The advisory-lock categories of R-ARCH-017. Every advisory lock uses the

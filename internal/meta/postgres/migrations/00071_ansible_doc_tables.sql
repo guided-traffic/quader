@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The documentation of a collection version (R-ANS-033): the README, the Markdown files of docs/ and one entry per content item (module,
 -- plugin, role). It is derived data and a source of truth for nothing: a local repository's rows are generated from the archive at publish,
@@ -14,7 +14,7 @@ CREATE TABLE ansible_version_docs (
     repo_id     bigint      NOT NULL REFERENCES repositories (id) ON DELETE CASCADE,
     name        text        COLLATE "C" NOT NULL CHECK (length(name) BETWEEN 3 AND 129),
     version     text        COLLATE "C" NOT NULL CHECK (length(version) BETWEEN 5 AND 128),
-    -- generated: derived from an archive by trove; upstream: parsed from the docs-blob document of an upstream.
+    -- generated: derived from an archive by quader; upstream: parsed from the docs-blob document of an upstream.
     source      text        NOT NULL CHECK (source IN ('generated', 'upstream')),
     -- The version of the code that derived the rows (docgen.Version; 0 for upstream); a reindex rebuilds older ones.
     generator   integer     NOT NULL CHECK (generator >= 0),

@@ -13,14 +13,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The forwarded search of a remote repository addressed directly (R-NUGET-016) over the in-memory
@@ -29,7 +29,7 @@ import (
 // (discovery, cache, circuit, populate check) run against a database and a test upstream in
 // test/integration/nuget (forwarded_search_test.go).
 
-const feedOfOrg = "https://trove.test/api/nuget/it/nuget-org/v3/"
+const feedOfOrg = "https://quader.test/api/nuget/it/nuget-org/v3/"
 
 // upstreamAnswer is an upstream's answer to a search: three results, the first with every member
 // a forwarded search keeps (its deprecation and vulnerabilities in nuget.org's JSON-LD form, one
@@ -164,7 +164,7 @@ func namesOf(d forwardedDoc) []string {
 }
 
 // TestR_NUGET_016_AForwardedSearchIsRewrittenIntoTheRemoteAndKeepsTheUpstreamMembers: the query
-// goes to the upstream with q, the page and the filters as trove validated them, for the period of
+// goes to the upstream with q, the page and the filters as quader validated them, for the period of
 // nuget.search.remote_result_ttl; the results come back with every address in the remote's hive
 // that matches semVerLevel, and with the download counts, the owners, the verified flag, the
 // deprecation and the vulnerabilities of the upstream; the cache is not searched.
@@ -252,8 +252,8 @@ func TestR_NUGET_016_AWithheldQueryIsAnsweredFromTheCacheAndCounted(t *testing.T
 	if n := len(fw.asked()); n != 0 {
 		t.Errorf("%d withheld queries reached the upstream", n)
 	}
-	if got := counted(t, fw.metrics, "trove_nuget_search_withheld_total"); got != 4 {
-		t.Errorf("trove_nuget_search_withheld_total = %v, want 4", got)
+	if got := counted(t, fw.metrics, "quader_nuget_search_withheld_total"); got != 4 {
+		t.Errorf("quader_nuget_search_withheld_total = %v, want 4", got)
 	}
 	if d := forwardedOf(t, doSearch(t, fw.h, "q=newtonsoft")); len(d.Data) != 3 || len(fw.asked()) != 1 {
 		t.Errorf("an unprotected query was not forwarded: %v", namesOf(d))
@@ -324,8 +324,8 @@ func TestR_NUGET_016_AnUpstreamThatCannotBeAskedOrFailsLeavesTheCacheSearch(t *t
 		if !slices.Equal(namesOf(d), []string{"Acme.Cached"}) {
 			t.Errorf("%s: results %v, want the cached package", c.name, namesOf(d))
 		}
-		if got := counted(t, fw.metrics, "trove_nuget_search_forward_failures_total"); got != c.failures {
-			t.Errorf("%s: trove_nuget_search_forward_failures_total = %v, want %v", c.name, got, c.failures)
+		if got := counted(t, fw.metrics, "quader_nuget_search_forward_failures_total"); got != c.failures {
+			t.Errorf("%s: quader_nuget_search_forward_failures_total = %v, want %v", c.name, got, c.failures)
 		}
 	}
 	fw.err = errs.E(errs.Internal, errs.CodeInternal, "a bug")
@@ -505,7 +505,7 @@ func TestR_NUGET_034_AForwardedResultMatchedOnAHiddenVersionIsRemoved(t *testing
 // TestR_NUGET_016_AnUpstreamAnswerIsReadWithinItsBounds: the forwarded answer is parsed again on
 // every use, so it is bounded far below a stored document: a gzip-coded answer that inflates
 // beyond maxSearchAnswerBytes is no answer (the cache-only search answers, a failure is counted),
-// a result that lists more versions than trove reads of one ID is removed, and a version listed
+// a result that lists more versions than quader reads of one ID is removed, and a version listed
 // many times is one version, found without comparing every pair.
 func TestR_NUGET_016_AnUpstreamAnswerIsReadWithinItsBounds(t *testing.T) {
 	fw := newForwarding(t, authz.Subject{}, pkg("Acme.Cached", "1.0.0"))
@@ -522,8 +522,8 @@ func TestR_NUGET_016_AnUpstreamAnswerIsReadWithinItsBounds(t *testing.T) {
 	if !slices.Equal(namesOf(d), []string{"Acme.Cached"}) {
 		t.Errorf("an answer beyond the bound: results %v, want the cached package", namesOf(d))
 	}
-	if got := counted(t, fw.metrics, "trove_nuget_search_forward_failures_total"); got != 1 {
-		t.Errorf("trove_nuget_search_forward_failures_total = %v, want 1", got)
+	if got := counted(t, fw.metrics, "quader_nuget_search_forward_failures_total"); got != 1 {
+		t.Errorf("quader_nuget_search_forward_failures_total = %v, want 1", got)
 	}
 
 	many := make([]string, 0, 40_000)

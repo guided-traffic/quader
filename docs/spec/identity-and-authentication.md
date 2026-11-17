@@ -2,17 +2,17 @@
 
 Status: specification — not implemented
 
-This page specifies how trove establishes who is calling. It covers the browser login of humans
+This page specifies how Quader establishes who is calling. It covers the browser login of humans
 through OpenID Connect, the server-side UI session, the break-glass administrator, and the
-principals trove knows: users with their `external` flag, groups, service accounts and the anonymous user. It also
+principals Quader knows: users with their `external` flag, groups, service accounts and the anonymous user. It also
 covers
-the credentials trove issues itself (personal, service-account and CI tokens per INV-8) and
+the credentials Quader issues itself (personal, service-account and CI tokens per INV-8) and
 how every package client and API caller presents them.
 
 The neighbouring pages own the rest:
 
 - What an authenticated principal may do is in [authorization.md](authorization.md).
-- How a GitLab job exchanges its ID token for a `trv_cit_` token is in
+- How a GitLab job exchanges its ID token for a `qdr_cit_` token is in
   [gitlab-ci-oidc.md](gitlab-ci-oidc.md).
 - Where audit events are stored and queried is in
   [operations-and-observability.md](operations-and-observability.md).
@@ -39,13 +39,13 @@ Covers: this page draws on these catalog pages:
 
 | Credential | Held by | Obtained through | Presented as | Lifetime (proposed) |
 |---|---|---|---|---|
-| UI session | user, break-glass administrator | OIDC login (R-AUTH-006), local form (R-AUTH-014) | `__Host-trv_session` cookie | idle 1 h, absolute 12 h |
-| `trv_pat_…` | user | UI or API (R-AUTH-027), npm web login (R-AUTH-034), device login (R-AUTH-036) | Bearer, Basic password, NuGet API key | default 90 days, maximum 365 days |
-| `trv_sat_…` | service account | administrator API or `trove admin` (R-AUTH-015, R-AUTH-027) | same | default 90 days, maximum 365 days |
-| `trv_cit_…` | CI identity mapping | CI exchange ([gitlab-ci-oidc.md](gitlab-ci-oidc.md)) | same | at most 6 h |
+| UI session | user, break-glass administrator | OIDC login (R-AUTH-006), local form (R-AUTH-014) | `__Host-qdr_session` cookie | idle 1 h, absolute 12 h |
+| `qdr_pat_…` | user | UI or API (R-AUTH-027), npm web login (R-AUTH-034), device login (R-AUTH-036) | Bearer, Basic password, NuGet API key | default 90 days, maximum 365 days |
+| `qdr_sat_…` | service account | administrator API or `quader admin` (R-AUTH-015, R-AUTH-027) | same | default 90 days, maximum 365 days |
+| `qdr_cit_…` | CI identity mapping | CI exchange ([gitlab-ci-oidc.md](gitlab-ci-oidc.md)) | same | at most 6 h |
 
 ```text
- browser ──/auth/oidc/{p}/start──► IdP ──code──► /auth/oidc/{p}/callback ──► ui_session ──► __Host-trv_session cookie
+ browser ──/auth/oidc/{p}/start──► IdP ──code──► /auth/oidc/{p}/callback ──► ui_session ──► __Host-qdr_session cookie
                                                      │ JIT user, group sync
  browser (session) ──POST /api/v1/tokens──────────────────────────────────► api_token (PAT, hash only)
  npm login ──/-/v1/login──► approval page (session) ──► poll doneUrl ──────► api_token (PAT)
@@ -58,7 +58,7 @@ Conventions on this page:
 - Durations in YAML use Go duration syntax (`720h`).
 - API error bodies follow [api-and-ui.md](api-and-ui.md). The error `code` values named here are
   part of the contract.
-- Paths are relative to the external base URL (R-AUTH-003). `https://trove.test` is the
+- Paths are relative to the external base URL (R-AUTH-003). `https://quader.test` is the
   example host in acceptance criteria.
 
 **Replicas.** The Kubernetes Service hands every request to a random `web` replica (INV-12), and a
@@ -96,17 +96,17 @@ The stage MUST select the credential in this order and MUST evaluate only the fi
    §2.1) or `Basic base64(<any username>:<token>)`
    ([RFC 7617](https://www.rfc-editor.org/rfc/rfc7617)). The Basic username is recorded for
    diagnostics and is otherwise ignored (INV-8). On the routes below `/v2/` a `Bearer` value with the
-   prefix `trv_rgt_` is a registry token of the OCI token service ([formats/oci.md](formats/oci.md)
+   prefix `qdr_rgt_` is a registry token of the OCI token service ([formats/oci.md](formats/oci.md)
    R-OCI-005): the stage verifies its MAC, its expiry and its endpoint without any lookup, and then the
-   trove token it was issued for exactly as if that token were presented, with the endpoint's rules
-   (R-AUTH-023, R-EP-010). Everywhere else, and as a Basic password, `trv_rgt_` is no trove token and
+   Quader token it was issued for exactly as if that token were presented, with the endpoint's rules
+   (R-AUTH-023, R-EP-010). Everywhere else, and as a Basic password, `qdr_rgt_` is no Quader token and
    is rejected without a lookup. On a route that declares the scheme (`Route.TokenScheme`, every route of
    the Ansible Galaxy format, [architecture.md](architecture.md) R-ARCH-008,
-   [formats/ansible.md](formats/ansible.md) R-ANS-006, Q-ANS-4) `Token <token>` is a trove token too, with
+   [formats/ansible.md](formats/ansible.md) R-ANS-006, Q-ANS-4) `Token <token>` is a Quader token too, with
    the checks of a `Bearer` token and the method `galaxy_token`; the stage learns the route from the
-   dispatcher's own match, as for the API key, and everywhere else the scheme `Token` is no trove token and
+   dispatcher's own match, as for the API key, and everywhere else the scheme `Token` is no Quader token and
    is rejected without a lookup.
-3. **Session cookie** `__Host-trv_session` (Q-AUTH-2). It is accepted on `/api/v1/…` for every
+3. **Session cookie** `__Host-qdr_session` (Q-AUTH-2). It is accepted on `/api/v1/…` for every
    method, with the CSRF rules of R-AUTH-012. On `/files/…` it is accepted for `GET` and `HEAD`, and for `PUT` and
    `DELETE` under the same CSRF rules, because the UI's deploy dialog and item actions use them
    ([api-and-ui.md](api-and-ui.md) R-API-006, R-UI-012). On `/api/<format>/…` it is accepted for
@@ -122,7 +122,7 @@ Normative rules:
 - If the selected credential is invalid (malformed, unknown, expired, revoked, or belonging to a
   disabled principal), the request MUST be rejected with 401 (R-AUTH-002). It MUST NOT fall
   through to a lower-ranked source or to anonymous.
-- `Bearer` and Basic credentials MUST be trove tokens (R-AUTH-022), or, as `Bearer` below `/v2/`, registry
+- `Bearer` and Basic credentials MUST be Quader tokens (R-AUTH-022), or, as `Bearer` below `/v2/`, registry
   tokens (item 2). Any other value MUST be rejected without a database lookup; so MUST a registry token
   whose MAC, expiry or endpoint does not verify. This covers identity-provider access tokens and ID tokens,
   JWTs in general, and passwords, including the break-glass password. There is one extension
@@ -146,7 +146,7 @@ Normative rules:
     ([formats/npm.md](formats/npm.md) R-NPM-022, Q-NPM-1).
 
   - from P1, the token service of the OCI registry, `GET` and `POST /v2/_token`
-    ([formats/oci.md](formats/oci.md) R-OCI-004, Q-OCI-51): its input is a trove token, which the
+    ([formats/oci.md](formats/oci.md) R-OCI-004, Q-OCI-51): its input is a Quader token, which the
     token service presents to this stage itself from the `Authorization` header or from the password
     of the OAuth 2.0 form, so the stage applies every rule of this requirement to it.
 
@@ -164,17 +164,17 @@ Normative rules:
   into per-replica shares, and narrows the throttle exemption to the replica's own cache, nothing
   else (R-AUTH-023, R-AUTH-038, R-AUTH-042).
 - The request log and every other log MUST redact the following before writing: the
-  `Authorization` header, the `X-NuGet-ApiKey` header, the `__Host-trv_session`,
-  `__Host-trv_csrf` and `__Host-trv_oidc_binding` cookies, every substring matching the token
+  `Authorization` header, the `X-NuGet-ApiKey` header, the `__Host-qdr_session`,
+  `__Host-qdr_csrf` and `__Host-qdr_oidc_binding` cookies, every substring matching the token
   pattern of R-AUTH-022 in paths and query strings, and the path segment after `/auth/cli/`. npm logout carries the token in the path
   (R-AUTH-035), and the npm web-login poll URL carries the poll secret there (R-AUTH-034).
 
 Acceptance criteria:
 
-- Run `curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $PAT" https://trove.test/api/v1/auth/whoami`.
-  It prints `200`. With a `__Host-trv_session` cookie of another user added to the same request,
+- Run `curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $PAT" https://quader.test/api/v1/auth/whoami`.
+  It prints `200`. With a `__Host-qdr_session` cookie of another user added to the same request,
   `whoami` still names the token owner.
-- Use a valid ID token issued by the configured IdP for trove's client as `Bearer`. The
+- Use a valid ID token issued by the configured IdP for Quader's client as `Bearer`. The
   request gets 401 with `error="invalid_token"`, and no token-table query is executed (asserted
   in an integration test through a query counter).
 - Send an expired PAT on a repository that anonymous may read. The request gets 401, not the
@@ -182,10 +182,10 @@ Acceptance criteria:
 - (P1, with R-NPM-022.) A GitLab ID token whose mapping grants `deploy` on `@acme/ui`, sent as
   `Bearer` to `POST /-/npm/v1/oidc/token/exchange/package/@acme%2Fui` and to
   `POST /api/npm/web/npm-all/-/npm/v1/oidc/token/exchange/package/@acme%2Fui`, gets 201 with a
-  `trv_cit_` token on both routes. The same ID token as `Bearer` on `GET /api/npm/web/npm-all/@acme%2Fui`
+  `qdr_cit_` token on both routes. The same ID token as `Bearer` on `GET /api/npm/web/npm-all/@acme%2Fui`
   gets 401 `invalid_token` without a token-table query.
-- Grep the request log after the whole acceptance suite has run. It contains no `trv_pat_`,
-  `trv_sat_` or `trv_cit_` substring followed by more than 4 characters.
+- Grep the request log after the whole acceptance suite has run. It contains no `qdr_pat_`,
+  `qdr_sat_` or `qdr_cit_` substring followed by more than 4 characters.
 
 ### R-AUTH-002 · Authentication failures and challenges
 Priority: **MVP** · Covers: TOK-033, TOK-034, PKG-NPM-007, PKG-NUGET-016
@@ -197,10 +197,10 @@ Priority: **MVP** · Covers: TOK-033, TOK-034, PKG-NPM-007, PKG-NUGET-016
 
 | Endpoint family | `WWW-Authenticate` |
 |---|---|
-| `/api/v1/…` | `Bearer realm="trove"`, plus `error="invalid_token"` when a token was presented and rejected ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750) §3) |
-| `/api/<format>/…`, `/files/…` | `Basic realm="trove"`. Format pages may add challenges. The npm endpoints MUST NOT include the token `otp` (PKG-NPM-012 is not implemented). |
-| `/v2/…` (P1, [formats/oci.md](formats/oci.md) R-OCI-004) | `Bearer realm="<base>/v2/_token",service="<host>"`, plus `scope="repository:<name>:<actions>"` on a repository route and `error="invalid_token"` for a rejected credential; the token service `/v2/_token` itself answers `Basic realm="trove"` |
-| Every other route, and every request that carries Fetch Metadata headers (`Sec-Fetch-Mode` or `Sec-Fetch-Dest`) | `Bearer realm="trove"`: a browser answers a Basic challenge with its native login dialog instead of trove's sign-in screen, and package clients send no Fetch Metadata (Q-AUTH-173) |
+| `/api/v1/…` | `Bearer realm="quader"`, plus `error="invalid_token"` when a token was presented and rejected ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750) §3) |
+| `/api/<format>/…`, `/files/…` | `Basic realm="quader"`. Format pages may add challenges. The npm endpoints MUST NOT include the token `otp` (PKG-NPM-012 is not implemented). |
+| `/v2/…` (P1, [formats/oci.md](formats/oci.md) R-OCI-004) | `Bearer realm="<base>/v2/_token",service="<host>"`, plus `scope="repository:<name>:<actions>"` on a repository route and `error="invalid_token"` for a rejected credential; the token service `/v2/_token` itself answers `Basic realm="quader"` |
+| Every other route, and every request that carries Fetch Metadata headers (`Sec-Fetch-Mode` or `Sec-Fetch-Dest`) | `Bearer realm="quader"`: a browser answers a Basic challenge with its native login dialog instead of Quader's sign-in screen, and package clients send no Fetch Metadata (Q-AUTH-173) |
 
 - The error body carries one `code`:
 
@@ -217,14 +217,14 @@ Priority: **MVP** · Covers: TOK-033, TOK-034, PKG-NPM-007, PKG-NUGET-016
 
 Acceptance criteria:
 
-- `curl -si https://trove.test/api/nuget/web/nuget-all/v3/index.json` with anonymous access off
-  returns 401 with `WWW-Authenticate: Basic realm="trove"`. `dotnet restore` against that
+- `curl -si https://quader.test/api/nuget/web/nuget-all/v3/index.json` with anonymous access off
+  returns 401 with `WWW-Authenticate: Basic realm="quader"`. `dotnet restore` against that
   source with credentials in `nuget.config` then succeeds, which proves the client answers the
   challenge.
 - No response on an npm endpoint contains `otp` in `WWW-Authenticate` (contract test over all
   npm routes).
 - A browser request without a credential to `/files/…` or to `/favicon.ico` gets 401 with
-  `WWW-Authenticate: Bearer realm="trove"`, never Basic, so no browser shows a login dialog.
+  `WWW-Authenticate: Bearer realm="quader"`, never Basic, so no browser shows a login dialog.
 
 ## OpenID Connect login
 
@@ -235,7 +235,7 @@ Priority: **MVP** · Covers: AUTHN-002, OPS-051
   [architecture.md](architecture.md)) is configured. If a provider is configured without a base
   URL, startup MUST fail with a configuration error.
 - The base URL MUST be `https`. The one exception is a loopback host, used in tests.
-- Every URL that trove registers at or sends to an IdP MUST be derived from the base URL and
+- Every URL that Quader registers at or sends to an IdP MUST be derived from the base URL and
   never from the request's `Host` or `X-Forwarded-*` headers:
 
 | URL | Value |
@@ -250,14 +250,14 @@ Configuration:
 
 ```yaml
 server:
-  base_url: https://trove.example.com  # example
+  base_url: https://quader.example.com  # example
 ```
 
 Acceptance criteria:
 
-- With provider `corp`, `curl -si https://trove.test/auth/oidc/corp/start -H 'Host: evil.test'`
+- With provider `corp`, `curl -si https://quader.test/auth/oidc/corp/start -H 'Host: evil.test'`
   answers 302. The `redirect_uri` in the Location header is
-  `https://trove.test/auth/oidc/corp/callback`.
+  `https://quader.test/auth/oidc/corp/callback`.
 
 ### R-AUTH-004 · Provider configuration and discovery
 Priority: **MVP** · Covers: AUTHN-007, AUTHN-008
@@ -275,7 +275,7 @@ Priority: **MVP** · Covers: AUTHN-007, AUTHN-008
   - `client_id`;
   - the client authentication.
 - The client secret MUST be read from a file (`client_secret_file`) or an environment variable,
-  never written inline (INV-15). trove MUST re-read the file when its modification time
+  never written inline (INV-15). Quader MUST re-read the file when its modification time
   changes, so that rotating the Kubernetes Secret needs no restart.
 - Client authentication at the token endpoint supports `client_secret_basic` (the default),
   `client_secret_post`, and `none`. `none` is for a public client that relies on PKCE alone.
@@ -319,8 +319,8 @@ auth:
         order: 0                                   # default (proposed); sorts the login buttons, then the ID
         display_name: Corporate SSO                # example
         issuer: https://login.example.com/realms/acme  # example
-        client_id: trove                         # example
-        client_secret_file: /var/run/secrets/trove/oidc-corp/client-secret  # example
+        client_id: quader                         # example
+        client_secret_file: /var/run/secrets/quader/oidc-corp/client-secret  # example
         client_auth_method: client_secret_basic    # default (proposed)
         scopes: [openid, profile, email]           # default (proposed); add the scope that releases groups, e.g. "groups"
         extra_auth_params: {}                      # default (proposed)
@@ -351,7 +351,7 @@ Priority: **MVP** · Covers: AUTHN-009, AUTHN-011
 `GET /auth/oidc/{providerId}/start?return_to=<path>` starts a login. No credential is needed. The
 endpoint is rate-limited per R-AUTH-038.
 
-**Generation.** trove MUST generate the following with `crypto/rand`:
+**Generation.** Quader MUST generate the following with `crypto/rand`:
 
 - `state`: 32 bytes, base64url;
 - `nonce`: 32 bytes, base64url;
@@ -370,7 +370,7 @@ PKCE is always on and `plain` is never used ([RFC 9700](https://www.rfc-editor.o
 - `state`, `nonce`, `code_challenge`, `code_challenge_method`;
 - the configured `extra_auth_params`.
 
-**Browser binding.** The flow is bound to the browser by the cookie `__Host-trv_oidc_binding`,
+**Browser binding.** The flow is bound to the browser by the cookie `__Host-qdr_oidc_binding`,
 whose value is 32 random bytes:
 
 - attributes `Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=600`, without `Domain`. The
@@ -422,12 +422,12 @@ Acceptance criteria:
 - The Location of `/auth/oidc/corp/start` meets all of the following:
   - it carries `code_challenge_method=S256`, a 43-character `code_challenge`, and `state` and
     `nonce` of 43 characters each;
-  - the response sets `__Host-trv_oidc_binding` with `Secure`, `HttpOnly`, `SameSite=Lax`,
+  - the response sets `__Host-qdr_oidc_binding` with `Secure`, `HttpOnly`, `SameSite=Lax`,
     `Path=/` and no `Domain`.
 - In the e2e profile `scatter` ([architecture.md](architecture.md) R-ARCH-032: three `web`
   replicas, every request to another replica), 50 consecutive logins against the test IdP all
   succeed. With `server.replica_header: always`
-  ([operations-and-observability.md](operations-and-observability.md)), the `X-Trove-Replica`
+  ([operations-and-observability.md](operations-and-observability.md)), the `X-Quader-Replica`
   headers show that start and callback of each login were served by different replicas.
 - `return_to=https://evil.test/` and `return_to=//evil.test` both end the login at `/ui/`.
 
@@ -446,7 +446,7 @@ login with an error page (HTTP 400, or 502 for IdP errors) and the audit event
    commits on its own, before step 6, because no outbound call runs inside a transaction
    ([architecture.md](architecture.md) R-ARCH-019).
 2. The flow's provider MUST equal the path's provider. Otherwise `provider_mismatch`.
-3. The SHA-256 of the `__Host-trv_oidc_binding` cookie MUST equal the flow's binding. Otherwise
+3. The SHA-256 of the `__Host-qdr_oidc_binding` cookie MUST equal the flow's binding. Otherwise
    `browser_mismatch`.
 4. If the response carries `iss`, it MUST equal the issuer. If discovery advertises
    `authorization_response_iss_parameter_supported: true`, `iss` is mandatory
@@ -506,7 +506,7 @@ starts the login again.
 Acceptance criteria:
 
 - Replaying a callback URL that already succeeded gives 400 `flow_expired`.
-- With the test IdP's token endpoint delayed by 5 s, `pg_stat_activity` shows no trove connection
+- With the test IdP's token endpoint delayed by 5 s, `pg_stat_activity` shows no Quader connection
   in state `idle in transaction` during the callback.
 - A callback opened in a second browser without the binding cookie gives 400 `browser_mismatch`.
 - The test IdP is switched to issue tokens:
@@ -528,7 +528,7 @@ Two provider entries with the same issuer resolve to the same user.
 
 **Claim mapping.** Mapping is per provider:
 
-| trove attribute | Default claim | Rule |
+| Quader attribute | Default claim | Rule |
 |---|---|---|
 | Username | `preferred_username` | The value goes through Unicode NFC, then lower case, then `username_prefix` is prepended. The result must match `^[a-z0-9][a-z0-9._@+-]{0,127}$` and must not be reserved (`anonymous`, `authenticated`, `system`, `me`, the break-glass username; see below). Otherwise the login fails with `username_invalid`. |
 | Email | `email` | Stored together with `email_verified`. It is never used for matching. |
@@ -552,7 +552,7 @@ for every source of a username:
 - SCIM (R-AUTH-039) answers 400 with `scimType: invalidValue`
   ([RFC 7644](https://www.rfc-editor.org/rfc/rfc7644) §3.12).
 
-The OpenAPI document lists them as `x-trove-reserved-names` of the username schema. A
+The OpenAPI document lists them as `x-quader-reserved-names` of the username schema. A
 break-glass username of `anonymous`, `authenticated`, `system` or `me` makes startup fail.
 
 **First login of an identity.** No (`iss`, `sub`) link exists yet. Exactly one of these applies:
@@ -575,7 +575,7 @@ different identity holds the name. A pending link is completed with a conditiona
 (`… SET subject = $1 WHERE id = $2 AND subject IS NULL`), so two concurrent logins cannot both use
 it.
 
-**Every login.** On each login trove:
+**Every login.** On each login Quader:
 
 - updates email, `email_verified` and display name from the claims;
 - renames the user to a changed mapped username if `sync_username` is true and the new name is
@@ -592,17 +592,17 @@ it.
 | `login_requires_groups` is non-empty and none of its values is in the raw group claim | `not_in_allowed_group` |
 
 **Providers with open registration.** A provider entry sets `public_issuer: true` when anyone can
-obtain an account at the issuer (open sign-up, a public SaaS instance). trove treats the issuers
+obtain an account at the issuer (open sign-up, a public SaaS instance). Quader treats the issuers
 `https://gitlab.com` and `https://accounts.google.com` as public whatever the setting says. For a
 public issuer, startup MUST refuse:
 
 - `jit: true` together with an empty `login_requires_groups`. Every account of the issuer would
-  otherwise become a trove user with the auto-join groups (R-AUTH-019).
+  otherwise become a Quader user with the auto-join groups (R-AUTH-019).
 - a `login_requires_groups` value or a group rule (R-AUTH-008) that is neither an exact `match` nor
   a `match_regex` whose literal prefix starts with a namespace ending in `/` (a namespace the
-  organization owns, such as `acme/` in `acme/trove-(.+)`, Q-AUTH-38). `login_requires_groups`
+  organization owns, such as `acme/` in `acme/quader-(.+)`, Q-AUTH-38). `login_requires_groups`
   values are compared exactly, so they always pass. On such issuers users create and name groups themselves, so a rule such as
-  `trove-team-(.+)` is satisfied by a group anyone can register.
+  `quader-team-(.+)` is satisfied by a group anyone can register.
 
 Transient users do not exist. Every OIDC login persists the user, so every human principal can
 hold tokens and open the profile (AUTHN-006, R-AUTH-017).
@@ -651,13 +651,13 @@ Acceptance criteria:
   pending link for `corp` logs in once and is linked.
 - A provider with issuer `https://gitlab.com`, `jit: true` and no `login_requires_groups` makes
   startup fail with a message naming the provider. With `login_requires_groups: [acme]` and the
-  group rule `match_regex: "acme/trove-(.+)"` it starts; with the rule
-  `match_regex: "trove-(.+)"` it fails again.
+  group rule `match_regex: "acme/quader-(.+)"` it starts; with the rule
+  `match_regex: "quader-(.+)"` it fails again.
 
 ### R-AUTH-008 · Group synchronization from claims
 Priority: **MVP** · Covers: IAM-013, IAM-014, IAM-016
 
-**Reading the claim.** On every login, and on every re-authentication (R-AUTH-011), trove
+**Reading the claim.** On every login, and on every re-authentication (R-AUTH-011), Quader
 reads the configured group claim:
 
 - The claim must be a JSON string or an array of strings. Only the first 1000 values are used.
@@ -667,7 +667,7 @@ reads the configured group claim:
   - it is replaced by an overage marker. An example is the distributed-claims indicator
     `_claim_names.groups`; distributed claims are not resolved.
 
-**Mapping rules.** Rules turn claim values into trove group names:
+**Mapping rules.** Rules turn claim values into Quader group names:
 
 - `match` compares a value exactly and case-sensitively.
 - `match_regex` is RE2 (Go `regexp`), implicitly anchored to the whole value. `group` may use
@@ -686,7 +686,7 @@ reads the configured group claim:
 creates no group, and the user's `oidc:<providerId>` membership in it, if one is left, is removed like any membership outside
 the target set.
 
-**Writing the memberships.** In one transaction, trove sets the user's memberships whose
+**Writing the memberships.** In one transaction, Quader sets the user's memberships whose
 source is `oidc:<providerId>` to exactly the target set. Memberships with source `manual`,
 `auto` or `scim` are never touched. If anything changed, the same transaction records the change
 in the change area `auth` ([architecture.md](architecture.md) R-ARCH-018, R-AUTH-023), so every
@@ -705,7 +705,7 @@ Q-AUTH-4). It applies to all three cases above alike, including the overage mark
 With `clear` and `keep`, every login with a missing claim writes the warning event
 `user.groups.claim_missing` (R-AUTH-041) with the provider and `details.reason`: `absent`,
 `wrong_type` or `overage`. It also increments
-`trove_auth_group_claim_missing_total{name,reason}` (`name` is the provider ID, Q-AUTH-39). trove also records the reason with the
+`quader_auth_group_claim_missing_total{name,reason}` (`name` is the provider ID, Q-AUTH-39). Quader also records the reason with the
 identity's `last_claims` (R-AUTH-007). The user's profile (R-AUTH-017) and
 `GET /api/v1/users/me` show it as `groupClaimMissing: {"provider", "reason"}` until a later
 login delivers the claim. This makes a broken group mapper or an overage visible to administrators and
@@ -718,7 +718,7 @@ break-glass account (R-AUTH-014) or by fixing the IdP mapper.
 synchronized group carries that binding, the IdP decides who is administrator. See the security
 notes.
 
-**Effect on tokens.** Group changes at the IdP reach trove only at the user's next login, or
+**Effect on tokens.** Group changes at the IdP reach Quader only at the user's next login, or
 through SCIM (R-AUTH-039). Tokens evaluate group memberships at use time, so a PAT gains or
 loses group rights with that next sync. See H-16.
 
@@ -730,15 +730,15 @@ Configuration:
           on_missing_claim: clear                # default (proposed): clear | keep | deny (Q-AUTH-4)
           create_groups: false                   # default (proposed)
           rules:
-            - match: trove-platform-admins     # example
+            - match: quader-platform-admins     # example
               group: platform-admins             # example
-            - match_regex: "trove-team-(.+)"   # example
+            - match_regex: "quader-team-(.+)"   # example
               group: "team-$1"                   # example
 ```
 
 Acceptance criteria:
 
-- The test IdP sends `groups: ["trove-team-web", "unrelated"]`. After login the user is a
+- The test IdP sends `groups: ["quader-team-web", "unrelated"]`. After login the user is a
   member of `team-web` with source `oidc:corp`, and `unrelated` is ignored.
 - At the next login the IdP sends `groups: []`. The `oidc:corp` membership is removed, and a
   manual membership in `team-web` added by an administrator survives.
@@ -811,7 +811,7 @@ break-glass login (R-AUTH-014):
 **Cookie.** The cookie is set as:
 
 ```text
-Set-Cookie: __Host-trv_session=<secret>; Secure; HttpOnly; SameSite=Lax; Path=/
+Set-Cookie: __Host-qdr_session=<secret>; Secure; HttpOnly; SameSite=Lax; Path=/
 ```
 
 - It has no `Domain`, `Max-Age` or `Expires` attribute, so it lives for the browser session and
@@ -822,8 +822,8 @@ Set-Cookie: __Host-trv_session=<secret>; Secure; HttpOnly; SameSite=Lax; Path=/
   that lacks `Secure` or `Path=/` or carries a `Domain` attribute (cookie name prefixes in
   [draft-ietf-httpbis-rfc6265bis](https://datatracker.ietf.org/doc/draft-ietf-httpbis-rfc6265bis/)).
   A sibling subdomain or a plain-HTTP response therefore cannot plant or shadow it. All three
-  trove cookies carry the prefix: `__Host-trv_session`, `__Host-trv_csrf` (R-AUTH-012) and
-  `__Host-trv_oidc_binding` (R-AUTH-005). This amends the cookie name in INV-8.
+  Quader cookies carry the prefix: `__Host-qdr_session`, `__Host-qdr_csrf` (R-AUTH-012) and
+  `__Host-qdr_oidc_binding` (R-AUTH-005). This amends the cookie name in INV-8.
 
 **Validation.** Lookup follows the token path of R-AUTH-023: the replica's in-process session
 cache, invalidated through the change area `auth`, with the same revocation bound and the same
@@ -851,7 +851,7 @@ moment, whichever replica the request reaches:
   value only saves statements, never decides that a session has ended, and no later request
   depends on it. The time of the replica's own last touch is not used for this decision: after a
   touch that changed nothing, the row may be up to 60 s older than that time.
-- A failed write is counted in `trove_auth_session_touch_failures_total` and never fails the
+- A failed write is counted in `quader_auth_session_touch_failures_total` and never fails the
   request; the kept value stays as it was, so the next request sends the touch again.
 
 After any request at time *L* whose touch did not fail, the row's `last_seen_at` is at least
@@ -936,10 +936,10 @@ auth:
 
 Acceptance criteria:
 
-- After login the browser holds `__Host-trv_session` with `Secure`, `HttpOnly`, `SameSite=Lax`,
+- After login the browser holds `__Host-qdr_session` with `Secure`, `HttpOnly`, `SameSite=Lax`,
   `Path=/` and no `Domain`. The database holds only its SHA-256.
-- A response from a sibling host that sets `trv_session` or `__Host-trv_session` with
-  `Domain=<parent domain>` leaves the browser's cookie for trove unchanged (browser test).
+- A response from a sibling host that sets `qdr_session` or `__Host-qdr_session` with
+  `Domain=<parent domain>` leaves the browser's cookie for Quader unchanged (browser test).
 - Ending a session through the API makes the next request with that cookie fail with 401
   `session_expired` within the revocation bound of R-AUTH-023. This holds on every replica, also
   with Valkey stopped.
@@ -990,17 +990,17 @@ Acceptance criteria:
   session cookie is invalid.
 
 ### R-AUTH-012 · CSRF protection for cookie-authenticated requests
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 **The CSRF token.** Each session has a CSRF token: 32 random bytes, base64url. It is delivered in
 a second cookie:
 
 ```text
-Set-Cookie: __Host-trv_csrf=<token>; Secure; SameSite=Strict; Path=/
+Set-Cookie: __Host-qdr_csrf=<token>; Secure; SameSite=Strict; Path=/
 ```
 
 The cookie is not `HttpOnly`. The Angular `HttpClient` XSRF support reads it, configured with
-`withXsrfConfiguration({cookieName: '__Host-trv_csrf', headerName: 'X-CSRF-Token'})`
+`withXsrfConfiguration({cookieName: '__Host-qdr_csrf', headerName: 'X-CSRF-Token'})`
 ([Angular security guide](https://angular.dev/best-practices/security)).
 
 **Checks on unsafe requests.** A `POST`, `PUT`, `PATCH` or `DELETE` request that is
@@ -1036,9 +1036,9 @@ Acceptance criteria:
 
 - An HTML form on another origin posting to `/api/v1/tokens` with the victim's cookie gets 403
   `csrf_failed`. A `fetch` from the UI with the header succeeds.
-- `curl -X DELETE -b "__Host-trv_session=$S" https://trove.test/api/v1/users/me/sessions`
+- `curl -X DELETE -b "__Host-qdr_session=$S" https://quader.test/api/v1/users/me/sessions`
   without the header gets 403.
-- `curl -X PUT -b "__Host-trv_session=$S" -T x.bin https://trove.test/files/web/generic-local/x.bin`
+- `curl -X PUT -b "__Host-qdr_session=$S" -T x.bin https://quader.test/files/web/generic-local/x.bin`
   without the header gets 403 `csrf_failed`. A `PUT` on `/api/npm/web/npm-local/…` carrying only the
   cookie gets 401.
 
@@ -1049,7 +1049,7 @@ Priority: **MVP** · Covers: AUTHN-038
 
 - ends the session (reason `logout`) and records the end in the change area `auth` in the same
   transaction (R-AUTH-023);
-- clears `__Host-trv_session` and `__Host-trv_csrf` with `Max-Age=0`, `Secure` and `Path=/`
+- clears `__Host-qdr_session` and `__Host-qdr_csrf` with `Max-Age=0`, `Secure` and `Path=/`
   and without `Domain`. The browser ignores a `__Host-` Set-Cookie that lacks these attributes,
   so a bare `Max-Age=0` would leave the cookie in place;
 - answers 200 with `{"redirectTo": "<url>"}`. The UI navigates there.
@@ -1110,7 +1110,7 @@ at least `m=65536` (KiB), `t=3` and `p=4`, which is the second recommended optio
 Each verification holds the memory its parameters name, at least 64 MiB. A replica therefore runs
 at most `max_concurrent_verifications` of them at a time. An attempt that cannot start one within 1 s answers 503 `server_busy` with
 `Retry-After: 1`, like the in-flight limit of [architecture.md](architecture.md) R-ARCH-005, and
-is counted in `trove_auth_ratelimited_total{limit="break_glass_verifications"}`. Without this
+is counted in `quader_auth_ratelimited_total{limit="break_glass_verifications"}`. Without this
 bound, concurrent attempts from many addresses, each within its per-address limit (R-AUTH-038),
 could exhaust a `web` replica's memory, and random distribution would carry them to every replica.
 
@@ -1166,7 +1166,7 @@ login with 403 `local_login_disabled` (Q-AUTH-33).
 - Lockout follows R-AUTH-038.
 
 **Restrictions.** The break-glass password is accepted only by this endpoint, never as a Basic
-password (R-AUTH-001). This is how trove maps the catalog's switch for disabling Basic
+password (R-AUTH-001). This is how Quader maps the catalog's switch for disabling Basic
 authentication with internal passwords (IAM-036): password Basic authentication does not exist.
 
 The break-glass account:
@@ -1176,7 +1176,7 @@ The break-glass account:
 - cannot approve command-line logins;
 - cannot be deleted or renamed through the API (409 `break_glass_immutable`).
 
-Bootstrapping automation uses `trove admin` instead (R-AUTH-015).
+Bootstrapping automation uses `quader admin` instead (R-AUTH-015).
 
 **Visibility.** Every break-glass login (success or failure) writes an `auth.breakglass.login`
 event with severity `high`. The UI shows a permanent banner during a break-glass session.
@@ -1188,7 +1188,7 @@ auth:
   break_glass:
     enabled: true                                   # default (proposed); disable once an OIDC administrator exists
     username: admin                                 # default (proposed)
-    password_file: /var/run/secrets/trove/break-glass/password  # example
+    password_file: /var/run/secrets/quader/break-glass/password  # example
     show_on_login_page: false                       # default (proposed)
     idle_timeout: 15m                               # default (proposed)
     absolute_timeout: 1h                            # default (proposed)
@@ -1198,7 +1198,7 @@ auth:
 
 Acceptance criteria:
 
-- `curl -u admin:$BREAKGLASS https://trove.test/api/v1/auth/whoami` gets 401. The local form
+- `curl -u admin:$BREAKGLASS https://quader.test/api/v1/auth/whoami` gets 401. The local form
   with the same password succeeds.
 - Start a replica with a 12-character plaintext password. It exits with a non-zero status and
   names the strength rule.
@@ -1220,8 +1220,8 @@ Acceptance criteria:
 ### R-AUTH-015 · Bootstrap and recovery commands
 Priority: **MVP** · Covers: TOK-041, IAM-010
 
-The `trove admin` subcommands (INV-2) give an operator who can run commands in a replica pod
-(`kubectl exec deploy/trove-api`, `deploy/trove-web` before phase 6a; [ha-and-helm.md](ha-and-helm.md) R-HA-030) the bootstrap and
+The `quader admin` subcommands (INV-2) give an operator who can run commands in a replica pod
+(`kubectl exec deploy/quader-api`, `deploy/quader-web` before phase 6a; [ha-and-helm.md](ha-and-helm.md) R-HA-030) the bootstrap and
 recovery operations. They use that pod's configuration and open their own short-lived database
 connection; someone with that access already holds the database credentials. They load neither
 the OIDC providers nor the break-glass password, so they also run in `worker` pods, which have
@@ -1234,12 +1234,12 @@ a revocation, a disable or a session end commits through the change log
 
 | Command | Effect |
 |---|---|
-| `trove admin service-account create <name> [--description …] [--admin]` | Creates a service account. `--admin` binds the system role `admin` ([authorization.md](authorization.md) R-AUTHZ-010) in the transaction that creates the account, and that transaction calls `cluster.Notify("authz", …)` exactly as the role-binding API does (R-AUTHZ-022, R-AUTHZ-028), so every replica rebuilds its grant index. The command is one of the writes of R-AUTHZ-028's completeness test. |
-| `trove admin token create --service-account <name\|project/name> [--ttl 15m] [--scope-file scope.json]` | Creates a SAT and prints it once to stdout. A bare name is an instance-wide account, `<project>/<name>` (also `sa:<project>/<name>`) the account of a project (R-AUTHZ-026). The TTL defaults to 15 min; the maximum is the SAT maximum (R-AUTH-026). |
-| `trove admin token revoke --id <uuid>` or `--value-stdin` | Revokes a token (R-AUTH-029). |
-| `trove admin break-glass status` or `unlock` or `end-sessions` | Shows the lockout state, the rotation hold (R-AUTH-014) and the sessions, clears a lockout, or ends every break-glass session (reason `revoked`). |
-| `trove admin user disable <username> [--keep-tokens]` | Disables a user (R-AUTH-016). |
-| `trove admin sessions end --user <username>` or `--all` | Ends sessions. |
+| `quader admin service-account create <name> [--description …] [--admin]` | Creates a service account. `--admin` binds the system role `admin` ([authorization.md](authorization.md) R-AUTHZ-010) in the transaction that creates the account, and that transaction calls `cluster.Notify("authz", …)` exactly as the role-binding API does (R-AUTHZ-022, R-AUTHZ-028), so every replica rebuilds its grant index. The command is one of the writes of R-AUTHZ-028's completeness test. |
+| `quader admin token create --service-account <name\|project/name> [--ttl 15m] [--scope-file scope.json]` | Creates a SAT and prints it once to stdout. A bare name is an instance-wide account, `<project>/<name>` (also `sa:<project>/<name>`) the account of a project (R-AUTHZ-026). The TTL defaults to 15 min; the maximum is the SAT maximum (R-AUTH-026). |
+| `quader admin token revoke --id <uuid>` or `--value-stdin` | Revokes a token (R-AUTH-029). |
+| `quader admin break-glass status` or `unlock` or `end-sessions` | Shows the lockout state, the rotation hold (R-AUTH-014) and the sessions, clears a lockout, or ends every break-glass session (reason `revoked`). |
+| `quader admin user disable <username> [--keep-tokens]` | Disables a user (R-AUTH-016). |
+| `quader admin sessions end --user <username>` or `--all` | Ends sessions. |
 
 This replaces the catalog's file-drop bootstrap token (TOK-041). There is no request file and no
 token file on disk. The token reaches only the operator's terminal or the Kubernetes Job that
@@ -1263,21 +1263,21 @@ Acceptance criteria:
   `POST /api/v1/projects/web/repositories`:
 
   ```shell
-  kubectl exec deploy/trove-api -- trove admin service-account create bootstrap --admin
-  T=$(kubectl exec deploy/trove-api -- trove admin token create --service-account bootstrap)
+  kubectl exec deploy/quader-api -- quader admin service-account create bootstrap --admin
+  T=$(kubectl exec deploy/quader-api -- quader admin token create --service-account bootstrap)
   ```
 
   After 15 minutes `$T` gets 401.
-- `trove admin break-glass unlock` clears an active lockout immediately, on all replicas, because
+- `quader admin break-glass unlock` clears an active lockout immediately, on all replicas, because
   every login attempt reads the lockout row (R-AUTH-038).
-- `kubectl exec deploy/trove-worker -- trove admin token revoke --id <id>`, run with Valkey
+- `kubectl exec deploy/quader-worker -- quader admin token revoke --id <id>`, run with Valkey
   stopped, makes the token fail on every `web` replica within `auth.revocation_bound`.
-- `trove admin service-account create ops --admin` advances the `authz` epoch in `cluster_epoch`
+- `quader admin service-account create ops --admin` advances the `authz` epoch in `cluster_epoch`
   in the transaction that inserts the `authz_role_binding` row. Run with Valkey stopped, a token of
   `ops` then creates a repository through every `web` replica within the bound of
   [authorization.md](authorization.md) R-AUTHZ-028.
 - A user signed in when a backup was taken, and still signed in when that backup is restored with
-  `trove backup restore`, gets 401 with the same session cookie on every `web` replica afterwards.
+  `quader backup restore`, gets 401 with the same session cookie on every `web` replica afterwards.
   `ui_session`, `oidc_login_flow` and `cli_login` are empty, and the user's PAT created before the
   snapshot still authenticates.
 
@@ -1319,14 +1319,14 @@ role binding, membership or owner record may name ([authorization.md](authorizat
 - `external` says whether the user is an external user (R-AUTH-044): it reads only what it is a member of, what a grant names
   and what is `public`, never what is `internal` ([authorization.md](authorization.md) R-AUTHZ-030).
 
-**The catalog's per-user options (IAM-003) map to trove as follows.** trove has none of the
+**The catalog's per-user options (IAM-003) map to Quader as follows.** Quader has none of the
 three switches; the table fixes the behavior that replaces each:
 
-| Catalog option | trove |
+| Catalog option | Quader |
 |---|---|
 | UI access disabled | No per-user switch. Every human user has UI access. API-only automation uses a service account (R-AUTH-020), which has no login, session or UI access. |
 | Internal password disabled | Not applicable: no user has an internal password, so there is nothing to fall back to. |
-| Profile updatable | No per-user switch. Users cannot edit their profile data in trove: email and display name come from the IdP and are overwritten at every login (R-AUTH-007). An administrator can correct them through `PATCH /api/v1/users/{username}` until the next login. |
+| Profile updatable | No per-user switch. Users cannot edit their profile data in Quader: email and display name come from the IdP and are overwritten at every login (R-AUTH-007). An administrator can correct them through `PATCH /api/v1/users/{username}` until the next login. |
 | Password change (the catalog's open point under "profile updatable") | Not applicable: users have no password to change. The only password, the break-glass password, changes only by rotating its Kubernetes Secret (R-AUTH-014). No API changes it. |
 
 **Disable.** `POST /api/v1/users/{username}/disable` does the following:
@@ -1439,9 +1439,9 @@ Acceptance criteria:
   `reserved_name`, and an OIDC login whose mapped username is `me` fails with `username_invalid`.
 
 ### R-AUTH-044 · The external flag of a user
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
-trove has a user flag `external` as GitLab has it, set by an administrator (owner, 2026-11-11): an external user sees only
+Quader has a user flag `external` as GitLab has it, set by an administrator (owner, 2026-11-11): an external user sees only
 what it is a member of, what a grant names and what is `public`; the level `internal` never admits it
 ([authorization.md](authorization.md) R-AUTHZ-030,
 [Q-AUTH-230](#q-auth-230--the-external-flag-is-an-attribute-of-the-user-set-by-an-administrator-and-resolved-with-the-users-status-and-groups)).
@@ -1641,7 +1641,7 @@ Acceptance criteria:
 Priority: **MVP** · Covers: TOK-010, TOK-015, IAM-003
 
 A service account is a non-human principal for automation (deploy jobs outside GitLab, IdP
-provisioning, monitoring). It is trove's answer to the catalog's group-scoped tokens for
+provisioning, monitoring). It is Quader's answer to the catalog's group-scoped tokens for
 subjects without a user account (TOK-010): permissions come from policies bound to the service
 account or to its groups, never from placeholder users.
 
@@ -1661,12 +1661,12 @@ account or to its groups, never from placeholder users.
 - It is never a member of a project (422 `principal_not_allowed`): it reaches a project's repositories through policies
   ([Q-AUTHZ-215](authorization.md#q-authz-215--a-members-role-acts-through-its-session-and-personal-tokens-within-their-scope-and-service-accounts-are-not-members)).
 - It can be a group member (R-AUTH-018) and a policy principal, unless it is a project service account (below).
-- It holds `trv_sat_` tokens, at most `max_active_per_principal`.
+- It holds `qdr_sat_` tokens, at most `max_active_per_principal`.
 - The record states `isAdmin`: whether the account holds the administrator role now, by a binding on the account; always `false`
   for a project's account ([Q-AUTH-209](#q-auth-209--a-token-and-a-service-account-state-whether-the-owner-holds-the-administrator-role)).
 
 **Instance-wide service accounts** are created, changed, disabled, enabled and deleted, and their tokens issued, only by
-administrators of trove (`identities:write`; tokens also by owners from P1; Q-AUTHZ-209).
+administrators of Quader (`identities:write`; tokens also by owners from P1; Q-AUTHZ-209).
 
 **Project service accounts (owner, [Q-AUTHZ-169](authorization.md#q-authz-169--a-technical-account-for-a-project-belongs-to-the-project)).**
 A project's service account lives under the project's routes. It is created, changed, disabled, enabled and deleted by an
@@ -1728,7 +1728,7 @@ gets 403.
 Acceptance criteria:
 
 - A SAT of `ci-bot`, whose only grant is deploy on `web/npm-local`, can `npm publish` to
-  `https://trove.example.com/api/npm/web/npm-local/`. `npm whoami` prints `sa:ci-bot`.
+  `https://quader.example.com/api/npm/web/npm-local/`. `npm whoami` prints `sa:ci-bot`.
 - An Owner of `web` creates `partner` with `POST /api/v1/projects/web/service-accounts` (201), an Owner of `mobile`
   creates `partner` in `mobile` (201), and an administrator creates the instance-wide `partner` with
   `POST /api/v1/service-accounts` (201); a second `partner` in `web` answers 409 `already_exists`. `npm whoami` with a
@@ -1740,9 +1740,9 @@ Acceptance criteria:
   `GET /api/v1/users/me/sessions` with the SAT answers 403.
 
 ### R-AUTH-021 · Dormant-user deactivation
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
-Without SCIM, deactivating a person at the IdP does not reach trove; their PATs keep working.
+Without SCIM, deactivating a person at the IdP does not reach Quader; their PATs keep working.
 Dormancy bounds that window:
 
 - The daily task `user-dormancy` (R-AUTH-043), which runs once per slot on a `worker` replica,
@@ -1792,10 +1792,10 @@ Priority: **MVP** · Covers: TOK-002, TOK-004, TOK-006
 
 | Type | Prefix | Owner principal | Issued by |
 |---|---|---|---|
-| Personal access token (PAT) | `trv_pat_` | user | the user (UI, API, npm web login, device login) |
-| Service-account token (SAT) | `trv_sat_` | service account | administrators, owners (P1), `trove admin` |
-| CI token (CIT) | `trv_cit_` | CI identity mapping | the CI exchange only ([gitlab-ci-oidc.md](gitlab-ci-oidc.md)) |
-| Bastion token (BST) | `trv_bst_` | Bastion registration (principal kind `bastion`) | holders of `endpoints:write`, `trove admin bastion token create`; accepted only by the Bastion interface ([bastion.md](bastion.md) R-BAS-004, R-BAS-005; phase 5b) |
+| Personal access token (PAT) | `qdr_pat_` | user | the user (UI, API, npm web login, device login) |
+| Service-account token (SAT) | `qdr_sat_` | service account | administrators, owners (P1), `quader admin` |
+| CI token (CIT) | `qdr_cit_` | CI identity mapping | the CI exchange only ([gitlab-ci-oidc.md](gitlab-ci-oidc.md)) |
+| Bastion token (BST) | `qdr_bst_` | Bastion registration (principal kind `bastion`) | holders of `endpoints:write`, `quader admin bastion token create`; accepted only by the Bastion interface ([bastion.md](bastion.md) R-BAS-004, R-BAS-005; phase 5b) |
 
 **Format.** The format is exact, so independent implementations and secret scanners agree:
 
@@ -1809,35 +1809,35 @@ token    = body + checksum                                         // always 57 
 - The alphabet is `0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz`, most
   significant digit first, left-padded with `0`. 43 base62 digits hold 256 bits; 6 digits hold
   32 bits.
-- The scanner pattern is `\btrv_(?:pat|sat|cit|bst)_[0-9A-Za-z]{49}\b`; `bst` joins with the Bastion token (phase 5b),
+- The scanner pattern is `\bqdr_(?:pat|sat|cit|bst)_[0-9A-Za-z]{49}\b`; `bst` joins with the Bastion token (phase 5b),
   whose row widens the `type` check of `api_token` in the same change.
 - The checksum lets a scanner reject random look-alikes offline. It is not a security mechanism.
 - Test vector, with 32 zero bytes as `random`:
-  - `trv_pat_000000000000000000000000000000000000000000010kJbh`;
-  - CRC-32 is `374382dd`;
+  - `qdr_pat_00000000000000000000000000000000000000000003INAaE`;
+  - CRC-32 is `b3ffeff6`;
   - its SHA-256 is
-    `e1ba47eddf817cc30ede3aa6f55391378f03840da097aa8c387dca45fb10c703`.
+    `82637bd67e995888ff39b1321d6c947df93e78ef76198102b341083b046ddb37`.
 - The token secret appears exactly once, in the response that creates it (create, rotate, npm or
-  device login completion, `trove admin token create`). No API, log, audit event or database
+  device login completion, `quader admin token create`). No API, log, audit event or database
   column returns it later.
 - Each token has a public `hint`, the prefix plus the first 4 characters of the random part (for
-  example `trv_pat_3kQ9`), so users can tell their tokens apart in lists. 24 of 256 bits are
+  example `qdr_pat_3kQ9`), so users can tell their tokens apart in lists. 24 of 256 bits are
   disclosed; the remaining entropy is ample.
 
-**Reference tokens (TOK-004).** Every trove token is what the catalog calls a reference token:
+**Reference tokens (TOK-004).** Every Quader token is what the catalog calls a reference token:
 an opaque string that is resolved through the database on every uncached request (R-AUTH-023).
-There is no second, self-contained form of a trove token (TOK-003 is P2). The registry token of the OCI
-token service (`trv_rgt_`, P1, [formats/oci.md](formats/oci.md) R-OCI-005) is no token type of this
-table: it is a short-lived, MAC-signed narrowing of the trove token that requested it, named after that
+There is no second, self-contained form of a Quader token (TOK-003 is P2). The registry token of the OCI
+token service (`qdr_rgt_`, P1, [formats/oci.md](formats/oci.md) R-OCI-005) is no token type of this
+table: it is a short-lived, MAC-signed narrowing of the Quader token that requested it, named after that
 token by the SHA-256 of its secret, never stored, verified through the cache of R-AUTH-023, and not
-matched by the scanner pattern above. Consequences for the trove tokens:
+matched by the scanner pattern above. Consequences for the Quader tokens:
 
 - The create request has no "also issue a reference token" option; the one token it returns is
   the reference.
 - No payload limit applies. Scope and group memberships live in PostgreSQL, not in the string,
   so long or many group names never change the token.
 - Every type is exactly 57 characters. This settles the catalog's open point between a
-  64-character and a 128-character form: trove uses neither.
+  64-character and a 128-character form: Quader uses neither.
 
 **Attributes.** Every token carries the attributes of TOK-002, adapted:
 
@@ -1928,7 +1928,7 @@ change-log poll started less than `auth.revocation_bound` ago
 Otherwise every lookup goes to PostgreSQL as on a miss and is not cached. A lookup that
 PostgreSQL does not answer within the request's retry budget
 ([ha-and-helm.md](ha-and-helm.md) R-HA-009) gives 503 (R-AUTH-001), never an answer from the cache.
-`trove_auth_cache_bypassed_total{reason="changes_stale"}` counts these lookups.
+`quader_auth_cache_bypassed_total{reason="changes_stale"}` counts these lookups.
 
 The gate is deliberately stricter than the `invalidation` readiness check of R-ARCH-018, which
 takes a replica out of the Service only once its poll is older than `cluster.epoch_max_staleness`
@@ -2090,7 +2090,7 @@ every project, or come from the Owner role of a project ([authorization.md](auth
 over the owner's own profile. A token whose scope does not inherit (`inherit: false`, also with `admin: true` or a
 `system` list) therefore cannot change the owner's avatar, preferences or sessions, list the sessions, or revoke
 all the owner's tokens; the operations answer `403 forbidden`. A session and a token with `inherit: true` can. The
-rule is the `x-trove-owner-rights` declaration of the OpenAPI document, enforced by the shared step before the
+rule is the `x-quader-owner-rights` declaration of the OpenAPI document, enforced by the shared step before the
 handler ([api-and-ui.md](api-and-ui.md) R-API-021, Q-API-214). Creating a token follows the derivation rule of
 R-AUTH-027 instead. Listing, reading, revoking and rotating the owner's tokens follow the line of R-AUTH-028 to
 R-AUTH-030: a token whose scope does not inherit sees and acts on, by ownership, only itself and the tokens derived
@@ -2120,7 +2120,7 @@ from it (Q-AUTH-199). The package owner changes and the cancellation of a job ha
     is the package name, with the actions `read` and `deploy`.
 
 **Deliberate departure.** The catalog's resource scope (TOK-012) grants rights independently of
-any policy. trove does not allow that. A scope that names actions the owner does not hold
+any policy. Quader does not allow that. A scope that names actions the owner does not hold
 simply yields nothing for them, because a token can never be a back door around policies.
 
 Acceptance criteria:
@@ -2169,7 +2169,7 @@ used for monitoring and audit tokens:
 | `vulnerabilities:triage` | From M4b: change the status of vulnerability findings; the token also needs `read` on the finding's repository, so a scope with this item alone reads and changes no finding ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-013, R-VULN-019) |
 
 **Declaring items.** Every administration operation declares the item that admits it, in the
-OpenAPI document as `x-trove-system-scope`. Operations without a declared item need
+OpenAPI document as `x-quader-system-scope`. Operations without a declared item need
 `admin: true`. Pages that add administrative operations extend this list through review of this
 page.
 
@@ -2197,7 +2197,7 @@ Priority: **MVP** · Covers: TOK-017, TOK-018, TOK-019, IAM-038, ADMAPI-042
   value, not an invalid one. Every other value must be at least 60. A negative value, a value
   from 1 to 59, a non-integer, and an `expiresAt` less than 60 s in the future answer 400
   `invalid_ttl`.
-- A lifetime above the maximum answers 400 `ttl_exceeds_maximum`. trove does not silently
+- A lifetime above the maximum answers 400 `ttl_exceeds_maximum`. Quader does not silently
   clamp it.
 
 **Non-expiring tokens (TOK-017).** Only a SAT can be non-expiring, and all three conditions must
@@ -2206,7 +2206,7 @@ hold:
 - `sat.allow_non_expiring` is true. Otherwise `ttlSeconds: 0` answers 400
   `non_expiring_not_allowed`.
 - The caller is an administrator: a session with recent authentication, a token with
-  `admin: true`, or `trove admin token create --ttl 0`. Service-account owners (P1) get 403
+  `admin: true`, or `quader admin token create --ttl 0`. Service-account owners (P1) get 403
   `non_expiring_restricted`.
 - The request does not run under the derivation rule (R-AUTH-027). A token derived from a
   non-expiring SAT gets a finite lifetime, at most the SAT maximum.
@@ -2223,12 +2223,12 @@ included. Every default is a finite duration; there is no "no default forced" se
 | `POST /api/v1/service-accounts/{name}/tokens`, `POST /api/v1/projects/{projectKey}/service-accounts/{name}/tokens` | `sat.default_ttl` (its runtime value) |
 | Token-authenticated create under the derivation rule (R-AUTH-027) | The path's default, capped at the presenting token's expiry |
 | npm web login (R-AUTH-034), device login (R-AUTH-036) | `cli_login.token_ttl`, capped by the PAT maximum; the approver may shorten it |
-| `trove admin token create` (R-AUTH-015) | 15 min |
+| `quader admin token create` (R-AUTH-015) | 15 min |
 | Rotation (R-AUTH-030) | The original lifetime, capped by the current maximum |
 | CI exchange | Set by [gitlab-ci-oidc.md](gitlab-ci-oidc.md), at most `cit.max_ttl` |
 
 **Who the caps bind (TOK-019).** The maximum binds every creator: users, service-account owners
-(P1), Owners of projects, administrators and `trove admin`. There is no separate cap for
+(P1), Owners of projects, administrators and `quader admin`. There is no separate cap for
 non-administrators or Owners, and no variant that caps at the default. This departs from the catalog,
 where administrators are uncapped, so that the security setting means what it says. The only
 way past the maximum is the non-expiring SAT above, which is off by default and reserved to
@@ -2305,7 +2305,7 @@ create call must satisfy all of the following:
 
 **Tokens an Owner issues** ([Q-AUTHZ-177](authorization.md#q-authz-177--what-a-project-administrator-may-do-with-service-accounts-and-their-tokens), [Q-AUTHZ-208](authorization.md#q-authz-208--four-project-roles-reader-developer-maintainer-owner)).
 A token that an Owner of a project, acting without the system capability, issues for a service account of the project is
-never non-expiring (the administrator rule of R-AUTH-026 applies to administrators of trove only), lives at most `auth.tokens.sat.max_ttl`, has `admin: false`
+never non-expiring (the administrator rule of R-AUTH-026 applies to administrators of Quader only), lives at most `auth.tokens.sat.max_ttl`, has `admin: false`
 and no `system` item (422 `invalid_scope`), and is not self-rotatable (422 `validation_failed` at `/selfRotatable`,
 [Q-AUTH-192](#q-auth-192--a-token-a-project-administrator-issues-is-not-self-rotatable)); repository grants, `inherit` and an
 `endpoints` binding are allowed.
@@ -2342,8 +2342,8 @@ token is revoked.
 {
   "id": "0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e11",
   "type": "pat",
-  "token": "trv_pat_3kQ9…",
-  "hint": "trv_pat_3kQ9",
+  "token": "qdr_pat_3kQ9…",
+  "hint": "qdr_pat_3kQ9",
   "owner": {"kind": "user", "name": "alice"},
   "description": "laptop npm",
   "scope": {"inherit": true, "admin": false, "repositories": [], "system": []},
@@ -2371,7 +2371,7 @@ the secret.
 
 Acceptance criteria:
 
-- `curl -s -X POST -H "Authorization: Bearer $PAT" -d '{"description":"ci","ttlSeconds":3600}' https://trove.test/api/v1/tokens`
+- `curl -s -X POST -H "Authorization: Bearer $PAT" -d '{"description":"ci","ttlSeconds":3600}' https://quader.test/api/v1/tokens`
   returns 201 when `$PAT` expires later than 1 h. With `ttlSeconds` beyond `$PAT`'s expiry it
   returns 403 `derivation_exceeds_parent`.
 - `curl -u x:$PAT -X POST … /api/v1/tokens` behaves like the Bearer call, so Basic with a token
@@ -2432,7 +2432,7 @@ Acceptance criteria:
 
 - `alice` listing tokens sees only her own. `GET /api/v1/tokens/{id-of-bob's-token}` with her
   PAT answers 404.
-- `curl -H "Authorization: Bearer $PAT" https://trove.test/api/v1/tokens/current` returns that
+- `curl -H "Authorization: Bearer $PAT" https://quader.test/api/v1/tokens/current` returns that
   token's `expiresAt` and scope.
 - `alice`'s PAT with scope `{"repositories": [{"repositories": ["web/npm-local"], "actions": ["read"]}]}`
   derives a child. `GET /api/v1/tokens` with that PAT lists the PAT and its child only, and
@@ -2451,7 +2451,7 @@ Priority: **MVP** · Covers: TOK-030, TOK-031, TOK-032, ADMAPI-045, ADMAPI-046
 | `DELETE /api/v1/users/me/tokens` | Revoke all own tokens | user: a session, or a token that inherits the owner's rights (R-AUTH-024) | 204, 403 |
 | `DELETE /api/v1/users/{username}/tokens`, `DELETE /api/v1/service-accounts/{name}/tokens` | Revoke all tokens of a principal | administrator | 204, 404 |
 | `DELETE /api/v1/projects/{projectKey}/service-accounts/{name}/tokens` | Revoke all tokens of a project's service account | administrator, `tokens:revoke`, an Owner of the project | 204, 404 |
-| `POST /api/v1/tokens/revoke` | Revoke by value: `{"token": "trv_…"}` | anyone; no authentication needed | 202; 200 with `{"id", "owner"}` for administrators; 400 if the syntax check fails |
+| `POST /api/v1/tokens/revoke` | Revoke by value: `{"token": "qdr_…"}` | anyone; no authentication needed | 202; 200 with `{"id", "owner"}` for administrators; 400 if the syntax check fails |
 
 **Revocation by value.** The endpoint is open to unauthenticated callers (decided in Q-AUTH-6).
 Possession of a live token already allows revoking it (`DELETE /api/v1/tokens/current`). The open
@@ -2477,7 +2477,7 @@ already rotated value revoke the live successor; that is deliberate. Its rules:
   (Q-AUTH-89).
 - The forward cascade of a by-value revocation also runs when the presented token is already
   revoked or expired, as long as its row still exists (retention, R-AUTH-023). The presented
-  token's own revocation fields stay unchanged. trove cannot tell a holder's rotation from a
+  token's own revocation fields stay unchanged. Quader cannot tell a holder's rotation from a
   thief's, so a leaked predecessor always ends the chain; the legitimate holder creates a new
   token.
 - Revoking an already revoked or expired token answers 204, so the operation is idempotent.
@@ -2502,7 +2502,7 @@ already rotated value revoke the live successor; that is deliberate. Its rules:
 
 Acceptance criteria:
 
-- `curl -X POST -d '{"token":"'$PAT'"}' https://trove.test/api/v1/tokens/revoke` without
+- `curl -X POST -d '{"token":"'$PAT'"}' https://quader.test/api/v1/tokens/revoke` without
   credentials answers 202. `npm whoami` with `$PAT` gets 401 within 2 s. The audit trail shows
   `token.revoked` with reason `leaked`.
 - `DELETE /api/v1/tokens/current` with a SAT makes that SAT unusable. The other SATs of the
@@ -2523,7 +2523,7 @@ Acceptance criteria:
 Priority: **P1** · Covers: TOK-024
 
 Rotation replaces a token's secret while keeping its description, scope and owner. It is how
-holders renew long-lived credentials without the issuer. trove issues no refresh tokens and has
+holders renew long-lived credentials without the issuer. Quader issues no refresh tokens and has
 no refresh grant (decided in Q-AUTH-3); no endpoint returns a `refresh_token`.
 
 Rotation is renewal, not a response to a leak. A token that may have leaked is revoked
@@ -2664,7 +2664,7 @@ row, which starts unnotified.
 - The UI shows the owner a banner listing their tokens that expire within the notice period.
   For service accounts, the banner goes to administrators and owners.
 - `GET /api/v1/tokens?expiresBefore=` gives the same list.
-- The gauge `trove_tokens_expiring{type}` counts tokens inside the notice period.
+- The gauge `quader_tokens_expiring{type}` counts tokens inside the notice period.
 - Email notification (TOK-023) is deferred to P2; it needs the mail server of the operations
   page.
 
@@ -2687,26 +2687,26 @@ Acceptance criteria:
 ### R-AUTH-033 · Client authentication matrix
 Priority: **MVP** · Covers: TOK-033, TOK-034, PKG-NPM-005, PKG-NPM-006, PKG-NPM-011, PKG-NUGET-017, PKG-NUGET-018, IAM-036, ADMAPI-055, FMT-013
 
-Every client presents a trove token (R-AUTH-022). The table lists the supported forms; the
+Every client presents a Quader token (R-AUTH-022). The table lists the supported forms; the
 endpoint routes themselves belong to the format pages.
 
 | Client | Configuration (example) | Wire form | Accepted |
 |---|---|---|---|
-| npm, pnpm, Yarn 1 | `//trove.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}` in `.npmrc` ([npmrc auth settings](https://docs.npmjs.com/cli/configuring-npm/npmrc#auth-related-configuration)) | `Authorization: Bearer <token>` | yes |
-| npm, pnpm, Yarn 1 | `//trove.example.com/api/npm/web/npm-all/:_auth=<base64(any:token)>` | `Authorization: Basic …` | yes; the username is ignored |
-| Yarn 2+ | `npmAuthToken: ${TROVE_TOKEN}` or `npmAuthIdent: "any:${TROVE_TOKEN}"` in `.yarnrc.yml` | Bearer or Basic | yes |
-| npm interactive | `npm login --registry=https://trove.example.com/api/npm/web/npm-all/` | web login (R-AUTH-034) or legacy login (R-AUTH-035); stores `_authToken` | P1 |
+| npm, pnpm, Yarn 1 | `//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}` in `.npmrc` ([npmrc auth settings](https://docs.npmjs.com/cli/configuring-npm/npmrc#auth-related-configuration)) | `Authorization: Bearer <token>` | yes |
+| npm, pnpm, Yarn 1 | `//quader.example.com/api/npm/web/npm-all/:_auth=<base64(any:token)>` | `Authorization: Basic …` | yes; the username is ignored |
+| Yarn 2+ | `npmAuthToken: ${QUADER_TOKEN}` or `npmAuthIdent: "any:${QUADER_TOKEN}"` in `.yarnrc.yml` | Bearer or Basic | yes |
+| npm interactive | `npm login --registry=https://quader.example.com/api/npm/web/npm-all/` | web login (R-AUTH-034) or legacy login (R-AUTH-035); stores `_authToken` | P1 |
 | NuGet (dotnet, nuget.exe, Visual Studio) | `packageSourceCredentials` with `Username=<any>` and `ClearTextPassword=<token>` in `nuget.config` ([reference](https://learn.microsoft.com/en-us/nuget/reference/nuget-config-file#packagesourcecredentials)) | Basic after a 401 challenge ([authenticated feeds](https://learn.microsoft.com/en-us/nuget/consume-packages/consuming-packages-authenticated-feeds)) | yes |
 | NuGet push, delete, relist | `dotnet nuget push … --api-key <token>` or `nuget setapikey <user>:<token>` | `X-NuGet-ApiKey` ([publish resource](https://learn.microsoft.com/en-us/nuget/api/package-publish-resource)) | yes; rules below |
 | ansible-galaxy | `token=` in `ansible.cfg`, `ANSIBLE_GALAXY_SERVER_<NAME>_TOKEN` or `--token` ([formats/ansible.md](formats/ansible.md) R-ANS-006) | `Authorization: Token <token>`, on the routes that declare the scheme only; method `galaxy_token` | yes |
 | ansible-galaxy | `username=` and `password=`, or `~/.netrc` for a role archive | Basic | yes; the username is ignored |
 | Generic (curl, CI scripts, other formats) | — | Bearer or Basic | yes |
-| Browser UI | — | `__Host-trv_session` cookie | `/api/v1` all methods; `/files` `GET` and `HEAD`, and `PUT` and `DELETE` with CSRF (R-AUTH-012); package-protocol endpoints `GET` and `HEAD` only |
+| Browser UI | — | `__Host-qdr_session` cookie | `/api/v1` all methods; `/files` `GET` and `HEAD`, and `PUT` and `DELETE` with CSRF (R-AUTH-012); package-protocol endpoints `GET` and `HEAD` only |
 
 **NuGet API-key rule (PKG-NUGET-018).** The rule applies on the API-key endpoints:
 
 - The value is examined first. If the value, or its part after the last `:`, is a well-formed
-  trove token (prefix, length, checksum), that token is the credential and the
+  Quader token (prefix, length, checksum), that token is the credential and the
   `Authorization` header is ignored. Both forms are accepted: a bare token (what
   `dotnet nuget push --api-key` and a publish that passes a single value send) and
   `<any user>:<token>` (the `setapikey` convention). This settles the catalog's open point.
@@ -2722,7 +2722,7 @@ endpoint routes themselves belong to the format pages.
 - A token in the header passes the same steps as a `Bearer` token: the endpoint's token rules
   (R-EP-010, R-EP-011), validation, the throttle, the last use (R-AUTH-031). The principal's
   credential method is `api_key`, which the audit event records (R-AUTH-041); the request log and
-  `trove_auth_attempts_total` name it `nuget_apikey`
+  `quader_auth_attempts_total` name it `nuget_apikey`
   ([operations-and-observability.md](operations-and-observability.md) R-OPS-015).
 - The session cookie is never a credential on an API-key endpoint (R-AUTH-001 item 3,
   Q-AUTH-187), so a cross-site `POST` relist from a signed-in browser is unauthenticated.
@@ -2736,13 +2736,13 @@ API key's owner. The username part of `user:token` is ignored, like the Basic us
 same for every format, so no format parses credentials of its own. Each client style of FMT-013
 maps to it as follows:
 
-| Client style | What reaches trove | trove's rule |
+| Client style | What reaches Quader | Quader's rule |
 |---|---|---|
 | Token in the client configuration, per registry URL or per scope (npm, pnpm, Yarn) | Bearer, or Basic from a registry-keyed `_auth`, `username` plus `_password`, or `npmAuthIdent` | Accepted. npm 9 and later read only registry-keyed auth lines, so setup instructions never offer the unkeyed legacy `_auth`. A scope (`@acme:registry=…`) authenticates through the auth line of the registry URL it names. When each client attaches credentials, and the `always-auth` and `npmAlwaysAuth` settings that follow from it, are in R-NPM-004 ([formats/npm.md](formats/npm.md)). |
-| Username and token per package source (NuGet) | Basic after a 401; the API key on push, delete and relist | Accepted, with the API-key rule above. Any non-empty username works, because trove ignores it. |
-| `.netrc`, or credentials inside the repository URL (`https://user:token@host/…`) | Basic. The client turns them into an `Authorization` header; userinfo never appears in the request target ([RFC 9110](https://www.rfc-editor.org/rfc/rfc9110) §4.2.4) | Accepted on every package-protocol endpoint and on `/files/`. trove never reads credentials from the request path or query (R-AUTH-001). |
-| A client that rejects certain usernames, for example email addresses | Basic | Any username works, because trove ignores it. |
-| A client that cannot authenticate at all, or not for some operations | No credential | Served only as the anonymous subject (R-AUTH-037): it reads the repositories whose artifacts are `public` ([authorization.md](authorization.md) R-AUTHZ-033), on an endpoint that admits requests without a credential. trove has no per-repository switch that bypasses the authentication stage. A format page that needs anonymous access for a client names the level it needs. |
+| Username and token per package source (NuGet) | Basic after a 401; the API key on push, delete and relist | Accepted, with the API-key rule above. Any non-empty username works, because Quader ignores it. |
+| `.netrc`, or credentials inside the repository URL (`https://user:token@host/…`) | Basic. The client turns them into an `Authorization` header; userinfo never appears in the request target ([RFC 9110](https://www.rfc-editor.org/rfc/rfc9110) §4.2.4) | Accepted on every package-protocol endpoint and on `/files/`. Quader never reads credentials from the request path or query (R-AUTH-001). |
+| A client that rejects certain usernames, for example email addresses | Basic | Any username works, because Quader ignores it. |
+| A client that cannot authenticate at all, or not for some operations | No credential | Served only as the anonymous subject (R-AUTH-037): it reads the repositories whose artifacts are `public` ([authorization.md](authorization.md) R-AUTHZ-033), on an endpoint that admits requests without a credential. Quader has no per-repository switch that bypasses the authentication stage. A format page that needs anonymous access for a client names the level it needs. |
 | A client that sends configured credentials only after a 401 (NuGet) | No credential at first | A repository whose artifacts are not `public` answers 401 with the challenge, so the client retries with its credentials and its reads are authorized and attributed per principal ([formats/nuget.md](formats/nuget.md) R-NUGET-012). A `public` repository answers without a challenge, so its reads are anonymous. |
 
 FMT-013 is MVP for its npm and NuGet rows, which the first two rows and the last row settle. The
@@ -2761,7 +2761,7 @@ under the rules of this table.
 
 **Basic switch.** `auth.clients.basic.enabled` turns off Basic token presentation everywhere
 (IAM-036, ADMAPI-055). This breaks NuGet restore and `_auth` users, and (P1) every OCI registry
-client: the token service takes the trove token as Basic or as the password of the OAuth 2.0 form,
+client: the token service takes the Quader token as Basic or as the password of the OAuth 2.0 form,
 which counts as a Basic presentation, so Docker, Podman and containerd get no registry token
 ([formats/oci.md](formats/oci.md) R-OCI-004, Q-OCI-57). The default is on, and the settings response
 warns when it is off. Basic with a password is impossible regardless (R-AUTH-014).
@@ -2778,22 +2778,22 @@ auth:
 
 Acceptance criteria:
 
-- `npm whoami --registry=https://trove.test/api/npm/web/npm-all/` with `_authToken` prints
+- `npm whoami --registry=https://quader.test/api/npm/web/npm-all/` with `_authToken` prints
   `alice`. With `_auth=$(printf 'whatever:%s' "$PAT" | base64)` it prints `alice` as well.
 - NuGet with credentials in `nuget.config`, all of which succeed:
 
   ```shell
-  dotnet nuget add source https://trove.test/api/nuget/web/nuget-all/v3/index.json -n trove -u alice -p "$PAT" --store-password-in-clear-text
+  dotnet nuget add source https://quader.test/api/nuget/web/nuget-all/v3/index.json -n quader -u alice -p "$PAT" --store-password-in-clear-text
   dotnet restore
-  dotnet nuget push Acme.Lib.1.0.0.nupkg -s trove --api-key "$PAT"
+  dotnet nuget push Acme.Lib.1.0.0.nupkg -s quader --api-key "$PAT"
   ```
 
   Push with `--api-key az` and the credentials configured succeeds as well. Push with
   `--api-key "$REVOKED_PAT"` gets 401 even though valid credentials are configured.
-- `curl -u ci:$SAT -T file.bin https://trove.test/files/web/generic-local/a/file.bin` deploys the
+- `curl -u ci:$SAT -T file.bin https://quader.test/files/web/generic-local/a/file.bin` deploys the
   file.
-- With a `.netrc` entry `machine trove.test login any password <PAT>`, `curl --netrc
-  https://trove.test/api/npm/web/npm-all/lodash` answers 200. `curl "https://any:$PAT@trove.test/files/web/generic-local/a/file.bin"`
+- With a `.netrc` entry `machine quader.test login any password <PAT>`, `curl --netrc
+  https://quader.test/api/npm/web/npm-all/lodash` answers 200. `curl "https://any:$PAT@quader.test/files/web/generic-local/a/file.bin"`
   downloads the file. A request whose path or query contains the PAT but which has no
   `Authorization` header gets 401.
 - `dotnet nuget push … --api-key "$PAT"` with valid source credentials of another user stores
@@ -2804,19 +2804,19 @@ Priority: **P1** · Covers: PKG-NPM-008, AUTHN-044
 
 npm's default `npm login` opens a browser and polls for a token. The protocol is from
 [npm-profile](https://github.com/npm/npm-profile) (verified against its `lib/index.js`) and
-[npm login](https://docs.npmjs.com/cli/commands/npm-login). trove serves it on top of the
+[npm login](https://docs.npmjs.com/cli/commands/npm-login). Quader serves it on top of the
 OIDC session.
 
 **Flow:**
 
 1. **Start.** `POST /api/npm/{projectKey}/{repoKey}/-/v1/login` needs no credential and is rate-limited
    (R-AUTH-038). The repository must exist and have format npm; otherwise 404, which makes npm
-   fall back to legacy login. trove creates a pending `cli_login` row (expiry
+   fall back to legacy login. Quader creates a pending `cli_login` row (expiry
    `auth.cli_login.ttl`) and answers 200:
 
    ```json
-   {"loginUrl": "https://trove.example.com/ui/cli-login/<publicId>",
-    "doneUrl":  "https://trove.example.com/auth/cli/<pollSecret>"}
+   {"loginUrl": "https://quader.example.com/ui/cli-login/<publicId>",
+    "doneUrl":  "https://quader.example.com/auth/cli/<pollSecret>"}
    ```
 
    Both URLs are absolute `https` URLs, as npm requires. `publicId` is 16 random bytes and
@@ -2833,7 +2833,7 @@ OIDC session.
    - an additional prominent warning if the browser's address differs from the requesting
      address;
    - the refused polls (address binding below): their count and the address and time of the last
-     one, with the text "trove
+     one, with the text "Quader
      refused to hand the token to a poll from <address>, outside the network that started this
      login. If that was your own npm, your network uses several egress addresses: create a token
      in your profile and enter it at npm's password prompt, or ask an administrator to list the
@@ -2849,7 +2849,7 @@ OIDC session.
 | State | Response |
 |---|---|
 | Pending | 202, body `{}`, `Retry-After: 2`. npm parses the body as JSON before checking the status, so the body must be JSON. |
-| Approved | Mint the PAT (`createdVia: npm-web-login`, description `npm login from <addr> on <date>`), mark the row consumed, answer 200 `{"token": "trv_pat_…"}`. The secret is generated at this moment and is never stored. |
+| Approved | Mint the PAT (`createdVia: npm-web-login`, description `npm login from <addr> on <date>`), mark the row consumed, answer 200 `{"token": "qdr_pat_…"}`. The secret is generated at this moment and is never stored. |
 | Denied | 403 `{"error": "denied"}` |
 | Expired, consumed or unknown | 404 `{"error": "not_found"}` |
 
@@ -2861,11 +2861,11 @@ same moment therefore mint one token: the second finds no approved row and gets 
 
 npm treats any 4xx answer, on the start call or on a poll, as "web login unsupported" and falls
 back to the username and password prompt. There, a user can still type a PAT as password
-(R-AUTH-035). trove documents this behavior; it cannot change it.
+(R-AUTH-035). Quader documents this behavior; it cannot change it.
 
 **Address binding (decided in Q-AUTH-8).** The `doneUrl` is a bearer URL: whoever polls it
 first after the approval receives the PAT, and its path passes through every proxy log between
-npm and trove. trove therefore releases the token only to a poll from the network that started
+npm and Quader. Quader therefore releases the token only to a poll from the network that started
 the login. The client address is the one of R-ARCH-006 in [architecture.md](architecture.md);
 IPv4-mapped IPv6 addresses are unmapped before comparing. A poll *matches* `requested_addr`
 when `auth.cli_login.poll_binding.mode` says so:
@@ -2884,10 +2884,10 @@ Rules:
   password prompt where it can enter a PAT.
 - Each refused poll increments `refused_poll_count` and records `last_refused_addr` and
   `last_refused_at` on the row, under the row's lock (`SELECT … FOR UPDATE`). The approval page
-  shows it (step 2). trove writes `cli_login.poll_refused` (R-AUTH-041) in the same transaction
+  shows it (step 2). Quader writes `cli_login.poll_refused` (R-AUTH-041) in the same transaction
   when the refused address differs from the previous `last_refused_addr`, so concurrent refusals
   on several replicas write one event per new address, and no replica keeps a record of its own.
-  The metric `trove_auth_cli_poll_refused_total` counts refusals, so operators see how often their
+  The metric `quader_auth_cli_poll_refused_total` counts refusals, so operators see how often their
   network defeats the binding.
 - `equivalent_ranges` lists CIDR blocks of the operator's egress pools whose addresses are not
   contiguous within the prefix. Startup MUST fail for an invalid entry, for an IPv4 entry wider
@@ -2900,12 +2900,12 @@ Rules:
   every poll carries a proxy address: the binding then admits every poll that passes the same
   proxy instance, attacker's included, and refuses legitimate polls that pass another instance.
   The settings response (R-AUTH-040) therefore warns when the mode is not `off` and
-  `server.trusted_proxies` is empty. trove cannot detect the edge proxy itself, so this is a
+  `server.trusted_proxies` is empty. Quader cannot detect the edge proxy itself, so this is a
   warning, not a startup error.
 - The binding applies to `client_kind = npm` only. The device flow (R-AUTH-036) carries its
   device code in a POST body, not in a URL, and binds the browser through the typed user code.
 
-trove's own logs redact the poll secret (R-AUTH-001); logs outside trove are H-20.
+Quader's own logs redact the poll secret (R-AUTH-001); logs outside Quader are H-20.
 
 **Turning it off.** With `auth.cli_login.npm_web_login: false`, step 1 answers 404, so npm uses
 legacy login.
@@ -2958,9 +2958,9 @@ auth:
 
 Acceptance criteria:
 
-- `npm login --registry=https://trove.test/api/npm/web/npm-all/` prints a URL. Opening it, logging
+- `npm login --registry=https://quader.test/api/npm/web/npm-all/` prints a URL. Opening it, logging
   in through the test IdP and approving lets the command finish. `~/.npmrc` then contains
-  `//trove.test/api/npm/web/npm-all/:_authToken=trv_pat_`, and `npm whoami` prints the user.
+  `//quader.test/api/npm/web/npm-all/:_authToken=qdr_pat_`, and `npm whoami` prints the user.
 - Polling the same `doneUrl` after success gives 404. A denied login makes npm stop polling.
 - Two polls of one approved `doneUrl`, sent at the same moment to two different `web` replicas:
   exactly one gets 200 with a token, the other 404, and
@@ -3031,7 +3031,7 @@ the terminal they are looking at.
 | Method and path | Request | Response |
 |---|---|---|
 | `POST /api/v1/auth/device/authorize` | form fields `client_id=<tool name>` (free text, shown on the approval page), optional `scope` (JSON scope, R-AUTH-024), optional `self_rotatable=true` | 200 `{"device_code", "user_code": "WDJB-MJHT", "verification_uri": "<base>/ui/device", "verification_uri_complete": "<base>/ui/device?code=WDJB-MJHT", "expires_in": 600, "interval": 5}` |
-| `POST /api/v1/auth/device/token` | `grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=…` | 200 `{"access_token": "trv_pat_…", "token_type": "Bearer", "expires_in": …}`; 400 `authorization_pending`, `slow_down`, `access_denied` or `expired_token` (§3.5) |
+| `POST /api/v1/auth/device/token` | `grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=…` | 200 `{"access_token": "qdr_pat_…", "token_type": "Bearer", "expires_in": …}`; 400 `authorization_pending`, `slow_down`, `access_denied` or `expired_token` (§3.5) |
 
 **Codes.** The user code has 8 characters from `BCDFGHJKLMNPQRSTVWXZ` (§6.1) and is compared
 case-insensitively. The device code is the `pollSecret`.
@@ -3134,12 +3134,12 @@ anonymous subject while `publicContent` is true and answer 401 otherwise.
 
 Acceptance criteria:
 
-- With every level `private`, `curl -si https://trove.test/api/npm/web/npm-all/lodash` gets 401.
+- With every level `private`, `curl -si https://quader.test/api/npm/web/npm-all/lodash` gets 401.
 - With project `web` and the artifacts of `npm-all` and its members `public`, the same call gets 200.
-  `curl -si https://trove.test/api/npm/web/no-such-repo/lodash` and
-  `curl -si https://trove.test/api/npm/no-such-project/npm-all/lodash` get 401, not 404.
-- `curl -X POST https://trove.test/api/v1/projects/web/repositories` without credentials gets 401 whatever the levels, and so
-  does `curl -X POST https://trove.test/api/v%31/projects/web/repositories`.
+  `curl -si https://quader.test/api/npm/web/no-such-repo/lodash` and
+  `curl -si https://quader.test/api/npm/no-such-project/npm-all/lodash` get 401, not 404.
+- `curl -X POST https://quader.test/api/v1/projects/web/repositories` without credentials gets 401 whatever the levels, and so
+  does `curl -X POST https://quader.test/api/v%31/projects/web/repositories`.
 
 ### R-AUTH-038 · Brute-force protection and rate limiting
 Priority: **MVP** · Covers: IAM-042, ADMAPI-012, ADMAPI-050
@@ -3167,7 +3167,7 @@ as rate, so R-ARCH-034's window *W* is one minute, or `auth.cli_login.ttl` for w
 
 While Valkey is unavailable, each limiter answers from per-replica buckets at the configured value
 divided by the live `web` replicas (R-ARCH-034), so the cluster-wide budget stays close to the
-configured one, and `trove_ratelimit_fallback{limiter}` is 1. A limiter never fails a request
+configured one, and `quader_ratelimit_fallback{limiter}` is 1. A limiter never fails a request
 because Valkey failed, and Valkey being unavailable never makes a replica unready (INV-12).
 
 **Break-glass lockout (cluster-wide, in PostgreSQL).** Failures are counted in PostgreSQL, not in
@@ -3188,7 +3188,7 @@ fresh threshold (INV-3, R-ARCH-034):
   password;
 - locks expire on their own, so nobody can lock out the recovery account permanently;
 - an administrator (`POST /api/v1/users/{breakGlassName}/unlock`, 204) or
-  `trove admin break-glass unlock` clears a lock early;
+  `quader admin break-glass unlock` clears a lock early;
 - the user record shows `lockedUntil`, and `GET /api/v1/users?status=locked` lists the account
   (ADMAPI-050);
 - each lock writes `auth.breakglass.locked`.
@@ -3264,7 +3264,7 @@ auth:
 Acceptance criteria:
 
 - Five wrong break-glass passwords, spread across two replicas, lock the account on both. The
-  correct password then gets 429 until `trove admin break-glass unlock` runs. Five wrong passwords
+  correct password then gets 429 until `quader admin break-glass unlock` runs. Five wrong passwords
   sent at the same moment to three replicas lock it as well, and `valkey-cli FLUSHALL` does not
   unlock it.
 - 400 requests with random well-formed tokens from one address within a minute, sent one after
@@ -3273,7 +3273,7 @@ Acceptance criteria:
   successfully from that address on one replica within the previous 10 minutes still works during
   the burst on all three.
 - With Valkey stopped, the same burst is validated at most 300 times across the three replicas,
-  and `trove_ratelimit_fallback{limiter="auth.credential_failures"}` is 1 on each of them.
+  and `quader_ratelimit_fallback{limiter="auth.credential_failures"}` is 1 on each of them.
 - 40 `GET /auth/oidc/corp/start` from one address within a minute, sent one after another, round
   robin over three replicas, get 429 from the 31st on.
 
@@ -3282,7 +3282,7 @@ Acceptance criteria:
 ### R-AUTH-039 · SCIM 2.0 provisioning
 Priority: **P1** · Covers: AUTHN-028, AUTHN-029, AUTHN-030, ADMAPI-035
 
-trove implements the SCIM 2.0 service-provider subset that IdPs need for user and group
+Quader implements the SCIM 2.0 service-provider subset that IdPs need for user and group
 lifecycle ([RFC 7643](https://www.rfc-editor.org/rfc/rfc7643),
 [RFC 7644](https://www.rfc-editor.org/rfc/rfc7644)). The base path is `/api/v1/scim/v2`.
 
@@ -3300,7 +3300,7 @@ Media type `application/scim+json`. Errors use the SCIM error schema.
 
 **Mapping:**
 
-| SCIM attribute | trove attribute |
+| SCIM attribute | Quader attribute |
 |---|---|
 | `userName` | Username, after the R-AUTH-007 normalization |
 | `externalId` | `scim_external_id` |
@@ -3468,8 +3468,8 @@ after *t* (H-37 in [ha-and-helm.md](ha-and-helm.md)). The events below are there
 `journal: revocation` in the event registry
 ([operations-and-observability.md](operations-and-observability.md) R-OPS-014). The audit writer
 copies each one into the revocation journal of [ha-and-helm.md](ha-and-helm.md) R-HA-054, which
-is MVP. `trove admin post-restore` re-applies it after a platform restore (Q-HA-9), and
-`trove backup restore` re-applies it after a restore of a trove backup
+is MVP. `quader admin post-restore` re-applies it after a platform restore (Q-HA-9), and
+`quader backup restore` re-applies it after a restore of a Quader backup
 ([backup-and-restore.md](backup-and-restore.md) R-BAK-024), with the backup's snapshot time as
 *t*. An entry carries IDs and states, never a token value, hash or other secret.
 
@@ -3534,23 +3534,23 @@ is MVP. `trove admin post-restore` re-applies it after a platform restore (Q-HA-
 
 **Metrics.** Proposed names, which the operations page may rename:
 
-- `trove_auth_attempts_total{method,outcome,reason}`
-- `trove_auth_sessions_active`
-- `trove_tokens_active{type}`
-- `trove_tokens_expiring{type}`
-- `trove_auth_cache_invalidations_total`
-- `trove_auth_cache_bypassed_total{reason}` (`changes_stale`, R-AUTH-023)
-- `trove_auth_ratelimited_total{limit}` (`credential_failures`, `flow_starts`,
+- `quader_auth_attempts_total{method,outcome,reason}`
+- `quader_auth_sessions_active`
+- `quader_tokens_active{type}`
+- `quader_tokens_expiring{type}`
+- `quader_auth_cache_invalidations_total`
+- `quader_auth_cache_bypassed_total{reason}` (`changes_stale`, R-AUTH-023)
+- `quader_auth_ratelimited_total{limit}` (`credential_failures`, `flow_starts`,
   `device_code_failures`, `break_glass_lockout`, `break_glass_verifications`, `pending_flows`)
-- `trove_auth_throttle_exempt_total{via}` (`cache`, `marker`; R-AUTH-038)
-- `trove_auth_session_touch_failures_total` (R-AUTH-010)
-- `trove_auth_lastused_flush_failures_total`
-- `trove_auth_group_claim_missing_total{name,reason}` (`name` is the provider ID, Q-AUTH-39)
-- `trove_auth_cli_poll_refused_total`
+- `quader_auth_throttle_exempt_total{via}` (`cache`, `marker`; R-AUTH-038)
+- `quader_auth_session_touch_failures_total` (R-AUTH-010)
+- `quader_auth_lastused_flush_failures_total`
+- `quader_auth_group_claim_missing_total{name,reason}` (`name` is the provider ID, Q-AUTH-39)
+- `quader_auth_cli_poll_refused_total`
 
 Acceptance criteria:
 
-- The full acceptance suite of this page leaves no audit event containing `trv_`, `eyJ` (a
+- The full acceptance suite of this page leaves no audit event containing `qdr_`, `eyJ` (a
   JWT) or the break-glass password.
 - A failed OIDC login with a wrong nonce produces exactly one `auth.login.failed` with
   `reason=nonce_mismatch` and the client address.
@@ -3591,14 +3591,14 @@ Rules:
   (R-AUTH-006 step 10, R-AUTH-010, R-AUTH-027), a session's deadlines are decided from its row
   (R-AUTH-010), and a break-glass rotation opens one hold (R-AUTH-014).
 - **Valkey never decides who a caller is** (Q-AUTH-9, Q-AUTH-12). No session, token, flow, approval
-  or lookup result is read from Valkey. What Valkey holds can make trove answer 429 or run one more
+  or lookup result is read from Valkey. What Valkey holds can make Quader answer 429 or run one more
   PostgreSQL lookup; it never turns a rejection into an acceptance and never keeps a revoked
   credential alive ([architecture.md](architecture.md) R-ARCH-030, H-49). A Valkey outage never
   makes a replica unready (INV-12).
 - **Roles** (INV-2). The routes of this page are served by the client listener, which runs on
   `web` replicas (and on `all` in the local profile). Only those replicas load the OIDC providers
   and the break-glass password, and the chart mounts the OIDC client-secret and break-glass Secrets
-  into `web` pods only. `worker` replicas run the scheduled tasks of R-AUTH-043. `trove admin`
+  into `web` pods only. `worker` replicas run the scheduled tasks of R-AUTH-043. `quader admin`
   (R-AUTH-015) runs in any pod and writes through the change log.
 - **Background loops on `web` replicas** ([architecture.md](architecture.md) R-ARCH-001): the
   discovery refresh and JWKS refetch (R-AUTH-004), the re-read of the client-secret and break-glass
@@ -3625,7 +3625,7 @@ Acceptance criteria:
   and 20 npm web logins added, completes every login.
 
 ### R-AUTH-043 · Scheduled authentication tasks
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The background work of this page runs as maintenance tasks of the job queue
 ([architecture.md](architecture.md) R-ARCH-016) on `worker` replicas, never on `web` replicas
@@ -3667,7 +3667,7 @@ Acceptance criteria:
 
 ## Deferred
 
-Catalog features of this area with priority P2 or Later, and trove-only extensions that are
+Catalog features of this area with priority P2 or Later, and quader-only extensions that are
 not scheduled:
 
 - IAM-012 (P2): "remember me" persistent login. The absolute session timeout plus IdP single
@@ -3675,7 +3675,7 @@ not scheduled:
 - IAM-017 (P2): groups imported from a directory realm. OIDC group sync and SCIM replace it.
 - IAM-035 (P2): encrypted client passwords. Not applicable, because there are no client
   passwords, only tokens.
-- IAM-039 (P2): TOTP second factor. For trove it is relevant only to break-glass (H-17).
+- IAM-039 (P2): TOTP second factor. For Quader it is relevant only to break-glass (H-17).
 - IAM-041 (P2): password expiration. Break-glass rotation is a Secret rotation (R-AUTH-014).
 - IAM-050 (P2): SSH authentication.
 - AUTHN-004 (P2): fallback from a directory to the internal password. No internal passwords.
@@ -3693,13 +3693,13 @@ not scheduled:
 - AUTHN-041 (P2): SSH public keys on the profile.
 - AUTHN-042 (P2): password self-service and reset. No passwords.
 - AUTHN-043 (P2): legacy per-user API key. Tokens in every header position replace it.
-- TOK-003 (P2): self-contained signed token format. trove tokens are opaque (INV-8).
+- TOK-003 (P2): self-contained signed token format. Quader tokens are opaque (INV-8).
 - TOK-011, TOK-013 (P2): project-role and project-membership scopes. A token reaches what its owner's
   project roles grant through the repository part of its scope (`web/*`, R-AUTH-024); a scope element that names
   a project or a role is not offered ([Q-AUTHZ-215](authorization.md#q-authz-215--a-members-role-acts-through-its-session-and-personal-tokens-within-their-scope-and-service-accounts-are-not-members)).
 - TOK-016 (P2): audience restriction. It is meaningful only with several trusting instances.
 - TOK-020, TOK-021, TOK-022 (P2): revocability and persistence thresholds and the
-  force-revocable flag. Not applicable, because every trove token is stored and revocable.
+  force-revocable flag. Not applicable, because every Quader token is stored and revocable.
 - TOK-023 (P2): email notification before token expiry. It needs the mail server; events and the
   UI banner are MVP (R-AUTH-032).
 - TOK-035 (P2): a companion command-line client with token handling. R-AUTH-036 serves any such
@@ -3717,13 +3717,13 @@ not scheduled:
 - ADMAPI-056 (P2): trust-root certificates of the token issuer.
 - PKG-NPM-012 (P2): npm one-time-password challenge on writes. The second factor belongs to the
   IdP.
-- PKG-NPM-014 (P2): `npm token` and `npm profile` endpoints. The trove token API covers the
+- PKG-NPM-014 (P2): `npm token` and `npm profile` endpoints. The Quader token API covers the
   need; these routes answer 404 per [formats/npm.md](formats/npm.md).
-- trove-only (P2): OIDC back-channel and front-channel logout
+- quader-only (P2): OIDC back-channel and front-channel logout
   ([Back-Channel Logout 1.0](https://openid.net/specs/openid-connect-backchannel-1_0.html)). The
   `idp_sid` column is prepared.
-- trove-only (P2): `private_key_jwt` client authentication at the IdP token endpoint.
-- trove-only (P2): an optional `acr`/`amr` requirement per provider (H-18).
+- quader-only (P2): `private_key_jwt` client authentication at the IdP token endpoint.
+- quader-only (P2): an optional `acr`/`amr` requirement per provider (H-18).
 
 Not planned (Out of scope in the catalog): IAM-011, IAM-043, IAM-044, AUTHN-014, TOK-043,
 TOK-045, TOK-048.
@@ -3747,7 +3747,7 @@ Handed to other pages, not deferred:
 
 - **The IdP is trusted for identity and, through group sync, possibly for administrator
   rights.** A rule that maps an IdP group to a group bound to the administrator role
-  (R-AUTH-008) makes the IdP's group administrators trove administrators. Keep such rules
+  (R-AUTH-008) makes the IdP's group administrators Quader administrators. Keep such rules
   exact (`match`, not `match_regex`), and review them like the role bindings themselves.
 - **No linking by email or username.** Returning identities are found only by (`iss`, `sub`).
   First-login conflicts fail instead of merging (R-AUTH-007). This closes account takeover
@@ -3766,7 +3766,7 @@ Handed to other pages, not deferred:
   503, never from a stale cache (R-AUTH-023, Q-AUTH-10). Incident runbooks can rely on it.
 - **Valkey is outside the authentication trust path.** No session, token, login flow, approval or
   lookup result is read from Valkey (Q-AUTH-9, Q-AUTH-12, R-AUTH-042). Someone who can write under
-  trove's Valkey prefix can make trove refuse callers with 429, lift the cluster-wide throttle, or
+  Quader's Valkey prefix can make Quader refuse callers with 429, lift the cluster-wide throttle, or
   cause extra PostgreSQL lookups; they cannot authenticate anyone or keep a revoked credential
   alive ([architecture.md](architecture.md) H-49). The break-glass lockout lives in PostgreSQL, so
   a Valkey flush does not reset it (R-AUTH-038).
@@ -3831,26 +3831,26 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Keep `trv_session`, `trv_csrf`, `trv_oidc_binding` | The INV-8 names; trove sets `Secure`, `Path=/` and no `Domain` by convention | No change to INV-8 | A sibling subdomain or a plain-HTTP response can still plant or shadow a cookie of the same name (cookie tossing) |
-| (b) `__Host-` for session and CSRF only | `__Host-trv_session` and `__Host-trv_csrf`; the binding cookie keeps `Path=/auth/oidc/` without a prefix | The browser enforces the flags of the two long-lived cookies | The login-CSRF defense of R-AUTH-005 still rests on a cookie a sibling subdomain can plant |
-| (c) `__Host-` for all three | As (b), plus `__Host-trv_oidc_binding`, whose path widens to `/` because the prefix requires it | The browser enforces host-only, `Secure` and `Path=/` for every trove cookie, including the one that stops login CSRF | The binding cookie is sent on every request during its 10 minutes; INV-8 changes |
+| (a) Keep `qdr_session`, `qdr_csrf`, `qdr_oidc_binding` | The INV-8 names; Quader sets `Secure`, `Path=/` and no `Domain` by convention | No change to INV-8 | A sibling subdomain or a plain-HTTP response can still plant or shadow a cookie of the same name (cookie tossing) |
+| (b) `__Host-` for session and CSRF only | `__Host-qdr_session` and `__Host-qdr_csrf`; the binding cookie keeps `Path=/auth/oidc/` without a prefix | The browser enforces the flags of the two long-lived cookies | The login-CSRF defense of R-AUTH-005 still rests on a cookie a sibling subdomain can plant |
+| (c) `__Host-` for all three | As (b), plus `__Host-qdr_oidc_binding`, whose path widens to `/` because the prefix requires it | The browser enforces host-only, `Secure` and `Path=/` for every Quader cookie, including the one that stops login CSRF | The binding cookie is sent on every request during its 10 minutes; INV-8 changes |
 
-**Choice:** (c) — all three cookies carry the `__Host-` prefix: `__Host-trv_session`,
-`__Host-trv_csrf` and `__Host-trv_oidc_binding` (`Path=/`).
+**Choice:** (c) — all three cookies carry the `__Host-` prefix: `__Host-qdr_session`,
+`__Host-qdr_csrf` and `__Host-qdr_oidc_binding` (`Path=/`).
 
 **Rationale:** The prefix turns a convention into a browser-enforced guarantee
 ([draft-ietf-httpbis-rfc6265bis](https://datatracker.ietf.org/doc/draft-ietf-httpbis-rfc6265bis/),
 cookie name prefixes). Without it, a host under the same parent domain can set
-`Domain=<parent>` cookies with a longer path that shadow trove's. (b) protects the session but
+`Domain=<parent>` cookies with a longer path that shadow Quader's. (b) protects the session but
 leaves the login-CSRF defense open. The attacker starts a login in their own browser, logs in at
-the IdP, and stops before the callback. They plant their `trv_oidc_binding` value in the victim's
+the IdP, and stops before the callback. They plant their `qdr_oidc_binding` value in the victim's
 browser from a sibling host and send the victim the callback URL, and the victim ends up logged in
 as the attacker ([RFC 9700](https://www.rfc-editor.org/rfc/rfc9700) §4.7). Only (c) closes that.
 Widening the binding cookie's path costs a few bytes per request for 10 minutes: the cookie is
 `HttpOnly` and useless without its flow row. Renaming now, before any code exists, costs three strings; renaming
-later would log out every user. The owner's `trv_` naming stays inside each name. The cookies
+later would log out every user. The owner's `qdr_` naming stays inside each name. The cookies
 already carried `Secure`, so the prefix adds no new requirement on test setups. This changes
-INV-8. The development agent would revisit it only if trove had to share a session across
+INV-8. The development agent would revisit it only if Quader had to share a session across
 subdomains, which the one-origin design (R-ARCH-007) rules out.
 
 **Applied in the spec:** Overview table and diagram, R-AUTH-001 (selection and log redaction,
@@ -3870,7 +3870,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) Rotation only | Holders renew a token through R-AUTH-030 (rotate, optionally self-rotate) or by logging in again; no refresh grant | No fourth secret type and no prefix outside INV-8; serves package managers, which present static tokens anyway | A device-login tool keeps a long-lived PAT instead of a short access token plus a refresh token |
 | (b) Refresh tokens for device-login clients | The device token endpoint also returns a refresh token; tools use the OAuth refresh grant | Short-lived access tokens for tools that can refresh | A new token type and prefix, refresh-token reuse detection ([RFC 9700](https://www.rfc-editor.org/rfc/rfc9700) §4.14.2), and only P1 device-login tools could use it |
 
-**Choice:** (a) — trove has no refresh tokens; rotation (R-AUTH-030) and repeated login are the
+**Choice:** (a) — Quader has no refresh tokens; rotation (R-AUTH-030) and repeated login are the
 renewal paths.
 
 **Rationale:** None of the MVP clients can run a refresh grant. npm, pnpm, Yarn, dotnet and
@@ -3934,7 +3934,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a) — dormancy is on by default with 90 days (P1, with R-AUTH-021).
 
-**Rationale:** trove's identity truth is the IdP, and without SCIM a person deactivated there
+**Rationale:** Quader's identity truth is the IdP, and without SCIM a person deactivated there
 keeps working tokens. Failing to offboard is the costlier error. 90 days matches the default
 PAT lifetime (R-AUTH-026), and creating a token needs a session, so users who follow the
 default cadence sign in anyway. Only holders of long-lived PATs who never open the UI hit the
@@ -3968,7 +3968,7 @@ an existence oracle, and its forward cascade has no time limit.
 
 **Rationale:** The endpoint adds exactly one capability beyond possession of a live token.
 Because a by-value revocation follows the rotation chain forward (R-AUTH-029), the holder of a
-stale, already rotated value can revoke its live successor. That is deliberate: trove cannot
+stale, already rotated value can revoke its live successor. That is deliberate: Quader cannot
 tell a holder's rotation from a thief's, and a leaked predecessor must end the chain. The
 cascade must therefore also run for already revoked or expired predecessors, which R-AUTH-029
 states. (d) limits that side effect, but it fails in the case the cascade exists for: a leak
@@ -4005,7 +4005,7 @@ INV-16 relies on. Rotation returns a fresh secret too, so letting administrators
 did, was the same impersonation through a side door. A narrow `tokens:revoke` token could even
 have been turned into an administrator's full-power token that way. R-AUTH-030 now applies the
 creation rules to rotation. The migration case does not need (b): tokens from another system
-cannot be imported anyway, because they do not match the `trv_` format. Automation gets service
+cannot be imported anyway, because they do not match the `qdr_` format. Automation gets service
 accounts with their own grants, and from P1 named owners. Users get their own tokens through the
 UI or npm login. (c) is safe but duplicates the token dialog. The development agent would revisit
 this, and build (c), if onboarding with administrator-chosen scopes becomes a real need.
@@ -4044,7 +4044,7 @@ neighbour in the same ISP or cloud block, which H-20 records, but not for log re
 Network binding therefore keeps almost all of the protection of (a). It also accepts the address
 changes that egress proxy farms and NAT pools produce within one allocation, and IPv6 privacy
 addresses within one site. (b) gives up the protection although the remaining cost of keeping it
-is a prefix comparison; weakening a control to save effort is not a trade trove makes. (c) is
+is a prefix comparison; weakening a control to save effort is not a trade Quader makes. (c) is
 secure but makes web login fail by default exactly where it is most wanted, corporate networks.
 (e) removes the risk by removing the feature. It replaces a residual that needs a log reader
 inside the user's network within ten minutes with a manual copy step for every user and
@@ -4053,7 +4053,7 @@ logs are widely readable.
 
 Every mode depends on the client address of R-ARCH-006. Behind an edge proxy with
 `server.trusted_proxies` empty, all polls carry the proxy's address, and the binding can no
-longer tell the user's network from anyone else's. trove cannot detect that state, so
+longer tell the user's network from anyone else's. Quader cannot detect that state, so
 R-AUTH-040 warns about it instead of failing. The refused-poll notice turns a silent fallback
 into an explanation for the user and a warning when someone else polls, and the metric tells
 operators whether they need a range.
@@ -4154,7 +4154,7 @@ failed lookup gives 503, never a cached acceptance.
   and the replica measures the poll's age on its own monotonic clock.
 - (c) leaves a gap of 15 s or more; (d) puts correctness into Valkey.
 - Revisit if the gate trips in normal operation, that is if
-  `trove_auth_cache_bypassed_total{reason="changes_stale"}` rises without a database incident.
+  `quader_auth_cache_bypassed_total{reason="changes_stale"}` rises without a database incident.
   The poll's latency, not the bound, is then the problem to fix.
 
 **Applied in the spec:** R-AUTH-023 (freshness gate, stated as stricter than the `invalidation`
@@ -4287,7 +4287,7 @@ idle expiry is decided from the row, never from one replica's view.
 **Applied in the spec:** R-AUTH-010 (deadlines decided from the row, the conditional touch that
 returns the row's value, the end window of `idle_timeout` − 60 s to `idle_timeout`, the principal
 row lock for `max_per_user`, acceptance criteria across replicas); R-AUTH-011 (both deadlines from
-the row); R-AUTH-041 (`trove_auth_session_touch_failures_total`); R-AUTH-042 (the kept value as
+the row); R-AUTH-041 (`quader_auth_session_touch_failures_total`); R-AUTH-042 (the kept value as
 per-replica state).
 
 ### Q-AUTH-14 · Break-glass password rotation across replicas
@@ -4304,7 +4304,7 @@ replica staying alive: a node drain can remove any replica at any time (INV-12).
 | (a) Each replica ends the sessions when it notices the change | Every replica that sees its file change ends every break-glass session created before that moment | No extra state | A session that a replica still holding the old file opens is ended only if that replica, or another still-old one, later notices the change; a drain that removes it first leaves the session alive until its absolute timeout (1 h by default), and the old password keeps working on lagging replicas until each switches |
 | (b) Rotation hold recorded in PostgreSQL | The first replica that notices the change records `password_changed_at` in the lockout row and ends every earlier break-glass session in the same transaction; every replica refuses the local login for `rotation_hold` (2 min) | The end is one committed transaction, independent of the noticing replica; no replica, old file or new, opens a session while replicas disagree; the check rides on the lockout row every attempt reads anyway | Break-glass login is unavailable for 2 minutes after a rotation; a kubelet slower than the hold, or a rollout that replaces every pod before any notices, escapes it (H-52) |
 | (c) Verifier fingerprint in PostgreSQL | Each session records a fingerprint of the password file it was opened with; replicas accept only sessions with the newest fingerprint | Also catches a rotation that no running replica notices | A fingerprint of a plaintext password file is an offline-guessable verifier in the database unless it is keyed; keying it with the stored-secret key ring makes it change on key rotation and differ between replicas during step 2 of that rotation ([architecture.md](architecture.md) R-ARCH-021). "The password is never stored in PostgreSQL" would hold only in letter. |
-| (d) No automatic end | The operator runs `trove admin break-glass end-sessions` after rotating | Nothing to build | A manual step forgotten in exactly the incident in which the rotation matters |
+| (d) No automatic end | The operator runs `quader admin break-glass end-sessions` after rotating | Nothing to build | A manual step forgotten in exactly the incident in which the rotation matters |
 
 **Choice:** (b) — the first replica that notices a changed break-glass password opens a rotation
 hold in PostgreSQL and ends every earlier break-glass session in the same transaction; every
@@ -4369,7 +4369,7 @@ user, a group or a service account only; each name follows the rule of its kind.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Application checks only | Every writer validates | Nothing in the schema | `trove admin`, journal replay, SCIM and the API are separate writers; one forgotten check is a built-in principal deleted or a role bound to `authenticated` |
+| (a) Application checks only | Every writer validates | Nothing in the schema | `quader admin`, journal replay, SCIM and the API are separate writers; one forgotten check is a built-in principal deleted or a role bound to `authenticated` |
 | (b) `CHECK` per kind and guard triggers (chosen) | `CHECK` on `principal.name` by kind, a unique index on the built-in kinds, a trigger that refuses changes to the two built-in rows, and one generic trigger `principal_kind_guard` that names the kinds a principal column may reference (SQLSTATE `AI001`) | Every writer, present and future, meets the same rules; the cost is one primary-key lookup per insert of a membership, a token, a session or a binding | The rules are in two places (API validation answers with the specified 4xx before it gets there) |
 | (c) A `kind` column in every subtype table with a composite foreign key | Declarative | No triggers | Changes the sketched tables of R-AUTH-016 to R-AUTH-020, and PostgreSQL does not allow the generated column the pattern needs |
 
@@ -4495,12 +4495,12 @@ decide what it writes (R-AUTH-007, R-AUTH-008).
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The provisioner reads the provider configuration | It imports the login area's types | Login passes less | The principal package would import the OIDC configuration, against the layer order of `m1-contracts.md` |
-| (b) The login flow passes the policy with the claims (chosen) | `LoginClaims` gains `Issuer`, `EmailVerified`, `GroupSync`, `ClaimState`, `KeepOnMissing`, `CreateGroups`, `JIT`, `SyncUsername` and `Source`; `Groups` are the trove group names the mapping rules produced | The package stays below the login area; the unit of work is one call | The login flow applies the gates that need raw claims (`require_verified_email`, `login_requires_groups`, `on_missing_claim: deny`) before it calls |
+| (b) The login flow passes the policy with the claims (chosen) | `LoginClaims` gains `Issuer`, `EmailVerified`, `GroupSync`, `ClaimState`, `KeepOnMissing`, `CreateGroups`, `JIT`, `SyncUsername` and `Source`; `Groups` are the Quader group names the mapping rules produced | The package stays below the login area; the unit of work is one call | The login flow applies the gates that need raw claims (`require_verified_email`, `login_requires_groups`, `on_missing_claim: deny`) before it calls |
 
 **Choice:** (b). This block states the one contract of the seam; Q-AUTH-36 only says where the mapping runs.
 
 - `LoginClaims`: `Provider`, `Issuer`, `Subject` (the identity key is `(Issuer, Subject)`), `Username` (mapped:
-  NFC, lower case, prefix applied), `Email`, `EmailVerified`, `DisplayName`, `Groups` (trove group names, valid under
+  NFC, lower case, prefix applied), `Email`, `EmailVerified`, `DisplayName`, `Groups` (Quader group names, valid under
   R-AUTH-018), `GroupSync` (bool: `group_sync.enabled`), `ClaimState` (`""` usable, or `absent`, `wrong_type`,
   `overage`), `KeepOnMissing` (`on_missing_claim: keep`), `CreateGroups`, `JIT`, `SyncUsername` and `Source`
   (`audit.Source`). The deny policy and the gates are the login's: it never calls the provisioner for them.
@@ -4509,7 +4509,7 @@ decide what it writes (R-AUTH-007, R-AUTH-008).
   `username_invalid` of `auth.login.failed` and of its error page (`refusalReason` in `internal/auth/oidc/flow.go`). Any
   other error is a failure of the system (`provisioning_failed`, or 503 when PostgreSQL does not answer).
 - The provisioner records `user.*` and `user.groups.*` events and the metric
-  `trove_auth_group_claim_missing_total{name,reason}` (Q-AUTH-39: `name` is the provider ID); the login records `auth.login.*` and does not count the claim.
+  `quader_auth_group_claim_missing_total{name,reason}` (Q-AUTH-39: `name` is the provider ID); the login records `auth.login.*` and does not count the claim.
 
 The provisioner links the identity in `user_identity` (the table of `00008_login`) and completes a pending
 link with a conditional update; two first logins of one identity on different replicas end with one
@@ -4559,7 +4559,7 @@ The configuration framework (R-ARCH-020) decodes a list of structs only when its
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A list, as sketched | `providers: [{id: corp, …}]`; the framework learns nested list elements | The order of the file is the order of the buttons | A change of the framework's element rule and its JSON Schema, shared by every section, for one key; a duplicate ID is a validation rule instead of impossible |
-| (b) A map keyed by the ID, with `order` | `providers: {corp: {…}}`; buttons sort by `order`, then by ID | The framework supports it today, like `server.endpoints`; an ID cannot appear twice; `TROVE_AUTH_OIDC_PROVIDERS` is a JSON object | The order is an explicit key instead of the position in the file |
+| (b) A map keyed by the ID, with `order` | `providers: {corp: {…}}`; buttons sort by `order`, then by ID | The framework supports it today, like `server.endpoints`; an ID cannot appear twice; `QUADER_AUTH_OIDC_PROVIDERS` is a JSON object | The order is an explicit key instead of the position in the file |
 | (c) Flatten the nested keys | `claims_username`, a comma-separated `scopes` | A flat list element | Unreadable keys; regular expressions inside comma lists |
 
 **Choice:** (b) — `auth.oidc.providers` is a map keyed by the provider ID; the key `order` (default 0) sorts the login page,
@@ -4583,7 +4583,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A JOSE library | The ID token is parsed and verified by a third-party module | Wide algorithm and format coverage | A new dependency for one call site; JWE, `HS*` and embedded-key options that the login must refuse anyway, so the safe configuration is a set of switches to keep off |
-| (b) A minimal verifier on the standard library | Compact JWS only; `RS256/384/512`, `PS256/384/512`, `ES256`, `ES384`; keys from the JWK Set by `kid`, of the algorithm's type and curve | About 250 lines that refuse everything else by construction: no `none`, no HMAC, no JWE, no `crit`, no key whose type or curve does not fit, no RSA key below 2048 bits | trove maintains the parser; a provider that signs only with `EdDSA` or `ES512` cannot be used |
+| (b) A minimal verifier on the standard library | Compact JWS only; `RS256/384/512`, `PS256/384/512`, `ES256`, `ES384`; keys from the JWK Set by `kid`, of the algorithm's type and curve | About 250 lines that refuse everything else by construction: no `none`, no HMAC, no JWE, no `crit`, no key whose type or curve does not fit, no RSA key below 2048 bits | Quader maintains the parser; a provider that signs only with `EdDSA` or `ES512` cannot be used |
 
 **Choice:** (b) — [internal/auth/oidc/jws.go](../../internal/auth/oidc/jws.go) verifies ID tokens with the standard library
 only. Since [Q-CI-19](gitlab-ci-oidc.md#q-ci-19--the-jws-code-of-the-subject-token-validation-and-the-order-of-its-steps) the
@@ -4594,7 +4594,7 @@ the login keeps its algorithm list and its key selection.
 confusion between a public key and an HMAC secret, `none`, unchecked curves) are refusals a minimal verifier makes by not having
 the code path. Unit tests pin each refusal, including an HS256 token keyed with the RSA modulus. The algorithm list covers the
 defaults of common IdPs, Keycloak and Dex among them. The development agent would revisit this if a supported IdP signs ID
-tokens only with an algorithm outside the list, or if trove needs JWE.
+tokens only with an algorithm outside the list, or if Quader needs JWE.
 
 **Applied in the spec:** R-AUTH-004 (the supported values of `allowed_signing_algs`).
 
@@ -4684,7 +4684,7 @@ dex-operator (v2.4.7), which renders a Dex configuration from custom resources. 
 **Choice:** (b) — Keycloak in [deploy/dev/keycloak.yaml](../../deploy/dev/keycloak.yaml), as E1.1 says.
 
 **Rationale:** The gap of (a) is in the operator, not in Dex itself: the operator cannot render the logout configuration
-R-AUTH-013's criterion needs. trove's login is generic OIDC, so the choice binds nothing outside the dev profile. The
+R-AUTH-013's criterion needs. Quader's login is generic OIDC, so the choice binds nothing outside the dev profile. The
 development agent would revisit this when dex-operator renders the sessions block, post-logout redirect URIs and users with
 groups; the realm file then becomes custom resources.
 
@@ -4700,11 +4700,11 @@ identity area's.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The login maps, the provisioner writes | The login applies the username rule, the gates and the group rules and hands the provisioner the identity key, the mapped values, trove group names and the sync policy | The provisioner never reads the provider configuration; a gated identity creates no user, because the gates run before provisioning | The provisioner contract grows by the mapped fields |
+| (a) The login maps, the provisioner writes | The login applies the username rule, the gates and the group rules and hands the provisioner the identity key, the mapped values, Quader group names and the sync policy | The provisioner never reads the provider configuration; a gated identity creates no user, because the gates run before provisioning | The provisioner contract grows by the mapped fields |
 | (b) The provisioner maps | The login hands over the raw claims and the provider entry | One place for everything about users | The identity area depends on the login's configuration; a gate failure can come after a user was created |
 
 **Choice:** (a) — the login maps and gates, the provisioner writes. The fields and the refusals of the seam are those of
-Q-AUTH-21; `Groups` holds the mapped trove group names ([principal.go](../../internal/auth/principal/principal.go)).
+Q-AUTH-21; `Groups` holds the mapped Quader group names ([principal.go](../../internal/auth/principal/principal.go)).
 
 **Rationale:** Gates that run before provisioning are stricter than the sketch requires ("gates run before the session is
 created"): no just-in-time user exists for an identity the provider entry refuses. The provisioner keeps what it owns (the
@@ -4718,7 +4718,7 @@ revisit this if SCIM (R-AUTH-039) needs the same mapping; it would then move int
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-R-AUTH-015 says every `trove admin` command writes an audit event; R-AUTH-041 had no event for clearing a lockout.
+R-AUTH-015 says every `quader admin` command writes an audit event; R-AUTH-041 had no event for clearing a lockout.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4737,7 +4737,7 @@ development agent would revisit this only if the audit catalog of R-OPS-016 adop
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 R-AUTH-007 refused, on a public issuer, a `match_regex` "whose literal prefix ends in `/`", while its acceptance criterion
-accepts `acme/trove-(.+)`, whose literal prefix is `acme/trove-`.
+accepts `acme/quader-(.+)`, whose literal prefix is `acme/quader-`.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4755,7 +4755,7 @@ namespaces were not path-shaped.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-R-AUTH-008 named `trove_auth_group_claim_missing_total{provider,reason}`; the label list of R-OPS-007 has no `provider`, and a
+R-AUTH-008 named `quader_auth_group_claim_missing_total{provider,reason}`; the label list of R-OPS-007 has no `provider`, and a
 family with another label stops start-up.
 
 | Option | What it means | For | Against |
@@ -4774,7 +4774,7 @@ configured object's name. The development agent would revisit this if more authe
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Both areas count into `trove_auth_attempts_total`, `trove_auth_ratelimited_total` and `trove_auth_cache_bypassed_total`
+Both areas count into `quader_auth_attempts_total`, `quader_auth_ratelimited_total` and `quader_auth_cache_bypassed_total`
 (R-AUTH-041), and each had registered the family with its own help text, which the registry refuses. The session store is the
 identity stage's `session.Validator`, and the OIDC login calls the identity area's provisioner: the two need each other's
 components.
@@ -4838,7 +4838,7 @@ them under the derivation rule. The session list of another user is `identities:
 **Rationale:** the declarations follow the table of R-AUTHZ-010. The development agent would revisit the session list (a source address
 and a user agent are personal data) if the owner wants it behind `identities:write`.
 
-**Applied in the spec:** none; the `x-trove-permission` of each operation in `api/openapi.yaml`.
+**Applied in the spec:** none; the `x-quader-permission` of each operation in `api/openapi.yaml`.
 
 ### Q-AUTH-44 · The shape of `whoami`
 
@@ -4903,7 +4903,7 @@ records the details of the flip. The development agent would revisit this if a t
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-`principal.AdminBinder` lets `trove admin service-account create --admin` bind the role in the creating transaction. R-AUTH-020 offers no
+`principal.AdminBinder` lets `quader admin service-account create --admin` bind the role in the creating transaction. R-AUTH-020 offers no
 such member on `POST /api/v1/service-accounts`.
 
 | Option | What it means | For | Against |
@@ -5045,15 +5045,15 @@ sees nothing to revisit here.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-R-AUTH-002 named `Basic realm="trove"` as the challenge of every route outside the management API, so package clients
+R-AUTH-002 named `Basic realm="quader"` as the challenge of every route outside the management API, so package clients
 answer it with their configured credentials. A browser answers the same challenge with its native login dialog: on the
 preview a request for `/favicon.ico`, or a download link opened without a session, asked for a user name and password
-that trove never accepts there.
+that Quader never accepts there.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Keep Basic everywhere outside `/api/v1/` | As written | Simple | Browsers show a login dialog trove cannot satisfy |
-| (b) Basic only on the package and raw-file routes, and only without Fetch Metadata (chosen) | Browsers send `Sec-Fetch-Mode`/`Sec-Fetch-Dest`, package clients do not; a browser and every other route get `Bearer realm="trove"` | No native dialog; npm, NuGet and curl keep the Basic challenge they answer | A non-browser client that sends Fetch Metadata gets Bearer |
+| (a) Keep Basic everywhere outside `/api/v1/` | As written | Simple | Browsers show a login dialog Quader cannot satisfy |
+| (b) Basic only on the package and raw-file routes, and only without Fetch Metadata (chosen) | Browsers send `Sec-Fetch-Mode`/`Sec-Fetch-Dest`, package clients do not; a browser and every other route get `Bearer realm="quader"` | No native dialog; npm, NuGet and curl keep the Basic challenge they answer | A non-browser client that sends Fetch Metadata gets Bearer |
 | (c) Redirect browser navigations to the sign-in screen | Best experience for documents | Needs a return path outside `/ui/`, which `return_to` refuses (R-AUTH-009) | More than the dialog needs |
 
 **Choice:** (b).
@@ -5125,12 +5125,12 @@ Status: **Decided by the development agent** — selected from the options below
 Context: `POST /auth/local/login` checks, in this order, the origin (R-AUTH-012), the flow-start limit of the client address
 (R-AUTH-038), whether the account is usable, and only then reads the body. The order is observable: a request over the limit, or one to a
 disabled login, never reaches the JSON decoder, so garbage in the body does not turn a `429` or a `403` into a `400`, and an address over
-the limit does not make trove read bodies. With the split of Q-AUTH-175 the body belongs to the edge and the limit and the account to
+the limit does not make Quader read bodies. With the split of Q-AUTH-175 the body belongs to the edge and the limit and the account to
 the domain.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The edge decodes, the domain admits and verifies in one call | `LocalLogin(ctx, in)` checks the limit and the account | One call | A bad body answers `400` before a `429` or `403`; trove reads and parses bodies of limited addresses |
+| (a) The edge decodes, the domain admits and verifies in one call | `LocalLogin(ctx, in)` checks the limit and the account | One call | A bad body answers `400` before a `429` or `403`; Quader reads and parses bodies of limited addresses |
 | (b) The domain offers `AdmitLocalLogin` before the body and `LocalLogin` after it (chosen) | The edge: origin check, `AdmitLocalLogin`, decode, `LocalLogin` | The observable order of the specification stays; the origin check stays at the edge, where the request is | A second public call the edge must make in order |
 | (c) The domain takes a decode callback | `LocalLogin(ctx, addr, decode)` | One call, the order inside | A closure over the request in a domain call; harder to test |
 
@@ -5145,7 +5145,7 @@ the limiter moves to the chain as a stage, when `AdmitLocalLogin` shrinks to the
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: a browser keeps `__Host-trv_session` after its session ended (`idle_timeout`, `absolute_timeout`, an end by an
+Context: a browser keeps `__Host-qdr_session` after its session ended (`idle_timeout`, `absolute_timeout`, an end by an
 administrator). The UI then calls `GET /api/v1/auth/login-options` with it; the stage evaluated the cookie, answered `401
 session_expired`, and the sign-in screen never loaded. The cookie is `HttpOnly`, so the UI cannot drop it, and every retry sent it again:
 the user stayed locked out until they deleted the site's cookies (found on an installation of `v0.5.0`, 2026-11-01). The handler of the
@@ -5186,7 +5186,7 @@ write-only buffers of R-ARCH-032 describe a per-replica buffer that flushes ever
 in a map under a mutex, which is all a request does. `auth.tokens.last_used_granularity` (default `5m`, 1 s to 24 h) is the
 coarsening: the `UPDATE` changes a row only when it has no last use or the new one is at least a granularity newer, so one token costs
 at most one row change per granularity whatever the number of requests and replicas, and one write per token and flush at most from a
-replica. A failed flush is dropped, counted in `trove_auth_lastused_flush_failures_total`, logged, and never fails a request.
+replica. A failed flush is dropped, counted in `quader_auth_lastused_flush_failures_total`, logged, and never fails a request.
 R-AUTH-031 keeps its P1 label and is built ahead of its milestone; the requirement text says so.
 
 **Rationale:** the filter, the column and the contract exist, so recording is the smaller change than removing them; and the buffer
@@ -5458,7 +5458,7 @@ and enabled again (R-AUTH-014). The harness of the dev profile has Go, kubectl a
 (`TestE1_11Journeys` runs `web/e2e` when it exists).
 
 The break-glass account is disabled the way an operator does it, with `auth.break_glass.enabled: false`, delivered as the
-environment key `TROVE_AUTH_BREAK_GLASS_ENABLED` on the `web` Deployment (a rolling restart without a migration Job); the test
+environment key `QUADER_AUTH_BREAK_GLASS_ENABLED` on the `web` Deployment (a rolling restart without a migration Job); the test
 removes the variable again, whatever happens.
 
 **Rationale:** The criteria are about what the replicas do with the flow, which (b) observes directly. The revisit
@@ -5547,7 +5547,7 @@ Context: Q-AUTHZ-177 bounds a token a project administrator issues by the instal
 | (b) Allow it, and cap every successor at the end of the token the project administrator issued | The lineage carries the first token's expiry as a ceiling | Secret hygiene without extension | A ceiling stored per lineage, read by every rotation; more than this phase needs |
 | (c) Ignore the member for a delegated create | The token is created without it | No error for the client | A request that says one thing is silently stored as another |
 
-**Choice:** (a). An administrator of trove still issues self-rotatable tokens for any account (R-AUTH-030).
+**Choice:** (a). An administrator of Quader still issues self-rotatable tokens for any account (R-AUTH-030).
 
 **Rationale:** Q-AUTHZ-177 says the token lives at most the cap, and the derivation rule of R-AUTH-027 already forbids a token to outlive what issued it; self-rotation is the one path that extends a lifetime, and its holder here is the partner, not the project administrator. The development agent revisits (b) when a project asks for rotating partner credentials.
 
@@ -5575,7 +5575,7 @@ Context: the trigger `AI003` of migration `00019_projects.sql` refuses a project
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: the internal-secrets-operator rotates `trove-break-glass` every 24 h on the dev cluster (`iso.gtrfc.com/rotate: 24h`); for `login.break_glass.rotation_hold` (2 m) after the replicas notice the new file, the local login answers 503 `break_glass_rotating` with a `Retry-After` (R-AUTH-014, Q-AUTH-14). A `TestE1_11Journeys` run on 2026-11-02, two minutes after a rotation, failed `01-sign-in` and `02-repository-and-files` at the break-glass sign-in. A fresh cluster in CI never meets the window.
+Context: the internal-secrets-operator rotates `quader-break-glass` every 24 h on the dev cluster (`iso.gtrfc.com/rotate: 24h`); for `login.break_glass.rotation_hold` (2 m) after the replicas notice the new file, the local login answers 503 `break_glass_rotating` with a `Retry-After` (R-AUTH-014, Q-AUTH-14). A `TestE1_11Journeys` run on 2026-11-02, two minutes after a rotation, failed `01-sign-in` and `02-repository-and-files` at the break-glass sign-in. A fresh cluster in CI never meets the window.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -5598,7 +5598,7 @@ Context: the UI shows the avatar of other users: in the member lists of groups a
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Every authenticated caller: a user, a service account, a CI token (chosen) | `x-trove-permission: authenticated` | The UI shows any user it can list; no capability to hold for a picture; consistent with the user's name, which an authenticated caller can read where it is shown | An image of a user is readable by every principal of the installation, a service account included |
+| (a) Every authenticated caller: a user, a service account, a CI token (chosen) | `x-quader-permission: authenticated` | The UI shows any user it can list; no capability to hold for a picture; consistent with the user's name, which an authenticated caller can read where it is shown | An image of a user is readable by every principal of the installation, a service account included |
 | (b) The user and holders of `identities:read` | The picture follows the user record's permission | Narrower | A member list a project Owner can read would show broken images; the capability is for the administration of identities, not for display |
 | (c) Anonymous too when anonymous access is on | `publicSwitch` | Works on a public instance | An anonymous reader learns pictures of users it cannot otherwise see; the digest is unguessable but the picture is personal |
 
@@ -5606,7 +5606,7 @@ Context: the UI shows the avatar of other users: in the member lists of groups a
 
 **Rationale:** whoever can sign in to an installation sees the people in it. The development agent revisits this if the owner wants a per-user setting to hide the avatar (today a user cannot hide it from other users: H-559).
 
-**Applied:** R-API-055 (Who); `api/openapi.yaml` (`getAvatar`: `x-trove-permission: {authenticated: true}`). Test: `TestR_API_055_AvatarLifecycle`.
+**Applied:** R-API-055 (Who); `api/openapi.yaml` (`getAvatar`: `x-quader-permission: {authenticated: true}`). Test: `TestR_API_055_AvatarLifecycle`.
 
 ### Q-AUTH-196 · A user sets and removes only their own avatar, an administrator removes any
 
@@ -5844,14 +5844,14 @@ Context: a token with `admin: true` carries administrator power only while its o
 ### Q-AUTH-230 · The external flag is an attribute of the user, set by an administrator and resolved with the user's status and groups
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That
-trove has a user flag set by an administrator, as GitLab has it, is the owner's decision of 2026-11-11; the options below decide
+Quader has a user flag set by an administrator, as GitLab has it, is the owner's decision of 2026-11-11; the options below decide
 its form.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A column of `app_user`, written by `identities:write`, resolved by the stage with status and groups (chosen) | R-AUTH-044 | As GitLab; one place to look; it takes the path a disable takes, so its bound is the revocation bound; a job re-reads it with the groups | Set by hand for each user (H-882) |
 | (b) Groups marked external | A user in such a group is external | One flag for many people; the IdP's group claim can carry it | Not what the owner asked; a user leaves "external" by leaving a group, which the IdP decides |
-| (c) Set from an identity-provider claim at every login | Automatic | No administrator step | The flag follows the IdP's mapping, not trove's administrator, and a token used between logins keeps the old value |
+| (c) Set from an identity-provider claim at every login | Automatic | No administrator step | The flag follows the IdP's mapping, not Quader's administrator, and a token used between logins keeps the old value |
 
 **Choice:** (a).
 
@@ -5944,7 +5944,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `httpserver.Problem` replaces the generic `Bearer` challenge of an Unauthenticated error by `Basic realm="trove"` on the package and raw-file routes, for a request without Fetch Metadata (chosen) | One place; the stage's own 401 and the decision point's agree | A package client that gets the refusal of a read by the decision point retries with its configured credentials (R-AUTH-002, R-NUGET-012); no handler knows the family | The error is copied when it is written |
+| (a) `httpserver.Problem` replaces the generic `Bearer` challenge of an Unauthenticated error by `Basic realm="quader"` on the package and raw-file routes, for a request without Fetch Metadata (chosen) | One place; the stage's own 401 and the decision point's agree | A package client that gets the refusal of a read by the decision point retries with its configured credentials (R-AUTH-002, R-NUGET-012); no handler knows the family | The error is copied when it is written |
 | (b) The decision point gets the request | It builds the challenge | No rewrite | The engine knows routes it was built not to know |
 
 **Choice:** (a). The default endpoint admits a request without a credential (R-EP-010, R-AUTH-037), so the decision point refuses a read of a
@@ -5976,7 +5976,7 @@ must still recognise a login they did not start.
 
 ### H-16 · IdP-side deactivation without SCIM
 
-Without SCIM (R-AUTH-039), disabling or removing a person at the IdP does not reach trove:
+Without SCIM (R-AUTH-039), disabling or removing a person at the IdP does not reach Quader:
 
 - open sessions live until their idle or absolute timeout (at most 12 h by default);
 - group memberships keep their last synced state;
@@ -5985,7 +5985,7 @@ Without SCIM (R-AUTH-039), disabling or removing a person at the IdP does not re
 The PATs keep working until one of three things happens: an administrator disables the user,
 dormancy (R-AUTH-021, P1) triggers after 90 days, or the token expires. Until P1, only the first
 and the last apply. Back-channel logout is deferred. Installations that need offboarding within
-hours must use SCIM or disable users in trove as part of their leaver process.
+hours must use SCIM or disable users in Quader as part of their leaver process.
 
 ### H-17 · Break-glass account is single-factor
 
@@ -5997,24 +5997,24 @@ enabled is administrator.
 
 ### H-18 · Authentication strength at the IdP is not checked
 
-trove accepts any successful IdP authentication. It neither requests nor validates `acr` or
+Quader accepts any successful IdP authentication. It neither requests nor validates `acr` or
 `amr`, and it does not force fresh credential entry. Whether a user passed MFA is entirely the
-IdP's policy. An IdP that allows password-only login for the trove client therefore yields
-password-only access to trove, including token minting.
+IdP's policy. An IdP that allows password-only login for the Quader client therefore yields
+password-only access to Quader, including token minting.
 
 ### H-19 · Tokens are bearer credentials
 
-trove tokens are not sender-constrained. That would need DPoP or mutual-TLS binding
+Quader tokens are not sender-constrained. That would need DPoP or mutual-TLS binding
 ([RFC 9700](https://www.rfc-editor.org/rfc/rfc9700) §4.10.1), which package managers do not
 support. A leaked PAT or SAT is usable from anywhere until it expires or is revoked. Scope
 narrowing (R-AUTH-024), lifetime caps (R-AUTH-026), last-used data (R-AUTH-031) and open
 revoke-by-value (R-AUTH-029) limit the damage; they do not prevent use.
 
-### H-20 · Command-line login secrets in URLs outside trove
+### H-20 · Command-line login secrets in URLs outside Quader
 
 Component: npm web login (R-AUTH-034). Subject: the poll secret in the `doneUrl` path. Dormant
 until R-AUTH-034 (P1) is enabled. npm requires the secret as part of a URL, so it passes through
-every reverse proxy, ingress controller and egress proxy between the client and trove, and their
+every reverse proxy, ingress controller and egress proxy between the client and Quader, and their
 access logs are outside the redaction of R-AUTH-001. Address binding (R-AUTH-034, Q-AUTH-8)
 stops a log reader who polls from outside the network that started the login: by default
 outside its IPv4 `/24` or IPv6 `/56`, or outside an operator-listed range. It does not stop one
@@ -6045,5 +6045,5 @@ change. Two cases escape it:
 
 What makes it real: someone who knows the old password, which is usually why it was rotated, and
 reaches the login page during one of these windows. An operator who rotates because of a suspected
-leak runs `trove admin break-glass end-sessions` after the rotation has reached every pod
+leak runs `quader admin break-glass end-sessions` after the rotation has reached every pod
 (R-AUTH-015); it ends every break-glass session whatever file the replicas hold.

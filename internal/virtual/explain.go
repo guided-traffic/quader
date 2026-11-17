@@ -4,10 +4,10 @@ import (
 	"context"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The decisions of the resolution explanation (R-REPO-019). The first four are the reasons of

@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // The recorded set: trimmed real documents and their real tarballs, for the shapes a synthetic

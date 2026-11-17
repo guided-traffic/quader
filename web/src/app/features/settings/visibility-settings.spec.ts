@@ -10,7 +10,7 @@ async function render(options: { capabilities?: readonly string[]; setup?: (api:
     setup: (get) => options.setup?.(get(VisibilityApi) as FakeVisibilityApi),
   });
   const api = r.get(VisibilityApi) as FakeVisibilityApi;
-  const radios = () => [...r.root.querySelectorAll<HTMLInputElement>('trove-visibility-level input[type="radio"]')];
+  const radios = () => [...r.root.querySelectorAll<HTMLInputElement>('quader-visibility-level input[type="radio"]')];
   const save = () => button(r.root, /^\s*Save changes\s+\(visibility\)\s*$/);
   return { ...r, api, radios, save };
 }
@@ -73,6 +73,6 @@ describe('General settings: the installation default visibility (R-UI-053)', () 
     await settle(fixture);
     save().click();
     await settle(fixture);
-    expect(text(root.querySelector('trove-error-notice')!)).toContain('admits no request without a credential');
+    expect(text(root.querySelector('quader-error-notice')!)).toContain('admits no request without a credential');
   });
 });

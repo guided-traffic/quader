@@ -6,7 +6,7 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // NewZstdReader returns a reader of the Zstandard stream r whose decompressed bytes are capped at lim.UncompressedBytes: a stream

@@ -14,7 +14,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/ansiblestub"
+	"github.com/guided-traffic/quader/test/ansiblestub"
 )
 
 func TestAnsibleVirtual(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"runtime/debug"
 )
 
-// Set by -ldflags "-X github.com/guided-traffic/trove/internal/buildinfo.version=…".
+// Set by -ldflags "-X github.com/guided-traffic/quader/internal/buildinfo.version=…".
 var (
 	version = "dev"
 	commit  = ""
@@ -52,7 +52,7 @@ func Get() Info {
 	return info
 }
 
-// String renders the one-line form printed by `trove --version`.
+// String renders the one-line form printed by `quader --version`.
 func (i Info) String() string {
-	return fmt.Sprintf("trove %s (commit %s, built %s, %s)", i.Version, i.Commit, i.Date, i.GoVersion)
+	return fmt.Sprintf("quader %s (commit %s, built %s, %s)", i.Version, i.Commit, i.Date, i.GoVersion)
 }

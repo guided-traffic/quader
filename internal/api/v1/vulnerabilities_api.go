@@ -12,20 +12,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/report"
-	"github.com/guided-traffic/trove/internal/vuln/store"
-	"github.com/guided-traffic/trove/internal/vuln/triage"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/report"
+	"github.com/guided-traffic/quader/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln/triage"
 )
 
 // The findings operations of the vulnerability scanning (R-VULN-013, R-VULN-019, R-VULN-020): the list, the detail, the triage

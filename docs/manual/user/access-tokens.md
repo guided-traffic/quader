@@ -5,7 +5,7 @@ A personal access token lets a tool such as npm, pnpm, Yarn or curl act as you w
 ## What a token is
 
 - A token **acts as you**. It never holds more than your own permissions, the roles you hold in projects included: its scope can only narrow them. When your permissions or roles change, so do the token's, and while your account is disabled, the token does not work.
-- The **value is shown once**, when the token is created. trove stores only a hash of it, so nobody, administrators included, can show it again.
+- The **value is shown once**, when the token is created. Quader stores only a hash of it, so nobody, administrators included, can show it again.
 - Clients send the token as a **bearer token** (`Authorization: Bearer <token>`) or as the **password of HTTP Basic authentication** with any user name, unless an administrator switched Basic authentication off. A Basic request with your account password instead of a token is refused.
 - The browser session of the UI is not a token; the UI never needs one.
 
@@ -15,13 +15,13 @@ Every token has 57 characters: a prefix, 43 random letters and digits, and a 6-c
 
 | Prefix | Type | Owner |
 |---|---|---|
-| `trv_pat_` | Personal access token (`pat`) | A user; created by the user |
-| `trv_sat_` | Service-account token (`sat`) | A service account; created by an administrator, or by an Owner of the account's project |
-| `trv_cit_` | CI token (`cit`) | A GitLab CI job, through the token exchange ([GitLab CI pipelines](gitlab-ci-pipelines.md)) |
+| `qdr_pat_` | Personal access token (`pat`) | A user; created by the user |
+| `qdr_sat_` | Service-account token (`sat`) | A service account; created by an administrator, or by an Owner of the account's project |
+| `qdr_cit_` | CI token (`cit`) | A GitLab CI job, through the token exchange ([GitLab CI pipelines](gitlab-ci-pipelines.md)) |
 
-A container client that signs in with one of these tokens receives a short-lived registry token that starts with `trv_rgt_`, issued for it by trove's token service ([Container images with Docker and Podman](container-images.md#sign-in)). A registry token is not listed among your tokens: it names the token it was issued for, holds no more than that token, and stops working when that token is revoked.
+A container client that signs in with one of these tokens receives a short-lived registry token that starts with `qdr_rgt_`, issued for it by Quader's token service ([Container images with Docker and Podman](container-images.md#sign-in)). A registry token is not listed among your tokens: it names the token it was issued for, holds no more than that token, and stops working when that token is revoked.
 
-Lists show a token by its description and its **hint**, the prefix plus the first four random characters, such as `trv_pat_Ab3x`.
+Lists show a token by its description and its **hint**, the prefix plus the first four random characters, such as `qdr_pat_Ab3x`.
 
 ## Create a token
 
@@ -40,7 +40,7 @@ Lists show a token by its description and its **hint**, the prefix plus the firs
 | **Package patterns (optional)** | One pattern per line, for example `@team-a/*`; empty means every package |
 | **Actions** | With a restricted scope: `read`, `annotate`, `deploy`, `overwrite`, `delete`, `manage` |
 
-Creating a token needs a recent sign-in. If your last sign-in is too long ago, trove asks you to [sign in again](troubleshooting.md#session-ended-and-re-authentication); your entries are kept and the form reopens with them.
+Creating a token needs a recent sign-in. If your last sign-in is too long ago, Quader asks you to [sign in again](troubleshooting.md#session-ended-and-re-authentication); your entries are kept and the form reopens with them.
 
 ### Choose the scope
 
@@ -82,7 +82,7 @@ You can hold 50 active personal tokens unless the administrator set another numb
 
 | Column | Shows |
 |---|---|
-| **Token** | Your description and the hint of the value, which starts with the type (`trv_pat_…`) |
+| **Token** | Your description and the hint of the value, which starts with the type (`qdr_pat_…`) |
 | **Scope** | **All repository permissions of the owner, without administration**, **Administrator: everything on this installation** (with **Administrator rights inactive** while you do not hold the role), or the number of repository grants; a warning when the token is bound to an endpoint that is no longer configured |
 | **Expires** | The day (point at it for the time); **Expires soon** within seven days of the expiry; **Never** |
 | **Last used** | The day the token last authenticated a request, recorded in batches, so it can be a few minutes behind; **Not used yet** for a token without a recorded use |
@@ -109,19 +109,19 @@ If a token leaked, revoke it at once. Anyone who has the value, signed in or not
 
 ### In package clients
 
-Keep the token in the environment variable `TROVE_TOKEN` (or the name your installation configured; the snippets show it) and let the client read it, so no configuration file holds the secret. [Connecting a package client](client-setup.md) explains the configuration of npm, pnpm, Yarn and curl, and the Client setup page shows it for your installation.
+Keep the token in the environment variable `QUADER_TOKEN` (or the name your installation configured; the snippets show it) and let the client read it, so no configuration file holds the secret. [Connecting a package client](client-setup.md) explains the configuration of npm, pnpm, Yarn and curl, and the Client setup page shows it for your installation.
 
 ### With curl and the management API
 
 Hand the token to curl on standard input, so that it appears neither on the command line nor in the process list. The function below is the one the generic repository snippets define:
 
 ```shell
-trove_curl() {
+quader_curl() {
   curl --silent --show-error --config - "$@" <<EOF
-header = "Authorization: Bearer ${TROVE_TOKEN}"
+header = "Authorization: Bearer ${QUADER_TOKEN}"
 EOF
 }
-trove_curl --fail https://trove.example.com/api/v1/tokens/current
+quader_curl --fail https://quader.example.com/api/v1/tokens/current
 ```
 
 Useful calls with a token:
@@ -139,17 +139,17 @@ A token with a restricted scope (neither **All repository permissions of the own
 
 ## When a token expires
 
-An expired token is refused with `401` `invalid_token`, the same answer as for an unknown or revoked token. Nothing renews it: create a new token, or rotate the old one before it expires. The list shows it as **Expired** while **Show revoked and expired tokens** is ticked; trove deletes the record 90 days after the expiry or revocation, unless an administrator set another period.
+An expired token is refused with `401` `invalid_token`, the same answer as for an unknown or revoked token. Nothing renews it: create a new token, or rotate the old one before it expires. The list shows it as **Expired** while **Show revoked and expired tokens** is ticked; Quader deletes the record 90 days after the expiry or revocation, unless an administrator set another period.
 
 ## Personal and service-account tokens
 
 | | Personal token | Service-account token |
 |---|---|---|
-| Prefix | `trv_pat_` | `trv_sat_` |
+| Prefix | `qdr_pat_` | `qdr_sat_` |
 | Acts as | You | A service account, independent of any person |
 | Created by | You, under **Personal tokens** | An administrator, or an Owner of the account's project ([Managing tokens](../admin/tokens.md)) |
 | Use | Your own machine and tools | CI jobs and other automation |
 | Lifetime | Always expires | Expires; can be non-expiring where the installation allows it |
 | Further endpoints | Refused unless an administrator allows personal tokens there | The token type further endpoints accept by default |
 
-A GitLab CI job needs no stored token: it exchanges the ID token GitLab gives it for a token that lives minutes ([GitLab CI pipelines](gitlab-ci-pipelines.md)). For other automation, ask an administrator or an Owner of your project for a service-account token with only the permissions the job needs, and store it as a masked, protected variable named `TROVE_TOKEN`.
+A GitLab CI job needs no stored token: it exchanges the ID token GitLab gives it for a token that lives minutes ([GitLab CI pipelines](gitlab-ci-pipelines.md)). For other automation, ask an administrator or an Owner of your project for a service-account token with only the permissions the job needs, and store it as a masked, protected variable named `QUADER_TOKEN`.

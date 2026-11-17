@@ -3,9 +3,9 @@ package app
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/mirror"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/mirror"
 )
 
 // R-REPO-053 (Q-ARCH-321): the dispatch runs on the maintenance queue, so that passes that hold the slots of the queue mirror for

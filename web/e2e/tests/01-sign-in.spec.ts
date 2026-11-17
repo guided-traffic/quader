@@ -34,7 +34,7 @@ test('R-UI-004 R-AUTH-009 sign-in with the identity provider and sign-out', asyn
   // leaves for the IdP, which asks for the password again instead of signing alice in silently.
   for (let i = 0; i < 3; i++) {
     await page.goto('/ui/en/admin/repositories');
-    await expect(page).toHaveURL(/trove-keycloak\.trove\.svc:8443\/realms\/trove\//);
+    await expect(page).toHaveURL(/quader-keycloak\.quader\.svc:8443\/realms\/quader\//);
     await expect(page.locator('#username')).toBeVisible();
   }
   expect(replicas.size, `replicas that answered: ${[...replicas]}`).toBeGreaterThanOrEqual(2);

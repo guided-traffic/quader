@@ -1,6 +1,6 @@
 package postgres
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // The tables this package owns (R-BAK-004). The coordination and storage tables
 // of the first migrations are registered in tables_m0.go.

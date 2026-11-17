@@ -16,16 +16,16 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
-// ClassProbe is the class label of trove_bastion_forwarded_requests_total for a write probe (R-BAS-014). It is
+// ClassProbe is the class label of quader_bastion_forwarded_requests_total for a write probe (R-BAS-014). It is
 // no iface.Class: a probe answer is `pass` on the wire.
 const ClassProbe = "probe"
 

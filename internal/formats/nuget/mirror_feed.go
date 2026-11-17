@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/nuget/remote"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The catalog as a feed (Q-NUGET-95, Q-NUGET-96, Q-NUGET-100): the catalog index lists pages with the commitTimeStamp of

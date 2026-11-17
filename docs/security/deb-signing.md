@@ -10,7 +10,7 @@ and the OpenPGP library under all of them ([internal/openpgp](../../internal/ope
 [R-DEB-015 to R-DEB-018 and R-DEB-032](../spec/formats/debian.md#r-deb-015--signing-keys-one-per-repository-where-the-private-key-lives);
 the developer view is [deb.md](../developer/deb.md).
 
-An APT client trusts a repository because it holds the repository's public key. Whoever can make trove sign with that key, or learn it,
+An APT client trusts a repository because it holds the repository's public key. Whoever can make Quader sign with that key, or learn it,
 can make every client of the repository accept an index of their choosing. This page is therefore about the private key.
 
 ## Who may do what
@@ -34,14 +34,14 @@ of a restore (below).
 
 ## Custody of the private key
 
-- **Generation.** trove generates an OpenPGP v4 key, public-key algorithm 22 (EdDSALegacy) over Ed25519, with the system's random
+- **Generation.** Quader generates an OpenPGP v4 key, public-key algorithm 22 (EdDSALegacy) over Ed25519, with the system's random
   source, in the process that serves the request or creates the repository ([openpgp.Generate](../../internal/openpgp/secret.go)). Its
   creation time is the database's transaction time minus one hour and its binding self-signature carries that time, so no signature
-  trove makes precedes its key.
+  Quader makes precedes its key.
 - **Sealing.** The secret key is stored in `deb_signing_keys.private_key`, sealed with the stored-secret key ring (AES-256-GCM) under the
   row's id as additional data ([data-and-secret-flow.md](data-and-secret-flow.md#the-stored-secret-key-ring)). The id is made before the
   insert, so a sealed value cannot be moved to another row or repository and still open (integration test
-  `TestR_ARCH_021_APrivateKeyIsBoundToItsRow`). The column is in the sealed-column registry, so `trove admin secrets status`, the start-up
+  `TestR_ARCH_021_APrivateKeyIsBoundToItsRow`). The column is in the sealed-column registry, so `quader admin secrets status`, the start-up
   canary and `secrets-reencrypt` cover it ([reseal.go](../../internal/formatdata/deb/reseal.go)).
 - **Where it is opened.** Only `SigningKeys` (the index build, for one signing call) and the self-test of `ParseSecret` at generation and
   import hold the plain secret. The format plug-in never sees it: the contracts carry keys as armored bytes and fingerprints, and the
@@ -49,7 +49,7 @@ of a restore (below).
   [H-735](#h-735--the-secret-key-of-an-import-and-its-passphrase-stay-in-process-memory-until-the-collector-frees-them).
 - **Where it never goes.** Not into an API answer (the schema has no such member), an audit event (details hold fingerprints and states),
   a journal entry, a log line, an error text (the library's errors name a reason and never material), the configuration export, Valkey
-  or a replica's disk. A key's `String`, `%v` and log value are its fingerprint. No API signs data a caller chooses: trove is no signing
+  or a replica's disk. A key's `String`, `%v` and log value are its fingerprint. No API signs data a caller chooses: Quader is no signing
   oracle.
 - **Import.** An uploaded secret key meets the rules of R-DEB-015 in the library before anything is stored: algorithm 22 over Ed25519 or
   RSA of at least 3072 bits, able to sign, not revoked, no expiry, created and bound no later than the database's time, no signing
@@ -74,8 +74,8 @@ promotions give one 200 (integration test `TestR_DEB_015_ConcurrentChangesLeaveO
 key per repository, one row per fingerprint) are the second line: a violation answers 409, never 500.
 
 What a client sees at each step is the table of [R-DEB-017](../spec/formats/debian.md#r-deb-017--key-rotation-and-what-clients-see). A client
-that never replaced its keyring file fails `apt-get update` after the promotion, which is the failure APT is built to show; trove cannot
-tell which clients that are ([H-621](../spec/formats/debian.md#h-621--trove-cannot-tell-which-clients-still-trust-only-a-retired-key)).
+that never replaced its keyring file fails `apt-get update` after the promotion, which is the failure APT is built to show; Quader cannot
+tell which clients that are ([H-621](../spec/formats/debian.md#h-621--quader-cannot-tell-which-clients-still-trust-only-a-retired-key)).
 
 ## The withheld state and the replay of a restore
 
@@ -105,7 +105,7 @@ common case (a key created before the snapshot and promoted after it) is repaire
 ## What this does not cover
 
 - [H-620](../spec/formats/debian.md#h-620--a-holder-of-the-stored-secret-key-ring-and-a-database-copy-can-sign-for-every-debian-repository): a holder of the stored-secret key ring and a database copy can sign for every Debian repository.
-- [H-621](../spec/formats/debian.md#h-621--trove-cannot-tell-which-clients-still-trust-only-a-retired-key): trove cannot tell which clients still trust only a retired key.
+- [H-621](../spec/formats/debian.md#h-621--quader-cannot-tell-which-clients-still-trust-only-a-retired-key): Quader cannot tell which clients still trust only a retired key.
 - [H-622](../spec/formats/debian.md#h-622--a-signing-key-created-after-the-newest-backup-is-lost-by-a-restore): a signing key created after the newest backup is lost by a restore.
 - [H-627](../spec/formats/debian.md#h-627--an-imported-signing-key-stays-known-to-whoever-imported-it): an imported signing key stays known to whoever imported it.
 - [H-629](../spec/formats/debian.md#h-629--a-forged-journal-entry-can-withhold-a-repositorys-signing-key-until-an-administrator-acts): a forged journal entry can withhold a repository's signing key until an administrator acts.
@@ -122,7 +122,7 @@ key ring of that replica and so every sealed key it can open ([H-620](../spec/fo
 ### H-765 · An imported secret key passes through the operator's browser
 
 The screen's **Import a key** takes the armored secret key and its passphrase in two form fields and sends them once over the connection to
-trove. The page clears both fields after the answer and keeps no draft, but it cannot control the browser: the pasted text lives in the
+Quader. The page clears both fields after the answer and keeps no draft, but it cannot control the browser: the pasted text lives in the
 field and in the page's memory until it is overwritten and collected, the operator's clipboard holds the key from the copy until it is
 replaced, a browser extension with access to the page reads the fields, and a password manager or autofill may offer the passphrase
 field to be saved (the field is `autocomplete="off"`, which not every manager honours). Live whenever the screen is used to import;

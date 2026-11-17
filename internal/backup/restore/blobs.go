@@ -10,10 +10,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // stepBlobs is step 3 (R-BAK-021): every digest of the blob list that is not damaged goes from the pool to the blob store,
@@ -96,7 +96,7 @@ produce:
 	}
 	_, _ = io.Copy(io.Discard, tee)
 	if got := hex.EncodeToString(sum.Sum(nil)); got != st.m.Blobs.SHA256 {
-		return backup.Failf(backup.ExitFailed, backup.CodeInternal, "the blob list has SHA-256 %s, the manifest says %s; run trove backup verify", got, st.m.Blobs.SHA256)
+		return backup.Failf(backup.ExitFailed, backup.CodeInternal, "the blob list has SHA-256 %s, the manifest says %s; run quader backup verify", got, st.m.Blobs.SHA256)
 	}
 	r.d.Log.Info("blobs copied", "copied", cp.copied.Load(), "skipped", cp.skipped.Load(), "server_side", cp.server.Load(), "streamed", cp.streamed.Load())
 	return nil
@@ -174,7 +174,7 @@ func (c *copier) done(server bool) {
 
 func (c *copier) missing(e format.BlobEntry) error {
 	return backup.Failf(backup.ExitFailed, backup.CodeMissingPoolObject,
-		"pool object %s of backup %s is missing from the target; trove backup verify %s reports it", e.Digest.Hex(), c.st.id, c.st.id)
+		"pool object %s of backup %s is missing from the target; quader backup verify %s reports it", e.Digest.Hex(), c.st.id, c.st.id)
 }
 
 // progressReader reports every read as progress.

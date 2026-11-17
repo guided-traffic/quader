@@ -7,18 +7,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/dispatch"
-	"github.com/guided-traffic/trove/internal/api/rawfiles"
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm"
-	"github.com/guided-traffic/trove/internal/formats/nuget"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/dispatch"
+	"github.com/guided-traffic/quader/internal/api/rawfiles"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm"
+	"github.com/guided-traffic/quader/internal/formats/nuget"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // noTokens is a token store that knows no token: the probe carries none, and nothing here may look one up.
@@ -77,7 +77,7 @@ func realStageChain(t *testing.T) (http.Handler, *rig) {
 }
 
 // TestR_BAS_014_AProbeIsAnsweredThroughTheRealAuthenticationStage: with anonymous access off, a write probe -
-// recognized, Trove-Bastion-Probe: 1, no credential of a caller - reaches the route match and is answered there
+// recognized, Quader-Bastion-Probe: 1, no credential of a caller - reaches the route match and is answered there
 // (403 bastion_read_only in the format's shape with the main installation's URL, or 204 for a read route that
 // takes a body), not refused 401 credentials_required by the authentication stage. The probe is admitted for
 // routing only: no handler runs and no decision is asked, and a forwarded request without a credential that is no

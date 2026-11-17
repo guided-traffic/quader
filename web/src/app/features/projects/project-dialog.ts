@@ -25,15 +25,15 @@ export interface ProjectDialogData {
  * radio group, preset to the installation's default (R-UI-054); an existing project's level changes on its settings page only. A new project names its first
  * Owners (`owners`, Q-AUTHZ-229; the caller holds `projects:write`); an edit changes the display name and the
  * description (`PUT` with `If-Match`; a 412 opens the conflict dialog of R-UI-042), by an Owner or an administrator of
- * trove. The members and their roles are changed on the project's screen, the repositories are created in the
+ * Quader. The members and their roles are changed on the project's screen, the repositories are created in the
  * project. The display name and the key are checked before the first request; the idempotency key of the create is
  * replaced after a refusal, because the server stores a 4xx outcome under it.
  */
 @Component({
-  selector: 'trove-project-dialog',
+  selector: 'quader-project-dialog',
   imports: [DialogTitle, DialogClose, ErrorNotice, PrincipalPicker, TextField, VisibilityLevelControl],
   template: `
-    <h2 troveDialogTitle>
+    <h2 quaderDialogTitle>
       @if (existing(); as p) {
         <ng-container i18n="@@project-dialog.title-edit">Edit project {{ p.value.key }}</ng-container>
       } @else {
@@ -43,9 +43,9 @@ export interface ProjectDialogData {
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
         @if (error(); as e) {
-          <trove-error-notice [error]="e" />
+          <quader-error-notice [error]="e" />
         }
-        <trove-text-field
+        <quader-text-field
           width="name"
           i18n-label="@@project-dialog.key"
           label="Key"
@@ -57,7 +57,7 @@ export interface ProjectDialogData {
           i18n-hint="@@project-dialog.key-hint"
           hint="Lower-case letters, digits and -, two to 32 characters, starting with a letter and ending with a letter or digit. Cannot be changed later."
         />
-        <trove-text-field
+        <quader-text-field
           width="name"
           i18n-label="@@project-dialog.display-name"
           label="Display name"
@@ -66,7 +66,7 @@ export interface ProjectDialogData {
           [required]="true"
           [error]="displayNameError()"
         />
-        <trove-text-field
+        <quader-text-field
           width="full"
           i18n-label="@@project-dialog.description"
           label="Description"
@@ -77,7 +77,7 @@ export interface ProjectDialogData {
         />
 
         @if (!existing()) {
-          <trove-visibility-level
+          <quader-visibility-level
             i18n-label="@@project-dialog.visibility"
             label="Visibility level"
             subject="project"
@@ -104,7 +104,7 @@ export interface ProjectDialogData {
                 }
               </ul>
             }
-            <trove-principal-picker
+            <quader-principal-picker
               i18n-label="@@project-dialog.find-owner"
               label="Find a user or group"
               name="owner-search"
@@ -116,7 +116,7 @@ export interface ProjectDialogData {
         }
       </div>
       <div class="dialog-actions">
-        <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@project-dialog.cancel">Cancel</button>
+        <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@project-dialog.cancel">Cancel</button>
         <button class="btn btn-confirm" type="submit" [disabled]="busy()">
           @if (existing()) {
             <ng-container i18n="@@project-dialog.save">Save project</ng-container>
@@ -130,35 +130,35 @@ export interface ProjectDialogData {
   styleUrl: '../../shared/access/access.scss',
   styles: `
     .group {
-      margin: 0 0 var(--trove-space-3);
-      padding: var(--trove-space-2) var(--trove-space-3);
-      border: 1px solid var(--trove-border);
-      border-radius: var(--trove-radius-m);
+      margin: 0 0 var(--quader-space-3);
+      padding: var(--quader-space-2) var(--quader-space-3);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-m);
     }
     .hint {
-      margin: 0 0 var(--trove-space-2);
-      color: var(--trove-text-muted);
-      font: var(--trove-type-body-small);
+      margin: 0 0 var(--quader-space-2);
+      color: var(--quader-text-muted);
+      font: var(--quader-type-body-small);
     }
     .chips {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-2);
-      margin: 0 0 var(--trove-space-2);
+      gap: var(--quader-space-2);
+      margin: 0 0 var(--quader-space-2);
       padding: 0;
       list-style: none;
     }
     .chips li {
       display: inline-flex;
       align-items: center;
-      gap: var(--trove-space-1);
-      padding-inline: var(--trove-space-3) var(--trove-space-1);
-      border: 1px solid var(--trove-border-strong);
-      border-radius: var(--trove-radius-full);
+      gap: var(--quader-space-1);
+      padding-inline: var(--quader-space-3) var(--quader-space-1);
+      border: 1px solid var(--quader-border-strong);
+      border-radius: var(--quader-radius-full);
     }
     .move {
-      color: var(--trove-text-muted);
-      font: var(--trove-type-label-small);
+      color: var(--quader-text-muted);
+      font: var(--quader-type-label-small);
     }
   `,
 })

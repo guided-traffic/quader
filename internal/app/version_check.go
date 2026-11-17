@@ -3,7 +3,7 @@ package app
 import (
 	"log/slog"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // checkBinaryVersion logs an ERROR when the version this binary was built with

@@ -18,13 +18,13 @@ import (
 
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 const baseURL = "https://packages.example.com"
@@ -128,7 +128,7 @@ func TestR_BAS_008_EveryRequestCarriesTheInterfaceHeaders(t *testing.T) {
 		if got := h.Get(iface.HeaderInterface); got != strconv.Itoa(iface.InterfaceVersion) {
 			t.Errorf("%s: %s = %q", op, iface.HeaderInterface, got)
 		}
-		if got := h.Get("User-Agent"); got != "trove-bastion/1.2.3" {
+		if got := h.Get("User-Agent"); got != "quader-bastion/1.2.3" {
 			t.Errorf("%s: User-Agent = %q", op, got)
 		}
 		if got := h.Get(iface.HeaderReplica); got != "replica-a" {
@@ -144,7 +144,7 @@ func TestR_BAS_008_EveryRequestCarriesTheInterfaceHeaders(t *testing.T) {
 			t.Errorf("%s: Forwarded = %q", op, got)
 		}
 	}
-	// The token is Authorization on an interface route and Trove-Bastion-Authorization on a forward, where
+	// The token is Authorization on an interface route and Quader-Bastion-Authorization on a forward, where
 	// the caller's own credential stays where it was.
 	for _, op := range []string{"handshake", "check", "feed", "downloads"} {
 		if got := r.main.Headers(op).Get("Authorization"); got != "Bearer "+r.token {
@@ -209,7 +209,7 @@ func TestR_BAS_017_AForwardCarriesOneClientAddressInBothFamilies(t *testing.T) {
 				"Authorization", "Basic Zm9vOmJhcg==",
 				"X-Forwarded-For", "192.0.2.1, 192.0.2.2", "X-Forwarded-Host", "evil.example", "X-Forwarded-Proto", "http", "X-Forwarded-Port", "80",
 				"Forwarded", "for=192.0.2.1;host=evil.example", "Cookie", "sid=1", "Range", "bytes=0-9", "If-None-Match", `"callers"`,
-				"If-Modified-Since", "Mon, 02 Jan 2006 15:04:05 GMT", "Trove-Bastion-Class", "artifact", "Trove-Bastion-Probe", "1",
+				"If-Modified-Since", "Mon, 02 Jan 2006 15:04:05 GMT", "Quader-Bastion-Class", "artifact", "Quader-Bastion-Probe", "1",
 				"Traceparent", "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01", "Connection", "X-Hop", "X-Hop", "1",
 				"Accept", "application/json", "User-Agent", "npm/11")
 			f.ClientAddress = tc.addr
@@ -246,7 +246,7 @@ func TestR_BAS_017_AForwardCarriesOneClientAddressInBothFamilies(t *testing.T) {
 			if h.Get("Authorization") != "Basic Zm9vOmJhcg==" || h.Get("Accept") != "application/json" {
 				t.Errorf("the caller's end-to-end headers changed: %q %q", h.Get("Authorization"), h.Get("Accept"))
 			}
-			if h.Get("User-Agent") != "trove-bastion/1.2.3" {
+			if h.Get("User-Agent") != "quader-bastion/1.2.3" {
 				t.Errorf("User-Agent = %q", h.Get("User-Agent"))
 			}
 			if strings.Contains(h.Get("Traceparent"), "4bf92f3577b34da6a3ce929d0e0e4736") {
@@ -285,7 +285,7 @@ func TestR_BAS_014_AProbeIsBodilessAndCarriesNoCredential(t *testing.T) {
 }
 
 // TestR_BAS_021_AForwardedBodyIsStreamedAndTheMarkingIsStripped: a read route that takes a body is forwarded
-// with it; the response is marked, the marking is parsed and no Trove-Bastion header remains.
+// with it; the response is marked, the marking is parsed and no Quader-Bastion header remains.
 func TestR_BAS_021_AForwardedBodyIsStreamedAndTheMarkingIsStripped(t *testing.T) {
 	r := newRig(t, nil)
 	r.main.SetForward(func(w http.ResponseWriter, _ *http.Request) {
@@ -320,7 +320,7 @@ func TestR_BAS_021_AForwardedBodyIsStreamedAndTheMarkingIsStripped(t *testing.T)
 }
 
 // TestR_BAS_014_TheRouteOfAProbeAnswerSurvivesTheStrippedMarking: the 204 of a probe to a read route that takes a
-// body names Trove-Bastion-Route; the client removes every Trove-Bastion header from the response and hands the
+// body names Quader-Bastion-Route; the client removes every Quader-Bastion header from the response and hands the
 // route over in Response.Route, because the engine decides on it.
 func TestR_BAS_014_TheRouteOfAProbeAnswerSurvivesTheStrippedMarking(t *testing.T) {
 	r := newRig(t, nil)
@@ -345,7 +345,7 @@ func TestR_BAS_014_TheRouteOfAProbeAnswerSurvivesTheStrippedMarking(t *testing.T
 }
 
 // TestR_BAS_006_ARefusedTokenAndAMismatchAreTypedErrors: 401 bastion_token_invalid is ErrTokenRefused and sets
-// trove_bastion_main_token_refused; 400 bastion_interface_mismatch and an answer with another version are
+// quader_bastion_main_token_refused; 400 bastion_interface_mismatch and an answer with another version are
 // *MismatchError with the main installation's version; every operation maps them the same way (R-BAS-009).
 func TestR_BAS_006_ARefusedTokenAndAMismatchAreTypedErrors(t *testing.T) {
 	ctx := context.Background()
@@ -373,7 +373,7 @@ func TestR_BAS_006_ARefusedTokenAndAMismatchAreTypedErrors(t *testing.T) {
 			}
 		}
 		if v := maintest.Value(r.m.MainTokenRefused); v != 1 {
-			t.Errorf("trove_bastion_main_token_refused = %v", v)
+			t.Errorf("quader_bastion_main_token_refused = %v", v)
 		}
 		// A token the main installation accepts again clears it.
 		fresh, _ := mainclient.ParseToken(r.main.NewToken())
@@ -382,7 +382,7 @@ func TestR_BAS_006_ARefusedTokenAndAMismatchAreTypedErrors(t *testing.T) {
 			t.Fatal(err)
 		}
 		if v := maintest.Value(r.m.MainTokenRefused); v != 0 {
-			t.Errorf("trove_bastion_main_token_refused = %v after a good answer", v)
+			t.Errorf("quader_bastion_main_token_refused = %v after a good answer", v)
 		}
 	})
 	t.Run("mismatch", func(t *testing.T) {
@@ -514,14 +514,14 @@ func TestR_BAS_021_ARedirectIsTheMainInstallationsAnswer(t *testing.T) {
 func TestR_BAS_044_AnHTTPMainURLIsRefused(t *testing.T) {
 	m, _ := metrics.New(nil)
 	holder := mainclient.NewHolder(mainclient.Token{Value: "x"})
-	for _, u := range []string{"http://trove.example.com", "trove.example.com", "ftp://trove.example.com", "https://"} {
+	for _, u := range []string{"http://quader.example.com", "quader.example.com", "ftp://quader.example.com", "https://"} {
 		_, err := mainclient.New(mainclient.Options{URL: u, BaseURL: baseURL, Tokens: holder, Metrics: m})
 		if err == nil {
 			t.Errorf("%q was accepted", u)
 		}
 	}
 	// A CA file that does not load stops the client at construction.
-	_, err := mainclient.New(mainclient.Options{URL: "https://trove.example.com", BaseURL: baseURL, Tokens: holder, Metrics: m, CAFile: filepath.Join(t.TempDir(), "missing.pem")})
+	_, err := mainclient.New(mainclient.Options{URL: "https://quader.example.com", BaseURL: baseURL, Tokens: holder, Metrics: m, CAFile: filepath.Join(t.TempDir(), "missing.pem")})
 	if err == nil {
 		t.Error("a missing CA file was accepted")
 	}
@@ -827,7 +827,7 @@ func TestR_BAS_044_ForwardsGoToThePackagesURLAndTheInterfaceToTheMainURL(t *test
 		}
 		main := maintest.New(t)
 		tok, _ := mainclient.ParseToken(main.NewToken())
-		for _, u := range []string{"http://trove-packages.trove.svc:8080", "trove-packages", "https://"} {
+		for _, u := range []string{"http://quader-packages.quader.svc:8080", "quader-packages", "https://"} {
 			_, err := mainclient.New(mainclient.Options{
 				URL: main.URL(), PackagesURL: u, BaseURL: baseURL, Tokens: mainclient.NewHolder(tok), Metrics: m,
 				ConnectTimeout: time.Second, ResponseHeaderTimeout: time.Second,

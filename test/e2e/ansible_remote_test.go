@@ -12,11 +12,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/ansiblestub"
+	"github.com/guided-traffic/quader/test/ansiblestub"
 )
 
 // netrcScript writes the ~/.netrc line of the configure snippet for the edge's host, with the token of the publisher.
-const netrcScript = `printf 'machine localhost login trove password %s\n' "$TROVE_TOKEN" >"$HOME/.netrc"
+const netrcScript = `printf 'machine localhost login quader password %s\n' "$QUADER_TOKEN" >"$HOME/.netrc"
 chmod 600 "$HOME/.netrc"
 `
 

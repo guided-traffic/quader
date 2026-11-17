@@ -8,16 +8,16 @@ import (
 	"runtime"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/buildinfo"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/files"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/manual"
-	"github.com/guided-traffic/trove/internal/sysstate"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/buildinfo"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/files"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/manual"
+	"github.com/guided-traffic/quader/internal/sysstate"
 )
 
 // PermissionSystemRead is the capability that admits the installation facts and
@@ -268,7 +268,7 @@ func New(o Options) *Server {
 }
 
 // Register mounts the operations on the router, each behind the authorization
-// step of its x-trove-permission declaration (authorize.go). The caller then
+// step of its x-quader-permission declaration (authorize.go). The caller then
 // runs Document.CheckRoutes over Router.Patterns() once every route is
 // registered.
 func (s *Server) Register(r *httpserver.Router) {

@@ -6,11 +6,11 @@ This page explains how administrators create, configure, edit and delete reposit
 
 | Format | Classes | Client address |
 |---|---|---|
-| Generic | local | `https://trove.example.com/files/<projectKey>/<key>/` |
-| npm | local, remote, virtual | `https://trove.example.com/api/npm/<projectKey>/<key>/` |
-| NuGet | local, remote, virtual | `https://trove.example.com/api/nuget/<projectKey>/<key>/v3/index.json` |
-| OCI (Docker) | local, remote, virtual | `trove.example.com/<projectKey>/<key>` as the start of an image reference; the protocol is below `https://trove.example.com/v2/` ([Container image repositories](container-repositories.md)) |
-| Debian (APT) | local, remote, virtual | `https://trove.example.com/api/deb/<projectKey>/<key>/` ([Debian (APT) repositories](apt-repositories.md)) |
+| Generic | local | `https://quader.example.com/files/<projectKey>/<key>/` |
+| npm | local, remote, virtual | `https://quader.example.com/api/npm/<projectKey>/<key>/` |
+| NuGet | local, remote, virtual | `https://quader.example.com/api/nuget/<projectKey>/<key>/v3/index.json` |
+| OCI (Docker) | local, remote, virtual | `quader.example.com/<projectKey>/<key>` as the start of an image reference; the protocol is below `https://quader.example.com/v2/` ([Container image repositories](container-repositories.md)) |
+| Debian (APT) | local, remote, virtual | `https://quader.example.com/api/deb/<projectKey>/<key>/` ([Debian (APT) repositories](apt-repositories.md)) |
 
 A **local** repository holds what is uploaded or published to it. A **remote** repository fetches from an upstream registry and caches what it fetched. A **virtual** repository combines local and remote repositories behind one address. How users see the classes is described in [Repositories](../user/repositories.md).
 
@@ -88,21 +88,21 @@ The settings of a format are drawn from the schema the format publishes, so the 
 |---|---|---|---|
 | Generic local | none | | |
 | NuGet local | **Delete mode** (`deleteMode`) | **Unlist** | What `dotnet nuget delete` and `nuget delete` do: **Unlist** (`unlist`) hides the version from search and keeps it downloadable; **Delete for good** (`delete`) removes the version and keeps its number blocked. A delete through the API, the UI or `/files/` always removes |
-| NuGet remote | **Forward search** (`forwardSearch`) | on | Pass the searches of this remote on to its upstream, so that clients also find packages nobody has fetched yet; a query that names a package trove keeps away from the remote is answered from the cache. Off answers every search from the packages the remote has cached, and no search term leaves your network |
-| NuGet, every class | **Vulnerability information** (`vulnerabilityInfo`) | **Automatic**: from trove's advisory data while vulnerability scanning is on and the OSV source is not off, else off | **From trove's advisory data** (`local`) lists the vulnerability information in the service index and serves trove's own NuGet advisory data once it has been imported, so `dotnet restore` reports known vulnerabilities (NU1901 to NU1904); **Off** (`off`) lists nothing. Passing the upstream's information through (`upstream`) is not built |
+| NuGet remote | **Forward search** (`forwardSearch`) | on | Pass the searches of this remote on to its upstream, so that clients also find packages nobody has fetched yet; a query that names a package Quader keeps away from the remote is answered from the cache. Off answers every search from the packages the remote has cached, and no search term leaves your network |
+| NuGet, every class | **Vulnerability information** (`vulnerabilityInfo`) | **Automatic**: from Quader's advisory data while vulnerability scanning is on and the OSV source is not off, else off | **From Quader's advisory data** (`local`) lists the vulnerability information in the service index and serves Quader's own NuGet advisory data once it has been imported, so `dotnet restore` reports known vulnerabilities (NU1901 to NU1904); **Off** (`off`) lists nothing. Passing the upstream's information through (`upstream`) is not built |
 | npm local | **Guard the latest tag** (`latestGuard`) | on | A publish of a version below `latest`, or of a pre-release while `latest` is a release, is stored without moving `latest` |
 | npm remote | **Serve removed versions** (`serveRemovedVersions`) | off | Keep serving cached tarballs of versions and packages the upstream removed, to exact downloads such as a lockfile's; the package documents never list them |
-| npm, every class | **Security audit** › **Mode** (`audit.mode`) | **Automatic**: from trove's advisory data while vulnerability scanning is on and the OSV source is not off; else forward on remote and virtual repositories and off on local ones | **From trove's advisory data** (`local`) answers `npm audit` from trove's own advisory data and sends nothing out; the answer is `503 vulnerability_data_unavailable` until the npm advisory data has been imported. **Forward to an advisory service** (`forward`) answers through the first remote that forwards, with only the names of public packages it has fetched (remote and virtual repositories only). **Off** (`disabled`) answers 501 `npm_audit_unavailable` |
+| npm, every class | **Security audit** › **Mode** (`audit.mode`) | **Automatic**: from Quader's advisory data while vulnerability scanning is on and the OSV source is not off; else forward on remote and virtual repositories and off on local ones | **From Quader's advisory data** (`local`) answers `npm audit` from Quader's own advisory data and sends nothing out; the answer is `503 vulnerability_data_unavailable` until the npm advisory data has been imported. **Forward to an advisory service** (`forward`) answers through the first remote that forwards, with only the names of public packages it has fetched (remote and virtual repositories only). **Off** (`disabled`) answers 501 `npm_audit_unavailable` |
 | npm, every class | **Security audit** › **Provider URL** (`audit.providerURL`) | the upstream | Forwarding only: an `https` URL of another advisory provider. It receives the remote's credential only when its host is the upstream's or a further host that receives the credential |
 | npm, every class | **Security audit** › **Timeout**, **Largest audit request** (`audit.timeout`, `audit.maxBodySize`) | `30s`, `1MiB` | Limits of one audit request: the wait for the provider, 1 to 300 seconds, when forwarding; the size of the request, 1 KiB to 10 MiB, in every mode |
 | npm virtual | **Latest tag strategy** (`latestStrategy`) | **Highest version** | Which `latest` the virtual repository offers when its members differ: the highest version (`highest-member-latest`) or the most recently published (`newest-published`) |
 | npm virtual | **Dist-tag strategy** (`distTagStrategy`) | **First member in order** | Which value the other dist-tags take when the members differ: the first member in order (`member-order`), the highest version (`highest-semver`) or the most recently published (`newest-published`) |
 | OCI remote | **Tags to mirror**, **Tags never mirrored**, **Platforms** (`mirror.tags`, `mirror.excludeTags`, `mirror.platforms`) | `latest`, none, every platform | Which tags and platforms a mirror copies; read in mode **Mirror** only ([The mirror mode](container-repositories.md#the-mirror-mode)). OCI local and virtual repositories have no settings of the format |
-| Debian local | **Architectures**, **Compression**, **Origin**, **Label** (`architectures`, `compression`, `origin`, `label`) | `amd64` and `arm64`, none, `trove`, the repository key | The architectures every suite's indexes are built for, `xz` beside gzip, and the `Origin` and `Label` of every `Release` ([A local repository](apt-repositories.md#a-local-repository)) |
+| Debian local | **Architectures**, **Compression**, **Origin**, **Label** (`architectures`, `compression`, `origin`, `label`) | `amd64` and `arm64`, none, `quader`, the repository key | The architectures every suite's indexes are built for, `xz` beside gzip, and the `Origin` and `Label` of every `Release` ([A local repository](apt-repositories.md#a-local-repository)) |
 | Debian virtual | **Suites**, **Components** (`suites`, `components`), and the four settings of a local repository | none, `main` | The suites served besides those of the local members and the components merged ([A virtual repository](apt-repositories.md#a-virtual-repository)) |
-| Debian remote | **Upstream keys** (`upstreamKeys`) | none | The archive's ASCII-armored public keys; with them trove checks every release before it stores it, and a mirror needs them ([Upstream keys](apt-repositories.md#upstream-keys)). The fingerprints are shown read-only below the settings |
+| Debian remote | **Upstream keys** (`upstreamKeys`) | none | The archive's ASCII-armored public keys; with them Quader checks every release before it stores it, and a mirror needs them ([Upstream keys](apt-repositories.md#upstream-keys)). The fingerprints are shown read-only below the settings |
 | Debian remote | **Suites**, **Components**, **Architectures**, **Translations**, **Source packages** (`mirror.suites`, `mirror.components`, `mirror.architectures`, `mirror.translations`, `mirror.sources`) | none, `main`, `amd64`, `en`, off | What a mirror copies; read in mode **Mirror** only, where **Suites** is required ([The mirror mode](apt-repositories.md#the-mirror-mode)) |
-| Ansible Galaxy remote | **Token endpoint URL**, **Client ID** (`authUrl`, `clientId`) | none, `cloud-services` | For a hub behind single sign-on: where trove exchanges the stored offline token for a short-lived access token, and the client ID it presents ([Ansible Galaxy repositories](ansible-repositories.md)) |
+| Ansible Galaxy remote | **Token endpoint URL**, **Client ID** (`authUrl`, `clientId`) | none, `cloud-services` | For a hub behind single sign-on: where Quader exchanges the stored offline token for a short-lived access token, and the client ID it presents ([Ansible Galaxy repositories](ansible-repositories.md)) |
 | Ansible Galaxy remote | **Fetch documentation** (`fetchDocumentation`) | on | Fetch and keep each version's documentation from the upstream, so that the package page shows its documentation and contents; off makes no such request |
 
 ## The upstream of a remote repository
@@ -144,7 +144,7 @@ For a container registry the test logs in as a client does: the registry answers
 
 ## Mirror
 
-A remote repository of a format whose upstream trove can list (npm, NuGet, OCI and Debian) has a **Mirror** group in **Advanced settings** of the creation form and a closed section **Mirror** on its settings page. It is shown only for such formats; a format that cannot list its upstream has none.
+A remote repository of a format whose upstream Quader can list (npm, NuGet, OCI and Debian) has a **Mirror** group in **Advanced settings** of the creation form and a closed section **Mirror** on its settings page. It is shown only for such formats; a format that cannot list its upstream has none.
 
 **Mode** is **Pull-through** (the default: fetch and store what clients ask for) or **Mirror** (also store, in background passes, every package of the upstream that the include patterns and the bounds admit). The other members show in mode **Mirror** only:
 
@@ -200,14 +200,14 @@ Read the repository to get its `ETag`, then send a merge patch with `If-Match`:
 
 ```bash
 # example values: the project, the key, the ETag and the token variable
-curl -X PATCH https://trove.example.com/api/v1/projects/web/repositories/npm-all \
-  -H "Authorization: Bearer $TROVE_TOKEN" \
+curl -X PATCH https://quader.example.com/api/v1/projects/web/repositories/npm-all \
+  -H "Authorization: Bearer $QUADER_TOKEN" \
   -H 'Content-Type: application/merge-patch+json' \
   -H 'If-Match: "3"' \
   --data '{"virtual": {"members": ["npm-internal", "npm-registry"], "deployTarget": "npm-internal"}}'
 ```
 
-The token needs a scope that allows repository configuration; see [Managing tokens](tokens.md). The full document is in the [management API reference](https://github.com/guided-traffic/trove/blob/main/README.md#-full-reference).
+The token needs a scope that allows repository configuration; see [Managing tokens](tokens.md). The full document is in the [management API reference](https://github.com/guided-traffic/quader/blob/main/README.md#-full-reference).
 
 ### npm remote: the upstream
 
@@ -238,7 +238,7 @@ The `remote` section of an npm remote repository:
 | `integrity.checksumPolicy` | `verify-if-available` | `verify-if-available`, `require`, `ignore` or `pass-through`. An npm remote always compares a tarball with the digest its package document announces and refuses a mismatch with `upstream_integrity_mismatch`, so `ignore` and `pass-through` are refused for it (422 `not_applicable`) |
 | `integrity.blockUnexpectedContentTypes`, `allowedContentTypes` | `true`, `[]` | Refuse upstream answers of unexpected content types |
 | `limits.maxArtifactBytes`, `maxMetadataBytes` | system value | Largest upstream answer |
-| `limits.maxConcurrentFetches` | `64` | Budget of upstream requests of the repository in flight at once. Each replica takes `ceil(budget ÷ n)` of it for the n replicas that fill client misses, so the cluster-wide total stays within `budget + n − 1`, plus the background share B of a mirror (R-REPO-040). A fetch counts until the upstream's answer has been read, not while trove stores it |
+| `limits.maxConcurrentFetches` | `64` | Budget of upstream requests of the repository in flight at once. Each replica takes `ceil(budget ÷ n)` of it for the n replicas that fill client misses, so the cluster-wide total stays within `budget + n − 1`, plus the background share B of a mirror (R-REPO-040). A fetch counts until the upstream's answer has been read, not while Quader stores it |
 | `mode` | `pullThrough` | `pullThrough` or `mirror`: a mirror also stores, in background passes, what the upstream offers within the include patterns and the bounds below. A mirror of `https://registry.npmjs.org/` needs include patterns that each start with a literal part (such as `@types/*`) or `mirror.maxBytes`; only a holder of `repositories:write-config` sets the mode, an Owner of the project without it may pause a mirror or turn it back to `pullThrough` |
 | `mirror.paused` | `false` | Pause or resume the mirror |
 | `mirror.intervalSeconds`, `fullPassIntervalSeconds` | `3600`, `604800` | Time between passes; age of the last full pass after which a pass reads everything again |
@@ -250,7 +250,7 @@ The `remote` section of an npm remote repository:
 </details>
 
 - **Credentials.** `password` is write-only. Send `{"value": "…"}` to store it encrypted, or `{"set": true}` to keep the stored value; a read shows only `{"set": true}`. Omitting `password` from a replaced document deletes it.
-- **When the upstream fails.** trove retries once only when the connection failed before anything was sent. Expired metadata that is stored is served within `maxStaleSeconds`; otherwise clients get 502 or 504, and 503 `upstream_assumed_offline` while the upstream is treated as down. In offline mode cached content is served whatever its age and uncached content answers 404 `not_cached_offline`.
+- **When the upstream fails.** Quader retries once only when the connection failed before anything was sent. Expired metadata that is stored is served within `maxStaleSeconds`; otherwise clients get 502 or 504, and 503 `upstream_assumed_offline` while the upstream is treated as down. In offline mode cached content is served whatever its age and uncached content answers 404 `not_cached_offline`.
 - **Versions removed upstream.** A version the upstream no longer lists, and every version of a package the upstream withdrew, answer 404 even when cached, unless **serveRemovedVersions** is on. Each case is recorded as `npm.remote.version_removed`.
 - **Changing the upstream.** A change of the URL, the hosts or the credentials discards all cached metadata and remembered misses at once; cached tarballs stay.
 - **Testing the connection.** `POST /api/v1/projects/<projectKey>/repositories/<key>/upstream-test` checks the saved settings; `POST /api/v1/projects/<projectKey>/upstream-tests` checks settings that are not saved.
@@ -275,7 +275,7 @@ A tarball is looked for in the local members in order, then in the caches of the
 
 ## Protection against dependency confusion
 
-When a virtual repository combines a local repository with a remote one, a public package of the same name as an internal one could be resolved instead. trove offers three defences:
+When a virtual repository combines a local repository with a remote one, a public package of the same name as an internal one could be resolved instead. Quader offers three defences:
 
 - **Namespace claims** of a local repository. A claimed name resolves only from the claimant; the remote members are never asked. Scope `members` applies in the virtual repositories that contain the local repository, scope `global` in every npm virtual repository and, by default, refuses the name at every npm remote repository. Manage claims with `GET` and `PUT /api/v1/projects/<projectKey>/repositories/<key>/claims`; `PUT` needs `manage`, and a `global` claim needs `repositories:write-config` as well. With `local.autoClaim` (on by default for npm) the first publish of a name claims it.
 - **The shadowing check.** The first version of a name in a local repository is refused with 403 `shadows_remote_package` when a remote member of a virtual repository containing it already serves that name, unless the repository claims the name. A holder of `manage` may publish anyway; this is recorded as `repository.remote_package_shadowed`. If the upstream cannot be asked, the publish answers 503 `shadow_check_unavailable` and should be retried.
@@ -304,7 +304,7 @@ these cases:
 - a claim was created whose pattern overlaps a claim of another repository that is in effect together with it;
 - a pin rule that was reduced is missing from the restored repository.
 
-To review one, read the printed entry (or the replay output of `trove admin post-restore`), check the repository's patterns, members,
+To review one, read the printed entry (or the replay output of `quader admin post-restore`), check the repository's patterns, members,
 pin rules and claims against what you intended, correct them, and enable the repository again.
 
 A restore does not re-apply the settings of how a repository talks to its upstream or what it accepts: the hosts that receive the

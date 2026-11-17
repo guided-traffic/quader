@@ -9,7 +9,7 @@
 .bin
 .dev
 bin
-trove
+quader
 node_modules
 **/node_modules
 web/dist

@@ -50,7 +50,7 @@ func drainUnderLoad(t *testing.T, kind string, v drainVariant, start func() drai
 		name = fmt.Sprintf("%s-ha-drain-%s", kind, strings.ToLower(string(v)))
 		logPrefix = fmt.Sprintf("%s-drain-%s-", kind, strings.ToLower(string(v)))
 	}
-	troveSettled(t, 3, 3, 4)
+	quaderSettled(t, 3, 3, 4)
 	// Variant E starts its backup in the preparation, and the Job copies what the installation holds then, at 512 KiB/s. The installation
 	// holds 200 MiB for it (a copy of about 7 minutes, longer than the 4 to 5 minutes to the eviction, and the Job that starts again in
 	// the second pod ends within the 15 minutes), and the 1 GiB file of the download probes is put after the Job has started, so that the
@@ -70,7 +70,7 @@ func drainUnderLoad(t *testing.T, kind string, v drainVariant, start func() drai
 	}
 	// the pick may have moved the PostgreSQL and the Valkey primary and the backup Job may be running: the replicas are unready for
 	// a few seconds after that, and the load is the drain's, not the pick's
-	troveSettled(t, 3, 3, 4)
+	quaderSettled(t, 3, 3, 4)
 	streams := streamPodLogs(t, logPrefix, d.OnNode)
 
 	load := start()
@@ -85,7 +85,7 @@ func drainUnderLoad(t *testing.T, kind string, v drainVariant, start func() drai
 		ids = append(ids, strings.TrimSpace(driver(t, "probe", "-steps", fmt.Sprint(steps), "-interval-ms", "1000")))
 	}
 	waitFor(t, "both workers to run a probe job", 60*time.Second, time.Second, func() bool {
-		rows := sql(t, fmt.Sprintf(`SELECT r.name FROM trove.job j JOIN trove.replica r ON r.instance_uid = j.locked_by WHERE j.kind = 'system.probe' AND j.state = 'running' AND j.progress_total = %d GROUP BY 1`, steps))
+		rows := sql(t, fmt.Sprintf(`SELECT r.name FROM quader.job j JOIN quader.replica r ON r.instance_uid = j.locked_by WHERE j.kind = 'system.probe' AND j.state = 'running' AND j.progress_total = %d GROUP BY 1`, steps))
 		return len(strings.Fields(rows)) >= 2
 	})
 	for _, x := range extras {
@@ -220,9 +220,9 @@ func TestDrainLoad(t *testing.T) {
 }
 
 // TestDrainLoadPooler is E5.9 for variant D of R-HA-059 (an instance of the transaction-mode pooler on the node, R-HA-058) under the
-// whole load. It needs the cluster in the pooler profile (TROVE_POOLER=1, set drain-load-pooler).
+// whole load. It needs the cluster in the pooler profile (QUADER_POOLER=1, set drain-load-pooler).
 func TestDrainLoadPooler(t *testing.T) {
-	// the fixtures put the cluster into the scatter profile with the poolers (up.sh reads TROVE_POOLER, which the set exports)
+	// the fixtures put the cluster into the scatter profile with the poolers (up.sh reads QUADER_POOLER, which the set exports)
 	h := npmHAFx(t)
 	nh := nugetHAFx(t)
 	requirePoolerProfile(t)

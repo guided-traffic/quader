@@ -145,7 +145,7 @@ UPDATE ui_session SET withdrawn_at = now()
 RETURNING id::text AS id;
 
 -- name: EndAllSessions :many
--- trove admin sessions end --all (R-AUTH-015), in batches; WithdrawEndedSessions then marks the sessions that had ended already.
+-- quader admin sessions end --all (R-AUTH-015), in batches; WithdrawEndedSessions then marks the sessions that had ended already.
 UPDATE ui_session SET ended_at = now(), end_reason = 'revoked', withdrawn_at = now()
  WHERE id IN (SELECT id FROM ui_session WHERE ended_at IS NULL LIMIT 1000)
 RETURNING id::text AS id, encode(secret_sha256, 'hex')::text AS secret_sha256_hex;
@@ -157,7 +157,7 @@ UPDATE ui_session SET withdrawn_at = now()
  WHERE id IN (SELECT id FROM ui_session WHERE withdrawn_at IS NULL AND ended_at IS NOT NULL LIMIT 1000);
 
 -- name: EndBreakGlassSessions :many
--- Every open break-glass session (R-AUTH-014: rotation, disabled account, trove admin break-glass end-sessions) ends with a reason
+-- Every open break-glass session (R-AUTH-014: rotation, disabled account, quader admin break-glass end-sessions) ends with a reason
 -- that withdraws it; WithdrawEndedBreakGlassSessions then marks the ones that had ended already (Q-AUTHZ-262).
 UPDATE ui_session SET ended_at = now(), end_reason = sqlc.arg(reason)::text, withdrawn_at = now()
  WHERE auth_method = 'break_glass' AND ended_at IS NULL
@@ -171,7 +171,7 @@ UPDATE ui_session SET withdrawn_at = now()
 RETURNING id::text AS id;
 
 -- name: ListLiveSessionsOfPrincipal :many
--- The session list of R-AUTH-010 (wave 2 API) and of trove admin.
+-- The session list of R-AUTH-010 (wave 2 API) and of quader admin.
 SELECT id::text AS id, created_at, last_seen_at, coalesce(host(created_addr), '')::text AS created_addr,
        coalesce(user_agent, '')::text AS user_agent, auth_method, coalesce(provider_id, '')::text AS provider_id
   FROM ui_session
@@ -284,7 +284,7 @@ UPDATE auth_lockout SET failures = 0, window_started_at = now()
  WHERE account_key = sqlc.arg(account_key)::text AND failures > 0;
 
 -- name: Unlock :many
--- trove admin break-glass unlock (R-AUTH-015); was_locked is the state before.
+-- quader admin break-glass unlock (R-AUTH-015); was_locked is the state before.
 WITH old AS (
     SELECT account_key, (locked_until > now())::bool AS was_locked
       FROM auth_lockout WHERE account_key = sqlc.arg(account_key)::text FOR UPDATE

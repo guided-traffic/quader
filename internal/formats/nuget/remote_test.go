@@ -12,13 +12,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/document"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nugettest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/remote"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/document"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nugettest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 )
 
 const upstreamIndex = `{"version":"3.0.0","resources":[
@@ -269,7 +269,7 @@ func TestR_NUGET_015_InspectFillHoldsTheDeclaredIdentityToThePath(t *testing.T) 
 }
 
 func TestR_NUGET_003_InspectFillComparesANonASCIIIDAsAClientLowerCasesIt(t *testing.T) {
-	const path = "ünïcode.pkg/1.0.0/ünïcode.pkg.1.0.0.nupkg" // the path a client builds; trove lowercases ASCII letters only
+	const path = "ünïcode.pkg/1.0.0/ünïcode.pkg.1.0.0.nupkg" // the path a client builds; quader lowercases ASCII letters only
 	if got, err := inspectFill(t, path, buildNupkg(t, "Ünïcode.Pkg", "1.0.0")); err != nil || got == nil {
 		t.Errorf("the declared casing: %v %v", got, err)
 	}
@@ -417,7 +417,7 @@ func TestR_NUGET_015_RemovingACachedPackageRemovesItsVersionAndWritesNoTombstone
 // remoteHost is a Host of a remote repository over the in-memory upstream.
 func remoteHost(t testing.TB, m *formattest.MemRemote) *formattest.Host {
 	t.Helper()
-	return formattest.NewHost(New(), formattest.HostOptions{Class: formats.Remote, Remote: m, Data: nugettest.New(), BaseURL: "https://trove.example.com"})
+	return formattest.NewHost(New(), formattest.HostOptions{Class: formats.Remote, Remote: m, Data: nugettest.New(), BaseURL: "https://quader.example.com"})
 }
 
 func rget(t testing.TB, h *formattest.Host, path string, hdr ...string) *formattest.Response {
@@ -520,7 +520,7 @@ func jsonOf(t testing.TB, r *formattest.Response) map[string]any {
 func TestR_NUGET_009_ARemoteRegistrationIsRenderedPerHiveWithTheDocumentsOfTheUpstream(t *testing.T) {
 	m := &formattest.MemRemote{Docs: registrationUpstream([]string{"1.0.0", "1.1.0", "2.0.0-rc.1", "2.0.0"}, 64, true)}
 	h := remoteHost(t, m)
-	const feed = "https://trove.example.com/api/nuget/it/main/v3/"
+	const feed = "https://quader.example.com/api/nuget/it/main/v3/"
 
 	semver2 := rget(t, h, "v3/registration-semver2/Acme.Widgets/index.json")
 	if semver2.Code != 200 {
@@ -600,7 +600,7 @@ func TestR_NUGET_015_TheRegistrationOfAnIDWithManyVersionsFollowsThePagesOfTheUp
 	}
 	d := jsonOf(t, idx)
 	pages := d["items"].([]any)
-	// trove's paging: 64 versions to a page, listed to fetch (the upstream's 100 do not matter).
+	// quader's paging: 64 versions to a page, listed to fetch (the upstream's 100 do not matter).
 	if len(pages) != 5 || countLeaves(d) != 0 {
 		t.Fatalf("%d pages, %d inlined leaves", len(pages), countLeaves(d))
 	}
@@ -611,7 +611,7 @@ func TestR_NUGET_015_TheRegistrationOfAnIDWithManyVersionsFollowsThePagesOfTheUp
 	total := 0
 	for _, p := range pages {
 		id := p.(map[string]any)["@id"].(string)
-		r := rget(t, h, strings.TrimPrefix(id, "https://trove.example.com/api/nuget/it/main/"))
+		r := rget(t, h, strings.TrimPrefix(id, "https://quader.example.com/api/nuget/it/main/"))
 		if r.Code != 200 {
 			t.Fatalf("%s: %d %s", id, r.Code, r.Body.String())
 		}
@@ -647,7 +647,7 @@ func TestR_NUGET_015_TheValidatorOfARemoteDocumentFollowsTheStoredBytesAndTheSer
 		t.Errorf("a changed upstream document: etag %s, %d leaves", changed.Header().Get("ETag"), countLeaves(jsonOf(t, changed)))
 	}
 	// The cache view names itself in every address.
-	cv := formattest.NewHost(New(), formattest.HostOptions{Class: formats.Remote, Remote: m, Data: nugettest.New(), BaseURL: "https://trove.example.com"})
+	cv := formattest.NewHost(New(), formattest.HostOptions{Class: formats.Remote, Remote: m, Data: nugettest.New(), BaseURL: "https://quader.example.com"})
 	r, err := cv.Serve(context.Background(), http.MethodGet, "v3/registration-semver2/acme.widgets/index.json", nil, false)
 	if err != nil || r.Code != 200 {
 		t.Fatalf("%v %v", r, err)
@@ -708,12 +708,12 @@ func TestR_NUGET_034_ARemoteHidesWhatTheEndpointDoesNotExposeBeforeAnyFetch(t *t
 func TestR_NUGET_015_RewriteRendersTheSemVer2HiveOfTheServingRepository(t *testing.T) {
 	a := New().Remote()
 	docs := registrationUpstream([]string{"1.0.0", "2.0.0-rc.1"}, 64, true)
-	ln := formattest.Links("https://trove.example.com", "nuget", qr("main"))
+	ln := formattest.Links("https://quader.example.com", "nuget", qr("main"))
 	out, err := a.Rewrite(context.Background(), formats.RemoteContext{}, formats.Path{Path: RegistrationIndexPath("acme.widgets")}, docs[RegistrationIndexPath("acme.widgets")], ln)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(out), "https://trove.example.com/api/nuget/it/main/v3/registration-semver2/acme.widgets/index.json") || strings.Contains(string(out), "up.test") {
+	if !strings.Contains(string(out), "https://quader.example.com/api/nuget/it/main/v3/registration-semver2/acme.widgets/index.json") || strings.Contains(string(out), "up.test") {
 		t.Errorf("rewritten index: %s", out)
 	}
 	again, err := a.Rewrite(context.Background(), formats.RemoteContext{}, formats.Path{Path: RegistrationIndexPath("acme.widgets")}, out, ln)

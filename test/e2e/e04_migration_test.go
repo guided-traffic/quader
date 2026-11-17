@@ -16,7 +16,7 @@ import (
 // helmUpgrade upgrades the release with the values it has (up.sh computed them: the dev values, the
 // profile, the node ranges) and the extra arguments on top.
 func helmUpgrade(extra ...string) (string, error) {
-	args := []string{"--kube-context", cfg.kubeContext, "upgrade", "trove", filepath.Join(cfg.repo, "deploy/helm/trove"), "-n", cfg.namespace, "--reuse-values"}
+	args := []string{"--kube-context", cfg.kubeContext, "upgrade", "quader", filepath.Join(cfg.repo, "deploy/helm/quader"), "-n", cfg.namespace, "--reuse-values"}
 	args = append(args, extra...)
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
@@ -33,12 +33,12 @@ func helmUpgrade(extra ...string) (string, error) {
 // password is wrong (secrets.databaseMigration, the credential of the migration Job only).
 func TestE04MigrationFailure(t *testing.T) {
 	t.Run("R-HA-052 R-HA-019 E0.4 a failing migration Job leaves the replicas serving and makes helm upgrade fail", func(t *testing.T) {
-		kn(t, "delete", "secret", "trove-e2e-db-wrong", "--ignore-not-found")
-		kn(t, "create", "secret", "generic", "trove-e2e-db-wrong", "--from-literal=username=trove", "--from-literal=password=not-the-password")
-		t.Cleanup(func() { _, _ = kubectl("-n", cfg.namespace, "delete", "secret", "trove-e2e-db-wrong") })
+		kn(t, "delete", "secret", "quader-e2e-db-wrong", "--ignore-not-found")
+		kn(t, "create", "secret", "generic", "quader-e2e-db-wrong", "--from-literal=username=quader", "--from-literal=password=not-the-password")
+		t.Cleanup(func() { _, _ = kubectl("-n", cfg.namespace, "delete", "secret", "quader-e2e-db-wrong") })
 
 		before := map[string]string{}
-		for _, p := range livePods(t, selTrove) {
+		for _, p := range livePods(t, selQuader) {
 			before[p.Name] = p.UID
 		}
 		beforeGen := deploymentGenerations(t)
@@ -65,7 +65,7 @@ func TestE04MigrationFailure(t *testing.T) {
 		}()
 
 		start := time.Now()
-		out, err := helmUpgrade("--set", "secrets.databaseMigration.existingSecret=trove-e2e-db-wrong", "--set", "migrations.backoffLimit=0", "--wait", "--timeout", "3m")
+		out, err := helmUpgrade("--set", "secrets.databaseMigration.existingSecret=quader-e2e-db-wrong", "--set", "migrations.backoffLimit=0", "--wait", "--timeout", "3m")
 		took := time.Since(start)
 		close(stop)
 		<-done
@@ -76,11 +76,11 @@ func TestE04MigrationFailure(t *testing.T) {
 		if !strings.Contains(out, "migrate") {
 			t.Errorf("the helm error does not name the migration Job: %s", out)
 		}
-		jobState := strings.TrimSpace(kn(t, "get", "job", "trove-migrate", "-o", "jsonpath={.status.conditions[*].type}"))
+		jobState := strings.TrimSpace(kn(t, "get", "job", "quader-migrate", "-o", "jsonpath={.status.conditions[*].type}"))
 		if !strings.Contains(jobState, "Failed") {
 			t.Errorf("the migration Job conditions are %q, want Failed", jobState)
 		}
-		logs, _ := kubectl("-n", cfg.namespace, "logs", "job/trove-migrate")
+		logs, _ := kubectl("-n", cfg.namespace, "logs", "job/quader-migrate")
 		t.Logf("migration Job log (tail): %s", tail(logs, 600))
 
 		mu.Lock()
@@ -91,9 +91,9 @@ func TestE04MigrationFailure(t *testing.T) {
 			}
 		}
 		mu.Unlock()
-		after := livePods(t, selTrove)
+		after := livePods(t, selQuader)
 		if len(after) != len(before) {
-			t.Errorf("%d trove pods after, %d before", len(after), len(before))
+			t.Errorf("%d quader pods after, %d before", len(after), len(before))
 		}
 		for _, p := range after {
 			if before[p.Name] != p.UID {
@@ -125,12 +125,12 @@ func TestE04MigrationFailure(t *testing.T) {
 // deploymentGenerations lists the generation of every Deployment of the release (api, packages, worker, worker-vuln).
 func deploymentGenerations(t testing.TB) string {
 	t.Helper()
-	return strings.TrimSpace(kn(t, "get", "deployments", "-l", "app.kubernetes.io/instance=trove", "-o", `jsonpath={range .items[*]}{.metadata.name}={.metadata.generation} {end}`))
+	return strings.TrimSpace(kn(t, "get", "deployments", "-l", "app.kubernetes.io/instance=quader", "-o", `jsonpath={range .items[*]}{.metadata.name}={.metadata.generation} {end}`))
 }
 
 func helmStatus(t testing.TB) string {
 	t.Helper()
-	out, err := exec.Command("helm", "--kube-context", cfg.kubeContext, "-n", cfg.namespace, "status", "trove", "-o", "json").Output()
+	out, err := exec.Command("helm", "--kube-context", cfg.kubeContext, "-n", cfg.namespace, "status", "quader", "-o", "json").Output()
 	if err != nil {
 		t.Fatal(err)
 	}

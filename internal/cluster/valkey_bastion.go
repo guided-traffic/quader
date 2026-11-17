@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
-// The Valkey side of the trove Bastion's shared state (R-BAS-034): the block list, the failed-authentication
+// The Valkey side of the quader Bastion's shared state (R-BAS-034): the block list, the failed-authentication
 // timeouts, the signed answer records and the sweep lease. The Bastion's fetch locks are the FlightLock of
 // valkey_flight.go (FlightKeyFromHash), its counters the limiters of limiter.go (Limiter.Estimate). Like every
 // mechanism, this one hands out typed methods and no key (Q-ARCH-16); the Bastion's client is made with
 // [WithoutKeyspace], so a key is <key_prefix><mechanism>:v1:<part>... with the key_prefix
-// trove-bastion:<valkey.key_prefix>: of the Bastion.
+// quader-bastion:<valkey.key_prefix>: of the Bastion.
 
 // The longest expiries of the Bastion's key families.
 const (
@@ -59,7 +59,7 @@ func (k MarkKind) family() *KeyFamily {
 
 // BastionStore is the Bastion's typed access to its Valkey keys. Every method returns [ErrUnavailable]
 // without network I/O while Valkey cannot be used, and every failure counts for
-// trove_valkey_degraded_total{mechanism="bastion_state"}; the caller runs its local form.
+// quader_valkey_degraded_total{mechanism="bastion_state"}; the caller runs its local form.
 type BastionStore struct{ v *Valkey }
 
 // NewBastionStore returns the store of a client made with [WithoutKeyspace]. With a nil client every call

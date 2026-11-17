@@ -18,7 +18,7 @@ import (
 )
 
 // roleDeployments are the Deployments the dev profile renders (deploy/dev/values-dev.yaml) and their replicas.
-var roleDeployments = map[string]int{"trove-api": 2, "trove-packages": 3, "trove-worker": 2, "trove-worker-vuln": 2}
+var roleDeployments = map[string]int{"quader-api": 2, "quader-packages": 3, "quader-worker": 2, "quader-worker-vuln": 2}
 
 // serviceBackends returns the pods behind a Service, from its EndpointSlices.
 func serviceBackends(t testing.TB, service string) []string {
@@ -99,26 +99,26 @@ func TestE03Roles(t *testing.T) {
 				t.Errorf("Deployment %s has %s ready/desired replicas, want %d/%d", dep, got, want, want)
 			}
 		}
-		if out, err := kubectl("-n", cfg.namespace, "get", "deployment", "trove-web"); err == nil {
-			t.Errorf("the Deployment trove-web exists outside the bridge of R-HA-064: %s", out)
+		if out, err := kubectl("-n", cfg.namespace, "get", "deployment", "quader-web"); err == nil {
+			t.Errorf("the Deployment quader-web exists outside the bridge of R-HA-064: %s", out)
 		}
 		rs, err := replicas()
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, r := range rs {
-			if r.Lost || !strings.HasPrefix(r.Name, "trove-") {
+			if r.Lost || !strings.HasPrefix(r.Name, "quader-") {
 				continue
 			}
 			wantRole, wantPool := "", ""
 			switch {
-			case strings.HasPrefix(r.Name, "trove-api-"):
+			case strings.HasPrefix(r.Name, "quader-api-"):
 				wantRole = "api"
-			case strings.HasPrefix(r.Name, "trove-packages-"):
+			case strings.HasPrefix(r.Name, "quader-packages-"):
 				wantRole = "packages"
-			case strings.HasPrefix(r.Name, "trove-worker-vuln-"):
+			case strings.HasPrefix(r.Name, "quader-worker-vuln-"):
 				wantRole, wantPool = "worker", "vuln"
-			case strings.HasPrefix(r.Name, "trove-worker-"):
+			case strings.HasPrefix(r.Name, "quader-worker-"):
 				wantRole = "worker"
 			default:
 				continue
@@ -130,7 +130,7 @@ func TestE03Roles(t *testing.T) {
 	})
 
 	t.Run("R-HA-002 R-HA-037 E6a.5 each role Service selects the pods of its role alone and balances without affinity", func(t *testing.T) {
-		for svc, sel := range map[string]string{"trove-api": selAPI, "trove-packages": selPackages} {
+		for svc, sel := range map[string]string{"quader-api": selAPI, "quader-packages": selPackages} {
 			want := names(livePods(t, sel))
 			if got := serviceBackends(t, svc); strings.Join(got, ",") != strings.Join(want, ",") {
 				t.Errorf("Service %s has the backends %v, want the pods %v", svc, got, want)
@@ -139,7 +139,7 @@ func TestE03Roles(t *testing.T) {
 				t.Errorf("Service %s has sessionAffinity %q, want None", svc, aff)
 			}
 		}
-		if out, err := kubectl("-n", cfg.namespace, "get", "service", "trove-worker"); err == nil {
+		if out, err := kubectl("-n", cfg.namespace, "get", "service", "quader-worker"); err == nil {
 			t.Errorf("a worker has a client Service: %s", out)
 		}
 	})
@@ -151,13 +151,13 @@ func TestE03Roles(t *testing.T) {
 			if err != nil || code != 200 {
 				t.Fatalf("ping through the edge: %d %v", code, err)
 			}
-			api[h.Get("X-Trove-Replica")]++
+			api[h.Get("X-Quader-Replica")]++
 			// A package-family request without a credential is refused or not found; either way the pod names itself.
 			_, h, _, err = edge(npmBase + "e2e-roles-distribution/-/ping")
 			if err != nil {
 				t.Fatal(err)
 			}
-			pkg[h.Get("X-Trove-Replica")]++
+			pkg[h.Get("X-Quader-Replica")]++
 		}
 		t.Logf("api requests per replica %v, packages requests per replica %v", api, pkg)
 		if got, want := sortedKeys(api), names(livePods(t, selAPI)); strings.Join(got, ",") != strings.Join(want, ",") {

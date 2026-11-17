@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // The repositories of the vulnerability tests. npm-local, npm-remote and npm-all are the ones of the npm tests (npmFixture);
@@ -94,11 +94,11 @@ var (
 // osvStub is the control client of the test advisory source (docs/developer/e2e.md#the-test-advisory-source).
 func osvStub(t testing.TB) *stubControl {
 	t.Helper()
-	host := os.Getenv("TROVE_E2E_OSVSTUB_HOST")
+	host := os.Getenv("QUADER_E2E_OSVSTUB_HOST")
 	if host == "" {
-		t.Fatal("TROVE_E2E_OSVSTUB_HOST is not set; run the vulnerability sets of deploy/dev/e2e.sh")
+		t.Fatal("QUADER_E2E_OSVSTUB_HOST is not set; run the vulnerability sets of deploy/dev/e2e.sh")
 	}
-	osvOnce.Do(func() { osvVal = newStubControl(t, "svc/osvstub", host, "trove-osvstub", 5*time.Minute) })
+	osvOnce.Do(func() { osvVal = newStubControl(t, "svc/osvstub", host, "quader-osvstub", 5*time.Minute) })
 	return osvVal
 }
 
@@ -348,7 +348,7 @@ func (e *vulnEnv) task(t testing.TB, name string, params any) (id string, runnin
 // jobState reads the state of a job from the table (the job API of the tests of the phase is not needed for a state).
 func jobState(t testing.TB, id string) string {
 	t.Helper()
-	return sql(t, "SELECT state FROM trove.job WHERE id = '"+id+"'")
+	return sql(t, "SELECT state FROM quader.job WHERE id = '"+id+"'")
 }
 
 func (e *vulnEnv) waitJob(t testing.TB, id string, within time.Duration) string {
@@ -369,13 +369,13 @@ func (e *vulnEnv) syncOnce(t testing.TB, kind string, params any) string {
 		id, running := e.task(t, kind, params)
 		if running {
 			waitFor(t, "the running synchronization to end", 10*time.Minute, time.Second, func() bool {
-				return sql(t, `SELECT count(*) FROM trove.job WHERE kind LIKE 'vuln-sync-osv%' AND state IN ('queued', 'running', 'cancelling')`) == "0"
+				return sql(t, `SELECT count(*) FROM quader.job WHERE kind LIKE 'vuln-sync-osv%' AND state IN ('queued', 'running', 'cancelling')`) == "0"
 			})
 			continue
 		}
 		st := e.waitJob(t, id, 10*time.Minute)
 		if st != "succeeded" {
-			t.Fatalf("%s ended %s: %s", kind, st, sql(t, "SELECT coalesce(error::text, '') FROM trove.job WHERE id = '"+id+"'"))
+			t.Fatalf("%s ended %s: %s", kind, st, sql(t, "SELECT coalesce(error::text, '') FROM quader.job WHERE id = '"+id+"'"))
 		}
 		e.awaitEvaluated(t)
 		return id
@@ -398,9 +398,9 @@ func (e *vulnEnv) syncFull(t testing.TB, acceptShrink bool) {
 func (e *vulnEnv) awaitEvaluated(t testing.TB) {
 	t.Helper()
 	waitFor(t, "the evaluation of the advisory data to finish", 5*time.Minute, time.Second, func() bool {
-		return sql(t, `SELECT (SELECT count(*) FROM trove.vuln_pending_evaluation)
-			+ (SELECT count(*) FROM trove.job WHERE kind IN ('vuln-evaluate', 'vuln-rescan') AND state IN ('queued', 'running', 'cancelling'))
-			+ (SELECT count(*) FROM trove.vuln_source_state WHERE full_evaluation_requested_at IS NOT NULL)`) == "0"
+		return sql(t, `SELECT (SELECT count(*) FROM quader.vuln_pending_evaluation)
+			+ (SELECT count(*) FROM quader.job WHERE kind IN ('vuln-evaluate', 'vuln-rescan') AND state IN ('queued', 'running', 'cancelling'))
+			+ (SELECT count(*) FROM quader.vuln_source_state WHERE full_evaluation_requested_at IS NOT NULL)`) == "0"
 	})
 }
 
@@ -408,7 +408,7 @@ func (e *vulnEnv) awaitEvaluated(t testing.TB) {
 func (e *vulnEnv) awaitComplete(t testing.TB) {
 	t.Helper()
 	waitFor(t, "the advisory data of npm and NuGet to be complete", 5*time.Minute, time.Second, func() bool {
-		return sql(t, `SELECT count(*) FROM trove.vuln_source_state WHERE source = 'osv' AND state = 'complete' AND ecosystem IN ('npm', 'NuGet')`) == "2"
+		return sql(t, `SELECT count(*) FROM quader.vuln_source_state WHERE source = 'osv' AND state = 'complete' AND ecosystem IN ('npm', 'NuGet')`) == "2"
 	})
 }
 

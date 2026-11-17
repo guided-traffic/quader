@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestR_REPO_012_TheQueryMatchesTheQualifiedName: q matches the key, <project>/<key> and the description (Q-API-279), so the

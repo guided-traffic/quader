@@ -3,9 +3,9 @@ package v1
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/packages/view"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/packages/view"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // TestR_OPS_004_SummaryPerRoleOfTheCut: replicas.roles has one entry per role of Q-OPS-161, api and packages included, and
@@ -13,14 +13,14 @@ import (
 func TestR_OPS_004_SummaryPerRoleOfTheCut(t *testing.T) {
 	pool := "vuln"
 	reps := []gen.Replica{
-		replica("trove-api-1", "api", "n1", gen.Ready, false),
-		replica("trove-api-2", "api", "n2", gen.Ready, false, "valkey"),
-		replica("trove-packages-1", "packages", "n1", gen.Ready, false),
-		replica("trove-packages-2", "packages", "n1", gen.Starting, false),
-		replica("trove-worker-1", "worker", "n3", gen.Ready, false),
-		replica("trove-worker-vuln-1", "worker", "n4", gen.Ready, false),
-		replica("trove-web-1", "web", "n5", gen.Ready, false),
-		replica("trove-packages-gone", "packages", "n6", gen.Ready, true),
+		replica("quader-api-1", "api", "n1", gen.Ready, false),
+		replica("quader-api-2", "api", "n2", gen.Ready, false, "valkey"),
+		replica("quader-packages-1", "packages", "n1", gen.Ready, false),
+		replica("quader-packages-2", "packages", "n1", gen.Starting, false),
+		replica("quader-worker-1", "worker", "n3", gen.Ready, false),
+		replica("quader-worker-vuln-1", "worker", "n4", gen.Ready, false),
+		replica("quader-web-1", "web", "n5", gen.Ready, false),
+		replica("quader-packages-gone", "packages", "n6", gen.Ready, true),
 	}
 	reps[5].Pool = &pool
 	sum := Summarise(reps)
@@ -53,7 +53,7 @@ func TestR_API_029_PackageFileContentURL(t *testing.T) {
 			{Path: "dir with space/a#b.bin", SizeBytes: 1, SHA256: "cd", Repo: qname.Repo{Project: "it", Key: "generic-1"}},
 		},
 	}
-	out := versionOf("https://trove.example.com", d)
+	out := versionOf("https://quader.example.com", d)
 	for i, want := range []string{
 		"/api/v1/projects/it/repositories/npm-local/content/@team-a/ui/-/ui-1.4.0.tgz",
 		"/api/v1/projects/it/repositories/generic-1/content/dir%20with%20space/a%23b.bin",

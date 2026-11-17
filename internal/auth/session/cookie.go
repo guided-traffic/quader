@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-// The three trove cookies and the CSRF header (R-AUTH-005, R-AUTH-010,
+// The three quader cookies and the CSRF header (R-AUTH-005, R-AUTH-010,
 // R-AUTH-012). The __Host- prefix makes the browser refuse any cookie of these
 // names that lacks Secure or Path=/ or carries Domain (Q-AUTH-2).
 const (
-	CookieSession = "__Host-trv_session"
-	CookieCSRF    = "__Host-trv_csrf"
-	CookieBinding = "__Host-trv_oidc_binding"
+	CookieSession = "__Host-qdr_session"
+	CookieCSRF    = "__Host-qdr_csrf"
+	CookieBinding = "__Host-qdr_oidc_binding"
 	HeaderCSRF    = "X-CSRF-Token"
 )
 

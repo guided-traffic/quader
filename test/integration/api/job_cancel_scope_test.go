@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_API_015_ANarrowedTokenCancelsItsOwnersJobsOnlyWithSettingsWrite is the starter's way of R-API-015 on the running
@@ -22,10 +22,10 @@ func TestR_API_015_ANarrowedTokenCancelsItsOwnersJobsOnlyWithSettingsWrite(t *te
 	// A kind without a handler: the job stays queued until it is cancelled.
 	job := func(createdBy testenv.Person) string {
 		id := uuidV4()
-		e.exec("INSERT INTO trove.job (id, kind, queue, created_by) VALUES ($1, 'probe', 'maintenance', $2::uuid)", id, createdBy.ID)
+		e.exec("INSERT INTO quader.job (id, kind, queue, created_by) VALUES ($1, 'probe', 'maintenance', $2::uuid)", id, createdBy.ID)
 		return id
 	}
-	state := func(id string) string { return e.stack.Text("SELECT state::text FROM trove.job WHERE id = $1", id) }
+	state := func(id string) string { return e.stack.Text("SELECT state::text FROM quader.job WHERE id = $1", id) }
 	cancel := func(id, token string, hdr ...string) testenv.Answer {
 		return e.stack.Do(r, "POST", "/api/v1/system/jobs/"+id+"/cancel", token, nil, hdr...)
 	}

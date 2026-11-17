@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // Step 1 of R-CI-007: the parameters, before the subject token costs a signature check (R-CI-008's reasons of the
@@ -30,8 +30,8 @@ func TestR_CI_007_TheParametersOfARequest(t *testing.T) {
 		{"an access token requested", func(r *ExchangeRequest) { r.RequestedTokenType = TokenTypeAccessToken }, ""},
 		{"a refresh token requested", func(r *ExchangeRequest) { r.RequestedTokenType = "urn:ietf:params:oauth:token-type:refresh_token" }, reason.UnsupportedRequestedTokenType},
 		{"an actor token type alone", func(r *ExchangeRequest) { r.ActorTokenType = TokenTypeJWT }, reason.ActorTokenNotSupported},
-		{"the base URL as audience, with a slash", func(r *ExchangeRequest) { r.Audience = []string{"https://trove.test/"} }, ""},
-		{"another resource", func(r *ExchangeRequest) { r.Resource = []string{"https://trove.test.evil"} }, reason.AudienceNotThisServer},
+		{"the base URL as audience, with a slash", func(r *ExchangeRequest) { r.Audience = []string{"https://quader.test/"} }, ""},
+		{"another resource", func(r *ExchangeRequest) { r.Resource = []string{"https://quader.test.evil"} }, reason.AudienceNotThisServer},
 		{"ttl zero", func(r *ExchangeRequest) { r.TTLSeconds = n(0) }, reason.MalformedRequest},
 		{"Q-CI-41 ttl below ci.token.min_ttl", func(r *ExchangeRequest) { r.TTLSeconds = n(29) }, reason.TTLBelowMinimum},
 		{"ttl at the floor", func(r *ExchangeRequest) { r.TTLSeconds = n(30) }, ""},

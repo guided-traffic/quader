@@ -14,7 +14,7 @@ func TestUIDefaults(t *testing.T) {
 		}
 	})
 	t.Run("R-API-030 ui.client_setup defaults", func(t *testing.T) {
-		if u.ClientSetup.TokenEnvVar != "TROVE_TOKEN" || u.ClientSetup.TokenTTL != 720*time.Hour {
+		if u.ClientSetup.TokenEnvVar != "QUADER_TOKEN" || u.ClientSetup.TokenTTL != 720*time.Hour {
 			t.Errorf("token_env_var = %q, token_ttl = %s", u.ClientSetup.TokenEnvVar, u.ClientSetup.TokenTTL)
 		}
 	})
@@ -39,8 +39,8 @@ func TestUIValidation(t *testing.T) {
 		})
 	}
 	t.Run("R-UI-008 an origin of this installation is refused, whatever its spelling", func(t *testing.T) {
-		for _, o := range []string{"https://trove.example.com", "https://TROVE.example.com:443", "https://partners.example.com"} {
-			yaml := "server:\n  base_url: https://trove.example.com\n  additional_base_urls: [\"https://partners.example.com\"]\nui:\n  readme:\n    external_image_origins: [\"" + o + "\"]\n"
+		for _, o := range []string{"https://quader.example.com", "https://QUADER.example.com:443", "https://partners.example.com"} {
+			yaml := "server:\n  base_url: https://quader.example.com\n  additional_base_urls: [\"https://partners.example.com\"]\nui:\n  readme:\n    external_image_origins: [\"" + o + "\"]\n"
 			if _, err := loadM2(t, yaml); err == nil || !strings.Contains(err.Error(), "origin of this installation") {
 				t.Errorf("%s: %v", o, err)
 			}

@@ -3,7 +3,7 @@ package npm
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // repoValues returns the values of the label repo over every family of the registry.

@@ -69,7 +69,7 @@ withheld answers 404 on its pool path in the meantime.
 
 ## What this does not cover
 
-- [H-624](../spec/formats/debian.md#h-624--troves-own-release-files-carry-no-valid-until): trove's own Release files carry no Valid-Until.
+- [H-624](../spec/formats/debian.md#h-624--quaders-own-release-files-carry-no-valid-until): Quader's own Release files carry no Valid-Until.
 - [H-720](../spec/formats/debian.md#h-720--a-path-pattern-that-hides-a-package-file-does-not-hide-its-version-from-the-package-screens): a path pattern that hides a package file does not hide its version from the package screens.
 - [H-721](../spec/formats/debian.md#h-721--the-index-of-a-deleted-package-stays-fetchable-by-hash-for-the-keep-time): the index of a deleted package stays fetchable by hash for the keep time.
 - [H-722](../spec/formats/debian.md#h-722--a-repository-whose-builds-fail-keeps-serving-its-last-generation): a repository whose builds fail keeps serving its last generation.

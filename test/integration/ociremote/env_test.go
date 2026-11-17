@@ -8,7 +8,7 @@
 // What these tests do not prove, and who does: the acceptance criteria that run `docker pull`, `crane` or six concurrent pulls on three replicas
 // (R-OCI-022 digest pull by `crane`, R-OCI-023 six concurrent pulls, R-OCI-025 `docker pull nginx:1`) need a registry client or three replicas behind
 // one address, which this harness is not; they are the e2e rows of WP11. The same requests are sent here over HTTP and counted at the stub. The second
-// criterion of R-OCI-025 (`quota_header` in `trove_mirror_rate_limited_total`) is the mirror's, WP10.
+// criterion of R-OCI-025 (`quota_header` in `quader_mirror_rate_limited_total`) is the mirror's, WP10.
 //
 // The requests go to /v2/<project>/<key>/ of a running replica, with the registry token the token service issues for the scope of the image, as a
 // container client sends them: the enforcement point, the grant check and the handlers are the registry's.
@@ -26,10 +26,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	_ "github.com/guided-traffic/trove/internal/formats/all"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	_ "github.com/guided-traffic/quader/internal/formats/all"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -38,7 +38,7 @@ const (
 	manifestTypes = "application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, " +
 		"application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json"
 	// secretEnv holds the password of the repositories that authenticate to the stub.
-	secretEnv = "TROVE_CAC_OCIREMOTE_IT_PASSWORD"
+	secretEnv = "QUADER_CAC_OCIREMOTE_IT_PASSWORD"
 	// The hosts of the stub as Docker Hub names them.
 	hubRegistry, hubRealm, hubCDN = "registry-1.docker.io", "auth.docker.io", "production.cloudfront.docker.com"
 )
@@ -109,11 +109,11 @@ func newEnv(t *testing.T, o options) *renv {
 
 	ca := testenv.WriteFile(t, t.TempDir(), "stub-ca.pem", string(ss.CAPEM))
 	e.st = testenv.NewStack(t, testenv.StackOptions{Name: "ociremote", Valkey: o.valkey, Env: append([]string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(filepath.ToSlash(ca)) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
-		"TROVE_API_RATE_LIMITS_ENABLED=false",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(filepath.ToSlash(ca)) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		"QUADER_API_RATE_LIMITS_ENABLED=false",
 	}, o.env...)})
 	t.Setenv(secretEnv, ocistub.DefaultPassword)
 
@@ -196,10 +196,10 @@ func (e *renv) do(r *testenv.Replica, method, repo, path string, hdr ...string) 
 	return e.doAs(r, e.reader, "pull", method, repo, path, hdr...)
 }
 
-// doAs sends a request with a registry token that the token service issues to the trove token for the actions on the image the path names.
-func (e *renv) doAs(r *testenv.Replica, trove, actions, method, repo, path string, hdr ...string) testenv.Answer {
+// doAs sends a request with a registry token that the token service issues to the quader token for the actions on the image the path names.
+func (e *renv) doAs(r *testenv.Replica, quader, actions, method, repo, path string, hdr ...string) testenv.Answer {
 	e.t.Helper()
-	tok := e.registryToken(r, trove, repo, imageOf(path), actions)
+	tok := e.registryToken(r, quader, repo, imageOf(path), actions)
 	return e.st.Do(r, method, "/v2/"+testenv.DefaultProject+"/"+repo+"/"+path, tok, nil, append([]string{"Accept", manifestTypes}, hdr...)...)
 }
 
@@ -221,9 +221,9 @@ func imageOf(path string) string {
 
 // registryToken asks the token service of the replica for a token for the actions on an image of a repository, as `docker login` and a pull do.
 // Tokens are kept for a minute.
-func (e *renv) registryToken(r *testenv.Replica, trove, repo, image, actions string) string {
+func (e *renv) registryToken(r *testenv.Replica, quader, repo, image, actions string) string {
 	e.t.Helper()
-	key := trove + "|" + repo + "|" + image + "|" + actions
+	key := quader + "|" + repo + "|" + image + "|" + actions
 	e.mu.Lock()
 	if c, ok := e.tokens[key]; ok && time.Since(c.at) < time.Minute {
 		e.mu.Unlock()
@@ -231,7 +231,7 @@ func (e *renv) registryToken(r *testenv.Replica, trove, repo, image, actions str
 	}
 	e.mu.Unlock()
 	q := url.Values{"scope": {"repository:" + testenv.DefaultProject + "/" + repo + "/" + image + ":" + actions}}
-	a := e.st.Do(r, http.MethodGet, "/v2/_token?"+q.Encode(), trove, nil)
+	a := e.st.Do(r, http.MethodGet, "/v2/_token?"+q.Encode(), quader, nil)
 	var body struct {
 		Token string `json:"token"`
 	}

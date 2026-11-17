@@ -15,10 +15,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The transfer suites that test the HTTP surface of the files transfer and the
@@ -56,7 +56,7 @@ func newWebEnv(t *testing.T) *webEnv {
 	t.Helper()
 	// The break-glass account keeps its reserved name; the administrator of the
 	// scenario is a user named admin with the admin role.
-	s := testenv.NewStack(t, testenv.StackOptions{Name: "files", Env: []string{"TROVE_AUTH_BREAK_GLASS_USERNAME=bg-admin"}})
+	s := testenv.NewStack(t, testenv.StackOptions{Name: "files", Env: []string{"QUADER_AUTH_BREAK_GLASS_USERNAME=bg-admin"}})
 	e := &webEnv{t: t, stack: s, tokens: map[string]string{}}
 	return e
 }
@@ -157,9 +157,9 @@ func (e *webEnv) newReplica(name string, o webOpts) *webReplica {
 		role = "all"
 	}
 	env := append([]string{
-		"TROVE_CLUSTER_EPOCH_POLL_INTERVAL=200ms", "TROVE_JOBS_POLL_INTERVAL=200ms",
-		"TROVE_STORAGE_DELETE_BATCH_SIZE=2", "TROVE_STORAGE_DELETE_MAX_SYNC_ITEMS=10000",
-		"TROVE_AUDIT_RECORD_DOWNLOADS=true",
+		"QUADER_CLUSTER_EPOCH_POLL_INTERVAL=200ms", "QUADER_JOBS_POLL_INTERVAL=200ms",
+		"QUADER_STORAGE_DELETE_BATCH_SIZE=2", "QUADER_STORAGE_DELETE_MAX_SYNC_ITEMS=10000",
+		"QUADER_AUDIT_RECORD_DOWNLOADS=true",
 	}, o.env...)
 	h := e.stack.Start(t, testenv.ReplicaOptions{Name: name, Role: role, Env: env})
 	r := &webReplica{t: t, e: e, name: name, h: h, baseURL: "http://" + h.Addr("default"), policy: h.App.AuthzService()}

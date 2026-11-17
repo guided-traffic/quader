@@ -13,11 +13,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // valkeyConfig is a replica's Valkey configuration against the stack with the
@@ -106,7 +106,7 @@ func TestValkeyTLS(t *testing.T) {
 		tlstest.WriteFile(t, caFile, stack)
 		pingWithin(t, raw, true, 15*time.Second)
 		if n := seriesValue(t, reg, tlsfiles.FamilyReloads, caFile); n < 2 {
-			t.Errorf("trove_tls_reloads_total{kind=valkey} = %v, want at least 2", n)
+			t.Errorf("quader_tls_reloads_total{kind=valkey} = %v, want at least 2", n)
 		}
 	})
 

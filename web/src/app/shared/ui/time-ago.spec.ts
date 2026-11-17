@@ -22,7 +22,7 @@ describe('Time ago', () => {
   });
 
   it('R-UI-093 Q-UI-378 shows the relative time and the absolute time in brackets, with the machine-readable time', async () => {
-    @Component({ imports: [TimeAgo], template: `<p><trove-time-ago [at]="at()" [now]="now" /></p>` })
+    @Component({ imports: [TimeAgo], template: `<p><quader-time-ago [at]="at()" [now]="now" /></p>` })
     class Host {
       readonly at = signal(before(3 * 60_000));
       readonly now = NOW;

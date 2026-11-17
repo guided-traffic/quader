@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // R-CI-016, Q-CI-47: a mapping's maxTtlSeconds bounds its own contribution, never the token beside another tier: the

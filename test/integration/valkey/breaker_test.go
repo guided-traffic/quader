@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestBreaker(t *testing.T) {
@@ -37,10 +37,10 @@ func TestBreaker(t *testing.T) {
 		if c.Available() || !c.Status().CircuitOpen {
 			t.Fatalf("status after 5 timeouts = %+v", c.Status())
 		}
-		if got := metric(t, c.Reg, "trove_valkey_circuit_open", ""); got != 1 {
-			t.Fatalf("trove_valkey_circuit_open = %v", got)
+		if got := metric(t, c.Reg, "quader_valkey_circuit_open", ""); got != 1 {
+			t.Fatalf("quader_valkey_circuit_open = %v", got)
 		}
-		if got := metric(t, c.Reg, "trove_valkey_errors_total", "timeout"); got < 5 {
+		if got := metric(t, c.Reg, "quader_valkey_errors_total", "timeout"); got < 5 {
 			t.Fatalf("errors_total{timeout} = %v", got)
 		}
 		start := time.Now()
@@ -50,8 +50,8 @@ func TestBreaker(t *testing.T) {
 
 		// the pause ends; open_duration (2 s) and the next probe close the circuit
 		eventually(t, "recovery", 15*time.Second, c.Available)
-		if got := metric(t, c.Reg, "trove_valkey_circuit_open", ""); got != 0 {
-			t.Fatalf("trove_valkey_circuit_open = %v after recovery", got)
+		if got := metric(t, c.Reg, "quader_valkey_circuit_open", ""); got != 0 {
+			t.Fatalf("quader_valkey_circuit_open = %v after recovery", got)
 		}
 		if err := c.Set(ctx, k, "back"); err != nil {
 			t.Fatalf("Set after recovery: %v", err)

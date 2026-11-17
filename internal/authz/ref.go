@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/principal"
 )
 
 // AnonymousID is the identifier of the built-in principal anonymous, the actor of a request without a credential; the

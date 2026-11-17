@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // CI tokens in the evaluator (R-AUTHZ-014, R-CI-012, R-CI-013, R-CI-015), the seam of Q-CI-17, built by work
@@ -73,7 +73,7 @@ type ciContribution struct {
 	name, pid string
 	// groups are the IDs of the listed groups that a policy entry names, groupNames their names.
 	groups, groupNames []string
-	// project is the trove project ID of a project tier, "" for the system tier. The inline grants of
+	// project is the quader project ID of a project tier, "" for the system tier. The inline grants of
 	// every contribution are read in the instance context: Freeze wrote a project tier's bare keys as
 	// instance selectors (Q-CI-67), and inlineFor bounds such a tier to its project (R-AUTHZ-026).
 	project string

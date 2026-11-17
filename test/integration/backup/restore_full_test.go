@@ -11,9 +11,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func (d *destination) restore(opts backup.RestoreOptions) (*backup.RestoreReport, error) {
@@ -36,7 +36,7 @@ func fingerprint(s *testenv.Stack, tables []string) string {
 	fmt.Fprintf(&b, "itemsHash=%s;", s.Text("SELECT coalesce(md5(string_agg(id::text || path || coalesce(encode(blob_sha256, 'hex'), '') || coalesce(version_id::text, ''), ',' ORDER BY id)), '') FROM items"))
 	fmt.Fprintf(&b, "blobsHash=%s;", s.Text("SELECT coalesce(md5(string_agg(encode(sha256, 'hex') || size::text || state || content_status, ',' ORDER BY sha256)), '') FROM blobs"))
 	fmt.Fprintf(&b, "pvHash=%s;", s.Text("SELECT coalesce(md5(string_agg(id::text || coalesce(lead_item_id::text, 'null'), ',' ORDER BY id)), '') FROM package_versions"))
-	fmt.Fprintf(&b, "seqHash=%s;", s.Text("SELECT string_agg(sequencename || ':' || coalesce(last_value::text, 'null'), ',' ORDER BY sequencename) FROM pg_sequences WHERE schemaname = 'trove'"))
+	fmt.Fprintf(&b, "seqHash=%s;", s.Text("SELECT string_agg(sequencename || ':' || coalesce(last_value::text, 'null'), ',' ORDER BY sequencename) FROM pg_sequences WHERE schemaname = 'quader'"))
 	return b.String()
 }
 
@@ -119,7 +119,7 @@ func TestR_BAK_021_RestoreEndToEnd(t *testing.T) {
 	})
 
 	t.Run("R-BAK-021 the anchor and the marker are gone, restored_at is set, the audit event is written", func(t *testing.T) {
-		if c := s.Text("SELECT coalesce(obj_description('trove'::regnamespace, 'pg_namespace'), '')"); c != "" {
+		if c := s.Text("SELECT coalesce(obj_description('quader'::regnamespace, 'pg_namespace'), '')"); c != "" {
 			t.Errorf("schema comment = %q", c)
 		}
 		if n := s.Number("SELECT count(*) FROM system_state WHERE key = 'restore_in_progress'"); n != 0 {
@@ -132,7 +132,7 @@ func TestR_BAK_021_RestoreEndToEnd(t *testing.T) {
 		if got := s.Text("SELECT details->>'journal' || '/' || (details->>'source') || '/' || (details->>'backupId') FROM audit_event WHERE action = 'system.restored'"); got != "skipped/backup/"+string(src.id) {
 			t.Errorf("system.restored = %q", got)
 		}
-		if n := s.Number("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'trove' AND c.relname = 'audit_event_202503'"); n != 1 {
+		if n := s.Number("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'quader' AND c.relname = 'audit_event_202503'"); n != 1 {
 			t.Error("the partition of the old audit event does not exist")
 		}
 		if n := s.Number("SELECT count(*) FROM audit_event WHERE action = 'x.old'"); n != 1 {
@@ -203,7 +203,7 @@ func TestR_BAK_021_RestoreEndToEnd(t *testing.T) {
 	})
 
 	t.Run("R-BAK-021 the user triggers are enabled again and the sequences continue", func(t *testing.T) {
-		if n := s.Number("SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'trove' AND NOT t.tgisinternal AND t.tgenabled = 'D'"); n != 0 {
+		if n := s.Number("SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'quader' AND NOT t.tgisinternal AND t.tgenabled = 'D'"); n != 0 {
 			t.Errorf("%d triggers stay disabled", n)
 		}
 		before := s.Number("SELECT max(id) FROM items")

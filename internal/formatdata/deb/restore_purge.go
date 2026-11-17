@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // EraseFunc empties one remote repository's cached items through the storage delete path (R-STOR-018, the trash can bypassed). It is

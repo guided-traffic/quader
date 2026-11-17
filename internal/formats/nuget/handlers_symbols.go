@@ -5,14 +5,14 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/id"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nupkg"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nuspec"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/symbols"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/id"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nupkg"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nuspec"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/symbols"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // incomingSymbols is a symbol package that passed the archive, .nuspec and symbol rules of

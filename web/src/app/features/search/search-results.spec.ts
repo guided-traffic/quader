@@ -49,7 +49,7 @@ describe('The results page of the search (R-UI-098)', () => {
     const heads = [...r.root.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', ''));
     expect(heads.map((h) => h.split(' ')[0])).toEqual(['Repository', 'Project', 'Format', 'Class', 'Actions']);
     expect(addressValues(r.root)).toEqual([]);
-    const copy = first.querySelector<HTMLButtonElement>('td.actions trove-copy-button button')!;
+    const copy = first.querySelector<HTMLButtonElement>('td.actions quader-copy-button button')!;
     expect(copy.getAttribute('aria-label')).toMatch(/^Copy client address https?:\/\//);
   });
 

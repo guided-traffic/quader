@@ -12,7 +12,7 @@ import { PackageReadmeView } from '../packages/package-readme';
  * the format's and English (Q-UI-86), so the sections carry `lang="en"`; the frame is translated.
  */
 @Component({
-  selector: 'trove-guide-view',
+  selector: 'quader-guide-view',
   imports: [CopyButton, PackageReadmeView],
   template: `
     <nav class="toc" [attr.aria-labelledby]="prefix() + '-toc'">
@@ -29,7 +29,7 @@ import { PackageReadmeView } from '../packages/package-readme';
       <section class="guide-section" [attr.aria-labelledby]="anchor(s)" [attr.data-section]="s.id">
         <h2 [id]="anchor(s)" tabindex="-1" lang="en">{{ s.title }}</h2>
         @if (s.html) {
-          <trove-package-readme lang="en" [readme]="readmeOf(s)" />
+          <quader-package-readme lang="en" [readme]="readmeOf(s)" />
         }
         @for (sn of s.snippets; track sn.id) {
           <div class="snippet" [attr.data-snippet]="sn.id">
@@ -40,7 +40,7 @@ import { PackageReadmeView } from '../packages/package-readme';
             }
             <div class="command">
               <pre class="code-block" translate="no" tabindex="0">{{ sn.content }}</pre>
-              <trove-copy-button [value]="sn.content" [label]="copyLabel" />
+              <quader-copy-button [value]="sn.content" [label]="copyLabel" />
             </div>
           </div>
         }

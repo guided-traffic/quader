@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // The rules of the Ansible Galaxy format's member of a document that the document alone decides (R-ANS-019, Q-ANS-51): `ansible.authUrl`

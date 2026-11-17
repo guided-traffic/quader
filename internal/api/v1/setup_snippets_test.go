@@ -4,12 +4,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 func testData() formats.SetupData {
 	return formats.SetupData{
-		RegistryURL: "https://trove.example.com/api/npm/npm-all/", Repository: "npm-all", Endpoint: "default",
+		RegistryURL: "https://quader.example.com/api/npm/npm-all/", Repository: "npm-all", Endpoint: "default",
 		RequiresAuth: true,
 	}
 }
@@ -41,10 +41,10 @@ func TestR_API_030_CredentialModes(t *testing.T) {
 		mode string
 		want string
 	}{
-		{credPlaceholder, "registry=https://trove.example.com/api/npm/npm-all/\n//trove.example.com/api/npm/npm-all/:token={{token}}\nalways=true\n"},
-		{credEnv, "registry=https://trove.example.com/api/npm/npm-all/\n//trove.example.com/api/npm/npm-all/:token=${MY_TOKEN}\nalways=true\n"},
+		{credPlaceholder, "registry=https://quader.example.com/api/npm/npm-all/\n//quader.example.com/api/npm/npm-all/:token={{token}}\nalways=true\n"},
+		{credEnv, "registry=https://quader.example.com/api/npm/npm-all/\n//quader.example.com/api/npm/npm-all/:token=${MY_TOKEN}\nalways=true\n"},
 		// Without a credential there is nothing for an always-auth switch to send.
-		{credNone, "registry=https://trove.example.com/api/npm/npm-all/\n"},
+		{credNone, "registry=https://quader.example.com/api/npm/npm-all/\n"},
 	} {
 		in.Credentials = tc.mode
 		ss, err := renderSnippets(in)
@@ -176,12 +176,12 @@ func TestR_API_030_ATemplateCannotReachForACredential(t *testing.T) {
 }
 
 func TestR_API_030_TokenShape(t *testing.T) {
-	for _, s := range []string{"trv_pat_abc", "x trv_sat_y", "trv_cit_"} {
+	for _, s := range []string{"qdr_pat_abc", "x qdr_sat_y", "qdr_cit_"} {
 		if !holdsTokenShape(s) {
 			t.Errorf("%q is not recognized", s)
 		}
 	}
-	for _, s := range []string{"{{token}}", "${TROVE_TOKEN}", "trv_xyz_abc", "trove_pat_x", ""} {
+	for _, s := range []string{"{{token}}", "${QUADER_TOKEN}", "qdr_xyz_abc", "quader_pat_x", ""} {
 		if holdsTokenShape(s) {
 			t.Errorf("%q is taken for a token", s)
 		}

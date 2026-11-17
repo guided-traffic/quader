@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 )
 
 // Store is the data port of the OCI format (Q-ARCH-193, D-1): everything the format needs of its own tables

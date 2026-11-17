@@ -14,15 +14,15 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/journal/replay"
-	"github.com/guided-traffic/trove/internal/journal/ship"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/journal/replay"
+	"github.com/guided-traffic/quader/internal/journal/ship"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The twin databases of the replay tests of the exposure and CI entries (R-EP-020, R-CI-020): a migrated database at
@@ -30,10 +30,10 @@ import (
 // brings back. A test changes the source after t through the services the API uses, so the audit writer fills
 // revocation_outbox with the producers' real entries; the shipper of the journal writes them to an object store, and the
 // replayer of the journal reads them from there and applies them to the copy, one transaction per entry, as
-// `trove backup restore` and `trove admin post-restore` do (R-HA-054, R-BAK-024).
+// `quader backup restore` and `quader admin post-restore` do (R-HA-054, R-BAK-024).
 
 // twinPrefix is the blob prefix of the journal the tests ship to.
-const twinPrefix = "trove"
+const twinPrefix = "quader"
 
 // twin is the pair of databases.
 type twin struct {
@@ -54,7 +54,7 @@ func newTwin(t *testing.T) *twin {
 	if err != nil {
 		t.Fatalf("connect to PostgreSQL: %v", err)
 	}
-	tw := &twin{t: t, maint: maint, src: "trove_jr_" + testenv.RandHex(5)}
+	tw := &twin{t: t, maint: maint, src: "quader_jr_" + testenv.RandHex(5)}
 	tw.restored = tw.src + "_t"
 	t.Cleanup(func() {
 		for _, db := range []string{tw.restored, tw.src} {
@@ -66,14 +66,14 @@ func newTwin(t *testing.T) *twin {
 		t.Fatalf("create database: %v", err)
 	}
 	dir := t.TempDir()
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	tw.base = config.Database{
-		Host: testenv.Get(t, "TROVE_TEST_PG_HOST"), Port: port, Name: tw.src, Schema: "trove",
-		UsernameFile: testenv.WriteFile(t, dir, "db-user", testenv.Get(t, "TROVE_TEST_PG_USER")+"\n"),
-		PasswordFile: testenv.WriteFile(t, dir, "db-pass", testenv.Get(t, "TROVE_TEST_PG_PASSWORD")+"\n"),
+		Host: testenv.Get(t, "QUADER_TEST_PG_HOST"), Port: port, Name: tw.src, Schema: "quader",
+		UsernameFile: testenv.WriteFile(t, dir, "db-user", testenv.Get(t, "QUADER_TEST_PG_USER")+"\n"),
+		PasswordFile: testenv.WriteFile(t, dir, "db-pass", testenv.Get(t, "QUADER_TEST_PG_PASSWORD")+"\n"),
 		SSLMode:      "verify-full", SSLRootCertFile: testenv.CAFile(t), ConnectTimeout: 5 * time.Second, TargetSessionAttrs: "read-write",
 		Pooler:        config.DatabasePooler{Mode: "none"},
 		Pool:          config.DatabasePool{MaxConns: 4, MinConns: 1, MaxConnLifetime: 30 * time.Minute, MaxConnLifetimeJitter: time.Minute, MaxConnIdleTime: 5 * time.Minute, HealthCheckPeriod: 30 * time.Second},
@@ -122,7 +122,7 @@ func (tw *twin) open(name string) *twinSide {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := admin.Exec(ctx, "SET search_path TO trove"); err != nil {
+	if _, err := admin.Exec(ctx, "SET search_path TO quader"); err != nil {
 		t.Fatal(err)
 	}
 	changes, err := cluster.NewChanges(cluster.ChangesOptions{

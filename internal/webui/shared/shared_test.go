@@ -8,8 +8,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/webui"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/webui"
 )
 
 // The store's statements run against PostgreSQL and the object store in test/integration/uiassets; these are the parts that

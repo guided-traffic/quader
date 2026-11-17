@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/dispatch"
-	"github.com/guided-traffic/trove/internal/api/registry"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/dispatch"
+	"github.com/guided-traffic/quader/internal/api/registry"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // R-OCI-005, unit level: the end-to-end proof is in test/integration/registry.
@@ -74,7 +74,7 @@ func TestAFailedBindingLookupIsNotAMissingScope(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := httptest.NewRequestWithContext(context.Background(), "GET", "/v2/library/alpine/manifests/3", nil)
-	ctx := httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://trove.test", RootRepository: hub})
+	ctx := httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://quader.test", RootRepository: hub})
 	ctx = httpserver.WithPrincipal(ctx, httpserver.Principal{Kind: httpserver.KindUser, Credential: httpserver.Credential{Registry: &httpserver.RegistryGrant{}}})
 	if ee, ok := errs.As(e.Check(r.WithContext(ctx))); !ok || ee.Kind != errs.Unavailable {
 		t.Fatalf("%v", ee)

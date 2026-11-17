@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The query side of cursor pagination, filtering and sorting (R-API-010,

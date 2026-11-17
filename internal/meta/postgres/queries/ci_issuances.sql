@@ -171,7 +171,7 @@ SELECT s.token_id::text AS token_id, i.name AS issuer, s.issuer_id::text AS issu
  LIMIT sqlc.arg(max_rows)::int;
 
 -- name: CiProjectIDByKey :many
--- The ID of a trove project by its key, for the project's issuance list.
+-- The ID of a quader project by its key, for the project's issuance list.
 SELECT id::text AS id FROM project WHERE key = sqlc.arg(key)::text;
 
 -- name: CiIssuanceUsage :one
@@ -195,7 +195,7 @@ SELECT DISTINCT COALESCE(repository, '')::text AS repository, COALESCE(details->
  LIMIT 1000;
 
 -- name: CiTokensActive :many
--- trove_ci_tokens_active (R-CI-020): unexpired, unrevoked CI tokens per issuer, 0 for an issuer without one, read
+-- quader_ci_tokens_active (R-CI-020): unexpired, unrevoked CI tokens per issuer, 0 for an issuer without one, read
 -- by the database gauge source (R-OPS-007).
 SELECT i.name, count(t.id)::bigint AS active
   FROM ci_issuers i

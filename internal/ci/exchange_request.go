@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // Step 1 of R-CI-007: the parameters of the request, before anything of the subject token is read. The

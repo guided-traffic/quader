@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // entrySpec is one entry of an in-memory archive: its body and whether it is deflated.

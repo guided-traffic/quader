@@ -14,11 +14,11 @@ func TestR_VULN_012_AReopenThatSetsABlockIsJournaled(t *testing.T) {
 	e := newEnv(t)
 	e.setComplete("npm", true)
 	e.addAdvisory("npm", "MAL-2026-0042", "", "malicious", "high")
-	e.addAffected("npm", "MAL-2026-0042", 0, "trove-test-mal", everyVersionRange, nil, true, nil)
+	e.addAffected("npm", "MAL-2026-0042", 0, "quader-test-mal", everyVersionRange, nil, true, nil)
 	e.addAdvisory("npm", "GHSA-aaaa-aaaa-0042", "", "vulnerability", "medium")
-	e.addAffected("npm", "GHSA-aaaa-aaaa-0042", 0, "trove-test-plain", everyVersionRange, nil, true, nil)
-	e.publish("npm-vendor", "trove-test-mal", "1.0.0")
-	e.publish("npm-vendor", "trove-test-plain", "1.0.0")
+	e.addAffected("npm", "GHSA-aaaa-aaaa-0042", 0, "quader-test-plain", everyVersionRange, nil, true, nil)
+	e.publish("npm-vendor", "quader-test-mal", "1.0.0")
+	e.publish("npm-vendor", "quader-test-plain", "1.0.0")
 	e.st.Exec(`UPDATE vuln_finding SET status = 'dismissed', dismissal_reason = 'false_positive'`)
 	before := e.st.Number(`SELECT count(*) FROM revocation_outbox WHERE event = 'vulnerability.finding.reopened'`)
 
@@ -26,7 +26,7 @@ func TestR_VULN_012_AReopenThatSetsABlockIsJournaled(t *testing.T) {
 	e.queue("npm", "MAL-2026-0042", "GHSA-aaaa-aaaa-0042")
 	e.evaluate()
 
-	for _, name := range []string{"trove-test-mal", "trove-test-plain"} {
+	for _, name := range []string{"quader-test-mal", "quader-test-plain"} {
 		if got := e.status("npm-vendor", name, "1.0.0"); got != "needs_triage" {
 			t.Fatalf("%s is %q after the material change, want needs_triage (reopened)", name, got)
 		}
@@ -42,8 +42,8 @@ func TestR_VULN_012_AReopenThatSetsABlockIsJournaled(t *testing.T) {
 	if err := json.Unmarshal([]byte(raw), &entry); err != nil {
 		t.Fatal(err)
 	}
-	id := e.st.Text(`SELECT id::text FROM vuln_finding WHERE package_name = 'trove-test-mal'`)
-	if entry["finding"] != id || entry["block"] != "set" || entry["package"] != "trove-test-mal" || entry["version"] != "1.0.0" || entry["ecosystem"] != "npm" {
+	id := e.st.Text(`SELECT id::text FROM vuln_finding WHERE package_name = 'quader-test-mal'`)
+	if entry["finding"] != id || entry["block"] != "set" || entry["package"] != "quader-test-mal" || entry["version"] != "1.0.0" || entry["ecosystem"] != "npm" {
 		t.Errorf("entry = %s", raw)
 	}
 }

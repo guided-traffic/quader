@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // pollOnce is one change-log poll (R-ARCH-018 step 3): one query for the epoch

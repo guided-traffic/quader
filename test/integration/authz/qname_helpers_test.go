@@ -1,6 +1,6 @@
 package authz
 
-import "github.com/guided-traffic/trove/internal/qname"
+import "github.com/guided-traffic/quader/internal/qname"
 
 // qr is the name of a repository: "<project>/<key>", or a bare key of the project "it" the tests use; "" is the
 // zero name (no repository).

@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The state of the multi-request upload sessions (R-STOR-011, Q-OCI-12): one row per session and one per completed part, so
 -- that any replica continues a blob that was sent over several requests (INV-18). Both tables are transient (R-STOR-047):

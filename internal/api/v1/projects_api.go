@@ -6,18 +6,18 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/project"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/project"
 )
 
 // The project operations (R-AUTHZ-026, R-API-047). The handlers are thin: the rules
 // (delete order, members and roles, move, the audit event, the change-log note, the
 // epoch) are in internal/project, the conventions (paging, ETag, idempotency, the
-// header Trove-Authz-Epoch) in this package.
+// header Quader-Authz-Epoch) in this package.
 //
 // What each handler adds to its declaration (api/openapi.yaml, docs/developer/projects.md):
 //
@@ -27,7 +27,7 @@ import (
 //   - the member operations are the project service's (last Owner, group and user only, the audit event);
 //     the handler maps the body and the status (201 added, 200 role set).
 //   - the writes: the declaration is the capability or an Owner of the project. They answer
-//     Trove-Authz-Epoch; createProject is idempotent, replaceProject takes If-Match.
+//     Quader-Authz-Epoch; createProject is idempotent, replaceProject takes If-Match.
 
 // projects returns the project service, or the 503 of a replica without it.
 func (s *Server) projects() (project.Service, error) {

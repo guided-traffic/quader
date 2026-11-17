@@ -1,8 +1,8 @@
 package postgres
 
 import (
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // Registrations of the tables of 00026_ci_oidc (R-CI-001, R-BAK-004), so that the migration test

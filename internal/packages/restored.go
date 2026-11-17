@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // RestoredAt returns the time of the last restore (system_state key restored_at,

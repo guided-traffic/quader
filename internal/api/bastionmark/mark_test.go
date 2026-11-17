@@ -15,21 +15,21 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/api/dispatch"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/formats/npm"
-	"github.com/guided-traffic/trove/internal/formats/nuget"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/dispatch"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/npm"
+	"github.com/guided-traffic/quader/internal/formats/nuget"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
-const mainURL = "https://trove.example.com"
+const mainURL = "https://quader.example.com"
 
 // mk is a format with one route of every kind the marking tells apart and its own error shape.
 type mk struct {
@@ -448,7 +448,7 @@ func TestR_BAS_013_SubjectHeader(t *testing.T) {
 }
 
 // TestR_BAS_013_HeadersOnlyOnBastionRequests: no response to a request without a valid Bastion token carries a
-// Trove-Bastion- header, over the route table of the formats.
+// Quader-Bastion- header, over the route table of the formats.
 func TestR_BAS_013_HeadersOnlyOnBastionRequests(t *testing.T) {
 	fs := []formats.Format{npm.New(), nuget.New()}
 	cases := 0
@@ -463,7 +463,7 @@ func TestR_BAS_013_HeadersOnlyOnBastionRequests(t *testing.T) {
 				for _, ex := range rt.Examples {
 					// Every request carries the headers a Bastion would send and a token that no stage recognized.
 					rec := r.doBody(rt.Method, "/api/"+id+"/web/"+key+"/"+ex, strings.NewReader(""),
-						iface.HeaderAuthorization, "Bearer trv_bst_nothing", iface.HeaderInterface, strconv.Itoa(iface.InterfaceVersion), iface.HeaderProbe, "1", hCred, "token")
+						iface.HeaderAuthorization, "Bearer qdr_bst_nothing", iface.HeaderInterface, strconv.Itoa(iface.InterfaceVersion), iface.HeaderProbe, "1", hCred, "token")
 					if got := hasMarking(rec.Header()); len(got) > 0 {
 						t.Fatalf("%s %s %s (decision %d): %d carries %v", rt.Method, id, ex, outcome, rec.Code, got)
 					}
@@ -480,7 +480,7 @@ func TestR_BAS_013_HeadersOnlyOnBastionRequests(t *testing.T) {
 		r.respond = func(w http.ResponseWriter) {
 			w.Header().Set(iface.HeaderClass, "artifact")
 			w.Header().Set(iface.HeaderRead, "full")
-			w.Header().Set("trove-bastion-subject", "anonymous")
+			w.Header().Set("quader-bastion-subject", "anonymous")
 		}
 		rec := r.do("GET", "/api/mk/web/mk-local/d/left-pad", hCred, "token")
 		if got := hasMarking(rec.Header()); len(got) > 0 || rec.Code != 200 {
@@ -517,7 +517,7 @@ func TestR_BAS_013_InterfaceRoutes(t *testing.T) {
 	}
 }
 
-// TestR_BAS_013_ForwardedRequestsAreCountedByClass: trove_bastion_forwarded_requests_total.
+// TestR_BAS_013_ForwardedRequestsAreCountedByClass: quader_bastion_forwarded_requests_total.
 func TestR_BAS_013_ForwardedRequestsAreCountedByClass(t *testing.T) {
 	r := newRig(t)
 	r.do("GET", "/api/mk/web/mk-local/f/x.bin", hRecognize, "forward", hCred, "token")

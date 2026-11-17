@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // TraceEntry is one mapping in the decision trace of an evaluation (R-CI-019): the first failed leaf

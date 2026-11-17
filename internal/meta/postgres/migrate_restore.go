@@ -10,12 +10,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// RestoreSession is the one connection of `trove backup restore` (R-BAK-021): it takes the migration lock exclusively
+// RestoreSession is the one connection of `quader backup restore` (R-BAK-021): it takes the migration lock exclusively
 // (R-ARCH-017) and holds it until Close, and everything the restore does to the database runs on it: the checks, the
 // runner's restore mode (R-BAK-023, R-ARCH-026), the load transaction, the fix-ups and the finishing transaction. Closing
 // the connection releases the lock, which is also what a killed process leaves behind.
@@ -123,10 +123,10 @@ type RestoreMigration struct {
 }
 
 // MigrateTo applies the embedded steps up to the step of the backup, or all of them, on the session connection, which
-// already holds the migration lock. It uses the checksums, the lock timeouts and the retries of `trove migrate up`, and
+// already holds the migration lock. It uses the checksums, the lock timeouts and the retries of `quader migrate up`, and
 // skips what that command does around the steps: the half-restored refusal (the restore set the anchor), the contract
 // guard (no replica runs during a restore), the audit policy, the backup role and the declared state (the migration Job of
-// the final upgrade applies those). It is not reachable from the command line of `trove migrate`.
+// the final upgrade applies those). It is not reachable from the command line of `quader migrate`.
 func (s *RestoreSession) MigrateTo(ctx context.Context, m RestoreMigration) (Result, error) {
 	var res Result
 	steps, err := ParseSteps(s.opts.Steps)
@@ -189,7 +189,7 @@ func (s *RestoreSession) MigrateTo(ctx context.Context, m RestoreMigration) (Res
 // ErrMarkerMissing is a phase change that found no restore_in_progress row to change.
 var ErrMarkerMissing = errors.New("system_state has no restore_in_progress marker in the expected phase")
 
-// PendingSteps lists the embedded steps that are not applied, for the check of R-BAK-021 step 8 (`trove migrate status`
+// PendingSteps lists the embedded steps that are not applied, for the check of R-BAK-021 step 8 (`quader migrate status`
 // shows no pending step).
 func (s *RestoreSession) PendingSteps(ctx context.Context) ([]StepInfo, error) {
 	rep, err := Report(ctx, s.conn, s.opts)

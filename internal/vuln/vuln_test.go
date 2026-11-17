@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 func TestStatusSets(t *testing.T) {
@@ -282,7 +282,7 @@ func TestJobsAndTasks(t *testing.T) {
 func TestR_VULN_025_TheConfigurationHoldsTheTaskDefaults(t *testing.T) {
 	l, err := config.Load(config.Options{
 		File: "/c.yaml", ReadFile: func(string) ([]byte, error) { return []byte(""), nil },
-		Environ: []string{"TROVE_DATABASE_HOST=db.example", "TROVE_DATABASE_NAME=trove"}, Command: config.CommandMigrate,
+		Environ: []string{"QUADER_DATABASE_HOST=db.example", "QUADER_DATABASE_NAME=quader"}, Command: config.CommandMigrate,
 	})
 	if err != nil {
 		t.Fatal(err)

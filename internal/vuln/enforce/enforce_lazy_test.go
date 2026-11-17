@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // countingStates counts the reads of the data state.
@@ -48,7 +48,7 @@ func TestR_VULN_015_TheDataStateIsReadOnlyWhenItDecides(t *testing.T) {
 func TestR_VULN_016_TheMissRefusalNamesTheAddressedRepository(t *testing.T) {
 	f := newFixture(t, states{"npm": {Complete: true}}, vuln.EnforceBlocks)
 	f.ev.block = vuln.Block{Reason: vuln.BlockMalicious, AdvisoryID: "MAL-2026-1234"}
-	m := Miss{Addressed: "npm-all", Package: "trove-test-mal", Version: "1.0.0", Path: "p"}
+	m := Miss{Addressed: "npm-all", Package: "quader-test-mal", Version: "1.0.0", Path: "p"}
 	m.Repo.Name = qr("npm-member-remote")
 	err := f.e.gate(context.Background(), scanned, m)
 	e, ok := errs.As(err)

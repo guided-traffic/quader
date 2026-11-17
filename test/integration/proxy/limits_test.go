@@ -14,11 +14,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestSizeLimit is R-REPO-040: an item above the effective limit is refused, stored
@@ -195,7 +195,7 @@ func TestFetchSlots(t *testing.T) {
 		if s.status != 503 || s.header.Get("Retry-After") != "5" || !strings.Contains(string(s.body), "fetch_queue_timeout") {
 			t.Fatalf("%d %v %s", s.status, s.header, s.body)
 		}
-		if a.metric("trove_remote_fetch_queue_wait_seconds", "repo", "slots-queue") < 1 {
+		if a.metric("quader_remote_fetch_queue_wait_seconds", "repo", "slots-queue") < 1 {
 			t.Fatal("the queue wait was not observed")
 		}
 	})
@@ -224,8 +224,8 @@ func TestIntegrity(t *testing.T) {
 		if n := e.number("SELECT count(*) FROM items WHERE kind = 'file'") + e.number("SELECT count(*) FROM remote_cache_entries"); n != 0 {
 			t.Fatalf("a refused artifact left %d rows", n)
 		}
-		if got := r.metric("trove_remote_integrity_failures_total", "repo", "integrity", "reason", "mismatch"); got != 1 {
-			t.Fatalf("trove_remote_integrity_failures_total{mismatch} = %v", got)
+		if got := r.metric("quader_remote_integrity_failures_total", "repo", "integrity", "reason", "mismatch"); got != 1 {
+			t.Fatalf("quader_remote_integrity_failures_total{mismatch} = %v", got)
 		}
 		if n := len(r.rec.ofType(audit.EventProxyIntegrityMismatch)); n != 1 {
 			t.Fatalf("proxy.integrity_mismatch events = %d", n)
@@ -295,7 +295,7 @@ func TestIntegrity(t *testing.T) {
 		if err != nil || !bytes.Equal(append(first, rest...), body) {
 			t.Fatalf("%v, %d bytes", err, len(rest)+len(first))
 		}
-		if resp.Header.Get("Cache-Status") != "trove; fwd=uri-miss; fwd-status=200; stored" {
+		if resp.Header.Get("Cache-Status") != "quader; fwd=uri-miss; fwd-status=200; stored" {
 			t.Fatalf("Cache-Status = %q", resp.Header.Get("Cache-Status"))
 		}
 		if n := e.number("SELECT count(*) FROM remote_cache_entries WHERE kind = 'artifact'"); n != 1 {
@@ -359,7 +359,7 @@ func TestIntegrity(t *testing.T) {
 		if n := len(r.rec.ofType(audit.EventProxyUpstreamDigestChanged)); n != 1 {
 			t.Fatalf("proxy.upstream_digest_changed events = %d", n)
 		}
-		if got := r.metric("trove_remote_integrity_failures_total", "repo", "integrity-changed", "reason", "digest_changed"); got != 1 {
+		if got := r.metric("quader_remote_integrity_failures_total", "repo", "integrity-changed", "reason", "digest_changed"); got != 1 {
 			t.Fatalf("digest_changed = %v", got)
 		}
 		_ = r.artifact(rem, "pkg/c/-/c-1.tgz", func(rq *proxy.Request) { rq.Expected = proxy.Digests{SHA512: wrong} })

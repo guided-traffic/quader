@@ -1,16 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://trove.guided-traffic.dev/schemas/backup-manifest-1.json",
-  "title": "trove backup manifest, format 1 (R-BAK-003)",
+  "$id": "https://quader.guided-traffic.dev/schemas/backup-manifest-1.json",
+  "title": "quader backup manifest, format 1 (R-BAK-003)",
   "type": "object",
-  "required": ["format", "backupId", "installationId", "incarnation", "trove", "schema", "postgres", "startedAt", "snapshotAt",
+  "required": ["format", "backupId", "installationId", "incarnation", "quader", "schema", "postgres", "startedAt", "snapshotAt",
     "completedAt", "previousBackupId", "options", "source", "tables", "sequences", "blobs", "secrets", "encryption"],
   "properties": {
     "format": {"type": "integer", "minimum": 1},
     "backupId": {"type": "string", "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{4}$"},
     "installationId": {"type": "string", "minLength": 1},
     "incarnation": {"type": "string", "minLength": 1},
-    "trove": {
+    "quader": {
       "type": "object",
       "required": ["version", "revision"],
       "properties": {"version": {"type": "string"}, "revision": {"type": "string"}}

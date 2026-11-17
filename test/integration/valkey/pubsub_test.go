@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // inbox collects the messages of a subscription.
@@ -75,8 +75,8 @@ func TestPubSub(t *testing.T) {
 		}
 		defer stop()
 		eventually(t, "the subscription", 10*time.Second, func() bool { return sub.Status().Subscribed })
-		if got := metric(t, sub.Reg, "trove_valkey_pubsub_subscribed", ""); got != 1 {
-			t.Fatalf("trove_valkey_pubsub_subscribed = %v", got)
+		if got := metric(t, sub.Reg, "quader_valkey_pubsub_subscribed", ""); got != 1 {
+			t.Fatalf("quader_valkey_pubsub_subscribed = %v", got)
 		}
 		if err := pub.Publish(ctx, ch, "m1"); err != nil {
 			t.Fatal(err)
@@ -84,7 +84,7 @@ func TestPubSub(t *testing.T) {
 		eventually(t, "delivery", 5*time.Second, func() bool { return in.has("m1") })
 	})
 
-	t.Run("R-ARCH-031 the Pub/Sub connection is named trove:<instance>:pubsub and subscribes on the primary", func(t *testing.T) {
+	t.Run("R-ARCH-031 the Pub/Sub connection is named quader:<instance>:pubsub and subscribes on the primary", func(t *testing.T) {
 		c := newClientIn(t, stackConfig(t, 2*time.Second), ks)
 		waitAvailable(t, c)
 		ch, _ := c.Channel(chanFamily, "named")
@@ -97,12 +97,12 @@ func TestPubSub(t *testing.T) {
 		admin := adminAt(t, v, c.Status().Primary)
 		var found bool
 		for _, m := range named(clientList(ctx, t, admin), c.Instance) {
-			if m["name"] == "trove:"+c.Instance+":pubsub" && m["sub"] != "0" {
+			if m["name"] == "quader:"+c.Instance+":pubsub" && m["sub"] != "0" {
 				found = true
 			}
 		}
 		if !found {
-			t.Fatal("no subscribed connection named trove:" + c.Instance + ":pubsub on the primary")
+			t.Fatal("no subscribed connection named quader:" + c.Instance + ":pubsub on the primary")
 		}
 	})
 

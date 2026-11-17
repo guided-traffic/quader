@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const abbreviatedAccept = "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*"
@@ -358,7 +358,7 @@ func TestR_NPM_012_TimesComeFromThePostgreSQLClock(t *testing.T) {
 // targets); the rendering itself is benchmarked in document.
 //
 // The three wall-clock targets (200 ms miss, 10 ms hit, 50 ms for a 304) are targets of
-// the reference environment and are enforced with TROVE_PERF_GATE=1, which the nightly
+// the reference environment and are enforced with QUADER_PERF_GATE=1, which the nightly
 // performance run sets (Q-ARCH-220, Q-ARCH-293): beside other processes the same request
 // took 1 to 3 s on a miss, 40 to 175 ms from the cache and up to 240 ms for a 304, and
 // the run cannot tell its own cost from that of the machine. Per change the test pins
@@ -400,7 +400,7 @@ func TestR_NPM_010_ThousandVersions(t *testing.T) {
 	}
 	// Five misses, each on a revision nobody rendered (the revision moves between them), and a conditional
 	// request for each right after it: one sample is the load of one moment, the median of five is not.
-	gated := os.Getenv("TROVE_PERF_GATE") == "1"
+	gated := os.Getenv("QUADER_PERF_GATE") == "1"
 	var misses, conds []time.Duration
 	size := 0
 	for range 5 {
@@ -456,6 +456,6 @@ func TestR_NPM_010_ThousandVersions(t *testing.T) {
 	case m > 10*time.Millisecond && gated:
 		t.Errorf("the document of 1,000 versions took %s from the cache (median of 7), the target is 10 ms", m)
 	case m > 10*time.Millisecond:
-		t.Logf("median %s above the 10 ms target; enforced with TROVE_PERF_GATE=1 (Q-ARCH-220)", m)
+		t.Logf("median %s above the 10 ms target; enforced with QUADER_PERF_GATE=1 (Q-ARCH-220)", m)
 	}
 }

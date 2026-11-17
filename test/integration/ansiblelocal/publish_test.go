@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection/collectiontest"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection/collectiontest"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func code(t *testing.T, a testenv.Answer) string {
@@ -218,7 +218,7 @@ func TestR_ANS_004_TheReadOperationsOverHTTP(t *testing.T) {
 	if doc.Meta.Count != 4 || len(doc.Data) != 2 || doc.Data[0].Version != "2.0.0" || doc.Data[1].Version != "2.0.0-rc.1" {
 		t.Errorf("list = %s", list.Body)
 	}
-	if doc.Links["next"] == nil || !strings.HasPrefix(*doc.Links["next"], "http://trove.test/api/ansible/") && !strings.HasPrefix(*doc.Links["next"], "https://trove.test/api/ansible/") {
+	if doc.Links["next"] == nil || !strings.HasPrefix(*doc.Links["next"], "http://quader.test/api/ansible/") && !strings.HasPrefix(*doc.Links["next"], "https://quader.test/api/ansible/") {
 		t.Errorf("next = %v: an absolute address on the base URL", doc.Links["next"])
 	}
 	col := e.get(e.tokC, "v3/collections/acme/tools/").JSON(t)

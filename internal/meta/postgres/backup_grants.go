@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // backupRoleKey is the system_state key that records which role the grants below went to, so that a later run that is
@@ -19,7 +19,7 @@ const backupRoleKey = "backup_role"
 // every table and sequence of the schema, writes on the run record and its pins, EXECUTE on the function that writes the backup's
 // audit events (no INSERT on the audit trail itself, Q-BAK-50), and SELECT by default on the tables the owner creates later,
 // such as the monthly audit partitions. It runs after the steps, as the schema owner, idempotently on every migration run, so a
-// table added by a later migration is covered at once. trove never creates the role (R-HA-014): the database administrator
+// table added by a later migration is covered at once. quader never creates the role (R-HA-014): the database administrator
 // does, with CONNECT and USAGE on the schema. With no role configured nothing is granted and the backup pod uses the runtime
 // credential.
 //

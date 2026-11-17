@@ -3,8 +3,8 @@ package evaluate
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln"
 )
 
 // R-VULN-010, R-VULN-015, Q-VULN-75: the repository-level part of the scope rule, which the download path reads from the

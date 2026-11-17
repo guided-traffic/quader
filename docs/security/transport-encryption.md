@@ -1,10 +1,10 @@
 # Transport encryption
 
-Status: implemented in M0 for every connection that trove makes or accepts: the client and ops listeners, the endpoint
+Status: implemented in M0 for every connection that Quader makes or accepts: the client and ops listeners, the endpoint
 listeners, PostgreSQL, Valkey and the Sentinels, the object store, the outbound HTTP clients and the OTLP span export.
 Every one of them needs an explicit switch for plaintext, except the listeners, which serve plain HTTP until a certificate is
 configured; the chart turns TLS on for them by default and plain HTTP there is a chart choice (`tls.enabled: false`, [H-38](../spec/ha-and-helm.md#h-38--plain-http-between-the-edge-proxy-and-the-replicas)).
-The requirement is [INV-20](../spec/README.md#design-invariants) and [ADR-127](../decisions.md#adr-127--transport-encryption-on-every-connection-troves-listeners-included).
+The requirement is [INV-20](../spec/README.md#design-invariants) and [ADR-127](../decisions.md#adr-127--transport-encryption-on-every-connection-quaders-listeners-included).
 
 This page says, per connection, what is encrypted, what the default verifies, where the material comes from and how a
 rotation reaches a running process. The configuration keys are listed in the reference of [README.md](../../README.md#-full-reference).
@@ -13,7 +13,7 @@ rotation reaches a running process. The configuration keys are listed in the ref
 
 | Connection | Configured by | Default | Verified by | Material reloaded |
 |---|---|---|---|---|
-| clients to the client listener and each endpoint listener | `server.tls`, `server.endpoints.<name>.tls` | plain HTTP until `certificates` is set | the client, not trove | every `reload_interval` (`10s`) |
+| clients to the client listener and each endpoint listener | `server.tls`, `server.endpoints.<name>.tls` | plain HTTP until `certificates` is set | the client, not Quader | every `reload_interval` (`10s`) |
 | kubelet and monitoring to the ops listener | `server.ops_tls` | `inherit: true`: the client listener's pairs, no client certificate | the kubelet does not verify probes | with the listener |
 | every role (`api`, `packages`, `worker`, the bridge's `web`) and the Jobs to PostgreSQL | `database.ssl_mode`, `ssl_root_cert_file`, `ssl_cert_file`, `ssl_key_file` | `verify-full` | chain and host name against the roots | on each new connection |
 | every role to Valkey data nodes | `valkey.tls.mode`, `ca_file`, `cert_file`, `key_file`, `server_name` | `verify-full`, the system roots when no `ca_file` | chain and host name | on each handshake |
@@ -53,7 +53,7 @@ The listener's TLS is built by [httpserver/tls.go](../../internal/httpserver/tls
 
 ## Reloading material
 
-Every TLS file of trove is read again and compared by content, not by time, so a Kubernetes Secret volume (which swaps a
+Every TLS file of Quader is read again and compared by content, not by time, so a Kubernetes Secret volume (which swaps a
 symlink) and a file rewritten in place both work. The mechanism is one package, [internal/tlsfiles](../../internal/tlsfiles/doc.go).
 
 - A **pass** reads each piece (one certificate/key pair or one CA bundle) and hashes its bytes. Unchanged content is a
@@ -63,7 +63,7 @@ symlink) and a file rewritten in place both work. The mechanism is one package, 
 - A pair that fails to parse after a half-written rotation is read once more before it is refused.
 - Pieces swap independently; the loaded pieces are published as one immutable snapshot behind an atomic pointer, so a
   handshake never sees half a rotation.
-- A **broken rotation** keeps the previous content in service, counts it once in `trove_tls_reload_errors_total` and logs
+- A **broken rotation** keeps the previous content in service, counts it once in `quader_tls_reload_errors_total` and logs
   an error with the file names. Readiness does not change.
 - A **broken start** holds the first readiness: the `tls` check of [wire_tls.go](../../internal/app/wire_tls.go) fails until
   every listener's material has loaded. The listener binds and refuses handshakes until then, except the operations listener,
@@ -86,9 +86,9 @@ The developer procedure, the metric families and the tests are in [tls.md](../de
 
 | Signal | Source |
 |---|---|
-| `trove_tls_certificate_expiry_timestamp_seconds{kind,listener,name}` | notAfter of the served leaf of each pair, the earliest of each bundle |
-| `trove_tls_reloads_total{kind,listener,name}` | changed content that loaded and replaced the previous one |
-| `trove_tls_reload_errors_total{kind,listener,name}` | content that did not load, once per distinct content |
+| `quader_tls_certificate_expiry_timestamp_seconds{kind,listener,name}` | notAfter of the served leaf of each pair, the earliest of each bundle |
+| `quader_tls_reloads_total{kind,listener,name}` | changed content that loaded and replaced the previous one |
+| `quader_tls_reload_errors_total{kind,listener,name}` | content that did not load, once per distinct content |
 
 `kind` is `listener`, `database`, `valkey`, `objectstore` or `outbound`. `listener` is `client`, `ops`, or `client:<endpoint>`
 for a further endpoint, and empty for a client ([tlsfiles/metrics.go](../../internal/tlsfiles/metrics.go)). A certificate
@@ -110,7 +110,7 @@ the password is then sent to whoever answers. The client certificate pair is opt
 data nodes are verified against the system roots ([valkey.go](../../internal/cluster/valkey.go), `warnWeakTrust`). These are
 warnings only: no configuration switch turns them into errors yet ([spec ha-and-helm](../spec/ha-and-helm.md#r-ha-056--valkey-with-sentinel-connection-and-supported-topologies)).
 
-**Object store** ([blob/s3/client.go](../../internal/blob/s3/client.go)). Trove's object-store client takes its trust from
+**Object store** ([blob/s3/client.go](../../internal/blob/s3/client.go)). Quader's object-store client takes its trust from
 `storage.s3.ca_file` when it is set; that file is the whole trust store of the client, neither the system roots nor
 `proxy.outbound.tls.ca_files` are added, and it is reloaded like any other bundle. Without `ca_file` the client uses the
 outbound factory's trust store ([outbound/factory.go](../../internal/outbound/factory.go), `Client`), so a bundle in
@@ -123,7 +123,7 @@ outbound factory's trust store ([outbound/factory.go](../../internal/outbound/fa
 
 ## What the chart renders
 
-The chart is [deploy/helm/trove](../../deploy/helm/trove). The defaults below are from [values.yaml](../../deploy/helm/trove/values.yaml).
+The chart is [deploy/helm/quader](../../deploy/helm/quader). The defaults below are from [values.yaml](../../deploy/helm/quader/values.yaml).
 
 | Value | Default | Effect |
 |---|---|---|
@@ -134,12 +134,12 @@ The chart is [deploy/helm/trove](../../deploy/helm/trove). The defaults below ar
 | `tls.clientCA.secretName` | `""` | when set, `server.tls.client_ca_file` and `client_auth` (`require` by default) |
 | `tls.ops.secretName` | `""` | a separate pair for `:8081`; the ops listener then has its own block |
 | `ingress.backendTLS.controller` | `haproxy` | the controller-specific backend settings: `haproxy`, `traefik`, `ingress-nginx` or `manual` |
-| `ingress.backendTLS.verify` | `true` | the controller verifies the trove certificate; with `true` and no `caSecret` (haproxy, ingress-nginx) or `serversTransport` (traefik) the render fails, for the Ingress of the default endpoint and for the Ingress of every further endpoint (its own `ingress.backendTLS` merged over this block) |
-| `secrets.s3CA.existingSecret`, `key` | `""`, `ca.crt` | mounts the CA of the object store at `/var/run/secrets/trove/s3-ca/` and renders `storage.s3.ca_file` |
-| `trustedCA.existingSecret` or `existingConfigMap`, `keys`, `useForObjectStore` | `""`, `""`, `[ca-bundle.crt]`, `false` | mounts the listed files of a Secret or ConfigMap at `/etc/trove/ca/` in every pod of the release, appends them to `proxy.outbound.tls.ca_files` (after the operator's own), and with `useForObjectStore` makes the one file `storage.s3.ca_file`; refused together with `secrets.s3CA` |
+| `ingress.backendTLS.verify` | `true` | the controller verifies the Quader certificate; with `true` and no `caSecret` (haproxy, ingress-nginx) or `serversTransport` (traefik) the render fails, for the Ingress of the default endpoint and for the Ingress of every further endpoint (its own `ingress.backendTLS` merged over this block) |
+| `secrets.s3CA.existingSecret`, `key` | `""`, `ca.crt` | mounts the CA of the object store at `/var/run/secrets/quader/s3-ca/` and renders `storage.s3.ca_file` |
+| `trustedCA.existingSecret` or `existingConfigMap`, `keys`, `useForObjectStore` | `""`, `""`, `[ca-bundle.crt]`, `false` | mounts the listed files of a Secret or ConfigMap at `/etc/quader/ca/` in every pod of the release, appends them to `proxy.outbound.tls.ca_files` (after the operator's own), and with `useForObjectStore` makes the one file `storage.s3.ca_file`; refused together with `secrets.s3CA` |
 
-What the pods get, from [_secrets.tpl](../../deploy/helm/trove/templates/_secrets.tpl): the Secret is mounted read-only at
-`/var/run/secrets/trove/tls/` with `tls.crt` and `tls.key` only, and only into pods that load that pair: the pods that open the client listener (`api`, `packages`, their path pools and the
+What the pods get, from [_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl): the Secret is mounted read-only at
+`/var/run/secrets/quader/tls/` with `tls.crt` and `tls.key` only, and only into pods that load that pair: the pods that open the client listener (`api`, `packages`, their path pools and the
 bridge's `web`), a pod that serves a further endpoint without a pair of its own, and every pod whose operations
 listener inherits it, which is every pod unless `tls.ops.secretName` is set. With `tls.ops`, workers and endpoint pools
 whose endpoints bring their own pairs hold no copy of the client listener's private key
@@ -148,28 +148,28 @@ still holds). The client CA mounts only into the pods that open the client liste
 listener never reads it; the Secret itself still carries `ca.crt` for the edge and for monitoring. The mount has no
 `subPath`, so the kubelet's swap of the projected files reaches the process. The migration Job mounts no listener material.
 
-The trusted CA bundle (R-HA-043, [Q-HA-272](../spec/ha-and-helm.md#q-ha-272--the-trusted-ca-bundle-is-mounted-in-every-pod-of-the-release-its-files-are-appended-to-ca_files-and-one-file-can-be-the-object-stores-ca)) adds trust for every outbound TLS connection of every pod, upstreams, OIDC issuers, GitLab and webhooks: whoever can write the named Secret or ConfigMap can make trove accept a certificate it signs, so that source is as protected as `tls.secretName`. The files are public certificates, projected by `items` without `subPath`; PostgreSQL's connection never uses them (`secrets.databaseCA` is a directory of its own), and the Valkey and backup-target CAs stay their own values. With `useForObjectStore` the file is the object store's whole trust store, not an addition (the rule of `storage.s3.ca_file`). A rotation reaches the pods at the kubelet's pace ([H-804](../spec/ha-and-helm.md#h-804--a-change-of-the-ca-source-reaches-the-pods-at-the-kubelets-pace)). Tested by `TestR_HA_043_TrustedCA`.
+The trusted CA bundle (R-HA-043, [Q-HA-272](../spec/ha-and-helm.md#q-ha-272--the-trusted-ca-bundle-is-mounted-in-every-pod-of-the-release-its-files-are-appended-to-ca_files-and-one-file-can-be-the-object-stores-ca)) adds trust for every outbound TLS connection of every pod, upstreams, OIDC issuers, GitLab and webhooks: whoever can write the named Secret or ConfigMap can make Quader accept a certificate it signs, so that source is as protected as `tls.secretName`. The files are public certificates, projected by `items` without `subPath`; PostgreSQL's connection never uses them (`secrets.databaseCA` is a directory of its own), and the Valkey and backup-target CAs stay their own values. With `useForObjectStore` the file is the object store's whole trust store, not an addition (the rule of `storage.s3.ca_file`). A rotation reaches the pods at the kubelet's pace ([H-804](../spec/ha-and-helm.md#h-804--a-change-of-the-ca-source-reaches-the-pods-at-the-kubelets-pace)). Tested by `TestR_HA_043_TrustedCA`.
 
-The probes use `scheme: HTTPS` on the ops port when `tls.enabled` is true ([_pod.tpl](../../deploy/helm/trove/templates/_pod.tpl)).
-The client and ops Service ports declare `appProtocol: https` ([services.yaml](../../deploy/helm/trove/templates/services.yaml)).
+The probes use `scheme: HTTPS` on the ops port when `tls.enabled` is true ([_pod.tpl](../../deploy/helm/quader/templates/_pod.tpl)).
+The client and ops Service ports declare `appProtocol: https` ([services.yaml](../../deploy/helm/quader/templates/services.yaml)).
 
 For the HAProxy Ingress, the chart renders `haproxy-ingress.github.io/secure-backends: "true"`, the verification secret
 (`secure-verify-ca-secret`), the server name `<fullname>.<namespace>.svc` (`secure-sni`) and, with a client certificate,
-`secure-crt-secret` ([ingress.yaml](../../deploy/helm/trove/templates/ingress.yaml)). The render refuses `clientCA` with
-HAProxy and no `clientCertSecret` ([_validate.tpl](../../deploy/helm/trove/templates/_validate.tpl)). A further endpoint's
-Ingress ([endpoint-ingress.yaml](../../deploy/helm/trove/templates/endpoint-ingress.yaml)) follows the same rules on the
-block that results from its own `ingress.backendTLS` laid over the global one (`trove.validateEndpoints`): verification with
+`secure-crt-secret` ([ingress.yaml](../../deploy/helm/quader/templates/ingress.yaml)). The render refuses `clientCA` with
+HAProxy and no `clientCertSecret` ([_validate.tpl](../../deploy/helm/quader/templates/_validate.tpl)). A further endpoint's
+Ingress ([endpoint-ingress.yaml](../../deploy/helm/quader/templates/endpoint-ingress.yaml)) follows the same rules on the
+block that results from its own `ingress.backendTLS` laid over the global one (`quader.validateEndpoints`): verification with
 HAProxy Ingress or ingress-nginx without `caSecret`, with Traefik without `serversTransport`, and an endpoint
 `tls.clientCaSecret` with HAProxy and no `clientCertSecret` all fail the render. `verify: false` is the only way to render an
 unverified backend connection with these three controllers.
 
-The `ServiceMonitor` (`metrics.serviceMonitor.enabled`, [servicemonitor.yaml](../../deploy/helm/trove/templates/servicemonitor.yaml))
+The `ServiceMonitor` (`metrics.serviceMonitor.enabled`, [servicemonitor.yaml](../../deploy/helm/quader/templates/servicemonitor.yaml))
 scrapes the ops port with `scheme: https` when `tls.enabled` is true, and its `tlsConfig` verifies the pods against `ca.crt` of the ops
 listener's Secret (`tls.ops.secretName`, else `tls.secretName`) and the name `<fullname>-ops.<namespace>.svc`; with `metrics.auth: static`
 it sends the bearer token of `secrets.metricsToken`. The Gateway API edge of the default endpoint is an `HTTPRoute` (`gateway.enabled`,
-[httproute.yaml](../../deploy/helm/trove/templates/httproute.yaml)), whose rules go to the Service port `http` of each role. How the Gateway
+[httproute.yaml](../../deploy/helm/quader/templates/httproute.yaml)), whose rules go to the Service port `http` of each role. How the Gateway
 verifies that connection is the `BackendTLSPolicy`, rendered only with `tls.enabled` and `tls.backendTLSPolicy.enabled`
-([backendtlspolicy.yaml](../../deploy/helm/trove/templates/backendtlspolicy.yaml)): one policy per Service the edge may route to, for
+([backendtlspolicy.yaml](../../deploy/helm/quader/templates/backendtlspolicy.yaml)): one policy per Service the edge may route to, for
 the name `<fullname>.<namespace>.svc`, with the CA from a ConfigMap (`tls.backendTLSPolicy.caConfigMapName`, which the render requires).
 
 ## What this does not cover
@@ -200,7 +200,7 @@ Stage: every TLS connection that is open when a certificate is rotated, on the l
 
 Live on every installation that rotates a certificate while connections are open. The old certificate stays in use until the
 connection closes; a compromised key stays usable through it until then. Subject: client connections to the listeners, and
-the trove-side connections to PostgreSQL, Valkey and the object store, which are recycled by their own lifetimes
+the Quader-side connections to PostgreSQL, Valkey and the object store, which are recycled by their own lifetimes
 (`database.pool.max_conn_lifetime`, `valkey.max_conn_lifetime`).
 
 What makes it real: a key compromised before the rotation and an existing session the attacker can keep. Rotation does not
@@ -222,12 +222,12 @@ What makes it real: a renewal that stops producing new content, with the gauge n
 Stage: the client certificate on a listener with `client_auth` set ([httpserver/tls.go](../../internal/httpserver/tls.go)).
 
 Live on an installation that sets `tls.clientCA` or `server.tls.client_ca_file` (dormant by default, since the chart's
-`tls.clientCA.secretName` is empty). Trove checks a client certificate against its CA bundle only. It performs no CRL or OCSP
+`tls.clientCA.secretName` is empty). Quader checks a client certificate against its CA bundle only. It performs no CRL or OCSP
 check and does not staple OCSP responses. A certificate that the CA revokes is accepted until it expires. Subject: the
 clients of the mutual-TLS listener.
 
 What makes it real: a revoked client certificate that is still within its validity. The mitigation is a short validity of the
-issued certificates and a rotation of the CA bundle, both outside trove.
+issued certificates and a rotation of the CA bundle, both outside Quader.
 
 ### H-68 · The operations listener serves a temporary certificate until its pair loads
 
@@ -235,10 +235,10 @@ Stage: start-up of a replica whose TLS pair for the operations listener is absen
 ([tls_temporary.go](../../internal/httpserver/tls_temporary.go), [wire_tls.go](../../internal/app/wire_tls.go), `startTLS`).
 
 The earlier gap, a pod restarted by its HTTPS probes while the Secret is missing, is closed: until the configured pair loads,
-the operations listener answers handshakes with a certificate that trove generates in memory (ECDSA P-256, valid for an hour,
+the operations listener answers handshakes with a certificate that Quader generates in memory (ECDSA P-256, valid for an hour,
 named by the instance, never written to disk). `/healthz` answers 200 and `/readyz` answers 503 with the failing `tls` check, so
 the kubelet keeps the container, and the real pair serves from the first pass that loads it. The gauge
-`trove_tls_temporary_certificate{listener="ops"}` is 1 meanwhile. The client and endpoint listeners have no temporary
+`quader_tls_temporary_certificate{listener="ops"}` is 1 meanwhile. The client and endpoint listeners have no temporary
 certificate: they refuse handshakes until their pair loads, and the replica is unready, so the edge sends no traffic.
 
 What stays open: live with `tls.enabled: true` whenever the pair is late or broken, for as long as it does. The temporary
@@ -258,13 +258,13 @@ in the meantime. The span export itself has no egress policy ([H-53](../spec/ope
 
 What makes it real: a collector certificate issued by a new CA while the process keeps the old one.
 
-### H-584 · Behind a transaction-mode pooler trove verifies the pooler, and the pooler's leg to PostgreSQL is the pooler's own setting
+### H-584 · Behind a transaction-mode pooler Quader verifies the pooler, and the pooler's leg to PostgreSQL is the pooler's own setting
 
 Stage: `database.pooler.mode: transaction` ([R-HA-058](../spec/ha-and-helm.md)); the pooled connection of the main pool, and the control connection through the second pooler.
 
-Dormant: live only with a pooler in front of PostgreSQL. trove's `database.ssl_mode` (`verify-full` in the dev profile) applies to the connection to the pooler: the
+Dormant: live only with a pooler in front of PostgreSQL. Quader's `database.ssl_mode` (`verify-full` in the dev profile) applies to the connection to the pooler: the
 pooler's server certificate must name its Service. The leg from the pooler to PostgreSQL is configured on the pooler (CloudNativePG: the `Pooler`'s own PgBouncer settings),
-which trove can neither set nor check, and the pooler's server certificate is the cluster's (CloudNativePG poolers present the cluster's server certificate; that behaviour is the operator's, taken from CloudNativePG's documentation and not verified in this repository), so the pooler
+which Quader can neither set nor check, and the pooler's server certificate is the cluster's (CloudNativePG poolers present the cluster's server certificate; that behaviour is the operator's, taken from CloudNativePG's documentation and not verified in this repository), so the pooler
 sits inside the database's trust boundary: whoever can read the pooler's pod can use the credentials it holds for the database.
 
 What makes it real: a pooler whose own `server_tls_sslmode` is weaker than `verify-full`, or a pod of the pooler that an attacker with access to its namespace can read.
@@ -274,8 +274,8 @@ What makes it real: a pooler whose own `server_tls_sslmode` is weaker than `veri
 Stage: the e2e profile `alerts` ([local-profile.md](../developer/local-profile.md#the-alerts-profile), [Q-HA-263](../spec/ha-and-helm.md)); the dev stack only, never the chart.
 
 Live in the profile `alerts`, dormant everywhere else. The Prometheus that kube-prometheus-stack installs listens on 9090 in plain HTTP, and so does kube-state-metrics:
-the tests read the alert state through the API server's Service proxy, and a person reads it with a port-forward. The link that carries trove's data, the scrape of the ops
-listener, is TLS and verified against the dev CA (the ServiceMonitor's `tlsConfig`, `trove-ops.<ns>.svc` in the certificate of `trove-tls`); what the plain interface holds is the
+the tests read the alert state through the API server's Service proxy, and a person reads it with a port-forward. The link that carries Quader's data, the scrape of the ops
+listener, is TLS and verified against the dev CA (the ServiceMonitor's `tlsConfig`, `quader-ops.<ns>.svc` in the certificate of `quader-tls`); what the plain interface holds is the
 metrics of the replicas, which the ops listener serves without authentication in this profile (`metrics.auth: none`). Anyone with a pod in the cluster can read them, which they could
 from the ops port if the chart's NetworkPolicy did not close it to the namespace `monitoring`; the Prometheus's pod sits in that namespace and answers to every namespace.
 

@@ -3,7 +3,7 @@
 package e2e
 
 // The restore drill of R-HA-052 and scenario 1, 3 and 9 of R-BAK-029 (E5.1, E5.11): packages are published, deleted and
-// trashed, and garbage collection with a grace period of 0s runs every 10 seconds, while `trove backup create` runs as a Job
+// trashed, and garbage collection with a grace period of 0s runs every 10 seconds, while `quader backup create` runs as a Job
 // made from the CronJob. The backup is restored into a second namespace (a fresh CloudNativePG cluster, a fresh bucket) with
 // the restore Job of R-HA-060, and the restored installation is judged by what it serves.
 
@@ -43,10 +43,10 @@ type drillState struct {
 // restoredNPMVersions is `npm view <name> versions --json` of a client pod against the restored installation.
 func restoredNPMVersions(t testing.TB, token, name string) []string {
 	t.Helper()
-	host := "trove-packages." + restoreNS + ".svc:8080"
+	host := "quader-packages." + restoreNS + ".svc:8080"
 	registry := "https://" + host + "/api/npm/" + e2eProject + "/" + bakNPM + "/"
 	pod := npmClientPod(t, 0)
-	cmd := exec.Command("kubectl", "--context", cfg.kubeContext, "-n", cfg.namespace, "exec", pod, "--", "env", "HOME=/tmp/bakhome", "NODE_EXTRA_CA_CERTS=/etc/trove-ca/ca.crt",
+	cmd := exec.Command("kubectl", "--context", cfg.kubeContext, "-n", cfg.namespace, "exec", pod, "--", "env", "HOME=/tmp/bakhome", "NODE_EXTRA_CA_CERTS=/etc/quader-ca/ca.crt",
 		"npm11", "view", name, "versions", "--json", "--registry", registry, "--//"+host+"/api/npm/"+e2eProject+"/"+bakNPM+"/:_authToken="+token)
 	out, err := cmd.Output()
 	if err != nil {
@@ -92,7 +92,7 @@ func blobObjectsMatch(t testing.TB, digests []string) {
 "securityContext":{"allowPrivilegeEscalation":false,"readOnlyRootFilesystem":true,"capabilities":{"drop":["ALL"]}},
 "command":["sh","-c",%q],
 "volumeMounts":[{"name":"tmp","mountPath":"/tmp"},{"name":"s3","mountPath":"/secrets"},{"name":"tls","mountPath":"/tls"},{"name":"digests","mountPath":"/digests"}]}],
-"volumes":[{"name":"tmp","emptyDir":{}},{"name":"s3","secret":{"secretName":"trove-s3"}},{"name":"tls","secret":{"secretName":"trove-s3-tls"}},{"name":"digests","configMap":{"name":"blob-digests"}}]}}}}`,
+"volumes":[{"name":"tmp","emptyDir":{}},{"name":"s3","secret":{"secretName":"quader-s3"}},{"name":"tls","secret":{"secretName":"quader-s3-tls"}},{"name":"digests","configMap":{"name":"blob-digests"}}]}}}}`,
 		image, `set -eu
 export AWS_ACCESS_KEY_ID="$(cat /secrets/access-key-id)" AWS_SECRET_ACCESS_KEY="$(cat /secrets/secret-access-key)" AWS_DEFAULT_REGION=us-east-1 AWS_CA_BUNDLE=/tls/ca.crt
 cat > /tmp/check.sh <<'EOS'
@@ -101,8 +101,8 @@ cat > /tmp/check.sh <<'EOS'
 n=0; bad=0
 while read -r d; do
   [ -n "$d" ] || continue
-  key="trove/sha256/$(echo "$d" | cut -c1-2)/$(echo "$d" | cut -c3-4)/$d"
-  got="$(aws --endpoint-url https://trove-s3.trove.svc:9000 s3 cp "s3://trove-restore-blobs/$key" - 2>/dev/null | sha256sum | cut -d' ' -f1 || true)"
+  key="quader/sha256/$(echo "$d" | cut -c1-2)/$(echo "$d" | cut -c3-4)/$d"
+  got="$(aws --endpoint-url https://quader-s3.quader.svc:9000 s3 cp "s3://quader-restore-blobs/$key" - 2>/dev/null | sha256sum | cut -d' ' -f1 || true)"
   n=$((n+1))
   if [ "$got" != "$d" ]; then echo "MISMATCH $d got $got"; bad=$((bad+1)); fi
 done < "$1"
@@ -190,7 +190,7 @@ func TestBackupDrill(t *testing.T) {
 		zero := 0
 		job := "bak-drill-" + st.run
 		start := time.Now()
-		bakCreateJob(t, bakJob{name: job, backoff: &zero, env: map[string]string{"TROVE_BACKUP_COPY_BYTES_PER_SECOND": "1MiB", "TROVE_BACKUP_COPY_CONCURRENCY": "1"}})
+		bakCreateJob(t, bakJob{name: job, backoff: &zero, env: map[string]string{"QUADER_BACKUP_COPY_BYTES_PER_SECOND": "1MiB", "QUADER_BACKUP_COPY_CONCURRENCY": "1"}})
 		end := bakWaitJob(t, cfg.namespace, job, 10*time.Minute)
 		took := time.Since(start)
 		after := load.snapshot()
@@ -210,7 +210,7 @@ func TestBackupDrill(t *testing.T) {
 		// start one run per 30 s and the others are refused as running (409); the runs that started while the Job did show that the collector met the hold.
 		gcJobs := sql(t, fmt.Sprintf(`SELECT count(*) || ' gc jobs started, ' || count(*) FILTER (WHERE state = 'succeeded') || ' finished, ' ||
 			coalesce(sum((result->>'deleted')::int), 0) || ' blobs deleted, ' || coalesce(sum((result->>'held')::int), 0) || ' candidates held'
-			FROM trove.job WHERE kind = 'gc' AND created_at >= now() - interval '%d seconds'`, int(time.Since(start).Seconds())+5))
+			FROM quader.job WHERE kind = 'gc' AND created_at >= now() - interval '%d seconds'`, int(time.Since(start).Seconds())+5))
 		t.Logf("garbage collection since the Job was created: %s", gcJobs)
 		timings.set("gcDuringBackup", gcJobs)
 		if after.NPM == before.NPM || after.NuGet == before.NuGet || after.Files == before.Files {
@@ -233,9 +233,9 @@ func TestBackupDrill(t *testing.T) {
 		infra := time.Since(start)
 		restoreNSScript(t, "install", st.backupID, "--set-json", `restore.extraArgs=["--json"]`)
 		began := time.Now()
-		end := bakWaitJob(t, restoreNS, "trove-restore", 20*time.Minute)
+		end := bakWaitJob(t, restoreNS, "quader-restore", 20*time.Minute)
 		took := time.Since(began)
-		logs := bakJobLogs(restoreNS, "trove-restore")
+		logs := bakJobLogs(restoreNS, "quader-restore")
 		if end.Condition != "Complete" {
 			t.Fatalf("the restore Job ended %s (exits %v):\n%s", end.Condition, end.Exits, tail(logs, 3000))
 		}
@@ -259,7 +259,7 @@ func TestBackupDrill(t *testing.T) {
 
 	t.Run("R-BAK-029 scenario 1: every file returns bytes of its digest, npm view lists the restored versions", func(t *testing.T) {
 		rows := krSQL(t, `SELECT r.key || '|' || i.path || '|' || encode(i.blob_sha256, 'hex') || '|' || (i.trashed_at IS NOT NULL)
-			FROM trove.items i JOIN trove.repositories r ON r.id = i.repo_id WHERE i.kind = 'file' AND i.blob_sha256 IS NOT NULL ORDER BY 1`)
+			FROM quader.items i JOIN quader.repositories r ON r.id = i.repo_id WHERE i.kind = 'file' AND i.blob_sha256 IS NOT NULL ORDER BY 1`)
 		var untrashed, trashed int
 		digests := map[string]bool{}
 		for _, row := range strings.Split(rows, "\n") {
@@ -297,8 +297,8 @@ func TestBackupDrill(t *testing.T) {
 
 		// npm view lists exactly the versions of the restored database
 		want := map[string][]string{}
-		for _, row := range strings.Split(krSQL(t, `SELECT p.name || '|' || pv.version FROM trove.package_versions pv JOIN trove.packages p ON p.id = pv.package_id
-			JOIN trove.repositories r ON r.id = p.repo_id WHERE r.key = '`+bakNPM+`' AND pv.trashed_at IS NULL ORDER BY 1`), "\n") {
+		for _, row := range strings.Split(krSQL(t, `SELECT p.name || '|' || pv.version FROM quader.package_versions pv JOIN quader.packages p ON p.id = pv.package_id
+			JOIN quader.repositories r ON r.id = p.repo_id WHERE r.key = '`+bakNPM+`' AND pv.trashed_at IS NULL ORDER BY 1`), "\n") {
 			if n, v, ok := strings.Cut(row, "|"); ok {
 				want[n] = append(want[n], v)
 			}
@@ -316,8 +316,8 @@ func TestBackupDrill(t *testing.T) {
 
 		// NuGet: the version list of the flat container is the database's
 		nug := map[string][]string{}
-		for _, row := range strings.Split(krSQL(t, `SELECT p.name || '|' || pv.version FROM trove.package_versions pv JOIN trove.packages p ON p.id = pv.package_id
-			JOIN trove.repositories r ON r.id = p.repo_id WHERE r.key = '`+bakNuGet+`' AND pv.trashed_at IS NULL ORDER BY 1`), "\n") {
+		for _, row := range strings.Split(krSQL(t, `SELECT p.name || '|' || pv.version FROM quader.package_versions pv JOIN quader.packages p ON p.id = pv.package_id
+			JOIN quader.repositories r ON r.id = p.repo_id WHERE r.key = '`+bakNuGet+`' AND pv.trashed_at IS NULL ORDER BY 1`), "\n") {
 			if n, v, ok := strings.Cut(row, "|"); ok {
 				nug[n] = append(nug[n], v)
 			}
@@ -354,7 +354,7 @@ func TestBackupDrill(t *testing.T) {
 		zero := 0
 		a, b := "bak-overlap-a-"+st.run, "bak-overlap-b-"+st.run
 		// created together; the slow copy keeps the first in its slot while the second starts
-		env := map[string]string{"TROVE_BACKUP_COPY_BYTES_PER_SECOND": "1MiB"}
+		env := map[string]string{"QUADER_BACKUP_COPY_BYTES_PER_SECOND": "1MiB"}
 		bakCreateJob(t, bakJob{name: a, backoff: &zero, env: env})
 		bakCreateJob(t, bakJob{name: b, backoff: &zero, env: env})
 		ea, eb := bakWaitJob(t, cfg.namespace, a, 10*time.Minute), bakWaitJob(t, cfg.namespace, b, 10*time.Minute)
@@ -375,7 +375,7 @@ func TestBackupDrill(t *testing.T) {
 			job := "bak-copy-" + mode.name + "-" + st.run
 			bakCreateJob(t, bakJob{
 				name: job, backoff: &zero, args: []string{"backup", "create", "--trigger", "schedule", "--no-prune", "--json"},
-				env: map[string]string{"TROVE_BACKUP_TARGET_PREFIX": bakFreshPrefix(st.run, "copy-"+mode.name), "TROVE_BACKUP_COPY_SERVER_SIDE": mode.setting},
+				env: map[string]string{"QUADER_BACKUP_TARGET_PREFIX": bakFreshPrefix(st.run, "copy-"+mode.name), "QUADER_BACKUP_COPY_SERVER_SIDE": mode.setting},
 			})
 			start := time.Now()
 			end := bakWaitJob(t, cfg.namespace, job, 20*time.Minute)

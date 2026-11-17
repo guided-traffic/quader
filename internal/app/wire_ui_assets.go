@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/guided-traffic/trove/internal/buildinfo"
-	"github.com/guided-traffic/trove/internal/webui"
-	"github.com/guided-traffic/trove/internal/webui/shared"
+	"github.com/guided-traffic/quader/internal/buildinfo"
+	"github.com/guided-traffic/quader/internal/webui"
+	"github.com/guided-traffic/quader/internal/webui/shared"
 )
 
 // AreaUIAssets is the UI's shared asset store (R-HA-020, Q-HA-120): a replica of a role that serves the UI publishes the

@@ -19,12 +19,12 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
-	"github.com/guided-traffic/trove/internal/bastion/answers"
-	"github.com/guided-traffic/trove/internal/bastion/guard"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // ---- R-BAS-027 --------------------------------------------------------------------------------------------
@@ -234,7 +234,7 @@ func TestR_BAS_029_EveryOwnAnswerIsProblemDetailsWithNoStoreAndTheRightFields(t 
 			return w
 		}},
 		{name: "misdirected_request", status: 421, code: "misdirected_request", call: func(s *siteHarness) *httptest.ResponseRecorder {
-			r := httptest.NewRequest(http.MethodGet, "https://trove.example.com"+tgz, nil)
+			r := httptest.NewRequest(http.MethodGet, "https://quader.example.com"+tgz, nil)
 			r.RemoteAddr = "203.0.113.7:1"
 			w := httptest.NewRecorder()
 			s.e.ServeHTTP(w, r)
@@ -282,7 +282,7 @@ func TestR_BAS_029_EveryOwnAnswerIsProblemDetailsWithNoStoreAndTheRightFields(t 
 			if err := json.Unmarshal(w.Body.Bytes(), &p); err != nil || p["status"] != float64(r.status) || p["code"] != r.code || p["title"] == "" || p["type"] == "" || p["instance"] == nil {
 				t.Errorf("not RFC 9457 problem details with the members of R-ARCH-023: %s", w.Body)
 			}
-			if r.auth && w.Header().Get("WWW-Authenticate") != `Basic realm="trove"` {
+			if r.auth && w.Header().Get("WWW-Authenticate") != `Basic realm="quader"` {
 				t.Errorf("WWW-Authenticate %q", w.Header().Get("WWW-Authenticate"))
 			}
 			if r.retry != "" && w.Header().Get("Retry-After") != r.retry {
@@ -330,7 +330,7 @@ func TestR_BAS_014_AWriteIsProbedWithoutBodyAndCredentialAndTheRefusalIsReplayed
 		t.Fatalf("the probe carries a credential, a cookie or a body: %v", r.Header)
 	}
 	for k := range w.Header() {
-		if strings.HasPrefix(k, "Trove-Bastion-") {
+		if strings.HasPrefix(k, "Quader-Bastion-") {
 			t.Errorf("%s reached the caller", k)
 		}
 	}
@@ -559,7 +559,7 @@ func TestR_BAS_042_TheRequestLogCarriesTheFieldsOfTheBastionAndNoToken(t *testin
 	_ = json.Unmarshal([]byte(lines[0]), &hit)
 	_ = json.Unmarshal([]byte(lines[1]), &refused)
 	if hit["remote_addr"] != "203.0.113.7" || hit["repo"] != "web/npm-all" || hit["format"] != "npm" || hit["cache"] != "hit" ||
-		hit["bastion_class"] != "artifact" || hit["bastion_result"] != "hit" || hit["token_id"] != "full" || !strings.HasPrefix(fmt.Sprint(hit["token_hint"]), "trv_pat_") {
+		hit["bastion_class"] != "artifact" || hit["bastion_result"] != "hit" || hit["token_id"] != "full" || !strings.HasPrefix(fmt.Sprint(hit["token_hint"]), "qdr_pat_") {
 		t.Fatalf("%v", hit)
 	}
 	if refused["bastion_class"] != "refused" || refused["bastion_result"] != "refused" || refused["deny_reason"] != "invalid_token" || refused["cache"] != "refused" {
@@ -617,7 +617,7 @@ func TestR_BAS_042_TheSpanOfARequestCarriesTheClassAndTheResult(t *testing.T) {
 			got[string(a.Key)] = a.Value.AsString()
 		}
 	}
-	if got["trove.bastion.class"] != "artifact" || got["trove.bastion.result"] != "hit" {
+	if got["quader.bastion.class"] != "artifact" || got["quader.bastion.result"] != "hit" {
 		t.Fatalf("%v", got)
 	}
 }

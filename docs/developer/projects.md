@@ -159,5 +159,5 @@ Tests are named after the requirement; the integration tier needs the stack (`ma
 | `TestR_AUTHZ_026_Members`, `TestQ_AUTHZ_217_TheLastOwner`, `TestR_REPO_060_MoveARepository`, `TestR_AUTHZ_026_AMemberSeesItsOwnProjectsOnly`, `TestR_AUTHZ_032_EveryProjectWriteRaisesTheEpochAndAnswersIt`, `TestQ_AUTHZ_209_DeleteSparesThePoliciesOfTheSameNameElsewhere` | [test/integration/projects](../../test/integration/projects) | the project API |
 | `TestProjectsMigration` | [test/integration/postgres/projects_test.go](../../test/integration/postgres/projects_test.go) | the schema and its guards |
 
-Test harness note: after a write that changes a membership, send `Trove-Authz-Min-Epoch` with the epoch of the write when another
+Test harness note: after a write that changes a membership, send `Quader-Authz-Min-Epoch` with the epoch of the write when another
 replica must see it.

@@ -1,4 +1,4 @@
-# Task runner for trove. GNU Make 3.81 or later (the version macOS ships).
+# Task runner for quader. GNU Make 3.81 or later (the version macOS ships).
 #
 # Every tool and image pin lives in tools/versions.env, which this file includes
 # and CI appends to $GITHUB_ENV (E0.2). Go itself is pinned by the `go` line of go.mod;
@@ -10,7 +10,7 @@ include tools/versions.env
 # Hand the pins to scripts (deploy/dev/*.sh, test/integration/*.sh).
 export $(shell sed -n 's/^\([A-Z0-9_]*\)=.*/\1/p' tools/versions.env)
 
-MODULE      := github.com/guided-traffic/trove
+MODULE      := github.com/guided-traffic/quader
 comma       := ,
 space       := $(subst ,, )
 GOVERSION   := $(shell go env GOVERSION)
@@ -41,10 +41,10 @@ PROMTOOL_ARCH  := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm6
 TRIVY_DIR      := .bin/trivy-$(TRIVY_VERSION)
 TRIVY_BIN      := $(TRIVY_DIR)/trivy
 
-IMAGE       ?= guidedtraffic/trove:dev
+IMAGE       ?= guidedtraffic/quader:dev
 # The image of the working tree with the second UI bundle (make image-marked): the upgrade test across two bundles
 # installs it and upgrades to IMAGE (R-HA-020, Q-HA-124).
-IMAGE_MARKED ?= guidedtraffic/trove:dev-marked
+IMAGE_MARKED ?= guidedtraffic/quader:dev-marked
 UI_BUNDLE_MARK ?=
 IMAGE_ARCH  ?= $(shell go env GOARCH)
 
@@ -73,8 +73,8 @@ help: ## List the targets
 ##@ Build
 
 .PHONY: build
-build: ## Build the static binary into bin/trove (CGO_ENABLED=0, -trimpath, version via ldflags)
-	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/trove ./cmd/trove
+build: ## Build the static binary into bin/quader (CGO_ENABLED=0, -trimpath, version via ldflags)
+	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/quader ./cmd/quader
 
 .PHONY: web-ci
 web-ci: ## npm ci in web/ (Node from web/.nvmrc; fails when package.json and the lockfile disagree)
@@ -102,7 +102,7 @@ ui-dev-up: ## PostgreSQL, Valkey and SeaweedFS (TLS) for UI work; writes .dev/ui
 	deploy/ui-dev/up.sh
 
 .PHONY: ui-dev-backend
-ui-dev-backend: ## Build trove, migrate, run one replica of role all on https://127.0.0.1:19080 in the foreground (deploy/ui-dev/serve.sh)
+ui-dev-backend: ## Build quader, migrate, run one replica of role all on https://127.0.0.1:19080 in the foreground (deploy/ui-dev/serve.sh)
 	deploy/ui-dev/serve.sh
 
 .PHONY: ui-dev-web
@@ -234,7 +234,7 @@ $(OASDIFF_BIN):
 
 .PHONY: compat-check
 compat-check: $(OASDIFF_BIN) ## R-ARCH-025 (OpenAPI breaking changes), R-ARCH-026 (migrations only added since the latest v0.* release; no migration of main changed) (CI: compat; needs the tags and the history)
-	TROVE_OASDIFF=$(abspath $(OASDIFF_BIN)) go test -tags compat -count=1 -v ./test/compat/...
+	QUADER_OASDIFF=$(abspath $(OASDIFF_BIN)) go test -tags compat -count=1 -v ./test/compat/...
 
 # One version per tool (E0.2): every pin of a tool that is installed on PATH is compared with the
 # pin, so a copy of another version can never be the one a check ran with.
@@ -340,7 +340,7 @@ test-integration: ## Integration tests against the running stack (make integrati
 	go test -c -o .out/integration-bin/ -tags integration -covermode=atomic -coverpkg=./... $(INTEGRATION_PKGS) >/dev/null
 	@set -o pipefail; set -a; . $(INTEGRATION_ENV); set +a; \
 	  go test -count=1 -p 1 -timeout $(INTEGRATION_TIMEOUT) -tags integration -covermode=atomic -coverpkg=./... \
-	    -coverprofile=$(COVERAGE_DIR)/integration-$${TROVE_TEST_VALKEY_LINE:-9.1}$(if $(SHARD),-$(SHARD)).out \
+	    -coverprofile=$(COVERAGE_DIR)/integration-$${QUADER_TEST_VALKEY_LINE:-9.1}$(if $(SHARD),-$(SHARD)).out \
 	    -json $(INTEGRATION_PKGS) | tee .out/test-integration$(if $(SHARD),-$(SHARD)).json | $(TESTLOG)
 
 # The latency bounds of P-13 and P-14 with Valkey, tail included (Q-ARCH-220), and the p99 of one decision with 1,000
@@ -352,15 +352,15 @@ test-performance: ## Latency targets of the per-change tier enforced (P-13, P-14
 	@mkdir -p .out
 	@set -o pipefail; set -a; . $(INTEGRATION_ENV); set +a; \
 	  rc=0; \
-	  TROVE_PERF_GATE=1 go test -count=1 -p 1 -tags integration -run 'TestChangePropagation|TestJobPickup|TestR_NPM_010_ThousandVersions|TestIdempotentCreate|TestR_DEB_010_DelayBound' \
+	  QUADER_PERF_GATE=1 go test -count=1 -p 1 -tags integration -run 'TestChangePropagation|TestJobPickup|TestR_NPM_010_ThousandVersions|TestIdempotentCreate|TestR_DEB_010_DelayBound' \
 	    -json ./test/integration/coordination/... ./test/integration/npm/... ./test/integration/api/... ./test/integration/deblocal/... | tee .out/test-performance.json | $(TESTLOG) || rc=$$?; \
-	  TROVE_PERF_GATE=1 go test -count=1 -p 1 -run 'TestR_EP_013_CeilingPerformance' \
+	  QUADER_PERF_GATE=1 go test -count=1 -p 1 -run 'TestR_EP_013_CeilingPerformance' \
 	    -json ./internal/authz/ | tee -a .out/test-performance.json | $(TESTLOG) || rc=$$?; \
-	  TROVE_PERF_GATE=1 go test -count=1 -p 1 -run 'TestFlightLockWait' \
+	  QUADER_PERF_GATE=1 go test -count=1 -p 1 -run 'TestFlightLockWait' \
 	    -json ./internal/cluster/ | tee -a .out/test-performance.json | $(TESTLOG) || rc=$$?; \
-	  TROVE_PERF_GATE=1 go test -count=1 -p 1 -run 'TestR_BAS_026_AFeedPageOfAThousandEntries' \
+	  QUADER_PERF_GATE=1 go test -count=1 -p 1 -run 'TestR_BAS_026_AFeedPageOfAThousandEntries' \
 	    -json ./internal/bastion/engine/ | tee -a .out/test-performance.json | $(TESTLOG) || rc=$$?; \
-	  TROVE_PERF_GATE=1 go test -count=1 -p 1 -run 'TestR_API_055_TheWorstCaseInputsAreAccepted|TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline' \
+	  QUADER_PERF_GATE=1 go test -count=1 -p 1 -run 'TestR_API_055_TheWorstCaseInputsAreAccepted|TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline' \
 	    -json ./internal/avatar/ | tee -a .out/test-performance.json | $(TESTLOG) || rc=$$?; \
 	  exit $$rc
 
@@ -440,7 +440,7 @@ trivy: $(TRIVY_BIN) ## Fetch Trivy at its pin into .bin/trivy-<version> (CI: con
 
 .PHONY: chart-test
 chart-test: $(PROMTOOL_BIN) ## Chart render assertions of E0.7 and the promtool rule tests of the PrometheusRule (test/chart/test.sh); .out/test-chart.json
-	TROVE_PROMTOOL=$(abspath $(PROMTOOL_BIN)) test/chart/test.sh
+	QUADER_PROMTOOL=$(abspath $(PROMTOOL_BIN)) test/chart/test.sh
 
 .PHONY: dev-charts
 dev-charts: ## Fetch the dev charts that are GitHub release assets into .dev/charts with GITHUB_TOKEN when set (deploy/dev/charts.sh; CI runs it before dev-up, Q-ARCH-356)
@@ -504,20 +504,20 @@ e2e: ## End-to-end tests on the dev cluster (deploy/dev/e2e.sh); SET=push|failov
 
 # >>> M2 npm-clients
 .PHONY: npm-clients-image
-npm-clients-image: ## Build the image of the npm client matrix (R-NPM-045: npm 10-12, pnpm 10-12, Yarn 4, Yarn 1) into the local Docker; NPM_CLIENTS_IMAGE, default trove-e2e-clients:dev
-	test/e2e/clients/build.sh $(or $(NPM_CLIENTS_IMAGE),trove-e2e-clients:dev)
+npm-clients-image: ## Build the image of the npm client matrix (R-NPM-045: npm 10-12, pnpm 10-12, Yarn 4, Yarn 1) into the local Docker; NPM_CLIENTS_IMAGE, default quader-e2e-clients:dev
+	test/e2e/clients/build.sh $(or $(NPM_CLIENTS_IMAGE),quader-e2e-clients:dev)
 # <<< M2 npm-clients
 
 # >>> M3 nuget-clients
 # The NuGet clients image (R-NUGET-027: the .NET 10 SDK and nuget.exe on Mono, test/e2e/nugetclients, docs/developer/e2e.md#the-nuget-clients)
 # and its smoke test. Edit only between the markers.
 .PHONY: nuget-clients-image
-nuget-clients-image: ## Build the NuGet clients image (dotnet of the pinned SDK, nuget.exe on Mono) into the local Docker; NUGET_CLIENTS_IMAGE, default trove-e2e-nugetclients:dev
-	test/e2e/nugetclients/build.sh $(or $(NUGET_CLIENTS_IMAGE),trove-e2e-nugetclients:dev)
+nuget-clients-image: ## Build the NuGet clients image (dotnet of the pinned SDK, nuget.exe on Mono) into the local Docker; NUGET_CLIENTS_IMAGE, default quader-e2e-nugetclients:dev
+	test/e2e/nugetclients/build.sh $(or $(NUGET_CLIENTS_IMAGE),quader-e2e-nugetclients:dev)
 
 .PHONY: nuget-clients-smoke
 nuget-clients-smoke: nuget-clients-image nuget-stub-image ## Run the NuGet clients image like a pod against the counting NuGet test upstream: both runtimes, the CA bundle, TLS verified and refused (no cluster)
-	test/e2e/nugetclients/smoke.sh $(or $(NUGET_CLIENTS_IMAGE),trove-e2e-nugetclients:dev)
+	test/e2e/nugetclients/smoke.sh $(or $(NUGET_CLIENTS_IMAGE),quader-e2e-nugetclients:dev)
 # <<< M3 nuget-clients
 
 # >>> M2 npm-fuzz
@@ -535,7 +535,7 @@ fuzz-npm: ## Fuzz one npm target (FUZZ, default FuzzR_ARCH_028_Match) for FUZZTI
 # >>> M2 npm-stub
 # The counting test upstream of the npm tests (test/npmstub, docs/developer/e2e.md) and the reference
 # lockfile resolved against it (perf/npm, perf/README.md). Edit only between the markers.
-NPM_STUB_IMAGE ?= trove-e2e-npmstub:dev
+NPM_STUB_IMAGE ?= quader-e2e-npmstub:dev
 
 .PHONY: npm-stub-image
 npm-stub-image: ## Build the counting npm test upstream image (NPM_STUB_IMAGE, IMAGE_ARCH) on the release base image
@@ -556,7 +556,7 @@ npm-reference-check: npm-stub-image ## Fail when perf/npm/reference differs from
 # >>> M4 oidc-stub
 # The GitLab-shaped OIDC issuer double of the CI tests (test/oidcstub, docs/developer/e2e.md). Edit only between
 # the markers.
-OIDC_STUB_IMAGE ?= trove-e2e-oidcstub:dev
+OIDC_STUB_IMAGE ?= quader-e2e-oidcstub:dev
 
 .PHONY: oidc-stub-image
 oidc-stub-image: ## Build the GitLab-shaped OIDC issuer double image (OIDC_STUB_IMAGE, IMAGE_ARCH) on the release base image
@@ -566,12 +566,12 @@ oidc-stub-image: ## Build the GitLab-shaped OIDC issuer double image (OIDC_STUB_
 	  -f test/oidcstub/Containerfile -t $(OIDC_STUB_IMAGE) .out/oidcstub
 
 # Re-records test/oidcstub/testdata from a real GitLab (Q-CI-25, docs/developer/e2e.md "Validating the double against a
-# real GitLab"). Never part of CI. TROVE_GITLAB_URL and TROVE_GITLAB_TOKEN (an administrator's token, scope api) come
-# from the environment; TROVE_GITLAB_CA_FILE names a PEM bundle for an instance behind an internal CA.
+# real GitLab"). Never part of CI. QUADER_GITLAB_URL and QUADER_GITLAB_TOKEN (an administrator's token, scope api) come
+# from the environment; QUADER_GITLAB_CA_FILE names a PEM bundle for an instance behind an internal CA.
 .PHONY: oidc-fixtures
-oidc-fixtures: ## Re-record the GitLab fixtures of the OIDC issuer double from a real instance (TROVE_GITLAB_URL, TROVE_GITLAB_TOKEN, optional TROVE_GITLAB_CA_FILE), then test the double against them
-	@test -n "$$TROVE_GITLAB_URL" && test -n "$$TROVE_GITLAB_TOKEN" || { echo "set TROVE_GITLAB_URL and TROVE_GITLAB_TOKEN"; exit 2; }
-	go run ./test/oidcstub/cmd/record-gitlab -job-image $(INTEGRATION_TOOLS_IMAGE) $${TROVE_GITLAB_CA_FILE:+-ca-file "$$TROVE_GITLAB_CA_FILE"}
+oidc-fixtures: ## Re-record the GitLab fixtures of the OIDC issuer double from a real instance (QUADER_GITLAB_URL, QUADER_GITLAB_TOKEN, optional QUADER_GITLAB_CA_FILE), then test the double against them
+	@test -n "$$QUADER_GITLAB_URL" && test -n "$$QUADER_GITLAB_TOKEN" || { echo "set QUADER_GITLAB_URL and QUADER_GITLAB_TOKEN"; exit 2; }
+	go run ./test/oidcstub/cmd/record-gitlab -job-image $(INTEGRATION_TOOLS_IMAGE) $${QUADER_GITLAB_CA_FILE:+-ca-file "$$QUADER_GITLAB_CA_FILE"}
 	go test -count=1 -run 'Recorded' ./test/oidcstub/
 # <<< M4 oidc-stub
 
@@ -581,7 +581,7 @@ oidc-fixtures: ## Re-record the GitLab fixtures of the OIDC issuer double from a
 # test upstream (test/nugetstub, docs/developer/e2e.md). Edit only between the markers.
 NUGET_FUZZ_TARGETS ?= nupkg:FuzzR_ARCH_028_Inspect nuspec:FuzzR_NUGET_005_Nuspec version:FuzzNormalize version:FuzzCompare version:FuzzRange id:FuzzID
 NUGET_FUZZTIME ?= 5m
-NUGET_STUB_IMAGE ?= trove-e2e-nugetstub:dev
+NUGET_STUB_IMAGE ?= quader-e2e-nugetstub:dev
 NUGET_VECTORS := internal/formats/nuget/version/testdata/vectors.json
 
 .PHONY: fuzz-nuget
@@ -618,7 +618,7 @@ nuget-reference-check: ## Fail when perf/nuget/reference differs from a regenera
 # >>> M4b osv-stub
 # The test advisory source of the vulnerability-scanning tests (test/osvstub, R-VULN-029, docs/developer/e2e.md) and the
 # refresh of the real records frozen for it. Edit only between the markers.
-OSV_STUB_IMAGE ?= trove-e2e-osvstub:dev
+OSV_STUB_IMAGE ?= quader-e2e-osvstub:dev
 
 .PHONY: osv-stub-image
 osv-stub-image: ## Build the test advisory source image (OSV_STUB_IMAGE, IMAGE_ARCH) on the release base image
@@ -648,7 +648,7 @@ osv-reference-refresh: ## Record the public npm bulk answer for perf/npm/referen
 # >>> T16 oci-stub
 # The counting OCI test upstream (test/ocistub, R-OCI-035, docs/developer/oci.md): a registry, a token realm and a blob CDN
 # with a generated image set. Edit only between the markers.
-OCI_STUB_IMAGE ?= trove-e2e-ocistub:dev
+OCI_STUB_IMAGE ?= quader-e2e-ocistub:dev
 
 .PHONY: oci-stub-image
 oci-stub-image: ## Build the counting OCI test upstream image (OCI_STUB_IMAGE, IMAGE_ARCH) on the release base image
@@ -661,7 +661,7 @@ oci-stub-image: ## Build the counting OCI test upstream image (OCI_STUB_IMAGE, I
 # >>> T17 deb-stub
 # The counting Debian archive test upstream (test/debstub, R-DEB-035, docs/developer/deb.md): suites, components, architectures,
 # a Sources index, by-hash, pdiffs, flat repositories and a large index, signed by test keys. Edit only between the markers.
-DEB_STUB_IMAGE ?= trove-e2e-debstub:dev
+DEB_STUB_IMAGE ?= quader-e2e-debstub:dev
 
 .PHONY: deb-stub-image
 deb-stub-image: ## Build the counting Debian archive test upstream image (DEB_STUB_IMAGE, IMAGE_ARCH) on the release base image
@@ -674,7 +674,7 @@ deb-stub-image: ## Build the counting Debian archive test upstream image (DEB_ST
 # >>> B2 ansible-stub
 # The counting Ansible Galaxy test upstream (test/ansiblestub, R-ANS-032, docs/developer/ansible-remote.md): the Galaxy v3 and v1
 # APIs, the GitHub stand-in for role archives and the single-sign-on realm of the hub, on five host names. Edit only between the markers.
-ANSIBLE_STUB_IMAGE ?= trove-e2e-ansiblestub:dev
+ANSIBLE_STUB_IMAGE ?= quader-e2e-ansiblestub:dev
 
 .PHONY: ansible-stub-image
 ansible-stub-image: ## Build the counting Ansible Galaxy test upstream image (ANSIBLE_STUB_IMAGE, IMAGE_ARCH) on the release base image
@@ -719,22 +719,22 @@ oci-conformance: oci-conformance-build ## OCI conformance suite (pull, push, con
 # The OCI clients images (R-OCI-035, Q-OCI-21: dockerd with Buildx and Podman in a privileged pod, test/e2e/ociclients,
 # docs/developer/e2e.md#the-oci-clients). Edit only between the markers.
 .PHONY: oci-clients-image
-oci-clients-image: ## Build the OCI clients images (the pinned dind image with the forwarder, the pinned Podman image) into the local Docker; OCI_CLIENTS_DOCKER_IMAGE and OCI_CLIENTS_PODMAN_IMAGE, default trove-e2e-ociclients-{docker,podman}:dev
-	test/e2e/ociclients/build.sh $(or $(OCI_CLIENTS_DOCKER_IMAGE),trove-e2e-ociclients-docker:dev) $(or $(OCI_CLIENTS_PODMAN_IMAGE),trove-e2e-ociclients-podman:dev)
+oci-clients-image: ## Build the OCI clients images (the pinned dind image with the forwarder, the pinned Podman image) into the local Docker; OCI_CLIENTS_DOCKER_IMAGE and OCI_CLIENTS_PODMAN_IMAGE, default quader-e2e-ociclients-{docker,podman}:dev
+	test/e2e/ociclients/build.sh $(or $(OCI_CLIENTS_DOCKER_IMAGE),quader-e2e-ociclients-docker:dev) $(or $(OCI_CLIENTS_PODMAN_IMAGE),quader-e2e-ociclients-podman:dev)
 # <<< T16 oci-clients
 
 # >>> T17 apt-clients
 # The APT clients images of the Debian e2e set (R-DEB-035, Q-DEB-27: Debian 13 and 12, Ubuntu 24.04 and 22.04 at their pinned digests
 # with curl and the forwarder, test/e2e/aptclients, docs/developer/e2e.md#the-apt-clients). Edit only between the markers.
 .PHONY: apt-clients-image
-apt-clients-image: ## Build the four APT clients images (the pinned Debian and Ubuntu images with the forwarder) into the local Docker; APT_CLIENTS_IMAGE_PREFIX, default trove-e2e-aptclients-
-	test/e2e/aptclients/build.sh $(or $(APT_CLIENTS_IMAGE_PREFIX),trove-e2e-aptclients-)
+apt-clients-image: ## Build the four APT clients images (the pinned Debian and Ubuntu images with the forwarder) into the local Docker; APT_CLIENTS_IMAGE_PREFIX, default quader-e2e-aptclients-
+	test/e2e/aptclients/build.sh $(or $(APT_CLIENTS_IMAGE_PREFIX),quader-e2e-aptclients-)
 # <<< T17 apt-clients
 
 # >>> B4 ansible-clients-image
 # The two Ansible client images of the e2e set `ansible` (R-ANS-032: the pinned Python images with ansible-core 2.17 and 2.21 and the
 # forwarder, test/e2e/ansibleclients, docs/developer/e2e.md#the-ansible-clients). Edit only between the markers.
 .PHONY: ansible-clients-image
-ansible-clients-image: ## Build the two Ansible client images (ansible-core 2.17 and 2.21 on their pinned Python images with the forwarder) into the local Docker; ANSIBLE_CLIENTS_IMAGE_PREFIX, default trove-e2e-ansibleclients-
-	test/e2e/ansibleclients/build.sh $(or $(ANSIBLE_CLIENTS_IMAGE_PREFIX),trove-e2e-ansibleclients-)
+ansible-clients-image: ## Build the two Ansible client images (ansible-core 2.17 and 2.21 on their pinned Python images with the forwarder) into the local Docker; ANSIBLE_CLIENTS_IMAGE_PREFIX, default quader-e2e-ansibleclients-
+	test/e2e/ansibleclients/build.sh $(or $(ANSIBLE_CLIENTS_IMAGE_PREFIX),quader-e2e-ansibleclients-)
 # <<< B4 ansible-clients-image

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deletes the kind cluster "trove" and the profile's local state (.dev/logs; .dev/integration is left alone). Other kind clusters are not
+# Deletes the kind cluster "quader" and the profile's local state (.dev/logs; .dev/integration is left alone). Other kind clusters are not
 # touched.
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh

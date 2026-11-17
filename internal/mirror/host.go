@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // Host is what the engine needs from the remote engine (internal/proxy) and the format host (internal/formathost) for the
@@ -111,7 +111,7 @@ const (
 )
 
 // RefusedError says that a background fill cannot store the artifact, and will not until something outside the pass
-// changes: the engine counts it in trove_mirror_items_total{result="refused"} and goes on with the next item of the plan.
+// changes: the engine counts it in quader_mirror_items_total{result="refused"} and goes on with the next item of the plan.
 type RefusedError struct {
 	// Reason is one of the Refused constants.
 	Reason string

@@ -10,7 +10,7 @@
 # stack (replication, Sentinel monitoring) and from the host (the tests), so the
 # addresses that Sentinel announces are valid for a client on the host and a
 # failover can be followed from there.
-name: trove-it
+name: quader-it
 
 x-valkey: &valkey
   image: ${VALKEY_IMAGE:?set by test/integration/up.sh}
@@ -23,11 +23,11 @@ x-valkey: &valkey
 services:
   postgres:
     image: ${POSTGRES_IMAGE:?set by test/integration/up.sh}
-    container_name: trove-it-postgres
+    container_name: quader-it-postgres
     environment:
-      POSTGRES_USER: trove
-      POSTGRES_PASSWORD: trove-it
-      POSTGRES_DB: trove
+      POSTGRES_USER: quader
+      POSTGRES_PASSWORD: quader-it
+      POSTGRES_DB: quader
       POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
       # The PostgreSQL 18 image defaults to /var/lib/postgresql/18/docker; the tmpfs below is the data directory.
       PGDATA: /var/lib/postgresql/data
@@ -55,7 +55,7 @@ services:
     ports:
       - "127.0.0.1:15432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U trove -d trove -h /var/run/postgresql"]
+      test: ["CMD-SHELL", "pg_isready -U quader -d quader -h /var/run/postgresql"]
       interval: 2s
       timeout: 3s
       retries: 30
@@ -64,7 +64,7 @@ services:
 
   pgbouncer:
     image: ${PGBOUNCER_IMAGE:?set by test/integration/up.sh}
-    container_name: trove-it-pgbouncer
+    container_name: quader-it-pgbouncer
     entrypoint: ["/usr/bin/pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
     volumes:
       - ./conf/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
@@ -83,7 +83,7 @@ services:
 
   net:
     image: ${TOOLS_IMAGE:?set by test/integration/up.sh}
-    container_name: trove-it-net
+    container_name: quader-it-net
     command: ["sleep", "infinity"]
     init: true
     ports:
@@ -95,7 +95,7 @@ services:
 
   valkey-primary:
     <<: *valkey
-    container_name: trove-it-valkey-primary
+    container_name: quader-it-valkey-primary
     entrypoint: ["/conf/node.sh"]
     environment:
       NODE_PORT: "16379"
@@ -111,7 +111,7 @@ services:
 
   valkey-replica:
     <<: *valkey
-    container_name: trove-it-valkey-replica
+    container_name: quader-it-valkey-replica
     entrypoint: ["/conf/node.sh"]
     environment:
       NODE_PORT: "16380"
@@ -133,7 +133,7 @@ services:
 
   valkey-sentinel-1:
     <<: *valkey
-    container_name: trove-it-valkey-sentinel-1
+    container_name: quader-it-valkey-sentinel-1
     entrypoint: ["/conf/sentinel.sh"]
     environment:
       SENTINEL_PORT: "26381"
@@ -154,7 +154,7 @@ services:
 
   valkey-sentinel-2:
     <<: *valkey
-    container_name: trove-it-valkey-sentinel-2
+    container_name: quader-it-valkey-sentinel-2
     entrypoint: ["/conf/sentinel.sh"]
     environment:
       SENTINEL_PORT: "26382"
@@ -175,7 +175,7 @@ services:
 
   valkey-sentinel-3:
     <<: *valkey
-    container_name: trove-it-valkey-sentinel-3
+    container_name: quader-it-valkey-sentinel-3
     entrypoint: ["/conf/sentinel.sh"]
     environment:
       SENTINEL_PORT: "26383"
@@ -196,7 +196,7 @@ services:
 
   seaweedfs:
     image: ${SEAWEEDFS_IMAGE:?set by test/integration/up.sh}
-    container_name: trove-it-seaweedfs
+    container_name: quader-it-seaweedfs
     command:
       - server
       - -dir=/data

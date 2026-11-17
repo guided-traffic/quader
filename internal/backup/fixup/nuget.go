@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/formatdata/nuget"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/formatdata/nuget"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The NuGet purger (R-BAK-008, R-NUGET-033): after a restore from a backup that left the remote caches out, it empties

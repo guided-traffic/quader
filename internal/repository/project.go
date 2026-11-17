@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The project side of the repository writes (R-AUTHZ-026, Q-REPO-212). A repository belongs to the

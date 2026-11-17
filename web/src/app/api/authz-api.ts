@@ -6,8 +6,8 @@ import { Schema } from './types';
 
 /*
  * Permission policies, roles and role bindings (R-AUTHZ-021, R-AUTHZ-022; docs/developer/authorization.md).
- * Every write answers `Trove-Authz-Epoch`; the HTTP layer keeps the highest one of the tab and sends it
- * as `Trove-Authz-Min-Epoch` on whatever request follows (R-AUTHZ-032, R-UI-042), so the reads that a
+ * Every write answers `Quader-Authz-Epoch`; the HTTP layer keeps the highest one of the tab and sends it
+ * as `Quader-Authz-Min-Epoch` on whatever request follows (R-AUTHZ-032, R-UI-042), so the reads that a
  * screen issues after a write need no extra code.
  */
 

@@ -1,7 +1,7 @@
-// Package restoreversions is the logic of `trove admin storage restore-versions --before <t>` (R-HA-025 step 5): after a
+// Package restoreversions is the logic of `quader admin storage restore-versions --before <t>` (R-HA-025 step 5): after a
 // point-in-time restore of the database, the objects that the old installation's collector deleted after t exist in the
 // versioned blob bucket under a delete marker. The package finds the blobs whose object is missing (the check of
-// `trove admin storage verify`, over every live blob row) and removes the delete markers younger than t from exactly those
+// `quader admin storage verify`, over every live blob row) and removes the delete markers younger than t from exactly those
 // keys, so that the object of the version before it is current again.
 //
 // It removes nothing else: a delete marker of a key that no blob row references stays (the orphan sweep or the grace period
@@ -16,9 +16,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/blob/verify"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/blob/verify"
 )
 
 // Outcomes of one blob.

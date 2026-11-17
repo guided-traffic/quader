@@ -111,16 +111,16 @@ describe('HTTP layer', () => {
     expect(err.fieldErrors.get('/key')?.detail).toBe('bad');
   });
 
-  it('R-UI-042 keeps the highest own authz epoch and sends it as Trove-Authz-Min-Epoch', async () => {
+  it('R-UI-042 keeps the highest own authz epoch and sends it as Quader-Authz-Min-Epoch', async () => {
     const { client, http, epoch } = setup();
     const w = client.put('/api/v1/permission-policies/p', {}, '"1"');
-    http.expectOne('/api/v1/permission-policies/p').flush({}, { status: 200, statusText: 'OK', headers: { 'Trove-Authz-Epoch': '1842' } });
+    http.expectOne('/api/v1/permission-policies/p').flush({}, { status: 200, statusText: 'OK', headers: { 'Quader-Authz-Epoch': '1842' } });
     await w;
     expect(epoch.value()).toBe(1842);
 
     const r = client.getJson('/api/v1/authz/me');
     const meReq = http.expectOne('/api/v1/authz/me');
-    expect(meReq.request.headers.get('Trove-Authz-Min-Epoch')).toBe('1842');
+    expect(meReq.request.headers.get('Quader-Authz-Min-Epoch')).toBe('1842');
     meReq.flush({});
     await r;
     epoch.note(5);
@@ -136,7 +136,7 @@ describe('HTTP layer', () => {
       .flush({ code: 'authz_epoch_unknown' }, { status: 412, statusText: 'Precondition Failed' });
     await tick();
     const retry = http.expectOne('/api/v1/authz/me');
-    expect(retry.request.headers.has('Trove-Authz-Min-Epoch')).toBe(false);
+    expect(retry.request.headers.has('Quader-Authz-Min-Epoch')).toBe(false);
     retry.flush({ capabilities: [] });
     await p;
     expect(epoch.value()).toBeNull();

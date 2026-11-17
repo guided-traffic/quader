@@ -11,7 +11,7 @@ import { FakeSessionApi, provideFakeApis } from './api/testing/fakes';
 import { FakeProjectsApi, sampleProject } from './api/testing/fakes-projects';
 import { Layout } from './core/layout';
 import { BrowserStorage } from './core/storage';
-import { TroveTitleStrategy } from './core/title-strategy';
+import { QuaderTitleStrategy } from './core/title-strategy';
 import { seriousViolations } from './testing/axe';
 
 type Me = Exclude<FakeSessionApi['meResult'], ApiError>;
@@ -23,7 +23,7 @@ async function render(url: string, me?: Me, setup?: (projects: FakeProjectsApi) 
     imports: [App],
     providers: [
       provideRouter(routes, withComponentInputBinding()),
-      { provide: TitleStrategy, useExisting: TroveTitleStrategy },
+      { provide: TitleStrategy, useExisting: QuaderTitleStrategy },
       provideHttpClient(),
       ...provideFakeApis(),
       // jsdom has no viewport: the sidebar is pinned.
@@ -166,7 +166,7 @@ describe('The project is the context of the content (Q-UI-129)', () => {
 
   it('Q-UI-129 R-UI-096 the recent projects are kept per signed-in principal in the search\'s store', async () => {
     await render('/projects/web/packages', undefined, TWO);
-    const stored = JSON.parse(new BrowserStorage().get('local', 'trove.frequent.00000000-0000-0000-0000-000000000001') ?? '{}');
+    const stored = JSON.parse(new BrowserStorage().get('local', 'quader.frequent.00000000-0000-0000-0000-000000000001') ?? '{}');
     expect(stored.projects.map((v: { id: string }) => v.id)).toEqual(['web']);
   });
 
@@ -182,29 +182,29 @@ describe('The project is the context of the content (Q-UI-129)', () => {
     const heads = [...root.querySelectorAll('main thead th')].map((th) => th.textContent?.replace(/help_outline/g, '').trim());
     expect(heads.slice(0, 4)).toEqual(['Repository', 'Format', 'Class', 'Client address']);
     const row = root.querySelector('main tbody tr')!;
-    expect(row.querySelector('td.format-cell .format-name trove-format-icon')).toBeTruthy();
+    expect(row.querySelector('td.format-cell .format-name quader-format-icon')).toBeTruthy();
     expect(row.querySelector('td.class-cell .class-name')).toBeTruthy();
     expect(row.querySelector('th[scope="row"] .secondary:not(:last-child)')).toBeNull();
     expect(row.querySelector('td.project-cell')).toBeNull();
-    expect(row.querySelector('td.address-cell trove-address-field')).toBeTruthy();
+    expect(row.querySelector('td.address-cell quader-address-field')).toBeTruthy();
     expect(heads).not.toContain('Last activity');
   });
 
   it('R-UI-065 R-UI-066 Q-UI-300 Q-UI-330 inside a project every address field of the list has one width: the column is sized to the longest address up to the room left after the repository, no field to its own', async () => {
     const { root } = await render('/projects/web/repositories', undefined, TWO);
-    const inputs = [...root.querySelectorAll<HTMLInputElement>('main trove-address-field input')];
+    const inputs = [...root.querySelectorAll<HTMLInputElement>('main quader-address-field input')];
     expect(inputs.length).toBeGreaterThan(0);
-    const table = root.querySelector<HTMLElement>('main trove-data-table')!;
+    const table = root.querySelector<HTMLElement>('main quader-data-table')!;
     const longest = String(Math.max(...inputs.map((i) => i.value.length)));
-    expect(table.style.getPropertyValue('--trove-address-chars')).toBe(longest);
+    expect(table.style.getPropertyValue('--quader-address-chars')).toBe(longest);
     // The address may take its whole length where the room is there: its share is the longest address (Q-UI-330).
-    expect(table.style.getPropertyValue('--trove-address-share')).toBe(longest);
+    expect(table.style.getPropertyValue('--quader-address-share')).toBe(longest);
     for (const input of inputs) {
       expect(input.closest('td')?.classList.contains('address-cell')).toBe(true);
       expect(input.style.inlineSize).toBe('');
     }
-    expect(root.querySelector('main trove-address-field input[aria-label^="Client address of "]')).toBeTruthy();
-    expect(root.querySelector('main trove-address-field trove-copy-button button[aria-label^="Copy client address of "]')).toBeTruthy();
+    expect(root.querySelector('main quader-address-field input[aria-label^="Client address of "]')).toBeTruthy();
+    expect(root.querySelector('main quader-address-field quader-copy-button button[aria-label^="Copy client address of "]')).toBeTruthy();
   });
 });
 

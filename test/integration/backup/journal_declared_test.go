@@ -10,16 +10,16 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/cache"
+	"github.com/guided-traffic/quader/internal/cache"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 // TestR_AUTHZ_010_DeclaredBindingRemovedByReplayIsNotBroughtBack: a restore deployed with an older configuration declares a
-// binding that the journal removed after the restore point. trove migrate (ApplyDeclared) must not re-create it, names it as
+// binding that the journal removed after the restore point. quader migrate (ApplyDeclared) must not re-create it, names it as
 // suppressed, and takes it up again once an administrator binds it through the API (Q-AUTHZ-235).
 func TestR_AUTHZ_010_DeclaredBindingRemovedByReplayIsNotBroughtBack(t *testing.T) {
 	e := newJEnv(t)
@@ -61,7 +61,7 @@ func TestR_AUTHZ_010_DeclaredBindingRemovedByReplayIsNotBroughtBack(t *testing.T
 		t.Fatal(err)
 	}
 	if has(gid) {
-		t.Fatal("trove migrate brought back a binding the replay removed")
+		t.Fatal("quader migrate brought back a binding the replay removed")
 	}
 	if len(res.Suppressed) != 1 || !has(keep) {
 		t.Fatalf("outcome = %+v; want the removed binding suppressed and the other kept", res)

@@ -11,7 +11,7 @@ import (
 
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // sentinelProbe is the answer of one Sentinel to "where is the primary".
@@ -59,7 +59,7 @@ func (v *Valkey) probeSentinel(ctx context.Context, addr string) sentinelProbe {
 		c, err := valkey.NewClient(valkey.ClientOption{
 			InitAddress:       []string{addr},
 			ForceSingleClient: true,
-			ClientName:        "trove:" + v.instance + ":probe",
+			ClientName:        "quader:" + v.instance + ":probe",
 			TLSConfig:         v.sentinelTLS,
 			AuthCredentialsFn: v.creds.fn,
 			DialCtxFn:         dialFn(v.sentinelResolver, v.tls.prepare),
@@ -97,7 +97,7 @@ func (v *Valkey) probeSentinel(ctx context.Context, addr string) sentinelProbe {
 }
 
 // sentinelLoop reconciles the Sentinel count every refresh_interval
-// (trove_valkey_sentinels_reachable). The failover itself is followed by
+// (quader_valkey_sentinels_reachable). The failover itself is followed by
 // valkey-go's TopologyRefreshInterval; this loop only observes.
 func (v *Valkey) sentinelLoop() {
 	defer v.wg.Done()

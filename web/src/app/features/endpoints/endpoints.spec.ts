@@ -69,7 +69,7 @@ describe('Endpoint screen', () => {
         );
       },
     });
-    const copy = served.root.querySelector<HTMLButtonElement>('td.actions trove-copy-button button')!;
+    const copy = served.root.querySelector<HTMLButtonElement>('td.actions quader-copy-button button')!;
     expect(copy.getAttribute('aria-label')).toMatch(/^Copy client address https?:\/\/.*generic-local\/$/);
     expect(copy.getAttribute('title')).toBe(copy.getAttribute('aria-label'));
     expect(served.root.querySelector('[role="img"][aria-label="This endpoint does not serve this address."]')).toBeNull();
@@ -77,7 +77,7 @@ describe('Endpoint screen', () => {
 
   it('Q-UI-331 the rule list is the shared data table: rule, repository, packages and paths, versions, pre-releases, enabled, the row actions; versions and pre-releases give way first; the rows stack', async () => {
     const { root } = await renderScreen(EndpointDetail, { inputs: { endpoint: 'customers' } });
-    const table = root.querySelector<HTMLElement>('trove-data-table')!;
+    const table = root.querySelector<HTMLElement>('quader-data-table')!;
     expect(table.classList.contains('stack')).toBe(true);
     const heads = [...table.querySelectorAll<HTMLElement>('thead th')];
     expect(heads.map((h) => text(h))).toEqual(['Rule', 'Repository', 'Packages and paths', 'Versions', 'Pre-releases', 'Enabled', 'Actions']);
@@ -184,7 +184,7 @@ describe('Exposure rule editor', () => {
 
   it('R-EP-017 deleting a rule is a danger button last on its page, behind Advanced, and asks first', async () => {
     const r = await edit();
-    const advanced = [...r.root.querySelectorAll('trove-disclosure')].at(-1)!;
+    const advanced = [...r.root.querySelectorAll('quader-disclosure')].at(-1)!;
     expect(text(advanced.querySelector('.heading span:not(.material-icons)')!)).toBe('Advanced');
     // Last: after the form and after the preview.
     expect(r.root.querySelector('section.preview')!.compareDocumentPosition(advanced) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

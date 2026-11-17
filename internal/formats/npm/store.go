@@ -3,8 +3,8 @@ package npm
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // Store is the data port of the npm format (Q-ARCH-193, D-1): everything the

@@ -45,9 +45,9 @@ type setup struct {
 
 const (
 	projectName         = "invoice-api"
-	partnerUsername     = "trove-oidcv-partner"
-	scheduleDescription = "trove-oidc-validation: pipeline_source schedule (played by record-gitlab, never active)"
-	groupDescription    = "trove: records how GitLab issues CI ID tokens, for the fixtures of the issuer double (test/oidcstub/testdata, make oidc-fixtures). Safe to delete; the next run creates it again."
+	partnerUsername     = "quader-oidcv-partner"
+	scheduleDescription = "quader-oidc-validation: pipeline_source schedule (played by record-gitlab, never active)"
+	groupDescription    = "quader: records how GitLab issues CI ID tokens, for the fixtures of the issuer double (test/oidcstub/testdata, make oidc-fixtures). Safe to delete; the next run creates it again."
 )
 
 // Access levels of the members API.
@@ -216,7 +216,7 @@ func ensurePartner(ctx context.Context, c *client, s setup) (user, error) {
 	} else {
 		logf("creating user %s", partnerUsername)
 		if err := c.call(ctx, http.MethodPost, "/users", map[string]any{
-			"username": partnerUsername, "name": "trove-oidcv partner", "email": partnerUsername + "@example.com",
+			"username": partnerUsername, "name": "quader-oidcv partner", "email": partnerUsername + "@example.com",
 			"force_random_password": true, "skip_confirmation": true,
 		}, &u); err != nil {
 			return u, err
@@ -249,7 +249,7 @@ func impersonate(ctx context.Context, c *client, u user) (*client, func(), error
 	}
 	base := "/users/" + strconv.FormatInt(u.ID, 10) + "/impersonation_tokens"
 	if err := c.call(ctx, http.MethodPost, base, map[string]any{
-		"name": "trove-oidc-validation", "scopes": []string{"api"}, "expires_at": time.Now().AddDate(0, 0, 1).Format(time.DateOnly),
+		"name": "quader-oidc-validation", "scopes": []string{"api"}, "expires_at": time.Now().AddDate(0, 0, 1).Format(time.DateOnly),
 	}, &tok); err != nil {
 		return nil, nil, err
 	}

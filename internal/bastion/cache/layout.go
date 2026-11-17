@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
 )
 
 // The top-level names of the layout (R-BAS-030). Artifacts are below sha256/ as the spec has them; the bytes of

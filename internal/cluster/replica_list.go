@@ -7,8 +7,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // ReplicaLease is a lease in the `leases` column.

@@ -13,11 +13,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // mustEncode is the JSON of a manifest.
@@ -65,7 +65,7 @@ func dial(t testing.TB, in *install) *pgx.Conn {
 	return c
 }
 
-// migrateOnce runs `trove migrate up` in the library: the runner waits up to wait for the migration lock.
+// migrateOnce runs `quader migrate up` in the library: the runner waits up to wait for the migration lock.
 func migrateOnce(in *install, wait time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()

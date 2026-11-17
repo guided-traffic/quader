@@ -51,7 +51,7 @@ export const PRIMARY_DISAGREEMENT_GRACE_MS = 30_000;
 
 /** System status (R-UI-038): installation facts, replicas per role, Valkey, stored-secret keys. */
 @Component({
-  selector: 'trove-system-status',
+  selector: 'quader-system-status',
   imports: [DataTable, PageHeader, DatePipe, RouterLink, ErrorNotice, JobProgress, JobTable, TasksCard],
   templateUrl: './system-status.html',
   styleUrl: './system-status.scss',

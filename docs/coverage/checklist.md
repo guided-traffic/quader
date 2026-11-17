@@ -16,7 +16,7 @@ requirement lists the feature in its `Covers:` line and not all of them are impl
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 788 specified (515 of them implemented), 1,451 open.
-877 spec requirements: 646 cover catalog features, 231 cover none (`trove-only`, [listed at the
+877 spec requirements: 646 cover catalog features, 231 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2965,7 +2965,7 @@ Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified 
 
 ## Requirements that cover no catalog feature
 
-Requirements whose `Covers:` line says `trove-only`: trove's own design work that no
+Requirements whose `Covers:` line says `quader-only`: Quader's own design work that no
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
@@ -3101,7 +3101,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-ANS-030 | Audit events and metrics | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-031 | Limits for untrusted content | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-032 | Test suites | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
-| R-ANS-033 | The documentation of a collection version: what trove keeps, per class | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
+| R-ANS-033 | The documentation of a collection version: what Quader keeps, per class | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-034 | Generating the documentation of a local publish | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-035 | The documentation as a protocol document, per class | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-036 | The documentation operations of the screens, their rendering and the search | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
@@ -3156,7 +3156,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-IMP-001 | The command, and what it is | P1 | [import.md](../spec/import.md) |
 | R-IMP-002 | The source and the credentials | P1 | [import.md](../spec/import.md) |
 | R-IMP-003 | Which packages | P1 | [import.md](../spec/import.md) |
-| R-IMP-004 | The road into trove, and what it guarantees | P1 | [import.md](../spec/import.md) |
+| R-IMP-004 | The road into Quader, and what it guarantees | P1 | [import.md](../spec/import.md) |
 | R-IMP-005 | What is kept, and what is not | P1 | [import.md](../spec/import.md) |
 | R-IMP-006 | Outcomes, idempotence and conflicts | P1 | [import.md](../spec/import.md) |
 | R-IMP-007 | Resume after an interruption | P1 | [import.md](../spec/import.md) |

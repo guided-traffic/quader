@@ -83,7 +83,7 @@ describe('Package details', () => {
   it('R-UI-007 R-UI-008 the README tab is the default when the version has a README and shows the rendered HTML', async () => {
     const r = await open();
     expect(tabLabels(r)).toEqual(['README', 'Metadata', 'Files', 'Repositories', 'All versions']);
-    expect(r.root.querySelector('trove-package-readme .readme h1')?.textContent).toBe('@team-a/ui');
+    expect(r.root.querySelector('quader-package-readme .readme h1')?.textContent).toBe('@team-a/ui');
     expect(r.fake.readmeCalls).toEqual(['pkg_01JBQ6V7S3K9@1.4.0']);
   });
 
@@ -131,7 +131,7 @@ describe('Package details', () => {
     const r = await open({ tab: 'files' });
     const sha = '0'.repeat(56) + '5be0c1d2';
     expect(text(r.root)).toContain(sha);
-    expect(r.root.querySelector('.pkg-tabs trove-copy-button button')?.getAttribute('aria-label')).toBe('Copy SHA-256');
+    expect(r.root.querySelector('.pkg-tabs quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy SHA-256');
     const download = [...r.root.querySelectorAll('a')].find((a) => a.textContent?.trim() === 'Download')!;
     expect(download.getAttribute('href')).toBe('/api/v1/projects/web/repositories/npm-local/content/@team-a/ui/-/ui-1.4.0.tgz');
     expect(download.hasAttribute('download')).toBe(true);
@@ -191,9 +191,9 @@ describe('Package details', () => {
 
   it('R-UI-007 R-UI-009 the install panel is part of the page and shows the command of the selected version', async () => {
     const r = await open();
-    expect((r.root.querySelector<HTMLInputElement>('trove-install-panel trove-address-field input')?.value ?? r.root.querySelector('trove-install-panel pre')?.textContent)).toBe('npm install @team-a/ui@1.4.0');
+    expect((r.root.querySelector<HTMLInputElement>('quader-install-panel quader-address-field input')?.value ?? r.root.querySelector('quader-install-panel pre')?.textContent)).toBe('npm install @team-a/ui@1.4.0');
     await set(r, { version: '1.3.0' });
-    expect((r.root.querySelector<HTMLInputElement>('trove-install-panel trove-address-field input')?.value ?? r.root.querySelector('trove-install-panel pre')?.textContent)).toBe('npm install @team-a/ui@1.3.0');
+    expect((r.root.querySelector<HTMLInputElement>('quader-install-panel quader-address-field input')?.value ?? r.root.querySelector('quader-install-panel pre')?.textContent)).toBe('npm install @team-a/ui@1.3.0');
   });
 
   it('R-UI-007 the install panel comes before the tabs in the document, so on a narrow content area the command is not below the README', async () => {
@@ -312,7 +312,7 @@ describe('Package details', () => {
       [...r.root.querySelectorAll('.pkg-tabs dl.facts')].flatMap((dl) =>
         [...dl.querySelectorAll('dt')].map((dt) => `${text(dt)} ${text(dt.nextElementSibling!)}`),
       );
-    const copyButtons = (r: Opened) => [...r.root.querySelectorAll<HTMLButtonElement>('.pkg-tabs trove-copy-button button')];
+    const copyButtons = (r: Opened) => [...r.root.querySelectorAll<HTMLButtonElement>('.pkg-tabs quader-copy-button button')];
     const nameOf = (b: HTMLElement) => b.getAttribute('aria-label') ?? text(b);
 
     it('R-UI-007 R-OCI-031 Q-UI-225 the image is a package, the tags are its versions, and the header shows the OCI logo beside the format', async () => {
@@ -321,7 +321,7 @@ describe('Package details', () => {
       expect(versionInput(r).value).toBe('1.2.0');
       expect(options(r)).toEqual(expect.arrayContaining(['1.1.0', '1.2.0']));
       const badge = r.root.querySelector('.type-badge')!;
-      expect([...badge.querySelectorAll('trove-format-icon img')].map((i) => [i.getAttribute('src'), i.getAttribute('alt')])).toEqual([
+      expect([...badge.querySelectorAll('quader-format-icon img')].map((i) => [i.getAttribute('src'), i.getAttribute('alt')])).toEqual([
         ['formats/oci/oci-icon-color.svg', ''],
         ['formats/oci/oci-icon-white.svg', ''],
       ]);
@@ -520,9 +520,9 @@ describe('Package details', () => {
 
     it('R-ANS-025 the install panel shows the collection install command of the selected version, and no error notice', async () => {
       const r = await collection();
-      expect((r.root.querySelector<HTMLInputElement>('trove-install-panel trove-address-field input')?.value ?? r.root.querySelector('trove-install-panel pre')?.textContent)).toBe('ansible-galaxy collection install acme.tools:1.2.0');
+      expect((r.root.querySelector<HTMLInputElement>('quader-install-panel quader-address-field input')?.value ?? r.root.querySelector('quader-install-panel pre')?.textContent)).toBe('ansible-galaxy collection install acme.tools:1.2.0');
       expect(r.root.querySelector('[role="alert"]')).toBeNull();
-      expect(r.root.querySelector('trove-error-notice')).toBeNull();
+      expect(r.root.querySelector('quader-error-notice')).toBeNull();
     });
 
     it('R-ANS-026 the metadata lists the Ansible versions it needs, the licences and tags of the generic fields, the dependencies on other collections, the authors and the links', async () => {

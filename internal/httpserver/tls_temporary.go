@@ -14,7 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // Lifetime of a temporary certificate and the remaining time at which a handshake

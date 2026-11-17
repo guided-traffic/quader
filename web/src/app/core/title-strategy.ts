@@ -3,11 +3,11 @@ import { Title } from '@angular/platform-browser';
 import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 
 /** Suffix of every page title (R-UI-003, WCAG 2.4.2). The product name is not translated. */
-export const TITLE_SUFFIX = 'trove';
+export const TITLE_SUFFIX = 'Quader';
 
-/** "Packages – trove": the route's `title` plus the product name. */
+/** "Packages – Quader": the route's `title` plus the product name. */
 @Injectable({ providedIn: 'root' })
-export class TroveTitleStrategy extends TitleStrategy {
+export class QuaderTitleStrategy extends TitleStrategy {
   private readonly title = inject(Title);
 
   override updateTitle(snapshot: RouterStateSnapshot): void {

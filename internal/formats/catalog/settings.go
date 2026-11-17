@@ -18,7 +18,7 @@ const (
 	// a value outside an enum or a range.
 	SettingInvalid = "invalid_value"
 	// SettingNotApplicable is a member of the settings that the class of the
-	// repository does not use (the schema's x-trove-classes).
+	// repository does not use (the schema's x-quader-classes).
 	SettingNotApplicable = "not_applicable"
 )
 
@@ -34,7 +34,7 @@ type SettingViolation struct {
 // settingsSchema is the compiled form of [Facts.SettingsSchema].
 type settingsSchema struct {
 	schema *jsonschema.Schema
-	// classes holds the classes of the members that name some (x-trove-classes); a member
+	// classes holds the classes of the members that name some (x-quader-classes); a member
 	// that names none applies to every class.
 	classes map[string][]Class
 }
@@ -56,7 +56,7 @@ func compileSettings(id ID, raw []byte) (*settingsSchema, error) {
 	props, _ := root["properties"].(map[string]any)
 	for name, p := range props {
 		decl, _ := p.(map[string]any)
-		list, ok := decl["x-trove-classes"].([]any)
+		list, ok := decl["x-quader-classes"].([]any)
 		if !ok {
 			continue
 		}
@@ -68,7 +68,7 @@ func compileSettings(id ID, raw []byte) (*settingsSchema, error) {
 			out.classes[name] = append(out.classes[name], Class(c))
 		}
 	}
-	url := "trove:formats/" + string(id) + "/settings.json"
+	url := "quader:formats/" + string(id) + "/settings.json"
 	c := jsonschema.NewCompiler()
 	c.DefaultDraft(jsonschema.Draft2020)
 	if err := c.AddResource(url, doc); err != nil {
@@ -85,7 +85,7 @@ func (e Entry) HasSettings() bool { return e.settings != nil }
 
 // ValidateSettings checks the settings member of a repository document of the given
 // class against the format's schema (R-ARCH-008, R-REPO-008): every violation is
-// reported, not the first. A member whose schema names classes (x-trove-classes) is
+// reported, not the first. A member whose schema names classes (x-quader-classes) is
 // not applicable to a repository of another class. A format without a settings schema
 // takes no settings: any content is a violation. An empty member is valid.
 func (e Entry) ValidateSettings(class Class, raw json.RawMessage) []SettingViolation {

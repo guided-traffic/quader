@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
 )
 
 // The per-replica aggregation of the denial events (R-CI-021): the first denial of a client address and reason

@@ -1,7 +1,7 @@
 # The namespace-scoped parts of the e2e Bastions (R-BAS-049, deploy/dev/bastion.sh): what the two releases of the chart
-# trove-bastion need around them, applied to the namespace ${BASTION_NS} (the Pod Security Standard restricted).
+# quader-bastion need around them, applied to the namespace ${BASTION_NS} (the Pod Security Standard restricted).
 #
-#   Issuer trove-dev-ca            the dev CA again, in this namespace: it signs the pods' listener certificates (chart
+#   Issuer quader-dev-ca            the dev CA again, in this namespace: it signs the pods' listener certificates (chart
 #                                  tls.certManager), the edge certificates below and the Valkey operator's certificate.
 #                                  bastion.sh copies the CA's Secret here first (a dev profile shortcut: the CA key is a
 #                                  development key).
@@ -16,11 +16,11 @@
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
-  name: trove-dev-ca
+  name: quader-dev-ca
   namespace: ${BASTION_NS}
 spec:
   ca:
-    secretName: trove-dev-ca
+    secretName: quader-dev-ca
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -29,13 +29,13 @@ metadata:
   namespace: ${BASTION_NS}
 spec:
   secretName: bastion-volume-edge-tls
-  commonName: bastion-volume.trove.localhost
+  commonName: bastion-volume.quader.localhost
   duration: 2160h
   renewBefore: 720h
   privateKey: {algorithm: ECDSA, size: 256}
   usages: [digital signature, key encipherment, server auth]
-  dnsNames: [bastion-volume.trove.localhost]
-  issuerRef: {name: trove-dev-ca, kind: Issuer, group: cert-manager.io}
+  dnsNames: [bastion-volume.quader.localhost]
+  issuerRef: {name: quader-dev-ca, kind: Issuer, group: cert-manager.io}
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -44,13 +44,13 @@ metadata:
   namespace: ${BASTION_NS}
 spec:
   secretName: bastion-bucket-edge-tls
-  commonName: bastion-bucket.trove.localhost
+  commonName: bastion-bucket.quader.localhost
   duration: 2160h
   renewBefore: 720h
   privateKey: {algorithm: ECDSA, size: 256}
   usages: [digital signature, key encipherment, server auth]
-  dnsNames: [bastion-bucket.trove.localhost]
-  issuerRef: {name: trove-dev-ca, kind: Issuer, group: cert-manager.io}
+  dnsNames: [bastion-bucket.quader.localhost]
+  issuerRef: {name: quader-dev-ca, kind: Issuer, group: cert-manager.io}
 ---
 apiVersion: v1
 kind: Secret
@@ -96,7 +96,7 @@ spec:
     certManager:
       issuer:
         kind: Issuer
-        name: trove-dev-ca
+        name: quader-dev-ca
   persistence:
     enabled: false
   podDisruptionBudget:
@@ -116,7 +116,7 @@ metadata:
   name: bastion-valkey-clients
   namespace: ${BASTION_NS}
   labels:
-    app.kubernetes.io/part-of: trove-dev
+    app.kubernetes.io/part-of: quader-dev
 spec:
   podSelector:
     matchLabels:
@@ -127,28 +127,28 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: trove-bastion
+              app.kubernetes.io/name: quader-bastion
       ports:
         - {port: 16379, protocol: TCP}
         - {port: 36379, protocol: TCP}
 ---
-# The bucket of the Bastion with the bucket backend, in the SeaweedFS of the dev profile (trove-s3, namespace ${NS}). The
-# Bastion's identity is the profile's (a copy of Secret trove-s3 in the Bastion namespace); the bucket is its own.
+# The bucket of the Bastion with the bucket backend, in the SeaweedFS of the dev profile (quader-s3, namespace ${NS}). The
+# Bastion's identity is the profile's (a copy of Secret quader-s3 in the Bastion namespace); the bucket is its own.
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: trove-s3-bastion-bucket
+  name: quader-s3-bastion-bucket
   namespace: ${NS}
   labels:
-    app.kubernetes.io/name: trove-s3-bastion-bucket
-    app.kubernetes.io/part-of: trove-dev
+    app.kubernetes.io/name: quader-s3-bastion-bucket
+    app.kubernetes.io/part-of: quader-dev
 spec:
   backoffLimit: 6
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: trove-s3-bastion-bucket
-        app.kubernetes.io/part-of: trove-dev
+        app.kubernetes.io/name: quader-s3-bastion-bucket
+        app.kubernetes.io/part-of: quader-dev
     spec:
       restartPolicy: OnFailure
       automountServiceAccountToken: false
@@ -172,8 +172,8 @@ spec:
               export AWS_SECRET_ACCESS_KEY="$(cat /secrets/secret-access-key)"
               export AWS_DEFAULT_REGION=us-east-1
               export AWS_CA_BUNDLE=/tls/ca.crt
-              s3() { aws --endpoint-url https://trove-s3.${NS}.svc:9000 "$@"; }
-              b=trove-bastion-partners
+              s3() { aws --endpoint-url https://quader-s3.${NS}.svc:9000 "$@"; }
+              b=quader-bastion-partners
               s3 s3api head-bucket --bucket "$b" 2>/dev/null || s3 s3api create-bucket --bucket "$b"
               echo "bucket: $b"
           env:
@@ -191,13 +191,13 @@ spec:
           emptyDir: {}
         - name: s3-secret
           secret:
-            secretName: trove-s3
+            secretName: quader-s3
             defaultMode: 0440
             items:
               - {key: access-key-id, path: access-key-id}
               - {key: secret-access-key, path: secret-access-key}
         - name: tls
           secret:
-            secretName: trove-s3-tls
+            secretName: quader-s3-tls
             items:
               - {key: ca.crt, path: ca.crt}

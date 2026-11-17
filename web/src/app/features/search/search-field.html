@@ -93,13 +93,13 @@
   >
     <span class="search-option-icon" aria-hidden="true">
       @if (e.format) {
-        <trove-format-icon [format]="e.format" />
+        <quader-format-icon [format]="e.format" />
       } @else if (e.letter) {
         <!-- Drawn by the stylesheet: a letter in the text would be visible text missing from the entry's name (axe
              label-content-name-mismatch). -->
         <span class="search-letter" [attr.data-letter]="e.letter"></span>
       } @else if (e.avatar) {
-        <trove-avatar class="search-avatar" [seed]="e.avatar" />
+        <quader-avatar class="search-avatar" [seed]="e.avatar" />
       } @else {
         <span class="material-icons">{{ e.icon }}</span>
       }

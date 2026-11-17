@@ -16,8 +16,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // cancelRequestCode is the request code of a PostgreSQL CancelRequest, which
@@ -150,7 +150,7 @@ func TestDatabaseTLSReload(t *testing.T) {
 		c.Host, c.Port = "127.0.0.1", port
 		c.ConnectTimeout = 2 * time.Second
 		c.UsernameFile = filepath.Join(dir, "user")
-		tlstest.WriteFile(t, c.UsernameFile, []byte("trove\n"))
+		tlstest.WriteFile(t, c.UsernameFile, []byte("quader\n"))
 		mutate(dir, &c)
 		tt, err := newDBTLS(c)
 		if err != nil {

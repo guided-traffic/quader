@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 func TestRead(t *testing.T) {
@@ -82,7 +82,7 @@ func TestRead(t *testing.T) {
 				var n int
 				if err := admin.QueryRow(context.Background(),
 					`SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity
-					  WHERE application_name LIKE 'trove:it-read:%' AND pid <> pg_backend_pid()`).Scan(&n); err == nil {
+					  WHERE application_name LIKE 'quader:it-read:%' AND pid <> pg_backend_pid()`).Scan(&n); err == nil {
 					kills.Add(int64(n))
 				}
 			}
@@ -119,7 +119,7 @@ func TestRead(t *testing.T) {
 	t.Run("R-ARCH-019 the system facts reads go through Read", func(t *testing.T) {
 		killAll := func() {
 			_, _ = admin.Exec(context.Background(), `SELECT pg_terminate_backend(pid) FROM pg_stat_activity
-				WHERE application_name LIKE 'trove:it-read:%' AND pid <> pg_backend_pid()`)
+				WHERE application_name LIKE 'quader:it-read:%' AND pid <> pg_backend_pid()`)
 		}
 		sctx := ctxT(t, 20*time.Second)
 		killAll()

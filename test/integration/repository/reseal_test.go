@@ -5,7 +5,7 @@ package repository
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/scope"
 )
 
 // TestSecretsReencryptTask runs the task on a worker of the harness: the

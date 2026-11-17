@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // idpUser is an account of the fake provider.
@@ -69,7 +69,7 @@ func newFakeIDP(t *testing.T, ca *tlstest.CA, secret string) *fakeIDP {
 	t.Helper()
 	f := &fakeIDP{t: t, secret: secret, codes: map[string]*grant{}, sessions: map[string]bool{}}
 	f.rotate()
-	f.user = idpUser{sub: "sub-alice", username: "alice", email: "alice@example.com", name: "Alice Example", groups: []string{"trove-team-web", "unrelated"}}
+	f.user = idpUser{sub: "sub-alice", username: "alice", email: "alice@example.com", name: "Alice Example", groups: []string{"quader-team-web", "unrelated"}}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /.well-known/openid-configuration", f.discovery)
 	mux.HandleFunc("GET /jwks", f.jwks)

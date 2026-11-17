@@ -17,8 +17,8 @@ import (
 
 // The client pods of the OCI acceptance tests (R-OCI-035, Q-OCI-21): deploy/dev/oci-clients.yaml holds the pod (the Docker Engine with
 // Buildx in the container `docker`, Podman in the container `podman`, a forwarder on 127.0.0.1:<edge port>, the dev CA trusted by both),
-// test/e2e/ociclients builds its two images, and deploy/dev/e2e.sh (marker T16 oci-clients) starts the pods trove-e2e-oci-<i> in the
-// namespace trove-e2e-clients, which admits privileged pods. The tests run the clients through `kubectl exec`; the scenarios build on
+// test/e2e/ociclients builds its two images, and deploy/dev/e2e.sh (marker T16 oci-clients) starts the pods quader-e2e-oci-<i> in the
+// namespace quader-e2e-clients, which admits privileged pods. The tests run the clients through `kubectl exec`; the scenarios build on
 // ociClientExec and ociClientTry.
 
 // The containers of a client pod.
@@ -30,13 +30,13 @@ const (
 // ociClientPod returns the name of the i-th clients pod; a missing setting is a failure, never a skip.
 func ociClientPod(t testing.TB, i int) string {
 	t.Helper()
-	prefix, count := os.Getenv("TROVE_E2E_OCI_CLIENTS_POD_PREFIX"), os.Getenv("TROVE_E2E_OCI_CLIENTS_PODS")
+	prefix, count := os.Getenv("QUADER_E2E_OCI_CLIENTS_POD_PREFIX"), os.Getenv("QUADER_E2E_OCI_CLIENTS_PODS")
 	if prefix == "" || count == "" {
-		t.Fatal("TROVE_E2E_OCI_CLIENTS_POD_PREFIX and TROVE_E2E_OCI_CLIENTS_PODS are not set; run `deploy/dev/e2e.sh oci-clients`")
+		t.Fatal("QUADER_E2E_OCI_CLIENTS_POD_PREFIX and QUADER_E2E_OCI_CLIENTS_PODS are not set; run `deploy/dev/e2e.sh oci-clients`")
 	}
 	n, err := strconv.Atoi(count)
 	if err != nil || i < 0 || i >= n {
-		t.Fatalf("OCI clients pod %d is outside TROVE_E2E_OCI_CLIENTS_PODS=%q", i, count)
+		t.Fatalf("OCI clients pod %d is outside QUADER_E2E_OCI_CLIENTS_PODS=%q", i, count)
 	}
 	return prefix + strconv.Itoa(i)
 }
@@ -44,9 +44,9 @@ func ociClientPod(t testing.TB, i int) string {
 // ociClientsNamespace is the namespace of the client pods (Pod Security level privileged).
 func ociClientsNamespace(t testing.TB) string {
 	t.Helper()
-	ns := os.Getenv("TROVE_E2E_OCI_CLIENTS_NAMESPACE")
+	ns := os.Getenv("QUADER_E2E_OCI_CLIENTS_NAMESPACE")
 	if ns == "" {
-		t.Fatal("TROVE_E2E_OCI_CLIENTS_NAMESPACE is not set; run `deploy/dev/e2e.sh oci-clients`")
+		t.Fatal("QUADER_E2E_OCI_CLIENTS_NAMESPACE is not set; run `deploy/dev/e2e.sh oci-clients`")
 	}
 	return ns
 }

@@ -349,9 +349,9 @@ func printSummary(w io.Writer, m *model, c *corpus) {
 			rparts = append(rparts, fmt.Sprintf("%s %d", p, rp[p]))
 		}
 	}
-	only := len(m.troveOnlyReqs())
+	only := len(m.quaderOnlyReqs())
 	fmt.Fprintf(w, "spec: %d pages, %d requirements (%s); %d cover catalog features, %d %s; %d Covers references\n",
-		len(pages), len(m.Reqs), strings.Join(rparts, ", "), len(m.Reqs)-only, only, troveOnly, refs)
+		len(pages), len(m.Reqs), strings.Join(rparts, ", "), len(m.Reqs)-only, only, quaderOnly, refs)
 	var cov []string
 	for _, p := range priorities() {
 		cov = append(cov, fmt.Sprintf("%s %d/%d", p, m.countSpecified(m.Features, p), m.countAll(m.Features, p)))

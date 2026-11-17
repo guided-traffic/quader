@@ -13,21 +13,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
-// TestListenerRotation runs `trove serve --role all` with TLS on both listeners
+// TestListenerRotation runs `quader serve --role all` with TLS on both listeners
 // and rotates the certificate files in place under a constant load (E0.15 at
 // process level).
 func TestListenerRotation(t *testing.T) {
 	in := newInstall(t)
 	in.run(t, "migrate", "up")
 
-	ca := tlstest.NewCA(t, "trove listener ca")
+	ca := tlstest.NewCA(t, "quader listener ca")
 	certFile, keyFile := ca.Issue(t, tlstest.Options{Serial: big.NewInt(1001)}).Files(t, in.dir, "tls")
 	const reload = time.Second
-	r := in.serve(t, "all", certificatesEnv("TROVE_SERVER_TLS_CERTIFICATES", certFile, keyFile),
-		"TROVE_SERVER_TLS_RELOAD_INTERVAL="+reload.String())
+	r := in.serve(t, "all", certificatesEnv("QUADER_SERVER_TLS_CERTIFICATES", certFile, keyFile),
+		"QUADER_SERVER_TLS_RELOAD_INTERVAL="+reload.String())
 	fresh := httpsClient(ca, false)
 	r.waitReady(t, fresh, 60*time.Second)
 	pid := r.cmd.Process.Pid
@@ -50,7 +50,7 @@ func TestListenerRotation(t *testing.T) {
 			}
 			resp.Body.Close()
 			if resp.StatusCode == 200 || resp.Header.Get("X-Request-Id") != "" {
-				t.Errorf("plaintext %s was served by trove: %d", u, resp.StatusCode)
+				t.Errorf("plaintext %s was served by quader: %d", u, resp.StatusCode)
 			}
 		}
 	})
@@ -171,18 +171,18 @@ func TestListenerRotation(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, l := range []string{"client", "ops"} {
-			series := fmt.Sprintf(`trove_tls_reloads_total{kind="listener",listener=%q,name=%q}`, l, certFile)
+			series := fmt.Sprintf(`quader_tls_reloads_total{kind="listener",listener=%q,name=%q}`, l, certFile)
 			line := metricLine(body, series)
 			n, _ := strconv.ParseFloat(strings.TrimSpace(strings.TrimPrefix(line, series)), 64)
 			if n < 1 {
 				t.Errorf("%s = %q, want at least 1", series, line)
 			}
-			if metricLine(body, fmt.Sprintf(`trove_tls_certificate_expiry_timestamp_seconds{kind="listener",listener=%q,name=%q}`, l, certFile)) == "" {
+			if metricLine(body, fmt.Sprintf(`quader_tls_certificate_expiry_timestamp_seconds{kind="listener",listener=%q,name=%q}`, l, certFile)) == "" {
 				t.Errorf("no expiry gauge for the %s listener", l)
 			}
 		}
 		for _, kind := range []string{"database", "valkey", "objectstore"} {
-			if !strings.Contains(body, `trove_tls_certificate_expiry_timestamp_seconds{kind="`+kind+`"`) {
+			if !strings.Contains(body, `quader_tls_certificate_expiry_timestamp_seconds{kind="`+kind+`"`) {
 				t.Errorf("no expiry gauge for the %s CA", kind)
 			}
 		}

@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // A pass outside Inspect declares limits above the defaults of R-ARCH-028 (R-VULN-004 step 3: 1,000,000 entries, 4 GiB):

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Decode returns the JSON of a stored upstream document. A registration hive may be stored
@@ -110,7 +110,7 @@ func (p rawPage) leaves(limit int) ([]Leaf, bool, error) {
 		return nil, true, invalid("A page of the upstream's registration has leaves that are no list of leaf objects: " + shorten(err.Error()))
 	}
 	if len(items) > limit {
-		return nil, true, invalid("The upstream's registration lists more than " + strconv.Itoa(MaxLeaves) + " versions; trove reads at most that many of one ID.")
+		return nil, true, invalid("The upstream's registration lists more than " + strconv.Itoa(MaxLeaves) + " versions; Quader reads at most that many of one ID.")
 	}
 	raw := make([]rawLeaf, len(items))
 	for i, it := range items {
@@ -131,7 +131,7 @@ func (p rawPage) leaves(limit int) ([]Leaf, bool, error) {
 
 // MaxPages is the most pages one registration index may list, inlined or not (Q-NUGET-83). Every
 // page that is not inlined costs an upstream request, a stored document and possibly a URL-map
-// row when the index is read, so an index that lists more is no document trove reads: 512 pages of
+// row when the index is read, so an index that lists more is no document quader reads: 512 pages of
 // nuget.org's 64 leaves are 32,768 versions, which is MaxLeaves.
 const MaxPages = 512
 
@@ -160,7 +160,7 @@ func parseIndex(doc []byte) (*Index, error) {
 		return nil, invalid("The upstream's registration index is not a registration document: " + shorten(err.Error()))
 	}
 	if len(d.Items) > MaxPages {
-		return nil, invalid("The upstream's registration index lists " + strconv.Itoa(len(d.Items)) + " pages; trove reads at most " + strconv.Itoa(MaxPages) + ".")
+		return nil, invalid("The upstream's registration index lists " + strconv.Itoa(len(d.Items)) + " pages; Quader reads at most " + strconv.Itoa(MaxPages) + ".")
 	}
 	idx := &Index{Pages: make([]PageRef, 0, len(d.Items))}
 	left := MaxLeaves

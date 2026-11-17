@@ -194,7 +194,7 @@ describe('The creation form of a repository', () => {
     const r = await openForm('deb');
     stayOnPage();
     await openAdvanced(r);
-    expect($(r, '#f-deb-origin').value).toBe('trove');
+    expect($(r, '#f-deb-origin').value).toBe('quader');
     expect($<HTMLTextAreaElement>(r, '#f-deb-architectures').value).toBe('amd64\narm64');
     expect(text(r.root)).not.toContain('Default:');
     const origin = $(r, '#f-deb-origin');
@@ -202,7 +202,7 @@ describe('The creation form of a repository', () => {
     await settle(r.fixture);
     origin.dispatchEvent(new Event('blur'));
     await settle(r.fixture);
-    expect(origin.value).toBe('trove');
+    expect(origin.value).toBe('quader');
     await create(r);
     expect(created(r.fake, 'deb-local').deb).toBeUndefined();
   });
@@ -301,10 +301,10 @@ describe('The creation form of a repository', () => {
     await chooseClass(r, 'remote');
     expect(r.root.querySelector('[aria-pressed]')).toBeNull();
     expect($(r, '#f-remote-url').value).toBe('');
-    expect(r.root.querySelector('trove-upstream-settings .field-error')).toBeNull();
+    expect(r.root.querySelector('quader-upstream-settings .field-error')).toBeNull();
     await create(r);
     expect(r.fake.createKeys).toEqual([]);
-    expect(text($(r, 'trove-upstream-settings .field-error'))).toBe('Enter the address of the registry, such as https://registry.example.com/.');
+    expect(text($(r, 'quader-upstream-settings .field-error'))).toBe('Enter the address of the registry, such as https://registry.example.com/.');
     expect(text($(r, '[role="alert"]'))).toContain('Upstream URL');
   });
 
@@ -348,7 +348,7 @@ describe('The creation form of a repository', () => {
     const request = text($(r, '.api-request'));
     expect(request).toContain('"value": "<the password>"');
     expect(request).not.toContain('tok-123');
-    expect(request).toContain("curl -X POST 'https://trove.example.net/api/v1/projects/web/repositories'");
+    expect(request).toContain("curl -X POST 'https://quader.example.net/api/v1/projects/web/repositories'");
   });
 
   it('R-UI-080 another class keeps an edited key and the description and starts the Advanced settings afresh', async () => {

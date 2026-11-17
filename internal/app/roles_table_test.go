@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // roleTable is the area table of R-ARCH-001 written out as data, independent of the roleSet constants of the step list: the

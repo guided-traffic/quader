@@ -77,7 +77,7 @@ describe('Authentication settings (R-UI-031)', () => {
     const api = get(AuthSettingsApi) as FakeAuthSettingsApi;
     expect(saveButton(root, 'new users are external').disabled).toBe(true);
     expect(saveTokens(root).disabled).toBe(true);
-    root.querySelector<HTMLInputElement>('trove-checkbox input')!.click();
+    root.querySelector<HTMLInputElement>('quader-checkbox input')!.click();
     typeInto(root, 'Default lifetime (days)', '30');
     await settle(fixture);
     expect(saveButton(root, 'new users are external').disabled).toBe(false);
@@ -98,7 +98,7 @@ describe('Authentication settings (R-UI-031)', () => {
 
   it('R-AUTH-044 without settings:write the flag for new users is shown but cannot be changed', async () => {
     const { root } = await renderScreen(AuthSettings, { capabilities: ['settings:read'] });
-    expect(root.querySelector<HTMLInputElement>('trove-checkbox input')!.disabled).toBe(true);
+    expect(root.querySelector<HTMLInputElement>('quader-checkbox input')!.disabled).toBe(true);
     expect(text(root)).toContain('existing users keep their flag');
   });
 
@@ -111,7 +111,7 @@ describe('Authentication settings (R-UI-031)', () => {
     await settle(fixture);
     saveTokens(root).click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-conflict-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-conflict-dialog') as HTMLElement;
     expect(dialog).toBeTruthy();
     buttonByText(dialog, 'Overwrite').click();
     await sleep(fixture, 300);
@@ -138,7 +138,7 @@ describe('Authentication settings (R-UI-031)', () => {
     await settle(fixture);
     saveTokens(root).click();
     await settle(fixture);
-    const drafts = browserStorage.entries('session').filter(([k]) => k.startsWith('trove.draft:'));
+    const drafts = browserStorage.entries('session').filter(([k]) => k.startsWith('quader.draft:'));
     expect(drafts).toHaveLength(1);
 
     // The sign-in returns to the same route: a new instance picks the draft up.

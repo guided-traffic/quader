@@ -1,21 +1,21 @@
 // One column of at most the settings measure (R-UI-087, the style guide's settings pages).
 .settings {
-  max-inline-size: var(--trove-settings-measure);
+  max-inline-size: var(--quader-settings-measure);
 }
 
 .subject {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-2);
-  margin: var(--trove-space-1) 0 0;
+  gap: var(--quader-space-2);
+  margin: var(--quader-space-1) 0 0;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--trove-space-1);
-  margin-block-end: var(--trove-space-4);
+  gap: var(--quader-space-1);
+  margin-block-end: var(--quader-space-4);
 
   .hint {
     margin: 0;
@@ -23,16 +23,16 @@
 }
 
 .top {
-  padding-block-end: var(--trove-space-5);
+  padding-block-end: var(--quader-space-5);
 }
 
 .open-section {
-  padding-block: var(--trove-space-4) var(--trove-space-5);
-  border-block-start: 1px solid var(--trove-border);
+  padding-block: var(--quader-space-4) var(--quader-space-5);
+  border-block-start: 1px solid var(--quader-border);
 
   h2 {
-    margin: 0 0 var(--trove-space-2);
-    font: var(--trove-type-title-small);
+    margin: 0 0 var(--quader-space-2);
+    font: var(--quader-type-title-small);
   }
 }
 
@@ -48,31 +48,31 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-3);
-  margin-block-start: var(--trove-space-3);
+  gap: var(--quader-space-3);
+  margin-block-start: var(--quader-space-3);
 }
 
 .details h3 {
-  margin: var(--trove-space-3) 0 var(--trove-space-2);
-  font-size: var(--trove-text-size);
+  margin: var(--quader-space-3) 0 var(--quader-space-2);
+  font-size: var(--quader-text-size);
   font-weight: 600;
 }
 
 .details h4 {
-  margin: var(--trove-space-3) 0 var(--trove-space-1);
-  font-size: var(--trove-text-size);
+  margin: var(--quader-space-3) 0 var(--quader-space-1);
+  font-size: var(--quader-text-size);
   font-weight: 400;
 }
 
 .advanced-action {
-  padding-block-end: var(--trove-space-4);
+  padding-block-end: var(--quader-space-4);
 
   h3 {
     margin-block-start: 0;
   }
 
   .hint {
-    margin-block: 0 var(--trove-space-3);
+    margin-block: 0 var(--quader-space-3);
   }
 }
 
@@ -80,6 +80,6 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-2);
-  margin-block-start: var(--trove-space-3);
+  gap: var(--quader-space-2);
+  margin-block-start: var(--quader-space-3);
 }

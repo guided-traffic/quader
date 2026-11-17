@@ -28,7 +28,7 @@ internal/formats/npm/
 ├── handlers_identity.go  whoami and ping
 ├── handlers_deprecate.go the metadata PUT; answers 404 until deprecate is built (R-NPM-018, R-NPM-043), 400 for a body without versions
 ├── handlers_audit.go     the security audit: the dispatch by mode, the forwarder, the bounds of the body, the forwarded set, the forward and npm 6's endpoints (R-NPM-038)
-├── handlers_audit_local.go   the audit in mode local, from trove's own advisory data: the mode of a repository, the answer and its notice (R-VULN-017)
+├── handlers_audit_local.go   the audit in mode local, from Quader's own advisory data: the mode of a repository, the answer and its notice (R-VULN-017)
 ├── handlers_audit_ranges.go  vulnerable_versions as node-semver text, the pre-release completion, the adapter the audit hands to the matcher (R-VULN-017)
 ├── tags.go          the dist-tag rules of R-NPM-016 on the SemVer order; a publish leaves a tag at a hidden version (Q-NPM-85)
 ├── exposure.go      the exposure adapter (ranges, pre-releases, dimensions) and the filter of rows and documents (R-NPM-048)
@@ -60,8 +60,8 @@ do with any other package of the format.
 | What does the format declare? | `Descriptor()` in [format.go](../../internal/formats/npm/format.go): the local class (remote and virtual join with their adapters), layout `npm`, default upstream and cache periods, pattern subject `name`, `OwnershipDefault: enforce`, property prefix `npm.`, `DataPort: Store`, `MaxDocumentBytes` 128 MiB, the limits of a `package.json` |
 | How is a path matched? | `Match` = `formats.MatchRoutes` on the route table, then `name.ParseEscaped` on the name the matcher found: the name is decoded exactly once (R-NPM-002), a second layer of escapes is 400 `npm_invalid_name` for every route |
 | How is a path classified? | `Classify` ([R-NPM-003](../spec/formats/npm.md)): `<name>` and `<name>/<ref>` metadata, `<name>/-/<file>` content (tarball and `.sigstore`), `-/…` computed; what it cannot read is metadata (R-REPO-003) |
-| How is an error rendered? | `WriteError`: `{"error","message","code"}`, `Content-Type: application/json`; a 401 carries the stage's challenge or `Basic realm="trove"` and never `otp` or `ipaddress` (R-NPM-004) |
-| What is logged and counted? | `op()` records `npm-command` and `npm-session` through `observability.RequestInfo.SetField` and counts `trove_npm_requests_total{class,operation,status}`, `trove_npm_request_duration_seconds{class,operation}`; the retry counter is `trove_npm_publish_retries_acknowledged_total{repo}` |
+| How is an error rendered? | `WriteError`: `{"error","message","code"}`, `Content-Type: application/json`; a 401 carries the stage's challenge or `Basic realm="quader"` and never `otp` or `ipaddress` (R-NPM-004) |
+| What is logged and counted? | `op()` records `npm-command` and `npm-session` through `observability.RequestInfo.SetField` and counts `quader_npm_requests_total{class,operation,status}`, `quader_npm_request_duration_seconds{class,operation}`; the retry counter is `quader_npm_publish_retries_acknowledged_total{repo}` |
 | Where do the settings and the metrics come from? | `Bind(host, cfg, metrics)` is called by the composition root with the Host it built; handlers find the replica by `rq.Host`. A Host nobody bound (the kit's) runs on the defaults without metrics |
 
 ## The routes
@@ -79,7 +79,7 @@ do with any other package of the format.
 | `ping`, `whoami` | GET `-/ping`, `-/whoami` | volatile, read (they answer by who asks, kit check 12) | `handlePing`, `handleWhoami` | built |
 | `audit.bulk` | POST `-/npm/v1/security/advisories/bulk` | volatile, read | `handleAudit` | built ([Security audit](#security-audit)) |
 | `audit.legacy` | POST `-/npm/v1/security/audits`, `…/audits/quick` | volatile, read | `handleAuditLegacy` | built (501) |
-| `deferred.get`, `.put`, `.delete`, `.post` | every path of the families npm defines and trove does not implement | computed or admin, read | `handleDeferred` | built (404; 501 for POST) |
+| `deferred.get`, `.put`, `.delete`, `.post` | every path of the families npm defines and Quader does not implement | computed or admin, read | `handleDeferred` | built (404; 501 for POST) |
 
 The deferred families (R-NPM-043) are one matcher (`matchDeferred`): `-/user`, `-/v1`, `-/npm`, `-/org`, `-/team`, `-/all`, `-/external`, `-/stage` and `-/package/{name}/access|visibility|collaborators`,
 without the audit paths, which have routes of their own (`isAudit`); a `GET` of an audit path is 405 with `Allow: POST`.
@@ -277,8 +277,8 @@ internal/meta/postgres/queries/npm_remote.sql
 | What does an exposure rule do here? | `exposedDocument` rewrites, filters with `filterDocument(viewOf(rq))` and parses again; dist-tags and `latest` come from the filtered document; a hidden version is 404 before any fetch (`hiddenVersion`) (R-NPM-048, H-295) |
 | Settings | `latestGuard` (local, default `true`), `serveRemovedVersions` (remote, default `false`) and `audit` (every class from M4b, [Security audit](#security-audit)), `latestStrategy` (virtual, default `highest-member-latest`) and `distTagStrategy` (virtual, default `member-order`) are the `npm` member of the repository document; the repository service validates it against [settings.schema.json](../../internal/formats/npm/settings.schema.json) (a member of another class is refused), and `settingsOf` reads it from the stored document of the request's repository (Q-NPM-59). The repository wizard and edit form render the settings from the schema ([web-ui.md](web-ui.md#the-repository-settings-form-rendered-from-the-formats-schema)) |
 
-Metrics: `trove_npm_virtual_version_conflicts_total`, `trove_npm_removed_upstream_versions_total`, `trove_npm_stale_upstream_documents_total`,
-`trove_npm_tarball_document_revalidations_total{outcome}`, `trove_npm_audit_names_withheld_total{reason}` ([bind.go](../../internal/formats/npm/bind.go)). A fill reaches its replica through the data port it is handed
+Metrics: `quader_npm_virtual_version_conflicts_total`, `quader_npm_removed_upstream_versions_total`, `quader_npm_stale_upstream_documents_total`,
+`quader_npm_tarball_document_revalidations_total{outcome}`, `quader_npm_audit_names_withheld_total{reason}` ([bind.go](../../internal/formats/npm/bind.go)). A fill reaches its replica through the data port it is handed
 (`Format.replicaOfPort`), because a storage hook has no request.
 
 Tests: `remote/remote_test.go` and `merge/merge_test.go` (with `FuzzRewrite`, `FuzzMerge`), `remote_test.go`, `handlers_remote_test.go`, `parity_test.go` (the install and version documents derived from a full
@@ -317,7 +317,7 @@ flowchart TD
 | What is answered? | The provider's 200 body unchanged (`Content-Type`, `Content-Encoding`, `Content-Length`), at most `MaxDocumentBytes`; `Cache-Control: no-store`, `X-Content-Type-Options: nosniff` (a `Volatile` route has no content wrapper), and `npm-notice` when names were withheld. Any other status and every transport failure is 502 with the code of the failure (`providerFailed`, `providerStatus`) |
 | What bounds the time? | `replica.auditBound`: `min(npm.audit.timeout, server.shutdown_timeout - 1 s)`, counted from the start of the handler, so a forward running when the replica starts to drain ends before the shutdown deadline. The statement runs and commits before the provider is asked |
 | npm 6's endpoints? | `handleAuditLegacy`: 501 `npm_audit_unavailable`, with the text of the bulk endpoint where no repository forwards (npm 7 to 10 ask the quick endpoint after a failed bulk request and print its answer), else a text that names the bulk endpoint. pnpm 10 asks only these and is not served (Q-NPM-65) |
-| What is counted? | `trove_npm_audit_names_withheld_total{repo,reason}`, labelled with the forwarding remote; the request itself in `trove_npm_requests_total{operation="audit.bulk"}` and the upstream request in `trove_remote_upstream_requests_total` |
+| What is counted? | `quader_npm_audit_names_withheld_total{repo,reason}`, labelled with the forwarding remote; the request itself in `quader_npm_requests_total{operation="audit.bulk"}` and the upstream request in `quader_remote_upstream_requests_total` |
 
 From M4b `npm.audit.mode` takes `local`, `forward` or `disabled` on every class, and `auditModeOf` resolves it (`local` needs the installation's scanning, else it answers like `disabled`; no mode: the installation's default through `Host.Vulnerabilities().LocalByDefault()`, Q-VULN-44, Q-ARCH-341); mode `local` is [handlers_audit_local.go](../../internal/formats/npm/handlers_audit_local.go) (R-VULN-017, [vulnerabilities.md](vulnerabilities.md#d--client-audits-r-vuln-017-r-vuln-018)), which reads `Host.Vulnerabilities()` and contacts no upstream.
 
@@ -344,12 +344,12 @@ sections; their texts are the files of [guide/](../../internal/formats/npm/guide
 
 | Fact the guide states | Pinned by ([guide_test.go](../../internal/formats/npm/guide_test.go)) |
 |---|---|
-| The troubleshooting table's codes and statuses | `TestR_UI_049_TheTroubleshootingCodesAreTroves`: each row's code is in `internal/errs` and answers that status |
+| The troubleshooting table's codes and statuses | `TestR_UI_049_TheTroubleshootingCodesAreQuaders`: each row's code is in `internal/errs` and answers that status |
 | Every snake_case code anywhere in the guide | `TestR_UI_049_EveryCodeTheGuideNamesExists`, over every class, client, reader and endpoint kind |
-| The notices and the refusal it quotes | `TestR_NPM_041_TheGuideQuotesWhatTroveSends`, against `latestKeptNotice`, `tagHeldNotice`, `retryAcknowledgedNotice` ([publish.go](../../internal/formats/npm/publish.go)), `auditPartialNotice`, `auditUnavailableText` ([handlers_audit.go](../../internal/formats/npm/handlers_audit.go)) |
+| The notices and the refusal it quotes | `TestR_NPM_041_TheGuideQuotesWhatQuaderSends`, against `latestKeptNotice`, `tagHeldNotice`, `retryAcknowledgedNotice` ([publish.go](../../internal/formats/npm/publish.go)), `auditPartialNotice`, `auditUnavailableText` ([handlers_audit.go](../../internal/formats/npm/handlers_audit.go)) |
 | Periods, limits, settings and their defaults | `TestR_NPM_041_TheGuideStatesTheDefaults`: the descriptor, the `default` tags of `config.NPMPublish`, the settings schema |
 | No credential step for an anonymous reader; the endpoint note only with rules | `TestR_UI_049_AnAnonymousReaderGetsNoCredentialSteps`, `TestR_UI_049_TheEndpointSectionIsForEndpointsWithRules` |
-| Coverage of every class and client, the snippets attached, no credential in code | kit check 8 in `TestR_ARCH_010_Conformance` (the fixture's `OptionNames` `_authToken`, `npmAuthToken`, `TROVE_TOKEN` are the option names a code block may spell) |
+| Coverage of every class and client, the snippets attached, no credential in code | kit check 8 in `TestR_ARCH_010_Conformance` (the fixture's `OptionNames` `_authToken`, `npmAuthToken`, `QUADER_TOKEN` are the option names a code block may spell) |
 
 When you change behaviour the guide describes (a code, a notice, a default, a client finding of [e2e.md](e2e.md#findings-of-the-npm-tests), a P1
 operation that ships), change the section in the same change, and add a test for a new fact a test can hold (H-320). Keep sub-headings unique across the
@@ -422,7 +422,7 @@ set -a; . .dev/integration/env; set +a; go test -count=1 -p 1 -tags integration 
 - The order in which libnpmpublish, pnpm and Yarn write the members of the body (the scanner does not assume one).
 - Publish with pnpm, Yarn 1 and Yarn 2+ in the unit and integration tiers: the clients run in the end-to-end client matrix only ([e2e.md](e2e.md)), which is not part of `make test`.
 - The revocation criterion of R-NPM-019 (`npm ping` fails on every replica within 2 s of a revocation) is not tested here: the authentication stage's bound is tested in the identity area (R-AUTH-023); ping and whoami answer 401 for the subject that stage produces.
-- The restore's replay (`trove admin npm reinstate`, the journal) does not exist yet; the withheld state is written by hand in `TestR_NPM_047_WithheldVersionsAreNotServed`. `OnItemsRestored` is driven through the kit only: the trash can is P1.
+- The restore's replay (`quader admin npm reinstate`, the journal) does not exist yet; the withheld state is written by hand in `TestR_NPM_047_WithheldVersionsAreNotServed`. `OnItemsRestored` is driven through the kit only: the trash can is P1.
 - Compression of documents is tested with gzip only; a client that sends another coding gets the identity form.
 - Publish, `npm view`, `npm unpublish`, `npm dist-tag`, `pnpm` and Yarn against the documents in the unit and integration tiers: the real clients run in the end-to-end client matrix ([e2e.md](e2e.md)).
 - The audit with real clients is not in the unit and integration tiers: npm 10, 11 and 12, pnpm 10, 11 and 12 and Yarn 4 were run by hand on
@@ -477,7 +477,7 @@ Which entry point to use (Q-NPM-15):
 | Situation | Function |
 |---|---|
 | A version a client publishes | `Clean` (npm's `clean()`: trim, strip leading `=` and `v`), then `Parse` on the result, and compare `Canonical()` with it (R-NPM-007 step 3) |
-| A version trove stores, compares or renders | `Parse`: SemVer 2.0.0 as written, no `v`, no whitespace. `Version.String()` keeps the build metadata, `Canonical()` is node-semver's `version` without it |
+| A version Quader stores, compares or renders | `Parse`: SemVer 2.0.0 as written, no `v`, no whitespace. `Version.String()` keeps the build metadata, `Canonical()` is node-semver's `version` without it |
 | A version from an upstream document or a tarball file name | `ParseNode(s, false)`: what `new SemVer(s)` accepts (trim, leading `v`) |
 | A client's loose text (none today) | `ParseNode(s, true)` |
 | A dist-tag name | `ValidateTag`: 1 to 128 characters, starts with a letter or digit, and not a strict-valid range (`1.x`, `v1.4`, `x`, `1.2.3`) |

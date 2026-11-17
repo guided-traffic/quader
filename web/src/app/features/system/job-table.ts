@@ -11,7 +11,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
  * `settings:write` or the principal that started the job (R-API-015).
  */
 @Component({
-  selector: 'trove-job-table',
+  selector: 'quader-job-table',
   imports: [DataTable, DatePipe],
   styles: `
     /* A replica name and a result are read in full: they wrap in their column, at any character where they must. */
@@ -21,7 +21,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
   `,
   template: `
     <!-- The shared data table: a column budget and stacked rows below 48 rem, so the screen never scrolls sideways at 390 px. -->
-    <trove-data-table [caption]="caption()" [columns]="columns">
+    <quader-data-table [caption]="caption()" [columns]="columns">
       @for (j of jobs(); track j.id) {
         <tr>
           <th scope="row" translate="no">{{ j.kind }}</th>
@@ -74,7 +74,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
           </td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   `,
 })
 export class JobTable {

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
+	"github.com/guided-traffic/quader/internal/audit"
 )
 
 // csrfEventEvery bounds auth.csrf_failed to one per session and minute on each

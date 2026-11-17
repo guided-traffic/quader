@@ -1,4 +1,4 @@
-<trove-page-header heading="Dashboard" i18n-heading="@@dashboard.title">
+<quader-page-header heading="Dashboard" i18n-heading="@@dashboard.title">
   <div actions class="refresh">
     <button
       type="button"
@@ -21,10 +21,10 @@
       Refresh now
     </button>
   </div>
-</trove-page-header>
+</quader-page-header>
 
 @if (failure(); as f) {
-  <trove-error-notice [error]="f" (retry)="reload()" />
+  <quader-error-notice [error]="f" (retry)="reload()" />
 }
 
 <!-- The instance: overall state, version, address and replicas, with the way to the status screen. -->
@@ -262,7 +262,7 @@
 
 <h2 i18n="@@dashboard.content-access">Content and access</h2>
 @if (overviewFailure(); as f) {
-  <trove-error-notice [error]="f" (retry)="overview.reload()" />
+  <quader-error-notice [error]="f" (retry)="overview.reload()" />
 }
 @if (valueOf(overview); as o) {
   <div class="cards">

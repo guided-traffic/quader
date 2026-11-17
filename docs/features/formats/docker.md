@@ -985,7 +985,7 @@ Priority: **Out of scope**
 
 A reduced, self-managed deployment profile limited to Docker, OCI, Helm, Helm-via-OCI and generic
 repositories, without high availability, replication, federation, plugins or scanning. Such a
-reduced packaging has no meaning for trove.
+reduced packaging has no meaning for Quader.
 
 ## Notes for implementers
 

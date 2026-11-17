@@ -3,13 +3,13 @@ package vuln
 import (
 	"fmt"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Status is the status of a finding (R-VULN-012, Q-VULN-7, Q-VULN-22).
 type Status string
 
-// The statuses. needs_triage, confirmed and blocked are the open ones. resolved is set by trove only.
+// The statuses. needs_triage, confirmed and blocked are the open ones. resolved is set by quader only.
 const (
 	StatusNeedsTriage Status = "needs_triage"
 	StatusConfirmed   Status = "confirmed"
@@ -56,9 +56,9 @@ func CheckTransition(from, to Status) error {
 	case !to.Valid():
 		return errs.E(errs.Invalid, errs.CodeValidation, fmt.Sprintf("%q is no finding status", string(to)))
 	case from == StatusResolved:
-		return errs.E(errs.Conflict, errs.CodeFindingResolved, "The finding is resolved; trove resolves and re-detects findings, a person does not change one.")
+		return errs.E(errs.Conflict, errs.CodeFindingResolved, "The finding is resolved; Quader resolves and re-detects findings, a person does not change one.")
 	case to == StatusResolved:
-		return errs.E(errs.Unprocessable, errs.CodeStatusNotSettable, "The status resolved is set by trove only.")
+		return errs.E(errs.Unprocessable, errs.CodeStatusNotSettable, "The status resolved is set by Quader only.")
 	case from == to:
 		return nil
 	case to == StatusBlocked && from != StatusConfirmed:
@@ -96,7 +96,7 @@ func (r DismissalReason) Valid() bool {
 	return false
 }
 
-// ResolvedReason is the reason trove resolves a finding (R-VULN-012).
+// ResolvedReason is the reason quader resolves a finding (R-VULN-012).
 type ResolvedReason string
 
 // The resolved reasons.

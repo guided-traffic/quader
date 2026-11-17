@@ -11,7 +11,7 @@ import { SystemStatus } from './system-status';
 import { ringGaps, rotationStep } from './system-status-model';
 
 const RING: EncryptionStatus = {
-  answeredBy: 'trove-api-0',
+  answeredBy: 'quader-api-0',
   activeKeyId: '2026-10',
   keys: [
     { id: '2026-10', active: true, sealedValues: 14, canary: 'ok' },
@@ -19,19 +19,19 @@ const RING: EncryptionStatus = {
   ],
   replicas: [
     {
-      name: 'trove-api-0',
+      name: 'quader-api-0',
       role: 'api',
       activeKeyId: '2026-10',
       keyIds: ['2026-04', '2026-10'],
     },
     {
-      name: 'trove-packages-0',
+      name: 'quader-packages-0',
       role: 'packages',
       activeKeyId: '2026-04',
       keyIds: ['2026-04'],
     },
     {
-      name: 'trove-worker-0',
+      name: 'quader-worker-0',
       role: 'worker',
       activeKeyId: '2026-10',
       keyIds: ['2026-04', '2026-10'],
@@ -49,18 +49,18 @@ describe('Stored-secret keys card (E1.9)', () => {
     const card = root.querySelector('section[aria-labelledby="card-keys"]')!;
     const t = text(card);
     expect(t).toContain('Key rings are not compatible');
-    expect(t).toContain('Canary (reported by trove-api-0)');
-    expect(t).toContain('trove-packages-0');
+    expect(t).toContain('Canary (reported by quader-api-0)');
+    expect(t).toContain('quader-packages-0');
     expect(t).toContain('lacks 2026-10');
     expect(t).toContain('Next step: give every replica the key files it lacks');
     expect(t).toContain('Last re-encryption');
     const rows = [...card.querySelectorAll('tbody tr')].map((r) => text(r));
-    expect(rows.find((r) => r.startsWith('trove-worker-0'))).toContain('complete');
+    expect(rows.find((r) => r.startsWith('quader-worker-0'))).toContain('complete');
     await expectAccessible(root);
   });
 
   it('R-UI-038 ringGaps names what each replica lacks, from the active IDs and the IDs that still seal values', () => {
-    expect(ringGaps(RING)).toEqual([{ replica: 'trove-packages-0', role: 'packages', missing: ['2026-10'] }]);
+    expect(ringGaps(RING)).toEqual([{ replica: 'quader-packages-0', role: 'packages', missing: ['2026-10'] }]);
     expect(
       ringGaps({
         ...RING,
@@ -98,7 +98,7 @@ describe('Stored-secret keys card (E1.9)', () => {
     button(root, 'Re-encrypt now').click();
     await settle(fixture, 10);
     expect((get(EncryptionApi) as FakeEncryptionApi).reencryptKeys).toHaveLength(1);
-    expect(root.querySelector('trove-job-progress')).toBeTruthy();
+    expect(root.querySelector('quader-job-progress')).toBeTruthy();
   });
 });
 
@@ -130,7 +130,7 @@ describe('Scheduled tasks and recent jobs on the status screen', () => {
     expect(jobs.runs).toHaveLength(1);
     expect(jobs.runs[0]?.key).toBeTruthy();
     expect(
-      root.querySelector('section[aria-labelledby="card-tasks"] trove-job-progress'),
+      root.querySelector('section[aria-labelledby="card-tasks"] quader-job-progress'),
     ).toBeTruthy();
   });
 

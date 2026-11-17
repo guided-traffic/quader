@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
-  selector: 'trove-not-found',
+  selector: 'quader-not-found',
   imports: [RouterLink],
   template: `
     <h1 tabindex="-1" i18n="@@notfound.heading">Page not found</h1>

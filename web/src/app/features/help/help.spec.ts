@@ -44,7 +44,7 @@ describe('Help', () => {
     });
     const sections = [...r.root.querySelectorAll('section.help-section')];
     expect(sections.map((s) => s.querySelector('h2')?.textContent?.trim())).toEqual(['User guide']);
-    const admin = r.root.querySelector('trove-disclosure.help-section')!;
+    const admin = r.root.querySelector('quader-disclosure.help-section')!;
     const toggle = admin.querySelector('button[aria-expanded]')!;
     expect(toggle.textContent).toContain('Administrator guide');
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
@@ -62,7 +62,7 @@ describe('Help', () => {
     expect(contents.map((a) => a.textContent?.trim())).toEqual([
       'Getting started',
       'Personal access tokens',
-      'How trove runs',
+      'How Quader runs',
       'Endpoints and exposure rules',
     ]);
     const pager = [...r.root.querySelectorAll<HTMLAnchorElement>('.help-pager a')];
@@ -94,7 +94,7 @@ describe('Help', () => {
   it('R-UI-050 the article is not capped in width; the prose carries the measure class, a table its own scrolling container', async () => {
     const r = await page('admin', 'overview');
     expect(r.root.querySelector('.help-article')).not.toBeNull();
-    expect(r.root.querySelector('trove-package-readme')?.classList.contains('help-readme')).toBe(true);
+    expect(r.root.querySelector('quader-package-readme')?.classList.contains('help-readme')).toBe(true);
     const wrap = r.root.querySelector('.help-article .readme-table');
     expect(wrap?.querySelector('table th')?.textContent).toBe('Role');
     expect(wrap?.querySelector('td code')?.textContent).toBe('all');
@@ -110,15 +110,15 @@ describe('Help', () => {
 
   it('R-UI-050 an unknown page and a failed read show the error with a retry', async () => {
     const missing = await page('user', 'nothing');
-    expect(missing.root.querySelector('trove-error-notice')).toBeTruthy();
+    expect(missing.root.querySelector('quader-error-notice')).toBeTruthy();
     expect(missing.root.querySelector('article')).toBeNull();
 
     const failed = await page('user', 'getting-started', (api) => {
       api.failure = new ApiError(503, { code: 'unavailable', detail: 'down' }, null);
     });
-    expect(failed.root.querySelector('trove-error-notice')).toBeTruthy();
+    expect(failed.root.querySelector('quader-error-notice')).toBeTruthy();
     failed.api.failure = null;
-    failed.root.querySelector<HTMLButtonElement>('trove-error-notice button')?.click();
+    failed.root.querySelector<HTMLButtonElement>('quader-error-notice button')?.click();
     await settle(failed.fixture);
     expect(failed.root.querySelector('h1')?.textContent?.trim()).toBe('Getting started');
   });

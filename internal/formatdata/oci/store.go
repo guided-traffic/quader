@@ -5,7 +5,7 @@
 // It is a domain package: it imports neither the format nor the edge, so the values that cross the port are those of
 // internal/formats/oci/rows, a leaf both import. It owns the three tables of migration 00055_oci and registers them with the
 // backup (tables.go), so that the package must be linked wherever the migrated schema is checked against the registry
-// (cmd/trove/registry.go).
+// (cmd/quader/registry.go).
 //
 // The listings (store_lists.go), the sweep of unreferenced blobs (store_sweep.go, sweep.go), the journal replay and the
 // reinstate command (journal_replay.go, reinstate.go) are built; a method that is not built yet answers not_implemented, so
@@ -16,9 +16,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // Options configure [New].

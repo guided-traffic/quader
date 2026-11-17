@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_VULN_028_AVersionRuleOfAnEndpointNarrowsEveryAnswerByVersion: the scope of the findings report is decided per package for
@@ -30,9 +30,9 @@ func TestR_VULN_028_AVersionRuleOfAnEndpointNarrowsEveryAnswerByVersion(t *testi
 	old := e.addFinding(finding{Repo: "npm-local", Package: "@acme/sdk", Version: "1.9.0"})
 	cur := e.addFinding(finding{Repo: "npm-local", Package: "@acme/sdk", Version: "2.1.0"})
 
-	const host = "packages.trove.test"
+	const host = "packages.quader.test"
 	cust := e.st.Start(t, testenv.ReplicaOptions{
-		Name: "customers", Env: []string{"TROVE_API_RATE_LIMITS_ENABLED=false"},
+		Name: "customers", Env: []string{"QUADER_API_RATE_LIMITS_ENABLED=false"},
 		Endpoints: `{"customers":{"listen":"127.0.0.1:0","base_url":"https://` + host + `","surface":["api"]}}`,
 	})
 	rule := e.st.Do(cust, "POST", "/api/v1/endpoints/customers/exposure-rules", e.tokRita,
@@ -41,13 +41,13 @@ func TestR_VULN_028_AVersionRuleOfAnEndpointNarrowsEveryAnswerByVersion(t *testi
 	if rule.Status != http.StatusCreated {
 		t.Fatalf("rule: %d %s", rule.Status, rule.Body)
 	}
-	epoch := rule.Header.Get("Trove-Authz-Epoch")
+	epoch := rule.Header.Get("Quader-Authz-Epoch")
 	through := func(method, path, tok string, body []byte) testenv.Answer {
 		t.Helper()
 		if tok == tokDefault {
-			return e.st.Do(cust, method, path, tok, body, "Content-Type", "application/json", "Trove-Authz-Min-Epoch", epoch)
+			return e.st.Do(cust, method, path, tok, body, "Content-Type", "application/json", "Quader-Authz-Min-Epoch", epoch)
 		}
-		return e.st.DoAt(cust.Addr("customers"), host, method, path, tok, body, "Content-Type", "application/json", "Trove-Authz-Min-Epoch", epoch)
+		return e.st.DoAt(cust.Addr("customers"), host, method, path, tok, body, "Content-Type", "application/json", "Quader-Authz-Min-Epoch", epoch)
 	}
 	const base = "/api/v1/vulnerabilities/"
 

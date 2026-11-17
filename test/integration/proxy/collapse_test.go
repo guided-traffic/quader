@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // pgSample watches the database while a test runs: R-REPO-026 allows no advisory lock
@@ -87,7 +87,7 @@ func burst(n int, reps []*replica, rem proxy.Remote, path string, mutate ...func
 
 func collapsedOrHit(s served) bool {
 	cs := s.cacheStatus()
-	return strings.Contains(cs, "collapsed") || strings.HasPrefix(cs, "trove; hit")
+	return strings.Contains(cs, "collapsed") || strings.HasPrefix(cs, "quader; hit")
 }
 
 // TestCollapse is the collapsing protocol of R-REPO-026 on two replicas that share
@@ -132,8 +132,8 @@ func TestCollapse(t *testing.T) {
 		if _, ok := getKey(t, e.valkeyAdmin(a), e.lockKey(rem, path, "")); ok {
 			t.Fatal("the flight lock outlived the fetch")
 		}
-		if a.metric("trove_remote_collapsed_requests_total", "repo", "collapse")+b.metric("trove_remote_collapsed_requests_total", "repo", "collapse") < 90 {
-			t.Fatal("trove_remote_collapsed_requests_total did not count the waiters")
+		if a.metric("quader_remote_collapsed_requests_total", "repo", "collapse")+b.metric("quader_remote_collapsed_requests_total", "repo", "collapse") < 90 {
+			t.Fatal("quader_remote_collapsed_requests_total did not count the waiters")
 		}
 	})
 
@@ -152,7 +152,7 @@ func TestCollapse(t *testing.T) {
 		if n := up.Count("GET", "/"+path); n < 1 || n > 2 {
 			t.Fatalf("the upstream saw %d GETs, want at most one per replica", n)
 		}
-		if got := a.metric("trove_flight_lock_bypass_total", "reason", "valkey_unavailable") + b.metric("trove_flight_lock_bypass_total", "reason", "valkey_unavailable"); got < 1 {
+		if got := a.metric("quader_flight_lock_bypass_total", "reason", "valkey_unavailable") + b.metric("quader_flight_lock_bypass_total", "reason", "valkey_unavailable"); got < 1 {
 			t.Fatal("the bypass was not counted")
 		}
 	})
@@ -258,8 +258,8 @@ func TestCollapse(t *testing.T) {
 		if s := <-res; s.status != 200 || !bytes.Equal(s.body, tarball) {
 			t.Fatalf("%d (%v)", s.status, s.err)
 		}
-		if got := a.metric("trove_flight_lock_bypass_total", "reason", "draining"); got != 1 {
-			t.Fatalf("trove_flight_lock_bypass_total{reason=draining} = %v", got)
+		if got := a.metric("quader_flight_lock_bypass_total", "reason", "draining"); got != 1 {
+			t.Fatalf("quader_flight_lock_bypass_total{reason=draining} = %v", got)
 		}
 	})
 
@@ -281,7 +281,7 @@ func TestCollapse(t *testing.T) {
 		if n := up.Count("GET", "/"+path); n != 1 {
 			t.Fatalf("the upstream saw %d GETs", n)
 		}
-		if got := a.metric("trove_flight_lock_bypass_total", "reason", "draining"); got != 0 {
+		if got := a.metric("quader_flight_lock_bypass_total", "reason", "draining"); got != 0 {
 			t.Fatalf("the draining replica waited and still counted a bypass: %v", got)
 		}
 	})
@@ -372,8 +372,8 @@ func TestCollapse(t *testing.T) {
 		if took < 4*time.Second || took > 8*time.Second {
 			t.Fatalf("served after %s, want about 5 s", took)
 		}
-		if got := b.metric("trove_flight_lock_bypass_total", "reason", "wait_timeout"); got != 1 {
-			t.Fatalf("trove_flight_lock_bypass_total{reason=wait_timeout} = %v", got)
+		if got := b.metric("quader_flight_lock_bypass_total", "reason", "wait_timeout"); got != 1 {
+			t.Fatalf("quader_flight_lock_bypass_total{reason=wait_timeout} = %v", got)
 		}
 	})
 
@@ -409,7 +409,7 @@ func TestCollapse(t *testing.T) {
 		// The upstream sees the conditional request before the replica has stored the refreshed entry, so a request in that
 		// gap joins the revalidation in flight (fwd=stale, collapsed); once it is stored, the entry is a fresh hit again.
 		waitFor(t, "the refreshed entry served as a fresh hit", 5*time.Second, func() bool {
-			return strings.HasPrefix(b.metadata(rem, "pkg/held").cacheStatus(), "trove; hit; ttl=")
+			return strings.HasPrefix(b.metadata(rem, "pkg/held").cacheStatus(), "quader; hit; ttl=")
 		})
 	})
 

@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // patNode is a node of the prefix trie of claim and pin-rule patterns: the path

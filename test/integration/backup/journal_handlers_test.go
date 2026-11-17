@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // ev is one hand-written journal object: what a producer's entry looks like (the entries are the documented shapes of the

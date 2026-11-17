@@ -19,9 +19,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/control"
-	"github.com/guided-traffic/trove/internal/openpgp"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
+	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func (e *env) base() string { return "/api/deb/" + project + "/" + repo + "/" }
@@ -229,7 +229,7 @@ func TestR_DEB_010_AnUploadIsPublishedAsASignedGeneration(t *testing.T) {
 		t.Fatalf("state after the wait: %+v", st)
 	}
 	rel, _ := e.release("stable")
-	if rel.Value("Suite") != "stable" || rel.Value("Acquire-By-Hash") != "yes" || rel.Value("Components") != "main" || rel.Value("Origin") != "trove" {
+	if rel.Value("Suite") != "stable" || rel.Value("Acquire-By-Hash") != "yes" || rel.Value("Components") != "main" || rel.Value("Origin") != "quader" {
 		t.Errorf("Release fields: %v", rel.Fields)
 	}
 	date := releaseDate(t, rel)

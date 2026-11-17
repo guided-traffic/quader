@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# PostgreSQL switchover (R-HA-051 dev-failover): promotes a standby of the CloudNativePG cluster trove-db and waits
+# PostgreSQL switchover (R-HA-051 dev-failover): promotes a standby of the CloudNativePG cluster quader-db and waits
 # until the old primary has rejoined as standby and the read-write service routes to the new primary. This is what
-# `kubectl cnpg promote trove-db <standby>` does, without needing the plugin: it sets status.targetPrimary, which the
-# instance managers act on and the operator follows (the status, and the pod label that trove-db-rw selects).
+# `kubectl cnpg promote quader-db <standby>` does, without needing the plugin: it sets status.targetPrimary, which the
+# instance managers act on and the operator follows (the status, and the pod label that quader-db-rw selects).
 #
 # Before it asks, it waits for what the switchover needs and names the precondition that is not met (F-65, Q-HA-126):
 #   1. the operator runs: a ready pod, not being deleted, holds the operator's leader lease;
@@ -20,7 +20,7 @@ set -euo pipefail
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 require_cluster
 
-cluster=trove-db
+cluster=quader-db
 operator_ns=cnpg-system
 operator_lease=db9c8771.cnpg.io # the leader-election ID of the CloudNativePG operator
 settle_seconds=180

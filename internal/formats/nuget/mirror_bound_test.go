@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The bounds of NuGet's mirror discovery on what an upstream sends (R-REPO-051, Q-NUGET-107 to Q-NUGET-109; Q-NUGET-83 is the
@@ -77,7 +77,7 @@ func TestR_REPO_051_AVersionListAtTheLeafLimitIsPlanned(t *testing.T) {
 }
 
 // The registration pages of one plan share one budget, as the pages of a rendering do: three pages of 20,000 leaves are more than
-// the 32,768 versions trove reads of one ID.
+// the 32,768 versions quader reads of one ID.
 func TestR_REPO_051_ThePlanReadsTheRegistrationWithinOneBudget(t *testing.T) {
 	leaves := func(from int) string {
 		var b strings.Builder

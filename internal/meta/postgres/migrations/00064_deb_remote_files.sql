@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The files a remote's stored releases list (R-DEB-021, Q-DEB-80): the format needs the SHA-256 of an index path while it decides
 -- whether a fetched index is the file the stored release names, and a statement on this table answers that in one lookup where the

@@ -7,24 +7,24 @@ import (
 )
 
 // SchemaID identifies the generated JSON Schema.
-const SchemaID = "https://github.com/guided-traffic/trove/internal/config/schema.json"
+const SchemaID = "https://github.com/guided-traffic/quader/internal/config/schema.json"
 
 // BastionSchemaID identifies the generated JSON Schema of the role bastion (BastionConfig), which the chart
-// trove-bastion includes as the schema of its `config` value (R-BAS-046, R-HA-029).
-const BastionSchemaID = "https://github.com/guided-traffic/trove/internal/config/bastion.schema.json"
+// quader-bastion includes as the schema of its `config` value (R-BAS-046, R-HA-029).
+const BastionSchemaID = "https://github.com/guided-traffic/quader/internal/config/bastion.schema.json"
 
 // JSONSchema renders the configuration tree as a JSON Schema (draft 2020-12)
 // for the chart's values validation and for editors. It is generated from the
 // same tags the loader reads, so the two cannot drift; the output is stable
 // (object keys sort) and committed as schema.json.
 func (s *Schema) JSONSchema() ([]byte, error) {
-	return s.jsonSchema(SchemaID, "trove configuration")
+	return s.jsonSchema(SchemaID, "Quader configuration")
 }
 
 // BastionJSONSchema is JSONSchema for the tree of the role bastion. Keys the chart renders carry
-// x-trove-chart-managed: true and are refused under `config` by the chart.
+// x-quader-chart-managed: true and are refused under `config` by the chart.
 func (s *Schema) BastionJSONSchema() ([]byte, error) {
-	return s.jsonSchema(BastionSchemaID, "trove Bastion configuration")
+	return s.jsonSchema(BastionSchemaID, "Quader Bastion configuration")
 }
 
 func (s *Schema) jsonSchema(id, title string) ([]byte, error) {
@@ -60,30 +60,30 @@ func (s *Schema) jsonSchema(id, title string) ([]byte, error) {
 }
 
 func (k Key) schemaNode() map[string]any {
-	n := map[string]any{"x-trove-env": k.Env}
+	n := map[string]any{"x-quader-env": k.Env}
 	if k.ChartManaged {
-		n["x-trove-chart-managed"] = true
+		n["x-quader-chart-managed"] = true
 	}
 	if k.Doc != "" {
 		n["description"] = k.Doc
 	}
 	switch k.Kind {
 	case KindSecretValue:
-		n["x-trove-secret"] = "env-only"
+		n["x-quader-secret"] = "env-only"
 	case KindSecretFile:
-		n["x-trove-secret"] = "file"
+		n["x-quader-secret"] = "file"
 	case KindSecretFileOnly:
-		n["x-trove-secret"] = "file-only"
+		n["x-quader-secret"] = "file-only"
 	}
 	t := k.Type
 	switch t {
 	case durTyp:
 		n["type"] = "string"
 		n["pattern"] = `^[0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$`
-		n["x-trove-type"] = "duration"
+		n["x-quader-type"] = "duration"
 	case sizeTyp:
 		n["type"] = []string{"string", "integer"}
-		n["x-trove-type"] = "bytes"
+		n["x-quader-type"] = "bytes"
 	default:
 		switch t.Kind() {
 		case reflect.String:
@@ -175,7 +175,7 @@ func elementSchema(t reflect.Type) map[string]any {
 			p["description"] = d
 		}
 		if f.Tag.Get("secret") == "file" {
-			p["x-trove-secret"] = "file-only"
+			p["x-quader-secret"] = "file-only"
 		}
 		if strings.Contains(","+f.Tag.Get("validate")+",", ",required,") {
 			required = append(required, name)

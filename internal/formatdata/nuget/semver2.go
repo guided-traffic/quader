@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/packages"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/packages"
 )
 
 // The recomputation of nuget_version.is_semver2 (F-30, Q-NUGET-93). Up to release 0.9.0 a push
@@ -48,7 +48,7 @@ const Semver2LastOldRelease = "0.9.0"
 const Semver2Release = "0.10.0"
 
 // Semver2Background declares the recomputation as a background data migration of R-HA-022 (Q-HA-114): GET
-// /api/v1/system/migrations and `trove migrate status` list it with its state, and a contract step may depend on it
+// /api/v1/system/migrations and `quader migrate status` list it with its state, and a contract step may depend on it
 // (Q-HA-115). Its name is its job kind without the prefix data_migration_; a completed run's count is the rows it examined,
 // read from the completion record, which outlives the job rows.
 func Semver2Background() postgres.BackgroundMigration {

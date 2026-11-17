@@ -7,13 +7,13 @@ import (
 	"io"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
-	"github.com/guided-traffic/trove/internal/servefacts"
-	"github.com/guided-traffic/trove/test/debstub/debgen"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/servefacts"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
 )
 
 // markStore answers the mark of one path, as the replay writes it (R-DEB-032).
@@ -81,7 +81,7 @@ func TestServeFactsKey(t *testing.T) {
 		{"a generated file of a local repository", local, "dists/stable/InRelease", servefacts.None},
 		{"the signing key", local, "signing-key.asc", servefacts.None},
 		{"a pool file of a remote", remote, "pool/main/h/hello/hello_2.10-3_amd64.deb", servefacts.DebRemote},
-		{"a flat file of a remote", remote, "binary/trove-hello_1.0_all.deb", servefacts.DebRemote},
+		{"a flat file of a remote", remote, "binary/quader-hello_1.0_all.deb", servefacts.DebRemote},
 		{"a release document of a remote", remote, "dists/bookworm/InRelease", servefacts.None},
 		{"an index of a flat remote", remote, "binary/Packages.gz", servefacts.None},
 		{"a by-hash file of a remote", remote, "dists/bookworm/main/binary-amd64/by-hash/SHA256/" + zeros, servefacts.None},

@@ -178,7 +178,7 @@ export class FakePreferencesApi extends PreferencesApi {
 
 export class FakeEncryptionApi extends EncryptionApi {
   statusResult: EncryptionStatus | ApiError = {
-    answeredBy: 'trove-api-0',
+    answeredBy: 'quader-api-0',
     activeKeyId: '2026-10',
     keys: [
       { id: '2026-10', active: true, sealedValues: 14, canary: 'ok' },
@@ -186,7 +186,7 @@ export class FakeEncryptionApi extends EncryptionApi {
     ],
     replicas: [
       {
-        name: 'trove-api-0',
+        name: 'quader-api-0',
         role: 'api',
         activeKeyId: '2026-10',
         keyIds: ['2026-04', '2026-10'],
@@ -210,7 +210,7 @@ export class FakeEncryptionApi extends EncryptionApi {
 
 export function sampleReplica(over: Partial<Replica> = {}): Replica {
   return {
-    name: 'trove-api-0',
+    name: 'quader-api-0',
     instanceUid: 'uid-0',
     version: '0.1.1',
     revision: 'abc',
@@ -242,9 +242,9 @@ export function sampleInfo(over: Partial<SystemInfo> = {}): SystemInfo {
   return {
     installationId: null,
     incarnation: null,
-    answeredBy: { replica: 'trove-api-0', role: 'api' },
+    answeredBy: { replica: 'quader-api-0', role: 'api' },
     version: { version: '0.1.1', revision: 'abc', goVersion: 'go1.27.4' },
-    baseUrl: 'https://trove.example.net',
+    baseUrl: 'https://quader.example.net',
     baseUrlSource: 'config',
     maintenanceMode: 'normal',
     replicas: {
@@ -266,14 +266,14 @@ export function sampleInfo(over: Partial<SystemInfo> = {}): SystemInfo {
     },
     valkey: {
       mode: 'sentinel',
-      primaryName: 'trove',
+      primaryName: 'quader',
       sentinels: 3,
       tls: 'verify',
-      keyPrefix: 'trove:',
+      keyPrefix: 'quader:',
       keyspace: null,
       degradedReplicas: 0,
     },
-    objectStore: { endpoint: 'https://s3.example.net', bucket: 'trove', prefix: '', credentialSource: 'static' },
+    objectStore: { endpoint: 'https://s3.example.net', bucket: 'quader', prefix: '', credentialSource: 'static' },
     backup: null,
     features: { tracing: false, webhooks: false, configAsCode: false },
     formats: [],
@@ -286,7 +286,7 @@ export class FakeSystemApi extends SystemApi {
   infoResult: SystemInfo = sampleInfo();
   replicasResult: readonly Replica[] = [
     sampleReplica(),
-    sampleReplica({ name: 'trove-api-1', instanceUid: 'uid-1', node: 'node-b' }),
+    sampleReplica({ name: 'quader-api-1', instanceUid: 'uid-1', node: 'node-b' }),
   ];
 
   override async info(): Promise<SystemInfo> {

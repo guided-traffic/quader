@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // Hooks wraps the storage hooks so that the commit of a manifest wakes the scan job in the commit's transaction: the job finds the new row

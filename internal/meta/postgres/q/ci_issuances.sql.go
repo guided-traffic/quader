@@ -881,7 +881,7 @@ const ciProjectIDByKey = `-- name: CiProjectIDByKey :many
 SELECT id::text AS id FROM project WHERE key = $1::text
 `
 
-// The ID of a trove project by its key, for the project's issuance list.
+// The ID of a quader project by its key, for the project's issuance list.
 func (q *Queries) CiProjectIDByKey(ctx context.Context, key string) ([]string, error) {
 	rows, err := q.db.Query(ctx, ciProjectIDByKey, key)
 	if err != nil {
@@ -1087,7 +1087,7 @@ type CiTokensActiveRow struct {
 	Active int64
 }
 
-// trove_ci_tokens_active (R-CI-020): unexpired, unrevoked CI tokens per issuer, 0 for an issuer without one, read
+// quader_ci_tokens_active (R-CI-020): unexpired, unrevoked CI tokens per issuer, 0 for an issuer without one, read
 // by the database gauge source (R-OPS-007).
 func (q *Queries) CiTokensActive(ctx context.Context) ([]CiTokensActiveRow, error) {
 	rows, err := q.db.Query(ctx, ciTokensActive)

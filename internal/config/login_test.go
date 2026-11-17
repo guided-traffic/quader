@@ -17,12 +17,12 @@ const corpYAML = `auth:
       corp:
         display_name: Corporate SSO
         issuer: https://login.example.com/realms/acme
-        client_id: trove
-        client_secret_file: /var/run/secrets/trove/oidc-corp/client-secret
+        client_id: quader
+        client_secret_file: /var/run/secrets/quader/oidc-corp/client-secret
         clock_skew: 30s
         group_sync:
           rules:
-            - match_regex: "trove-team-(.+)"
+            - match_regex: "quader-team-(.+)"
               group: "team-$1"
 `
 
@@ -60,7 +60,7 @@ func TestLoginConfig(t *testing.T) {
 		{"R-AUTH-004 a provider ID outside the pattern", strings.Replace(corpYAML, "corp:", "Corp_1:", 1), "providers.Corp_1"},
 		{"R-AUTH-004 an http issuer that is not loopback", strings.Replace(corpYAML, "https://login", "http://login", 1), "issuer must be https"},
 		{"R-AUTH-004 a reserved extra parameter", corpYAML + "        extra_auth_params: {state: x}\n", `must not set "state"`},
-		{"R-AUTH-004 an inline secret is impossible and a missing one is reported", strings.Replace(corpYAML, "        client_secret_file: /var/run/secrets/trove/oidc-corp/client-secret\n", "", 1), "client_secret_file"},
+		{"R-AUTH-004 an inline secret is impossible and a missing one is reported", strings.Replace(corpYAML, "        client_secret_file: /var/run/secrets/quader/oidc-corp/client-secret\n", "", 1), "client_secret_file"},
 		{"R-AUTH-006 alg none or HS256 in allowed_signing_algs", corpYAML + "        allowed_signing_algs: [RS256, HS256]\n", `"HS256" is not supported`},
 		{"R-AUTH-008 a rule with match and match_regex", corpYAML + "            - match: a\n              match_regex: b\n              group: c\n", "exactly one of match and match_regex"},
 		{"R-AUTH-011 an idle timeout above 24h", "auth:\n  sessions:\n    idle_timeout: 25h\n", "auth.sessions.idle_timeout"},
@@ -87,11 +87,11 @@ func TestLoginConfig(t *testing.T) {
 
 	t.Run("R-AUTH-007 a public issuer starts with login_requires_groups and a namespaced rule, and fails with an open rule", func(t *testing.T) {
 		y := strings.Replace(corpYAML, "https://login.example.com/realms/acme", "https://gitlab.com", 1)
-		y = strings.Replace(y, `"trove-team-(.+)"`, `"acme/trove-(.+)"`, 1) + "        login_requires_groups: [acme]\n"
+		y = strings.Replace(y, `"quader-team-(.+)"`, `"acme/quader-(.+)"`, 1) + "        login_requires_groups: [acme]\n"
 		if _, err := loadLogin(t, y); err != nil {
 			t.Fatalf("namespaced: %v", err)
 		}
-		y = strings.Replace(y, `"acme/trove-(.+)"`, `"trove-(.+)"`, 1)
+		y = strings.Replace(y, `"acme/quader-(.+)"`, `"quader-(.+)"`, 1)
 		_, err := loadLogin(t, y)
 		if err == nil || !strings.Contains(strings.Join(issuesOf(t, err), "\n"), "literal namespace ending in /") {
 			t.Fatalf("open rule: %v", err)
@@ -99,7 +99,7 @@ func TestLoginConfig(t *testing.T) {
 	})
 
 	t.Run("R-AUTH-004 the whole provider map comes from the environment as JSON", func(t *testing.T) {
-		l, err := loadLogin(t, "", `TROVE_AUTH_OIDC_PROVIDERS={"corp":{"display_name":"C","issuer":"https://idp.example.com","client_id":"t","client_auth_method":"none"}}`)
+		l, err := loadLogin(t, "", `QUADER_AUTH_OIDC_PROVIDERS={"corp":{"display_name":"C","issuer":"https://idp.example.com","client_id":"t","client_auth_method":"none"}}`)
 		if err != nil {
 			t.Fatal(err)
 		}

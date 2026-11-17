@@ -46,7 +46,7 @@ function setup() {
 describe('access services over HTTP', () => {
   afterEach(() => TestBed.inject(HttpTestingController).verify());
 
-  it('R-AUTHZ-032 the epoch of a policy write goes out as Trove-Authz-Min-Epoch on the next read', async () => {
+  it('R-AUTHZ-032 the epoch of a policy write goes out as Quader-Authz-Min-Epoch on the next read', async () => {
     const { http, epoch } = setup();
     const api = TestBed.inject(HttpPolicyApi);
     const body = { resourceType: 'repository', description: 'd' } as const;
@@ -55,10 +55,10 @@ describe('access services over HTTP', () => {
     const put = http.expectOne('/api/v1/permission-policies/team-web-publish');
     expect(put.request.method).toBe('PUT');
     expect(put.request.headers.get('If-Match')).toBe('"3"');
-    expect(put.request.headers.has('Trove-Authz-Min-Epoch')).toBe(false);
+    expect(put.request.headers.has('Quader-Authz-Min-Epoch')).toBe(false);
     put.flush(
       { name: 'team-web-publish', version: 4, resources: {}, entries: [] },
-      { headers: { ETag: '"4"', 'Trove-Authz-Epoch': '1842' } },
+      { headers: { ETag: '"4"', 'Quader-Authz-Epoch': '1842' } },
     );
     expect((await write).etag).toBe('"4"');
     expect(epoch.value()).toBe(1842);
@@ -66,13 +66,13 @@ describe('access services over HTTP', () => {
     // The follow-up reads of the screen: the policy itself and the caller's capabilities.
     const read = api.load('team-web-publish', null);
     const get = http.expectOne('/api/v1/permission-policies/team-web-publish');
-    expect(get.request.headers.get('Trove-Authz-Min-Epoch')).toBe('1842');
+    expect(get.request.headers.get('Quader-Authz-Min-Epoch')).toBe('1842');
     get.flush({ name: 'team-web-publish', version: 4, resources: {}, entries: [] }, { headers: { ETag: '"4"' } });
     await read;
 
     const me = TestBed.inject(HttpSessionApi).authzMe();
     const meReq = http.expectOne('/api/v1/authz/me');
-    expect(meReq.request.headers.get('Trove-Authz-Min-Epoch')).toBe('1842');
+    expect(meReq.request.headers.get('Quader-Authz-Min-Epoch')).toBe('1842');
     meReq.flush({ roles: [], capabilities: [], principals: [], scope: null, epoch: 1842 });
     await me;
   });
@@ -86,14 +86,14 @@ describe('access services over HTTP', () => {
     expect(put.request.headers.has('If-Match')).toBe(false);
     put.flush(
       { role: 'auditor', principal: 'group:platform-admins', grantedAt: '2026-10-29T10:00:00Z', grantedBy: '', source: 'api' },
-      { status: 201, statusText: 'Created', headers: { 'Trove-Authz-Epoch': '77' } },
+      { status: 201, statusText: 'Created', headers: { 'Quader-Authz-Epoch': '77' } },
     );
     await bind;
     const list = api.bindings({ principal: 'group:platform-admins' })(null, 50);
     const get = http.expectOne((r) => r.url === '/api/v1/role-bindings');
     expect(get.request.params.get('principal')).toBe('group:platform-admins');
     expect(get.request.params.get('limit')).toBe('50');
-    expect(get.request.headers.get('Trove-Authz-Min-Epoch')).toBe('77');
+    expect(get.request.headers.get('Quader-Authz-Min-Epoch')).toBe('77');
     get.flush({ items: [], nextCursor: null });
     await list;
   });

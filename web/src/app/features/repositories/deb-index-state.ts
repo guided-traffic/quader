@@ -63,7 +63,7 @@ export function behindBy(suite: DebSuiteState): number {
  * `POST …/reindex` and answers the refusals in words.
  */
 @Component({
-  selector: 'trove-deb-index-state',
+  selector: 'quader-deb-index-state',
   imports: [DatePipe, RouterLink, DataTable, ErrorNotice],
   template: `
     <section class="index" aria-labelledby="deb-index-heading">
@@ -74,9 +74,9 @@ export function behindBy(suite: DebSuiteState): number {
       </p>
 
       @if (failure(); as f) {
-        <trove-error-notice [error]="f" (retry)="load()" />
+        <quader-error-notice [error]="f" (retry)="load()" />
       } @else if (state(); as s) {
-        <trove-data-table [caption]="caption" [columns]="columns" [empty]="s.suites.length === 0" [emptyText]="emptyText" data-testid="deb-index-table">
+        <quader-data-table [caption]="caption" [columns]="columns" [empty]="s.suites.length === 0" [emptyText]="emptyText" data-testid="deb-index-table">
           @for (suite of s.suites; track suite.distribution) {
             <tr [attr.data-state]="suite.state">
               <th scope="row" translate="no">{{ suite.distribution }}</th>
@@ -113,7 +113,7 @@ export function behindBy(suite: DebSuiteState): number {
               </td>
             </tr>
           }
-        </trove-data-table>
+        </quader-data-table>
 
         @if (canManage()) {
           <div class="buttons">
@@ -139,7 +139,7 @@ export function behindBy(suite: DebSuiteState): number {
           </p>
         }
         @if (actionFailure(); as f) {
-          <trove-error-notice [error]="f" />
+          <quader-error-notice [error]="f" />
         }
       } @else {
         <p role="status" i18n="@@deb.index.loading">Loading the index state.</p>
@@ -148,16 +148,16 @@ export function behindBy(suite: DebSuiteState): number {
   `,
   styles: `
     .index {
-      margin-block-end: var(--trove-space-6);
+      margin-block-end: var(--quader-space-6);
     }
     .reason {
-      margin: var(--trove-space-1) 0 0;
+      margin: var(--quader-space-1) 0 0;
       max-width: 40rem;
     }
     .buttons {
       display: flex;
-      gap: var(--trove-space-3);
-      margin-block: var(--trove-space-3);
+      gap: var(--quader-space-3);
+      margin-block: var(--quader-space-3);
     }
   `,
 })

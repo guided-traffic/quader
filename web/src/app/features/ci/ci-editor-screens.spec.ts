@@ -28,8 +28,8 @@ const token = (claims: unknown): string => `${b64url({ alg: 'RS256', typ: 'JWT' 
 
 const valueArea = (root: HTMLElement): HTMLTextAreaElement => root.querySelector('textarea[id$="-value"]') as HTMLTextAreaElement;
 const checkbox = (root: HTMLElement, label: string): HTMLInputElement =>
-  [...root.querySelectorAll('trove-checkbox')].find((c) => text(c).startsWith(label))!.querySelector('input') as HTMLInputElement;
-const picker = (root: HTMLElement, i = 0): HTMLElement => root.querySelectorAll('trove-ci-name-picker')[i] as HTMLElement;
+  [...root.querySelectorAll('quader-checkbox')].find((c) => text(c).startsWith(label))!.querySelector('input') as HTMLInputElement;
+const picker = (root: HTMLElement, i = 0): HTMLElement => root.querySelectorAll('quader-ci-name-picker')[i] as HTMLElement;
 const pickerField = (root: HTMLElement, i = 0): HTMLInputElement => picker(root, i).querySelector('input') as HTMLInputElement;
 const suggestions = (root: HTMLElement, i = 0): string[] =>
   [...picker(root, i).querySelectorAll('datalist option')].map((o) => (o as HTMLOptionElement).value);
@@ -73,8 +73,8 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
   it('R-UI-035 an existing mapping opens with its condition as a tree, its grants and its options', async () => {
     const { root } = await renderScreen(MappingEditor, { inputs: { issuer: 'gitlab-com', mapping: 'team-a-release' } });
     expect(text(root)).toContain('gitlab-com/team-a-release');
-    expect(root.querySelectorAll('trove-ci-condition-node input[list="ci-claims"]')).toHaveLength(2);
-    expect([...root.querySelectorAll('trove-ci-condition-node input[list="ci-claims"]')].map((i) => (i as HTMLInputElement).value)).toEqual(['namespace_id', 'ref_protected']);
+    expect(root.querySelectorAll('quader-ci-condition-node input[list="ci-claims"]')).toHaveLength(2);
+    expect([...root.querySelectorAll('quader-ci-condition-node input[list="ci-claims"]')].map((i) => (i as HTMLInputElement).value)).toEqual(['namespace_id', 'ref_protected']);
     expect(text(root)).toContain('ci-read-internal');
     expect(root.querySelector<HTMLTextAreaElement>('textarea[name="repositories-0"]')!.value).toBe('npm-internal');
     expect(root.querySelector<HTMLInputElement>('input[name="maxTtlSeconds"]')!.value).toBe('1800');
@@ -113,7 +113,7 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     });
     const policies = pickerField(root, 0);
     const groups = pickerField(root, 1);
-    expect(root.querySelectorAll('trove-ci-name-picker select')).toHaveLength(0);
+    expect(root.querySelectorAll('quader-ci-name-picker select')).toHaveLength(0);
     expect(policies.disabled).toBe(true);
     expect(policies.getAttribute('aria-busy')).toBe('true');
     expect(policies.placeholder).toBe('Loading policies…');
@@ -215,7 +215,7 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     await sleep(fixture, 100);
     expect(ci(get).calls).toContain('replaceMapping system gitlab-com/team-a-release');
     expect(ci(get).ifMatch).toEqual(['"1"']);
-    const warnings = text(root.querySelector('trove-ci-warnings')!);
+    const warnings = text(root.querySelector('quader-ci-warnings')!);
     expect(warnings).toContain('Saved, with warnings');
     expect(warnings).toContain('write_without_pipeline_source');
     expect(warnings).toContain('Add a pipeline_source condition');
@@ -223,7 +223,7 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
 
   it('R-CI-013 explicit ownership none on a writing grant warns before the save (shared_ownership)', async () => {
     const { root, fixture } = await renderScreen(MappingEditor, { inputs: { issuer: 'gitlab-com', mapping: 'team-a-release' } });
-    const owner = [...root.querySelectorAll('trove-select-field')].find((f) => text(f).includes('Ownership of package names'))!.querySelector('select') as HTMLSelectElement;
+    const owner = [...root.querySelectorAll('quader-select-field')].find((f) => text(f).includes('Ownership of package names'))!.querySelector('select') as HTMLSelectElement;
     type(owner, 'none');
     await settle(fixture);
     expect(text(root)).toContain('co-owns them (shared_ownership)');
@@ -269,8 +269,8 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     await settle(fixture);
     buttonByText(root, 'Add group').click();
     await settle(fixture);
-    expect(root.querySelectorAll('trove-ci-condition-node .group')).toHaveLength(3);
-    const operators = [...root.querySelectorAll('trove-ci-condition-node select')]
+    expect(root.querySelectorAll('quader-ci-condition-node .group')).toHaveLength(3);
+    const operators = [...root.querySelectorAll('quader-ci-condition-node select')]
       .filter((s) => [...(s as HTMLSelectElement).options].some((o) => o.value === 'regex'))
       .map((s) => [...(s as HTMLSelectElement).options].map((o) => o.value));
     expect(operators[0]).toEqual(['equals', 'in', 'glob', 'regex', 'present']);
@@ -285,7 +285,7 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     expect(text(root)).toContain('Reads as: project_id = 4242 (ignoring case)');
     buttonByText(root, 'Builder').click();
     await settle(fixture);
-    expect((root.querySelector('trove-ci-condition-node input[list="ci-claims"]') as HTMLInputElement).value).toBe('project_id');
+    expect((root.querySelector('quader-ci-condition-node input[list="ci-claims"]') as HTMLInputElement).value).toBe('project_id');
     expect(root.querySelector<HTMLInputElement>('.fold input')!.checked).toBe(true);
   });
 
@@ -307,7 +307,7 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     expect(text(root)).toContain('Read only: changing this needs the permission ci:write');
     expect(root.querySelector('button[type="submit"]')).toBeNull();
     expect(root.querySelector('fieldset.plain')!.hasAttribute('disabled')).toBe(true);
-    expect(root.querySelector('trove-ci-condition-node button')).toBeNull();
+    expect(root.querySelector('quader-ci-condition-node button')).toBeNull();
   });
 
   it('R-UI-035 "Test with claims" opens the tester for the stored mapping, and says so when the form has unsaved changes', async () => {
@@ -322,18 +322,18 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
 
   it('R-UI-035 "CI snippet" shows the snippet text of the chosen client with a copy button', async () => {
     const { root, fixture, get } = await renderScreen(MappingEditor, { inputs: { issuer: 'gitlab-com', mapping: 'team-a-release' } });
-    ci(get).snippets.set('gitlab-com/team-a-release/npm', 'id_tokens:\n  TROVE_ID_TOKEN:\n    aud: https://trove.example.com\nnpm-line');
-    ci(get).snippets.set('gitlab-com/team-a-release/nuget', 'id_tokens:\n  TROVE_ID_TOKEN:\nnuget-line');
+    ci(get).snippets.set('gitlab-com/team-a-release/npm', 'id_tokens:\n  QUADER_ID_TOKEN:\n    aud: https://quader.example.com\nnpm-line');
+    ci(get).snippets.set('gitlab-com/team-a-release/nuget', 'id_tokens:\n  QUADER_ID_TOKEN:\nnuget-line');
     buttonByText(root, 'CI snippet').click();
     await sleep(fixture, 80);
     expect(root.querySelector('pre.snippet')!.textContent).toContain('npm-line');
-    expect(root.querySelector('trove-copy-button button')!.getAttribute('aria-label')).toBe('Copy the snippet');
+    expect(root.querySelector('quader-copy-button button')!.getAttribute('aria-label')).toBe('Copy the snippet');
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
-    (root.querySelector('trove-copy-button button') as HTMLButtonElement).click();
+    (root.querySelector('quader-copy-button button') as HTMLButtonElement).click();
     await settle(fixture);
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('npm-line'));
-    type([...root.querySelectorAll('trove-select-field')].find((f) => text(f).includes('Package client'))!.querySelector('select') as HTMLSelectElement, 'nuget');
+    type([...root.querySelectorAll('quader-select-field')].find((f) => text(f).includes('Package client'))!.querySelector('select') as HTMLSelectElement, 'nuget');
     await sleep(fixture, 80);
     expect(root.querySelector('pre.snippet')!.textContent).toContain('nuget-line');
     await expectAccessible(root);
@@ -345,7 +345,7 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     typeInto(root, 'Description', 'mine');
     buttonByText(root, 'Save mapping').click();
     await sleep(fixture, 150);
-    expect(document.querySelector('trove-conflict-dialog')).toBeTruthy();
+    expect(document.querySelector('quader-conflict-dialog')).toBeTruthy();
   });
 
   it('R-CI-002 R-UI-042 "Overwrite" keeps the narrowing another administrator made in between and replaces only what the user changed', async () => {
@@ -360,7 +360,7 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     typeInto(root, 'Description', 'mine');
     buttonByText(root, 'Save mapping').click();
     await sleep(fixture, 150);
-    expect(document.querySelector('trove-conflict-dialog')).toBeTruthy();
+    expect(document.querySelector('quader-conflict-dialog')).toBeTruthy();
     (buttonByText(document.body, 'Overwrite') as HTMLButtonElement).click();
     await sleep(fixture, 150);
     const stored = ci(get).mappings[0]!;
@@ -603,7 +603,7 @@ describe('The claim tester (R-UI-036, R-CI-019)', () => {
     await settle(fixture);
     const claims = JSON.parse(claimsArea(root).value) as Record<string, unknown>;
     expect(claims['iss']).toBe('https://gitlab.example.com');
-    expect(claims['aud']).toBe('https://trove.example.com');
+    expect(claims['aud']).toBe('https://quader.example.com');
     expect(claims['sub']).toBe('project_path:team-a/app:ref_type:branch:ref:main');
     for (const k of ['namespace_id', 'namespace_path', 'project_id', 'project_path', 'ref', 'ref_type', 'ref_protected', 'pipeline_source', 'environment', 'user_login', 'job_id', 'iat', 'nbf', 'exp']) {
       expect(claims, k).toHaveProperty(k);
@@ -631,7 +631,7 @@ describe('The claim tester (R-UI-036, R-CI-019)', () => {
     expect(result).toContain('Passed');
     // Templates are resolved with the claims.
     expect(result).toContain('read, deploy: npm-internal · @team-a/*');
-    expect(result).toContain('trv_cit_');
+    expect(result).toContain('qdr_cit_');
     expect(result).toContain('15 minutes');
     expect(root.querySelector('table.data caption')!.textContent).toContain('team-a-release');
     await expectAccessible(root);
@@ -698,12 +698,12 @@ describe('The claim tester (R-UI-036, R-CI-019)', () => {
         release = holdCalls(g(CiApi), 'projectIssuers');
       },
     });
-    const select = root.querySelector('trove-select-field select') as HTMLSelectElement;
+    const select = root.querySelector('quader-select-field select') as HTMLSelectElement;
     expect(select.disabled).toBe(true);
     expect([...select.options].map((o) => text(o))).toEqual(['Loading issuers…']);
     release();
     await settle(fixture);
-    expect(root.querySelector('trove-select-field select')).toBe(select);
+    expect(root.querySelector('quader-select-field select')).toBe(select);
     expect(select.disabled).toBe(false);
     expect(text(select.options[0]!)).toBe('Choose an issuer');
     expect(select.value).toBe('');
@@ -718,7 +718,7 @@ describe('The claim tester (R-UI-036, R-CI-019)', () => {
         ci(g).mappings = [sampleMapping({ name: 'web-x', tier: 'project:web' }), sampleMapping({ name: 'system-only', tier: 'system', priority: 5 })];
       },
     });
-    type(root.querySelector('trove-select-field select') as HTMLSelectElement, 'gitlab-com');
+    type(root.querySelector('quader-select-field select') as HTMLSelectElement, 'gitlab-com');
     await settle(fixture);
     type(claimsArea(root), JSON.stringify({ namespace_id: '4711', ref_protected: 'true' }));
     buttonByText(root, 'Evaluate').click();

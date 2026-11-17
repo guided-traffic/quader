@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_AUTH_033_TheAPIKeyOnARunningReplica is E3.5's API-key half and R-AUTH-033's
@@ -61,7 +61,7 @@ func TestR_AUTH_033_TheAPIKeyOnARunningReplica(t *testing.T) {
 				t.Fatalf("%d %s, want %d", a.Status, a.Body, c.status)
 			}
 			if c.status == http.StatusUnauthorized {
-				if got := a.Header.Get("WWW-Authenticate"); got != `Basic realm="trove"` {
+				if got := a.Header.Get("WWW-Authenticate"); got != `Basic realm="quader"` {
 					t.Fatalf("challenge %q", got)
 				}
 				return
@@ -84,7 +84,7 @@ func TestR_AUTH_033_TheAPIKeyOnARunningReplica(t *testing.T) {
 			last, _ = e.send(r, "PUT", push, apiKey, e.doomPAT, "Authorization", basic("ci", e.ciSAT))
 			return last.Status == http.StatusUnauthorized
 		})
-		if last.Code(t) != errs.CodeInvalidToken || last.Header.Get("WWW-Authenticate") != `Basic realm="trove"` {
+		if last.Code(t) != errs.CodeInvalidToken || last.Header.Get("WWW-Authenticate") != `Basic realm="quader"` {
 			t.Fatalf("%d %s %v", last.Status, last.Body, last.Header)
 		}
 	})
@@ -119,10 +119,10 @@ func TestR_AUTH_033_TheAPIKeyOnARunningReplica(t *testing.T) {
 			}
 		}
 		m := r.Metrics(t)
-		if v := testenv.MetricValue(m, `trove_auth_attempts_total{method="nuget_apikey",outcome="success",reason=""}`); v < 5 {
+		if v := testenv.MetricValue(m, `quader_auth_attempts_total{method="nuget_apikey",outcome="success",reason=""}`); v < 5 {
 			t.Fatalf("successful API-key attempts %v", v)
 		}
-		if v := testenv.MetricValue(m, `trove_auth_attempts_total{method="nuget_apikey",outcome="failure",reason="revoked"}`); v < 1 {
+		if v := testenv.MetricValue(m, `quader_auth_attempts_total{method="nuget_apikey",outcome="failure",reason="revoked"}`); v < 1 {
 			t.Fatalf("revoked API-key attempts %v", v)
 		}
 	})
@@ -152,7 +152,7 @@ func TestR_NUGET_012_ASessionCookieIsNoCredentialOnAnAPIKeyRoute(t *testing.T) {
 	}
 	for _, c := range []struct{ method, path string }{{"POST", version}, {"PUT", push}, {"DELETE", version}} {
 		a, _ := e.send(r, c.method, c.path, "Cookie", cookie, "X-CSRF-Token", csrf, "Origin", origin)
-		if a.Status != http.StatusUnauthorized || a.Header.Get("WWW-Authenticate") != `Basic realm="trove"` {
+		if a.Status != http.StatusUnauthorized || a.Header.Get("WWW-Authenticate") != `Basic realm="quader"` {
 			t.Errorf("%s %s with a session cookie: %d %s", c.method, c.path, a.Status, a.Body)
 		}
 	}
@@ -165,7 +165,7 @@ func TestR_NUGET_012_ASessionCookieIsNoCredentialOnAnAPIKeyRoute(t *testing.T) {
 // false the header is never examined; the source credentials push.
 func TestR_AUTH_033_TheSwitchTurnsTheHeaderOff(t *testing.T) {
 	e := newEnv(t)
-	r := e.start("web-off", "TROVE_AUTH_CLIENTS_NUGET_API_KEY_HEADER=false")
+	r := e.start("web-off", "QUADER_AUTH_CLIENTS_NUGET_API_KEY_HEADER=false")
 	if a, _ := e.send(r, "PUT", push, apiKey, e.alicePAT); a.Status != http.StatusUnauthorized {
 		t.Fatalf("API key with the switch off: %d %s", a.Status, a.Body)
 	}

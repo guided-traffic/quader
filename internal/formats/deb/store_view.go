@@ -3,7 +3,7 @@ package deb
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 // ViewStore is the part of the data port that the package screens read (R-DEB-030). Built by the work package of the local class.

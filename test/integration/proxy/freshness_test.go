@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestFreshness is R-REPO-027: the period, the conditional revalidation, the refresh
@@ -34,14 +34,14 @@ func TestFreshness(t *testing.T) {
 		}
 		time.Sleep(2200 * time.Millisecond)
 		s := r.metadata(rem, "pkg/left-pad")
-		if s.status != 200 || !bytes.Equal(s.body, doc) || s.cacheStatus() != "trove; fwd=stale; fwd-status=304" {
+		if s.status != 200 || !bytes.Equal(s.body, doc) || s.cacheStatus() != "quader; fwd=stale; fwd-status=304" {
 			t.Fatalf("%d %q", s.status, s.cacheStatus())
 		}
 		if up.Conditional("/pkg/left-pad") != 1 || up.Seen()[1].IfNoneMatch != `"v1"` {
 			t.Fatalf("the revalidation was not an If-None-Match request: %+v", up.Seen())
 		}
 		// A 304 renewed the period: the next request is a hit again.
-		if s := r.metadata(rem, "pkg/left-pad"); !strings.HasPrefix(s.cacheStatus(), "trove; hit; ttl=") {
+		if s := r.metadata(rem, "pkg/left-pad"); !strings.HasPrefix(s.cacheStatus(), "quader; hit; ttl=") {
 			t.Fatalf("%q", s.cacheStatus())
 		}
 	})
@@ -55,7 +55,7 @@ func TestFreshness(t *testing.T) {
 		r := e.newReplica("a", replicaOpts{})
 		_ = r.metadata(rem, "pkg/lm")
 		time.Sleep(1200 * time.Millisecond)
-		if s := r.metadata(rem, "pkg/lm"); s.cacheStatus() != "trove; fwd=stale; fwd-status=304" {
+		if s := r.metadata(rem, "pkg/lm"); s.cacheStatus() != "quader; fwd=stale; fwd-status=304" {
 			t.Fatalf("%q", s.cacheStatus())
 		}
 	})
@@ -74,14 +74,14 @@ func TestFreshness(t *testing.T) {
 		start := time.Now()
 		s := r.metadata(rem, "pkg/slow")
 		took := time.Since(start)
-		if string(s.body) != `{"v":1}` || s.cacheStatus() != "trove; fwd=stale; detail=served-stale" {
+		if string(s.body) != `{"v":1}` || s.cacheStatus() != "quader; fwd=stale; detail=served-stale" {
 			t.Fatalf("%q %q", s.body, s.cacheStatus())
 		}
 		if took < 800*time.Millisecond || took > 2*time.Second {
 			t.Fatalf("the stale copy came after %s, want about the refresh timeout of 1 s", took)
 		}
 		waitFor(t, "the detached refresh to store the new document", 10*time.Second, func() bool {
-			return strings.HasPrefix(r.metadata(rem, "pkg/slow").cacheStatus(), "trove; hit; ttl=")
+			return strings.HasPrefix(r.metadata(rem, "pkg/slow").cacheStatus(), "quader; hit; ttl=")
 		})
 		if s := r.metadata(rem, "pkg/slow"); string(s.body) != `{"v":2}` {
 			t.Fatalf("the next request sees %q", s.body)
@@ -168,14 +168,14 @@ func TestEnsureCurrent(t *testing.T) {
 		return d.Status.Header(), int(cur)
 	}
 	t.Run("a fresh document validated after the restore is current", func(t *testing.T) {
-		if hdr, cur := call(time.Now().Add(-time.Hour)); !strings.HasPrefix(hdr, "trove; hit") || cur != int(proxy.Current) {
+		if hdr, cur := call(time.Now().Add(-time.Hour)); !strings.HasPrefix(hdr, "quader; hit") || cur != int(proxy.Current) {
 			t.Fatalf("%q %d", hdr, cur)
 		}
 	})
 	t.Run("a fresh document validated before the restore is revalidated", func(t *testing.T) {
 		before := up.Conditional("/pkg/cur")
 		hdr, cur := call(time.Now().Add(time.Hour))
-		if hdr != "trove; fwd=stale; fwd-status=304" || cur != int(proxy.Revalidated) || up.Conditional("/pkg/cur") != before+1 {
+		if hdr != "quader; fwd=stale; fwd-status=304" || cur != int(proxy.Revalidated) || up.Conditional("/pkg/cur") != before+1 {
 			t.Fatalf("%q %d", hdr, cur)
 		}
 	})

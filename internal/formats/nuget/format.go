@@ -22,11 +22,11 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nupkg"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nupkg"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // ID is the format name.
@@ -133,7 +133,7 @@ func (f *Format) Exposure() formats.ExposureAdapter { return f.exposure }
 // entry count and the declared sizes are the defaults of nuget.archive, because Inspect
 // meets the package without its replica (the push route applies the settings).
 //
-// What the archive rules refuse as ambiguous or forbidden is content trove does not read,
+// What the archive rules refuse as ambiguous or forbidden is content quader does not read,
 // 422 content_refused, as for npm; the push answers 400 for the same rules (R-NUGET-005).
 // A path that names another ID or version than the package declares is refused too.
 func (f *Format) Inspect(ctx context.Context, in formats.InspectInput) (*formats.Inspection, error) {

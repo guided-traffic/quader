@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The exchange of a hub behind single sign-on (R-ANS-019, Q-ANS-51). The Red Hat Automation Hub is called with an access token that

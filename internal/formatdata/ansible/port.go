@@ -5,7 +5,7 @@
 // It is a domain package: it imports neither the format nor the edge, so the values that cross the port are those of
 // internal/formats/ansible/rows, a leaf both import. It owns the tables of the migrations 00068_ansible_collections and
 // 00069_ansible_import_tasks and registers them with the backup (tables.go), so that the package must be linked wherever the migrated
-// schema is checked against the registry (cmd/trove/registry.go).
+// schema is checked against the registry (cmd/quader/registry.go).
 //
 // The port is three groups, each in files of its own: local_store.go (the local class: versions, tombstones, tasks, the reindex step),
 // remote_store.go (the remote class: the digests a remote's version documents announce) and docs_store.go (the documentation of
@@ -18,9 +18,9 @@ import (
 	"context"
 	"io"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // Options configure [New].

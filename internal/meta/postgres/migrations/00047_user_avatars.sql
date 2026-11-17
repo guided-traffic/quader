@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The avatar of a user (R-API-055, Q-STOR-166, Q-STOR-167). The image is the PNG that the server made of the upload
 -- (internal/avatar): its content is a blob like any other (INV-4), committed through the protocol of R-STOR-005 and

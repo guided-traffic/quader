@@ -230,7 +230,7 @@ func checkBound(t *testing.T, input, name string, got *Version, want *string) {
 // readsSignedIdentifier reports whether the library reads a pre-release identifier of the
 // version as a negative number: "-" and digits, as in 1.0.0--5. The library hands such an
 // identifier to Int32.TryParse, so "1.0.0--0" and "1.0.0-0" have equal precedence but two
-// URL forms. trove orders the identifier as text instead, which keeps equal precedence and
+// URL forms. quader orders the identifier as text instead, which keeps equal precedence and
 // equal URL form the same thing (Q-NUGET-22); the ordering vectors of such versions are
 // therefore not applicable.
 func readsSignedIdentifier(input string) bool {

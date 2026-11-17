@@ -99,12 +99,12 @@ describe('Packages list', () => {
     const typeOf = (name: string) =>
       rows(r).find((row) => text(row.querySelector('th a')!) === name)!.querySelector('.type-cell')!;
     const nuget = typeOf('Contoso.Logging');
-    expect(nuget.querySelector('trove-format-icon img')?.getAttribute('src')).toBe('formats/nuget/nuget.svg');
-    expect(nuget.querySelector('trove-format-icon img')?.getAttribute('alt')).toBe('');
+    expect(nuget.querySelector('quader-format-icon img')?.getAttribute('src')).toBe('formats/nuget/nuget.svg');
+    expect(nuget.querySelector('quader-format-icon img')?.getAttribute('alt')).toBe('');
     expect(spokenText(nuget)).toBe('NuGet');
     const npm = typeOf('left-pad');
-    expect(npm.querySelector('trove-format-icon img')).toBeNull();
-    expect(npm.querySelector('trove-format-icon .material-icons')?.getAttribute('aria-hidden')).toBe('true');
+    expect(npm.querySelector('quader-format-icon img')).toBeNull();
+    expect(npm.querySelector('quader-format-icon .material-icons')?.getAttribute('aria-hidden')).toBe('true');
     expect(spokenText(npm)).toBe('npm');
   });
 
@@ -140,7 +140,7 @@ describe('Packages list', () => {
   it('R-UI-006 the filter panel offers package type, repository, name or description, keyword and created', async () => {
     const r = await open();
     await openFilters(r.fixture, r.root);
-    const categories = [...r.root.querySelectorAll('trove-filter-category .category-label')].map((c) => text(c));
+    const categories = [...r.root.querySelectorAll('quader-filter-category .category-label')].map((c) => text(c));
     expect(categories).toEqual(['Package type', 'Repository', 'Name or description', 'Keyword', 'Created']);
     await expectAccessible(r.root);
   });
@@ -151,7 +151,7 @@ describe('Packages list', () => {
     await openFilters(r.fixture, r.root);
     for (const label of ['Package type', 'Name or description', 'Keyword']) buttonByText(r.root, label).click();
     await settle(r.fixture);
-    const check = [...r.root.querySelectorAll<HTMLInputElement>('trove-filter-category input[type="checkbox"]')].find(
+    const check = [...r.root.querySelectorAll<HTMLInputElement>('quader-filter-category input[type="checkbox"]')].find(
       (i) => text(i.parentElement!) === 'NuGet',
     )!;
     check.checked = true;
@@ -171,7 +171,7 @@ describe('Packages list', () => {
     expect(names(r)).toEqual(['Contoso.Logging']);
     expect(r.fake.listFilters.at(-1)?.format).toEqual(['nuget']);
     expect(r.root.querySelector('.chip')?.textContent).toContain('Package type: NuGet');
-    expect(r.root.querySelector('trove-filter-panel form')).not.toBeNull();
+    expect(r.root.querySelector('quader-filter-panel form')).not.toBeNull();
   });
 
   it('R-UI-006 several formats and repositories repeat the parameter (OR within a field)', async () => {
@@ -353,7 +353,7 @@ describe('Packages list', () => {
     it('R-UI-006 a list opened without a query lands on the default saved view once', async () => {
       new BrowserStorage().set(
         'local',
-        'trove.packages.alice.web',
+        'quader.packages.alice.web',
         JSON.stringify({ recent: [], views: [{ id: 'v1', name: 'NuGet only', query: { format: 'nuget' } }], defaultView: 'v1' }),
       );
       let navigate: ReturnType<typeof navigateSpy> | undefined;

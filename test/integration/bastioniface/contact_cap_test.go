@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastionmain"
 )
 
 // TestR_BAS_010_TheContactRowsOfARegistrationAreBounded: the name of a replica is what the Bastion reports, so the
@@ -19,7 +19,7 @@ func TestR_BAS_010_TheContactRowsOfARegistrationAreBounded(t *testing.T) {
 	bid, other := e.registration("partners"), e.registration("others")
 	c := bastionmain.NewContacts(bastionmain.ContactOptions{DB: s.db, Audit: s.rec})
 	ctx := context.Background()
-	rep := bastionmain.Report{ClientAddress: "198.51.100.20", UserAgent: "trove-bastion/0.14.0", ResponseBaseURL: "https://packages.example.com"}
+	rep := bastionmain.Report{ClientAddress: "198.51.100.20", UserAgent: "quader-bastion/0.14.0", ResponseBaseURL: "https://packages.example.com"}
 	if err := c.Record(ctx, bastionmain.Recognition{Bastion: "others", BastionID: other, Interface: iface.InterfaceVersion, Replica: "other-0"}, rep); err != nil {
 		t.Fatal(err)
 	}

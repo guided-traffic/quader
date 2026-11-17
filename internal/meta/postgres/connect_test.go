@@ -14,12 +14,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func testConfig() config.Database {
 	return config.Database{
-		Host: "db.example", Port: 5432, Name: "trove", Schema: "trove",
+		Host: "db.example", Port: 5432, Name: "quader", Schema: "quader",
 		SSLMode: "verify-full", TargetSessionAttrs: "read-write", ConnectTimeout: 5 * time.Second,
 		Pool:          config.DatabasePool{MaxConns: 20, MinConns: 2},
 		LeasePoolSize: 4,
@@ -35,14 +35,14 @@ func testConfig() config.Database {
 }
 
 func TestApplicationName(t *testing.T) {
-	t.Run("R-ARCH-019 the name is trove:<instance>:<class>", func(t *testing.T) {
-		if got := ApplicationName("trove-web-7d9", "main"); got != "trove:trove-web-7d9:main" {
+	t.Run("R-ARCH-019 the name is quader:<instance>:<class>", func(t *testing.T) {
+		if got := ApplicationName("quader-web-7d9", "main"); got != "quader:quader-web-7d9:main" {
 			t.Fatalf("got %q", got)
 		}
 	})
 	t.Run("R-HA-015 a long instance is cut to 63 bytes and keeps its class", func(t *testing.T) {
 		got := ApplicationName(strings.Repeat("p", 100), "lease")
-		if len(got) != 63 || !strings.HasSuffix(got, ":lease") || !strings.HasPrefix(got, "trove:p") {
+		if len(got) != 63 || !strings.HasSuffix(got, ":lease") || !strings.HasPrefix(got, "quader:p") {
 			t.Fatalf("got %q (%d)", got, len(got))
 		}
 	})
@@ -53,8 +53,8 @@ func TestRuntimeParams(t *testing.T) {
 	t.Run("R-HA-015 a direct connection sends every session parameter", func(t *testing.T) {
 		p := runtimeParams(c, "pod", connKind{class: classMain})
 		want := map[string]string{
-			"application_name": "trove:pod:main", "TimeZone": "UTC", "statement_timeout": "30000",
-			"lock_timeout": "5000", "idle_in_transaction_session_timeout": "60000", "search_path": "trove",
+			"application_name": "quader:pod:main", "TimeZone": "UTC", "statement_timeout": "30000",
+			"lock_timeout": "5000", "idle_in_transaction_session_timeout": "60000", "search_path": "quader",
 			"tcp_keepalives_idle": "60", "tcp_keepalives_interval": "10", "tcp_keepalives_count": "6",
 		}
 		for k, v := range want {
@@ -86,7 +86,7 @@ func TestRuntimeParams(t *testing.T) {
 	})
 	t.Run("R-HA-015 migrations run without a statement timeout", func(t *testing.T) {
 		p := runtimeParams(c, "pod", connKind{class: classMigrate, noLimit: true})
-		if p["statement_timeout"] != "0" || p["application_name"] != "trove:pod:migrate" {
+		if p["statement_timeout"] != "0" || p["application_name"] != "quader:pod:migrate" {
 			t.Fatalf("params = %v", p)
 		}
 	})
@@ -95,14 +95,14 @@ func TestRuntimeParams(t *testing.T) {
 func TestEndpoints(t *testing.T) {
 	c := testConfig()
 	c.SessionHost, c.SessionPort = "pg-direct", 6543
-	c.ControlHost, c.ControlName = "pooler-control", "trove_ctl"
+	c.ControlHost, c.ControlName = "pooler-control", "quader_ctl"
 	t.Run("R-ARCH-017 session connections use the session host and port", func(t *testing.T) {
-		if e := sessionEndpoint(c); e.host != "pg-direct" || e.port != 6543 || e.name != "trove" {
+		if e := sessionEndpoint(c); e.host != "pg-direct" || e.port != 6543 || e.name != "quader" {
 			t.Fatalf("%+v", e)
 		}
 	})
 	t.Run("R-ARCH-019 the control connection uses the control endpoint, empty keys fall back", func(t *testing.T) {
-		if e := controlEndpoint(c); e.host != "pooler-control" || e.port != 5432 || e.name != "trove_ctl" {
+		if e := controlEndpoint(c); e.host != "pooler-control" || e.port != 5432 || e.name != "quader_ctl" {
 			t.Fatalf("%+v", e)
 		}
 		if e := controlEndpoint(testConfig()); e != mainEndpoint(testConfig()) {
@@ -207,7 +207,7 @@ func TestCredentialFiles(t *testing.T) {
 	}
 	c := testConfig()
 	c.UsernameFile, c.PasswordFile = user, pw
-	write(user, "trove_app_a\n")
+	write(user, "quader_app_a\n")
 	write(pw, "s3cret\n")
 	bc := beforeConnect(c, nil)
 
@@ -216,7 +216,7 @@ func TestCredentialFiles(t *testing.T) {
 		if err := bc(context.Background(), cc); err != nil {
 			t.Fatal(err)
 		}
-		if cc.User != "trove_app_a" || cc.Password != "s3cret" {
+		if cc.User != "quader_app_a" || cc.Password != "s3cret" {
 			t.Fatalf("user %q password %q", cc.User, cc.Password)
 		}
 	})

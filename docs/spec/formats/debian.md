@@ -4,13 +4,13 @@ Status: specification — built (phase T-17, closed; FULL.md block D row "Debian
 [apt-work-packages.md](../../projektplan/apt-work-packages.md)): local, remote (modes `pullThrough` and `mirror`) and virtual repositories for
 `apt` and `apt-get` on Debian and Ubuntu; what stays is in [Deferred](#deferred) and in the gaps below
 
-This page specifies how trove serves APT repositories: the format `deb` for local, remote and virtual repositories in the
-Debian repository format; how a local repository takes `.deb` uploads and lists them in suites and components; how trove
+This page specifies how Quader serves APT repositories: the format `deb` for local, remote and virtual repositories in the
+Debian repository format; how a local repository takes `.deb` uploads and lists them in suites and components; how Quader
 builds the repository-wide indexes (`Packages`, `Release`) as signed, consistent snapshots in a job and serves them by hash
 across replicas; where the signing keys live, how they rotate and how clients learn them; how a remote repository passes an
 upstream's signed release documents through byte for byte, verifies them against configured keys and serves every index file
 by the hash its release names; what a mirror of an APT archive keeps; how a virtual repository merges its members into one
-index that trove signs; the limits on untrusted package and index content; operation on interchangeable replicas; and the test
+index that Quader signs; the limits on untrusted package and index content; operation on interchangeable replicas; and the test
 suites. Mechanisms shared by all formats are owned by other pages and only refined here:
 
 | Topic | Owner |
@@ -39,16 +39,16 @@ External references, normative wherever this page does not say otherwise:
 
 | Placeholder | Meaning |
 |---|---|
-| `<base>` | trove's public base URL of the endpoint the request arrived on; `https://trove.example.com` in examples (# example) |
+| `<base>` | Quader's public base URL of the endpoint the request arrived on; `https://quader.example.com` in examples (# example) |
 | `<repo URL>` | `<base>/api/deb/<projectKey>/<repoKey>`, the URI of an APT source line, without a trailing slash; route paths below are relative to it |
 | `<suite>` | a suite (distribution) name as APT names it in a source line: `stable`, `bookworm`, `noble-updates` (# example) |
 | `<component>`, `<arch>` | a component (`main`) and an architecture (`amd64`, `arm64`, `all`) (# example) |
-| `$TROVE_TOKEN` | a trove token (`trv_pat_…`, `trv_sat_…` or `trv_cit_…`, INV-8) |
+| `$QUADER_TOKEN` | a Quader token (`qdr_pat_…`, `qdr_sat_…` or `qdr_cit_…`, INV-8) |
 
 Project and repository keys used in examples (# example): the project `web` with `deb-local` (local), `debian` (remote of
 `https://deb.debian.org/debian/`, mode `pullThrough`), `debian-mirror` (remote of the same upstream, mode `mirror`) and `apt`
 (virtual over `deb-local` and `debian`, deploy target `deb-local`). A source line therefore reads
-`deb [signed-by=/etc/apt/keyrings/trove-web-apt.asc] https://trove.example.com/api/deb/web/apt stable main`.
+`deb [signed-by=/etc/apt/keyrings/quader-web-apt.asc] https://quader.example.com/api/deb/web/apt stable main`.
 
 Priorities: every requirement below is **P2** (block D of the roadmap), built now because the owner set the APT registry as
 task T-17 (promt.md section 10); what this phase leaves to FULL.md is in [Deferred](#deferred).
@@ -94,7 +94,7 @@ Not verified, and to be proven by the package that builds the mechanism:
 ### R-DEB-001 · The format `deb`, its classes and the repository address
 Priority: **P2** · Covers: PKG-DEB-001
 
-trove MUST offer the format `deb` for all three repository classes of INV-5. One format serves Debian, Ubuntu and every other
+Quader MUST offer the format `deb` for all three repository classes of INV-5. One format serves Debian, Ubuntu and every other
 archive in the Debian repository format; its clients are `apt`, `apt-get` and every tool that reads an APT source (Q-DEB-1).
 
 Format registration (R-REPO-003):
@@ -119,12 +119,12 @@ Format registration (R-REPO-003):
 `dists/<suite>/…` for indexes and the `Filename` of an index entry for package files:
 
 ```text
-# /etc/apt/sources.list.d/trove-web-apt.sources (deb822 form)        # example
+# /etc/apt/sources.list.d/quader-web-apt.sources (deb822 form)        # example
 Types: deb
-URIs: https://trove.example.com/api/deb/web/apt
+URIs: https://quader.example.com/api/deb/web/apt
 Suites: stable
 Components: main
-Signed-By: /etc/apt/keyrings/trove-web-apt.asc
+Signed-By: /etc/apt/keyrings/quader-web-apt.asc
 ```
 
 - Every repository of every project is reached on the same host and port; no host-root binding is needed or offered for the
@@ -138,7 +138,7 @@ Acceptance criteria:
 
 - `curl -s <base>/api/v1/formats | jq '.formats[] | select(.name=="deb")'` lists the classes `local`, `remote`, `virtual`, the
   protocol base path `/api/deb/{project}/{key}/` and the five upstream presets above, `debian` the default.
-- With the source above, `apt-get update` and `apt-get install trove-hello` succeed in a Debian 13 container without
+- With the source above, `apt-get update` and `apt-get install quader-hello` succeed in a Debian 13 container without
   `trusted=yes` (e2e, R-DEB-035).
 - `curl -X PUT --data-binary @hello.deb <base>/files/web/deb-local/pool/hello.deb` answers 409 and stores nothing.
 
@@ -215,12 +215,12 @@ Acceptance criteria:
 - The route table's examples (R-ARCH-010 check 1) cover every row; `Classify` maps `pool/h/hello/hello_2.10-3_amd64.deb` to
   package `hello`, version `2.10-3`, and `dists/stable/main/binary-amd64/Packages.gz` to no package.
 - `GET <repo URL>/dists/stable/main/binary-amd64/Packages.bz2` of a local repository answers 404.
-- `Classify` maps `binary/trove-hello_1.0_all.deb` of a remote to a package file and `binary/Packages.gz` to an index file;
+- `Classify` maps `binary/quader-hello_1.0_all.deb` of a remote to a package file and `binary/Packages.gz` to an index file;
   `GET <repo URL>/./InRelease` of a remote whose `remote.url` is a flat directory answers its `InRelease` without a redirect, and
   `GET <repo URL>/a/./b` answers 400.
 
 ### R-DEB-004 · Permissions per operation
-Priority: **P2** · Covers: trove-only
+Priority: **P2** · Covers: quader-only
 
 The coordinate of every request and the actions it needs (R-AUTHZ-007 rules; this table joins it for the format):
 
@@ -254,7 +254,7 @@ it, repositories with `packageOwnership: off`):
 - With `read` but not `manage`, `POST …/deb/signing-keys` answers 403 and `GET …/deb/signing-keys` 200.
 
 ### R-DEB-005 · Errors and response headers
-Priority: **P2** · Covers: trove-only
+Priority: **P2** · Covers: quader-only
 
 APT shows the status line of a failed request and does not read bodies; other tools (`curl`, CI scripts) do. The format's
 `WriteError` (R-ARCH-008) therefore answers standard status codes with the problem details of R-ARCH-023 and these codes:
@@ -285,7 +285,7 @@ Response headers:
 - Every file is an item or a cache entry, so `ETag` (the SHA-256), `Last-Modified`, conditional requests and `Range` follow
   [storage.md](../storage.md) R-STOR-012; APT revalidates `InRelease` with `If-Modified-Since`.
 - Responses are always `private` (the anonymous principal's read cannot be asked at response time, as for npm, Q-NPM-28).
-- A package file served through a virtual repository carries `Trove-Resolved-From: <memberKey>` (R-REPO-019).
+- A package file served through a virtual repository carries `Quader-Resolved-From: <memberKey>` (R-REPO-019).
 
 Acceptance criteria:
 
@@ -300,12 +300,12 @@ Priority: **P2** · Covers: PKG-DEB-004, PKG-DEB-005
 A package file is uploaded with one request (Q-DEB-3):
 
 ```sh
-curl -fsS -u "ci-bot:${TROVE_TOKEN}" --upload-file ./hello_2.10-3_amd64.deb \
-  "https://trove.example.com/api/deb/web/deb-local/upload/hello_2.10-3_amd64.deb?distribution=stable&component=main"
+curl -fsS -u "ci-bot:${QUADER_TOKEN}" --upload-file ./hello_2.10-3_amd64.deb \
+  "https://quader.example.com/api/deb/web/deb-local/upload/hello_2.10-3_amd64.deb?distribution=stable&component=main"
 ```
 
 - `PUT <repo URL>/upload/<file>` with the `.deb` as body. `<file>` is informational and must end in `.deb` (400
-  `deb_invalid_file_name` otherwise); trove names the stored file itself (R-DEB-008). `distribution` is required (400
+  `deb_invalid_file_name` otherwise); Quader names the stored file itself (R-DEB-008). `distribution` is required (400
   `deb_distribution_required`), `component` defaults to `main`; both may repeat and may hold comma-separated values, at most 16
   of each per request, and the file gets every combination as a coordinate (R-DEB-009). A value outside the grammar of R-DEB-002
   answers 400 `deb_invalid_coordinate`.
@@ -353,12 +353,12 @@ Priority: **P2** · Covers: PKG-DEB-009, PKG-DEB-010
 - **Control file.** Only the member `./control` (or `control`) of the control archive is read; it must be a regular file. It is
   one deb822 paragraph ([Debian Policy, chapter 5](https://www.debian.org/doc/debian-policy/ch-controlfields.html)):
   `Package`, `Version`, `Architecture`, `Maintainer` and `Description` are required; names follow R-DEB-002.
-- **Strict syntax, because trove copies the paragraph into its indexes** (R-DEB-034): field names match
+- **Strict syntax, because Quader copies the paragraph into its indexes** (R-DEB-034): field names match
   `^[A-Za-z][A-Za-z0-9-]{0,63}$` and appear once (compared without case); values are UTF-8 without control characters other than
   tab; a continuation line starts with a space or a tab and is not blank after it (` .` stands for an empty line of a
   description); exactly one paragraph. A violation answers 422 `deb_invalid_control` naming the field, and nothing is stored: a
-  package trove cannot index is refused, never stored unindexed (Q-DEB-4).
-- **Normalized paragraph.** The fields in their order, without the fields trove computes for an index (`Filename`, `Size`,
+  package Quader cannot index is refused, never stored unindexed (Q-DEB-4).
+- **Normalized paragraph.** The fields in their order, without the fields Quader computes for an index (`Filename`, `Size`,
   `MD5sum`, `SHA1`, `SHA256`, `SHA512`, `Description-md5`), at most 1 MiB. It is stored in the row of the file (R-DEB-008) and is
   what the index lists.
 - **Identity.** The declared package and version are the coordinate of authorization (R-AUTHZ-005) and the package and version
@@ -459,7 +459,7 @@ CREATE TABLE deb_tombstones (               -- a package file the journal replay
 |---|---|---|---|---|
 | `architectures` | local, virtual | Architectures every suite's indexes are built for; a local repository adds the architectures of its stored files | `["amd64", "arm64"]` | 1–32 names of R-DEB-002, not `all` |
 | `compression` | local, virtual | Index variants besides gzip, which is always built | `[]` | subset of `["xz"]` |
-| `origin` | local, virtual | `Origin` of every `Release` | `"trove"` | 1–64 characters, printable ASCII without `:` |
+| `origin` | local, virtual | `Origin` of every `Release` | `"quader"` | 1–64 characters, printable ASCII without `:` |
 | `label` | local, virtual | `Label` of every `Release` | the repository key | as `origin` |
 | `suites` | virtual | Suites served besides those of the local members | `[]` | 0–32 names of R-DEB-002 |
 | `components` | virtual | Components merged | `["main"]` | 1–32 names of R-DEB-002 |
@@ -475,7 +475,7 @@ Acceptance criteria:
   (source `libxml2`) at `pool/libx/libxml2/libxml2-utils_2.9.14+dfsg-1.3_amd64.deb`; `GET /files/web/deb-local/<path>` returns the
   uploaded bytes.
 - A remote created without `deb` reads back `"deb": {"upstreamKeys": null, "mirror": {…the defaults of R-DEB-024…}}`; a local
-  one `"deb": {"architectures": ["amd64", "arm64"], "compression": [], "origin": "trove", "label": "deb-local"}`.
+  one `"deb": {"architectures": ["amd64", "arm64"], "compression": [], "origin": "quader", "label": "deb-local"}`.
 
 ### R-DEB-009 · Coordinates: suites and components of a package file
 Priority: **P2** · Covers: PKG-DEB-005, PKG-DEB-006
@@ -548,7 +548,7 @@ The indexes of a suite are signed and stored in several compressed variants, so 
   and the next change enqueues again. A drain or a crash during a build releases or expires the job, and another worker builds
   from the rows.
 - **Keys and settings.** A key change (R-DEB-017) and a settings change (R-DEB-008) raise `change_seq` of every suite and enqueue
-  a build without delay, so trove re-signs at once.
+  a build without delay, so Quader re-signs at once.
 - **Retention and housekeeping run only inside this job** (Q-DEB-33): the by-hash files a generation gives up are removed by the
   commit of a later build of the same repository, and the periodic task `deb-index-refresh` only enqueues a `deb-index` job (for
   a repository whose retention is due, a virtual repository whose check is due, or a remote's housekeeping, R-DEB-021); it
@@ -557,9 +557,9 @@ The indexes of a suite are signed and stored in several compressed variants, so 
 - **Delay bound** (R-ARCH-012 item 2; measured from `deb_suites.dirty_since`, the first change no build published yet, Q-DEB-58): from the answer of an upload to the commit of a generation that lists it, p99 at most
   `deb.index_delay` + 5 s while Valkey is available and `deb.index_delay` + `jobs.poll_interval` + 5 s while it is not, for a
   local repository of 10,000 package files in three suites under ten uploads per second spread over three replicas (reference
-  sizes, proposed). `trove_deb_index_delay_seconds` measures it.
+  sizes, proposed). `quader_deb_index_delay_seconds` measures it.
 
-Configuration (`trove.yaml`):
+Configuration (`quader.yaml`):
 
 ```yaml
 deb:
@@ -582,7 +582,7 @@ Acceptance criteria:
 - A by-hash item that a test deletes between two builds is present again after the next build that lists it (the commit upserts
   every by-hash item of its generation).
 - `TestR_DEB_010_DelayBound` holds the bound under the reference load in the nightly performance run (`make test-performance` with
-  `TROVE_PERF_GATE=1`, [architecture.md](../architecture.md) Q-ARCH-293, Q-DEB-59); per change it asserts that every upload of a smaller load is published
+  `QUADER_PERF_GATE=1`, [architecture.md](../architecture.md) Q-ARCH-293, Q-DEB-59); per change it asserts that every upload of a smaller load is published
   and the p50.
 
 ### R-DEB-011 · Index content: Packages, Release and their variants
@@ -602,7 +602,7 @@ Priority: **P2** · Covers: PKG-DEB-006, PKG-DEB-011, PKG-DEB-014, PKG-DEB-015
 - **`Release`** of a suite:
 
 ```text
-Origin: trove
+Origin: quader
 Label: deb-local
 Suite: stable
 Codename: stable
@@ -623,7 +623,7 @@ SHA256:
   finds the `all` files in every architecture's index); every index file of the suite is listed under both checksum fields with
   its size, sorted by path, and with them the size and checksums of each `Packages` before its compression, which is not a file of the
   repository (Q-DEB-56). A local repository's `Release` has no `Valid-Until`
-  ([H-624](#h-624--troves-own-release-files-carry-no-valid-until)); a virtual repository's carries the earliest `Valid-Until` of
+  ([H-624](#h-624--quaders-own-release-files-carry-no-valid-until)); a virtual repository's carries the earliest `Valid-Until` of
   the member releases it merged, when any has one (R-DEB-025, Q-DEB-32). There is no `Signed-By` field.
 - `InRelease` and `Release.gpg` are R-DEB-016.
 
@@ -717,27 +717,27 @@ Priority: **P2** · Covers: PKG-DEB-018, PKG-DEB-019
 - **A key per repository from its creation.** Every local and every virtual Debian repository has a primary signing key from
   the transaction that creates it (a creation hook the format's data port registers, Q-REPO-273). There is no unsigned Debian
   repository, no instance-wide default key and no key store shared by name: a key belongs to one repository.
-- **The key type** (Q-DEB-10). trove generates an OpenPGP version 4 key whose primary key uses public-key algorithm 22
-  (EdDSALegacy) over the curve Ed25519, with the user ID `trove <projectKey>/<repoKey>`, no expiry, signing capability and no
+- **The key type** (Q-DEB-10). Quader generates an OpenPGP version 4 key whose primary key uses public-key algorithm 22
+  (EdDSALegacy) over the curve Ed25519, with the user ID `quader <projectKey>/<repoKey>`, no expiry, signing capability and no
   subkeys. Algorithm 27 (Ed25519 of RFC 9580), which the OpenPGP module writes by default, is never generated or imported:
   GnuPG 2.2 and 2.4, the verifier of Debian 12 and of Ubuntu 22.04 and 24.04, cannot read it (verified, see
   [Client and library behaviour](#client-and-library-behaviour-this-page-relies-on)).
-- **The key's creation time** (Q-DEB-30) is the creating transaction's PostgreSQL time minus one hour, so every signature trove
+- **The key's creation time** (Q-DEB-30) is the creating transaction's PostgreSQL time minus one hour, so every signature Quader
   makes with it is later than the key (R-DEB-016), on every client whose clock trails the database by less than that hour; `sqv`
   refuses a signature made before its key (verified).
 - **The binding self-signature carries the key's creation time** (Q-DEB-40). `sqv` checks a signing key against its binding
   self-signature at the time of the data signature, and refuses a data signature older than every binding self-signature even when
   the key itself is older (verified; `gpgv` accepts it). The generator therefore makes the self-signature at the key's creation time
-  (the module's `Config.Time`). Every key trove holds records `bound_since`, the creation time of its earliest valid binding
+  (the module's `Config.Time`). Every key Quader holds records `bound_since`, the creation time of its earliest valid binding
   self-signature: for a generated key the key's creation time, for an imported key whatever its certificate holds (an operator who
   strips an expiry before the import makes GnuPG write a fresh self-signature).
 - **Where the private key lives.** In PostgreSQL, sealed with the stored-secret key ring of
   [architecture.md](../architecture.md) R-ARCH-021 (AES-256-GCM, bound to its row and column), in `deb_signing_keys.private_key`,
-  registered in the sealed-column registry, so `trove admin secrets status`, the start-up canary and `secrets-reencrypt` cover it
+  registered in the sealed-column registry, so `quader admin secrets status`, the start-up canary and `secrets-reencrypt` cover it
   (the walk is `ResealSigningKeys`, built with the migration, so registering the column never stops a key-ring rotation).
   It is opened only by the index build (R-DEB-010) and by the self-certification at generation or import, in memory, for the
   signing call. It is never written anywhere else: not to a log, to Valkey, to a replica's disk, to an API answer or to the
-  configuration export (R-OPS-032 exports no key at all). No API signs data a caller chooses: trove is no signing oracle.
+  configuration export (R-OPS-032 exports no key at all). No API signs data a caller chooses: Quader is no signing oracle.
 - **Backups** carry the sealed private key (export class `data`), so a restore with the key ring in escrow (R-BAK-028) keeps the
   repository's signature identity. A key an administrator retires has its private key erased (the column is set to `NULL`); its
   public certificate stays, so the record of which key signed which generation stays readable. A restore can bring back the
@@ -812,7 +812,7 @@ Priority: **P2** · Covers: PKG-DEB-017
   60 s or a little later, never later than that time minus 59 s), and at least one second after the creation time of each key
   that signs **and** after its `bound_since` (Q-DEB-40): the signature time is at least the later of the key's creation and its
   earliest binding self-signature, plus one second. For a key whose `bound_since` is younger than that (an imported key whose only
-  self-signature is fresh), the build waits until the rule holds, about a minute after the import. Neither APT verifier accepts what trove would otherwise produce under a client clock that trails the database:
+  self-signature is fresh), the build waits until the rule holds, about a minute after the import. Neither APT verifier accepts what Quader would otherwise produce under a client clock that trails the database:
   `sqv` refuses a signature made after the client's now, and APT a `Date` more than 10 s ahead (both verified).
 - Signatures are not deterministic: the OpenPGP module adds a random salt notation to each (verified), so two builds of equal
   rows publish equal `Packages` files but different `InRelease` and `Release.gpg` bytes. This page prescribes no subpacket layout
@@ -848,8 +848,8 @@ and APT 2.4 with `gpgv` ([Client and library behaviour](#client-and-library-beha
    keeps verifying the old signature; a client whose keyring file is replaced trusts both. A generated next key's creation time
    is an hour back (R-DEB-015), so a client that holds only the new key verifies its signatures from the first build on.
 2. **Distribute.** The operator replaces the clients' keyring files (the configure snippet's key command again, R-DEB-029) while
-   both keys sign. The key list shows since when the next key exists; trove cannot know which clients replaced their file
-   ([H-621](#h-621--trove-cannot-tell-which-clients-still-trust-only-a-retired-key)).
+   both keys sign. The key list shows since when the next key exists; Quader cannot know which clients replaced their file
+   ([H-621](#h-621--quader-cannot-tell-which-clients-still-trust-only-a-retired-key)).
 3. **Promote** (`POST …/deb/signing-keys/promote`): the next key becomes primary; the old primary is retired: it stops signing,
    leaves `signing-key.asc` and its private key is erased. The promotion writes the audit event `deb.signing_key.promoted` with
    a journal entry naming the old and the new fingerprint (R-DEB-032). A client that never replaced its file fails
@@ -889,8 +889,8 @@ Priority: **P2** · Covers: PKG-DEB-020
   (404 `deb_no_upstream_keys` without them, R-DEB-020).
 - Permission: `read` without package restriction (R-DEB-004); anonymous where the repository allows anonymous reads. The block's
   SHA-256 is its `ETag`.
-- The configure snippet installs the block as `/etc/apt/keyrings/trove-<projectKey>-<repoKey>.asc` and names it in `Signed-By`
-  (R-DEB-029). No setup of trove asks for `trusted=yes`.
+- The configure snippet installs the block as `/etc/apt/keyrings/quader-<projectKey>-<repoKey>.asc` and names it in `Signed-By`
+  (R-DEB-029). No setup of Quader asks for `trusted=yes`.
 - The key list (R-DEB-015) shows the same certificates with their fingerprints, so that an operator can compare a fingerprint
   through a second channel before trusting the key.
 
@@ -907,7 +907,7 @@ Priority: **P2** · Covers: PKG-DEB-021
   same root, or `./` when `remote.url` is the flat directory itself (Q-DEB-23, Q-DEB-39).
 - **Release documents** of a release directory (`dists/<suite>/` or a flat directory): `InRelease`, `Release` and `Release.gpg`,
   each a metadata document with the remote's metadata period, **passed through byte for byte**: the remote adapter's `Rewrite` is
-  the identity, and trove never signs a remote's files (Q-DEB-13).
+  the identity, and Quader never signs a remote's files (Q-DEB-13).
 - **Before a release document is stored** (`PrepareFill`): at most 16 MiB; `InRelease` parses as one cleartext-signed message,
   and a `Hash` armor header, when present, matches its signatures (RFC 9580 deprecates the header, so its absence is no error,
   Q-DEB-35); the text parses as one deb822 paragraph with a `Date` and checksum fields whose lines parse (R-DEB-034); the `Date`
@@ -917,7 +917,7 @@ Priority: **P2** · Covers: PKG-DEB-021
 - **No rollback below a verified release** (`OnFill`, Q-DEB-35, Q-DEB-42): `deb_remote_releases.floor_date` holds the newest
   `Date` of any release that was ever verified for the directory; it stays when `verified_by` is cleared (R-DEB-020) and only rises.
   While keys are set, a received release whose `Date` is older than the floor keeps the stored document and renews only its
-  freshness (`FillKeepStored`, R-ARCH-008), counted in `trove_deb_release_rollbacks_total`, even when the stored document is
+  freshness (`FillKeepStored`, R-ARCH-008), counted in `quader_deb_release_rollbacks_total`, even when the stored document is
   itself unverified now: the directory then fails closed (no build, pass or plain index path uses an unverified release) until a
   release at or above the floor verifies. An older signed release replayed by a mirror or an attacker, also one signed by a key
   that stays in the set, therefore never replaces a newer one that was verified once. Between unverified releases the received copy replaces the
@@ -970,9 +970,9 @@ Priority: **P2** · Covers: PKG-DEB-021
 - **Without keys** release documents are stored unverified and clients verify with their own keyrings (the bytes are the
   upstream's, R-DEB-019; [H-623](#h-623--a-pull-through-remote-without-upstream-keys-stores-what-its-upstream-sends)). Such a remote cannot be a mirror (422 `deb_upstream_keys_required` at `/deb/upstreamKeys` for
   `remote.mode: mirror`) and cannot be a member of a virtual repository (422 `deb_member_unverified` at the member's pointer),
-  because both would hand on content nobody checked: a virtual repository signs it with trove's key (R-DEB-025). Its document
+  because both would hand on content nobody checked: a virtual repository signs it with Quader's key (R-DEB-025). Its document
   carries the warning `deb_upstream_unverified`. Removing the keys of a mirror or of a virtual member answers the same 422.
-- Failures are counted in `trove_deb_upstream_signature_failures_total{repo, reason}` and written as the security audit event
+- Failures are counted in `quader_deb_upstream_signature_failures_total{repo, reason}` and written as the security audit event
   `deb.upstream_signature_invalid`, at most once per repository, release directory and hour.
 - The keys are public data, stored in the repository document as given; they rotate when the operator changes them (the
   upstream archive's own key changes are the operator's to follow,
@@ -1003,7 +1003,7 @@ Every index file a client fetches after a release document must be the file that
   verified against the digest in the path whatever `checksumPolicy` says (the digest addresses the file, R-REPO-041), immutable,
   with the cross-replica flight of R-REPO-026. `MD5Sum` and `SHA1` by-hash paths answer 404 without an upstream request.
 - **Plain index paths** (a path relative to the release directory that the stored release lists) are metadata documents at that
-  path, served only while their SHA-256 equals the hash the stored release names: otherwise trove revalidates them first (one
+  path, served only while their SHA-256 equals the hash the stored release names: otherwise Quader revalidates them first (one
   conditional request), and a mismatch after that answers 502 `deb_index_mismatch` (the upstream is inconsistent) and stores
   nothing new. The fill of an index checks the fetched document against the listed hash in its own transaction and stores nothing
   on a mismatch; a stored document that is another file than the stored release lists is not served: the listed file is read from
@@ -1015,7 +1015,7 @@ Every index file a client fetches after a release document must be the file that
 - An index path of a directory without a stored release fetches the release first (`InRelease`, else `Release`).
 - **Across replicas.** Release documents and index files are single copies in PostgreSQL and the object store, so every replica
   serves the same release and the same bytes for a hash. The one window is an archive without by-hash: a client that read an
-  older release than trove's current one gets a plain file of the newer release and reports a hash mismatch until its next
+  older release than Quader's current one gets a plain file of the newer release and reports a hash mismatch until its next
   update. Archives with by-hash, which include the Debian and Ubuntu archives, have no such window.
 - **Housekeeping.** By-hash files and plain index documents that neither the stored release nor a release stored within
   `deb.by_hash_keep` names are removed by a `deb-index` job of the remote repository, under its key `index:<repository id>`,
@@ -1046,7 +1046,7 @@ Priority: **P2** · Covers: PKG-DEB-021
   rows (R-DEB-023) list for the path, and the engine verifies against them on a fill (R-REPO-041). The item lookup reads those rows
   in its own statement (the serve-facts kind `deb_remote`, Q-ARCH-381), so a remote hit stays at one statement (R-ARCH-027). For a
   path no parsed index lists, `checksumPolicy: verify-if-available` stores it unverified, counted in
-  `trove_deb_unverified_fills_total`, and `require` refuses it with 502 `upstream_digest_missing`
+  `quader_deb_unverified_fills_total`, and `require` refuses it with 502 `upstream_digest_missing`
   ([H-625](#h-625--pool-files-no-parsed-index-names-are-stored-unverified)).
 - When two parsed indexes list different digests for one path, the newest parsed index decides; a stored file is never replaced
   (R-REPO-041, `proxy.upstream_digest_changed`).
@@ -1160,7 +1160,7 @@ Acceptance criteria:
 - Within ten seconds after `apt-get update` through `debian`, the rows of `main/binary-amd64` exist and their count is the number of
   the stub's paragraphs; after the stub adds a version, the rows of that index are replaced and list it.
 - A crafted `Packages` with 2,000,000 paragraphs fails its run with `too_many_entries` and the earlier rows stay.
-- In `apt` (members `deb-local`, `debian`), a `deploy` holder's first upload of `trove-hello`, which the stub lists, answers 403
+- In `apt` (members `deb-local`, `debian`), a `deploy` holder's first upload of `quader-hello`, which the stub lists, answers 403
   `shadows_remote_package`; of `acme-tool`, which it does not list, 201.
 - With `apt` serving `main` and `contrib`, the first upload of `contrib-only`, which the stub lists only in `contrib`, answers 403
   `shadows_remote_package`; before `contrib` was parsed it answers 503 `shadow_check_unavailable` and the parse is enqueued; with
@@ -1172,7 +1172,7 @@ Acceptance criteria:
   of that index are replaced within ten seconds of the release being stored, without a client fetching the full index.
 
 ### R-DEB-024 · Mirror settings of a Debian remote
-Priority: **P2** · Covers: trove-only
+Priority: **P2** · Covers: quader-only
 
 A remote repository of the format runs in either mode of R-REPO-050. What a mirror of an APT archive keeps is in
 [Mirror discovery](#mirror-discovery) (Q-DEB-17, built: Q-DEB-91); its own settings are `deb.mirror`, present in both modes and effective in mode
@@ -1225,7 +1225,7 @@ Priority: **P2** · Covers: PKG-DEB-023
   - its `Valid-Until`, when it has one, has not passed (else `member_expired: <key>`);
   - its `Date` is not older than the `Date` the previous generation merged for that member, recorded in `deb_suites.inputs`
     (else `member_rollback: <key>`). The virtual repository's own rows survive a restore without remote caches, so an older
-    upstream release that a remote accepts after losing its stored copy never becomes a newer trove generation. The recorded
+    upstream release that a remote accepts after losing its stored copy never becomes a newer Quader generation. The recorded
     `Date` of a member is dropped, in the transaction of the change, when the member's upstream identity changes (R-REPO-011: a
     new `remote.url` is another archive) and when the member leaves the virtual repository (Q-DEB-43); taking a member out and
     adding it back is therefore the deliberate, audited way to accept an older release of its upstream. A reindex does not reset
@@ -1237,7 +1237,7 @@ Priority: **P2** · Covers: PKG-DEB-023
     key change took the verification away) and for a member without keys (Q-DEB-64).
 - **Freshness carried over.** The virtual repository's `Release` carries the earliest `Valid-Until` of the member releases it
   merged, when any has one, so a frozen upstream suite expires for the virtual repository's clients as it would for the
-  upstream's: trove re-signs no staleness into a fresh signature.
+  upstream's: Quader re-signs no staleness into a fresh signature.
 - **Members** are local and remote Debian repositories of the project (R-REPO-017); a remote member without `deb.upstreamKeys` is
   refused (422 `deb_member_unverified`, R-DEB-020). Nested virtual repositories wait for R-REPO-018.
 - **Architecture `all`** (Q-DEB-110). The merged `binary-all` index is the merge of the members' `binary-all` indexes. The merged index of an
@@ -1259,7 +1259,7 @@ Priority: **P2** · Covers: PKG-DEB-023
   give equal bytes.
 - **Signature.** The virtual repository's `Release` has its own `Origin`, `Label`, `Suite`, `Codename`, `Architectures` and
   `Components` and is signed with the virtual repository's own key (R-DEB-015, R-DEB-016). Its clients trust that key and no
-  upstream's, which is why trove merges only remote members whose upstream signatures it verified.
+  upstream's, which is why Quader merges only remote members whose upstream signatures it verified.
 - Source packages, translations and `Contents` are not served through a virtual repository (Q-DEB-7, Q-DEB-28).
 - **Dependency confusion.** APT installs the highest version among every entry of every source. A remote paragraph for an
   internal name with a higher version would win, so claims are the protection: a name claimed by a local member loses every
@@ -1267,8 +1267,8 @@ Priority: **P2** · Covers: PKG-DEB-023
 
 Acceptance criteria:
 
-- `trove-hello 1.0 all` in `deb-local` and, with other bytes, in the stub behind `debian`: the merged `Packages` of `apt` lists one
-  paragraph, `deb-local`'s, with `Filename: members/deb-local/pool/t/trove-hello/trove-hello_1.0_all.deb`.
+- `quader-hello 1.0 all` in `deb-local` and, with other bytes, in the stub behind `debian`: the merged `Packages` of `apt` lists one
+  paragraph, `deb-local`'s, with `Filename: members/deb-local/pool/q/quader-hello/quader-hello_1.0_all.deb`.
 - A claim `acme-*` of `deb-local`; the stub lists `acme-tool 9.9`, `deb-local` holds `acme-tool 1.0`: the merged index lists only
   `1.0`, and `apt-get install acme-tool` through `apt` installs `1.0`.
 - A member whose exclude patterns hold `bad-*` contributes no `bad-x`.
@@ -1329,7 +1329,7 @@ Priority: **P2** · Covers: PKG-DEB-023
 - **Member paths.** `members/<memberKey>/<path>` resolves on that member, which must be a member of the virtual repository (404
   otherwise), with the member's own checks: `read` on the member for the coordinate, the cache-fill check of a remote member
   (R-AUTHZ-008: not stored and not fillable by the caller is 404), the member's serve check, its patterns, and the virtual
-  repository's pin rules and claims for the name. The answer carries `Trove-Resolved-From: <memberKey>`. A local member's file costs
+  repository's pin rules and claims for the name. The answer carries `Quader-Resolved-From: <memberKey>`. A local member's file costs
   one statement (R-ARCH-027).
 - A `pool/<path>` request to a virtual repository (a client with an index from elsewhere) is resolved by the artifact tiers of
   R-REPO-019.
@@ -1366,20 +1366,20 @@ the repository the reader looks at:
 ```sh
 # configure: trust the repository's keys and add the source (deb822 form)
 sudo install -d -m 0755 /etc/apt/keyrings
-curl -fsSL -u "alice:${TROVE_TOKEN}" https://trove.example.com/api/deb/web/apt/signing-key.asc \
-  | sudo tee /etc/apt/keyrings/trove-web-apt.asc >/dev/null
-sudo tee /etc/apt/sources.list.d/trove-web-apt.sources >/dev/null <<'SOURCES'
+curl -fsSL -u "alice:${QUADER_TOKEN}" https://quader.example.com/api/deb/web/apt/signing-key.asc \
+  | sudo tee /etc/apt/keyrings/quader-web-apt.asc >/dev/null
+sudo tee /etc/apt/sources.list.d/quader-web-apt.sources >/dev/null <<'SOURCES'
 Types: deb
-URIs: https://trove.example.com/api/deb/web/apt
+URIs: https://quader.example.com/api/deb/web/apt
 Suites: stable
 Components: main
-Signed-By: /etc/apt/keyrings/trove-web-apt.asc
+Signed-By: /etc/apt/keyrings/quader-web-apt.asc
 SOURCES
 
 # authenticate: credentials in a file only root can read, never in the source URL
-sudo install -m 0600 /dev/null /etc/apt/auth.conf.d/trove-web-apt.conf
-printf 'machine trove.example.com/api/deb/web/apt\nlogin alice\npassword %s\n' "${TROVE_TOKEN}" \
-  | sudo tee /etc/apt/auth.conf.d/trove-web-apt.conf >/dev/null
+sudo install -m 0600 /dev/null /etc/apt/auth.conf.d/quader-web-apt.conf
+printf 'machine quader.example.com/api/deb/web/apt\nlogin alice\npassword %s\n' "${QUADER_TOKEN}" \
+  | sudo tee /etc/apt/auth.conf.d/quader-web-apt.conf >/dev/null
 
 # install
 sudo apt-get update && sudo apt-get install hello
@@ -1389,13 +1389,13 @@ sudo apt-get update && sudo apt-get install hello
 - **Publish** (local, and virtual with a deploy target): the `curl --upload-file` of R-DEB-006 and the index wait of R-DEB-014.
 - **Remote:** `Signed-By` names the remote's `signing-key.asc` when `deb.upstreamKeys` is set; otherwise the distribution's own
   keyring (`/usr/share/keyrings/debian-archive-keyring.gpg`, `/usr/share/keyrings/ubuntu-archive-keyring.gpg`), with the note that
-  trove did not verify the upstream. `deb-src` lines appear only for remote repositories.
+  Quader did not verify the upstream. `deb-src` lines appear only for remote repositories.
 - An anonymously readable repository drops the `-u` option and the authentication step.
 - No snippet uses `trusted=yes`, `allow-insecure`, `apt-key` or credentials in a URL (they would end up in world-readable files and
   in logs).
 - **Guide** sections ([api-and-ui.md](../api-and-ui.md) R-UI-049, R-API-053) for every class and topic the kit's check 8 requires, with
   `maintain` (key rotation, R-DEB-017; a withheld key after a restore, R-DEB-032) and `troubleshooting`: an unverified signature
-  after a promotion; a client clock that trails trove's database (R-DEB-010): on Debian 13 from about 60 s "OpenPGP signature
+  after a promotion; a client clock that trails Quader's database (R-DEB-010): on Debian 13 from about 60 s "OpenPGP signature
   verification failed … created after the --not-after date … is not signed", on the `gpgv` clients from about 70 s "Release file
   … is not valid yet", both cured by the client's time synchronisation; a hash mismatch on an upstream without by-hash, 403 `deb_members_unreadable`, `member_unverified`,
   `member_expired` and `member_rollback` in a virtual repository's index state (an older upstream release is accepted
@@ -1427,7 +1427,7 @@ Acceptance criteria:
   `stable/main`; the API returns them in `metadata`.
 
 ### R-DEB-031 · Debian on n replicas, without Valkey and during a drain
-Priority: **P2** · Covers: trove-only
+Priority: **P2** · Covers: quader-only
 
 | State | Where | Across replicas | Valkey unavailable | Drain or crash of the replica |
 |---|---|---|---|---|
@@ -1450,7 +1450,7 @@ Acceptance criteria:
   (closing run).
 
 ### R-DEB-032 · Debian data in backups and restores
-Priority: **P2** · Covers: trove-only
+Priority: **P2** · Covers: quader-only
 
 - **Export classes** (R-BAK-004): every table of the format is `data`. `deb_remote_releases`, `deb_remote_indexes` and
   `deb_remote_entries` are the remote's cache rows: a restore without remote caches (R-BAK-008) deletes them with the cache.
@@ -1465,7 +1465,7 @@ Priority: **P2** · Covers: trove-only
   `already in effect`; a file the repository does not hold is `subject unknown`. A marked file is withheld: the serve check refuses
   it with 404 on the format's routes and on `/files/`, read with the item in one statement (the serve-facts kind `deb_local`,
   Q-ARCH-381); builds leave it out; an upload of the same bytes answers 409 `deb_withheld`. An administrator confirms the deletion
-  through the item API (the mark stays) or reverses it with `trove admin deb reinstate <projectKey>/<repoKey> <path>`, which removes
+  through the item API (the mark stays) or reverses it with `quader admin deb reinstate <projectKey>/<repoKey> <path>`, which removes
   the mark only while the file is stored with that digest and writes `deb.reinstate` (not journaled).
 - **A retired key does not sign again, and the replay erases nothing** (Q-DEB-31, Q-DEB-22). The replay runs with the owner
   credential, but its entries come from the journal in the object store, which a holder of the runtime S3 credential could write
@@ -1496,7 +1496,7 @@ Acceptance criteria:
 
 - The restore drill of R-BAK-029 holds a package uploaded before the snapshot: after the restore `apt-get install` of it succeeds.
 - A package deleted after the snapshot is withheld after the restore: no index lists it, its pool path answers 404, the replay
-  reports `applied`, and an upload of the same bytes answers 409 `deb_withheld` until `trove admin deb reinstate`.
+  reports `applied`, and an upload of the same bytes answers 409 `deb_withheld` until `quader admin deb reinstate`.
 - A key created before the snapshot and promoted after it: after the restore the new key is `primary`, the old one `withheld`
   with its sealed private key in place, `apt-get update` with the new keyring succeeds; confirming the retirement erases the old
   private key, and reinstating instead makes it `next`.
@@ -1506,7 +1506,7 @@ Acceptance criteria:
   restore, and a second replay reports both `already in effect`.
 
 ### R-DEB-033 · Audit events and metrics
-Priority: **P2** · Covers: trove-only
+Priority: **P2** · Covers: quader-only
 
 | Event | When | Journal |
 |---|---|---|
@@ -1524,21 +1524,21 @@ Priority: **P2** · Covers: trove-only
 
 | Metric | Type | Labels | Meaning |
 |---|---|---|---|
-| `trove_deb_index_builds_total` | counter | `class`, `outcome` (`published`, `unchanged`, `failed`) | Index builds |
-| `trove_deb_index_build_seconds` | histogram | `class` | Duration of a build |
-| `trove_deb_index_delay_seconds` | histogram | `class` | From the first change a build covers to its commit (R-DEB-010) |
-| `trove_deb_upstream_signature_failures_total` | counter | `repo`, `reason` | R-DEB-020 |
-| `trove_deb_release_rollbacks_total` | counter | `repo` | Older release documents kept out (R-DEB-019) |
-| `trove_deb_unverified_fills_total` | counter | `repo` | Package files stored without an announced digest (R-DEB-022) |
-| `trove_deb_remote_parse_total` | counter | `outcome` (`parsed`, `skipped`, `failed`) | Runs of `deb-remote-parse` |
+| `quader_deb_index_builds_total` | counter | `class`, `outcome` (`published`, `unchanged`, `failed`) | Index builds |
+| `quader_deb_index_build_seconds` | histogram | `class` | Duration of a build |
+| `quader_deb_index_delay_seconds` | histogram | `class` | From the first change a build covers to its commit (R-DEB-010) |
+| `quader_deb_upstream_signature_failures_total` | counter | `repo`, `reason` | R-DEB-020 |
+| `quader_deb_release_rollbacks_total` | counter | `repo` | Older release documents kept out (R-DEB-019) |
+| `quader_deb_unverified_fills_total` | counter | `repo` | Package files stored without an announced digest (R-DEB-022) |
+| `quader_deb_remote_parse_total` | counter | `outcome` (`parsed`, `skipped`, `failed`) | Runs of `deb-remote-parse` |
 
 Acceptance criteria:
 
-- After the e2e set `deb`, `trove_deb_index_builds_total{outcome="published"}` grew and the request log contains no
+- After the e2e set `deb`, `quader_deb_index_builds_total{outcome="published"}` grew and the request log contains no
   `PRIVATE KEY` and no token.
 
 ### R-DEB-034 · Limits for untrusted content
-Priority: **P2** · Covers: trove-only
+Priority: **P2** · Covers: quader-only
 
 Every uploaded package and every upstream document is untrusted input ([architecture.md](../architecture.md) R-ARCH-028); the
 format reads it through `internal/formats/untrusted` with these bounds, which only tighten the defaults:
@@ -1553,7 +1553,7 @@ format reads it through `internal/formats/untrusted` with these bounds, which on
 | OpenPGP input | `deb.upstreamKeys`: 256 KiB, 32 certificates; an imported secret key: 64 KiB; 32 signatures per document |
 | Every pass | the 30 s deadline of R-ARCH-028, except the parse job (its own timeout of 10 minutes) |
 
-- **Index injection.** Every paragraph trove writes is built from parsed fields, never from bytes copied unparsed: a field value
+- **Index injection.** Every paragraph Quader writes is built from parsed fields, never from bytes copied unparsed: a field value
   cannot hold a blank line (which would start a new paragraph), a computed field (`Filename`, `Size`, the digests) is never taken
   from the input, and field names follow R-DEB-007. A virtual merge validates each remote paragraph the same way and leaves one that
   fails out, counted.
@@ -1570,14 +1570,14 @@ Acceptance criteria:
   repository's paths is requested from the upstream.
 
 ### R-DEB-035 · Test suites
-Priority: **P2** · Covers: trove-only
+Priority: **P2** · Covers: quader-only
 
 - **Unit:** the grammars and the version order of R-DEB-002; the deb822 parser and writer with crafted inputs and fuzz targets
   (kit `fuzz.go`); the `ar` reader; the `Packages` and `Release` renderers (determinism, order, field rules); the merge of R-DEB-025
   over fixtures; the OpenPGP signer and verifier against keys generated in the test; the format conformance kit with no check
   skipped.
 - **Counting stub archive** (`test/debstub`): a deterministic APT archive generated in code (no recorded third-party data) with
-  real, installable `.deb` files (`trove-hello` and friends, each installing a script that prints a fixed line), the suites `stable`
+  real, installable `.deb` files (`quader-hello` and friends, each installing a script that prints a fixed line), the suites `stable`
   and `testing`, the components `main` and `contrib`, the architectures `amd64`, `arm64` and `all`, a `Sources` index with one
   source package, a flat directory `binary/` and a flat root, an index of 70,000 synthetic paragraphs for the bounds, signed by
   test keys (EdDSALegacy, generated from fixed seeds) with creation times an hour back; counters per host, method and path;
@@ -1662,7 +1662,7 @@ suites, components and architectures the operator names (Q-DEB-17).
 - **Hosts.** The upstream origin; `MirrorHosts` is empty.
 - **Offline.** After a complete pass, `apt-get update` and `apt-get install` of a mirrored version succeed with the upstream
   unreachable: the stored release document (served stale by R-REPO-029), its kept index files and the package files. A release
-  whose `Valid-Until` passes while the upstream stays unreachable is refused by the clients themselves; trove cannot sign an
+  whose `Valid-Until` passes while the upstream stays unreachable is refused by the clients themselves; Quader cannot sign an
   upstream's release anew.
 - **Bounds.** R-REPO-052 applies; the sizes the rows announce let `maxBytes` be checked before each fetch. A component of a Debian
   suite holds tens of thousands of packages per architecture, so the defaults keep one component and one architecture, and the
@@ -1674,13 +1674,13 @@ Acceptance criteria (integration, the stub of R-DEB-035):
   ["stable"]` and the defaults: the pass stores `stable`'s `InRelease`, the `Packages` files of `main/binary-amd64` and
   `main/binary-all`, `main/i18n/Translation-en` and every package file those indexes list; the stub records no request for a file of
   `contrib` or `arm64`.
-- With `includePatterns: ["trove-*"]` and `maxVersionsPerPackage: 1`, and `trove-hello` in the versions `1.0` and `1.1`: the pass
-  stores `1.1` of each `trove-*` name only; `apt-get install trove-hello=1.0` through the remote still succeeds by pull-through.
+- With `includePatterns: ["quader-*"]` and `maxVersionsPerPackage: 1`, and `quader-hello` in the versions `1.0` and `1.1`: the pass
+  stores `1.1` of each `quader-*` name only; `apt-get install quader-hello=1.0` through the remote still succeeds by pull-through.
 - A second pass with nothing changed upstream sends one conditional request per release document and no request for an index or
   package file; after the stub publishes a generation with one new version, the next pass stores its index files and the new file.
 - With `maxBytes` below the mirrored size the pass ends `bound_reached`, and a package it did not store still installs by
   pull-through.
-- After a pass, with the stub stopped, `apt-get update && apt-get install trove-hello` through the remote succeeds.
+- After a pass, with the stub stopped, `apt-get update && apt-get install quader-hello` through the remote succeeds.
 - The stub signing with an unknown key: the pass's discovery fails with `deb_upstream_signature_invalid` and nothing new is stored.
 
 ## Test plan
@@ -1703,7 +1703,7 @@ against PostgreSQL, Valkey with Sentinel and S3 plus the conformance kit, and e2
 ## Catalog coverage
 
 Every entry of the catalog page, with what this phase does (Q-DEB-2). "Built" means specified on this page and built in T-17;
-"FULL.md" means it stays in the FULL.md row for a later phase; "Not offered" means trove decided against it.
+"FULL.md" means it stays in the FULL.md row for a later phase; "Not offered" means Quader decided against it.
 
 <details>
 <summary>PKG-DEB-001 to PKG-DEB-028</summary>
@@ -1711,7 +1711,7 @@ Every entry of the catalog page, with what this phase does (Q-DEB-2). "Built" me
 | Entry | Decision | Where |
 |---|---|---|
 | PKG-DEB-001 Three classes | Built; the federated class is outside the phase (no federation exists) | R-DEB-001 |
-| PKG-DEB-002 Automatic layout and coordinates | Built; coordinates are rows, not properties, and trove chooses the pool path | R-DEB-003, R-DEB-008, R-DEB-009, Q-DEB-5 |
+| PKG-DEB-002 Automatic layout and coordinates | Built; coordinates are rows, not properties, and Quader chooses the pool path | R-DEB-003, R-DEB-008, R-DEB-009, Q-DEB-5 |
 | PKG-DEB-003 Flat layout | Not offered for local and virtual repositories; flat upstreams served by remote pull-through | R-DEB-021, Q-DEB-23 |
 | PKG-DEB-004 Deploy with coordinates | Built as `PUT upload/<file>` with query parameters; the deploy dialog's Debian option stays in FULL.md | R-DEB-006, Q-DEB-3 |
 | PKG-DEB-005 Several coordinate sets | Built: repeated or comma-separated parameters, the coordinates operation | R-DEB-006, R-DEB-009 |
@@ -1737,7 +1737,7 @@ Every entry of the catalog page, with what this phase does (Q-DEB-2). "Built" me
 | PKG-DEB-025 Resolve and delete snapshots | FULL.md | Deferred |
 | PKG-DEB-026 APT source configuration | Built (deb822 and one-line forms; `deb-src` for remotes) | R-DEB-029 |
 | PKG-DEB-027 Authenticated access | Built through `auth.conf.d`; credentials in a source URL are not recommended | R-DEB-029 |
-| PKG-DEB-028 Companion CLI | Not offered: trove has no companion CLI | Q-DEB-2 |
+| PKG-DEB-028 Companion CLI | Not offered: Quader has no companion CLI | Q-DEB-2 |
 
 </details>
 
@@ -1776,7 +1776,7 @@ IDs of other pages below are reserved for those edits and recorded there by the 
 | `dput` uploads | P2 | Uploads of a signed `.changes` with its files, which needs a keyring of uploaders. |
 | Translations and `Contents` for local and virtual repositories | P2 | Long descriptions are in `Packages` today; a virtual repository does not merge its remote members' translations. |
 | Mirrors of flat repositories | P2 | Flat upstreams are served by pull-through (Q-DEB-23). |
-| `Valid-Until` on trove's own releases | P2 | With a periodic re-signing ([H-624](#h-624--troves-own-release-files-carry-no-valid-until)). |
+| `Valid-Until` on Quader's own releases | P2 | With a periodic re-signing ([H-624](#h-624--quaders-own-release-files-carry-no-valid-until)). |
 | Signing keys in an external key service | P2 | A key management service or an HSM that signs without handing out the key (Q-DEB-9). |
 | Debian vulnerability matching | P2 | OSV's Debian data is keyed by source package and release; it needs a mapping of its own (Q-DEB-26). |
 | Copy and move of Debian packages | P1 | With R-STOR-019: the coordinates travel with the file. |
@@ -1784,10 +1784,10 @@ IDs of other pages below are reserved for those edits and recorded there by the 
 
 ## Security notes
 
-- **Clients trust a key, not a host.** Every index trove generates is signed with the repository's own key, and the setup installs
+- **Clients trust a key, not a host.** Every index Quader generates is signed with the repository's own key, and the setup installs
   that key under `Signed-By` for that one source. A key belongs to one repository, so trusting `web/apt` trusts nothing else on the
   same installation (Q-DEB-9).
-- **The private keys never leave trove.** They are sealed with the stored-secret key ring, opened only by the index build for one
+- **The private keys never leave Quader.** They are sealed with the stored-secret key ring, opened only by the index build for one
   signing call, and returned by no API; a holder of the ring and of a database copy can sign for every repository
   ([H-620](#h-620--a-holder-of-the-stored-secret-key-ring-and-a-database-copy-can-sign-for-every-debian-repository)). An imported
   key stays known to whoever imported it ([H-627](#h-627--an-imported-signing-key-stays-known-to-whoever-imported-it)).
@@ -1798,7 +1798,7 @@ IDs of other pages below are reserved for those edits and recorded there by the 
 - **Times trail the database clock.** Release dates and signature times lie a minute behind the database's clock and keys an
   hour behind it, so clients whose clocks trail a little still verify, and `sqv` never sees a signature from its future
   (R-DEB-010, R-DEB-015, R-DEB-016).
-- **Re-signing only what was verified, and only while it is fresh.** A virtual repository signs upstream content with trove's
+- **Re-signing only what was verified, and only while it is fresh.** A virtual repository signs upstream content with Quader's
   key, so it merges a remote member's release only while a key of the member's current set verified it, its `Valid-Until` has not
   passed and its `Date` did not go back, and carries the earliest member `Valid-Until` into its own `Release`; a remote without
   keys can be neither a member nor a mirror (R-DEB-020, R-DEB-025).
@@ -1861,14 +1861,14 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `PUT <repo URL>/upload/<file>?distribution=…&component=…` (chosen) | One request, trove names the stored file | One `curl --upload-file` in a CI job, no client tool; the parameters GitLab's Debian package API takes too; the path never conflicts with the canonical one | No standard Debian upload tool speaks it |
+| (a) `PUT <repo URL>/upload/<file>?distribution=…&component=…` (chosen) | One request, Quader names the stored file | One `curl --upload-file` in a CI job, no client tool; the parameters GitLab's Debian package API takes too; the path never conflicts with the canonical one | No standard Debian upload tool speaks it |
 | (b) Matrix parameters on a free path (`PUT …/pool/x.deb;…`) | Coordinates in the path | Familiar from generic stores | Brittle (a stray space breaks the coordinates); a client-chosen path conflicts with Q-DEB-5 |
 | (c) `dput` with a signed `.changes` | Debian's upload tool | The Debian way | Needs a keyring of uploaders and the processing of `.changes` files; a feature of its own (Deferred) |
 | (d) Multipart `POST` | `curl -F` | Familiar | Nothing over (a) |
 
 **Choice:** (a).
 
-**Rationale:** a single authenticated request is what a CI job can run anywhere, and the canonical path stays trove's. The
+**Rationale:** a single authenticated request is what a CI job can run anywhere, and the canonical path stays Quader's. The
 development agent would revisit it when an owner workload uploads with `dput`.
 
 **Applied in the spec:** R-DEB-006, R-DEB-028, R-DEB-029.
@@ -1890,7 +1890,7 @@ replacement if snapshot repositories for nightly builds become a workload, then 
 
 **Applied in the spec:** R-DEB-006, R-DEB-007, R-DEB-004.
 
-### Q-DEB-5 · trove derives the pool path from the control data
+### Q-DEB-5 · Quader derives the pool path from the control data
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -1960,13 +1960,13 @@ superseded virtual indexes grows beyond what operators accept.
 
 **Applied in the spec:** R-DEB-012, R-DEB-021.
 
-### Q-DEB-9 · Signing keys: one per repository, generated by trove, the private key sealed with the stored-secret key ring
+### Q-DEB-9 · Signing keys: one per repository, generated by Quader, the private key sealed with the stored-secret key ring
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A key per local and virtual repository, generated at creation, sealed in PostgreSQL with the key ring of R-ARCH-021, opened only by the index build; import possible (chosen) | trove holds and rotates the keys | No new Secret and no operator step; every worker can sign; a backup keeps the identity; rotation is an API call; trusting one repository trusts no other; the same custody as sealed upstream credentials | A holder of the ring and a database copy can sign for every repository (H-620); sealed keys are in backups |
+| (a) A key per local and virtual repository, generated at creation, sealed in PostgreSQL with the key ring of R-ARCH-021, opened only by the index build; import possible (chosen) | Quader holds and rotates the keys | No new Secret and no operator step; every worker can sign; a backup keeps the identity; rotation is an API call; trusting one repository trusts no other; the same custody as sealed upstream credentials | A holder of the ring and a database copy can sign for every repository (H-620); sealed keys are in backups |
 | (b) One instance key in a Kubernetes Secret, mounted like the key ring | The operator generates it with gpg | The key is outside the database | A client that trusts it for one repository trusts every repository of every project; rotation needs roll-outs; the UI cannot create a key |
 | (c) A key per repository in Kubernetes Secrets | One Secret per repository | Outside the database | A Secret and chart values per repository; self-service repositories cannot get a key without the operator |
 | (d) An external key service or HSM that signs | The key never leaves it | Strongest custody | A new outbound dependency and a service the owner's stack does not have; later (Deferred) |
@@ -2007,10 +2007,10 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A next key signs alongside the primary and is served in `signing-key.asc`; a promotion retires the old key, erases it and journals the promotion (chosen) | An overlap in which both keys verify | Clients switch at their own pace inside the overlap; APT accepts a release with one trusted signature among several and refuses one with only unknown signers (verified on APT 3.0 with `sqv` and APT 2.4 with `gpgv`); a restore withholds the old key again (R-DEB-032) | Clients must replace a file; trove cannot see which did |
+| (a) A next key signs alongside the primary and is served in `signing-key.asc`; a promotion retires the old key, erases it and journals the promotion (chosen) | An overlap in which both keys verify | Clients switch at their own pace inside the overlap; APT accepts a release with one trusted signature among several and refuses one with only unknown signers (verified on APT 3.0 with `sqv` and APT 2.4 with `gpgv`); a restore withholds the old key again (R-DEB-032) | Clients must replace a file; Quader cannot see which did |
 | (b) Switch at once | Replace the key | Simple | Every client breaks at the same moment |
 | (c) A standby second key that does not sign | The catalog's primary and secondary | Familiar | Clients have nothing to verify with the new key before the switch |
-| (d) A keyring package that trove publishes into each repository | Clients update the key through APT | Automatic distribution | A package trove would build, version and sign into every repository; a feature of its own |
+| (d) A keyring package that Quader publishes into each repository | Clients update the key through APT | Automatic distribution | A package Quader would build, version and sign into every repository; a feature of its own |
 
 **Choice:** (a).
 
@@ -2044,13 +2044,13 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Byte for byte; between verified releases an older `Date` keeps the stored release; a `Date` more than 10 minutes ahead is refused; `Release` and `Release.gpg` as a pair (chosen) | The upstream's signatures reach the client | Clients verify the upstream with the keyrings they have; trove adds the rollback protection a client has only for itself (APT keeps its own newer list against an older `Date`, verified) | A remote serves whatever the upstream signed, also without trove's verification |
-| (b) Re-sign a remote's indexes | trove signs everything | One trust anchor | Clients trust trove for the Debian archive; every remote needs a key and builds; the upstream's signature never reaches the client |
+| (a) Byte for byte; between verified releases an older `Date` keeps the stored release; a `Date` more than 10 minutes ahead is refused; `Release` and `Release.gpg` as a pair (chosen) | The upstream's signatures reach the client | Clients verify the upstream with the keyrings they have; Quader adds the rollback protection a client has only for itself (APT keeps its own newer list against an older `Date`, verified) | A remote serves whatever the upstream signed, also without Quader's verification |
+| (b) Re-sign a remote's indexes | Quader signs everything | One trust anchor | Clients trust Quader for the Debian archive; every remote needs a key and builds; the upstream's signature never reaches the client |
 | (c) Pass through without checks | No parsing | Simple | A broken mirror's older release replaces a newer one for every client |
 
 **Choice:** (a).
 
-**Rationale:** the upstream's signature is the strongest statement a client can check, and trove must not weaken it. The
+**Rationale:** the upstream's signature is the strongest statement a client can check, and Quader must not weaken it. The
 development agent would revisit (b) for a remote only together with a feature that changes upstream content (none exists).
 
 **Applied in the spec:** R-DEB-019, R-DEB-021.
@@ -2061,14 +2061,14 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `deb.upstreamKeys` optional for a pull-through remote, required for a mirror and for a member of a virtual repository (chosen) | Verification where trove hands content on | A virtual repository signs only what trove verified; a mirror stores only verified content; a quick proxy of a third-party archive still works, with clients verifying | Operators supply the keys |
+| (a) `deb.upstreamKeys` optional for a pull-through remote, required for a mirror and for a member of a virtual repository (chosen) | Verification where Quader hands content on | A virtual repository signs only what Quader verified; a mirror stores only verified content; a quick proxy of a third-party archive still works, with clients verifying | Operators supply the keys |
 | (b) Always required | No unverified remote | Uniform | A pull-through remote of any archive needs its key first, although clients verify it anyway |
 | (c) Never verified | Clients verify | Nothing to configure | A virtual repository would sign whatever an HTTP upstream or a party in between delivered |
-| (d) Ship the Debian and Ubuntu archive keys as defaults | Built-in keys | No setup for the two archives | trove would follow every key change of two archives; every Debian host already has them |
+| (d) Ship the Debian and Ubuntu archive keys as defaults | Built-in keys | No setup for the two archives | Quader would follow every key change of two archives; every Debian host already has them |
 
 **Choice:** (a).
 
-**Rationale:** trust is handed on only where trove signs or keeps content for later; elsewhere the client's own verification
+**Rationale:** trust is handed on only where Quader signs or keeps content for later; elsewhere the client's own verification
 holds. The development agent would revisit (b) if unverified pull-through remotes cause incidents.
 
 **Applied in the spec:** R-DEB-020, R-DEB-024, R-DEB-025; [H-623](#h-623--a-pull-through-remote-without-upstream-keys-stores-what-its-upstream-sends).
@@ -2226,7 +2226,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a).
 
-**Rationale:** the flat form matters only for archives trove does not control. The development agent would revisit mirrors of flat
+**Rationale:** the flat form matters only for archives Quader does not control. The development agent would revisit mirrors of flat
 archives when one is needed offline.
 
 **Applied in the spec:** R-DEB-003, R-DEB-019, R-DEB-021.
@@ -2291,7 +2291,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `debian:13`, `debian:12`, `ubuntu:24.04` and `ubuntu:22.04` pinned by digest; `--error-on=any`; never `trusted=yes`; the rotation row on Debian 13, Ubuntu 24.04 and Ubuntu 22.04; a stub archive generated in code (chosen) | Both verifiers and the oldest supported LTS | `sqv` (Debian 13) and `gpgv` 2.2 and 2.4 both verify trove's signatures; the rotation runs on both verifier generations; a warning fails a row (`--error-on=any` exists on APT 2.4, verified by the review's probes); deterministic data | Four images per row |
+| (a) `debian:13`, `debian:12`, `ubuntu:24.04` and `ubuntu:22.04` pinned by digest; `--error-on=any`; never `trusted=yes`; the rotation row on Debian 13, Ubuntu 24.04 and Ubuntu 22.04; a stub archive generated in code (chosen) | Both verifiers and the oldest supported LTS | `sqv` (Debian 13) and `gpgv` 2.2 and 2.4 both verify Quader's signatures; the rotation runs on both verifier generations; a warning fails a row (`--error-on=any` exists on APT 2.4, verified by the review's probes); deterministic data | Four images per row |
 | (b) One image | Faster | Smaller matrix | Misses the verifier difference |
 | (c) Responses recorded from the Debian archive | Real data | Realistic | Third-party data in the repository; recorded signatures expire |
 
@@ -2381,13 +2381,13 @@ after the review of 2026-11-08.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A member release counts only while a fingerprint of the member's current keys verified it, its `Valid-Until` has not passed and its `Date` is not older than the one the previous generation merged; a key removal clears `verified_by` of what the removed key verified; the virtual `Release` carries the earliest member `Valid-Until`; a mirror pass uses verified, unexpired releases only (chosen) | Hand on trust only while it holds | trove never re-signs content nobody verified, content verified by a key the operator withdrew, a frozen suite, or an older release a remote accepted after losing its copy; freeze protection reaches the virtual repository's clients | A build fails (and the previous generation stays) while a member release is stale |
-| (b) Merge whatever release the member holds (the first version) | Trust the cache | Simple | Launders unverified, withdrawn-key, expired and rolled-back upstream content into a fresh trove signature |
+| (a) A member release counts only while a fingerprint of the member's current keys verified it, its `Valid-Until` has not passed and its `Date` is not older than the one the previous generation merged; a key removal clears `verified_by` of what the removed key verified; the virtual `Release` carries the earliest member `Valid-Until`; a mirror pass uses verified, unexpired releases only (chosen) | Hand on trust only while it holds | Quader never re-signs content nobody verified, content verified by a key the operator withdrew, a frozen suite, or an older release a remote accepted after losing its copy; freeze protection reaches the virtual repository's clients | A build fails (and the previous generation stays) while a member release is stale |
+| (b) Merge whatever release the member holds (the first version) | Trust the cache | Simple | Launders unverified, withdrawn-key, expired and rolled-back upstream content into a fresh Quader signature |
 | (c) Check verification only | Partial | Simpler | An expired upstream suite would be served as fresh by the virtual repository's signature |
 
 **Choice:** (a).
 
-**Rationale:** a virtual repository's signature is a statement trove makes about upstream content; it may only make it while the
+**Rationale:** a virtual repository's signature is a statement Quader makes about upstream content; it may only make it while the
 upstream's own statement holds. The development agent would revisit the `Valid-Until` carry-over if an upstream's short validity
 makes virtual builds fail more often than the upstream itself.
 
@@ -2439,7 +2439,7 @@ after the review of 2026-11-08.
 | (b) Anti-rollback by `Date` for every release, keys valid at signature time (the first version) | Simple | Strict | A far-future `Date` (forged on an unverified HTTP remote, or an upstream clock error) makes every genuine release "older" forever; a backdated signature by an expired key passes |
 | (c) No anti-rollback | Nothing to freeze | Simple | A replayed older release replaces a newer one for every client |
 
-**Choice:** (a). Ten minutes is far beyond APT's own 10 s, so trove refuses no release a client would accept for clock reasons.
+**Choice:** (a). Ten minutes is far beyond APT's own 10 s, so Quader refuses no release a client would accept for clock reasons.
 
 **Rationale:** each rule closes one way to freeze a remote or to slip in an old signature. The development agent would revisit the
 tolerance if a real upstream's clock drifts beyond it.
@@ -2455,7 +2455,7 @@ after the review of 2026-11-08.
 |---|---|---|---|
 | (a) A newly stored release enqueues the parse of every index path with rows whose hash it changes; the job fetches the full index through the background path; a virtual build enqueues the parse of what it merged (chosen) | Rows track the release | APT applies pdiffs and may never fetch a full index again; the rows stay current anyway | One background fetch of each changed index per release |
 | (b) Parse only what clients fetch (the first version) | Lazy | No extra fetch | With pdiffs the rows stay stale indefinitely, and with them digests, the shadowing check and screens |
-| (c) Parse pdiffs | Incremental | Fewer bytes | A pdiff applier in trove for no client need |
+| (c) Parse pdiffs | Incremental | Fewer bytes | A pdiff applier in Quader for no client need |
 
 **Choice:** (a). The parse job is `coalesce` per index path and reads the hash the stored release names when it runs, so a
 release stored during a run is parsed by the waiting job and no trigger is lost (revised after the second review of
@@ -2498,7 +2498,7 @@ after the review of 2026-11-08, which found the global order of the first versio
 **Choice:** (a).
 
 **Rationale:** APT reads paragraphs in any order; boundedness matters, order does not. The development agent would revisit (c) if
-a tool that reads trove's indexes needs sorted input.
+a tool that reads Quader's indexes needs sorted input.
 
 **Applied in the spec:** R-DEB-011, R-DEB-025.
 
@@ -2536,7 +2536,7 @@ of its key, even when the key's creation time is older; `gpgv` accepts it.
 **Choice:** (a). WP2's unit test asserts that a generated key's self-signature time equals its creation time; the e2e rotation row
 on Debian 13 runs once more with an imported key whose only self-signature is fresh.
 
-**Rationale:** `sqv` evaluates the key's binding at the data signature's time, so trove must not sign before the binding exists.
+**Rationale:** `sqv` evaluates the key's binding at the data signature's time, so Quader must not sign before the binding exists.
 The development agent would revisit the wait if imports with fresh self-signatures delay rotations noticeably.
 
 **Applied in the spec:** R-DEB-015, R-DEB-016, R-DEB-017,
@@ -2744,7 +2744,7 @@ deletion (R-DEB-013, R-DEB-032).
 
 **Choice:** (a).
 
-**Rationale:** the format owns its rows, and the hook is the one place that removes them; `trove admin` checks of the schema do not
+**Rationale:** the format owns its rows, and the hook is the one place that removes them; `quader admin` checks of the schema do not
 need the foreign key. The development agent would revisit (c) if a second format needed its rows at removal time.
 
 **Applied in the spec:** R-DEB-013. Code: `internal/meta/postgres/migrations/00063_deb_binaries_detached.sql`, `Removed` in
@@ -2888,7 +2888,7 @@ became one statement.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-DEB-033 defines `trove_deb_index_delay_seconds` as the time "from the first change a build covers to its commit". No row held that time.
+Context: R-DEB-033 defines `quader_deb_index_delay_seconds` as the time "from the first change a build covers to its commit". No row held that time.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -2912,7 +2912,7 @@ between two events inside the database's clock and needs neither a cluster nor a
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) An integration test with three in-process replicas, run per change at a small load (every upload published, the p50) and by `make test-performance` with `TROVE_PERF_GATE=1` at the reference load (10,000 files in three suites, ten uploads per second for 90 s), with and without Valkey (chosen) | The same tier as P-13 and P-14 (Q-ARCH-220) | One clock; the nightly job `latency` already runs it on the large runner after the kind legs; no cluster | Not the chart's three pods: a replica here is a process of the test |
+| (a) An integration test with three in-process replicas, run per change at a small load (every upload published, the p50) and by `make test-performance` with `QUADER_PERF_GATE=1` at the reference load (10,000 files in three suites, ten uploads per second for 90 s), with and without Valkey (chosen) | The same tier as P-13 and P-14 (Q-ARCH-220) | One clock; the nightly job `latency` already runs it on the large runner after the kind legs; no cluster | Not the chart's three pods: a replica here is a process of the test |
 | (b) The e2e set `deb-long` on the kind cluster | What the spec names | The real chart | Timing on a shared cluster says nothing about the bound; the set is WP10's and does not exist yet |
 
 **Choice:** (a). The set `deb-long` keeps what needs a cluster: the drain during a build (R-DEB-031).
@@ -3135,14 +3135,14 @@ the counting stub archive (T-17 WP5).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The stub frames and signs `InRelease` by hand the way `gpg --clearsign` writes it (the signed text lacks the final line ending, the armor header follows the last line), indexes in plain text and gzip, no xz, zstd or bzip2, no `Contents` or translations, and a flat directory's Release names `Suite` and `Codename` after the directory (chosen) | The shape real archives have; one module for the signatures | trove's verifier meets gpg's framing, not its own; no second compression module for a test double; no APT warning from the flat directory (verified) | `Packages.xz` handling is not exercised by the stub (WP8's bound test and the unit tests do) |
-| (b) The module's own `clearsign` encoder | Fewer lines | | The same code as trove's signer, so framing mistakes would cancel out |
+| (a) The stub frames and signs `InRelease` by hand the way `gpg --clearsign` writes it (the signed text lacks the final line ending, the armor header follows the last line), indexes in plain text and gzip, no xz, zstd or bzip2, no `Contents` or translations, and a flat directory's Release names `Suite` and `Codename` after the directory (chosen) | The shape real archives have; one module for the signatures | Quader's verifier meets gpg's framing, not its own; no second compression module for a test double; no APT warning from the flat directory (verified) | `Packages.xz` handling is not exercised by the stub (WP8's bound test and the unit tests do) |
+| (b) The module's own `clearsign` encoder | Fewer lines | | The same code as Quader's signer, so framing mistakes would cancel out |
 | (c) Add xz output to the stub | Complete | Exercises xz | A second owner of the xz module while WP1 adds it |
 
 **Choice:** (a). The stub signs with the module directly (`openpgp.Entity`, `packet.Signature`) and never imports `internal/openpgp`
-outside its tests, which verify the stub's output with trove's verifier.
+outside its tests, which verify the stub's output with Quader's verifier.
 
-**Rationale:** the point of the stub is an upstream that is not trove. The development agent would revisit (c) when a remote test
+**Rationale:** the point of the stub is an upstream that is not Quader. The development agent would revisit (c) when a remote test
 needs `Packages.xz` from an upstream.
 
 **Applied in the spec:** R-DEB-035, [Client and library behaviour](#client-and-library-behaviour-this-page-relies-on).
@@ -3391,7 +3391,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a).
 
-**Rationale:** An APT archive's documents hold no address of the upstream; trove must not change a byte of a signed release.
+**Rationale:** An APT archive's documents hold no address of the upstream; Quader must not change a byte of a signed release.
 
 **Applied in the spec:** R-ARCH-010. Code: [checks.go](../../../internal/formats/formattest/checks.go) `rewriteIdentity`.
 
@@ -3500,7 +3500,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a), with the values shown as the server sends them (the page does not parse `Depends`).
 
-**Rationale:** the control field is the package's own statement; a parsed list of links would claim a resolution trove does not do for
+**Rationale:** the control field is the package's own statement; a parsed list of links would claim a resolution Quader does not do for
 this format. The development agent revisits this when the search of control fields is built (Deferred: PKG-DEB-010).
 
 **Applied in the spec:** R-DEB-030.
@@ -3626,9 +3626,9 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A namespace `trove-e2e-apt` of the level `baseline`, pods as root without a privileged container (chosen) | `apt-get install` runs as root; the level refuses privileged containers, host paths and extra capabilities | The least level that lets APT install packages; the OCI clients' privileged namespace is not widened | A third namespace beside `trove` and `trove-e2e-clients` |
-| (b) The namespace `trove-e2e-clients` (level `privileged`) of the OCI clients | One namespace for all client pods | Nothing new to create | The OCI clients' teardown deletes the namespace and the APT pods with it; the Debian clients would run at a level they do not need |
-| (c) The namespace `trove` (level `restricted`) | No new namespace | none | `restricted` refuses root, which `apt-get install` needs |
+| (a) A namespace `quader-e2e-apt` of the level `baseline`, pods as root without a privileged container (chosen) | `apt-get install` runs as root; the level refuses privileged containers, host paths and extra capabilities | The least level that lets APT install packages; the OCI clients' privileged namespace is not widened | A third namespace beside `quader` and `quader-e2e-clients` |
+| (b) The namespace `quader-e2e-clients` (level `privileged`) of the OCI clients | One namespace for all client pods | Nothing new to create | The OCI clients' teardown deletes the namespace and the APT pods with it; the Debian clients would run at a level they do not need |
+| (c) The namespace `quader` (level `restricted`) | No new namespace | none | `restricted` refuses root, which `apt-get install` needs |
 
 **Choice:** (a).
 
@@ -3685,7 +3685,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: F-118. The merge of a virtual repository read, for `main/binary-amd64/Packages`, only the members' `main/binary-amd64/Packages`. The archives of Debian and Ubuntu list their `all` packages in every architecture index and in `binary-all`, so nothing was lost through them; an upstream that keeps them in `binary-all` only (the test archive does) lost them from the merged architecture index. Reproduced on 2026-11-09 (`TestR_DEB_025_ThePackagesOfArchitectureAllOfARemoteMemberAreInEveryArchitectureIndex`): `trove-config`, an `all` package of the stub, was in the merged `binary-all` and missing from the merged `binary-amd64`. The merged `Release` lists `binary-all` among its hashed files and does not list `all` under `Architectures`, as a local repository's does not.
+Context: F-118. The merge of a virtual repository read, for `main/binary-amd64/Packages`, only the members' `main/binary-amd64/Packages`. The archives of Debian and Ubuntu list their `all` packages in every architecture index and in `binary-all`, so nothing was lost through them; an upstream that keeps them in `binary-all` only (the test archive does) lost them from the merged architecture index. Reproduced on 2026-11-09 (`TestR_DEB_025_ThePackagesOfArchitectureAllOfARemoteMemberAreInEveryArchitectureIndex`): `quader-config`, an `all` package of the stub, was in the merged `binary-all` and missing from the merged `binary-amd64`. The merged `Release` lists `binary-all` among its hashed files and does not list `all` under `Architectures`, as a local repository's does not.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -3768,14 +3768,14 @@ came to build two indexers (one per queue, say), which would then be two fields 
 
 The private signing keys of local and virtual Debian repositories are sealed with the stored-secret key ring of R-ARCH-021
 (R-DEB-015, built in T-17). Whoever holds a key file of the ring and a copy of the database or of a backup can open every signing
-key and sign indexes that every client of those repositories accepts, without trove recording anything. Clients still download
-from trove over TLS, so a forged index helps only an attacker who can also serve it (a party on the client's path or a compromised
-mirror of trove's content). Live once the format is built; real for an operator or attacker with read access to the key ring
+key and sign indexes that every client of those repositories accepts, without Quader recording anything. Clients still download
+from Quader over TLS, so a forged index helps only an attacker who can also serve it (a party on the client's path or a compromised
+mirror of Quader's content). Live once the format is built; real for an operator or attacker with read access to the key ring
 Secret and the database, which already opens every sealed upstream credential ([H-579](oci.md#h-579--a-holder-of-the-stored-secret-key-ring-can-mint-registry-tokens) is the same trust for registry tokens).
 
-### H-621 · trove cannot tell which clients still trust only a retired key
+### H-621 · Quader cannot tell which clients still trust only a retired key
 
-A rotation reaches a client only when its keyring file is replaced (R-DEB-017). trove sees requests, not the keys clients hold, so
+A rotation reaches a client only when its keyring file is replaced (R-DEB-017). Quader sees requests, not the keys clients hold, so
 it cannot warn before a promotion that clients still trust only the old key; those clients fail closed after the promotion. Live
 once rotation is built; real for fleets whose keyring files are not managed centrally.
 
@@ -3792,15 +3792,15 @@ every restore that follows a rotation whose next key is newer than the backup.
 
 A remote without `deb.upstreamKeys` stores release documents unverified (R-DEB-020). Clients verify the upstream's signatures with
 their own keyrings, so a forged release fails at the client, but the forged bytes stay in the cache and fail every client until the
-next refresh or an operator's deletion; over a plain HTTP upstream a party on trove's path can cause this. Such a remote can be
+next refresh or an operator's deletion; over a plain HTTP upstream a party on Quader's path can cause this. Such a remote can be
 neither a mirror nor a virtual member. Live once the remote class is built; real for remotes of HTTP archives without keys.
 
-### H-624 · trove's own Release files carry no Valid-Until
+### H-624 · Quader's own Release files carry no Valid-Until
 
 A local repository's `Release` files have no `Valid-Until` (R-DEB-011), so a client accepts an old, validly signed `InRelease`
 indefinitely: a party that can keep serving the client the generation it already holds keeps it on old packages (a freeze attack).
 APT keeps its newer list when served an older `Date` (verified), so the attacker cannot roll a client back, only hold it. TLS to
-trove prevents this for clients that reach trove directly. A virtual repository carries its member releases' earliest
+Quader prevents this for clients that reach Quader directly. A virtual repository carries its member releases' earliest
 `Valid-Until` (Q-DEB-32) and is not affected while a member has one. Live once the format is built; real for clients behind a
 TLS-terminating proxy that an attacker controls.
 
@@ -3816,14 +3816,14 @@ real for upstreams that serve wrong pool files.
 ### H-626 · A verified remote fails closed when its upstream signs with a new key
 
 A remote verifies against the keys its operator configured (R-DEB-020). When the upstream archive starts signing with a key that is
-not in the set (Debian adds an archive key per release), trove refuses the new release with 502 until the operator adds the key;
+not in the set (Debian adds an archive key per release), Quader refuses the new release with 502 until the operator adds the key;
 clients keep failing their updates through that remote meanwhile. Live once the remote class is built; real at every archive key
 change of an upstream.
 
 ### H-627 · An imported signing key stays known to whoever imported it
 
-An imported key (R-DEB-015) was outside trove before the import; whoever held it can still sign indexes that the repository's
-clients accept. trove erases its own copy at retirement but cannot make the importer forget it. Live once import is built; real
+An imported key (R-DEB-015) was outside Quader before the import; whoever held it can still sign indexes that the repository's
+clients accept. Quader erases its own copy at retirement but cannot make the importer forget it. Live once import is built; real
 for every imported key until it is retired and the clients' keyring files no longer hold it.
 
 ### H-628 · An offline mirror serves only clients whose index targets it keeps

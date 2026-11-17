@@ -6,11 +6,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	vmetrics "github.com/guided-traffic/trove/internal/vuln/metrics"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	vmetrics "github.com/guided-traffic/quader/internal/vuln/metrics"
 )
 
 // ExpectedSource is a source and ecosystem the configuration makes the installation sync (the KEV catalog has the
@@ -46,11 +46,11 @@ func ExpectedSources(v config.Vulnerabilities) []ExpectedSource {
 //
 //   - The three source gauges carry a series for every expected source and ecosystem, a source without a row of
 //     vuln_source_state included, with the value 0: a restore removes the rows (R-VULN-026) and a source that never
-//     succeeded must keep TroveVulnerabilityDataStale firing instead of having no series (Q-VULN-56). A row of a source
+//     succeeded must keep QuaderVulnerabilityDataStale firing instead of having no series (Q-VULN-56). A row of a source
 //     that is not expected has no series.
-//   - trove_vuln_findings carries every combination of severity, status and kind, 0 included, so that a dashboard sees a
+//   - quader_vuln_findings carries every combination of severity, status and kind, 0 included, so that a dashboard sees a
 //     count fall to zero instead of the series vanishing.
-//   - trove_vuln_claimed_name_matches carries every effective ecosystem and both kinds, 0 included.
+//   - quader_vuln_claimed_name_matches carries every effective ecosystem and both kinds, 0 included.
 func GaugeSource(db Database, expected func() []ExpectedSource, ecosystems func() []string) observability.GaugeSource {
 	descs := vmetrics.GaugeDescs()
 	return observability.GaugeSource{

@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/observability/health"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/observability/health"
 )
 
 // valkeyComponent starts the Valkey client in the background (R-ARCH-024 step 7).

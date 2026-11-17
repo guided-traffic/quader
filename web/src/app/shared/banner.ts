@@ -8,7 +8,7 @@ import { parseBannerText } from './banner-text';
  * the severity is an icon and a word as well as a colour (R-UI-044).
  */
 @Component({
-  selector: 'trove-banner',
+  selector: 'quader-banner',
   template: `
     @for (notice of store.notices(); track notice.kind) {
       <section
@@ -36,19 +36,19 @@ import { parseBannerText } from './banner-text';
     .banner {
       display: flex;
       align-items: flex-start;
-      gap: var(--trove-space-2);
-      padding: var(--trove-space-2) var(--trove-space-4);
-      background: var(--trove-banner-bg);
-      color: var(--trove-banner-fg);
+      gap: var(--quader-space-2);
+      padding: var(--quader-space-2) var(--quader-space-4);
+      background: var(--quader-banner-bg);
+      color: var(--quader-banner-fg);
       white-space: pre-line;
     }
     .banner[data-severity='warning'] {
-      background: var(--trove-badge-warn-bg);
-      color: var(--trove-badge-warn-fg);
+      background: var(--quader-badge-warn-bg);
+      color: var(--quader-badge-warn-fg);
     }
     .banner[data-severity='critical'] {
-      background: var(--trove-badge-bad-bg);
-      color: var(--trove-badge-bad-fg);
+      background: var(--quader-badge-bad-bg);
+      color: var(--quader-badge-bad-fg);
     }
     p {
       margin: 0;

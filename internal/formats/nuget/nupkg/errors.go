@@ -3,8 +3,8 @@ package nupkg
 import (
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nuspec"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nuspec"
 )
 
 // The reasons of a refusal, kept as the cause of the *errs.Error (see the

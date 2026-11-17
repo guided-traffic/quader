@@ -3,7 +3,7 @@ package authz
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 func TestR_AUTHZ_005_Patterns(t *testing.T) {

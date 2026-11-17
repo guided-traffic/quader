@@ -2,7 +2,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
 
   h1 {
     margin: 0;
@@ -13,21 +13,21 @@
 .summary {
   display: flex;
   align-items: center;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
   font-weight: 600;
 }
 
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-  gap: var(--trove-space-4);
+  gap: var(--quader-space-4);
 }
 
 .card {
-  margin-block: var(--trove-space-4);
-  padding: var(--trove-space-4);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-l);
+  margin-block: var(--quader-space-4);
+  padding: var(--quader-space-4);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-l);
 
   h2 {
     margin-block-start: 0;
@@ -41,7 +41,7 @@
 dl {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: var(--trove-space-1) var(--trove-space-4);
+  gap: var(--quader-space-1) var(--quader-space-4);
   margin: 0;
 }
 
@@ -55,19 +55,19 @@ dd {
 }
 
 .role {
-  margin-block: var(--trove-space-4);
+  margin-block: var(--quader-space-4);
 
   .counts {
-    margin-inline-start: var(--trove-space-3);
+    margin-inline-start: var(--quader-space-3);
     font-weight: 400;
     font-size: 0.875rem;
   }
 
   .pool {
-    margin-block-start: var(--trove-space-3);
+    margin-block-start: var(--quader-space-3);
 
     h4 {
-      margin-block: var(--trove-space-2);
+      margin-block: var(--quader-space-2);
     }
   }
 }
@@ -83,40 +83,40 @@ table {
 
 th,
 td {
-  padding: var(--trove-space-1) var(--trove-space-3);
+  padding: var(--quader-space-1) var(--quader-space-3);
   text-align: start;
   vertical-align: top;
-  border-block-end: 1px solid var(--trove-border);
+  border-block-end: 1px solid var(--quader-border);
 }
 
 .material-icons {
   font-size: 1.125rem;
   vertical-align: middle;
-  margin-inline-end: var(--trove-space-1);
+  margin-inline-end: var(--quader-space-1);
 }
 
 // Status colours always come with an icon and a text (R-UI-044); they only reinforce.
 .ok {
-  color: var(--trove-status-ok);
+  color: var(--quader-status-ok);
 }
 
 .warn {
-  color: var(--trove-status-warn);
+  color: var(--quader-status-warn);
 }
 
 .bad {
-  color: var(--trove-status-bad);
+  color: var(--quader-status-bad);
 }
 
 .warning,
 .info-notice {
   display: flex;
   align-items: flex-start;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 }
 
 .check-list {
-  margin-block-start: var(--trove-space-1);
+  margin-block-start: var(--quader-space-1);
   max-inline-size: 36rem;
 }
 
@@ -130,5 +130,5 @@ td {
 
 .limits,
 .more {
-  margin-block: var(--trove-space-4);
+  margin-block: var(--quader-space-4);
 }

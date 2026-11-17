@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 const bastions = "/api/v1/bastions"
@@ -24,7 +24,7 @@ func tokensOf(t *testing.T, rp reply) []any {
 }
 
 // TestR_BAS_004_RegisterIssueAndLimit is the first acceptance criterion of R-BAS-004: a registration, then a
-// token of one year that is 57 characters long with the prefix trv_bst_ and passes the checksum of R-AUTH-022;
+// token of one year that is 57 characters long with the prefix qdr_bst_ and passes the checksum of R-AUTH-022;
 // ttlSeconds above max_ttl answers 400 invalid_ttl, and a fourth unrevoked token 409 token_limit_reached.
 func TestR_BAS_004_RegisterIssueAndLimit(t *testing.T) {
 	e := newEnv(t)
@@ -59,7 +59,7 @@ func TestR_BAS_004_RegisterIssueAndLimit(t *testing.T) {
 		body := rp.json(t)
 		secret, _ := body["token"].(string)
 		typ, err := token.Check(secret)
-		if err != nil || typ != token.TypeBST || len(secret) != 57 || !strings.HasPrefix(secret, "trv_bst_") {
+		if err != nil || typ != token.TypeBST || len(secret) != 57 || !strings.HasPrefix(secret, "qdr_bst_") {
 			t.Fatalf("token %q: type %v, err %v", secret, typ, err)
 		}
 		if body["hint"] != secret[:12] {
@@ -178,8 +178,8 @@ func TestR_BAS_004_TheListShowsTheTokensAndTheLastContacts(t *testing.T) {
 
 	id := e.text(`SELECT id::text FROM principal WHERE kind = 'bastion' AND name = 'partners'`)
 	e.exec(`INSERT INTO bastion_contact (bastion_id, replica, contact_at, client_address, release, interface_version, base_url)
-	        VALUES ($1::uuid, 'trove-bastion-a', now() - interval '5 minutes', '198.51.100.20', '0.15.0', 1, 'https://packages.example.com'),
-	               ($1::uuid, 'trove-bastion-b', now(), NULL, '0.15.0', 1, '')`, id)
+	        VALUES ($1::uuid, 'quader-bastion-a', now() - interval '5 minutes', '198.51.100.20', '0.15.0', 1, 'https://packages.example.com'),
+	               ($1::uuid, 'quader-bastion-b', now(), NULL, '0.15.0', 1, '')`, id)
 
 	check := func(t *testing.T, reg map[string]any) {
 		t.Helper()
@@ -204,7 +204,7 @@ func TestR_BAS_004_TheListShowsTheTokensAndTheLastContacts(t *testing.T) {
 			t.Fatalf("contacts = %v", contacts)
 		}
 		newest, older := contacts[0].(map[string]any), contacts[1].(map[string]any)
-		if newest["replica"] != "trove-bastion-b" || newest["clientAddress"] != nil || older["replica"] != "trove-bastion-a" ||
+		if newest["replica"] != "quader-bastion-b" || newest["clientAddress"] != nil || older["replica"] != "quader-bastion-a" ||
 			older["clientAddress"] != "198.51.100.20" || older["release"] != "0.15.0" || older["interfaceVersion"] != float64(1) ||
 			older["baseUrl"] != "https://packages.example.com" {
 			t.Errorf("contacts = %v", contacts)

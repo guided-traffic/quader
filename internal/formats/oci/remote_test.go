@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
 )
 
 func rctx(t *testing.T, upstream string) formats.RemoteContext {
@@ -226,7 +226,7 @@ func TestAFetchedTagIsEnteredUnderItsDigest(t *testing.T) {
 }
 
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestAPassThroughAnswerIsAcceptedAndAPathOutsideTheLayoutIsNot(t *testing.T) {
 	accept := func(p string) error {
 		resp := &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader("{}"))}
@@ -409,7 +409,7 @@ func TestATokenAnswerIsReadWithinItsBounds(t *testing.T) {
 }
 
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestATagsListTheUpstreamCutIsMarked(t *testing.T) {
 	read := func(link, body string) string {
 		h := http.Header{}
@@ -436,7 +436,7 @@ func TestATagsListTheUpstreamCutIsMarked(t *testing.T) {
 	if st, err := parseTaglist([]byte(whole)); err != nil || st.Truncated {
 		t.Errorf("whole list = %s: %+v %v", whole, st, err)
 	}
-	if got := read(`<x>; rel="next"`, `{}`); got != `{"x-trove-truncated":true}` {
+	if got := read(`<x>; rel="next"`, `{}`); got != `{"x-quader-truncated":true}` {
 		t.Errorf("empty object = %s", got)
 	}
 	if got := read(`<x>; rel="next"`, `[1]`); got != `[1]` {
@@ -567,7 +567,7 @@ func TestAManifestByDigestAndABlobAreArtifactsOfTheName(t *testing.T) {
 }
 
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestATagsListIsCutFromTheStoredDocument(t *testing.T) {
 	list := func(name string, tags ...string) []byte {
 		return []byte(`{"name":"` + name + `","tags":["` + strings.Join(tags, `","`) + `"]}`)
@@ -605,7 +605,7 @@ func TestATagsListIsCutFromTheStoredDocument(t *testing.T) {
 }
 
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestReferrersArePassedThroughAndFiltered(t *testing.T) {
 	subject := sha([]byte("subject"))
 	sig, sbom := sha([]byte("sig")), sha([]byte("sbom"))

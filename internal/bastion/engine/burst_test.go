@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/answers"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // TestR_BAS_026_AFeedPageOfAThousandEntriesIsAppliedAgainstTwoHundredThousandAnswersWithinTheBound: the link
@@ -16,17 +16,17 @@ import (
 // costs one pass and not one per entry (Q-BAS-126, security finding B7). The 5 s of R-BAS-026 is a wall-clock target
 // of the reference environment: the page takes about 0.1 s natively, 0.65 s under -race with -coverpkg=./... and
 // about 1 s in the pinned image on 2 CPUs (a headroom of 5 to 50, not two orders of magnitude), and 5.5 s on a
-// runner that ran the packages of `make test` in parallel (run 41797860424). It is enforced with TROVE_PERF_GATE=1
+// runner that ran the packages of `make test` in parallel (run 41797860424). It is enforced with QUADER_PERF_GATE=1
 // (`make test-performance`, Q-BAS-140). Per change the bound is relative to the load: the page may cost at most
 // maxPassesPerPage times one matching pass over the same answers measured right before it, and a per-entry pass
 // would cost a thousand of them.
 func TestR_BAS_026_AFeedPageOfAThousandEntriesIsAppliedAgainstTwoHundredThousandAnswersWithinTheBound(t *testing.T) {
-	// The configuration of a bastion refuses a TROVE_ variable that is no setting of it (R-BAS-002), so the gate is
+	// The configuration of a bastion refuses a QUADER_ variable that is no setting of it (R-BAS-002), so the gate is
 	// read first and the variable is out of the environment while the harness loads its configuration.
-	gated := os.Getenv("TROVE_PERF_GATE") == "1"
-	if v, ok := os.LookupEnv("TROVE_PERF_GATE"); ok {
-		os.Unsetenv("TROVE_PERF_GATE")
-		t.Cleanup(func() { os.Setenv("TROVE_PERF_GATE", v) })
+	gated := os.Getenv("QUADER_PERF_GATE") == "1"
+	if v, ok := os.LookupEnv("QUADER_PERF_GATE"); ok {
+		os.Unsetenv("QUADER_PERF_GATE")
+		t.Cleanup(func() { os.Setenv("QUADER_PERF_GATE", v) })
 	}
 	s := newSiteHarness(t, options{})
 	const answersHeld, tokens, revoked = 200000, 2000, 1000
@@ -62,7 +62,7 @@ func TestR_BAS_026_AFeedPageOfAThousandEntriesIsAppliedAgainstTwoHundredThousand
 	case gated:
 		t.Fatalf("the page took %v to apply, the bound of R-BAS-026 is 5 s", took)
 	default:
-		t.Logf("the page took %v, above the 5 s of R-BAS-026; enforced with TROVE_PERF_GATE=1 (Q-BAS-140)", took)
+		t.Logf("the page took %v, above the 5 s of R-BAS-026; enforced with QUADER_PERF_GATE=1 (Q-BAS-140)", took)
 	}
 	if got, want := s.e.answers.mem.len(), answersHeld/2; got != want {
 		t.Fatalf("%d answers left, want %d: the answers of the 1000 named tokens go and only those", got, want)

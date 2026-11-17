@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // echo is the answer of the stand-in package route: what the chain made of the request.
@@ -56,7 +56,7 @@ func TestR_BAS_008_AForwardedRequestIsRecognizedOnlyByAValidBastionToken(t *test
 		t.Errorf("a revoked Bastion token: %d %s %s", rp.Status, rp.Header.Get("Content-Type"), rp.Body)
 	}
 
-	// $PAT in Trove-Bastion-Authorization: ordinary request, no marking header, the headers are ignored.
+	// $PAT in Quader-Bastion-Authorization: ordinary request, no marking header, the headers are ignored.
 	rp = s.do(packageRequest("/api/npm/it/npm-all/lodash", "Authorization", "Bearer "+caller, iface.HeaderAuthorization, "Bearer "+caller,
 		iface.HeaderInterface, v, iface.HeaderReplica, "pod", iface.HeaderProbe, "1"))
 	var got echo
@@ -79,7 +79,7 @@ func TestR_BAS_008_AForwardedRequestIsRecognizedOnlyByAValidBastionToken(t *test
 	if rp.Header.Get(iface.HeaderInterface) != v {
 		t.Errorf("%s = %q", iface.HeaderInterface, rp.Header.Get(iface.HeaderInterface))
 	}
-	// No Trove-Bastion-* request header is ever echoed: the only one on the answer is the version.
+	// No Quader-Bastion-* request header is ever echoed: the only one on the answer is the version.
 	for k := range rp.Header {
 		if strings.HasPrefix(k, iface.HeaderPrefix) && k != iface.HeaderInterface {
 			t.Errorf("the answer echoes %s", k)
@@ -116,7 +116,7 @@ func TestR_BAS_009_AnotherInterfaceVersionAnswersAMismatchOnEveryRoute(t *testin
 }
 
 // TestR_BAS_008_AnInterfaceRouteTakesAnyOtherCredentialAsNoBastion: a service account token on an interface route
-// is no Bastion; a Bastion token anywhere but the interface and Trove-Bastion-Authorization is no credential at all
+// is no Bastion; a Bastion token anywhere but the interface and Quader-Bastion-Authorization is no credential at all
 // (R-BAS-005).
 func TestR_BAS_008_AnInterfaceRouteTakesAnyOtherCredentialAsNoBastion(t *testing.T) {
 	e := newEnv(t)
@@ -137,7 +137,7 @@ func TestR_BAS_008_AnInterfaceRouteTakesAnyOtherCredentialAsNoBastion(t *testing
 	}
 }
 
-// TestR_BAS_008_InterfaceRequestsAreCounted: trove_bastion_interface_requests_total by registration, operation
+// TestR_BAS_008_InterfaceRequestsAreCounted: quader_bastion_interface_requests_total by registration, operation
 // and outcome through the real chain.
 func TestR_BAS_008_InterfaceRequestsAreCounted(t *testing.T) {
 	e := newEnv(t)
@@ -153,7 +153,7 @@ func TestR_BAS_008_InterfaceRequestsAreCounted(t *testing.T) {
 	}
 	got := map[string]float64{}
 	for _, f := range families {
-		if f.GetName() != "trove_bastion_interface_requests_total" {
+		if f.GetName() != "quader_bastion_interface_requests_total" {
 			continue
 		}
 		for _, m := range f.GetMetric() {

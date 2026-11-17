@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // env is one installation with two npm local repositories and three people: alice and
@@ -33,8 +33,8 @@ func newEnv(t *testing.T) *env { return newEnvOpts(t, false) }
 func newEnvOpts(t *testing.T, valkey bool) *env {
 	t.Helper()
 	// The audit endpoint answers in the mode of R-NPM-038 (501 on a local repository) while the installation does not scan; with
-	// the OSV source on it answers from trove's own data, which test/integration/vulnaudit tests (R-VULN-017, Q-VULN-44).
-	st := testenv.NewStack(t, testenv.StackOptions{Name: "npm", Valkey: valkey, Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
+	// the OSV source on it answers from quader's own data, which test/integration/vulnaudit tests (R-VULN-017, Q-VULN-44).
+	st := testenv.NewStack(t, testenv.StackOptions{Name: "npm", Valkey: valkey, Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
 	e := &env{t: t, st: st}
 	e.alice, e.bob, e.carol = st.User("alice"), st.User("bob"), st.User("carol")
 	st.Repository("npm-local", "local", "npm", `{"local":{"packageOwnership":"enforce"}}`)

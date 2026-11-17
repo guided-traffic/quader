@@ -9,11 +9,11 @@ import (
 // The metric names of the main installation's side (R-BAS-008, INV-16). The bastion label is the registration's
 // name, bounded by bastions.max_registrations. The Bastion's own metrics are internal/bastion/metrics.
 const (
-	MetricInterfaceRequests = "trove_bastion_interface_requests_total"
-	MetricForwardedRequests = "trove_bastion_forwarded_requests_total"
+	MetricInterfaceRequests = "quader_bastion_interface_requests_total"
+	MetricForwardedRequests = "quader_bastion_forwarded_requests_total"
 )
 
-// The outcome label of trove_bastion_interface_requests_total.
+// The outcome label of quader_bastion_interface_requests_total.
 const (
 	OutcomeOK        = "ok"
 	OutcomeInvalid   = "invalid_token"

@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // payloadVersion is the version of the change payloads authz writes.
@@ -92,7 +92,7 @@ func afterEpoch(tx meta.Tx, epoch *int64, fn func(ctx context.Context, tx meta.T
 }
 
 // Create stores a new policy (R-AUTHZ-021). The answer carries the epoch the
-// write produced, for the header Trove-Authz-Epoch (R-AUTHZ-032). in.Name is the
+// write produced, for the header Quader-Authz-Epoch (R-AUTHZ-032). in.Name is the
 // stored name ([StoredPolicyName]), by which every later call of this service
 // addresses the policy.
 func (s *Service) Create(ctx context.Context, actor Subject, in PolicyInput, opts ...WriteOption) (Policy, int64, error) {

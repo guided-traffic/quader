@@ -1,4 +1,4 @@
-A local repository holds the packages your teams publish{{if .Repository}} to `{{.Repository}}`{{end}}. trove keeps every published tarball and renders the package documents from its own records, so a version is visible on every replica as soon as its publish has returned.
+A local repository holds the packages your teams publish{{if .Repository}} to `{{.Repository}}`{{end}}. Quader keeps every published tarball and renders the package documents from its own records, so a version is visible on every replica as soon as its publish has returned.
 
 ### Published versions never change
 
@@ -20,7 +20,7 @@ The first publish of a name records its owner: the publisher, or the owner the p
 
 New names follow npm's rules for new packages: lower case, URL-safe, at most 214 characters, and neither the scope nor the name starts with a dot, an underscore or a hyphen. A new name that differs from a name the repository holds only in `-`, `_` or `.` is refused with `400` `npm_invalid_name`, because `acme.ui` next to `acme-ui` invites mistakes.
 
-### What trove checks in a publish
+### What Quader checks in a publish
 
 The manifest your client sends must agree with the `package.json` inside the tarball on the dependencies, binaries, engines, operating systems, CPUs and install scripts (`400` `npm_manifest_mismatch`), and the tarball must match the integrity the request announces (`409` `conflict`). Your client takes care of both; a request built by hand may not.
 

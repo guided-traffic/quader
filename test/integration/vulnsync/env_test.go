@@ -18,9 +18,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // The sync tasks and the names of the repositories.
@@ -83,17 +83,17 @@ func newEnv(t *testing.T, o options) *env {
 		t.Fatal(err)
 	}
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnsync", Valkey: o.Valkey, Env: append([]string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
-		"TROVE_VULNERABILITIES_SOURCES_OSV_BASE_URL=" + srv.URL + "/",
-		"TROVE_VULNERABILITIES_SOURCES_KEV_URL=" + srv.URL + kevPathName,
-		"TROVE_MAINTENANCE_TASKS=" + taskOff,
-		"TROVE_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "TROVE_JOBS_POLL_INTERVAL=200ms",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
+		"QUADER_VULNERABILITIES_SOURCES_OSV_BASE_URL=" + srv.URL + "/",
+		"QUADER_VULNERABILITIES_SOURCES_KEV_URL=" + srv.URL + kevPathName,
+		"QUADER_MAINTENANCE_TASKS=" + taskOff,
+		"QUADER_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "QUADER_JOBS_POLL_INTERVAL=200ms",
 		// The sync kinds run on the maintenance queue and the evaluation on the default queue: with no worker on the default
 		// queue the evaluation's jobs stay queued, so that the tests see what the sync leaves for the evaluation (the pending
 		// advisories, the requests of the full evaluation, the job) before anything consumes it. The evaluation's own tests
 		// are test/integration/vulnfindings and vulnflow.
-		"TROVE_JOBS_WORKERS_DEFAULT=0",
+		"QUADER_JOBS_WORKERS_DEFAULT=0",
 	}, o.Env...)})
 	e := &env{t: t, st: st, stub: stub, srv: srv}
 	rita := st.User("rita")

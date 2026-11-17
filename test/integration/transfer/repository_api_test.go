@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // across returns a Do function for apitest.RunContract that spreads the requests

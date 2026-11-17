@@ -5,11 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 )
 
 // TestR_NUGET_015_AnEntryKeepsTheMembersOfAnUpstreamAfterItsOwn: the pass-through members of a
-// remote entry are written after the members trove computes, in the order given, compact and
+// remote entry are written after the members quader computes, in the order given, compact and
 // without the escaping of HTML characters; a local entry has none and its bytes do not change.
 func TestR_NUGET_015_AnEntryKeepsTheMembersOfAnUpstreamAfterItsOwn(t *testing.T) {
 	v := entryOf(t, "1.2.3", true, `{"description":"d"}`)
