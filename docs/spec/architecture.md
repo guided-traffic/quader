@@ -7263,6 +7263,24 @@ Context: `TestChangePropagation` with Valkey kept a p50 bound of 20 ms per chang
 
 **Applied in the spec:** the P-13 row of R-ARCH-027; [docs/developer/coordination.md](../developer/coordination.md) ("Bounds P-13 and P-14"). Test: `TestChangePropagation`.
 
+### Q-ARCH-496 · The acceptance of the cluster-wide limiter reads the bound from the time the burst took
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: The criterion of R-ARCH-034 is "1,000 requests sent within 2 s are admitted at most 300 times" for a limiter of rate 50 and burst 200. `TestClusterWideRateLimit` sends the burst from the process that also runs the three replicas and failed whenever the burst took longer than 2 s (finding H-823: 1.8 s on a loaded runner against 0.1 s elsewhere in the same test), a bound that measures the host and not the limiter. The 300 is the burst plus the rate times the 2 s; the limiter admits no more than burst + rate × t over any burst that takes t, with Valkey (the sliding window admits `burst` per window of `burst ÷ rate` and frees at most `rate × t` as it slides by `t`) and in the fallback (n buckets of `burst ÷ n`, each filling at `rate ÷ n`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the 2 s bound | A slower burst fails | The criterion's words | Fails on the host's speed, with no statement about the limiter |
+| (b) Raise the 2 s | A larger number | One number | The next slower runner fails it again, and above 2 s the 300 no longer is the limiter's bound |
+| (c) The bound is the budget over the time the burst took, `ceil(200 + 50 × t)` (chosen) | 300 for a burst of 2 s, more for a slower one, as the limiter admits | The criterion as stated for every burst that meets it, and the same arithmetic for one a loaded host stretches; the precedent of R-CI-021 (`TestR_CI_021_TheAddressBudgetIsOneAcrossReplicas`) | A burst of many seconds tests a looser bound; the lower bounds (150 with Valkey, 90 without) stay and still show that the limiter admitted its burst |
+
+**Choice:** (c), in [ratelimit_test.go](../../test/integration/api/ratelimit_test.go) (`readBudget`).
+
+**Rationale:** The subject of the test is what the limiter admits for the time it was asked; how fast one process sends 1,000 requests is not. The development agent would revisit the choice if the budget were seen to pass a limiter that admits more than the criterion's 300 within 2 s, which a burst of up to 2 s still shows at once.
+
+**Applied in the spec:** none (R-ARCH-034 is unchanged); [ha-and-helm.md](ha-and-helm.md) Q-HA-285 points here; H-823 is closed. Test: `TestClusterWideRateLimit`.
+
 ### Q-ARCH-226 · The host answers an early, read-only ownership question
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

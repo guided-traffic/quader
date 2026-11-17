@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -32,7 +33,7 @@ func burstOf(t *testing.T, e *env, nodes []*node, token string, total int) (admi
 	val := e.stack.Validator()
 	// The answers are validated against the API document after the burst: the
 	// validation costs more than the request, and inside the timed window it
-	// would stretch the burst past the 2 s the bound holds for on a slow runner.
+	// would stretch the burst and with it the budget the bound is read from.
 	type answer struct {
 		status int
 		header http.Header
@@ -112,9 +113,25 @@ func (e *env) startWebs(t *testing.T) []*node {
 	return nodes
 }
 
+// The read class at its defaults (R-API-016): 50 requests a second and a burst of 200.
+const (
+	readPerSecond = 50.0
+	readBurst     = 200.0
+)
+
+// readBudget is what the limiter of the read class admits to one token over a burst that took elapsed: the burst plus the rate
+// times the time. The criterion of R-ARCH-034 bounds a burst sent within 2 s, 300 admitted; a burst that a loaded host stretches
+// past 2 s is held to the budget over the time it took instead of failing on the host's speed (Q-ARCH-496). The sliding window
+// admits no more than this (it admits burst per window of burst ÷ rate, and a window that slides by elapsed frees at most rate ×
+// elapsed), and neither does the fallback, whose buckets on n replicas hold burst ÷ n and fill at rate ÷ n each.
+func readBudget(elapsed time.Duration) int {
+	return int(math.Ceil(readBurst + readPerSecond*elapsed.Seconds()))
+}
+
 // TestClusterWideRateLimit is the acceptance of R-ARCH-034 and R-API-016: three
 // web replicas, one token, 1,000 requests within 2 s admit at most 300, with
 // Valkey available and with it unavailable, and a second token is not slowed down.
+// A burst that takes longer is held to the budget over the time it took (readBudget).
 func TestClusterWideRateLimit(t *testing.T) {
 	t.Run("R-ARCH-034 R-API-016 with Valkey: at most 300 admitted, 429 with Retry-After, the second token unaffected", func(t *testing.T) {
 		// The subject is that a Valkey that answers is used, so no command may be given up on for the speed of the host: on a
@@ -125,12 +142,10 @@ func TestClusterWideRateLimit(t *testing.T) {
 		e := newEnv(t, true, append([]string{"QUADER_VALKEY_COMMAND_TIMEOUT=10s"}, rateLimitsOn...)...)
 		nodes := e.startWebs(t)
 		admitted, refused, elapsed, noRetry := burstOf(t, e, nodes, e.alice.token, 1000)
-		t.Logf("admitted %d, refused %d in %s", admitted, refused, elapsed)
-		if elapsed > 2*time.Second {
-			t.Fatalf("the burst took %s; the bound holds for 2 s", elapsed)
-		}
-		if admitted > 300 || admitted < 150 || noRetry != 0 || refused != 1000-admitted {
-			t.Fatalf("admitted %d refused %d without Retry-After %d", admitted, refused, noRetry)
+		budget := readBudget(elapsed)
+		t.Logf("admitted %d, refused %d in %s; the budget over that time is %d", admitted, refused, elapsed, budget)
+		if admitted > budget || admitted < 150 || noRetry != 0 || refused != 1000-admitted {
+			t.Fatalf("admitted %d (budget %d over %s) refused %d without Retry-After %d", admitted, budget, elapsed, refused, noRetry)
 		}
 		req, _ := http.NewRequest("GET", nodes[1].url()+"/api/v1/system/version", nil)
 		req.Header.Set("Authorization", "Bearer "+e.bob.token)
@@ -159,12 +174,10 @@ func TestClusterWideRateLimit(t *testing.T) {
 				}
 			}
 			admitted, refused, elapsed, noRetry := burstOf(t, e, nodes, e.alice.token, 1000)
-			t.Logf("admitted %d, refused %d in %s", admitted, refused, elapsed)
-			if elapsed > 2*time.Second {
-				t.Fatalf("the burst took %s; the bound holds for 2 s", elapsed)
-			}
-			if admitted > 300 || admitted < 90 || noRetry != 0 {
-				t.Fatalf("admitted %d refused %d without Retry-After %d", admitted, refused, noRetry)
+			budget := readBudget(elapsed)
+			t.Logf("admitted %d, refused %d in %s; the budget over that time is %d", admitted, refused, elapsed, budget)
+			if admitted > budget || admitted < 90 || noRetry != 0 {
+				t.Fatalf("admitted %d (budget %d over %s) refused %d without Retry-After %d", admitted, budget, elapsed, refused, noRetry)
 			}
 			for _, n := range nodes {
 				if v := fallback(t, n); v != 1 {

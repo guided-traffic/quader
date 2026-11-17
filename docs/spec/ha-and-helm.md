@@ -9791,7 +9791,7 @@ Context: Two test defects in run 42839263211. `TestEndpoints` failed in 0.5 s wi
 | (b) Pass the listeners on instead of addresses | The test binds, the replica inherits | Closes the window | A replica is a child process that takes addresses from its configuration |
 | (c) Rate-limit test: `valkey.command_timeout` of 10 s for the subtest "with Valkey" (chosen) | The subject is that a Valkey that answers is used | The result no longer depends on the speed of the host | The subtest does not show what a slow Valkey does; `TestRateLimitAddsNoDelayOnceTheCircuitIsOpen` and the two "unavailable" subtests do |
 
-**Choice:** (a) and (c). **Rationale:** both bounds belonged to the speed of the host and not to the subject of their test. Revisit (c) if the burst bound of 2 s in the same subtest is seen to fail on a loaded runner (H-823).
+**Choice:** (a) and (c). **Rationale:** both bounds belonged to the speed of the host and not to the subject of their test. The burst bound of 2 s in the same subtest is replaced by the budget over the time the burst took ([Q-ARCH-496](architecture.md#q-arch-496--the-acceptance-of-the-cluster-wide-limiter-reads-the-bound-from-the-time-the-burst-took)).
 **Applied:** `test/integration/server/env_test.go` (`freeAddr`), `test/integration/api/ratelimit_test.go`.
 
 ### Q-HA-280 · The drain variants keep the logs of the evicted pods in the artifacts
@@ -10398,10 +10398,3 @@ Live on the CI runners, not seen on the laptop. In runs 42788335321, 42793751322
 Not verified, and this is the gap: what kept the pool from handing out a connection for 10 s and longer. The candidates, none of them shown: (1) the cleanup of a closed connection (cancel request over TLS, terminate, wait for the server to close) taking seconds on the runner; (2) the `schema` and `database` checks cutting every fresh connection again and again at 200 ms (the integration setting) while a connection takes longer than that to set up, which Q-HA-284 removes; (3) a stall of the PostgreSQL container. The dump of an overrun is now grouped and carries the pool counts (Q-ARCH-461), so the next red run answers it.
 
 What makes it real: a replica whose control connection is unusable turns stale for the authorization gate (`503 authz_stale`) and its heartbeat lapses, in production as in the tests; the bound of the drain step and the move of the mark to the request pool keep it from costing the shutdown its budget, they do not keep the poll running.
-
-### H-823 · The burst of the rate-limit acceptance test is bound by wall-clock time
-
-Component: `TestClusterWideRateLimit` ([test/integration/api/ratelimit_test.go](../../test/integration/api/ratelimit_test.go)). Subject: its fixed bound "the burst took more than 2 s".
-
-Live. The criterion R-ARCH-034 states 1,000 requests within 2 s admit at most 300, and the test sends them from one process that also runs the three replicas; on a loaded runner the burst of run 42839263211 took 1.8 s against 0.1 s elsewhere in the same test, so the bound is close to the edge there. Not verified: whether a burst over 2 s on the runner would also exceed 300 admitted; the bound is the test's reading of the window and is kept as it is. What makes it real: a runner slower by a further factor of 1.1 fails the test on the bound and not on the product.
-
