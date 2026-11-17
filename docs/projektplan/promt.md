@@ -258,6 +258,16 @@ Found on 2026-11-08 during the run of T-16, by the penetration test of the F-82 
 
 ### Tests and tools
 
+- **F-131 · The search field keeps its active index when a newer answer replaces the list of suggestions** (read on 2026-11-17
+  while the search journey of `e2e (access-long)` was fixed, not reproduced as a user): the highlight can then sit on another
+  entry than the one the reader walked to; Enter opens the highlighted entry, so nothing opens unseen. The spec (R-UI-095 to
+  R-UI-098) does not say what the active entry is after the list changed. Done when the spec says it and the field holds it.
+- **F-132 · The suggested key of the repository creation form can land in a key the user has begun** (seen on 2026-11-17 in the
+  trace of a browser journey: the answer with the class's defaults arrived 5 ms into the journey's fill and the key became the
+  suggestion followed by the typed text). The form writes its suggestion until the key is edited (Q-UI-342), so the window is
+  the time between the focus and the first character; a person will hardly hit it, a script does. The journeys now wait for the
+  suggestion before they type. Done when the form no longer writes a suggestion into a field that has the focus, or the spec
+  says why it may.
 - **F-130 · The upgrade set has no release to start from since the rename to Quader** (2026-11-17,
   [ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark)).
   `TestUpgrade_R_HA_064_AcrossTheCut` installs `v0.16.0` and `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` the latest
