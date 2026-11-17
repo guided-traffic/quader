@@ -12,6 +12,13 @@
 # (values-pooler.yaml: 60s + 15s + 5s = 80 s). The grace period of 120 s covers the sleep and the shutdown.
 #
 # The server connections of the four pool sizes are 2 x 20 + 2 x 4 = 48, which values-pooler.yaml declares.
+#
+# What a PostgreSQL switchover behind the poolers needs (R-HA-058, Q-HA-301): server_login_retry of 1 s. After a failed server
+# login PgBouncer refuses every client for server_login_retry (15 s by default) without trying again. A switchover fails the login
+# twice: once while the old primary stops, and once more on the new primary, whose instance manager sets the application password
+# again with a new SCRAM salt, so the keys PgBouncer keeps from its long-lived clients no longer match. With the default that was
+# 30 s in which every replica's database check failed and the edge answered 503 for everything; with 1 s the poolers serve again
+# about a second after the new primary does.
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
@@ -26,6 +33,7 @@ spec:
     parameters:
       default_pool_size: "20"
       max_client_conn: "500"
+      server_login_retry: "1"
   template:
     metadata:
       labels:
@@ -61,6 +69,7 @@ spec:
     parameters:
       default_pool_size: "4"
       max_client_conn: "100"
+      server_login_retry: "1"
   template:
     metadata:
       labels:
