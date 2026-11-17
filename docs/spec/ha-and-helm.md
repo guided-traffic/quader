@@ -1119,7 +1119,7 @@ affinity. The harness that picks the node, drains it and judges the variant's ow
 no load of its own: the blocks of the vulnerability scanning run it under their probes (roadmap E5.13), and E5.9 runs it under the load
 above, with the variants A to E in one flow (`test/e2e/drain_load_test.go`,
 [Q-HA-240](#q-ha-240--the-variants-b-to-e-under-the-full-load-run-as-long-as-variant-a-and-judge-attempt-unchanged-on-the-jobs-that-moved)
-to Q-HA-245).
+to Q-HA-245, [Q-HA-301](#q-ha-301--variant-e-writes-a-base-backup-into-its-jobs-target-first-so-that-every-pod-of-the-slowed-job-copies-only-the-jobs-own-files)).
 
 **The long-transfer probes in the test**
 ([Q-HA-241](#q-ha-241--the-long-transfer-probes-hold-one-download-on-the-evicted-pod-and-the-uploads-are-repeated-by-the-client)).
@@ -10078,7 +10078,9 @@ evicted worker to finish on another with `attempt` unchanged, and the node of va
 
 ### Q-HA-245 · The backup of variant E is started before the 1 GiB file is put into the installation
 
-Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
+Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough. **Superseded** by
+[Q-HA-301](#q-ha-301--variant-e-writes-a-base-backup-into-its-jobs-target-first-so-that-every-pod-of-the-slowed-job-copies-only-the-jobs-own-files):
+the pod that replaces the evicted one takes a snapshot of its own, which holds the 1 GiB file, so the order below never kept the file out of the second copy.
 
 Context: variant E slows its backup Job to 512 KiB/s so that the copy is still running when the drain comes, and the pod that replaces an evicted one
 copies the installation again from the start (the Job must end within 15 minutes). The long-transfer probes keep a 1 GiB file in the installation: a
@@ -10141,6 +10143,39 @@ The development agent would revisit the choice if the recorders' own cost shows 
 resolution of `ps`); the host side was the Secret watch (0.9 s in its first minute, mostly the initial list) and three clients of 0.1 s each.
 
 **Applied in the spec:** none. [docs/developer/e2e.md](../developer/e2e.md#reading-a-stall).
+
+### Q-HA-301 · Variant E writes a base backup into its Job's target first, so that every pod of the slowed Job copies only the Job's own files
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Supersedes the order of
+[Q-HA-245](#q-ha-245--the-backup-of-variant-e-is-started-before-the-1-gib-file-is-put-into-the-installation).
+
+Context: the leg `drain-load-e` failed in every nightly run from 2026-11-10 to 2026-11-17 with `timed out after 15m0s waiting for Job var-e-<id>-1 to
+end`, every other condition held. Q-HA-245 kept the 1 GiB file of the download probes out of the Job's snapshot by starting the Job before the file
+went in, and counted on the replacement pod copying the same 200 MiB again. That is not what a backup Job does: each pod is a run of its own that takes
+a snapshot of its own and copies what is referenced then, minus what the previous complete backup of the target holds ([backup-and-restore.md](backup-and-restore.md)
+R-BAK-006, R-BAK-010). The product does what R-BAK-006 says; the test's assumption was wrong. Run 44067104691 shows it: the first pod
+(`var-e-b068-1-sv7tz`) started at 14:53:11 and was evicted at 14:55:53; the replacement (`var-e-b068-1-66dfp`) started at 14:56:03, after the 1 GiB file
+had gone in, logged its table export at 14:56:04 and nothing after it, and was still copying when the test gave up at 15:18:25: 22 minutes at
+512 KiB/s are about 670 MiB, more than the 200 MiB the Job was meant to copy and less than the 1.2 GiB it had. Verified from the pods' logs in the
+leg's `evidence/kept-pod-logs/` and the events; the run rows were not read (they are now, below).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A base backup at full speed into the Job's target prefix, then the Job's 200 MiB, then the slowed Job (chosen) | The extras are prepared first, as for every other variant; the base takes the installation with the 1 GiB file; each pod of the slowed Job copies the 200 MiB and what the load added since, because the rest is in the target's pool | The Job's work no longer depends on what else the installation holds; the rate and the 200 MiB stay; the first pod still needs about 7 minutes, the replacement a few; the incremental copy of R-BAK-006 runs on the way | One extra Job before the load (a full-speed copy of about 1.3 GiB) |
+| (b) The 1 GiB file first and a faster rate (2 MiB/s) | Both pods have the file; the replacement copies what the first did not | No extra Job | The first pass must outlast the eviction and the second must end in 15 minutes: one rate has to serve both, and a 1 GiB object cut mid-copy is copied again from its start |
+| (c) Wait longer than 15 minutes | — | — | 1.2 GiB at 512 KiB/s is 40 minutes: a bound widened to fit the test's mistake |
+
+**Choice:** (a). The base is a property of the harness (`variantDrain.BackupBase`), set by E5.9 only: the vulnerability blocks run variant E without the
+large files, and their Job copies the whole installation as before (set `vuln-long` of run 44067104691: Complete with 2 pods, 41 s after the drain began).
+The runner losses that Q-HA-245 suspected of a full disk came before the runners' disk limit was removed on 2026-11-09; the base writes the 1 GiB file into
+the target once.
+
+**Diagnostics:** every pod of the variant's Jobs (base and slowed) has its log streamed by `kubectl logs -f` into `drain-variant-E-<pod>.log` of the
+artifacts, from its start to its SIGTERM line (the evidence recorder of Q-HA-300 copies every 2 s and lost the last lines of both pods); and `verifyE` logs
+the run rows of the Job (pod, state, progress, pins left and their bytes), also when its wait times out.
+
+**Applied:** `test/e2e/drain_load_test.go`, `test/e2e/drain_variants_test.go` (`prepareBackupJob`, `verifyE`), `test/e2e/backup_env_test.go`
+(`followJobPodLogs`, `logBackupRuns`).
 
 ## What this does not cover
 

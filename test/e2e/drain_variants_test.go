@@ -72,6 +72,11 @@ type variantDrain struct {
 	job string
 	// BackupFiles files of BackupFileMiB MiB are put into the installation before variant E's Job starts (16 of 1 MiB by default)
 	BackupFiles, BackupFileMiB int
+	// BackupBase writes a complete backup of the installation into the Job's target prefix at full speed before the files are put, so
+	// that every pod of the slowed Job copies the files and what the caller adds after them, never what the installation held before
+	// (Q-HA-301). Each pod of a backup Job is a run of its own with a snapshot of its own (R-BAK-006): the pod that replaces an evicted
+	// one copies whatever is referenced when it starts.
+	BackupBase bool
 
 	runErr   error
 	runOut   string
@@ -374,9 +379,26 @@ func pickNodeD(t *testing.T) string {
 
 // prepareBackupJob puts at least 16 MiB of fresh files into the installation and starts a backup Job whose pod runs on the node
 // (a preferred node affinity, Q-HA-174), slowed to 512 KiB/s into a fresh target prefix so that the copy outlasts the probes' lead.
+// With BackupBase the prefix first gets a complete backup of the installation, and the Job's runs copy only what came after it.
+// The log of every pod of the Job, the evicted one's included, is streamed into drain-variant-E-<pod>.log of the artifacts.
 func (d *variantDrain) prepareBackupJob(t *testing.T) {
 	t.Helper()
 	run := bakRun()
+	prefix := bakFreshPrefix(run, "var-e")
+	if d.BackupBase {
+		base := fmt.Sprintf("var-e-%s-base", run)
+		bakCreateJob(t, bakJob{name: base, env: map[string]string{"QUADER_BACKUP_TARGET_PREFIX": prefix}})
+		followJobPodLogs(t, base, "drain-variant-E-")
+		func() {
+			defer logBackupRuns(t, base)
+			began := time.Now()
+			end := bakWaitJob(t, cfg.namespace, base, 10*time.Minute)
+			if end.Condition != "Complete" {
+				t.Fatalf("variant E: the base backup Job %s ended %s (exits %v):\n%s", base, end.Condition, end.Exits, tail(bakJobLogs(cfg.namespace, base), 2500))
+			}
+			t.Logf("variant E: the base backup %s into %s completed in %s", base, prefix, time.Since(began).Round(time.Second))
+		}()
+	}
 	adm := adminAPI(t)
 	repo := "vdrain-" + run
 	ensureRepo(t, adm, repo)
@@ -398,9 +420,10 @@ func (d *variantDrain) prepareBackupJob(t *testing.T) {
 		bakCreateJob(t, bakJob{
 			name: d.job, backoff: &zero, preferNode: d.Node,
 			env: map[string]string{
-				"QUADER_BACKUP_TARGET_PREFIX": bakFreshPrefix(run, "var-e"), "QUADER_BACKUP_COPY_BYTES_PER_SECOND": "512KiB", "QUADER_BACKUP_COPY_CONCURRENCY": "1",
+				"QUADER_BACKUP_TARGET_PREFIX": prefix, "QUADER_BACKUP_COPY_BYTES_PER_SECOND": "512KiB", "QUADER_BACKUP_COPY_CONCURRENCY": "1",
 			},
 		})
+		followJobPodLogs(t, d.job, "drain-variant-E-")
 		bakWaitLog(t, cfg.namespace, d.job, "backup run started", 3*time.Minute)
 		on := podNode(t, cfg.namespace, bakPodOf(t, cfg.namespace, d.job))
 		if on == d.Node {
@@ -611,6 +634,8 @@ func variantStamp(at time.Time) string {
 // verifyE: the backup Job completes although its pod was evicted, and the eviction is no failure (backoffLimit 0).
 func (d *variantDrain) verifyE(t *testing.T) {
 	t.Helper()
+	// the runs of the Job's pods, also when the wait below times out: what each run had to copy and what it still had
+	defer logBackupRuns(t, d.job)
 	end := bakWaitJob(t, cfg.namespace, d.job, 15*time.Minute)
 	if end.Condition != "Complete" {
 		t.Errorf("variant E: the backup Job ended %s (exits %v, %d pods):\n%s", end.Condition, end.Exits, end.Pods, tail(bakJobLogs(cfg.namespace, d.job), 2500))
