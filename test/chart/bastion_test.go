@@ -604,12 +604,12 @@ func TestR_BAS_038_EdgeLimitIsWiderThanTheBastionsOwn(t *testing.T) {
 	})
 }
 
-// TestR_BAS_033_RouteByPath (R-BAS-033): URI hashing with consistent hashing and stable server IDs, only with
-// the volume backend and an Ingress.
+// TestR_BAS_033_RouteByPath (R-BAS-033): hashing of the path alone (path-only, so HTTP/1.1 and HTTP/2 requests of one
+// path meet, Q-BAS-154) with consistent hashing and stable server IDs, only with the volume backend and an Ingress.
 func TestR_BAS_033_RouteByPath(t *testing.T) {
 	t.Run("routeByPath renders URI hashing, consistent hashing and server IDs", func(t *testing.T) {
 		a := bstIngressAnnotations(t, bstRequired(), "cacheVolume.routeByPath=true")
-		want := map[string]string{hp + "balance-algorithm": "uri", hp + "assign-backend-server-id": "true", hp + "config-backend": "hash-type consistent"}
+		want := map[string]string{hp + "balance-algorithm": "uri path-only", hp + "assign-backend-server-id": "true", hp + "config-backend": "hash-type consistent"}
 		for k, v := range want {
 			if a[k] != v {
 				t.Errorf("annotation %s = %v, want %s", k, a[k], v)

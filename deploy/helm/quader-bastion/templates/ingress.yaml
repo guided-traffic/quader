@@ -5,9 +5,11 @@ pathType Prefix. The ops port is never routed. The annotations are HAProxy Ingre
 controller's default prefix, verified against its v0.16.3 documentation and source (Q-BAS-56); any other
 controller ignores them (NOTES.txt says so):
   edgeLimit (R-BAS-038):    limit-rps, limit-connections, limit-whitelist (from blocking.exempt_cidrs).
-  routeByPath (R-BAS-033):  balance-algorithm uri, assign-backend-server-id, and the snippet
-                            "hash-type consistent": URI hashing moves about 1/n of the paths when a
-                            pod is added, drained or replaced.
+  routeByPath (R-BAS-033):  balance-algorithm "uri path-only", assign-backend-server-id, and the
+                            snippet "hash-type consistent": the hash covers the path alone, so an
+                            HTTP/2 request (whose URI carries scheme and authority) and an HTTP/1.1
+                            request for one path reach the same pod (Q-BAS-154); consistent hashing
+                            moves about 1/n of the paths when a pod is added, drained or replaced.
   TLS to the pods (R-BAS-044): secure-backends, secure-sni and secure-verify-ca-secret.
 */ -}}
 {{- $hp := "haproxy-ingress.github.io/" }}
@@ -25,7 +27,7 @@ controller ignores them (NOTES.txt says so):
 {{- end }}
 {{- end }}
 {{- if .Values.cacheVolume.routeByPath }}
-{{- $_ := set $ann (print $hp "balance-algorithm") "uri" }}
+{{- $_ := set $ann (print $hp "balance-algorithm") "uri path-only" }}
 {{- $_ := set $ann (print $hp "assign-backend-server-id") "true" }}
 {{- $_ := set $ann (print $hp "config-backend") "hash-type consistent" }}
 {{- end }}

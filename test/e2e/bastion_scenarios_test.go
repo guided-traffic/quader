@@ -231,7 +231,19 @@ func TestBastion_R_BAS_049_RoutingByPath(t *testing.T) {
 	// A request that still goes to the main installation after it is a revalidation caused by an entry the Bastion applied meanwhile.
 	// Nothing in this suite commits one at this point: before Q-BAS-152 a replica applied the entries a quiet feed kept re-sending
 	// again 5 minutes and 15 seconds after it first received them, which is about when this test runs after the fixture's setup.
+	// The cold runs were npm clients over HTTP/1.1 and curl speaks HTTP/2, whose URI carries the scheme and the authority: the hash of
+	// the path alone (Q-BAS-154) sends both to the replica that holds the path, so the warm-up revalidates and never misses.
+	missesOf := func() (n float64) {
+		for _, p := range pods {
+			n += msum(basMetrics(t, p.Name), "quader_bastion_requests_total", `class="artifact"`, `result="miss"`)
+		}
+		return n
+	}
+	missesBefore := missesOf()
 	fetch(1)
+	if n := missesOf() - missesBefore; n != 0 {
+		t.Errorf("the warm-up missed %v of %d paths: a path the npm clients filled over HTTP/1.1 reached another replica over HTTP/2 (R-BAS-033)", n, len(paths))
+	}
 	before := map[string]float64{}
 	for _, p := range pods {
 		before[p.Name] = msum(basMetrics(t, p.Name), "quader_bastion_requests_total", `class="artifact"`, `result="hit"`)
