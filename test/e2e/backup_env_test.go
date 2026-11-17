@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -477,6 +478,102 @@ func bakWaitJob(t testing.TB, ns, name string, within time.Duration) jobEnd {
 func bakJobLogs(ns, name string) string {
 	out, _ := kubectl("-n", ns, "logs", "job/"+name, "--all-containers", "--tail=-1")
 	return out
+}
+
+// followJobPodLogs streams the log of every pod the Job creates in the release's namespace, the replacement of an evicted pod
+// included, into <prefix><pod>.log of the artifact directory, from the container's start until it ends or the test ends. The
+// log of an evicted pod goes with the pod, and `kubectl logs job/<name>` reads one pod only; the files keep every pod's whole log,
+// the line of its SIGTERM included.
+func followJobPodLogs(t testing.TB, job, prefix string) {
+	ctx, cancel := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		seen := map[string]bool{}
+		for ctx.Err() == nil {
+			out, err := kubectlCtx(ctx, "-n", cfg.namespace, "get", "pods", "-l", "job-name="+job, "-o", "jsonpath={range .items[*]}{.metadata.name}{\"\\n\"}{end}")
+			if err == nil {
+				for _, p := range strings.Fields(out) {
+					if seen[p] {
+						continue
+					}
+					seen[p] = true
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						streamJobPodLog(ctx, p, filepath.Join(cfg.out, prefix+p+".log"))
+					}()
+				}
+			}
+			select {
+			case <-ctx.Done():
+			case <-time.After(time.Second):
+			}
+		}
+	}()
+	t.Cleanup(func() { cancel(); wg.Wait() })
+}
+
+// countingWriter counts what it passes on.
+type countingWriter struct {
+	w io.Writer
+	n int64
+}
+
+func (c *countingWriter) Write(b []byte) (int, error) {
+	n, err := c.w.Write(b)
+	c.n += int64(n)
+	return n, err
+}
+
+// streamJobPodLog runs `kubectl logs -f` on the pod into the file, again while the container has not started (kubectl then
+// writes nothing and fails), and ends when a stream that carried the log ends (the container ended), when the pod is gone or
+// when ctx ends.
+func streamJobPodLog(ctx context.Context, pod, file string) {
+	f, err := os.Create(file)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	out := &countingWriter{w: f}
+	for ctx.Err() == nil {
+		var stderr bytes.Buffer
+		cmd := exec.CommandContext(ctx, "kubectl", "--context", cfg.kubeContext, "-n", cfg.namespace, "logs", "-f", "--all-containers", pod)
+		cmd.Stdout, cmd.Stderr = out, &stderr
+		if err := cmd.Run(); err == nil || out.n > 0 {
+			return
+		}
+		if strings.Contains(stderr.String(), "NotFound") || strings.Contains(stderr.String(), "not found") {
+			return
+		}
+		select {
+		case <-ctx.Done():
+		case <-time.After(500 * time.Millisecond):
+		}
+	}
+}
+
+// logBackupRuns writes the run rows of a backup Job into the test log, one per pod that started a run: the state, the progress the
+// heartbeat wrote last, and the pins the run has not removed yet with their bytes (what it still had to copy; a run that ended
+// deleted its pins). It never fails the test: it is called in a defer, also after a failed wait.
+func logBackupRuns(t testing.TB, job string) {
+	t.Helper()
+	primary, err := kubectl("-n", cfg.namespace, "get", "cluster", "quader-db", "-o", "jsonpath={.status.currentPrimary}")
+	if err != nil || strings.TrimSpace(primary) == "" {
+		t.Logf("the runs of Job %s: no PostgreSQL primary to ask (%v)", job, err)
+		return
+	}
+	q := fmt.Sprintf(`SELECT r.pod, r.state, r.started_at, coalesce(r.finished_at::text, '-'), r.progress,
+		(SELECT count(*) FROM quader.backup_blob_pin p WHERE p.run_id = r.id), (SELECT coalesce(sum(p.size), 0) FROM quader.backup_blob_pin p WHERE p.run_id = r.id),
+		coalesce(r.error::text, '-')
+		FROM quader.backup_run r WHERE r.job_name = '%s' ORDER BY r.started_at`, job)
+	out, err := kubectl("-n", cfg.namespace, "exec", strings.TrimSpace(primary), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-F", " | ", "-c", q)
+	if err != nil {
+		t.Logf("the runs of Job %s: %v", job, err)
+		return
+	}
+	t.Logf("the runs of Job %s (pod | state | started | finished | progress | pins left | bytes pinned | error):\n%s", job, strings.TrimSpace(out))
 }
 
 var backupIDPattern = regexp.MustCompile(`\b(\d{8}T\d{6}Z-[0-9a-f]{4})\b`)

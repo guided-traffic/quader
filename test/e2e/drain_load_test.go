@@ -51,23 +51,20 @@ func drainUnderLoad(t *testing.T, kind string, v drainVariant, start func() drai
 		logPrefix = fmt.Sprintf("%s-drain-%s-", kind, strings.ToLower(string(v)))
 	}
 	quaderSettled(t, 3, 3, 4)
-	// Variant E starts its backup in the preparation, and the Job copies what the installation holds then, at 512 KiB/s. The installation
-	// holds 200 MiB for it (a copy of about 7 minutes, longer than the 4 to 5 minutes to the eviction, and the Job that starts again in
-	// the second pod ends within the 15 minutes), and the 1 GiB file of the download probes is put after the Job has started, so that the
-	// copy does not take it: it would take 35 minutes. The first runs of the leg lost their runner in variant E, with the 1 GiB file in the
-	// backup (Q-HA-245).
-	var d *variantDrain
-	if v == variantE {
-		d = prepareVariantDrain(t, v, func(d *variantDrain) { d.BackupFiles, d.BackupFileMiB = 10, 20 })
-		for _, x := range extras {
-			x.prepare(t)
-		}
-	} else {
-		for _, x := range extras {
-			x.prepare(t)
-		}
-		d = prepareVariantDrain(t, v)
+	for _, x := range extras {
+		x.prepare(t)
 	}
+	// Variant E's backup Job copies at 512 KiB/s, and each of its pods copies what is referenced when that pod starts (R-BAK-006). A base
+	// backup into the Job's target takes the installation first, the 1 GiB file of the download probes included (35 minutes at that
+	// rate); then 200 MiB of the Job's own go in. The first pod copies them in about 7 minutes, longer than its time to the eviction (the
+	// warm-up and the forcing of the extras: 2 min 42 s in run 44067104691), and the pod that replaces it copies what is left of them and
+	// what the load added, well inside the 15 minutes of verifyE.
+	// Without the base the replacement copied the 1 GiB file and never ended in time (Q-HA-301).
+	var opts []func(*variantDrain)
+	if v == variantE {
+		opts = append(opts, func(d *variantDrain) { d.BackupFiles, d.BackupFileMiB, d.BackupBase = 10, 20, true })
+	}
+	d := prepareVariantDrain(t, v, opts...)
 	// the pick may have moved the PostgreSQL and the Valkey primary and the backup Job may be running: the replicas are unready for
 	// a few seconds after that, and the load is the drain's, not the pick's
 	quaderSettled(t, 3, 3, 4)

@@ -1910,7 +1910,7 @@ passes to `up.sh` in place of `scatter`.
 
 **The flow of one drain**, in `drainUnderLoad`:
 
-1. `prepare` of every extra (below): files made and the source of the downloads uploaded once per process. In variant E the preparation of the variant comes first: its backup Job starts with 200 MiB of its own (10 files of 20 MiB) before the 1 GiB file goes in, so that the Job does not copy the file ([Q-HA-245](../spec/ha-and-helm.md#q-ha-245--the-backup-of-variant-e-is-started-before-the-1-gib-file-is-put-into-the-installation)). Variant C judges its p99 outside the window of the switchover ([Q-HA-243](../spec/ha-and-helm.md#q-ha-243--variant-c-judges-its-latency-outside-the-switchover-window-and-bounds-the-requests-inside-it)); the job writes of a handler ride out the switchover ([Q-HA-244](../spec/ha-and-helm.md#q-ha-244--a-jobs-checkpoint-and-progress-writes-ride-out-a-postgresql-switchover)).
+1. `prepare` of every extra (below): files made and the source of the downloads uploaded once per process. Variant E then writes a base backup of the installation (the 1 GiB file included) at full speed into the target prefix of its Job, puts 200 MiB of its own (10 files of 20 MiB) and starts the Job at 512 KiB/s: each pod of the Job is a run with a snapshot of its own, so the base is what keeps the 1 GiB file out of the copy of the pod that replaces the evicted one ([Q-HA-301](../spec/ha-and-helm.md#q-ha-301--variant-e-writes-a-base-backup-into-its-jobs-target-first-so-that-every-pod-of-the-slowed-job-copies-only-the-jobs-own-files)). The log of every pod of both Jobs goes to `drain-variant-E-<pod>.log` in the artifacts, and `verifyE` logs the Job's run rows (state, progress, pins left and their bytes), also when its wait times out. Variant C judges its p99 outside the window of the switchover ([Q-HA-243](../spec/ha-and-helm.md#q-ha-243--variant-c-judges-its-latency-outside-the-switchover-window-and-bounds-the-requests-inside-it)); the job writes of a handler ride out the switchover ([Q-HA-244](../spec/ha-and-helm.md#q-ha-244--a-jobs-checkpoint-and-progress-writes-ride-out-a-postgresql-switchover)).
 2. `prepareVariantDrain`: the node of the variant (B, C and D may move a primary first), the pod watch, the log streams of the pods on the node.
 3. The load starts (`startFullLoad`: eight `npm ci` loops, four `dotnet restore` loops, the two publish loops, both k6 scripts).
 4. Extras `begin` (the download probes start), then the warm-up: 2 minutes from the start of the load.
@@ -1952,7 +1952,8 @@ stands for are the probe jobs of step 3, and the retention run joins `storageJob
 
 **Artifacts.** `full-ha-drain-b.json`, `-c.json`, `-e.json`, `-d.json` and `nuget-ha-drain.json` (the conditions' numbers), the logs of the
 evicted pods (`full-drain-<variant>-<pod>.log`), the header dumps of the download probes (`.out/e2e-data/drain-dl-<i>.hdr`, overwritten by
-the next variant), `drain-pod-watch.jsonl`, `drain-events.json`, the load's own files (`npm-load-drain-<variant>.json`, `nuget-load-drain-<variant>.json`, `k6-npm-drain-<variant>/`, `k6-nuget-drain-<variant>/`).
+the next variant), `drain-pod-watch.jsonl`, `drain-events.json`, the load's own files (`npm-load-drain-<variant>.json`, `nuget-load-drain-<variant>.json`, `k6-npm-drain-<variant>/`, `k6-nuget-drain-<variant>/`);
+in variant E the whole log of every pod of the base and the slowed backup Job (`drain-variant-E-var-e-<run>-<base|1|2>-<pod>.log`), the evicted one's SIGTERM line included.
 
 **Not built.** The 5 minutes before and 10 minutes after of the table (the variants run 2 and 3, Q-HA-240); the retention run of R-STOR-046
 (not built in the product); a cut upload is repeated from its start, because no resumable generic upload exists. **Not yet measured.** No run
