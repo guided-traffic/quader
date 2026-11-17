@@ -91,29 +91,45 @@ func (e *engine) sharedEnabled() bool {
 // history start and the feed log.
 func (e *engine) state() answers.State { return e.d.Link.AnswerState(e.now()) }
 
-// get returns the usable answer of a kind and key, or nil. An answer that fails a rule is dropped.
+// get returns the usable answer of a kind and key, or nil. An answer that fails a rule is dropped. A copy in memory
+// that fails a rule does not hide the shared store: another replica may have obtained the answer again since, and
+// with Valkey the replicas share their answers (R-BAS-034, Q-BAS-153).
 func (s *answerStore) get(ctx context.Context, kind answers.Kind, key string) *answerVal {
 	mk := memKey(kind, key)
-	v, ok := s.mem.get(mk)
-	if !ok {
-		v, ok = s.fromShared(ctx, kind, mk)
-	}
 	m := s.e.d.Metrics.AnswersTotal
-	if !ok {
-		m.WithLabelValues(string(kind), metrics.AnswerMiss).Inc()
-		return nil
+	reason, found := answers.Usable, false
+	if v, ok := s.mem.get(mk); ok {
+		found = true
+		if reason = s.judge(mk, v); reason == answers.Usable {
+			m.WithLabelValues(string(kind), metrics.AnswerHit).Inc()
+			return v
+		}
 	}
-	switch s.e.state().Check(v.Answer) {
-	case answers.Usable:
-		m.WithLabelValues(string(kind), metrics.AnswerHit).Inc()
-		return v
-	case answers.Revoked:
+	if v, ok := s.fromShared(ctx, kind, mk); ok {
+		found = true
+		if reason = s.judge(mk, v); reason == answers.Usable {
+			m.WithLabelValues(string(kind), metrics.AnswerHit).Inc()
+			return v
+		}
+	}
+	switch {
+	case !found:
+		m.WithLabelValues(string(kind), metrics.AnswerMiss).Inc()
+	case reason == answers.Revoked:
 		m.WithLabelValues(string(kind), metrics.AnswerDropped).Inc()
 	default:
 		m.WithLabelValues(string(kind), metrics.AnswerExpired).Inc()
 	}
-	s.mem.remove(mk)
 	return nil
+}
+
+// judge applies the validity rules to an answer and drops it from memory when it fails one.
+func (s *answerStore) judge(mk string, v *answerVal) answers.Reason {
+	r := s.e.state().Check(v.Answer)
+	if r != answers.Usable {
+		s.mem.remove(mk)
+	}
+	return r
 }
 
 // fromShared reads a signed record from the shared store and puts the answer into memory.

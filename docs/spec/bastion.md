@@ -1534,6 +1534,9 @@ it, the replicas share:
   in Q-BAS-91.
 - **Signed answers** ([Q-BAS-93](#q-bas-93--the-store-signs-and-verifies-the-answer-records)): the store signs a record on `Put` and verifies it on `Get`; a
   record that fails is not returned, is deleted (only if it still holds the failed value) and counts as `bad_signature`.
+- **Memory in front of Valkey** ([Q-BAS-153](#q-bas-153--a-stale-answer-in-a-replicas-memory-does-not-hide-the-one-valkey-holds)): a
+  replica looks an answer up in its memory first; a copy there that fails a rule of R-BAS-020 is dropped and the record in Valkey is
+  read, so an answer another replica obtained since is used, also for the failed-authentication timeout of R-BAS-036.
 
 Acceptance criteria:
 
@@ -5487,6 +5490,32 @@ behind the main installation's cannot widen the window again. The development ag
 
 **Applied in the spec:** R-BAS-026; code: `answers.FeedLog.Settle`, `link.pollOnce`;
 `TestR_BAS_026_AQuietFeedThatReSendsAnEntryPastItsLookbackDoesNotApplyItAgain`, `TestR_BAS_026_AnAppliedIDIsKeptWhileTheFeedSendsItsEntry`.
+
+### Q-BAS-153 · A stale answer in a replica's memory does not hide the one Valkey holds
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `TestBastion_R_BAS_049_FailedAuthenticationTimeout` failed once (run 43698804297): `$FULL`, used from the address before the
+timeout, answered `429 auth_timeout`. The replica logs show why. Replica `x2nsv` had obtained `$FULL`'s credential answer at 09:43:13.8,
+seven seconds before; the last request reached replica `ldx5d`, whose memory still held its own answer of `$FULL` from 09:42:38, older
+than the e2e period of 30 s. The store found that copy in memory, judged it expired and returned no answer without reading Valkey, so
+the replica had no usable answer for `$FULL` and the timeout of R-BAS-036 refused it, although the Bastion as a whole held a usable one.
+The same lookup made a stale shape or URL answer cost a request to the main installation that a shared answer would have saved.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A memory copy that fails a rule is dropped and Valkey is read (chosen) | Memory is a cache of the shared store and never hides a newer record | Every replica sees what any replica obtained; one Valkey read per stale copy | None found |
+| (b) Refresh the credential answer of a caller in the background before it expires | No stale copy for a caller who keeps coming | Fewer misses | A request per caller and period to the main installation; a replica that did not see the caller still has no answer |
+| (c) Accept it | A replica decides by its own memory | Nothing to change | A colleague behind an address in the timeout is refused depending on which replica the ingress picks, which R-BAS-036 rules out |
+
+**Choice:** (a).
+
+**Rationale:** R-BAS-034 shares answers so that a replica does not ask what another one knows; reading Valkey only on a miss in memory
+defeated that for exactly the callers a replica had seen before. The rules of R-BAS-020 judge the record from Valkey as they judge the copy,
+so nothing becomes usable that is not. The development agent records no revisit condition.
+
+**Applied in the spec:** R-BAS-034, R-BAS-036; code: `engine.answerStore.get`;
+`TestR_BAS_036_AStaleAnswerInMemoryDoesNotHideTheFreshOneAnotherReplicaShares`.
 
 ## What this does not cover
 

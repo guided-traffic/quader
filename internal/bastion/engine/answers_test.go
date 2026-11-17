@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/bastion/shared"
@@ -222,6 +223,38 @@ func TestR_BAS_020_AnswersAreSharedThroughTheSharedStoreAndAnUnreadableRecordIsI
 	}
 	if _, ok, _ := st.Answers.Get(context.Background(), shared.AnswerShape, hashKey(key)); ok {
 		t.Fatal("the unreadable record was not deleted")
+	}
+}
+
+// TestR_BAS_036_AStaleAnswerInMemoryDoesNotHideTheFreshOneAnotherReplicaShares: replica B keeps its own answers of
+// $FULL from an earlier request; after the period they are stale, replica A obtains them again and shares them. B, with
+// its address in the failed-authentication timeout, uses A's credential answer instead of refusing $FULL with
+// auth_timeout, and sends nothing to the main installation (R-BAS-034, R-BAS-036, Q-BAS-153; seen in the e2e run
+// 43698804297, where the last request of $FULL reached the replica that held the stale copy).
+func TestR_BAS_036_AStaleAnswerInMemoryDoesNotHideTheFreshOneAnotherReplicaShares(t *testing.T) {
+	clk := &testClock{t: epoch}
+	st := shared.NewLocal(1, clk.now)
+	st.Shared = func() bool { return true }
+	a := newSiteHarness(t, options{signer: true, state: st, clock: clk})
+	b := newHarness(t, options{signer: true, state: st, cache: a.cache, main: a.main, clock: clk})
+	a.site.artifacts[tgz] = payload(1000)
+	if w := b.get(tgz, "Authorization", bearer(a.full)); w.Code != http.StatusOK {
+		t.Fatalf("replica B, first request: %d", w.Code)
+	}
+	clk.advance(a.cfg.Bastion.Answers.Period + time.Second)
+	a.tick()
+	b.tick()
+	if w := a.get(tgz, "Authorization", bearer(a.full)); w.Code != http.StatusOK {
+		t.Fatalf("replica A after the period: %d", w.Code)
+	}
+	b.guard.timeout = guard.Verdict{Status: 429, Code: iface.CodeAuthTimeout, RetryAfter: 15 * time.Minute, Reason: metrics.RefusedAuthTimeout}
+	before := a.main.count()
+	w := b.get(tgz, "Authorization", bearer(a.full))
+	if w.Code != http.StatusOK {
+		t.Fatalf("replica B in the timeout refused $FULL, whose fresh answer replica A shares: %d %s", w.Code, w.Body.String())
+	}
+	if n := a.main.count() - before; n != 0 {
+		t.Fatalf("replica B sent %d requests to the main installation, want none: A's answers are shared", n)
 	}
 }
 
