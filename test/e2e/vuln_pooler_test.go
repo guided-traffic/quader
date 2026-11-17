@@ -91,8 +91,8 @@ func TestVulnPooler_R_VULN_015_BlockHoldsThroughDrainVariantD(t *testing.T) {
 	t.Run("R-HA-059 R-HA-058 R-VULN-015 R-VULN-027 E5.13 drain variant D (an instance of the request pooler on the node): every replica refuses, the replacement from its first request", func(t *testing.T) {
 		quaderSettled(t, 3, 3, 4)
 		d := prepareVariantDrain(t, variantD)
-		// the pick may have moved the PostgreSQL and the Valkey primary: the replicas are unready for a few seconds after that,
-		// and the probes are the drain's, not the pick's
+		// the pick may have moved the PostgreSQL and the Valkey primary. Neither move may take a replica out of its Service (a
+		// switchover is a stall, Q-HA-13, Q-HA-302), so a 503 of the edge after it is a finding, not the pick's to excuse.
 		quaderSettled(t, 3, 3, 4)
 		start := time.Now()
 		tally := probeDuring(t, probes, 20*time.Second, 40*time.Second, func() { d.Run(t) })

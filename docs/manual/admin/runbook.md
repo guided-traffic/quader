@@ -28,7 +28,7 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 **What to do.**
 
 1. Do not restart Quader. A restart repairs nothing and discards the replicas' caches.
-2. Check the primary, the Service that points to it and the pooler in front of it. On CloudNativePG, `kubectl cnpg status <cluster>`.
+2. Check the primary, the Service that points to it and the pooler in front of it. On CloudNativePG, `kubectl cnpg status <cluster>`. Every replica unready for about 30 s after a switchover that itself took a few seconds, with `server login has been failing` in the replicas' logs, is a pooler at PgBouncer's default `server_login_retry`: set it to `1` ([Behind a transaction-mode pooler](configuration.md#behind-a-transaction-mode-pooler)).
 3. Read `quader_db_retries_total` by `kind`: `connection` and `shutdown` are the outage itself, `read_only` is a demoted primary the pool reached, `too_many_connections` is the connection budget ([Scaling](operations.md#scaling-api-packages-and-worker)).
 4. A pod that stays unready after PostgreSQL is back: read its `/readyz?verbose=1` and log for a wrong credential or CA in `secrets.database`, `secrets.databaseCA`.
 5. With asynchronous replication a failover can lose the newest commits; Quader flushes the caches of what went backwards on its own, and there is no step for it. If the data is lost for good, see [Backup and restore](backup-and-restore.md).

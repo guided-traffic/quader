@@ -327,10 +327,10 @@ func pickPrimaryNode(t *testing.T, v drainVariant, wantPG bool) string {
 			}
 		}
 		if otherNode == n {
-			t.Logf("variant %s: the other primary is on %s; moving it away", v, n)
+			t.Logf("variant %s: the other primary is on %s; moving it away at %s", v, n, time.Now().UTC().Format("15:04:05.000"))
 			moveOther()
 		} else {
-			t.Logf("variant %s: the primary is not on %s; moving it there", v, n)
+			t.Logf("variant %s: the primary is not on %s; moving it there at %s", v, n, time.Now().UTC().Format("15:04:05.000"))
 			moveWanted()
 		}
 	}
@@ -366,7 +366,7 @@ func pickNodeD(t *testing.T) string {
 			t.Fatalf("variant D: no node with an api, a packages and a worker pod hosts an instance of the request pooler (poolers on %v)", poolers)
 		}
 		sort.Strings(inWay)
-		t.Logf("variant D: the nodes of the request pooler hold a primary (%v); moving %s first", inWay, inWay[0])
+		t.Logf("variant D: the nodes of the request pooler hold a primary (%v); moving %s first at %s", inWay, inWay[0], time.Now().UTC().Format("15:04:05.000"))
 		if inWay[0] == "postgres" {
 			script(t, "failover.sh")
 		} else {
