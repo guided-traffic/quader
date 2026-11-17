@@ -21,9 +21,21 @@ on:
   push:
     branches:
       - main
+    # A change of documentation alone starts no run (owner, 2026-11-17). The manual under docs/manual is part of the
+    # binary and the guides under internal/ are code, so both still start one; "*.md" matches the files at the root only.
+    paths:
+      - "**"
+      - "!docs/**"
+      - "docs/manual/**"
+      - "!*.md"
   pull_request:
     branches:
       - main
+    paths:
+      - "**"
+      - "!docs/**"
+      - "docs/manual/**"
+      - "!*.md"
   workflow_dispatch:
     inputs:
       closing:

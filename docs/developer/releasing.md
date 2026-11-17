@@ -1,6 +1,6 @@
 # Releasing
 
-Every push to `main` and every pull request runs the checks ([CI](#ci)). Once the jobs that gate it passed ([Q-ARCH-457](../spec/architecture.md#q-arch-457--until-the-first-stable-release-a-minimal-set-of-jobs-gates-semantic-release)),
+Every push to `main` and every pull request that changes more than documentation runs the checks ([CI](#ci)). Once the jobs that gate it passed ([Q-ARCH-457](../spec/architecture.md#q-arch-457--until-the-first-stable-release-a-minimal-set-of-jobs-gates-semantic-release)),
 Semantic Release publishes a GitHub release ([release flow](#release-flow)),
 and [`build.yml`](../../.github/workflows/build.yml) builds the product from that tag: the image
 `guidedtraffic/quader` on Docker Hub, and the Helm charts `quader` and `quader-bastion` in the chart repository on GitHub Pages
@@ -28,7 +28,12 @@ With the first stable release the full gate returns and reliability comes first.
 ## CI
 
 [`release.yml`](../../.github/workflows/release.yml) ("Test and Release") runs on every push to `main`,
-every pull request to `main` and on demand. A newer push cancels the running run of its ref. Every
+every pull request to `main` and on demand. A push or pull request that changes documentation alone starts no run
+(owner, 2026-11-17): everything under `docs/` except `docs/manual/`, which is embedded in the binary, and the Markdown
+files at the root. The guides under `internal/formats/*/guide/` are embedded as well and start a run like any code. What
+this leaves out: the jobs that read the documentation (`coverage`, the links and rules of the coverage generator) see such a
+change only with the next run, and a red one then belongs to the earlier documentation commit. A newer push cancels the
+running run of its ref. Every
 check is a job of its own, with its own make target, so it runs the same locally. A job runs on one of the
 organisation's two self-hosted runner classes or, where it needs more disk than they have, on a GitHub-hosted runner
 (owner, 2026-11-05; the table below). Both self-hosted classes start one ephemeral pod per job and discard it
